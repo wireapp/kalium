@@ -27,7 +27,7 @@ class MessageTextEditHandlerTest {
 
     @Test
     fun givenACorrectMessageAndMessageContent_whenHandeling_ThenDataGetsUpdatedCorrectly() = runTest {
-        //given
+        // given
         val mockMessage = Message.Regular(
             id = "someId",
             content = MessageContent.Text("some new content"),
@@ -59,9 +59,9 @@ class MessageTextEditHandlerTest {
             .suspendFunction(messageRepository::updateMessageId)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(Either.Right(Unit))
-        //when
+        // when
         messageTextEditHandler.handle(mockMessage, mockMessageContent)
-        //then
+        // then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateTextMessageContent)
             .with(eq(mockMessage.conversationId), eq(mockMessageContent.editMessageId), eq(mockMessageContent.newContent))

@@ -2,6 +2,27 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>ChainWrapping:com.wire.detekt.rules.EnforceSerializableFields.kt:39</ID>
+    <ID>ChainWrapping:com.wire.detekt.rules.EnforceSerializableFields.kt:40</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.data.message.MessageEnvelope.kt:13</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.data.message.MessageEnvelope.kt:14</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.data.message.MessageEnvelope.kt:15</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.data.message.MessageEnvelope.kt:35</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.data.message.MessageEnvelope.kt:36</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.data.message.MessageRepository.kt:205</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase.kt:73</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:180</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:181</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:182</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:214</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:215</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:219</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:223</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:227</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:228</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:229</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:230</ID>
+    <ID>ChainWrapping:com.wire.kalium.logic.sync.ConversationEventReceiver.kt:296</ID>
     <ID>ClassNaming:Cryptobox.module_@wireapp_cryptobox.kt$T$0</ID>
     <ID>ClassNaming:Size_t.kt$Size_t : IntegerType</ID>
     <ID>ClassNaming:Uint32_t.kt$Uint32_t : IntegerType</ID>
@@ -10,22 +31,338 @@
     <ID>ClassNaming:messages.kt$EncryptionAlgorithm$AES_GCM : EncryptionAlgorithm</ID>
     <ID>ClassNaming:otr.kt$Priority$HIGH_PRIORITY : Priority</ID>
     <ID>ClassNaming:otr.kt$Priority$LOW_PRIORITY : Priority</ID>
-    <ID>ComplexMethod:MessageDAOImpl.kt$MessageMapper$fun toModel(msg: SQLDelightMessage): MessageEntity</ID>
-    <ID>ComplexMethod:MessageMapper.kt$MessageMapperImpl$override fun fromMessageToEntity(message: Message): MessageEntity</ID>
-    <ID>ComplexMethod:ProtoContentMapper.kt$ProtoContentMapperImpl$override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent</ID>
+    <ID>CommentSpacing:build.gradle.kts:33</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:100</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:102</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:121</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:122</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:124</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:125</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:145</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:146</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:148</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:30</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:31</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:33</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:34</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:53</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:54</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:56</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:75</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:76</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:78</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:79</ID>
+    <ID>CommentSpacing:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:99</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.call.CallClient.kt:17</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.call.CallRepository.kt:121</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.call.CallRepository.kt:65</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.client.ClientModel.kt:12</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.connection.ConnectionRepository.kt:181</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.connection.ConnectionRepository.kt:215</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.connection.ConnectionRepositoryTest.kt:58</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.connection.ConnectionRepositoryTest.kt:80</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.conversation.ConversationMapper.kt:90</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:208</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:240</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.kt:433</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.kt:448</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.kt:450</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.conversation.MLSConversationRepository.kt:85</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.location.Location.kt:4</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.message.MessageRepository.kt:194</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.message.MessageRepository.kt:89</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.message.ProtoContentMapper.kt:105</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.notification.LocalNotification.kt:20</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper.kt:13</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource.kt:24</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.PublicUserMapper.kt:29</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepository.kt:154</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:106</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:112</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:115</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:121</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:127</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:130</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:139</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:145</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:147</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:161</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:172</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:175</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:181</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:192</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:195</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:205</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:215</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:218</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:232</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:262</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:265</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:272</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:310</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:320</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:348</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:358</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:369</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:392</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:403</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:413</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:51</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:20</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:22</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:25</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:31</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:35</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:38</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:44</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:48</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.sync.SyncRepositoryTest.kt:55</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:18</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:25</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:31</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:38</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:44</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:51</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt:15</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt:22</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt:28</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt:35</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt:41</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt:48</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.data.user.UserModel.kt:14</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.auth.LogoutUseCase.kt:27</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.auth.ValidateEmailUseCase.kt:22</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:27</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.CallManagerImpl.kt:17</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.CallManagerTest.kt:73</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.MediaManagerServiceImpl.kt:20</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall.kt:11</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnConfigRequest.kt:15</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall.kt:11</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnHttpRequest.kt:20</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnIncomingCall.kt:16</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnMissedCall.kt:12</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnSFTRequest.kt:18</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.scenario.OnSendOTR.kt:18</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase.kt:52</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase.kt:63</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase.kt:70</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase.kt:72</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase.kt:21</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCaseTest.kt:35</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCaseTest.kt:41</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCaseTest.kt:58</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCaseTest.kt:64</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCaseTest.kt:80</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCaseTest.kt:86</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetAllContactsNotInTheConversationUseCaseTest.kt:26</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetAllContactsNotInTheConversationUseCaseTest.kt:31</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetAllContactsNotInTheConversationUseCaseTest.kt:34</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetAllContactsNotInTheConversationUseCaseTest.kt:41</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetAllContactsNotInTheConversationUseCaseTest.kt:46</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetAllContactsNotInTheConversationUseCaseTest.kt:49</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:46</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:56</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:58</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:74</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:83</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:85</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:106</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:125</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:133</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:151</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:170</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:173</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:181</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:200</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:203</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:68</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:88</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:91</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.GetNotificationsUseCase.kt:164</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:28</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:29</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSender.kt:146</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:102</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:104</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:115</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:119</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:121</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:133</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:137</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:139</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:151</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:155</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:157</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:169</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:173</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:175</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:187</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:191</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:193</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:205</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:209</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:211</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:223</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:227</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:229</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:88</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:90</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:92</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:98</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase.kt:14</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase.kt:20</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase.kt:44</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:109</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:136</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:138</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:145</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:165</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:171</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:181</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:201</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:207</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:36</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:43</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:45</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:59</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:66</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:68</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:84</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:91</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:93</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserDirectoryUseCaseTest.kt:42</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserDirectoryUseCaseTest.kt:49</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserDirectoryUseCaseTest.kt:51</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserDirectoryUseCaseTest.kt:58</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserDirectoryUseCaseTest.kt:65</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserDirectoryUseCaseTest.kt:68</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:105</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:112</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:114</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:121</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:128</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:131</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:65</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:72</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:74</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:81</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:93</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.feature.user.SearchUserUseCaseTest.kt:95</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.ConversationEventReceiver.kt:215</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.ConversationEventReceiver.kt:45</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManager.kt:59</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:113</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:116</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:121</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:135</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:138</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:143</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:158</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:161</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:166</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:174</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:177</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:188</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:252</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:263</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:267</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:274</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:282</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:290</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:294</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:303</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:310</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:319</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:326</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:335</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:342</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:67</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:70</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:75</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:90</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:93</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.SyncManagerTest.kt:98</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.WrapperWorker.kt:35</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.WrapperWorker.kt:42</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.sync.WrapperWorker.kt:49</ID>
+    <ID>CommentSpacing:com.wire.kalium.logic.util.TimeParser.kt:10</ID>
+    <ID>CommentSpacing:com.wire.kalium.network.api.conversation.ConversationResponse.kt:72</ID>
+    <ID>CommentSpacing:com.wire.kalium.network.api.message.EnvelopeProtoMapperImpl.kt:33</ID>
+    <ID>CommentSpacing:com.wire.kalium.network.api.notification.NotificationApiImpl.kt:53</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:131</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:136</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:139</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:146</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:151</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:154</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:161</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:166</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:169</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:176</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:217</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:220</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:224</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:227</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:232</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:235</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:241</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:246</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:249</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:257</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:262</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:265</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:273</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:278</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:281</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:290</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:299</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:302</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:308</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:318</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:321</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:329</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:340</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:343</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:352</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:365</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:368</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:388</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:391</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:397</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:401</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:405</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:414</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:417</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:420</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:430</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:433</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:436</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:445</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:448</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:451</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.kmm_settings.KaliumPreferences.kt:53</ID>
     <ID>ComplexMethod:messages.kt$@Suppress("UNCHECKED_CAST") private fun GenericMessage.Companion.decodeWithImpl(u: pbandk.MessageDecoder): GenericMessage</ID>
+    <ID>ComplexMethod:messages.kt$@Suppress("UNCHECKED_CAST") private fun ImageAsset.Companion.decodeWithImpl(u: pbandk.MessageDecoder): ImageAsset</ID>
     <ID>ComplexMethod:messages.kt$private fun Ephemeral.protoMergeImpl(plus: pbandk.Message?): Ephemeral</ID>
     <ID>ComplexMethod:messages.kt$private fun GenericMessage.protoMergeImpl(plus: pbandk.Message?): GenericMessage</ID>
     <ID>ComplexMethod:messages.kt$private fun LinkPreview.protoMergeImpl(plus: pbandk.Message?): LinkPreview</ID>
     <ID>ComplexMethod:otr.kt$private fun QualifiedNewOtrMessage.protoMergeImpl(plus: pbandk.Message?): QualifiedNewOtrMessage</ID>
     <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.DefaultParameters$val `data`: String? = null</ID>
-    <ID>ConstructorParameterNaming:MessageApi.kt$MessageApi.Parameters.QualifiedDefaultParameters$val `data`: String? = null</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException$()</ID>
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException.FeatureError$()</ID>
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
     <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
     <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
-    <ID>FunctionNaming:CallManagerTest.kt$CallManagerTest$@Test fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled()</ID>
+    <ID>Filename:com.wire.kalium.api.tools.json.model.IDSample.kt:1</ID>
+    <ID>Filename:com.wire.kalium.logic.data.client.MLSClientProvider.kt:1</ID>
+    <ID>Filename:com.wire.kalium.logic.data.conversation.ConversationStatus.kt:1</ID>
+    <ID>Filename:com.wire.kalium.logic.data.prekey.remote.RemotePrekeyListMapperTest.kt:1</ID>
+    <ID>Filename:com.wire.kalium.logic.feature.session.SessionResult.kt:1</ID>
+    <ID>Filename:com.wire.kalium.network.api.Handles.kt:1</ID>
+    <ID>Filename:com.wire.kalium.network.api.RefreshToken.kt:1</ID>
+    <ID>Filename:com.wire.kalium.network.api.notification.user.ClientEventsData.kt:1</ID>
+    <ID>Filename:com.wire.kalium.persistence.client.SessionStorageTest.kt:1</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_config_update(inst: Handle, error: Int, jsonString: String)</ID>
     <ID>FunctionNaming:Calling.kt$Calling$fun wcall_create( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? ): Handle</ID>
@@ -69,32 +406,21 @@
     <ID>FunctionNaming:PreKeyStore.module_@wireapp_proteus.kt$PreKeyStore$open fun delete_prekey(prekeyId: Number): Promise&lt;Number></ID>
     <ID>FunctionNaming:PreKeyStore.module_@wireapp_proteus.kt$PreKeyStore$open fun load_prekey(prekeyId: Number): Promise&lt;PreKey?></ID>
     <ID>FunctionNaming:SecretKey.module_@wireapp_proteus.kt$SecretKey.Companion$fun shared_secret(publicKey: PublicKey, secretKey: SecretKey): Uint8Array</ID>
-    <ID>FunctionNaming:UserRepository.kt$UserDataSource$private suspend fun _getSelfUserId(): QualifiedIDEntity</ID>
     <ID>FunctionParameterNaming:Calling.kt$Calling$curr_time: Uint32_t</ID>
     <ID>FunctionParameterNaming:Calling.kt$Calling$msg_time: Uint32_t</ID>
     <ID>FunctionParameterNaming:Calling.kt$Calling$wcall_participant_changed_h: ParticipantChangedHandler</ID>
     <ID>FunctionParameterNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$pk_store: CryptoboxCRUDStore</ID>
     <ID>FunctionParameterNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$ed25519_key_pair: KeyPair</ID>
     <ID>FunctionParameterNaming:SetUserHandleUseCase.kt$SetUserHandleUseCase$_handle: String</ID>
-    <ID>LongParameterList:AuthenticatedDataSourceSet.kt$AuthenticatedDataSourceSet$( val authenticatedRootDir: String, val authenticatedNetworkContainer: AuthenticatedNetworkContainer, val proteusClient: ProteusClient, val workScheduler: WorkScheduler, val syncManager: SyncManager, val userDatabaseProvider: UserDatabaseProvider, val kaliumPreferencesSettings: KaliumPreferencesSettings, val encryptedSettingsHolder: EncryptedSettingsHolder )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? )</ID>
-    <ID>LongParameterList:CloseCallHandler.kt$CloseCallHandler$( reason: Int, conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, arg: Pointer? )</ID>
-    <ID>LongParameterList:ConnectionRepository.kt$ConnectionDataSource$( private val conversationDAO: ConversationDAO, private val connectionDAO: ConnectionDAO, private val connectionApi: ConnectionApi, private val userDetailsApi: UserDetailsApi, private val userDAO: UserDAO, private val idMapper: IdMapper = MapperProvider.idMapper(), private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(), private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(), private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(), )</ID>
-    <ID>LongParameterList:ConversationRepository.kt$ConversationDataSource$( private val userRepository: UserRepository, private val mlsConversationRepository: MLSConversationRepository, private val conversationDAO: ConversationDAO, private val conversationApi: ConversationApi, private val clientApi: ClientApi, private val idMapper: IdMapper = MapperProvider.idMapper(), private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(), private val memberMapper: MemberMapper = MapperProvider.memberMapper(), private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper() )</ID>
-    <ID>LongParameterList:GlobalCallManager.kt$GlobalCallManager$( userId: QualifiedID, callRepository: CallRepository, userRepository: UserRepository, clientRepository: ClientRepository, callMapper: CallMapper, messageSender: MessageSender )</ID>
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
     <ID>LongParameterList:MessageScope.kt$MessageScope$( internal val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val clientRepository: ClientRepository, private val proteusClient: ProteusClient, private val mlsClientProvider: MLSClientProvider, private val preKeyRepository: PreKeyRepository, private val userRepository: UserRepository, private val assetRepository: AssetRepository, private val syncManager: SyncManager, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser, )</ID>
     <ID>LongParameterList:MessageSender.kt$MessageSenderImpl$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val syncManager: SyncManager, private val messageSendFailureHandler: MessageSendFailureHandler, private val sessionEstablisher: SessionEstablisher, private val messageEnvelopeCreator: MessageEnvelopeCreator, private val mlsMessageCreator: MLSMessageCreator, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser )</ID>
     <ID>LongParameterList:MessageSenderTest.kt$MessageSenderTest$( getMessageById: Boolean = true, getConversationProtocol: Boolean = true, getConversationsRecipient: Boolean = true, prepareRecipientsForNewOutGoingMessage: Boolean = true, createOutgoingEnvelope: Boolean = true, updateMessageDate: Boolean = true, updatePendingMessagesAddMillisToDate: Boolean = true, sendEnvelope: Either&lt;CoreFailure, String> = Either.Right("date"), updateMessageStatus: Boolean = true, )</ID>
-    <ID>LongParameterList:MessageStubs.kt$( id: String = "testMessage", content: MessageEntity.MessageEntityContent = MessageEntity.MessageEntityContent.TextMessageContent("Test Text"), conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"), senderUserId: QualifiedIDEntity = QualifiedIDEntity("senderId", "senderDomain"), senderClientId: String = "senderClientId", status: MessageEntity.Status = MessageEntity.Status.PENDING )</ID>
     <ID>LongParameterList:NetworkQualityChangedHandler.kt$NetworkQualityChangedHandler$( conversationId: String, userId: String, clientId: String, quality: Int, roundTripTimeInMilliseconds: Int, upstreamPacketLossPercentage: Int, downstreamPacketLossPercentage: Int, arg: Pointer? )</ID>
-    <ID>LongParameterList:RegisterAccountRepository.kt$RegisterAccountRepository$( email: String, code: String, name: String, password: String, teamName: String, teamIcon: String, serverConfig: ServerConfig )</ID>
     <ID>LongParameterList:RegisterAccountUseCase.kt$RegisterParam.Team$( firstName: String, lastName: String, email: String, password: String, val emailActivationCode: String, val teamName: String, val teamIcon: String )</ID>
     <ID>LongParameterList:SendHandler.kt$SendHandler$( context: Pointer?, conversationId: String, userIdSelf: String, clientIdSelf: String, userIdDestination: String?, clientIdDestination: String?, data: Pointer?, length: Size_t, isTransient: Boolean, arg: Pointer? )</ID>
-    <ID>LongParameterList:ServerConfigurationDAO.kt$ServerConfigurationDAO$( id: String, apiBaseUrl: String, accountBaseUrl: String, webSocketBaseUrl: String, blackListUrl: String, teamsUrl: String, websiteUrl: String, title: String )</ID>
-    <ID>LongParameterList:UserRepository.kt$UserDataSource$( private val userDAO: UserDAO, private val metadataDAO: MetadataDAO, private val selfApi: SelfApi, private val userDetailsApi: UserDetailsApi, private val assetRepository: AssetRepository, private val idMapper: IdMapper = MapperProvider.idMapper(), private val userMapper: UserMapper = MapperProvider.userMapper(), private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper() )</ID>
-    <ID>LongParameterList:UserStubs.kt$( id: String = "test", name: String = "testName", handle: String = "testHandle", email: String = "testEmail@wire.com", phone: String = "testPhone", accentId: Int = 1, team: String = "testTeam", connectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED, previewAssetId: String = "previewAssetId", completeAssetId: String = "completeAssetId", )</ID>
     <ID>MagicNumber:AESUtils.kt$AESDecrypt$16</ID>
     <ID>MagicNumber:AESUtils.kt$AESEncrypt$256</ID>
     <ID>MagicNumber:CLIUtils.kt$CLIUtils$1024</ID>
@@ -103,17 +429,13 @@
     <ID>MagicNumber:CallManagerImpl.kt$CallManagerImpl$1000</ID>
     <ID>MagicNumber:ConversationApiImpl.kt$ConversationApiImpl$200</ID>
     <ID>MagicNumber:ConversationApiImpl.kt$ConversationApiImpl$204</ID>
-    <ID>MagicNumber:ConversationRepository.kt$ConversationDataSource$100</ID>
     <ID>MagicNumber:ConversationResponse.kt$ConversationResponse.Type.INCOMING_CONNECTION$4</ID>
     <ID>MagicNumber:ConversationResponse.kt$ConversationResponse.Type.WAIT_FOR_CONNECTION$3</ID>
     <ID>MagicNumber:ConversationStatus.kt$MutedConversationStatus.AllMuted$3</ID>
-    <ID>MagicNumber:ConversationsApplication.kt$ConversationsApplication$100</ID>
     <ID>MagicNumber:CustomErrors.kt$CustomErrors$500</ID>
-    <ID>MagicNumber:GetNotificationsUseCase.kt$GetNotificationsUseCaseImpl$100</ID>
     <ID>MagicNumber:GlobalCallManager.kt$LogHandlerImpl$3</ID>
     <ID>MagicNumber:HttpEngine.kt$401</ID>
     <ID>MagicNumber:MLSClientImpl.kt$MLSClientImpl$30</ID>
-    <ID>MagicNumber:MessageDAOImpl.kt$MessageMapper$16</ID>
     <ID>MagicNumber:NetworkUtils.kt$300</ID>
     <ID>MagicNumber:NetworkUtils.kt$399</ID>
     <ID>MagicNumber:NetworkUtils.kt$400</ID>
@@ -193,7 +515,6 @@
     <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
     <ID>MatchingDeclarationName:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession</ID>
     <ID>MatchingDeclarationName:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
-    <ID>MatchingDeclarationName:GetOngoingCallsUseCase.kt$GetOngoingCallUseCase</ID>
     <ID>MatchingDeclarationName:Handles.kt$QualifiedHandle</ID>
     <ID>MatchingDeclarationName:IDSample.kt$QualifiedIDSamples</ID>
     <ID>MatchingDeclarationName:IdentityKey.module_@wireapp_proteus.kt$IdentityKey</ID>
@@ -208,34 +529,21 @@
     <ID>MatchingDeclarationName:RefreshToken.kt$RefreshTokenProperties</ID>
     <ID>MatchingDeclarationName:RemotePrekeyListMapperTest.kt$PreKeyListMapperTest</ID>
     <ID>MatchingDeclarationName:SecretKey.module_@wireapp_proteus.kt$SecretKey</ID>
-    <ID>MatchingDeclarationName:ServerConfigResult.kt$GetServerConfigResult</ID>
     <ID>MatchingDeclarationName:SessionResult.kt$GetAllSessionsResult</ID>
     <ID>MatchingDeclarationName:SessionStorageTest.kt$SessionDAOTest</ID>
-    <ID>MaxLineLength:AssetRepositoryTest.kt$AssetRepositoryTest$val actual = assetRepository.uploadAndPersistPrivateAsset(encryptedAssetData = "the_image".encodeToByteArray(), mimeType = ImageAsset.JPEG)</ID>
-    <ID>MaxLineLength:CLIApplication.kt$DeleteClientCommand$val deleteClientResult = userSession.client.deleteClient(DeleteClientParam(password, selfClientsResult.clients[clientIndex].clientId))</ID>
-    <ID>MaxLineLength:CLIApplication.kt$ListenGroupCommand$val conversationIndex = prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")</ID>
-    <ID>MaxLineLength:CallManagerImpl.kt$CallManagerImpl$override suspend</ID>
     <ID>MaxLineLength:ClientDAOImpl.kt$ClientDAOImpl$override suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Unit</ID>
     <ID>MaxLineLength:ClientMapper.kt$ClientMapper$capabilities</ID>
     <ID>MaxLineLength:ConversationApiImpl.kt$ConversationApiImpl$override suspend</ID>
     <ID>MaxLineLength:ConversationDAOImpl.kt$ConversationDAOImpl$if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS</ID>
     <ID>MaxLineLength:ConversationDAOImpl.kt$ConversationDAOImpl$if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED</ID>
-    <ID>MaxLineLength:ConversationEvent.kt$ConversationMember$@SerialName("conversation_role") val conversationRole: String?</ID>
-    <ID>MaxLineLength:ConversationEvent.kt$ConversationMembers$@SerialName("user_ids") val userIds: List&lt;String></ID>
-    <ID>MaxLineLength:ConversationEvent.kt$ConversationUsers$@SerialName("user_ids") val userIds: List&lt;String></ID>
-    <ID>MaxLineLength:ConversationEventReceiver.kt$ConversationEventReceiver$// The asset message received contains the asset decryption keys, so update the preview message persisted previously</ID>
     <ID>MaxLineLength:ConversationRepository.kt$ConversationDataSource$is ProtocolInfo.MLS</ID>
-    <ID>MaxLineLength:ConversationRepositoryTest.kt$ConversationRepositoryTest$val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE.copy(groupId = groupId, protocol = ConvProtocol.MLS))</ID>
-    <ID>MaxLineLength:ConversationsApplication.kt$ConversationsApplication$LoginApi.LoginParam.LoginWithEmail(email = email, password = password, label = "ktor")</ID>
     <ID>MaxLineLength:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$external open</ID>
     <ID>MaxLineLength:LocalNotification.kt$LocalNotificationMessage.Comment$data</ID>
     <ID>MaxLineLength:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine$override fun &lt;PrimaryKey, ChangesType> updateOrCreate(tableName: String, primaryKey: PrimaryKey, changes: ChangesType): Promise&lt;PrimaryKey></ID>
-    <ID>MaxLineLength:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest$.</ID>
     <ID>MaxLineLength:MessageSenderTest.kt$MessageSenderTest$.</ID>
     <ID>MaxLineLength:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$constructor(publicIdentityKey: IdentityKey, preKeyId: Number, publicKey: PublicKey, signature: Uint8Array? = definedExternally, version: Number = definedExternally)</ID>
     <ID>MaxLineLength:PreKeyListMapper.kt$PreKeyListMapper$fun</ID>
     <ID>MaxLineLength:ProtoContentMapper.kt$ProtoContentMapperImpl$// Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one</ID>
-    <ID>MaxLineLength:RegisterAccountRepositoryTest.kt$RegisterAccountRepositoryTest$val authSession = with(SESSION) { AuthSession(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType, serverConfig) }</ID>
     <ID>MaxLineLength:SaveSessionUseCase.kt$SaveSessionUseCase$@Deprecated("unsafe API", replaceWith = ReplaceWith("com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase", "com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase"))</ID>
     <ID>MaxLineLength:SendAssetMessageUseCaseTest.kt$SendAssetMessageUseCaseTest$"some VERY long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long asset".toByteArray()</ID>
     <ID>MaxLineLength:SessionEstablisher.kt$SessionEstablisherImpl$private</ID>
@@ -243,7 +551,6 @@
     <ID>MaxLineLength:TestCredentials.kt$accessToken = "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"</ID>
     <ID>MaxLineLength:TestCredentials.kt$refreshToken = "a123bGciOiJIUzI1NiIsInR5cCI6IkpX2fr9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik420G4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ"</ID>
     <ID>MaxLineLength:UserDTO.kt$NewUserDTO$@SerialName("label") val label: String?</ID>
-    <ID>MaxLineLength:ValidateUserHandleUseCaseTest.kt$ValidateUserHandleUseCaseTest$fun</ID>
     <ID>MaxLineLength:WrapApiRequestTest.kt$WrapApiRequestTest$val expected = NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "have you tried turning it off and on again?", "server_crash")))</ID>
     <ID>MaxLineLength:messages.kt$1 -> items = (items ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Composite.Item> }</ID>
     <ID>MaxLineLength:messages.kt$22 -> content = GenericMessage.Content.ButtonActionConfirmation(_fieldValue as com.wire.kalium.protobuf.messages.ButtonActionConfirmation)</ID>
@@ -261,10 +568,8 @@
     <ID>MaxLineLength:messages.kt$Asset.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.RemoteData.Companion)</ID>
     <ID>MaxLineLength:messages.kt$Asset.ImageMetaData$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.Asset.ImageMetaData> get() = Companion.descriptor</ID>
     <ID>MaxLineLength:messages.kt$Asset.ImageMetaData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.ImageMetaData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.ImageMetaData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.ImageMetaData by lazy { com.wire.kalium.protobuf.messages.Asset.ImageMetaData() }</ID>
     <ID>MaxLineLength:messages.kt$Asset.NotUploaded.Companion$override fun fromName(name: String): Asset.NotUploaded</ID>
     <ID>MaxLineLength:messages.kt$Asset.Original.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.Original</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Original.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.Original by lazy { com.wire.kalium.protobuf.messages.Asset.Original() }</ID>
     <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.AudioMetaData.Companion)</ID>
     <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.ImageMetaData.Companion)</ID>
     <ID>MaxLineLength:messages.kt$Asset.Original.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.VideoMetaData.Companion)</ID>
@@ -272,12 +577,10 @@
     <ID>MaxLineLength:messages.kt$Asset.Original.MetaData$Image : MetaData</ID>
     <ID>MaxLineLength:messages.kt$Asset.Original.MetaData$Video : MetaData</ID>
     <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.Preview</ID>
-    <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.Preview by lazy { com.wire.kalium.protobuf.messages.Asset.Preview() }</ID>
     <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.ImageMetaData.Companion)</ID>
     <ID>MaxLineLength:messages.kt$Asset.Preview.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Asset.RemoteData.Companion)</ID>
     <ID>MaxLineLength:messages.kt$Asset.Preview.MetaData$Image : MetaData</ID>
     <ID>MaxLineLength:messages.kt$Asset.RemoteData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.RemoteData</ID>
-    <ID>MaxLineLength:messages.kt$Asset.RemoteData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.RemoteData by lazy { com.wire.kalium.protobuf.messages.Asset.RemoteData() }</ID>
     <ID>MaxLineLength:messages.kt$Asset.RemoteData.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.EncryptionAlgorithm.Companion, hasPresence = true)</ID>
     <ID>MaxLineLength:messages.kt$Asset.Status$NotUploaded : Status</ID>
     <ID>MaxLineLength:messages.kt$Asset.Status$Uploaded : Status</ID>
@@ -285,15 +588,12 @@
     <ID>MaxLineLength:messages.kt$Asset.VideoMetaData.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Asset.VideoMetaData</ID>
     <ID>MaxLineLength:messages.kt$Asset.VideoMetaData.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Asset.VideoMetaData by lazy { com.wire.kalium.protobuf.messages.Asset.VideoMetaData() }</ID>
     <ID>MaxLineLength:messages.kt$Availability.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Availability</ID>
-    <ID>MaxLineLength:messages.kt$Availability.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Availability by lazy { com.wire.kalium.protobuf.messages.Availability() }</ID>
-    <ID>MaxLineLength:messages.kt$Availability.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Availability.Type.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Availability.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Availability.Type.Companion, hasPresence = true)</ID>
     <ID>MaxLineLength:messages.kt$Availability.Type.Companion$override fun fromName(name: String): Availability.Type</ID>
     <ID>MaxLineLength:messages.kt$Button.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Button</ID>
     <ID>MaxLineLength:messages.kt$ButtonAction.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.ButtonAction</ID>
-    <ID>MaxLineLength:messages.kt$ButtonAction.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.ButtonAction by lazy { com.wire.kalium.protobuf.messages.ButtonAction() }</ID>
     <ID>MaxLineLength:messages.kt$ButtonActionConfirmation$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.ButtonActionConfirmation> get() = Companion.descriptor</ID>
     <ID>MaxLineLength:messages.kt$ButtonActionConfirmation.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.ButtonActionConfirmation</ID>
-    <ID>MaxLineLength:messages.kt$ButtonActionConfirmation.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.ButtonActionConfirmation by lazy { com.wire.kalium.protobuf.messages.ButtonActionConfirmation() }</ID>
     <ID>MaxLineLength:messages.kt$Calling.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Calling</ID>
     <ID>MaxLineLength:messages.kt$Cleared.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Cleared</ID>
     <ID>MaxLineLength:messages.kt$Cleared.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
@@ -306,8 +606,7 @@
     <ID>MaxLineLength:messages.kt$Composite.Item.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Button.Companion)</ID>
     <ID>MaxLineLength:messages.kt$Composite.Item.Content$Button : Content</ID>
     <ID>MaxLineLength:messages.kt$Confirmation.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Confirmation</ID>
-    <ID>MaxLineLength:messages.kt$Confirmation.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.Confirmation by lazy { com.wire.kalium.protobuf.messages.Confirmation() }</ID>
-    <ID>MaxLineLength:messages.kt$Confirmation.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Confirmation.Type.Companion)</ID>
+    <ID>MaxLineLength:messages.kt$Confirmation.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.Confirmation.Type.Companion, hasPresence = true)</ID>
     <ID>MaxLineLength:messages.kt$Confirmation.Type.Companion$override fun fromName(name: String): Confirmation.Type</ID>
     <ID>MaxLineLength:messages.kt$DataTransfer.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.DataTransfer</ID>
     <ID>MaxLineLength:messages.kt$DataTransfer.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.DataTransfer by lazy { com.wire.kalium.protobuf.messages.DataTransfer() }</ID>
@@ -320,7 +619,6 @@
     <ID>MaxLineLength:messages.kt$External.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.External</ID>
     <ID>MaxLineLength:messages.kt$External.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.EncryptionAlgorithm.Companion, hasPresence = true)</ID>
     <ID>MaxLineLength:messages.kt$GenericMessage.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.GenericMessage</ID>
-    <ID>MaxLineLength:messages.kt$GenericMessage.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.GenericMessage by lazy { com.wire.kalium.protobuf.messages.GenericMessage() }</ID>
     <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.ClientAction.Companion, hasPresence = true)</ID>
     <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Availability.Companion)</ID>
     <ID>MaxLineLength:messages.kt$GenericMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.ButtonAction.Companion)</ID>
@@ -358,26 +656,20 @@
     <ID>MaxLineLength:messages.kt$LastRead.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
     <ID>MaxLineLength:messages.kt$LegalHoldStatus.Companion$override fun fromName(name: String): LegalHoldStatus</ID>
     <ID>MaxLineLength:messages.kt$LinkPreview.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.LinkPreview</ID>
-    <ID>MaxLineLength:messages.kt$LinkPreview.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.LinkPreview by lazy { com.wire.kalium.protobuf.messages.LinkPreview() }</ID>
     <ID>MaxLineLength:messages.kt$LinkPreview.Preview$Article : Preview</ID>
     <ID>MaxLineLength:messages.kt$Location.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Location</ID>
     <ID>MaxLineLength:messages.kt$Location.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
     <ID>MaxLineLength:messages.kt$Mention.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Mention</ID>
     <ID>MaxLineLength:messages.kt$Mention.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedUserId.Companion)</ID>
     <ID>MaxLineLength:messages.kt$MessageDelete.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageDelete</ID>
-    <ID>MaxLineLength:messages.kt$MessageDelete.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.MessageDelete by lazy { com.wire.kalium.protobuf.messages.MessageDelete() }</ID>
     <ID>MaxLineLength:messages.kt$MessageEdit.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageEdit</ID>
-    <ID>MaxLineLength:messages.kt$MessageEdit.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.MessageEdit by lazy { com.wire.kalium.protobuf.messages.MessageEdit() }</ID>
     <ID>MaxLineLength:messages.kt$MessageEdit.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Composite.Companion)</ID>
     <ID>MaxLineLength:messages.kt$MessageEdit.Content$Composite : Content</ID>
     <ID>MaxLineLength:messages.kt$MessageHide.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.MessageHide</ID>
-    <ID>MaxLineLength:messages.kt$MessageHide.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.MessageHide by lazy { com.wire.kalium.protobuf.messages.MessageHide() }</ID>
     <ID>MaxLineLength:messages.kt$MessageHide.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.QualifiedConversationId.Companion)</ID>
     <ID>MaxLineLength:messages.kt$QualifiedConversationId$override val descriptor: pbandk.MessageDescriptor&lt;com.wire.kalium.protobuf.messages.QualifiedConversationId> get() = Companion.descriptor</ID>
     <ID>MaxLineLength:messages.kt$QualifiedConversationId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.QualifiedConversationId</ID>
-    <ID>MaxLineLength:messages.kt$QualifiedConversationId.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.QualifiedConversationId by lazy { com.wire.kalium.protobuf.messages.QualifiedConversationId() }</ID>
     <ID>MaxLineLength:messages.kt$QualifiedUserId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.QualifiedUserId</ID>
-    <ID>MaxLineLength:messages.kt$QualifiedUserId.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.QualifiedUserId by lazy { com.wire.kalium.protobuf.messages.QualifiedUserId() }</ID>
     <ID>MaxLineLength:messages.kt$Quote.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Quote</ID>
     <ID>MaxLineLength:messages.kt$Reaction.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Reaction</ID>
     <ID>MaxLineLength:messages.kt$Reaction.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.messages.LegalHoldStatus.Companion, hasPresence = true)</ID>
@@ -386,7 +678,6 @@
     <ID>MaxLineLength:messages.kt$Text.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.messages.LinkPreview>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.LinkPreview.Companion))</ID>
     <ID>MaxLineLength:messages.kt$Text.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.messages.Mention>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.messages.Mention.Companion))</ID>
     <ID>MaxLineLength:messages.kt$TrackingIdentifier.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.TrackingIdentifier</ID>
-    <ID>MaxLineLength:messages.kt$TrackingIdentifier.Companion$public val defaultInstance: com.wire.kalium.protobuf.messages.TrackingIdentifier by lazy { com.wire.kalium.protobuf.messages.TrackingIdentifier() }</ID>
     <ID>MaxLineLength:messages.kt$Tweet.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.messages.Tweet</ID>
     <ID>MaxLineLength:messages.kt$private</ID>
     <ID>MaxLineLength:messages.kt$public</ID>
@@ -434,7 +725,6 @@
     <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$ReportAll : ClientMismatchStrategy</ID>
     <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.ClientMismatchStrategy$ReportOnly : ClientMismatchStrategy</ID>
     <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage by lazy { com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage() }</ID>
     <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Enum(enumCompanion = com.wire.kalium.protobuf.otr.Priority.Companion, hasPresence = true)</ID>
     <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll.Companion)</ID>
     <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly.Companion)</ID>
@@ -442,7 +732,6 @@
     <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.ClientMismatchStrategy.ReportOnly.Companion)</ID>
     <ID>MaxLineLength:otr.kt$QualifiedNewOtrMessage.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.QualifiedUserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.QualifiedUserEntry.Companion))</ID>
     <ID>MaxLineLength:otr.kt$QualifiedUserEntry.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedUserEntry</ID>
-    <ID>MaxLineLength:otr.kt$QualifiedUserEntry.Companion$public val defaultInstance: com.wire.kalium.protobuf.otr.QualifiedUserEntry by lazy { com.wire.kalium.protobuf.otr.QualifiedUserEntry() }</ID>
     <ID>MaxLineLength:otr.kt$QualifiedUserEntry.Companion$type = pbandk.FieldDescriptor.Type.Repeated&lt;com.wire.kalium.protobuf.otr.UserEntry>(valueType = pbandk.FieldDescriptor.Type.Message(messageCompanion = com.wire.kalium.protobuf.otr.UserEntry.Companion))</ID>
     <ID>MaxLineLength:otr.kt$QualifiedUserId.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.QualifiedUserId</ID>
     <ID>MaxLineLength:otr.kt$UserEntry.Companion$override fun decodeWith(u: pbandk.MessageDecoder): com.wire.kalium.protobuf.otr.UserEntry</ID>
@@ -454,16 +743,29 @@
     <ID>MaxLineLength:otr.kt$clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly &amp;&amp; plus.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly</ID>
     <ID>MaxLineLength:otr.kt$private</ID>
     <ID>MaxLineLength:otr.kt$public</ID>
-    <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_CLAIM = "claim"</ID>
-    <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_COUNT = "count"</ID>
-    <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_KEY_PACKAGES = "mls/key-packages"</ID>
-    <ID>MayBeConst:KeyPackageApiImpl.kt$KeyPackageApiImpl.Companion$val PATH_SELF = "self"</ID>
+    <ID>MaximumLineLength:com.wire.kalium.api.tools.TestCredentials.kt:10</ID>
+    <ID>MaximumLineLength:com.wire.kalium.api.tools.TestCredentials.kt:9</ID>
+    <ID>MaximumLineLength:com.wire.kalium.api.tools.json.api.notification.NotificationEventsResponseJson.kt:90</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.core_failure.WrapApiRequestTest.kt:27</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.data.client.ClientMapper.kt:38</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:336</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.data.notification.LocalNotification.kt:21</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper.kt:22</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.feature.asset.SendAssetMessageUseCaseTest.kt:198</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:282</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.feature.message.SessionEstablisher.kt:64</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.feature.message.SessionEstablisherTest.kt:166</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.feature.session.SaveSessionUseCase.kt:6</ID>
+    <ID>MaximumLineLength:com.wire.kalium.network.api.conversation.ConversationApiImpl.kt:55</ID>
+    <ID>MaximumLineLength:com.wire.kalium.network.api.conversation.ConversationApiImpl.kt:62</ID>
+    <ID>MaximumLineLength:com.wire.kalium.network.api.model.UserDTO.kt:39</ID>
+    <ID>MaximumLineLength:com.wire.kalium.persistence.dao.ConversationDAOImpl.kt:76</ID>
+    <ID>MaximumLineLength:com.wire.kalium.persistence.dao.ConversationDAOImpl.kt:77</ID>
+    <ID>MaximumLineLength:com.wire.kalium.persistence.dao.client.ClientDAOImpl.kt:35</ID>
     <ID>MayBeConst:LoginApiTest.kt$LoginApiTest.Companion$val refreshToken = "415a5306-a476-41bc-af36-94ab075fd881"</ID>
     <ID>MayBeConst:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Companion$val GROUP_ID = "groupId"</ID>
     <ID>MayBeConst:MessageRepositoryTest.kt$MessageRepositoryTest.Companion$val TEST_DATETIME = "2022-04-21T20:56:22.393Z"</ID>
     <ID>MayBeConst:MessageSenderTest.kt$MessageSenderTest.Companion$val TEST_MESSAGE_UUID = "messageUuid"</ID>
-    <ID>MayBeConst:SearchUserRepositoryTest.kt$SearchUserRepositoryTest.Companion$val TEST_DOMAIN = "testDomain"</ID>
-    <ID>MayBeConst:SearchUserRepositoryTest.kt$SearchUserRepositoryTest.Companion$val TEST_QUERY = "testQuery"</ID>
     <ID>ModifierOrder:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$external open</ID>
     <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$external open</ID>
     <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$override open</ID>
@@ -480,12 +782,540 @@
     <ID>ModifierOrder:PublicKey.module_@wireapp_proteus.kt$PublicKey$external open</ID>
     <ID>ModifierOrder:SecretKey.module_@wireapp_proteus.kt$SecretKey$external open</ID>
     <ID>NestedBlockDepth:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$override fun invoke(ssoCode: String): ValidateSSOCodeResult</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.detekt.rules.EnforceSerializableFields.kt:55</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.ApiTest.kt:209</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.ApiTest.kt:232</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.ApiTest.kt:255</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.ApiTest.kt:63</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.TestUtil.kt:21</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.BackendMetaDataUtilTest.kt:35</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.BackendMetaDataUtilTest.kt:63</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.ServiceReferenceDTOJson.kt:5</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.SupportedApiVersionTest.kt:9</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.connection.ConnectionApiTest.kt:97</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.contact.search.UserSearchApiTest.kt:76</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.conversation.ConversationDetailsResponse.kt:119</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.conversation.ConversationListIdsResponseJson.kt:30</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.conversation.ConversationListIdsResponseJson.kt:52</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.message.MessageApiTest.kt:153</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.message.SendMessageRequestJson.kt:10</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.notification.NotificationEventsResponseJson.kt:30</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.teams.TeamsResponsesJson.kt:80</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.user.client.ClientApiTest.kt:106</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.user.client.RegisterTokenJson.kt:18</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.user.details.UserDetailsApiTest.kt:98</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.user.login.LoginWithEmailRequestJson.kt:45</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.user.login.SSOLoginApiTest.kt:82</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:128</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:151</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.api.tools.json.api.user.register.RegisterApiTest.kt:82</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.cli.RegisterAccountApp.kt:79</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.cryptography.BaseProteusClientTest.kt:13</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.configuration.ServerConfigRepositoryTest.kt:161</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.configuration.UserConfigRepository.kt:8</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.configuration.server.ServerConfig.kt:157</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.configuration.server.ServerConfig.kt:96</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.auth.login.LoginRepositoryTest.kt:22</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.auth.login.SSOLoginRepository.kt:47</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.call.CallRepositoryTest.kt:235</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.client.ClientRepositoryTest.kt:225</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.client.ClientRepositoryTest.kt:267</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.client.ClientRepositoryTest.kt:279</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.client.ClientRepositoryTest.kt:329</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.client.ClientRepositoryTest.kt:351</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.client.remote.ClientRemoteRepository.kt:39</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionMapperTest.kt:17</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionMapperTest.kt:43</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionMapperTest.kt:68</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionRepository.kt:161</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionRepositoryTest.kt:257</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionRepositoryTest.kt:493</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.connection.ConnectionStatusMapper.kt:83</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.kt:314</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.ConversationRepositoryTest.kt:358</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.kt:210</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.kt:216</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.kt:238</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.MemberMapper.kt:68</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.MemberMapperTest.kt:127</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.conversation.ProtocolInfoMapper.kt:30</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.event.Event.kt:67</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.id.FederatedIdMapperImpl.kt:8</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.id.FederatedIdMapperTest.kt:15</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.id.FederatedIdMapperTest.kt:56</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.kt:108</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.message.MessageRepository.kt:259</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.prekey.MessageSendFailureHandlerTest.kt:47</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.prekey.MessageSendFailureHandlerTest.kt:70</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.prekey.MessageSendFailureHandlerTest.kt:98</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:50</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperTest.kt:157</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.register.RegisterAccountRepositoryTest.kt:87</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.session.SessionMapperTest.kt:111</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.session.SessionMapperTest.kt:43</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.team.TeamRepositoryTest.kt:110</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:56</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt:53</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.user.UserRepositoryTest.kt:94</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.data.user.type.UserTypeMapper.kt:6</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.failure.ServerConfigFailure.kt:10</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.asset.SendImageUseCaseTest.kt:202</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.asset.SendImageUseCaseTest.kt:58</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase.kt:8</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCaseTest.kt:97</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.auth.AuthenticationScope.kt:54</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.auth.ValidateEmailUseCase.kt:7</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:7</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.auth.sso.SSOInitiateLoginUseCaseTest.kt:35</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.call.CallManagerTest.kt:56</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseTest.kt:177</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.client.RegisterClientUseCaseTest.kt:385</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.client.RegisterClientUseCaseTest.kt:401</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.client.SelfClientsUseCase.kt:19</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.client.SelfClientsUseCase.kt:28</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.client.SelfClientsUseCaseTest.kt:27</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.client.SelfClientsUseCaseTest.kt:52</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCaseTest.kt:28</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:29</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.conversation.ObserveConversationsAndConnectionsUseCaseTest.kt:52</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:117</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.featureConfig.GetRemoteFileSharingStatusAndPersistUseCase.kt:33</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.featureConfig.GetRemoteFileSharingStatusAndPersistUseCase.kt:44</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase.kt:32</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.kt:55</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.kt:96</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:148</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:169</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:199</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.kt:87</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.GetNotificationsUseCaseTest.kt:534</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.MessageSendFailureHandler.kt:11</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:34</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.message.SessionEstablisher.kt:63</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase.kt:19</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase.kt:7</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase.kt:8</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase.kt:19</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase.kt:10</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCase.kt:11</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCase.kt:68</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase.kt:12</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase.kt:58</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.register.RegisterAccountUseCase.kt:84</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.register.RegisterAccountUseCaseTest.kt:158</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.register.RegisterAccountUseCaseTest.kt:177</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.register.RequestActivationCodeUseCaseTest.kt:66</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.register.VerifyActivationCodeUseCaseTest.kt:88</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.register.VerifyActivationCodeUseCaseTest.kt:96</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase.kt:22</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase.kt:49</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase.kt:25</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.CurrentSessionFlowUseCaseTest.kt:69</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.CurrentSessionUseCaseTest.kt:63</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.DeregisterTokenUseCase.kt:29</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.IsFileSharingEnabledUseCaseTest.kt:34</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.PushTokenUseCaseTest.kt:43</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.PushTokenUseCaseTest.kt:62</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.RegisterTokenUseCase.kt:47</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.GetUserInfoUseCaseTest.kt:234</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase.kt:38</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase.kt:10</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:328</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.SetUserHandleUseCase.kt:14</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.SetUserHandleUseCaseTest.kt:169</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.SetUserHandleUseCaseTest.kt:207</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.featureFlags.KaliumConfigs.kt:40</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.framework.TestConversation.kt:68</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.framework.TestConversation.kt:78</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.Either.kt:39</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.Either.kt:53</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.Either.kt:61</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.Either.kt:73</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.FlowTest.kt:13</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.sync.DefaultWorker.kt:3</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.sync.PendingEventsBufferTest.kt:58</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.sync.SyncManagerTest.kt:155</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.sync.UpdateApiVersionsWorker.kt:5</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.sync.event.EventProcessorTest.kt:19</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.sync.handler.MessageTextEditHandler.kt:41</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.util.stubs.ServerConfigStubs.kt:82</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.ServerMetaDataManager.kt:3</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.UnauthenticatedNetworkContainer.kt:28</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.conversation.AddParticipantRequest.kt:16</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.conversation.CreateConversationRequest.kt:16</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:3</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:35</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:44</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:53</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:62</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:69</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.model.Tokens.kt:10</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.notification.EventSerialization.kt:6</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.prekey.PreKeyApiImpl.kt:34</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.teams.TeamsApi.kt:20</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.client.ClientApi.kt:35</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.client.ClientResponse.kt:44</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.details.ListUserRequest.kt:19</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.login.LoginApiImpl.kt:43</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.login.SSOLoginApi.kt:101</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.login.SSOSettingsResponse.kt:3</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.login.SSOSettingsResponse.kt:7</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.logout.RemoveCookiesRequest.kt:6</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.pushToken.PushTokenBody.kt:3</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.register.ActivationRequest.kt:3</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.register.ActivationRequest.kt:8</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.register.RegisterApi.kt:121</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.register.RegisterApi.kt:167</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.self.SelfApi.kt:44</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.versioning.VersionApi.kt:39</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.session.SessionManager.kt:22</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.utils.WireDefaultRequest.kt:184</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.utils.WireDefaultRequest.kt:30</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.DBUtil.kt:39</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.ClientRegistrationStorageImpl.kt:15</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.SessionStorage.kt:127</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.SessionStorage.kt:94</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.TokenStorage.kt:27</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.UserConfigStorage.kt:29</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.UserConfigStorageTest.kt:29</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:250</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:266</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:284</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.MessageDAOTest.kt:216</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.UserDAOTest.kt:427</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.message.MessageDAOImpl.kt:58</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:153</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:70</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:84</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:98</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.db.GlobalDatabaseProvider.kt:19</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.db.GlobalDatabaseProvider.kt:22</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.db.GlobalDatabaseProvider.kt:50</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.db.GlobalDatabaseProvider.kt:67</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:34</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:55</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.utils.stubs.ConversationStubs.kt:26</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.util.KaliumDispatcher.kt:13</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.util.KaliumDispatcher.kt:5</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:73</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:75</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:82</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.configuration.server.ServerConfigTest.kt:19</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.configuration.server.ServerConfigTest.kt:27</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.configuration.server.ServerConfigTest.kt:35</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:110</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:112</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:119</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.data.message.MessageRepositoryTest.kt:218</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.data.publicuser.SearchUserRepository.kt:166</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:23</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:24</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:25</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:26</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase.kt:27</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseTest.kt:32</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseTest.kt:33</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseTest.kt:34</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseTest.kt:39</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseTest.kt:40</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseTest.kt:41</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseTest.kt:42</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseTest.kt:43</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseTest.kt:37</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.feature.user.SearchUserDirectoryUseCaseTest.kt:95</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.logic.framework.TestUser.kt:55</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.network.api.contact.search.UserSearchApiImpl.kt:9</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.persistence.BaseDatabaseTest.kt:8</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.persistence.GlobalDBBaseTest.kt:7</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.persistence.util.FileNameUtil.kt:19</ID>
+    <ID>NoMultipleSpaces:com.wire.kalium.persistence.util.JsonSerializer.kt:5</ID>
+    <ID>NoSemicolons:com.wire.kalium.PackagePathProvider.kt:1</ID>
+    <ID>NoSemicolons:com.wire.kalium.logic.data.connection.ConnectionRepository.kt:193</ID>
+    <ID>NoSemicolons:com.wire.kalium.logic.data.user.type.UserType.kt:1</ID>
+    <ID>NoTrailingSpaces:com.wire.kalium.persistence.dao.ContentTypeAdapter.kt:13</ID>
+    <ID>NoTrailingSpaces:com.wire.kalium.persistence.dao.client.ClientDAOImpl.kt:38</ID>
+    <ID>NoUnusedImports:com.wire.kalium.api.ApiTest.kt:31</ID>
+    <ID>NoUnusedImports:com.wire.kalium.api.tools.json.api.message.SendMessageResponseJson.kt:5</ID>
+    <ID>NoUnusedImports:com.wire.kalium.api.tools.json.api.user.client.SimpleClientResponseJson.kt:4</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.call.CallProfile.kt:4</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.client.ClientRepositoryTest.kt:21</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.connection.ConnectionRepository.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.connection.ConnectionRepository.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.event.EventMapper.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.event.EventRepository.kt:18</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.event.EventRepository.kt:19</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.prekey.PreKeyRepository.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.publicuser.SearchUserRepository.kt:17</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.publicuser.SearchUserRepository.kt:18</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.publicuser.SearchUserRepository.kt:19</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.publicuser.SearchUserRepository.kt:24</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest.kt:27</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.register.RegisterAccountRepositoryTest.kt:19</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.register.RegisterAccountRepositoryTest.kt:20</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.ConnectionStateMapper.kt:4</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:5</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.UserRepositoryTest.kt:20</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.UserRepositoryTest.kt:4</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.UserRepositoryTest.kt:5</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.UserRepositoryTest.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.UserRepositoryTest.kt:7</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.UserRepositoryTest.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.data.user.UserRepositoryTest.kt:9</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseTest.kt:4</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.MediaManagerServiceImpl.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.MediaManagerServiceImpl.kt:7</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.RejectCallUseCaseTest.kt:5</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.UnMuteCallUseCaseTest.kt:5</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.scenario.OnConfigRequest.kt:10</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseTest.kt:13</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase.kt:5</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCase.kt:5</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCaseTest.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase.kt:9</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.message.GetNotificationsUseCaseTest.kt:7</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.message.GetRecentMessagesUseCase.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorTest.kt:30</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:8</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.framework.TestUser.kt:11</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.framework.TestUser.kt:14</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.sync.WorkSchedulerImpl.kt:9</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.test_util.TestKaliumDispatcher.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.HttpEngine.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.notification.NotificationApiImpl.kt:17</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.notification.NotificationApiImpl.kt:19</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.notification.NotificationApiImpl.kt:23</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.notification.NotificationApiImpl.kt:24</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.notification.NotificationApiImpl.kt:26</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.notification.NotificationApiImpl.kt:27</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.prekey.PreKeyApiImpl.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.user.details.UserDetailsApiImpl.kt:7</ID>
+    <ID>NoUnusedImports:com.wire.kalium.network.api.user.self.SelfApi.kt:7</ID>
+    <ID>NoUnusedImports:com.wire.kalium.persistence.client.ClientRegistrationStorageTest.kt:3</ID>
+    <ID>NoUnusedImports:com.wire.kalium.persistence.client.ClientRegistrationStorageTest.kt:4</ID>
+    <ID>NoUnusedImports:com.wire.kalium.persistence.client.ClientRegistrationStorageTest.kt:6</ID>
+    <ID>NoUnusedImports:com.wire.kalium.persistence.db.GlobalDatabaseProvider.kt:7</ID>
+    <ID>NoWildcardImports:com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseTest.kt:8</ID>
+    <ID>NoWildcardImports:com.wire.kalium.network.defaultHttpEngine.kt:3</ID>
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
+    <ID>PackageName:com.wire.kalium.api.tools.json.api.api_version.VersionApiTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.api.tools.json.api.api_version.VersionInfoDTOJson.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.core_failure.WrapApiRequestTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.core_failure.WrapCryptoRequestTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.test_util.TestKaliumDispatcher.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.test_util.TestNetworkException.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.test_util.TimeUtils.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.kmm_settings.KaliumPreferences.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:1</ID>
     <ID>PackageNaming:EncryptedSettingsHolder.kt$package com.wire.kalium.persistence.kmm_settings</ID>
     <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmm_settings</ID>
-    <ID>PackageNaming:SaveNotificationTokenUseCase.kt$package com.wire.kalium.logic.feature.notificationToken</ID>
     <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.dao_kalium_db</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClient.kt:110</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClient.kt:52</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClient.kt:72</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClient.kt:86</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClient.kt:98</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClientImpl.kt:16</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClientImpl.kt:42</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClientImpl.kt:43</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClientImpl.kt:84</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.cryptography.MLSClientImpl.kt:95</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:14</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:18</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:29</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:34</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:39</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.SSOLoginRepository.kt:13</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.SSOLoginRepository.kt:30</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.client.MLSClientProvider.kt:20</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.conversation.ConversationMapper.kt:39</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.conversation.ConversationMapper.kt:84</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:145</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:309</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:367</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:408</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:68</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.conversation.ConversationRepository.kt:72</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.event.Event.kt:53</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.event.EventRepository.kt:119</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.notification.LocalNotification.kt:21</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.register.RegisterAccountRepository.kt:18</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.register.RegisterAccountRepository.kt:23</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.register.RegisterAccountRepository.kt:39</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.data.register.RegisterAccountRepository.kt:44</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.feature.auth.LoginUseCase.kt:23</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.feature.auth.LoginUseCase.kt:34</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.feature.register.RegisterAccountUseCase.kt:27</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.feature.user.GetSelfUserUseCase.kt:8</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.logic.feature.user.GetSelfUserUseCase.kt:9</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.UnauthenticatedNetworkContainer.kt:17</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.keypackage.KeyPackageDTO.kt:16</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.teams.TeamsApi.kt:40</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.user.login.LoginApi.kt:10</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.user.login.LoginApi.kt:14</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.user.login.LoginApi.kt:19</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.user.login.LoginApiImpl.kt:45</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.user.register.RegisterApi.kt:102</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.utils.NetworkResponse.kt:14</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.utils.WireDefaultRequest.kt:145</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage.kt:19</ID>
     <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
+    <ID>SpacingAroundColon:com.wire.kalium.api.ApiTest.kt:64</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.ValidSingleJsonObjectProvider.kt:19</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.api.keypackage.KeyPackageApiTest.kt:14</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.api.message.MLSMessageApiTest.kt:16</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.api.teams.TeamsApiTest.kt:12</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.model.DomainToUserIdToClientsMapJson.kt:18</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.cryptography.MLSClient.kt:113</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.cryptography.MLSClientTest.kt:10</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.cryptography.ProteusClientTest.kt:11</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.cryptography.exceptions.ProteusException.kt:3</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.call.CallMapper.kt:74</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.client.MLSClientProvider.kt:22</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.conversation.Conversation.kt:76</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.conversation.Conversation.kt:77</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.conversation.Conversation.kt:78</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.event.Event.kt:80</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.message.Message.kt:27</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.message.Message.kt:46</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.message.MessageContent.kt:42</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.publicuser.model.UserSearchResult.kt:3</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.user.DomainUserTypeMapperTest.kt:14</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt:11</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.failure.ResourceFailure.kt:5</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.failure.ServerConfigFailure.kt:5</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.failure.ServerConfigFailure.kt:6</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.failure.ServerConfigFailure.kt:7</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.feature.UserSessionScope.kt:180</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:24</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:25</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.feature.message.MLSMessageCreator.kt:26</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.feature.session.SessionResult.kt:7</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.functional.Either.kt:59</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.sync.KaliumSyncException.kt:5</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.sync.WorkSchedulerImpl.kt:11</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.sync.WorkSchedulerImpl.kt:12</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.util.DateTimeUtil.kt:10</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.network.api.conversation.AddParticipantRequest.kt:19</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.network.api.conversation.AddParticipantRequest.kt:31</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.network.api.notification.NotificationApi.kt:11</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.network.api.notification.NotificationApi.kt:28</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.network.api.notification.NotificationApi.kt:7</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.network.api.notification.NotificationApi.kt:9</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.network.api.versioning.VersionInfoDTO.kt:12</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.network.serialization.ByteArrayConverter.kt:17</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.client.ClientRegistrationStorageTest.kt:13</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage.kt:19</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.MetadataDAOImpl.kt:9</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.MetadataDAOTest.kt:12</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.QualifiedIDAdapter.kt:5</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.UserDAO.kt:116</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.UserDAO.kt:118</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.UserDAO.kt:119</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.UserDAOImpl.kt:160</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder.kt:12</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder.kt:9</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.utils.stubs.MessageStubs.kt:15</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.notification.NotificationEventsResponseJson.kt:88</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.user.details.ListUsersRequestJson.kt:24</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.user.details.ListUsersRequestJson.kt:25</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.user.details.ListUsersRequestJson.kt:26</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.user.details.ListUsersRequestJson.kt:30</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.user.details.ListUsersRequestJson.kt:31</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.user.details.ListUsersRequestJson.kt:32</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.user.register.RegisterAccountJson.kt:28</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.data.prekey.remote.RemotePrekeyListMapperTest.kt:56</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.data.prekey.remote.RemotePrekeyListMapperTest.kt:57</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.data.prekey.remote.RemotePrekeyListMapperTest.kt:58</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.data.register.RegisterAccountRepositoryTest.kt:136</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.data.register.RegisterAccountRepositoryTest.kt:137</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.data.register.RegisterAccountRepositoryTest.kt:186</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.data.register.RegisterAccountRepositoryTest.kt:187</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.data.team.TeamRepositoryTest.kt:113</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.feature.asset.SendAssetMessageUseCaseTest.kt:154</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.feature.asset.SendAssetMessageUseCaseTest.kt:155</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.feature.asset.SendImageUseCaseTest.kt:156</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.logic.feature.asset.SendImageUseCaseTest.kt:157</ID>
+    <ID>SpacingAroundComma:com.wire.kalium.persistence.dao.message.MessageDAO.kt:11</ID>
+    <ID>SpacingAroundCurly:build.gradle.kts:11</ID>
+    <ID>SpacingAroundCurly:build.gradle.kts:7</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.api.tools.json.api.message.EnvelopeProtoMapperTest.kt:37</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.data.client.ClientRepositoryTest.kt:284</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.data.conversation.Conversation.kt:75</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.data.event.EventMapper.kt:99</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.data.team.TeamRepositoryTest.kt:112</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.call.AnswerCallUseCaseTest.kt:26</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.call.EndCallUseCaseTest.kt:26</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.call.RejectCallUseCaseTest.kt:27</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.call.StartCallUseCaseTest.kt:28</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.message.MLSMessageCreatorTest.kt:45</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.sync.SlowSyncWorker.kt:20</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.sync.SlowSyncWorker.kt:28</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.network.utils.WireDefaultRequest.kt:94</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.persistence.client.ClientRegistrationStorageTest.kt:18</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.presentation.MainActivity.kt:80</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.protobuf.OtrEnvelopeTest.kt:13</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.api.tools.json.api.user.login.LoginWithEmailRequestJson.kt:13</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.api.tools.json.api.user.register.RegisterAccountJson.kt:12</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:16</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.kt:19</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.logic.feature.register.RequestActivationCodeUseCase.kt:19</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.logic.sync.SlowSyncWorker.kt:20</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.network.api.contact.search.UserSearchApiImpl.kt:18</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.network.session.SessionManager.kt:47</ID>
+    <ID>SpacingAroundKeyword:com.wire.kalium.persistence.dao.MemberRoleAdapter.kt:12</ID>
+    <ID>SpacingAroundOperators:com.wire.kalium.network.utils.WireDefaultRequest.kt:94</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:76</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:77</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:78</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:79</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:80</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:81</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:83</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:84</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.api.tools.json.api.featureConfig.FeatureConfigJson.kt:85</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.client.ClientModel.kt:18</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:113</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:114</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:115</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:116</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:117</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:118</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:120</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:121</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:122</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:43</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:44</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:45</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:46</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:47</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:48</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:53</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:54</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryTest.kt:55</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.data.message.Message.kt:46</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:46</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:47</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:48</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:49</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:50</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:51</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:56</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:57</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigsStatusUseCaseTest.kt:58</ID>
+    <ID>SpacingAroundParens:com.wire.kalium.network.api.conversation.AddParticipantRequest.kt:9</ID>
+    <ID>StringTemplate:com.wire.kalium.cryptography.IDs.kt:26</ID>
+    <ID>StringTemplate:com.wire.kalium.cryptography.ProteusClientImpl.kt:7</ID>
+    <ID>StringTemplate:com.wire.kalium.logic.data.sso.SSOUtil.kt:5</ID>
+    <ID>StringTemplate:com.wire.kalium.logic.feature.message.GetNotificationsUseCaseTest.kt:437</ID>
+    <ID>StringTemplate:com.wire.kalium.persistence.util.FileNameUtil.kt:11</ID>
+    <ID>ThrowsCount:messages.kt$@Suppress("UNCHECKED_CAST") private fun ImageAsset.Companion.decodeWithImpl(u: pbandk.MessageDecoder): ImageAsset</ID>
     <ID>TooGenericExceptionCaught:CoreFailure.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:NetworkUtils.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ProteusClientImpl.kt$ProteusClientImpl$e: Exception</ID>
@@ -493,12 +1323,10 @@
     <ID>TooManyFunctions:Calling.kt$Calling : Library</ID>
     <ID>TooManyFunctions:ConversationDAO.kt$ConversationDAO</ID>
     <ID>TooManyFunctions:ConversationDAOImpl.kt$ConversationDAOImpl : ConversationDAO</ID>
-    <ID>TooManyFunctions:ConversationRepository.kt$ConversationDataSource : ConversationRepository</ID>
     <ID>TooManyFunctions:ConversationRepository.kt$ConversationRepository</ID>
     <ID>TooManyFunctions:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox</ID>
     <ID>TooManyFunctions:Decoder.module_@wireapp_cbor.kt$Decoder</ID>
     <ID>TooManyFunctions:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
-    <ID>TooManyFunctions:KaliumException.kt$com.wire.kalium.network.exceptions.KaliumException.kt</ID>
     <ID>TooManyFunctions:MapperProvider.kt$MapperProvider$MapperProvider</ID>
     <ID>TooManyFunctions:MessageDAO.kt$MessageDAO</ID>
     <ID>TooManyFunctions:MessageDAOImpl.kt$MessageDAOImpl : MessageDAO</ID>
@@ -507,7 +1335,6 @@
     <ID>TopLevelPropertyNaming:Uint32_t.kt$private const val integerSize = 4</ID>
     <ID>UnnecessaryAbstractClass:GlobalDBBaseTest.kt$GlobalDBBaseTest</ID>
     <ID>UnnecessaryAbstractClass:UserModel.kt$User</ID>
-    <ID>VariableNaming:CallMapper.kt$CallMapper.ParticipantMapper$private val DOMAIN_SEPARATOR = "@"</ID>
     <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var create_last_resort_prekey: Any</ID>
     <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var create_new_identity: Any</ID>
     <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var get_prekey: Any</ID>

@@ -26,7 +26,6 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRole
     fun toApiModel(protocol: ProtocolInfo): ConvProtocol
     fun toApiModel(createConversationParam: CreateConversationParam): CreateConversationRequest
-
     fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
 }
 
@@ -68,31 +67,45 @@ internal class ConversationMapperImpl(
         TODO()
     )
 
-    override fun toApiModel(createConversationParam: CreateConversationParam): CreateConversationRequest =
-        with(createConversationParam) {
-            val (protocol: ConvProtocol, qualifiedUsers: List<UserId>) = when (this) {
-                is CreateConversationParam.MLS -> Pair(ConvProtocol.MLS, emptyList<UserId>())
-                is CreateConversationParam.Proteus -> Pair(ConvProtocol.MLS, userList.map { idMapper.toApiModel(it) })
-            }
-            CreateConversationRequest(
-                qualifiedUsers = qualifiedUsers,
-                name = name,
-                access = access?.map { toApiModel(it) },
-                accessRole = accessRole?.map { toApiModel(it) },
-                convTeamInfo = teamId?.let { ConvTeamInfo(false, it.value) },
-                messageTimer = null,
-                receiptMode = if (readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
-                conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
-                protocol = protocol
-            )
-        }
+    override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
+        CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+            idMapper.toApiModel(it)
+        } else emptyList(),
+            name = name,
+            access = options.access?.toList()?.map { toApiModel(it) },
+            accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
+            convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
+            messageTimer = null,
+            receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+            conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
+            protocol = toApiModel(options.protocol),
+            creatorClient = options.creatorClientId
+        )
+
+//     with(createConversationParam) {
+//         val (protocol: ConvProtocol, qualifiedUsers: List<UserId>) = when (this) {
+//             is CreateConversationParam.MLS -> Pair(ConvProtocol.MLS, emptyList<UserId>())
+//             is CreateConversationParam.Proteus -> Pair(ConvProtocol.MLS, userList.map { idMapper.toApiModel(it) })
+//         }
+//         CreateConversationRequest(
+//             qualifiedUsers = qualifiedUsers,
+//             name = name,
+//             access = access?.map { toApiModel(it) },
+//             accessRole = accessRole?.map { toApiModel(it) },
+//             convTeamInfo = teamId?.let { ConvTeamInfo(false, it.value) },
+//             messageTimer = null,
+//             receiptMode = if (readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+//             conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
+//             protocol = protocol
+//         )
+//     }
 
     override fun toConversationDetailsOneToOne(
         conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation, otherUser = otherUser, connectionState = otherUser.connectionStatus,
-            //TODO(user-metadata) get actual legal hold status
+            // TODO(user-metadata) get actual legal hold status
             legalHoldStatus = LegalHoldStatus.DISABLED, userType = otherUser.userType
         )
     }

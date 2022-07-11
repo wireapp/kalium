@@ -15,8 +15,9 @@ class UserSearchApiImpl internal constructor(private val authenticatedNetworkCli
             httpClient.get("/$PATH_CONTACT_SEARCH") {
                 with(userSearchRequest) {
                     parameter(QUERY_KEY_SEARCH_QUERY, searchQuery)
-
-                    parameter(QUERY_KEY_DOMAIN, domain)
+                    if(domain.isNotBlank()) {
+                        parameter(QUERY_KEY_DOMAIN, domain)
+                    }
                     maxResultSize?.let { parameter(QUERY_KEY_SIZE, it) }
                 }
             }

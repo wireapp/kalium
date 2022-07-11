@@ -21,11 +21,12 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse> = wrapKaliumResponse {
-        httpClient.post("$PATH_CONVERSATIONS/$PATH_LIST_IDS") {
-            setBody(PaginationRequest(pagingState = pagingState))
+    override suspend fun fetchConversationsIds(pagingState: String?): NetworkResponse<ConversationPagingResponse> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_CONVERSATIONS/$PATH_LIST_IDS") {
+                setBody(PaginationRequest(pagingState = pagingState, size = MAX_CONVERSATION_DETAILS_COUNT))
+            }
         }
-    }
 
     override suspend fun fetchConversationsListDetails(conversationsIds: List<ConversationId>): NetworkResponse<ConversationResponseDTO> =
         wrapKaliumResponse {
@@ -124,5 +125,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_IDS = "qualified_ids"
+
+        const val MAX_CONVERSATION_DETAILS_COUNT = 200 // fixme: adjust "size" value later on when server can handle the load
     }
 }
