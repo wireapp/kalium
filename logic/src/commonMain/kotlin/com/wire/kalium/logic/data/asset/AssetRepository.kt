@@ -101,11 +101,11 @@ internal class AssetDataSource(
 
         val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
         val assetDataSource = kaliumFileSystem.source(assetDataPath)
-        val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
         val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
 
         // Encrypt the data on the provided temp path
         val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
+        val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
 
         // Calculate the SHA of the encrypted data
         val sha256 = calcFileSHA256(encryptedDataSource)
