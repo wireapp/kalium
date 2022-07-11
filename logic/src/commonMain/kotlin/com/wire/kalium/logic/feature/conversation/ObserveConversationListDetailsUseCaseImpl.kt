@@ -29,15 +29,10 @@ internal class ObserveConversationListDetailsUseCaseImpl(
                 flow {
                     emit(null)
                     emitAll(conversationRepository.observeConversationDetailsById(conversation.id))
-                }.map {
-                    conversation to it
                 }
             }
         }.flatMapLatest { flowsOfDetails ->
-            combine(flowsOfDetails) { latestValues ->
-                val (conversations, _) = latestValues.asList().partition { it.second != null }
-                conversations.mapNotNull { it.second }
-            }
+            combine(flowsOfDetails) { latestValues -> latestValues.asList().mapNotNull { it } }
         }
 
         return combine(conversationsFlow, callRepository.ongoingCallsFlow()) { conversations, calls ->
