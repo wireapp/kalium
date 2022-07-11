@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -187,9 +186,10 @@ class GetIncomingCallsUseCaseTest {
             given(syncManager).invocation { startSyncIfIdle() }.thenReturn(Unit)
         }
 
-        fun withIncomingCalls(calls: List<Call>): Arrangement {
+        suspend fun withIncomingCalls(calls: List<Call>): Arrangement {
             given(callRepository)
-                .invocation { incomingCallsFlow() }
+                .suspendFunction(callRepository::incomingCallsFlow)
+                .whenInvoked()
                 .then { MutableStateFlow(calls) }
 
             return this
