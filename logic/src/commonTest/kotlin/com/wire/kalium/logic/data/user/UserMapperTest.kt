@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -52,7 +53,7 @@ class UserMapperTest {
         )
 
         val result = userMapper.fromTeamMemberToDaoModel(
-            teamId = "teamId",
+            teamId = TeamId("teamId"),
             teamMemberDTO = apiModel,
             userDomain = "userDomain"
         )

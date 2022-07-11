@@ -47,7 +47,7 @@ class OnParticipantListChanged(
 
             participantsChange.members.map { member ->
                 val participant = participantMapper.fromCallMemberToParticipant(member)
-                userRepository.getUserInfo(mapQualifiedMemberId(memberList, member)).map {
+                userRepository.userById(mapQualifiedMemberId(memberList, member)).map {
                     val updatedParticipant = participant.copy(
                         name = it.name!!,
                         avatarAssetId = it.completePicture

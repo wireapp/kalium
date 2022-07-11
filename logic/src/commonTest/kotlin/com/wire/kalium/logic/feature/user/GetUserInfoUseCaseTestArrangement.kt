@@ -32,13 +32,13 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(
                 flowOf(
                     if (!localUserPresent) null
-                    else if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(team = null, userType = userType)
+                    else if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(teamId = null, userType = userType)
                 )
             )
 
         if (!localUserPresent) {
             given(userRepository)
-                .suspendFunction(userRepository::getUserInfo)
+                .suspendFunction(userRepository::userById)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(TestUser.OTHER))
         }
@@ -53,7 +53,7 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(flowOf(null))
 
         given(userRepository)
-            .suspendFunction(userRepository::getUserInfo)
+            .suspendFunction(userRepository::userById)
             .whenInvokedWith(any())
             .thenReturn(
                 Either.Left(CoreFailure.Unknown(RuntimeException("some error")))

@@ -14,14 +14,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.contact.search.ContactDTO
-import com.wire.kalium.network.api.contact.search.UserSearchApi
-import com.wire.kalium.network.api.contact.search.UserSearchRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -142,7 +138,7 @@ internal class SearchUserRepositoryImpl(
                         userDetailResponse = userProfileDTO,
                         userType = userTypeMapper.fromOtherUserTeamAndDomain(
                             otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = getSelfUser().teamId,
+                            selfUserTeamId = getSelfUser().teamId?.value,
                             otherUserTeamId = userProfileDTO.teamId,
                             selfUserDomain = selfUser.id.domain
                         )
@@ -151,7 +147,7 @@ internal class SearchUserRepositoryImpl(
             }
         }
 
-    //TODO: code duplication here for getting self user, the same is done inside
+    // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository, what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
     private suspend fun getSelfUser(): SelfUser {
@@ -163,7 +159,7 @@ internal class SearchUserRepositoryImpl(
                 userDAO.getUserByQualifiedID(selfUserID)
                     .filterNotNull()
                     .map(userMapper::fromDaoModelToSelfUser)
-            }.firstOrNull() ?: throw  IllegalStateException()
+            }.firstOrNull() ?: throw IllegalStateException()
     }
 
     private suspend fun handeSearchUsersOptions(
