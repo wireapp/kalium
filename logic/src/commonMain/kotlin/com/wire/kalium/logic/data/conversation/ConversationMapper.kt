@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -22,10 +22,11 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
-    fun toApiModel(access: ConversationOptions.Access): ConversationAccess
-    fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole
-    fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
-    fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+    fun toApiModel(access: Conversation.Access): ConversationAccess
+    fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRole
+    fun toApiModel(protocol: ProtocolInfo): ConvProtocol
+    fun toApiModel(createConversationParam: CreateConversationParam): CreateConversationRequest
+
     fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
 }
 
@@ -62,53 +63,57 @@ internal class ConversationMapperImpl(
         protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
         mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
         lastNotificationDate = daoModel.lastNotificationDate,
-        lastModifiedDate = daoModel.lastModifiedDate
+        lastModifiedDate = daoModel.lastModifiedDate,
+        TODO(),
+        TODO()
     )
 
-    override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
-        CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
-            idMapper.toApiModel(it)
-        } else emptyList(),
-            name = name,
-            access = options.access?.toList()?.map { toApiModel(it) },
-            accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
-            convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
-            messageTimer = null,
-            receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
-            conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
-            protocol = toApiModel(options.protocol)
-        )
+    override fun toApiModel(createConversationParam: CreateConversationParam): CreateConversationRequest =
+        with(createConversationParam) {
+            val (protocol: ConvProtocol, qualifiedUsers: List<UserId>) = when (this) {
+                is CreateConversationParam.MLS -> Pair(ConvProtocol.MLS, emptyList<UserId>())
+                is CreateConversationParam.Proteus -> Pair(ConvProtocol.MLS, userList.map { idMapper.toApiModel(it) })
+            }
+            CreateConversationRequest(
+                qualifiedUsers = qualifiedUsers,
+                name = name,
+                access = access?.map { toApiModel(it) },
+                accessRole = accessRole?.map { toApiModel(it) },
+                convTeamInfo = teamId?.let { ConvTeamInfo(false, it.value) },
+                messageTimer = null,
+                receiptMode = if (readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+                conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
+                protocol = protocol
+            )
+        }
 
     override fun toConversationDetailsOneToOne(
         conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
-            conversation = conversation,
-            otherUser = otherUser,
-            connectionState = otherUser.connectionStatus,
+            conversation = conversation, otherUser = otherUser, connectionState = otherUser.connectionStatus,
             //TODO(user-metadata) get actual legal hold status
-            legalHoldStatus = LegalHoldStatus.DISABLED,
-            userType = otherUser.userType
+            legalHoldStatus = LegalHoldStatus.DISABLED, userType = otherUser.userType
         )
     }
 
-    override fun toApiModel(access: ConversationOptions.Access): ConversationAccess = when (access) {
-        ConversationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
-        ConversationOptions.Access.CODE -> ConversationAccess.CODE
-        ConversationOptions.Access.INVITE -> ConversationAccess.INVITE
-        ConversationOptions.Access.LINK -> ConversationAccess.LINK
+    override fun toApiModel(access: Conversation.Access): ConversationAccess = when (access) {
+        Conversation.Access.PRIVATE -> ConversationAccess.PRIVATE
+        Conversation.Access.CODE -> ConversationAccess.CODE
+        Conversation.Access.INVITE -> ConversationAccess.INVITE
+        Conversation.Access.LINK -> ConversationAccess.LINK
     }
 
-    override fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole = when (accessRole) {
-        ConversationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
-        ConversationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
-        ConversationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST
-        ConversationOptions.AccessRole.SERVICE -> ConversationAccessRole.SERVICE
+    override fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRole = when (accessRole) {
+        Conversation.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
+        Conversation.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
+        Conversation.AccessRole.GUEST -> ConversationAccessRole.GUEST
+        Conversation.AccessRole.SERVICE -> ConversationAccessRole.SERVICE
     }
 
-    override fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol = when (protocol) {
-        ConversationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
-        ConversationOptions.Protocol.MLS -> ConvProtocol.MLS
+    override fun toApiModel(protocol: ProtocolInfo): ConvProtocol = when (protocol) {
+        is ProtocolInfo.MLS -> ConvProtocol.MLS
+        ProtocolInfo.Proteus -> ConvProtocol.PROTEUS
     }
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
@@ -133,9 +138,9 @@ internal class ConversationMapperImpl(
                     ConversationEntity.Type.GROUP
                 }
             }
+
             ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
-            ConversationResponse.Type.INCOMING_CONNECTION,
-            ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
+            ConversationResponse.Type.INCOMING_CONNECTION, ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
         }
     }
 

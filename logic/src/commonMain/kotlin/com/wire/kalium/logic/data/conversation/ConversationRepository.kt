@@ -27,6 +27,8 @@ import com.wire.kalium.network.api.conversation.AddParticipantRequest
 import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.network.api.conversation.model.ConversationAccessData
+import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -75,6 +77,9 @@ interface ConversationRepository {
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
+    suspend fun updateConversationAccess(
+        convId: ConversationId, accessSet: Set<Conversation.Access>, accessRoleSet: Set<Conversation.AccessRole>
+    ): Either<NetworkFailure, UpdateConversationAccessResponse>
 }
 
 class ConversationDataSource(
@@ -242,12 +247,11 @@ class ConversationDataSource(
                 .map(conversationMapper::fromDaoModel)
         }
 
-    override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> =
-        wrapStorageRequest {
-            conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
-                conversationMapper.fromDaoModel(it)
-            }
+    override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
+        conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
+            conversationMapper.fromDaoModel(it)
         }
+    }
 
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
         wrapStorageRequest {
@@ -270,27 +274,26 @@ class ConversationDataSource(
             )
         }
 
-    override suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
-        wrapApiRequest {
-            val users = userIdList.map {
-                idMapper.toApiModel(it)
-            }
-            val addParticipantRequest = AddParticipantRequest(users, DEFAULT_MEMBER_ROLE)
-            conversationApi.addParticipant(
-                addParticipantRequest, idMapper.toApiModel(conversationID)
-            )
-        }.map {
-            when (it) {
-                is AddParticipantResponse.ConversationUnchanged -> Unit
-                // TODO: the server response with an event can we use event processor to handle it
-                is AddParticipantResponse.UserAdded -> userIdList.map { userId ->
-                    // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
-                    Member(userId, Member.Role.Member)
-                }.let { membersList ->
-                    persistMembers(membersList, conversationID)
-                }
+    override suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> = wrapApiRequest {
+        val users = userIdList.map {
+            idMapper.toApiModel(it)
+        }
+        val addParticipantRequest = AddParticipantRequest(users, DEFAULT_MEMBER_ROLE)
+        conversationApi.addParticipant(
+            addParticipantRequest, idMapper.toApiModel(conversationID)
+        )
+    }.map {
+        when (it) {
+            is AddParticipantResponse.ConversationUnchanged -> Unit
+            // TODO: the server response with an event can we use event processor to handle it
+            is AddParticipantResponse.UserAdded -> userIdList.map { userId ->
+                // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
+                Member(userId, Member.Role.Member)
+            }.let { membersList ->
+                persistMembers(membersList, conversationID)
             }
         }
+    }
 
     override suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(userID, conversationID) }
@@ -340,6 +343,18 @@ class ConversationDataSource(
 
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationModifiedDate(idMapper.toDaoModel(qualifiedID), date) }
+
+    override suspend fun updateConversationAccess(
+        convId: ConversationId, accessSet: Set<Conversation.Access>, accessRoleSet: Set<Conversation.AccessRole>
+    ): Either<NetworkFailure, UpdateConversationAccessResponse> = wrapApiRequest {
+        conversationApi.updateAccessRole(
+            idMapper.toApiModel(convId),
+            ConversationAccessData(
+                accessSet.map { conversationMapper.toApiModel(it) }.toSet(),
+                accessRoleSet.map { conversationMapper.toApiModel(it) }.toSet()
+            )
+        )
+    }
 
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

@@ -18,6 +18,7 @@ data class ConversationEntity(
 
     enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
+    // TODO: check why Protocol and protocolInfo are needed
     enum class Protocol { PROTEUS, MLS }
 
     enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_ALLOWED, MENTIONS_MUTED, ALL_MUTED }

@@ -18,9 +18,13 @@ data class Conversation(
     val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
-    val lastModifiedDate: String?
+    val lastModifiedDate: String?,
+    val access: Access,
+    val accessRole: AccessRole
 ) {
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
+    enum class Access { PRIVATE, CODE, INVITE, LINK; }
+    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE; }
 }
 
 sealed class ProtocolInfo {
@@ -29,6 +33,7 @@ sealed class ProtocolInfo {
         enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
     }
 }
+
 
 sealed class ConversationDetails(open val conversation: Conversation) {
 
@@ -43,9 +48,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
     ) : ConversationDetails(conversation)
 
     data class Group(
-        override val conversation: Conversation,
-        val legalHoldStatus: LegalHoldStatus,
-        val hasOngoingCall: Boolean = false
+        override val conversation: Conversation, val legalHoldStatus: LegalHoldStatus, val hasOngoingCall: Boolean = false
     ) : ConversationDetails(conversation)
 
     data class Connection(
@@ -65,6 +68,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
+            TODO(),
+            TODO()
         )
     )
 }
@@ -72,10 +77,10 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
 class Member(override val id: UserId, val role: Role) : User() {
-    sealed class Role{
-        object Member: Role()
-        object Admin: Role()
-        data class Unknown(val name: String): Role()
+    sealed class Role {
+        object Member : Role()
+        object Admin : Role()
+        data class Unknown(val name: String) : Role()
     }
 }
 
