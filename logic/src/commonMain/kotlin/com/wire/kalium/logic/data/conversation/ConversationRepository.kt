@@ -125,7 +125,7 @@ class ConversationDataSource(
                     if (conversations.conversationsNotFound.isNotEmpty()) {
                         kaliumLogger.d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
                     }
-                    persistConversations(conversations.conversationsFound, selfUserTeamId)
+                    persistConversations(conversations.conversationsFound, selfUserTeamId?.value)
                 }.onFailure {
                     kaliumLogger.e("Error fetching conversation details $it")
                 }

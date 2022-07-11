@@ -127,6 +127,15 @@ class UserDataSource(
             }
         }
 
+    override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
+        val qualifiedIDList = ids.map(idMapper::toDaoModel)
+        val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map(idMapper::toDaoModel))
+        qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it } }
+    }.flatMap { missingIds ->
+        if (missingIds.isEmpty()) Either.Right(Unit)
+        else fetchUsersByIds(missingIds.map { idMapper.fromDaoModel(it) }.toSet())
+    }
+
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
         return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
@@ -150,6 +159,7 @@ class UserDataSource(
             }
     }
 
+    // TODO: replace the flow with selfUser and cache it
     override suspend fun getSelfUser(): SelfUser? =
         observeSelfUser().firstOrNull()
 
@@ -188,12 +198,14 @@ class UserDataSource(
 
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }.map { userProfile ->
+            val selfUser = getSelfUser()
             publicUserMapper.fromUserDetailResponseWithUsertype(
                 userDetailResponse = userProfile,
                 userType = userTypeMapper.fromOtherUserTeamAndDomain(
                     otherUserDomain = userProfile.id.domain,
-                    selfUserTeamId = getSelfUser()?.teamId?.value,
-                    otherUserTeamId = userProfile.teamId
+                    selfUserTeamId = selfUser?.teamId?.value,
+                    otherUserTeamId = userProfile.teamId,
+                    selfUserDomain = selfUser?.id?.domain
                 )
             )
         }

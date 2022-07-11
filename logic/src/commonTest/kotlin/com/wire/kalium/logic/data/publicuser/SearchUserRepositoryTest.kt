@@ -16,7 +16,7 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-import com.wire.kalium.network.api.QualifiedID
+import com.wire.kalium.network.api.UserId as UserIdDTO
 import com.wire.kalium.network.api.contact.search.ContactDTO
 import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
 import com.wire.kalium.network.api.contact.search.UserSearchResponse
@@ -25,7 +25,6 @@ import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -41,6 +40,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -50,6 +50,7 @@ import kotlin.test.assertIs
 
 
 //TODO: refactor to arrangement pattern
+@OptIn(ExperimentalCoroutinesApi::class)
 class SearchUserRepositoryTest {
 
     @Mock
@@ -469,7 +470,7 @@ class SearchUserRepositoryTest {
             UserProfileDTO(
                 accentId = 1,
                 handle = "handle",
-                id = UserId(value = "value", domain = "domain"),
+                id = UserIdDTO(value = "value", domain = "domain"),
                 name = "name",
                 legalHoldStatus = LegalHoldStatusResponse.ENABLED,
                 teamId = "team",

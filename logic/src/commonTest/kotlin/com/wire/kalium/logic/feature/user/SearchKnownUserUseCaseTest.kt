@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
@@ -21,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.feature.publicuser.search.Result
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
