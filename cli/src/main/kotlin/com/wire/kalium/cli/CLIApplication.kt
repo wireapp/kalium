@@ -13,7 +13,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
@@ -134,12 +134,12 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
         val userIndicesRaw = prompt("Enter user indexes", promptSuffix = ": ")
         val userIndices = userIndicesRaw?.split("\\s".toRegex())?.map(String::toInt) ?: emptyList()
-        val userToAddList = userIndices.map { users[it].id }
+        val userToAddList = userIndices.map { users[it].id }.toSet()
 
         val result = userSession.conversations.createGroupConversation(
-            name,
-            userToAddList,
-            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+            CreateConversationParam.MLS(
+                name = name, teamId = TODO(), userIdSet = userToAddList
+            )
         )
         when (result) {
             is Either.Right -> echo("group created successfully")
