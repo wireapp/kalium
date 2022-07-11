@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlin.math.max
 
+@Suppress("TooManyFunctions")
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
@@ -96,6 +97,8 @@ internal class CallDataSource(
         .getEstablishedCalls()
         .combineWithCallsMetadata()
 
+    // This needs to be reworked the logic into the useCases
+    @Suppress("LongMethod")
     override suspend fun createCall(
         conversationId: ConversationId,
         status: CallStatus,
@@ -109,7 +112,7 @@ internal class CallDataSource(
 
         // in OnIncomingCall we get callerId without a domain,
         // to cover that case and have a valid UserId we have that workaround
-        //TODO fix this callerId in OnIncomingCall once we support federation
+        // TODO fix this callerId in OnIncomingCall once we support federation
         val myId = userRepository.getSelfUserId()
         val callerIdWithDomain = UserId(callerId.toUserId().value, myId.domain)
         val caller = userRepository.getKnownUser(callerIdWithDomain).first()
