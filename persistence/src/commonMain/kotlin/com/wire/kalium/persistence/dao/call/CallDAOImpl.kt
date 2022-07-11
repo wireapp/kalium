@@ -82,5 +82,9 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
             .mapToOne()
             .map { mapper.toModel(dbEntry = it).status }
             .firstOrNull()
+
+    override suspend fun deleteAllCalls() {
+        callsQueries.deleteAllCalls()
+    }
 }
 

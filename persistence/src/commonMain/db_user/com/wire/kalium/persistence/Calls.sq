@@ -51,3 +51,6 @@ WHERE
     conversation_id = ?
 ORDER BY created_at DESC
 LIMIT 1;
+
+deleteAllCalls:
+DELETE FROM Call WHERE 1=1;

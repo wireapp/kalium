@@ -45,6 +45,10 @@ interface CallRepository {
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
+    /**
+     * To be used only in Debug mode
+     */
+    suspend fun deleteAllCalls()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -308,6 +312,13 @@ internal class CallDataSource(
                 data = updatedCallMetadata
             )
         }
+    }
+
+    /**
+     * To be used only in Debug mode
+     */
+    override suspend fun deleteAllCalls() {
+        callDAO.deleteAllCalls()
     }
 
     private suspend fun persistMissedCallMessage(
