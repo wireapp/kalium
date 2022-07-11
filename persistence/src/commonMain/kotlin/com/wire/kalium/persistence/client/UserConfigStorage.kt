@@ -50,7 +50,6 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
 
     private val isFileSharingEnabledFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-
     override fun enableLogging(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_LOGGING, enabled)
     }
@@ -75,7 +74,6 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
         .map { isFileSharingEnabled() }
         .onStart { emit(isFileSharingEnabled()) }
         .distinctUntilChanged()
-
 
     private companion object {
         const val ENABLE_LOGGING = "enable_logging"

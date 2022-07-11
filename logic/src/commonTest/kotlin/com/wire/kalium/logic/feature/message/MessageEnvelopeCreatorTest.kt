@@ -7,7 +7,6 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -72,7 +71,10 @@ class MessageEnvelopeCreatorTest {
             recipient.clients.forEach { client ->
                 verify(proteusClient)
                     .suspendFunction(proteusClient::encrypt)
-                    .with(eq(plainData), eq(CryptoSessionId(CryptoUserID(recipient.member.id.value, recipient.member.id.domain), CryptoClientId(client.value))))
+                    .with(
+                        eq(plainData),
+                        eq(CryptoSessionId(CryptoUserID(recipient.id.value, recipient.id.domain), CryptoClientId(client.value)))
+                    )
                     .wasInvoked(exactly = once)
             }
         }
@@ -117,6 +119,7 @@ class MessageEnvelopeCreatorTest {
             }
         }
     }
+
     @Test
     fun givenMessageContentIsSmall_whenCreatingAnEnvelope_thenShouldNotCreateExternalMessageInstructions() = runTest {
         // Given
@@ -175,7 +178,7 @@ class MessageEnvelopeCreatorTest {
                 TEST_RECIPIENTS.forEach { recipient ->
                     // Should get a matching recipient entry in the created envelope
                     val matchingRecipientEntry = envelope.recipients.first { recipientEntry ->
-                        recipient.member.id == recipientEntry.userId
+                        recipient.id == recipientEntry.userId
                     }
 
                     // All clients of this contact should have a matching payload in the entry
@@ -236,10 +239,10 @@ class MessageEnvelopeCreatorTest {
         const val SUPER_BIG_CONTENT_SIZE = 300 * 1024
         val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
         val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
-        val TEST_MEMBER_1 = Member(UserId("value1", "domain1"))
+        val TEST_MEMBER_1 = UserId("value1", "domain1")
         val TEST_RECIPIENT_1 = Recipient(TEST_MEMBER_1, listOf(TEST_CONTACT_CLIENT_1, TEST_CONTACT_CLIENT_2))
         val TEST_CONTACT_CLIENT_3 = ClientId("clientId3")
-        val TEST_MEMBER_2 = Member(UserId("value2", "domain2"))
+        val TEST_MEMBER_2 = UserId("value2", "domain2")
         val TEST_RECIPIENT_2 = Recipient(TEST_MEMBER_2, listOf(TEST_CONTACT_CLIENT_3))
         val TEST_RECIPIENTS = listOf(TEST_RECIPIENT_1, TEST_RECIPIENT_2)
     }

@@ -7,6 +7,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.RegisterTokenUseCase
@@ -34,4 +36,5 @@ class ClientScope(
     val deregisterNativePushToken: DeregisterTokenUseCase get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
         get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientRepository)
+    val refillKeyPackages: RefillKeyPackagesUseCase get() = RefillKeyPackagesUseCaseImpl(keyPackageRepository, clientRepository)
 }

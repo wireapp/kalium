@@ -64,6 +64,7 @@ sealed class EventContentDTO {
             val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
+            // TODO: rename members to something else since the name is confusing (it's only userIDs)
             @SerialName("data") val members: ConversationUsers,
             @SerialName("from") val from: String
         ) : Conversation()
@@ -85,8 +86,6 @@ sealed class EventContentDTO {
             val time: String,
             @SerialName("data") val message: String,
         ) : Conversation()
-
-
     }
 
     @Serializable
@@ -100,7 +99,8 @@ sealed class EventContentDTO {
 
         @Serializable
         enum class FeatureConfigNameDTO {
-            @SerialName("fileSharing") FILE_SHARING
+            @SerialName("fileSharing")
+            FILE_SHARING
         }
     }
 

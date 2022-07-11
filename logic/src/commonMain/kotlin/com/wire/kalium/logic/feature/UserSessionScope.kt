@@ -38,6 +38,8 @@ import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
+import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
+import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
@@ -82,8 +84,10 @@ import com.wire.kalium.logic.sync.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
-import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.event.EventProcessor
+import com.wire.kalium.logic.sync.event.EventProcessorImpl
+import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -180,12 +184,17 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.metadataDAO
         )
 
+    private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
+        authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
+        userDatabaseProvider.conversationDAO,
+    )
+
     private val publicUserRepository: SearchUserRepository
         get() = SearchUserRepositoryImpl(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            userSearchApiWrapper
         )
 
     private val callRepository: CallRepository by lazy {
@@ -210,7 +219,7 @@ abstract class UserSessionScopeCommon(
         )
 
     private val clientRegistrationStorage: ClientRegistrationStorage
-        get() = ClientRegistrationStorageImpl(userPreferencesSettings)
+        get() = ClientRegistrationStorageImpl(userDatabaseProvider.metadataDAO)
 
     private val clientRepository: ClientRepository
         get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
@@ -251,14 +260,17 @@ abstract class UserSessionScopeCommon(
 
     private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, syncRepository)
 
+    private val eventProcessor: EventProcessor
+        get() = EventProcessorImpl(
+            eventRepository,
+            conversationEventReceiver, userEventReceiver, featureConfigEventReceiver
+        )
+
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
             authenticatedDataSourceSet.userSessionWorkScheduler,
-            eventRepository,
             syncRepository,
-            conversationEventReceiver,
-            userEventReceiver,
-            featureConfigEventReceiver,
+            eventProcessor,
             eventGatherer
         )
     }
@@ -345,7 +357,8 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callRepository,
             syncManager,
-            mlsConversationRepository
+            mlsConversationRepository,
+            clientRepository
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -361,7 +374,15 @@ abstract class UserSessionScopeCommon(
             messageSendingScheduler,
             timeParser
         )
-    val users: UserScope get() = UserScope(userRepository, publicUserRepository, syncManager, assetRepository, teamRepository)
+    val users: UserScope
+        get() = UserScope(
+            userRepository,
+            publicUserRepository,
+            syncManager,
+            assetRepository,
+            teamRepository,
+            connectionRepository
+        )
     val logout: LogoutUseCase
         get() = LogoutUseCase(
             logoutRepository,

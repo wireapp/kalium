@@ -1,11 +1,10 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.event.EventProcessor
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException
@@ -60,13 +59,10 @@ interface SyncManager {
 @Suppress("LongParameterList") //Can't take them out right now. Maybe we can extract an `EventProcessor` on a future PR
 internal class SyncManagerImpl(
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
-    private val eventRepository: EventRepository,
     private val syncRepository: SyncRepository,
-    private val conversationEventReceiver: ConversationEventReceiver,
-    private val userEventReceiver: EventReceiver<Event.User>,
-    private val featureConfigEventReceiver: EventReceiver<Event.FeatureConfig>,
+    private val eventProcessor: EventProcessor,
     private val eventGatherer: EventGatherer,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncManager {
 
     /**
@@ -127,18 +123,7 @@ internal class SyncManagerImpl(
     }
 
     private suspend fun gatherAndProcessEvents() = eventGatherer.gatherEvents().collect {
-        processEvent(it)
-    }
-
-    private suspend fun processEvent(event: Event) {
-        kaliumLogger.i(message = "SYNC: Processing event ${event.id}")
-        when (event) {
-            is Event.Conversation -> conversationEventReceiver.onEvent(event)
-            is Event.User -> userEventReceiver.onEvent(event)
-            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
-            is Event.Unknown -> kaliumLogger.i("Unhandled event id=${event.id}")
-        }
-        eventRepository.updateLastProcessedEventId(event.id)
+        eventProcessor.processEvent(it)
     }
 
     override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }

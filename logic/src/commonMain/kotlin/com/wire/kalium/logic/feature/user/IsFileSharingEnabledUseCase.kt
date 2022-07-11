@@ -28,11 +28,10 @@ class IsFileSharingEnabledUseCaseImpl(
                 }
                 is StorageFailure.Generic -> {
                     kaliumLogger.e("Storage Error : ${it.rootCause} in IsFileSharingEnabledUseCase", it.rootCause)
-                    FileSharingStatus(null , null)
+                    FileSharingStatus(null, null)
                 }
             }
         }, {
             FileSharingStatus(it.isFileSharingEnabled, it.isStatusChanged)
         })
 }
-

@@ -17,7 +17,7 @@ class SlowSyncWorker(
     override suspend fun doWork(): Result {
         kaliumLogger.d("Sync: Starting SlowSync")
 
-        val result = try{
+        val result = try {
             // todo : to move the feature configs call outside the sync
             userSessionScope.syncFeatureConfigsUseCase()
             userSessionScope.users.syncSelfUser()
@@ -27,7 +27,7 @@ class SlowSyncWorker(
                 .flatMap { userSessionScope.users.syncContacts() }
                 .onSuccess { userSessionScope.syncManager.onSlowSyncComplete() }
                 .onFailure { userSessionScope.syncManager.onSlowSyncFailure(it) }
-        }catch (e: Exception){
+        } catch (e: Exception) {
             kaliumLogger.e("An unexpected error happening during SlowSync", e)
             Either.Left(CoreFailure.Unknown(e))
         }

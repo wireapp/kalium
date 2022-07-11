@@ -104,7 +104,6 @@ class GetFeatureConfigsStatusUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-
     private class Arrangement {
 
         @Mock
@@ -114,7 +113,6 @@ class GetFeatureConfigsStatusUseCaseTest {
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         var kaliumConfigs: KaliumConfigs = KaliumConfigs()
-
 
         @Mock
         val isFileSharingEnabledUseCase = mock(classOf<IsFileSharingEnabledUseCase>())

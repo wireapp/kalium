@@ -6,7 +6,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.notification.EventContentDTO
 
-
 interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
 class FeatureConfigEventReceiverImpl(

@@ -14,7 +14,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
@@ -26,6 +25,8 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
+import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.feature.session.GetAllSessionsResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -70,7 +71,13 @@ suspend fun selectConversation(userSession: UserSessionScope): Conversation {
 }
 
 suspend fun selectConnection(userSession: UserSessionScope): OtherUser {
-    val connections = userSession.users.getAllKnownUsers()
+    val connections = userSession.users.getAllKnownUsers().let {
+        when (it) {
+            is GetAllContactsResult.Failure -> throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
+            is GetAllContactsResult.Success -> it.allContacts
+        }
+    }
+
     connections.forEachIndexed { index, connection ->
         echo("$index) ${connection.id.value}  Name: ${connection.name}")
     }
@@ -115,7 +122,12 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
     override fun run() = runBlocking {
         val userSession = currentUserSession()
 
-        val users = userSession.users.getAllKnownUsers()
+        val users = userSession.users.getAllKnownUsers().let {
+            when (it) {
+                is GetAllContactsResult.Failure -> throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
+                is GetAllContactsResult.Success -> it.allContacts
+            }
+        }
 
         users.forEachIndexed { index, user ->
             echo("$index) ${user.id.value}  Name: ${user.name}")
@@ -123,10 +135,12 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
         val userIndicesRaw = prompt("Enter user indexes", promptSuffix = ": ")
         val userIndices = userIndicesRaw?.split("\\s".toRegex())?.map(String::toInt) ?: emptyList()
-        val members = userIndices.map { Member(users[it].id) }
+        val userToAddList = userIndices.map { users[it].id }
 
         val result = userSession.conversations.createGroupConversation(
-            name, members, ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+            name,
+            userToAddList,
+            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
         )
         when (result) {
             is Either.Right -> echo("group created successfully")
@@ -143,8 +157,8 @@ class LoginCommand : CliktCommand(name = "login") {
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
 
     private val serverConfig: ServerConfig.Links by lazy {
-        if (environment == "production") {
-            ServerConfig.PRODUCTION
+        if (environment == "staging") {
+            ServerConfig.STAGING
         } else {
             ServerConfig.DEFAULT
         }
@@ -162,12 +176,12 @@ class LoginCommand : CliktCommand(name = "login") {
         }
 
         val userId = coreLogic.globalScope {
-            val allSessionsResult = this.session.allSessions()
-            if (allSessionsResult !is GetAllSessionsResult.Success) {
-                throw PrintMessage("Failed retrieve existing sessions")
+            val sessions = when (val result = this.session.allSessions()) {
+                is GetAllSessionsResult.Success -> result.sessions
+                is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
+                is GetAllSessionsResult.Failure.Generic -> throw PrintMessage("Failed retrieve existing sessions: ${result.genericFailure}")
             }
-
-            if (allSessionsResult.sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
+            if (sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
                 this.session.updateCurrentSession(loginResult.tokens.userId)
             } else {
                 val addAccountResult = addAuthenticatedAccount(loginResult, true)
@@ -224,7 +238,18 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
         val selectedConversation = selectConversation(userSession)
         val selectedConnection = selectConnection(userSession)
 
-        userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(Member(id = selectedConnection.id)))
+        userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(selectedConnection.id))
+    }
+}
+
+class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
+    override fun run() = runBlocking {
+        val userSession = currentUserSession()
+
+        when (val result = userSession.client.refillKeyPackages()) {
+            is RefillKeyPackagesResult.Success -> echo("key packages were refilled")
+            is RefillKeyPackagesResult.Failure -> throw PrintMessage("refill key packages failed: ${result.failure}")
+        }
     }
 }
 
@@ -241,5 +266,10 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 }
 
 fun main(args: Array<String>) = CLIApplication().subcommands(
-    LoginCommand(), CreateGroupCommand(), ListenGroupCommand(), DeleteClientCommand(), AddMemberToGroupCommand()
+    LoginCommand(),
+    CreateGroupCommand(),
+    ListenGroupCommand(),
+    DeleteClientCommand(),
+    AddMemberToGroupCommand(),
+    RefillKeyPackagesCommand()
 ).main(args)

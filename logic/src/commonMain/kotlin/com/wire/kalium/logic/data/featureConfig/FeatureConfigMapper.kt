@@ -12,7 +12,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             FeatureConfigModel(
                 appLockModel = AppLockModel(
                     AppLockConfigModel
-                        (appLock.config.enforceAppLock, appLock.config.inactivityTimeoutSecs),appLock.status.name
+                        (appLock.config.enforceAppLock, appLock.config.inactivityTimeoutSecs), appLock.status.name
                 ),
                 classifiedDomainsModel = ClassifiedDomainsModel(
                     ClassifiedDomainsConfigModel(classifiedDomains.config.domains), classifiedDomains.status.name

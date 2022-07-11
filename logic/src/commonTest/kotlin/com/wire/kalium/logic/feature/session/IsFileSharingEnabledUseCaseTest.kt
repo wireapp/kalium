@@ -32,7 +32,6 @@ class IsFileSharingEnabledUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenStorageFailure_thenDataNotFoundReturned() = runTest {
         // Given

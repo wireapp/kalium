@@ -8,7 +8,6 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-
 /**
  * This use case is to get a flow of  file sharing status of the team settings from the local storage
  * so we can use it to show and hide things on the screen

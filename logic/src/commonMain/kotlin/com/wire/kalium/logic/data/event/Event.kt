@@ -50,9 +50,9 @@ sealed class Event(open val id: String) {
 
         data class MemberLeave(
             override val id: String,
-            override val conversationId: ConversationId,
+             override val conversationId: ConversationId,
             val removedBy: UserId,
-            val members: List<Member>,
+            val removedList: List<UserId>,
             val timestampIso: String
         ) : Conversation(id, conversationId)
 

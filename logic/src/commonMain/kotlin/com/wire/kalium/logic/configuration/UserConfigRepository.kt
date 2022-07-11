@@ -8,16 +8,12 @@ import com.wire.kalium.persistence.client.UserConfigStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-
 interface UserConfigRepository {
-
     fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit>
     fun isLoggingEnabled(): Either<StorageFailure, Boolean>
-
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
-
 }
 
 class UserConfigDataSource(
