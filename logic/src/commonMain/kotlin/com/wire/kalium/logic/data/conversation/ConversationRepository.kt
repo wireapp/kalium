@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -65,7 +66,9 @@ interface ConversationRepository {
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
     suspend fun createGroupConversation(
-        name: String? = null, usersList: List<UserId>, options: ConversationOptions = ConversationOptions()
+        name: String? = null,
+        usersList: List<UserId>,
+        options: ConversationOptions = ConversationOptions()
     ): Either<CoreFailure, Conversation>
 
     suspend fun updateMutedStatus(
@@ -202,38 +205,41 @@ class ConversationDataSource(
 
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
         Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
-        Conversation.Type.GROUP -> flowOf(
-            ConversationDetails.Group(
-                conversation, LegalHoldStatus.DISABLED // TODO(user-metadata): get actual legal hold status
-            )
-        )
-        // TODO(connection-requests): Handle requests instead of filtering them out
+        // TODO(user-metadata): get actual legal hold status
+        Conversation.Type.GROUP -> flowOf(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED))
         Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> {
             val selfUser = userRepository.observeSelfUser().first()
-
-            getConversationMembers(conversation.id).map { members ->
-                members.firstOrNull { itemId -> itemId != selfUser.id }
-            }.fold({
-                when (it) {
-                    StorageFailure.DataNotFound -> {
-                        kaliumLogger.e("DataNotFound when fetching conversation members: $it")
-                    }
-
-                    is StorageFailure.Generic -> {
-                        kaliumLogger.e("Failure getting other 1:1 user for $conversation", it.rootCause)
-                    }
-                }
-                emptyFlow()
-            }, { otherUserIdOrNull ->
-                otherUserIdOrNull?.let {
-                    userRepository.getKnownUser(it)
-                } ?: run {
-                    emptyFlow()
-                }
-            }).filterNotNull().map { otherUser ->
-                conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+            when (val conversationMembers = getConversationMembers(conversation.id)) {
+                is Either.Left -> logMemberDetailsError(conversation, conversationMembers)
+                is Either.Right -> fetchConversationDetailsOneToOne(conversation, conversationMembers, selfUser)
             }
         }
+    }
+
+    private fun logMemberDetailsError(conversation: Conversation, storageFailure: Either.Left<StorageFailure>): Flow<ConversationDetails> {
+        when (val error = storageFailure.value) {
+            StorageFailure.DataNotFound -> {
+                kaliumLogger.e("DataNotFound when fetching conversation members: $error")
+            }
+
+            is StorageFailure.Generic -> {
+                kaliumLogger.e("Failure getting other 1:1 user for $conversation", error.rootCause)
+            }
+        }
+        return emptyFlow()
+    }
+
+    private suspend fun fetchConversationDetailsOneToOne(
+        conversation: Conversation,
+        conversationMembers: Either.Right<List<UserId>>,
+        selfUser: SelfUser
+    ): Flow<ConversationDetails> {
+        return conversationMembers.map { members ->
+            members.firstOrNull { itemId -> itemId != selfUser.id }
+        }.fold(
+            { emptyFlow() },
+            { otherUserId -> otherUserId?.let { userRepository.getKnownUser(it) } ?: emptyFlow() }
+        ).filterNotNull().map { otherUser -> conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser) }
     }
 
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
