@@ -58,6 +58,7 @@ kotlin {
                 implementation(Dependencies.Ktor.authClient)
                 implementation(Dependencies.Ktor.webSocket)
                 implementation(Dependencies.Ktor.contentNegotiation)
+                implementation(Dependencies.Ktor.encoding)
 
                 // Okio
                 implementation(Dependencies.Okio.core)

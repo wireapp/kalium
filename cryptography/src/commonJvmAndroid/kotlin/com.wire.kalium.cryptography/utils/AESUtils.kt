@@ -20,7 +20,6 @@ internal class AESEncrypt {
         try {
         // Fetch AES256 Algorithm
         val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
-        var encryptedDataWithIVSize = 0L
 
         // Parse Secret Key from our custom AES256Key model object
         val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)

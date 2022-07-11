@@ -15,7 +15,13 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import io.mockative.*
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.anything
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.matching
+import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.Path
@@ -50,21 +56,6 @@ class GetMessageAssetUseCaseTest {
         // Then
         assertTrue(result is MessageAssetResult.Success)
         assertEquals(result.decodedAssetPath, encryptedPath)
-    }
-
-    private fun createFileSystem(): Pair<FakeFileSystem, Path> {
-        val userHome = "/Users/me".toPath()
-        val fileSystem = FakeFileSystem()
-        fileSystem.createDirectories(userHome)
-        return fileSystem to userHome
-    }
-
-    private fun copyDataToDummyPath(expectedDecodedAsset: ByteArray, rootPath: Path, fileSystem: FakeFileSystem): Path {
-        val inputPath = "$rootPath/test-text.txt".toPath()
-        fileSystem.write(inputPath) {
-            write(expectedDecodedAsset)
-        }
-        return inputPath
     }
 
     @Test
@@ -110,7 +101,7 @@ class GetMessageAssetUseCaseTest {
 
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
-        private lateinit var encryptionKey: ByteArray
+        private var encryptionKey = AES256Key(ByteArray(1))
 
         val userId = UserId("some-user", "some-domain.com")
         val clientId = ClientId("some-client-id")
@@ -127,7 +118,7 @@ class GetMessageAssetUseCaseTest {
                         mimeType = "image/jpeg",
                         metadata = AssetContent.AssetMetadata.Image(width = 100, height = 100),
                         remoteData = AssetContent.RemoteData(
-                            otrKey = encryptionKey,
+                            otrKey = encryptionKey.data,
                             sha256 = ByteArray(16),
                             assetId = someAssetId,
                             assetToken = someAssetToken,
@@ -156,14 +147,14 @@ class GetMessageAssetUseCaseTest {
         ): Arrangement {
             convId = conversationId
             msgId = messageId
-            encryptionKey = secretKey.data
+            encryptionKey = secretKey
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(eq(secretKey), any(), any())
+                .whenInvokedWith(anything(), anything(), matching { it.data.contentEquals(secretKey.data) })
                 .thenReturn(Either.Right(encodedPath))
             return this
         }
@@ -178,7 +169,7 @@ class GetMessageAssetUseCaseTest {
 
         fun withDownloadAssetErrorResponse(noNetworkConnection: NetworkFailure.NoNetworkConnection): Arrangement {
             convId = ConversationId("", "")
-            encryptionKey = ByteArray(0)
+            encryptionKey = AES256Key(ByteArray(0))
             msgId = ""
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
@@ -192,5 +183,20 @@ class GetMessageAssetUseCaseTest {
         }
 
         fun arrange() = this to getMessageAssetUseCase
+    }
+
+    private fun createFileSystem(): Pair<FakeFileSystem, Path> {
+        val userHome = "/Users/me".toPath()
+        val fileSystem = FakeFileSystem()
+        fileSystem.createDirectories(userHome)
+        return fileSystem to userHome
+    }
+
+    private fun copyDataToDummyPath(expectedDecodedAsset: ByteArray, rootPath: Path, fileSystem: FakeFileSystem): Path {
+        val inputPath = "$rootPath/test-text.txt".toPath()
+        fileSystem.write(inputPath) {
+            write(expectedDecodedAsset)
+        }
+        return inputPath
     }
 }
