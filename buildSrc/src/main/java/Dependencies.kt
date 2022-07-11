@@ -143,6 +143,7 @@ object Dependencies {
         const val mock = "io.ktor:ktor-client-mock:${Versions.ktor}"
         const val okHttp = "io.ktor:ktor-client-okhttp:${Versions.ktor}"
         const val iosHttp = "io.ktor:ktor-client-ios:${Versions.ktor}"
+        const val encoding = "io.ktor:ktor-client-encoding:${Versions.ktor}"
     }
 
     object Okio {

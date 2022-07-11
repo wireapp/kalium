@@ -42,6 +42,7 @@ interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
+    suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
@@ -82,7 +83,7 @@ class UserDataSource(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userMapper.fromApiModelWithUserTypeEntityToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+        .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
             assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
             userDAO.insertUser(userEntity)
@@ -109,14 +110,16 @@ class UserDataSource(
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
         }.flatMap {
             wrapStorageRequest {
+                val selfUser = getSelfUser()
                 userDAO.upsertUsers(
                     it.map { userProfileDTO ->
                         userMapper.fromApiModelWithUserTypeEntityToDaoModel(
                             userProfileDTO = userProfileDTO,
                             userTypeEntity = userTypeEntityMapper.fromOtherUserTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = getSelfUser()?.teamId?.value,
-                                otherUserTeamId = userProfileDTO.teamId
+                                selfUserTeamId = selfUser?.teamId?.value,
+                                otherUserTeamId = userProfileDTO.teamId,
+                                selfUserDomain = selfUser?.id?.domain
                             )
                         )
                     }

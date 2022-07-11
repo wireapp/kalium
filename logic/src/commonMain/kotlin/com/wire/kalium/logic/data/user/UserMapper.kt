@@ -26,7 +26,7 @@ interface UserMapper {
         userTypeEntity: UserTypeEntity?
     ): UserEntity
 
-    fun fromApiModelWithUserTypeEntityToDaoModel(userDTO: UserDTO): UserEntity
+    fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
 
     /**
@@ -156,7 +156,7 @@ internal class UserMapperImpl(
         )
     }
 
-    override fun fromApiModelWithUserTypeEntityToDaoModel(userDTO: UserDTO): UserEntity = with(userDTO) {
+    override fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity = with(userDTO) {
         return UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
