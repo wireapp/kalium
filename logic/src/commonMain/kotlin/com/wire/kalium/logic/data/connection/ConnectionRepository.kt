@@ -196,7 +196,7 @@ internal class ConnectionDataSource(
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
                     userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
-                        selfUserTeamId = selfUser.teamId,
+                        selfUserTeamId = selfUser.teamId?.value,
                         otherUserTeamId = userProfileDTO.teamId,
                         selfUserDomain = selfUser.id.domain
                     )

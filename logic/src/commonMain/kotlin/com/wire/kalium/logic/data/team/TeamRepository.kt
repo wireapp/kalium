@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -8,7 +9,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
@@ -26,11 +26,11 @@ internal class TeamDataSource(
     private val teamDAO: TeamDAO,
     private val teamsApi: TeamsApi,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
+    private val teamMapper: TeamMapper = MapperProvider.teamMapper()
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
-        teamsApi.getTeamInfo(teamId = teamId)
+        teamsApi.getTeamInfo(teamId = teamId.value)
     }.map { teamDTO ->
         teamMapper.fromDtoToEntity(teamDTO)
     }.map { teamEntity ->
@@ -41,7 +41,7 @@ internal class TeamDataSource(
 
     override suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit> = wrapApiRequest {
         teamsApi.getTeamMembers(
-            teamId = teamId,
+            teamId = teamId.value,
             limitTo = null
         )
     }.map { teamMemberList ->
@@ -68,7 +68,7 @@ internal class TeamDataSource(
     }
 
     override suspend fun getTeam(teamId: TeamId): Flow<Team?> =
-        teamDAO.getTeamById(teamId)
+        teamDAO.getTeamById(teamId.value)
             .map {
                 it?.let {
                     teamMapper.fromDaoModelToTeam(it)
