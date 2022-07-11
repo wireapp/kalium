@@ -23,7 +23,7 @@ class ObserveConversationMembersUseCase(
         syncManager.startSyncIfIdle()
         return conversationRepository.observeConversationMembers(conversationId).map { members ->
             members.map { member ->
-                userRepository.userStream(member.id).filterNotNull().map {
+                userRepository.observeUser(member.id).filterNotNull().map {
                     MemberDetails(it, member.role)
                 }
             }

@@ -22,7 +22,7 @@ class ObserveMemberDetailsByIdsUseCase(
         syncManager.startSyncIfIdle()
         return flowOf(userIdList).map { members ->
             members.map { userId ->
-                userRepository.userStream(userId)
+                userRepository.observeUser(userId)
             }
         }.flatMapLatest { detailsFlows ->
             combine(detailsFlows) { it.toList().filterNotNull() }

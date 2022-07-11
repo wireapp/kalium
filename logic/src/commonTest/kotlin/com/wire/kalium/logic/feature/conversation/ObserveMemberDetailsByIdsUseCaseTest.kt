@@ -73,7 +73,7 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstSelfUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(anything())
             .thenReturn(selfUserUpdates.asFlow())
 
@@ -92,12 +92,12 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstOtherUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(TestUser.SELF.id))
             .thenReturn(flowOf(TestUser.SELF))
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(anything())
             .thenReturn(otherUserUpdates.asFlow())
 
@@ -115,12 +115,12 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(knownUser.id, notKnownUserId)
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(knownUser.id))
             .then { flowOf(knownUser) }
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(notKnownUserId))
             .then { flowOf(null) }
 

@@ -116,7 +116,7 @@ class ObserveConversationMembersUseCaseTest {
         )
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(firstSelfUser.id))
             .thenReturn(selfUserUpdates.asFlow())
 
@@ -142,7 +142,7 @@ class ObserveConversationMembersUseCaseTest {
         )
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(firstOtherUser.id))
             .thenReturn(flow {
                 emit(firstOtherUser)
@@ -169,12 +169,12 @@ class ObserveConversationMembersUseCaseTest {
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(TestUser.SELF.id))
             .thenReturn(flowOf(selfUser))
 
         given(userRepository)
-            .suspendFunction(userRepository::userStream)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(otherUser.id))
             .thenReturn(flowOf(otherUser))
 
