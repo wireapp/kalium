@@ -8,6 +8,7 @@ import kotlinx.cinterop.refTo
 import okio.FileSystem
 import okio.HashingSink
 import okio.Path
+import okio.Sink
 import okio.Source
 import okio.blackholeSink
 import okio.buffer
@@ -30,9 +31,9 @@ actual fun calcSHA256(bytes: ByteArray): ByteArray {
     TODO("Not yet implemented")
 }
 
-actual fun calcFileMd5(dataPath: Path, kaliumFileSystem: FileSystem): String? =
+actual fun calcFileMd5(dataSource: Source): String? =
     try {
-        kaliumFileSystem.source(dataPath).buffer().use { source ->
+        dataSource.buffer().use { source ->
             HashingSink.md5(blackholeSink()).use { sink ->
                 source.readAll(sink)
                 sink.hash.toByteArray().encodeBase64()
@@ -43,9 +44,9 @@ actual fun calcFileMd5(dataPath: Path, kaliumFileSystem: FileSystem): String? =
         null
     }
 
-actual fun calcFileSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray? =
+actual fun calcFileSHA256(dataSource: Source): ByteArray? =
     try {
-        kaliumFileSystem.source(dataPath).buffer().use { source ->
+        dataSource.buffer().use { source ->
             HashingSink.sha256(blackholeSink()).use { sink ->
                 source.readAll(sink)
                 sink.hash.toByteArray()
@@ -68,18 +69,13 @@ actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
     TODO("Not yet implemented")
 }
 
-actual fun encryptFileWithAES256(rawDataPath: Path, key: AES256Key, encryptedDataPath: Path, kaliumFileSystem: FileSystem): Long {
+actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long =
     TODO("Not yet implemented")
-}
 
-actual fun decryptFileWithAES256(
-    encryptedDataSource: Source,
-    decryptedDataPath: Path,
-    secretKey: AES256Key,
-    kaliumFileSystem: FileSystem
-): Long {
+
+actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink: Sink, secretKey: AES256Key): Long =
     TODO("Not yet implemented")
-}
+
 
 actual fun generateRandomAES256Key(): AES256Key {
     TODO("Not yet implemented")

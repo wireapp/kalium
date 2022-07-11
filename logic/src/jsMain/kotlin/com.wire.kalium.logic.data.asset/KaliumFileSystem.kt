@@ -7,56 +7,35 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
-actual class KaliumFileSystem : FileSystem() {
-    override fun appendingSink(file: Path, mustExist: Boolean): Sink {
+actual class KaliumFileSystem {
+
+    actual fun sink(file: Path, mustCreate: Boolean): Sink {
         TODO("Not yet implemented")
     }
 
-    override fun atomicMove(source: Path, target: Path) {
+    actual fun source(file: Path): Source {
         TODO("Not yet implemented")
     }
 
-    override fun canonicalize(path: Path): Path {
+    actual fun createDirectory(dir: Path, mustCreate: Boolean): Source {
         TODO("Not yet implemented")
     }
 
-    override fun createDirectory(dir: Path, mustCreate: Boolean) {
-        TODO("Not yet implemented")
-    }
+    actual fun delete(path: Path, mustExist: Boolean) = TODO("Not yet implemented")
 
-    override fun createSymlink(source: Path, target: Path) {
-        TODO("Not yet implemented")
-    }
+    actual fun exists(path: Path): Boolean = TODO("Not yet implemented")
 
-    override fun delete(path: Path, mustExist: Boolean) {
-        TODO("Not yet implemented")
-    }
+    actual fun copy(sourcePath: Path, targetPath: Path) = TODO("Not yet implemented")
 
-    override fun list(dir: Path): List<Path> {
-        TODO("Not yet implemented")
-    }
+    actual fun tempFilePath(pathString: String?): Path = TODO("Not yet implemented")
 
-    override fun listOrNull(dir: Path): List<Path>? {
-        TODO("Not yet implemented")
-    }
+    actual fun providePersistentAssetPath(assetName: String): Path = TODO("Not yet implemented")
 
-    override fun metadataOrNull(path: Path): FileMetadata? {
-        TODO("Not yet implemented")
-    }
+    actual suspend fun readByteArray(inputPath: Path): ByteArray = TODO("Not yet implemented")
 
-    override fun openReadOnly(file: Path): FileHandle {
-        TODO("Not yet implemented")
-    }
+    actual suspend fun writeData(outputPath: Path, dataSource: Source): Long = TODO("Not yet implemented")
 
-    override fun openReadWrite(file: Path, mustCreate: Boolean, mustExist: Boolean): FileHandle {
-        TODO("Not yet implemented")
-    }
+    actual suspend fun writeData(outputPath: Path, dataBlob: ByteArray) = TODO("Not yet implemented")
 
-    override fun sink(file: Path, mustCreate: Boolean): Sink {
-        TODO("Not yet implemented")
-    }
-
-    override fun source(file: Path): Source {
-        TODO("Not yet implemented")
-    }
+    actual fun selfUserAvatarPath(): Path = TODO("Not yet implemented")
 }

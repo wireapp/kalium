@@ -100,12 +100,15 @@ internal class AssetDataSource(
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
 
         val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
+        val assetDataSource = kaliumFileSystem.source(assetDataPath)
+        val encryptedDataSource = kaliumFileSystem.source(tempEncryptedDataPath)
+        val assetDataSink = kaliumFileSystem.sink(tempEncryptedDataPath)
 
         // Encrypt the data on the provided temp path
-        val encryptedDataSize = encryptFileWithAES256(assetDataPath, otrKey, tempEncryptedDataPath, kaliumFileSystem)
+        val encryptedDataSize = encryptFileWithAES256(assetDataSource, otrKey, assetDataSink)
 
         // Calculate the SHA of the encrypted data
-        val sha256 = calcFileSHA256(tempEncryptedDataPath, kaliumFileSystem)
+        val sha256 = calcFileSHA256(encryptedDataSource)
 
         val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
 
@@ -168,19 +171,19 @@ internal class AssetDataSource(
             }.flatMap { assetData ->
                 // Copy byte array to temp file and provide it as source
                 val tempFile = kaliumFileSystem.tempFilePath()
-                kaliumFileSystem.write(tempFile) {
-                    write(assetData)
-                }
-                val assetDataSource = kaliumFileSystem.source(tempFile)
+                kaliumFileSystem.writeData(tempFile, assetData)
+
+                val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
                 // Decrypt and persist decoded asset onto a persistent asset path
                 val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath(assetId.value)
+                val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
                 // Public assets are stored already decrypted on the backend, hence no decryption is needed
                 val assetDataSize = if (encryptionKey != null)
-                    decryptFileWithAES256(assetDataSource, decodedAssetPath, encryptionKey, kaliumFileSystem)
+                    decryptFileWithAES256(encryptedAssetDataSource, decodedAssetSink, encryptionKey)
                 else
-                    kaliumFileSystem.writeData(decodedAssetPath, assetDataSource)
+                    kaliumFileSystem.writeData(decodedAssetPath, encryptedAssetDataSource)
 
                 // Delete temp path now that the decoded asset has been persisted correctly
                 kaliumFileSystem.delete(tempFile)
@@ -188,7 +191,7 @@ internal class AssetDataSource(
                 if (assetDataSize == -1L)
                     Either.Left(EncryptionFailure())
                 wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetId, decodedAssetPath, assetDataSize)) }
-                    .map { assetDataSource }
+                    .map { encryptedAssetDataSource }
                 Either.Right(decodedAssetPath)
             }
         }, {

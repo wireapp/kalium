@@ -2,17 +2,57 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import okio.FileSystem
+import okio.BufferedSink
 import okio.Path
+import okio.Sink
 import okio.Source
 
-expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) :
-    FileSystem {
-
+expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) {
     /**
      * Provides the root of the cache path, used to store temporary files
      */
     val rootCachePath: Path
+
+    /**
+     * Opens an output stream that will be used to write the data on the given [outputPath]
+     * @param outputPath the path where the data will be eventually written
+     * @param mustCreate whether to force the creation of the outputPath if it doesn't exist on the current file system
+     * @return the [Sink] stream of data to be written
+     */
+    fun sink(outputPath: Path, mustCreate: Boolean = false): Sink
+
+    /**
+     * Creates an input stream that will be used to read the data from the given [inputPath]
+     * @param inputPath the path from where the data will be read
+     * @return the [Source] stream of data to be read
+     */
+    fun source(inputPath: Path): Source
+
+    /**
+     * It will make sure the given [dir] gets created on the file system
+     * @param mustCreate whether it is certain that [dir] doesn't exist and will need to be created
+     */
+    fun createDirectory(dir: Path, mustCreate: Boolean = true)
+
+    /**
+     * This will delete the content of the given [path]
+     * @param path the path to be deleted
+     * @param mustExist whether it is certain that [path] exists before the deletion
+     */
+    fun delete(path: Path, mustExist: Boolean = false)
+
+    /**
+     * Checks whether the given [path] is already created and exists on the current file system
+     * @return whether the given [path] exists in the current file system
+     */
+    fun exists(path: Path): Boolean
+
+    /**
+     * Copies effectively the content of [sourcePath] into [targetPath]
+     * @param sourcePath the path of the content to be copied
+     * @param targetPath the destination path where the data will be copied into
+     */
+    fun copy(sourcePath: Path, targetPath: Path)
 
     /**
      * Creates a temporary path if it didn't exist before and returns it if successful
@@ -45,4 +85,11 @@ expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths, di
      */
     suspend fun writeData(outputPath: Path, dataSource: Source): Long
 
+    /**
+     * Writes the given blob of data into the provided [outputPath]
+     * @param outputPath the path where the data will be written
+     * @param dataBlob the data that will be written to the [outputPath]
+     * @return the data [BufferedSink] that will be used to write to the [outputPath]
+     */
+    suspend fun writeData(outputPath: Path, dataBlob: ByteArray): BufferedSink
 }

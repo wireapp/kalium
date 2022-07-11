@@ -1,7 +1,6 @@
 package com.wire.kalium.cryptography.utils
 
-import okio.FileSystem
-import okio.Path
+import okio.Sink
 import okio.Source
 import kotlin.jvm.JvmInline
 
@@ -21,18 +20,17 @@ expect fun calcSHA256(bytes: ByteArray): ByteArray
 
 /**
  * Method used to calculate the digested MD5 hash of a given file
- * @param dataPath the file containing the data to be hashed
- * @param kaliumFileSystem the file system used to access the stored data
+ * @param dataSource the data stream used to read the stored data and hash it
  * @return the digested md5 hash of the input data
  */
-expect fun calcFileMd5(dataPath: Path, kaliumFileSystem: FileSystem): String?
+expect fun calcFileMd5(dataSource: Source): String?
 
 /**
  * Method used to calculate the digested MD5 hash of a relatively small byte array
- * @param bytes the data to be hashed
+ * @param dataSource the data stream used to read the stored data and hash it
  * @return the digested md5 hash of the input data
  */
-expect fun calcFileSHA256(dataPath: Path, kaliumFileSystem: FileSystem): ByteArray?
+expect fun calcFileSHA256(dataSource: Source): ByteArray?
 
 /**
  * Method used to encrypt a relatively small array of bytes using the AES256 encryption algorithm
@@ -54,33 +52,21 @@ expect fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
 
 /**
  * Method used to encrypt some data stored on the file system using the AES256 encryption algorithm
- * @param rawDataPath the path to the data that needs to be encrypted
+ * @param assetDataSource the path to the data that needs to be encrypted
  * @param key the symmetric secret [AES256Key] that will be used for the encryption
- * @param encryptedDataPath the path where the encrypted data will be saved
- * @param kaliumFileSystem the file system used to store the encrypted data
+ * @param outputSink the path where the encrypted data will be saved
  * @return the size of the encrypted data in bytes if the encryption succeeded and 0 otherwise
  */
-expect fun encryptFileWithAES256(
-    rawDataPath: Path,
-    key: AES256Key = generateRandomAES256Key(),
-    encryptedDataPath: Path,
-    kaliumFileSystem: FileSystem
-): Long
+expect fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long
 
 /**
  * Method used to decrypt some binary data using the AES256 encryption algorithm
  * @param encryptedDataSource the [Source] of the encrypted data that needs to be decrypted
- * @param decryptedDataPath the encrypted data that needs to be decrypted
+ * @param decryptedDataSink the output stream data sink invoked to write the decrypted data
  * @param secretKey the key used for the decryption
- * @param kaliumFileSystem the file system used to store the encrypted data
  * @return the size of the decrypted data in bytes if the decryption succeeded -1L otherwise
  */
-expect fun decryptFileWithAES256(
-    encryptedDataSource: Source,
-    decryptedDataPath: Path,
-    secretKey: AES256Key,
-    kaliumFileSystem: FileSystem
-): Long
+expect fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink: Sink, secretKey: AES256Key): Long
 
 /**
  * Method to generate a random Secret Key via the AES256 ciphering Algorithm

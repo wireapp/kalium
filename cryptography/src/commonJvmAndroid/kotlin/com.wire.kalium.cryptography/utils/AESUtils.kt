@@ -1,8 +1,8 @@
 package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
-import okio.FileSystem
-import okio.Path
+import okio.BufferedSink
+import okio.Sink
 import okio.Source
 import okio.buffer
 import okio.cipherSink
@@ -11,30 +11,29 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
-import kotlin.io.use
 
 internal class AESEncrypt {
 
-    internal fun encryptFile(assetDataPath: Path, key: AES256Key, outputPath: Path, kaliumFileSystem: FileSystem): Long {
+    internal fun encryptFile(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long {
         var encryptedDataSize = 0L
         try {
-        // Fetch AES256 Algorithm
-        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
+            // Fetch AES256 Algorithm
+            val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
-        // Parse Secret Key from our custom AES256Key model object
-        val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
+            // Parse Secret Key from our custom AES256Key model object
+            val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
 
-        // Init the encryption
-        cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey)
+            // Init the encryption
+            cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey)
 
-        // Encrypt and write the data to given outputPath
-        kaliumFileSystem.sink(outputPath).cipherSink(cipher).buffer().use { cipheredSink ->
-            cipheredSink.write(cipher.iv) // we append the IV to the beginning of the file data
-            encryptedDataSize = cipheredSink.writeAll(kaliumFileSystem.source(assetDataPath))
-            kaliumLogger.d("** The encrypted data size is => $encryptedDataSize")
-        }
+            // Encrypt and write the data to given outputPath
+            outputSink.cipherSink(cipher).buffer().use { cipheredSink ->
+                cipheredSink.write(cipher.iv) // we append the IV to the beginning of the file data
+                encryptedDataSize = cipheredSink.writeAll(assetDataSource)
+                kaliumLogger.d("** The encrypted data size is => $encryptedDataSize")
+            }
 
-        kaliumLogger.d("** The encrypted data with IV size is => ${sizeWithPaddingAndIV(encryptedDataSize)}")
+            kaliumLogger.d("** The encrypted data with IV size is => ${sizeWithPaddingAndIV(encryptedDataSize)}")
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while encrypting the asset:\n $e}")
         }
@@ -68,28 +67,26 @@ internal class AESEncrypt {
 
 internal class AESDecrypt(private val secretKey: AES256Key) {
 
-    internal fun decryptFile(encryptedDataSource: Source, outputPath: Path, kaliumFileSystem: FileSystem): Long {
+    internal fun decryptFile(encryptedDataSource: Source, outputSink: Sink): Long {
         var size = 0L
         try {
-        // Fetch AES256 Algorithm
-        val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
+            // Fetch AES256 Algorithm
+            val cipher = Cipher.getInstance(KEY_ALGORITHM_CONFIGURATION)
 
-        // Parse Secret Key from our custom AES256Key model object
-        val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
+            // Parse Secret Key from our custom AES256Key model object
+            val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
 
-        // Init the decryption
-        cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
+            // Init the decryption
+            cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
 
-        // Decrypt and write the data to given outputPath
-        encryptedDataSource.cipherSource(cipher).buffer().use { bufferedSource ->
-            kaliumFileSystem.write(outputPath) {
+            // Decrypt and write the data to given outputPath
+            encryptedDataSource.cipherSource(cipher).buffer().use { bufferedSource ->
                 val dataWithIV = bufferedSource.readByteArray()
                 val data = dataWithIV.copyOfRange(16, dataWithIV.size) // We discard the first 16 bytes corresponding to the IV
                 size = data.size.toLong()
-                write(data)
+                outputSink.buffer().write(data)
             }
-        }
-        kaliumLogger.d("WROTE $size bytes")
+            kaliumLogger.d("WROTE $size bytes")
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while decrypting the asset:\n $e}")
         }

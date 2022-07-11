@@ -38,11 +38,12 @@ class AssetMapperImpl(
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper()
 ) : AssetMapper {
     override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest {
+        val dataSource = kaliumFileSystem.source(uploadAssetMetadata.tempEncryptedDataPath)
         return AssetMetadataRequest(
             uploadAssetMetadata.assetType.mimeType,
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
-            calcFileMd5(uploadAssetMetadata.tempEncryptedDataPath, kaliumFileSystem) ?: ""
+            calcFileMd5(dataSource) ?: ""
         )
     }
 
