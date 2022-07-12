@@ -3,6 +3,7 @@ package com.wire.kalium.logic.sync.event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.ConversationEventReceiver
+import com.wire.kalium.logic.sync.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -15,7 +16,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class EventProcessorTest {
-
 
     @Test
     fun givenAEvent_whenSyncing_thenTheLastProcessedEventIdIsUpdated() = runTest(TestKaliumDispatcher.default) {
@@ -77,9 +77,14 @@ class EventProcessorTest {
         val conversationEventReceiver = configure(mock(ConversationEventReceiver::class)) { stubsUnitByDefault = true }
 
         @Mock
+        private val featureConfigEventReceiver: FeatureConfigEventReceiver =
+            mock(FeatureConfigEventReceiver::class)
+
+        @Mock
         val userEventReceiver = configure(mock(UserEventReceiver::class)) { stubsUnitByDefault = true }
 
-        val eventProcessor: EventProcessor = EventProcessorImpl(eventRepository, conversationEventReceiver, userEventReceiver)
+        val eventProcessor: EventProcessor =
+            EventProcessorImpl(eventRepository, conversationEventReceiver, userEventReceiver, featureConfigEventReceiver)
 
         fun arrange() = this to eventProcessor
     }
