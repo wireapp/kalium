@@ -38,25 +38,25 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
         )
     }
 
-    override suspend fun getCalls(): Flow<List<CallEntity>> =
+    override suspend fun observeCalls(): Flow<List<CallEntity>> =
         callsQueries.selectAllCalls()
             .asFlow()
             .mapToList()
             .map { calls -> calls.map(mapper::toModel) }
 
-    override suspend fun getIncomingCalls(): Flow<List<CallEntity>> =
+    override suspend fun observeIncomingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectIncomingCalls()
             .asFlow()
             .mapToList()
             .map { calls -> calls.map(mapper::toModel) }
 
-    override suspend fun getEstablishedCalls(): Flow<List<CallEntity>> =
+    override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
         callsQueries.selectEstablishedCalls()
             .asFlow()
             .mapToList()
             .map { calls -> calls.map(mapper::toModel) }
 
-    override suspend fun getOngoingCalls(): Flow<List<CallEntity>> =
+    override suspend fun observeOngoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOngoingCalls()
             .asFlow()
             .mapToList()
