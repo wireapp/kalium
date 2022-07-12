@@ -205,8 +205,7 @@ class MessageDataSource(
             )
         }.fold({ networkFailure ->
             val failure = when {
-                (networkFailure is NetworkFailure.ServerMiscommunication
-                        && networkFailure.rootCause is ProteusClientsChangedError) -> {
+                (networkFailure is NetworkFailure.ServerMiscommunication && networkFailure.rootCause is ProteusClientsChangedError) -> {
                     sendMessageFailureMapper.fromDTO(networkFailure.rootCause as ProteusClientsChangedError)
                 }
 
