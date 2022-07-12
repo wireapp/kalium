@@ -18,6 +18,7 @@ sealed class User {
     abstract val teamId: TeamId?
     abstract val previewPicture: UserAssetId?
     abstract val completePicture: UserAssetId?
+    abstract val availabilityStatus: UserAvailabilityStatus
 }
 
 // TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
@@ -74,7 +75,7 @@ data class SelfUser(
     val connectionStatus: ConnectionState,
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
-    val availabilityStatus: UserAvailabilityStatus
+    override val availabilityStatus: UserAvailabilityStatus
 ) : User()
 
 data class OtherUser(
@@ -89,7 +90,7 @@ data class OtherUser(
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
     val userType: UserType,
-    val availabilityStatus: UserAvailabilityStatus
+    override val availabilityStatus: UserAvailabilityStatus
 ) : User()
 
 typealias UserAssetId = AssetId

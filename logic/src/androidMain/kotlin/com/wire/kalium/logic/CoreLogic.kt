@@ -85,7 +85,8 @@ actual class CoreLogic(
                 userDataSource,
                 sessionRepository,
                 globalCallManager,
-                globalPreferences.value
+                globalPreferences.value,
+                kaliumConfigs
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }
