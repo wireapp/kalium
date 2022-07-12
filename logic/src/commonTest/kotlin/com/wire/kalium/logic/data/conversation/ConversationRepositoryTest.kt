@@ -306,7 +306,9 @@ class ConversationRepositoryTest {
             .thenDoNothing()
 
         val result = conversationRepository.createGroupConversation(
-            CreateConversationParam.Proteus(name = GROUP_NAME, teamId = null, userIdSet = setOf(TestUser.USER_ID))
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
 
@@ -348,11 +350,9 @@ class ConversationRepositoryTest {
             .thenDoNothing()
 
         val result = conversationRepository.createGroupConversation(
-            CreateConversationParam.Proteus(
-                name = GROUP_NAME,
-                userIdSet = setOf(TestUser.USER_ID),
-                teamId = null
-            )
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
 
@@ -404,11 +404,9 @@ class ConversationRepositoryTest {
             .then { Either.Right(Unit) }
 
         val result = conversationRepository.createGroupConversation(
-            CreateConversationParam.MLS(
-                name = GROUP_NAME,
-                userIdSet = setOf(TestUser.USER_ID),
-                teamId = null
-            )
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
         )
 
         result.shouldSucceed { }

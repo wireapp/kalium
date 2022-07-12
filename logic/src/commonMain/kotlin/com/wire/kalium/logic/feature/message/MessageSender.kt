@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.CreateConversationParam
+import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -26,7 +26,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
  * for sending a message to the wanted recipients.
  * Will handle reading and updating message status, retries
  * in case of connectivity issues, and encryption based on
- * [CreateConversationParam.Protocol].
+ * [ConversationOptions.Protocol].
  *
  * @see MessageSenderImpl
  */
@@ -37,7 +37,7 @@ interface MessageSender {
      * attempts to send the message to suitable recipients.
      *
      * Will handle all the needed encryption and possible set-up
-     * steps and retries depending on the [CreateConversationParam.Protocol].
+     * steps and retries depending on the [ConversationOptions.Protocol].
      *
      * In case of connectivity failure, will schedule a retry in the future using a [MessageSendingScheduler].
      *
@@ -50,7 +50,7 @@ interface MessageSender {
      * Attempts to send the given [Message] to suitable recipients.
      *
      * Will handle all the needed encryption and possible set-up
-     * steps and retries depending on the [CreateConversationParam.Protocol].
+     * steps and retries depending on the [ConversationOptions.Protocol].
      *
      * Unlike [sendPendingMessage], will **not** handle connectivity failures
      * and scheduling re-tries in the future.

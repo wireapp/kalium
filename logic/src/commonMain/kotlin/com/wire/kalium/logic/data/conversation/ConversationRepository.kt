@@ -66,7 +66,9 @@ interface ConversationRepository {
     suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
-    suspend fun createGroupConversation(param: CreateConversationParam): Either<CoreFailure, Conversation>
+    suspend fun createGroupConversation(
+        name: String? = null, usersList: List<UserId>, options: ConversationOptions = ConversationOptions()
+    ): Either<CoreFailure, Conversation>
 
     suspend fun updateMutedStatus(
         conversationId: ConversationId,
