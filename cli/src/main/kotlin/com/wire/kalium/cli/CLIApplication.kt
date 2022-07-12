@@ -15,7 +15,7 @@ import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession

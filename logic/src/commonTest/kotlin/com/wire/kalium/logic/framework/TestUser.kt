@@ -1,17 +1,16 @@
 package com.wire.kalium.logic.framework
 
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.api.model.AssetSizeDTO
-import com.wire.kalium.network.api.model.ServiceDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
-import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
@@ -33,7 +32,7 @@ object TestUser {
         email = "email",
         phone = "phone",
         accentId = 0,
-        teamId = "teamId",
+        teamId = TeamId("teamId"),
         connectionStatus = ConnectionState.ACCEPTED,
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
@@ -47,12 +46,12 @@ object TestUser {
         email = "otherEmail",
         phone = "otherPhone",
         accentId = 0,
-        team = "otherTeamId",
+        teamId = TeamId("otherTeamId"),
         connectionStatus = ConnectionState.ACCEPTED,
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE,
-        userType =  UserType.EXTERNAL
+        userType = UserType.EXTERNAL
     )
 
     val ENTITY = UserEntity(
