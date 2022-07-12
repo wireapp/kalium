@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -65,7 +66,9 @@ interface ConversationRepository {
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
     suspend fun createGroupConversation(
-        name: String? = null, usersList: List<UserId>, options: ConversationOptions = ConversationOptions()
+        name: String? = null,
+        usersList: List<UserId>,
+        options: ConversationOptions = ConversationOptions()
     ): Either<CoreFailure, Conversation>
 
     suspend fun updateMutedStatus(
@@ -202,38 +205,27 @@ class ConversationDataSource(
 
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
         Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
-        Conversation.Type.GROUP -> flowOf(
-            ConversationDetails.Group(
-                conversation, LegalHoldStatus.DISABLED // TODO(user-metadata): get actual legal hold status
-            )
-        )
-        // TODO(connection-requests): Handle requests instead of filtering them out
-        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> {
-            val selfUser = userRepository.observeSelfUser().first()
+        // TODO(user-metadata): get actual legal hold status
+        Conversation.Type.GROUP -> flowOf(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED))
+        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
+    }
 
-            getConversationMembers(conversation.id).map { members ->
-                members.firstOrNull { itemId -> itemId != selfUser.id }
-            }.fold({
-                when (it) {
-                    StorageFailure.DataNotFound -> {
-                        kaliumLogger.e("DataNotFound when fetching conversation members: $it")
-                    }
+    private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> {
+        val selfUser = userRepository.observeSelfUser().first()
+        return getConversationMembers(conversation.id).map { members ->
+            members.firstOrNull { itemId -> itemId != selfUser.id }
+        }.fold(
+            { storageFailure -> logMemberDetailsError(conversation, storageFailure) },
+            { otherUserId -> otherUserId?.let { userRepository.getKnownUser(it) } ?: emptyFlow() }
+        ).filterNotNull().map { otherUser -> conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser) }
+    }
 
-                    is StorageFailure.Generic -> {
-                        kaliumLogger.e("Failure getting other 1:1 user for $conversation", it.rootCause)
-                    }
-                }
-                emptyFlow()
-            }, { otherUserIdOrNull ->
-                otherUserIdOrNull?.let {
-                    userRepository.getKnownUser(it)
-                } ?: run {
-                    emptyFlow()
-                }
-            }).filterNotNull().map { otherUser ->
-                conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
-            }
+    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Flow<OtherUser> {
+        when (error) {
+            is StorageFailure.DataNotFound -> kaliumLogger.e("DataNotFound when fetching conversation members: $error")
+            is StorageFailure.Generic -> kaliumLogger.e("Failure getting other 1:1 user for $conversation", error.rootCause)
         }
+        return emptyFlow()
     }
 
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.

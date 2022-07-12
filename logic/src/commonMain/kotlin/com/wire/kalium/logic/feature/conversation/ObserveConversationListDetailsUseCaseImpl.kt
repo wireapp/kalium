@@ -6,7 +6,9 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 fun interface ObserveConversationListDetailsUseCase {
@@ -24,10 +26,13 @@ internal class ObserveConversationListDetailsUseCaseImpl(
 
         val conversationsFlow = conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
-                conversationRepository.observeConversationDetailsById(conversation.id)
+                flow {
+                    emit(null)
+                    emitAll(conversationRepository.observeConversationDetailsById(conversation.id))
+                }
             }
         }.flatMapLatest { flowsOfDetails ->
-            combine(flowsOfDetails) { latestValues -> latestValues.asList() }
+            combine(flowsOfDetails) { latestValues -> latestValues.asList().mapNotNull { it } }
         }
 
         return combine(conversationsFlow, callRepository.ongoingCallsFlow()) { conversations, calls ->
