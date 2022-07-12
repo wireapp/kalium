@@ -12,7 +12,8 @@ fun newMessageEntity(
     senderUserId: QualifiedIDEntity = QualifiedIDEntity("senderId", "senderDomain"),
     senderClientId: String = "senderClientId",
     status: MessageEntity.Status = MessageEntity.Status.PENDING,
-    editStatus : MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited,
+    readStatus: MessageEntity.ReadStatus = MessageEntity.ReadStatus.NotRead,
+    editStatus: MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited,
     date: String = "2022-03-30T15:36:00.000Z",
     visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE
 ) = MessageEntity.Regular(
@@ -23,6 +24,7 @@ fun newMessageEntity(
     senderUserId = senderUserId,
     senderClientId = senderClientId,
     status = status,
+    readStatus = readStatus,
     editStatus = editStatus,
     visibility = visibility
 )

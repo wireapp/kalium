@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class MessageDAOTest : BaseDatabaseTest() {
@@ -62,7 +63,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 // Different status
-                status = MessageEntity.Status.READ
+                status = MessageEntity.Status.SENT
             ),
             newMessageEntity(
                 "4",
@@ -93,7 +94,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 // Different status
-                status = MessageEntity.Status.READ
+                status = MessageEntity.Status.SENT
             ),
             newMessageEntity(
                 "4",
@@ -205,7 +206,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationEntity2.id,
                 // different user
                 senderUserId = userEntity2.id,
-                status = MessageEntity.Status.READ
+                status = MessageEntity.Status.SENT
             )
         )
 
@@ -248,7 +249,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // different conversation
                 conversationId = otherConversation.id,
                 senderUserId = userEntity1.id,
-                status = MessageEntity.Status.READ,
+                status = MessageEntity.Status.SENT,
                 visibility = visibilityInQuestion
             ),
             newMessageEntity(
@@ -298,7 +299,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 "2",
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
-                status = MessageEntity.Status.READ,
+                status = MessageEntity.Status.SENT,
                 // date before
                 date = "2022-03-30T15:35:00.000Z",
             )
@@ -312,35 +313,42 @@ class MessageDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingMessages_whenMarkedAsEdited_thenTheMessageIsUpdatedAsExpected() = runTest {
         //given
-        conversationDAO.insertConversation(newConversationEntity(QualifiedIDEntity("1", "domain.com")))
+        val conversationId = QualifiedIDEntity("1", "domain.com")
+
+        conversationDAO.insertConversation(newConversationEntity(conversationId))
+        userDAO.insertUser(userEntity1)
 
         val allMessages = listOf(
             newMessageEntity(
                 "1",
-                status = MessageEntity.Status.SENT
+                status = MessageEntity.Status.SENT,
+                conversationId = conversationId,
+                senderUserId = userEntity1.id
             ),
             newMessageEntity(
                 "2",
-                status = MessageEntity.Status.SENT
+                status = MessageEntity.Status.SENT,
+                conversationId = conversationId,
+                senderUserId = userEntity1.id
             ),
             newMessageEntity(
                 "3",
-                status = MessageEntity.Status.SENT
+                status = MessageEntity.Status.SENT,
+                conversationId = conversationId,
+                senderUserId = userEntity1.id
             )
         )
 
         messageDAO.insertMessages(allMessages)
 
         //when
-        messageDAO.markAsRead(123456789L, QualifiedIDEntity("1", "domain.com"), "1")
+        messageDAO.markAsRead(123456789L, conversationId, "1")
 
         //then
-        val message = messageDAO.getMessageById("1", QualifiedIDEntity("1", "domain.com")).firstOrNull()
-        assertTrue(message != null)
-        assertTrue {
-            message.status == MessageEntity.Status.READ
-        }
+        val message = messageDAO.getMessageById("1", conversationId).firstOrNull()
 
+        assertTrue(message != null)
+        assertTrue { message.readStatus is MessageEntity.ReadStatus.Read }
     }
 
     private suspend fun insertInitialData() {
