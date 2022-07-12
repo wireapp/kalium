@@ -31,13 +31,14 @@ class UserEventReceiverImpl(
     private suspend fun handleClientRemove(event: Event.User.ClientRemove) {
         clientRepository.currentClientId().map { currentClientId ->
             if (currentClientId.value == event.id)
-                logoutUseCase.invoke(false)
+                logoutUseCase.invoke(false, 1)
         }
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
-        //todo: validate the userDelete event?
-        logoutUseCase.invoke(false)
+        // todo: validate the userDelete event?
+        kaliumLogger.d("####### user delete")
+        logoutUseCase.invoke(false, 2)
     }
 
     private companion object {

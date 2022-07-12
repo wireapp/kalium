@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 
 
 class AddAuthenticatedUserUseCase(
@@ -23,7 +24,14 @@ class AddAuthenticatedUserUseCase(
                 Result.Failure.Generic(it)
             }, {
                 when (it) {
-                    true -> onUserExist(authSession, replace)
+                    true -> {
+                        var forceReplace = false
+                        sessionRepository.userSession(authSession.session.userId).map { existSession ->
+                            forceReplace = existSession.session !is AuthSession.Session.LoggedIn
+                        }
+                        onUserExist(authSession, forceReplace)
+                    }
+
                     false -> storeUser(authSession)
                 }
             }

@@ -15,11 +15,10 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 interface LogoutUseCase {
-    suspend operator fun invoke(reason: LogoutReason = LogoutReason.USER_INTENTION, isHardLogout: Boolean = false)
+    suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT, isHardLogout: Boolean = false)
 }
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
-// TODO(testing): This class is a pain to test because of AuthenticatedDataSourceSet
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
@@ -32,15 +31,14 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
-    suspend operator fun invoke(reason: LogoutReason,isHardLogout: Boolean) {
+    override suspend operator fun invoke(reason: LogoutReason, isHardLogout: Boolean) {
         deregisterTokenUseCase()
         logoutRepository.logout()
-        logoutRepository.onLogout(reason)
         clearCrypto()
         if (isHardLogout) {
             clearUserStorage()
         }
-        clearUserSessionAndUpdateCurrent()
+        clearUserSessionAndUpdateCurrent(reason)
         clearInMemoryUserSession()
     }
 
@@ -48,9 +46,25 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         userSessionScopeProvider.delete(userId)
     }
 
-    private fun clearUserSessionAndUpdateCurrent() {
-        //instead of deleting the session, we should update the session with the reason!
-        sessionRepository.logoutSession(AuthSession.Session.SelfLogout(userId = userId, hardLogout = false))
+    private fun clearUserSessionAndUpdateCurrent(reason: LogoutReason) {
+        when (reason) {
+
+            LogoutReason.SELF_LOGOUT -> {
+                // self logout
+                sessionRepository.logoutSession(AuthSession.Session.SelfLogout(userId = userId, hardLogout = true))
+            }
+
+            LogoutReason.REMOVED_CLIENT -> {
+                // client removed
+                sessionRepository.logoutSession(AuthSession.Session.RemovedClient(userId = userId, hardLogout = false))
+            }
+
+            LogoutReason.DELETED_ACCOUNT -> {
+                // user deleted
+                sessionRepository.logoutSession(AuthSession.Session.UserDeleted(userId = userId, hardLogout = false))
+            }
+        }
+        // instead of deleting the session, we should update the session with the reason!
         sessionRepository.allSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().session.userId)
         }
@@ -58,7 +72,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     private fun clearUserStorage() {
         authenticatedDataSourceSet.userDatabaseProvider.nuke()
-        //exclude clientId clear from this step
+        // exclude clientId clear from this step
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
     }
 
