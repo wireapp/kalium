@@ -14,7 +14,7 @@ interface PersistMessageUseCase {
     suspend operator fun invoke(message: Message): Either<CoreFailure, Unit>
 }
 
-class PersistMessageUseCaseImpl internal constructor(
+internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val userId: QualifiedID,
