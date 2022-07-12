@@ -120,6 +120,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         const val PATH_V2 = "v2"
         const val PATH_CONVERSATIONS_LIST = "list"
         const val PATH_LIST_IDS = "list-ids"
+        const val PATH_ACCESS = "access"
 
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"
