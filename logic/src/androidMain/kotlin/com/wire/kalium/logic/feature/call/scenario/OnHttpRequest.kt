@@ -72,6 +72,7 @@ class OnHttpRequest(
             senderUserId = userId,
             senderClientId = clientId,
             status = Message.Status.SENT,
+            readStatus = Message.ReadStatus.NotRead,
             editStatus = Message.EditStatus.NotEdited
         )
         return messageSender.sendMessage(message)

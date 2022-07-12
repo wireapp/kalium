@@ -254,7 +254,8 @@ internal class CallDataSource(
                     timeParser.currentTimeStamp(),
                     call.callerId.toUserId(),
                     Message.Status.SENT,
-                    Message.Visibility.VISIBLE
+                    Message.ReadStatus.NotRead,
+                    Message.Visibility.VISIBLE,
                 )
             )
         }

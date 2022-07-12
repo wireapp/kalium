@@ -53,7 +53,6 @@ class ConversationEventReceiverImpl(
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
     private val userConfigRepository: UserConfigRepository,
-    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
 ) : ConversationEventReceiver {
@@ -232,6 +231,7 @@ class ConversationEventReceiverImpl(
                 id = event.id,
                 content = MessageContent.MemberChange.Removed(members = event.removedList),
                 conversationId = event.conversationId,
+                date = event.timestampIso,
                 senderUserId = event.removedBy,
                 status = Message.Status.SENT,
                 readStatus =  Message.ReadStatus.NotRead,

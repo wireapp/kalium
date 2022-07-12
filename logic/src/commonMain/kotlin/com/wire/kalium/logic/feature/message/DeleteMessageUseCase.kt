@@ -44,6 +44,7 @@ class DeleteMessageUseCase(
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
+                readStatus = Message.ReadStatus.NotRead,
                 editStatus = Message.EditStatus.NotEdited,
             )
             messageSender.sendMessage(message)

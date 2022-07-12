@@ -120,6 +120,7 @@ internal class SendImageMessageUseCaseImpl(
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
+                readStatus = Message.ReadStatus.NotRead,
                 editStatus = Message.EditStatus.NotEdited
             )
             messageRepository.persistMessage(message)
