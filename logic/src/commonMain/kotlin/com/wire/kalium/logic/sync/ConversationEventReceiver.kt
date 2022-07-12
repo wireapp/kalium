@@ -100,6 +100,7 @@ class ConversationEventReceiverImpl(
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
                     status = Message.Status.SENT,
+                    readStatus =  Message.ReadStatus.NotRead,
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility
                 )
@@ -210,7 +211,8 @@ class ConversationEventReceiverImpl(
                     date = event.timestampIso,
                     senderUserId = event.addedBy,
                     status = Message.Status.SENT,
-                    visibility = Message.Visibility.VISIBLE
+                    readStatus =  Message.ReadStatus.NotRead,
+                    visibility = Message.Visibility.VISIBLE,
                 )
                 processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
             }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
@@ -230,9 +232,9 @@ class ConversationEventReceiverImpl(
                 id = event.id,
                 content = MessageContent.MemberChange.Removed(members = event.removedList),
                 conversationId = event.conversationId,
-                date = event.timestampIso,
                 senderUserId = event.removedBy,
                 status = Message.Status.SENT,
+                readStatus =  Message.ReadStatus.NotRead,
                 visibility = Message.Visibility.VISIBLE
             )
             processMessage(message)

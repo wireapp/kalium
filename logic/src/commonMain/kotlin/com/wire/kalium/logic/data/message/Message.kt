@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.message.MessageEntity
 
 @Suppress("LongParameterList")
 sealed class Message(
@@ -12,6 +13,7 @@ sealed class Message(
     open val date: String,
     open val senderUserId: UserId,
     open val status: Status,
+    open val readStatus: ReadStatus,
     open val visibility: Visibility
 ) {
 
@@ -22,10 +24,11 @@ sealed class Message(
         override val date: String,
         override val senderUserId: UserId,
         override val status: Status,
+        override val readStatus: ReadStatus,
         override val visibility: Visibility = Visibility.VISIBLE,
         val senderClientId: ClientId,
-        val editStatus : EditStatus
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
+        val editStatus: EditStatus
+    ) : Message(id, content, conversationId, date, senderUserId, status, readStatus, visibility)
 
     data class System(
         override val id: String,
@@ -34,16 +37,22 @@ sealed class Message(
         override val date: String,
         override val senderUserId: UserId,
         override val status: Status,
+        override val readStatus: ReadStatus,
         override val visibility: Visibility = Visibility.VISIBLE
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
+    ) : Message(id, content, conversationId, date, senderUserId, status, readStatus, visibility)
 
     enum class Status {
-        PENDING, SENT, READ, FAILED
+        PENDING, SENT, FAILED
     }
 
     sealed class EditStatus {
         object NotEdited : EditStatus()
-        data class Edited (val lastTimeStamp : String) : EditStatus()
+        data class Edited(val lastTimeStamp: String) : EditStatus()
+    }
+
+    sealed class ReadStatus {
+        object NotRead : ReadStatus()
+        data class Read(val readTimeStamp: String) : ReadStatus()
     }
 
     enum class DownloadStatus {

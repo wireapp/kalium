@@ -332,7 +332,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertMessages(allMessages)
 
         //when
-        messageDAO.markAsEdited(123456789L, QualifiedIDEntity("1", "domain.com"), "1")
+        messageDAO.markAsRead(123456789L, QualifiedIDEntity("1", "domain.com"), "1")
 
         //then
         val message = messageDAO.getMessageById("1", QualifiedIDEntity("1", "domain.com")).firstOrNull()

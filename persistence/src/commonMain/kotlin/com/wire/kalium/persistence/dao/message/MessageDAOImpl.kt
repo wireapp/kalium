@@ -37,6 +37,7 @@ class MessageMapper {
             senderUserId = msg.sender_user_id,
             senderClientId = msg.sender_client_id!!,
             status = msg.status,
+            readStatus = mapReadStatus(msg.message_read_timestamp),
             editStatus = mapEditStatus(msg.last_edit_timestamp),
             visibility = msg.visibility
         )
@@ -46,15 +47,19 @@ class MessageMapper {
             conversationId = msg.conversation_id,
             date = msg.date,
             senderUserId = msg.sender_user_id,
+            readStatus = mapReadStatus(msg.message_read_timestamp),
             status = msg.status,
             visibility = msg.visibility
         )
     }
 
+    private fun mapReadStatus(messageReadTimestamp: String?) =
+        messageReadTimestamp?.let { MessageEntity.ReadStatus.Read(it) }
+            ?: MessageEntity.ReadStatus.NotRead
+
     fun toModel(content: SQLDelightMessageTextContent) = MessageEntityContent.Text(content.text_body ?: "")
 
     fun toModel(content: MessageRestrictedAssetContent) = MessageEntityContent.RestrictedAsset(content.asset_mime_type)
-
 
     fun toModel(content: SQLDelightMessageAssetContent) = MessageEntityContent.Asset(
         assetSizeInBytes = content.asset_size,

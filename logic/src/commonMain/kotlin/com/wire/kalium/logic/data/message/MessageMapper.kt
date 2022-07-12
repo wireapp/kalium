@@ -22,7 +22,6 @@ interface MessageMapper {
 
 class MessageMapperImpl(
     private val idMapper: IdMapper,
-    private val memberMapper: MemberMapper,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper()
 ) : MessageMapper {
 
@@ -30,7 +29,6 @@ class MessageMapperImpl(
         val status = when (message.status) {
             Message.Status.PENDING -> MessageEntity.Status.PENDING
             Message.Status.SENT -> MessageEntity.Status.SENT
-            Message.Status.READ -> MessageEntity.Status.READ
             Message.Status.FAILED -> MessageEntity.Status.FAILED
         }
         val visibility = message.visibility.toEntityVisibility()
@@ -43,6 +41,7 @@ class MessageMapperImpl(
                 senderUserId = idMapper.toDaoModel(message.senderUserId),
                 senderClientId = message.senderClientId.value,
                 status = status,
+                readStatus = MessageEntity.ReadStatus.NotRead,
                 editStatus = when (message.editStatus) {
                     Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp)
@@ -57,6 +56,10 @@ class MessageMapperImpl(
                 date = message.date,
                 senderUserId = idMapper.toDaoModel(message.senderUserId),
                 status = status,
+                readStatus = when (val readStatus = message.readStatus) {
+                    Message.ReadStatus.NotRead -> MessageEntity.ReadStatus.NotRead
+                    is Message.ReadStatus.Read -> MessageEntity.ReadStatus.Read(readStatus.readTimeStamp)
+                },
                 visibility = visibility
             )
         }
@@ -66,7 +69,6 @@ class MessageMapperImpl(
         val status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING
             MessageEntity.Status.SENT -> Message.Status.SENT
-            MessageEntity.Status.READ -> Message.Status.READ
             MessageEntity.Status.FAILED -> Message.Status.FAILED
         }
         val visibility = when (message.visibility) {
@@ -83,13 +85,16 @@ class MessageMapperImpl(
                 senderUserId = idMapper.fromDaoModel(message.senderUserId),
                 senderClientId = ClientId(message.senderClientId),
                 status = status,
+                readStatus = when (val readStatus = message.readStatus) {
+                    MessageEntity.ReadStatus.NotRead -> Message.ReadStatus.NotRead
+                    is MessageEntity.ReadStatus.Read -> Message.ReadStatus.Read(readStatus.readTimeStamp)
+                },
                 editStatus = when (val editStatus = message.editStatus) {
                     MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
                     is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
                 },
                 visibility = visibility
             )
-
             is MessageEntity.System -> Message.System(
                 id = message.id,
                 content = message.content.toMessageContent(),
@@ -97,6 +102,10 @@ class MessageMapperImpl(
                 date = message.date,
                 senderUserId = idMapper.fromDaoModel(message.senderUserId),
                 status = status,
+                readStatus = when (val readStatus = message.readStatus) {
+                    MessageEntity.ReadStatus.NotRead -> Message.ReadStatus.NotRead
+                    is MessageEntity.ReadStatus.Read -> Message.ReadStatus.Read(readStatus.readTimeStamp)
+                },
                 visibility = visibility
             )
         }
