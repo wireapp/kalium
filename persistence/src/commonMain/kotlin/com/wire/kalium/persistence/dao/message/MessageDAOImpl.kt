@@ -98,7 +98,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
         queries.markMessageAsDeleted(id, conversationsId)
 
-    override suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String) {
+    override suspend fun markAsEdited(editTimeStamp: Long, conversationId: QualifiedIDEntity, id: String) {
         queries.markMessageAsEdited(editTimeStamp, id, conversationId)
     }
 

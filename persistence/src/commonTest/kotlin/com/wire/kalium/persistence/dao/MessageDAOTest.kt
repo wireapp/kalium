@@ -7,6 +7,7 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -306,6 +307,40 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertMessages(allMessages)
         val result = messageDAO.getMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
         assertContentEquals(expectedMessages, result.first())
+    }
+
+    @Test
+    fun givenExistingMessages_whenMarkedAsEdited_thenTheMessageIsUpdatedAsExpected() = runTest {
+        //given
+        conversationDAO.insertConversation(newConversationEntity(QualifiedIDEntity("1", "domain.com")))
+
+        val allMessages = listOf(
+            newMessageEntity(
+                "1",
+                status = MessageEntity.Status.SENT
+            ),
+            newMessageEntity(
+                "2",
+                status = MessageEntity.Status.SENT
+            ),
+            newMessageEntity(
+                "3",
+                status = MessageEntity.Status.SENT
+            )
+        )
+
+        messageDAO.insertMessages(allMessages)
+
+        //when
+        messageDAO.markAsEdited(123456789L, QualifiedIDEntity("1", "domain.com"), "1")
+
+        //then
+        val message = messageDAO.getMessageById("1", QualifiedIDEntity("1", "domain.com")).firstOrNull()
+        assertTrue(message != null)
+        assertTrue {
+            message.status == MessageEntity.Status.READ
+        }
+
     }
 
     private suspend fun insertInitialData() {

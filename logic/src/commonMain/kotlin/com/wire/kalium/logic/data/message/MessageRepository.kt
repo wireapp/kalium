@@ -33,6 +33,12 @@ interface MessageRepository {
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun markMessageAsEdited(messageUuid: String, conversationId: ConversationId, timeStamp: String): Either<StorageFailure, Unit>
+    suspend fun markMessageAsRead(
+        conversationId: ConversationId,
+        messageUuid: String,
+        timeStamp: Long
+    ): Either<StorageFailure, Unit>
+
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
@@ -131,6 +137,14 @@ class MessageDataSource(
         timeStamp: String
     ) = wrapStorageRequest {
         messageDAO.markAsEdited(timeStamp, idMapper.toDaoModel(conversationId), messageUuid)
+    }
+
+    override suspend fun markMessageAsRead(
+        conversationId: ConversationId,
+        messageUuid: String,
+        timeStamp: Long
+    ) = wrapStorageRequest {
+        messageDAO.markAsRead(timeStamp, idMapper.toDaoModel(conversationId), messageUuid)
     }
 
     override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
