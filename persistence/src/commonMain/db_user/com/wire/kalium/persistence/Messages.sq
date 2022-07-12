@@ -1,10 +1,7 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.DownloadStatus;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.Status;
-import com.wire.kalium.persistence.dao.message.MessageEntity.Visibility;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Int;
 import kotlin.collections.List;
 
@@ -17,6 +14,7 @@ CREATE TABLE Message (
       sender_client_id TEXT,
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_timestamp TEXT ,
+      message_read_timestamp TEXT,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
@@ -129,6 +127,12 @@ markMessageAsDeleted {
 markMessageAsEdited:
 UPDATE Message
 SET last_edit_timestamp = ?
+WHERE id = ? AND conversation_id = ?;
+
+markAsRead:
+UPDATE Message
+SET message_read_timestamp = ?,
+status = 'SENT'
 WHERE id = ? AND conversation_id = ?;
 
 insertMessage:

@@ -39,5 +39,4 @@ interface MessageDAO {
         newTextContent: MessageEntityContent.Text
     )
 
-
 }
