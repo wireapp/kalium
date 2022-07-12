@@ -222,7 +222,7 @@ class ConversationDataSource(
 
     private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Flow<OtherUser> {
         when (error) {
-            StorageFailure.DataNotFound -> kaliumLogger.e("DataNotFound when fetching conversation members: $error")
+            is StorageFailure.DataNotFound -> kaliumLogger.e("DataNotFound when fetching conversation members: $error")
             is StorageFailure.Generic -> kaliumLogger.e("Failure getting other 1:1 user for $conversation", error.rootCause)
         }
         return emptyFlow()
