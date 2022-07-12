@@ -24,10 +24,10 @@ data class CallEntity(
 
 interface CallDAO {
     suspend fun insertCall(call: CallEntity)
-    suspend fun getCalls(): Flow<List<CallEntity>>
-    suspend fun getIncomingCalls(): Flow<List<CallEntity>>
-    suspend fun getEstablishedCalls(): Flow<List<CallEntity>>
-    suspend fun getOngoingCalls(): Flow<List<CallEntity>>
+    suspend fun observeCalls(): Flow<List<CallEntity>>
+    suspend fun observeIncomingCalls(): Flow<List<CallEntity>>
+    suspend fun observeEstablishedCalls(): Flow<List<CallEntity>>
+    suspend fun observeOngoingCalls(): Flow<List<CallEntity>>
     suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity)
     suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String
     suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status?
