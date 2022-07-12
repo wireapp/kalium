@@ -33,7 +33,7 @@ class PersistMessageUseCaseImpl(
 
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
         when (this) {
-            is MessageContent.MemberChange -> false
+            is MessageContent.MemberChange -> true
             MessageContent.MissedCall -> true
             is MessageContent.Text -> true
             is MessageContent.Calling -> true
