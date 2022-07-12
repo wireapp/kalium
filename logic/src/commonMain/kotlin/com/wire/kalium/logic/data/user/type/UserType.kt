@@ -10,7 +10,6 @@ enum class UserType {
     EXTERNAL,
 
     /**
-     * A user on the same backend but not on your team or,
      * Any user on another backend using the Wire application,
      */
     FEDERATED,
@@ -22,5 +21,11 @@ enum class UserType {
      * A temporary user that joined using the guest web interface,
      * from outside the backend network
      */
-    GUEST;
+    GUEST,
+
+    /**
+     * A user on the same backend,
+     * when current user doesn't belongs to any team
+     */
+    NONE;
 }
