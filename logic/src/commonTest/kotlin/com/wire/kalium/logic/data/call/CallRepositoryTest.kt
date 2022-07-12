@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -52,7 +52,7 @@ class CallRepositoryTest {
     private val teamRepository = mock(classOf<TeamRepository>())
 
     @Mock
-    private val messageRepository = mock(classOf<MessageRepository>())
+    private val persistMessage = mock(classOf<PersistMessageUseCase>())
 
     private lateinit var mapOfCallProfiles: Map<String, Call>
     private lateinit var startedCall: Call
@@ -70,7 +70,7 @@ class CallRepositoryTest {
             userRepository = userRepository,
             teamRepository = teamRepository,
             timeParser = TimeParserImpl(),
-            messageRepository = messageRepository
+            persistMessage = persistMessage
         )
         startedCall = provideCall(sharedConversationId, CallStatus.STARTED)
         answeredCall = provideCall(conversationIdAnsweredCall, CallStatus.ANSWERED)
@@ -397,7 +397,7 @@ class CallRepositoryTest {
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
-        given(messageRepository).suspendFunction(messageRepository::persistMessage)
+        given(persistMessage).suspendFunction(persistMessage::invoke)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
         callRepository.createCall(conversationIdIncomingCall, CallStatus.INCOMING, "caller_id", false, false)
@@ -412,8 +412,8 @@ class CallRepositoryTest {
             assertTrue(list[0].establishedTime != null)
         }
 
-        verify(messageRepository)
-            .suspendFunction(messageRepository::persistMessage)
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
             .with(any())
             .wasNotInvoked()
     }
@@ -423,14 +423,6 @@ class CallRepositoryTest {
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationModifiedDate)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationNotificationDate)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
@@ -440,28 +432,19 @@ class CallRepositoryTest {
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
-        given(messageRepository).suspendFunction(messageRepository::persistMessage)
+        given(persistMessage).suspendFunction(persistMessage::invoke)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
         callRepository.createCall(conversationIdIncomingCall, CallStatus.INCOMING, "caller_id", false, false)
 
         callRepository.updateCallStatusById(conversationIdIncomingCall.toString(), CallStatus.CLOSED)
 
-        verify(messageRepository)
-            .suspendFunction(messageRepository::persistMessage)
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
             .with(any())
             .wasInvoked(exactly = once)
-
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationNotificationDate)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
-
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationModifiedDate)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenCallWithEstablishedTime_whenUpdateStatusToClose_thenMissedCallNotAddedToDB() = runTest {
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
@@ -476,7 +459,7 @@ class CallRepositoryTest {
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
-        given(messageRepository).suspendFunction(messageRepository::persistMessage)
+        given(persistMessage).suspendFunction(persistMessage::invoke)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
         callRepository.createCall(conversationIdIncomingCall, CallStatus.INCOMING, "caller_id", false, false)
@@ -484,8 +467,8 @@ class CallRepositoryTest {
 
         callRepository.updateCallStatusById(conversationIdIncomingCall.toString(), CallStatus.CLOSED)
 
-        verify(messageRepository)
-            .suspendFunction(messageRepository::persistMessage)
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
             .with(any())
             .wasNotInvoked()
     }

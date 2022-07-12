@@ -3,24 +3,21 @@ package com.wire.kalium.logic.feature.message
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
 class SendTextMessageUseCase(
-    private val messageRepository: MessageRepository,
-    private val conversationRepository: ConversationRepository,
+    private val persistMessage: PersistMessageUseCase,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     private val syncManager: SyncManager,
@@ -44,11 +41,7 @@ class SendTextMessageUseCase(
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited
             )
-            messageRepository.persistMessage(message)
-                .onSuccess {
-                    conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
-                    conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
-                }
+            persistMessage(message)
         }.flatMap {
             messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
         }.onFailure {

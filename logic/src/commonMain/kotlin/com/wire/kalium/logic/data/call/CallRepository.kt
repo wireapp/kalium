@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -18,7 +18,6 @@ import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.call.CallApi
@@ -55,11 +54,11 @@ interface CallRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CallDataSource(
     private val callApi: CallApi,
+    private val persistMessage: PersistMessageUseCase,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
     private val timeParser: TimeParser,
-    private val messageRepository: MessageRepository,
     private val callMapper: CallMapper = MapperProvider.callMapper()
 ) : CallRepository {
 
@@ -256,11 +255,7 @@ internal class CallDataSource(
                 Message.Status.SENT,
                 Message.Visibility.VISIBLE
             )
-            messageRepository.persistMessage(message)
-                .onSuccess {
-                    conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
-                    conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
-                }
+            persistMessage(message)
         }
     }
 }

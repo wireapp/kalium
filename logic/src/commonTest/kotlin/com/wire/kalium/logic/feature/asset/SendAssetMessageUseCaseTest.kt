@@ -5,11 +5,10 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -89,8 +88,8 @@ class SendAssetMessageUseCaseTest {
         sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
 
         // Then
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::persistMessage)
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.messageSender)
@@ -113,8 +112,8 @@ class SendAssetMessageUseCaseTest {
             sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
 
             // Then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistMessage)
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
                 .with(matching {
                     val content = it.content
                     content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
@@ -122,37 +121,10 @@ class SendAssetMessageUseCaseTest {
                 .wasInvoked(exactly = once)
         }
 
-    @Test
-    fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheConversationRepository_thenConversationModifiedAndNotifiedDatesUpdated() =
-        runTest {
-            // Given
-            val assetToSend = getMockedAsset()
-            val conversationId = ConversationId("some-convo-id", "some-domain-id")
-            val (arrangement, sendAssetUseCase) = Arrangement()
-                .withSuccessfulResponse()
-                .arrange()
-
-            // When
-            sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
-
-            // Then
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::updateConversationNotificationDate)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
-        }
-
     private class Arrangement {
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
-
-        @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
         val messageSender = mock(classOf<MessageSender>())
@@ -170,17 +142,6 @@ class SendAssetMessageUseCaseTest {
 
         val someClientId = ClientId("some-client-id")
 
-        init {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateConversationModifiedDate)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateConversationNotificationDate)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
         private fun fakeSelfUser() = SelfUser(
             UserId("some_id", "some_domain"),
             "some_name",
@@ -197,8 +158,7 @@ class SendAssetMessageUseCaseTest {
 
         val sendAssetUseCase =
             SendAssetMessageUseCaseImpl(
-                messageRepository,
-                conversationRepository,
+                persistMessage,
                 clientRepository,
                 assetDataSource,
                 userRepository,
@@ -218,8 +178,8 @@ class SendAssetMessageUseCaseTest {
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
-            given(messageRepository)
-                .suspendFunction(messageRepository::persistMessage)
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(messageSender)

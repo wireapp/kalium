@@ -29,6 +29,10 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
+    @Deprecated(
+        "shouldn't be used directly",
+        replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
+    )
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>

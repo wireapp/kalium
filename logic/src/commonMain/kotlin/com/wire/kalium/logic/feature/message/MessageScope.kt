@@ -7,7 +7,10 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -24,6 +27,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 
 class MessageScope(
+    private val userId: QualifiedID,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val clientRepository: ClientRepository,
@@ -68,10 +72,12 @@ class MessageScope(
             timeParser
         )
 
+    val persistMessage: PersistMessageUseCase
+        get() = PersistMessageUseCaseImpl(messageRepository, conversationRepository, userId)
+
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
-            messageRepository,
-            conversationRepository,
+            persistMessage,
             userRepository,
             clientRepository,
             syncManager,
@@ -80,8 +86,7 @@ class MessageScope(
 
     val sendImageMessage: SendImageMessageUseCase
         get() = SendImageMessageUseCaseImpl(
-            messageRepository,
-            conversationRepository,
+            persistMessage,
             clientRepository,
             assetRepository,
             userRepository,
@@ -90,8 +95,7 @@ class MessageScope(
 
     val sendAssetMessage: SendAssetMessageUseCase
         get() = SendAssetMessageUseCaseImpl(
-            messageRepository,
-            conversationRepository,
+            persistMessage,
             clientRepository,
             assetRepository,
             userRepository,
