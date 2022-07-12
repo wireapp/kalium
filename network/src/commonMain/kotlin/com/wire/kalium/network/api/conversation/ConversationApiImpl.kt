@@ -75,7 +75,8 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
      * returns 200 conversation created or 204 conversation unchanged
      */
     override suspend fun addParticipant(
-        addParticipantRequest: AddParticipantRequest, conversationId: ConversationId
+        addParticipantRequest: AddParticipantRequest,
+        conversationId: ConversationId
     ): NetworkResponse<AddParticipantResponse> {
         val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
             setBody(addParticipantRequest)
@@ -97,7 +98,8 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     }
 
     override suspend fun updateAccessRole(
-        conversationId: ConversationId, conversationAccessData: ConversationAccessData
+        conversationId: ConversationId,
+        conversationAccessData: ConversationAccessData
     ): NetworkResponse<UpdateConversationAccessResponse> {
         return httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
             setBody(conversationAccessData)

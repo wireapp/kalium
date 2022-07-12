@@ -112,7 +112,6 @@ class ConversationApiTest : ApiTest {
             }
         )
 
-
         val conversationApi = ConversationApiImpl(networkClient)
         conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles)
     }

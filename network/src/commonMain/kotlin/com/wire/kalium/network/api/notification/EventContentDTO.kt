@@ -31,7 +31,7 @@ sealed class EventContentDTO {
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("data") val data: ConversationResponse,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            ) : Conversation()
+        ) : Conversation()
 
         @Serializable
         @SerialName("conversation.create")

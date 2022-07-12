@@ -12,8 +12,7 @@ data class ConversationAccessData(
     @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRole>?
 )
 
-
 sealed class UpdateConversationAccessResponse {
-    object AccessUnchanged: UpdateConversationAccessResponse()
-    data class AccessUpdated(val event: EventContentDTO.Conversation.AccessUpdate): UpdateConversationAccessResponse()
+    object AccessUnchanged : UpdateConversationAccessResponse()
+    data class AccessUpdated(val event: EventContentDTO.Conversation.AccessUpdate) : UpdateConversationAccessResponse()
 }
