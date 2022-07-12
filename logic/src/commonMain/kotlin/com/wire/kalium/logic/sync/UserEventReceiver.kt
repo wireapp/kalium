@@ -3,6 +3,7 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -31,14 +32,14 @@ class UserEventReceiverImpl(
     private suspend fun handleClientRemove(event: Event.User.ClientRemove) {
         clientRepository.currentClientId().map { currentClientId ->
             if (currentClientId.value == event.id)
-                logoutUseCase.invoke(false, 1)
+                logoutUseCase.invoke(LogoutReason.REMOVED_CLIENT)
         }
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
         // todo: validate the userDelete event?
         kaliumLogger.d("####### user delete")
-        logoutUseCase.invoke(false, 2)
+        logoutUseCase.invoke(LogoutReason.DELETED_ACCOUNT)
     }
 
     private companion object {
