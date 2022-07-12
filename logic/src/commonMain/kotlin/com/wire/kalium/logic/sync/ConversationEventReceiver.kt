@@ -12,7 +12,6 @@ import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -20,6 +19,7 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -46,6 +46,7 @@ interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 @Suppress("LongParameterList", "TooManyFunctions")
 class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
+    private val persistMessage: PersistMessageUseCase,
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -53,7 +54,6 @@ class ConversationEventReceiverImpl(
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
     private val userConfigRepository: UserConfigRepository,
-    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
 ) : ConversationEventReceiver {
@@ -277,10 +277,9 @@ class ConversationEventReceiverImpl(
     private suspend fun processMessage(message: Message) {
         kaliumLogger.i(message = "Message received: $message")
 
-        val isMyMessage = userRepository.getSelfUserId() == message.senderUserId
         when (message) {
             is Message.Regular -> when (val content = message.content) {
-                is MessageContent.Text -> messageRepository.persistMessage(message)
+                is MessageContent.Text -> persistMessage(message)
                 is MessageContent.Asset -> {
 
                     userConfigRepository.isFileSharingEnabled().onSuccess {
@@ -288,24 +287,25 @@ class ConversationEventReceiverImpl(
                             messageRepository.getMessageById(message.conversationId, message.id)
                                 .onFailure {
                                     // No asset message was received previously, so just persist the preview asset message
-                                    messageRepository.persistMessage(message)
+                                    persistMessage(message)
                                 }
                                 .onSuccess { persistedMessage ->
                                     // Check the second asset message is from the same original sender
-                                    if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
+                                    if (
+                                        isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
                                         && persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
                                     ) {
                                         // The asset message received contains the asset decryption keys,
                                         // so update the preview message persisted previously
                                         updateAssetMessage(persistedMessage, content.value.remoteData)?.let {
-                                            messageRepository.persistMessage(it)
+                                            persistMessage(it)
                                         }
                                     }
                                 }
 
                         } else {
                             val newMessage = message.copy(content = MessageContent.RestrictedAsset(content.value.mimeType))
-                            messageRepository.persistMessage(newMessage)
+                            persistMessage(newMessage)
 
                         }
                     }
@@ -348,7 +348,7 @@ class ConversationEventReceiverImpl(
                 is MessageContent.TextEdited -> editTextHandler.handle(message, content)
                 is MessageContent.Unknown -> {
                     kaliumLogger.i(message = "Unknown Message received: $message")
-                    messageRepository.persistMessage(message)
+                    persistMessage(message)
                 }
 
                 MessageContent.Empty -> TODO()
@@ -357,13 +357,10 @@ class ConversationEventReceiverImpl(
             is Message.System -> when (message.content) {
                 is MessageContent.MemberChange -> {
                     kaliumLogger.i(message = "System MemberChange Message received: $message")
-                    messageRepository.persistMessage(message)
+                    persistMessage(message)
                 }
             }
         }
-
-        if (isMyMessage) conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
-        conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
     }
 
     private companion object {

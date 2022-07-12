@@ -32,6 +32,8 @@ import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
@@ -197,6 +199,9 @@ abstract class UserSessionScopeCommon(
             userSearchApiWrapper
         )
 
+    val persistMessage: PersistMessageUseCase
+        get() = PersistMessageUseCaseImpl(messageRepository, conversationRepository, userId)
+
     private val callRepository: CallRepository by lazy {
         CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
@@ -204,7 +209,7 @@ abstract class UserSessionScopeCommon(
             userRepository = userRepository,
             teamRepository = teamRepository,
             timeParser = timeParser,
-            messageRepository = messageRepository
+            persistMessage = persistMessage
         )
     }
 
@@ -306,6 +311,7 @@ abstract class UserSessionScopeCommon(
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
+            persistMessage,
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
@@ -362,6 +368,7 @@ abstract class UserSessionScopeCommon(
         )
     val messages: MessageScope
         get() = MessageScope(
+            userId,
             messageRepository,
             conversationRepository,
             clientRepository,
