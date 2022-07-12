@@ -291,7 +291,8 @@ class ConversationEventReceiverImpl(
                                 }
                                 .onSuccess { persistedMessage ->
                                     // Check the second asset message is from the same original sender
-                                    if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
+                                    if (
+                                        isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
                                         && persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
                                     ) {
                                         // The asset message received contains the asset decryption keys,

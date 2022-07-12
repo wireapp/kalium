@@ -96,7 +96,6 @@ class PersistMessageUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenMyMessage_whenPersistCalledAndFailed_thenUpdateNotifiedAndModifiedDateAreNotCalled() = runTest {
         val message = TestMessage.TEXT_MESSAGE.copy(senderUserId = TestUser.USER_ID)

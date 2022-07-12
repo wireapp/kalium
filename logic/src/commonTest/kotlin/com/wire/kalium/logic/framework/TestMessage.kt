@@ -3,7 +3,6 @@ package com.wire.kalium.logic.framework
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCaseTest
 
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"

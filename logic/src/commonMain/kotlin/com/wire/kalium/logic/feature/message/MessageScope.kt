@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 
+@Suppress("LongParameterList")
 class MessageScope(
     private val userId: QualifiedID,
     internal val messageRepository: MessageRepository,

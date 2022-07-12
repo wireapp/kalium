@@ -62,7 +62,7 @@ class ConversationEventReceiverTest {
             .withSelfUserIdReturning(TestUser.USER_ID)
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
             .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown()))
-            .withPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .arrange()
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
@@ -104,7 +104,7 @@ class ConversationEventReceiverTest {
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
-            .withPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withProtoContentMapperReturning(matching { it.data.contentEquals(emptyArray) }, externalInstructions)
             .withProtoContentMapperReturning(
                 matching { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
@@ -175,7 +175,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
@@ -196,7 +196,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
@@ -217,7 +217,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
             .arrange()
@@ -237,7 +237,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
             .arrange()
@@ -314,7 +314,7 @@ class ConversationEventReceiverTest {
                 .thenReturn(selfUserId)
         }
 
-        fun withPersistingMessageDateReturning(result: Either<CoreFailure, Unit>) = apply {
+        fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
             given(persistMessage)
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
