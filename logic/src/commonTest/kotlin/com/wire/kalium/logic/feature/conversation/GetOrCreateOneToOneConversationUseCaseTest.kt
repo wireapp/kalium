@@ -99,8 +99,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             teamId = null,
             ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,
-            null,
-            null
+            lastNotificationDate = null,
+            lastModifiedDate = null,
         )
         val OTHER_USER = OtherUser(
             id =
@@ -122,7 +122,9 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             OTHER_USER,
             ConnectionState.ACCEPTED,
             LegalHoldStatus.ENABLED,
-            UserType.INTERNAL
+            UserType.INTERNAL,
+            TODO(),
+            TODO()
         )
     }
 }

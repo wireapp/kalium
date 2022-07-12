@@ -209,7 +209,8 @@ class ConversationDataSource(
         Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
         Conversation.Type.GROUP -> flowOf(
             ConversationDetails.Group(
-                conversation, LegalHoldStatus.DISABLED // TODO(user-metadata): get actual legal hold status
+                conversation, LegalHoldStatus.DISABLED, // TODO(user-metadata): get actual legal hold status
+                access = emptySet(), accessRole = emptySet()
             )
         )
         // TODO(connection-requests): Handle requests instead of filtering them out
@@ -236,7 +237,7 @@ class ConversationDataSource(
                     emptyFlow()
                 }
             }).filterNotNull().map { otherUser ->
-                conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+                conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser, TODO(), TODO())
             }
         }
     }
@@ -411,7 +412,7 @@ class ConversationDataSource(
                     userRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
                         val selfUser = userRepository.observeSelfUser().first()
 
-                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
+                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser, TODO(), TODO())
                     }
                 }
         }

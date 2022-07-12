@@ -17,9 +17,7 @@ data class Conversation(
     val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
-    val lastModifiedDate: String?,
-    val access: Access,
-    val accessRole: AccessRole
+    val lastModifiedDate: String?
 ) {
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
     enum class Access { PRIVATE, CODE, INVITE, LINK; }
@@ -42,11 +40,17 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val otherUser: OtherUser,
         val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
-        val userType: UserType
+        val userType: UserType,
+        val access: Set<Conversation.Access>,
+        val accessRole: Set<Conversation.AccessRole>
     ) : ConversationDetails(conversation)
 
     data class Group(
-        override val conversation: Conversation, val legalHoldStatus: LegalHoldStatus, val hasOngoingCall: Boolean = false
+        override val conversation: Conversation,
+        val legalHoldStatus: LegalHoldStatus,
+        val hasOngoingCall: Boolean = false,
+        val access: Set<Conversation.Access>,
+        val accessRole: Set<Conversation.AccessRole>
     ) : ConversationDetails(conversation)
 
     data class Connection(
@@ -66,19 +70,12 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
-            TODO(),
-            TODO()
         )
     )
 }
 
 data class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-class Member(override val id: UserId, val role: Role) : User() {
-    sealed class Role {
-        object Member : Role()
-        object Admin : Role()
-        data class Unknown(val name: String) : Role()
 data class Member(val id: UserId, val role: Role) {
     sealed class Role {
         object Member : Role()

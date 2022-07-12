@@ -45,7 +45,7 @@ class ConversationScope(
         get() = SyncConversationsUseCase(conversationRepository)
 
     val createGroupConversation: CreateGroupConversationUseCase
-        get() = CreateGroupConversationUseCase(conversationRepository, syncManager, clientRepository)
+        get() = CreateGroupConversationUseCase(conversationRepository, syncManager)
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
         get() = AddMemberToConversationUseCaseImpl(conversationRepository, mlsConversationRepository)

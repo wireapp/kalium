@@ -26,16 +26,16 @@ import kotlin.test.Test
 
 class CreateGroupConversationUseCaseTest {
 
-
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenRepositoryCreateGroupShouldBeCalled() = runTest {
         val name = "Conv Name"
+        val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
-        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+        val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)
 
         val (arrangement, createGroupConversation) = Arrangement()
             .withUpdateConversationModifiedDateSucceeding()
-            .withCurrentClientIdReturning(creatorClientId)
+            .withCurrentClientIdReturning(creatorClientId.value)
             .withCreateGroupConversationReturning(TestConversation.GROUP())
             .arrange()
 
@@ -46,6 +46,7 @@ class CreateGroupConversationUseCaseTest {
             .with(eq(name), eq(members), eq(conversationOptions))
             .wasInvoked(exactly = once)
     }
+
 
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenConversationModifiedDateIsUpdated() = runTest {
@@ -81,9 +82,7 @@ class CreateGroupConversationUseCaseTest {
             stubsUnitByDefault = true
         }
 
-        private val createGroupConversation = CreateGroupConversationUseCase(
-            conversationRepository, syncManager, clientRepository
-        )
+        private val createGroupConversation = CreateGroupConversationUseCase(conversationRepository, syncManager)
 
         fun withCreateGroupConversationReturning(conversation: Conversation) = apply {
             given(conversationRepository)
