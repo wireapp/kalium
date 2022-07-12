@@ -1,16 +1,7 @@
 package com.wire.kalium.cryptography
 
-import com.wire.kalium.cryptography.utils.EncryptedData
-import com.wire.kalium.cryptography.utils.PlainData
-import com.wire.kalium.cryptography.utils.calcFileMd5
-import com.wire.kalium.cryptography.utils.calcFileSHA256
-import com.wire.kalium.cryptography.utils.decryptDataWithAES256
-import com.wire.kalium.cryptography.utils.decryptFileWithAES256
-import com.wire.kalium.cryptography.utils.encryptDataWithAES256
-import com.wire.kalium.cryptography.utils.encryptFileWithAES256
-import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import io.ktor.utils.io.core.String
-import io.ktor.utils.io.core.toByteArray
+import com.wire.kalium.cryptography.utils.*
+import io.ktor.utils.io.core.*
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
@@ -32,9 +23,10 @@ class CryptoUtilsTest {
         fileSystem.write(inputPath) {
             write(input)
         }
+        val dataSource = fileSystem.source(inputPath)
 
         // When
-        val digest = calcFileMd5(inputPath, fileSystem)
+        val digest = calcFileMd5(dataSource)
 
         // Then
         assertEquals("sQqNsWTgdUEFt6mb5y4/5Q==", digest)
@@ -52,9 +44,10 @@ class CryptoUtilsTest {
         fileSystem.write(inputPath) {
             write(input)
         }
+        val dataSource = fileSystem.source(inputPath)
 
         // When
-        val digest = calcFileSHA256(inputPath, fileSystem)
+        val digest = calcFileSHA256(dataSource)
         val expectedValue = "3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4".decodeHex()
 
         // Then
@@ -76,14 +69,18 @@ class CryptoUtilsTest {
         val tempPath = "$rootPath/temp_path".toPath()
         val encryptedDataPath = "encrypted_data_path.aes".toPath()
         val decryptedDataPath = "decrypted_data_path.pdf".toPath()
+
         fakeFileSystem.write(tempPath) {
             write(input)
         }
+        val rawAssetDataSource = fakeFileSystem.source(tempPath)
+        val outputEncryptedSink = fakeFileSystem.sink(encryptedDataPath)
+        val outputDecryptedSink = fakeFileSystem.sink(decryptedDataPath)
 
         // When
-        encryptFileWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
-        val decryptedDataSize =
-            decryptFileWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
+        encryptFileWithAES256(rawAssetDataSource, randomAES256Key, outputEncryptedSink)
+        val encryptedAssetDataSource = fakeFileSystem.source(encryptedDataPath)
+        val decryptedDataSize = decryptFileWithAES256(encryptedAssetDataSource, outputDecryptedSink, randomAES256Key)
 
         val decryptedData = fakeFileSystem.read(decryptedDataPath) {
             readByteArray()
@@ -116,9 +113,9 @@ class CryptoUtilsTest {
         fakeFileSystem.write(encryptedDataPath) {
             write(encryptedData.data)
         }
-
-        val decryptedDataSize =
-            decryptFileWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
+        val encryptedDataSource = fakeFileSystem.source(encryptedDataPath)
+        val decryptedDataSink = fakeFileSystem.sink(decryptedDataPath)
+        val decryptedDataSize = decryptFileWithAES256(encryptedDataSource, decryptedDataSink, randomAES256Key)
 
         val decryptedData = fakeFileSystem.read(decryptedDataPath) {
             readByteArray()
@@ -148,9 +145,11 @@ class CryptoUtilsTest {
         fakeFileSystem.write(tempPath) {
             write(input)
         }
+        val rawDataSource = fakeFileSystem.source(tempPath)
+        val encryptedDataSink = fakeFileSystem.sink(encryptedDataPath)
 
         // When
-        encryptFileWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
+        encryptFileWithAES256(rawDataSource, randomAES256Key, encryptedDataSink)
 
         val encryptedData = fakeFileSystem.read(encryptedDataPath) {
             readByteArray()
@@ -181,11 +180,14 @@ class CryptoUtilsTest {
         fakeFileSystem.write(tempPath) {
             write(inputData)
         }
+        val rawDataSource = fakeFileSystem.source(tempPath)
+        val encryptedDataSink = fakeFileSystem.sink(encryptedDataPath)
 
         // When
-        encryptFileWithAES256(tempPath, randomAES256Key, encryptedDataPath, fakeFileSystem)
-        val decryptedDataSize =
-            decryptFileWithAES256(fakeFileSystem.source(encryptedDataPath), decryptedDataPath, randomAES256Key, fakeFileSystem)
+        encryptFileWithAES256(rawDataSource, randomAES256Key, encryptedDataSink)
+        val encryptedDataSource = fakeFileSystem.source(encryptedDataPath)
+        val decryptedDataSink = fakeFileSystem.sink(decryptedDataPath)
+        val decryptedDataSize = decryptFileWithAES256(encryptedDataSource, decryptedDataSink, randomAES256Key)
 
         val decryptedData = fakeFileSystem.read(decryptedDataPath) {
             readByteArray()

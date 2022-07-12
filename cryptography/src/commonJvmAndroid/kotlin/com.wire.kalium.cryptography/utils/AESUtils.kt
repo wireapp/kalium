@@ -84,7 +84,9 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
                 val dataWithIV = bufferedSource.readByteArray()
                 val data = dataWithIV.copyOfRange(16, dataWithIV.size) // We discard the first 16 bytes corresponding to the IV
                 size = data.size.toLong()
-                outputSink.buffer().write(data)
+                outputSink.buffer().use {
+                    it.write(data)
+                }
             }
             kaliumLogger.d("WROTE $size bytes")
         } catch (e: Exception) {

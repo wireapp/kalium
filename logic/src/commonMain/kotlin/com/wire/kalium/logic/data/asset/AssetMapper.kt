@@ -26,7 +26,7 @@ interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
-    fun fromUserAssetToDaoModel(assetId: AssetId, dataPath: Path, dataSize: Long): AssetEntity
+    fun fromUserAssetToDaoModel(assetId: AssetId, mimeType: AssetType, dataPath: Path, dataSize: Long): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
@@ -61,11 +61,11 @@ class AssetMapperImpl(
         )
     }
 
-    override fun fromUserAssetToDaoModel(assetId: AssetId, dataPath: Path, dataSize: Long): AssetEntity {
+    override fun fromUserAssetToDaoModel(assetId: AssetId, assetType: AssetType, dataPath: Path, dataSize: Long): AssetEntity {
         return AssetEntity(
             key = assetId.value,
             domain = assetId.domain,
-            mimeType = ImageAsset.JPEG.mimeType,
+            mimeType = assetType.mimeType,
             dataPath = dataPath.toString(),
             dataSize = dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()

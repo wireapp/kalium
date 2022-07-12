@@ -19,9 +19,9 @@ fun String.fileExtension(): String {
 }
 
 fun String.fileExtensionToAssetType(): AssetType = when (this) {
-    ImageAsset.JPEG.mimeType -> ImageAsset.JPEG
-    ImageAsset.JPG.mimeType -> ImageAsset.JPG
-    ImageAsset.PNG.mimeType -> ImageAsset.PNG
+    "jpeg" -> ImageAsset.JPEG
+    "jpg" -> ImageAsset.JPG
+    "png" -> ImageAsset.PNG
     else -> FileAsset("file/$this")
 }
 

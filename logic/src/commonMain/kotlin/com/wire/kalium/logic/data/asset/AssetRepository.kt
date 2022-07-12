@@ -16,6 +16,8 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.logic.util.fileExtensionToAssetType
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.asset.AssetApi
@@ -62,11 +64,17 @@ interface AssetRepository {
     /**
      * Method used to fetch the [Path] of a decoded private asset
      * @param assetId the asset identifier
+     * @param assetName the name of the original asset
      * @param assetToken the asset token used to provide an extra layer of asset/user authentication
      * @param encryptionKey the asset encryption key used to decrypt an extra layer of asset/user authentication
      * @return [Either] a [CoreFailure] if anything went wrong, or the [Path] to the decoded asset
      */
-    suspend fun fetchPrivateDecodedAsset(assetId: AssetId, assetToken: String?, encryptionKey: AES256Key): Either<CoreFailure, Path>
+    suspend fun fetchPrivateDecodedAsset(
+        assetId: AssetId,
+        assetName: String,
+        assetToken: String?,
+        encryptionKey: AES256Key
+    ): Either<CoreFailure, Path>
 
     /**
      * Method used to download the list of avatar pictures of the current authenticated user
@@ -150,17 +158,24 @@ internal class AssetDataSource(
         }
 
     override suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, Path> =
-        fetchOrDownloadDecodedAsset(assetId = idMapper.toApiModel(assetId), assetToken = null)
+        fetchOrDownloadDecodedAsset(assetId = idMapper.toApiModel(assetId), assetName = "user_avatar_image.jpg", assetToken = null)
 
     override suspend fun fetchPrivateDecodedAsset(
         assetId: AssetId,
+        assetName: String,
         assetToken: String?,
         encryptionKey: AES256Key
     ): Either<CoreFailure, Path> =
-        fetchOrDownloadDecodedAsset(assetId = idMapper.toApiModel(assetId), assetToken = assetToken, encryptionKey = encryptionKey)
+        fetchOrDownloadDecodedAsset(
+            assetId = idMapper.toApiModel(assetId),
+            assetName = assetName,
+            assetToken = assetToken,
+            encryptionKey = encryptionKey
+        )
 
     private suspend fun fetchOrDownloadDecodedAsset(
         assetId: NetworkAssetId,
+        assetName: String,
         assetToken: String?,
         encryptionKey: AES256Key? = null
     ): Either<CoreFailure, Path> =
@@ -190,8 +205,17 @@ internal class AssetDataSource(
 
                 if (assetDataSize == -1L)
                     Either.Left(EncryptionFailure())
-                wrapStorageRequest { assetDao.insertAsset(assetMapper.fromUserAssetToDaoModel(assetId, decodedAssetPath, assetDataSize)) }
-                    .map { encryptedAssetDataSource }
+
+                wrapStorageRequest {
+                    assetDao.insertAsset(
+                        assetMapper.fromUserAssetToDaoModel(
+                            assetId,
+                            assetName.fileExtension().fileExtensionToAssetType(),
+                            decodedAssetPath,
+                            assetDataSize
+                        )
+                    )
+                }
                 Either.Right(decodedAssetPath)
             }
         }, {
