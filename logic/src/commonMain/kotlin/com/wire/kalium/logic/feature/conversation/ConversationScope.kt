@@ -35,8 +35,8 @@ class ConversationScope(
     val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCase(conversationRepository, userRepository, syncManager)
 
-    val observeMemberDetailsByIds: ObserveMemberDetailsByIdsUseCase
-        get() = ObserveMemberDetailsByIdsUseCase(userRepository, syncManager)
+    val observeMemberDetailsByIds: ObserveUserListByIdUseCase
+        get() = ObserveUserListByIdUseCase(userRepository, syncManager)
 
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository, syncManager)
