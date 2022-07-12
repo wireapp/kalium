@@ -126,4 +126,9 @@ class MessageScope(
             conversationRepository,
             timeParser
         )
+
+    val markMessageAsReadUseCase: MarkMessageAsReadUseCase
+        get() = MarkMessageAsReadUseCaseImpl(
+            messageRepository
+        )
 }
