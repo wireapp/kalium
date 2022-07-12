@@ -8,7 +8,7 @@ interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
-    suspend fun markAsEdited(editTimeStamp: Long, conversationId: QualifiedIDEntity, id: String)
+    suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String)
     suspend fun markAsRead(timeStamp: Long, conversationId: QualifiedIDEntity, messageUuid: String)
     suspend fun deleteAllMessages()
     suspend fun insertMessage(message: MessageEntity)
