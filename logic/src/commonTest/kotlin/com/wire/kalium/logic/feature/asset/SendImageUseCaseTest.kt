@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -55,7 +55,6 @@ class SendImageUseCaseTest {
         assertEquals(result, SendImageMessageResult.Success)
     }
 
-
     @Test
     fun givenAValidSendImageMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
         // Given
@@ -90,8 +89,8 @@ class SendImageUseCaseTest {
             sendImageUseCase.invoke(conversationId, mockedImg, "temp_image.jpg", 1, 1)
 
             // Then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistMessage)
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.messageSender)
@@ -114,8 +113,8 @@ class SendImageUseCaseTest {
             sendImageUseCase.invoke(conversationId, mockedImg, "temp_image.jpg", 1, 1)
 
             // Then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistMessage)
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
                 .with(matching {
                     val content = it.content
                     content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
@@ -126,7 +125,7 @@ class SendImageUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
         private val clientRepository = mock(classOf<ClientRepository>())
@@ -153,13 +152,19 @@ class SendImageUseCaseTest {
             1,
             null,
             ConnectionState.ACCEPTED,
-            UserAssetId("value1","domain"),
-            UserAssetId("value2","domain"),
+            UserAssetId("value1", "domain"),
+            UserAssetId("value2", "domain"),
             UserAvailabilityStatus.NONE
         )
 
         val sendImageUseCase =
-            SendImageMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+            SendImageMessageUseCaseImpl(
+                persistMessage,
+                clientRepository,
+                assetDataSource,
+                userRepository,
+                messageSender
+            )
 
         fun withSuccessfulResponse(): Arrangement {
             given(assetDataSource)
@@ -174,8 +179,8 @@ class SendImageUseCaseTest {
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
-            given(messageRepository)
-                .suspendFunction(messageRepository::persistMessage)
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(messageSender)
@@ -198,4 +203,3 @@ class SendImageUseCaseTest {
 
     private fun getMockedImage(): ByteArray = "some_image".toByteArray()
 }
-

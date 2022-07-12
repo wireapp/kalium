@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
 class SendTextMessageUseCase(
-    private val messageRepository: MessageRepository,
+    private val persistMessage: PersistMessageUseCase,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     private val syncManager: SyncManager,
@@ -41,7 +41,7 @@ class SendTextMessageUseCase(
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited
             )
-            messageRepository.persistMessage(message)
+            persistMessage(message)
         }.flatMap {
             messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
         }.onFailure {

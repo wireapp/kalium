@@ -29,6 +29,10 @@ import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
+    /**
+     * this fun should never be used directly, use PersistMessageUseCase() instead
+     * @see PersistMessageUseCase
+     */
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
@@ -86,7 +90,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 }
 
-//TODO: suppress TooManyFunctions for now, something we need to fix in the future
+// TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
 class MessageDataSource(
     private val messageApi: MessageApi,
@@ -191,7 +195,7 @@ class MessageDataSource(
         }
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
-                //TODO(messaging): Handle other MessageOptions, native push, transient and priorities
+                // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap, true, MessagePriority.HIGH, false, envelope.dataBlob?.data,
@@ -201,8 +205,7 @@ class MessageDataSource(
             )
         }.fold({ networkFailure ->
             val failure = when {
-                networkFailure is NetworkFailure.ServerMiscommunication
-                        && networkFailure.rootCause is ProteusClientsChangedError -> {
+                (networkFailure is NetworkFailure.ServerMiscommunication && networkFailure.rootCause is ProteusClientsChangedError) -> {
                     sendMessageFailureMapper.fromDTO(networkFailure.rootCause as ProteusClientsChangedError)
                 }
 
@@ -255,4 +258,3 @@ class MessageDataSource(
         }
     }
 }
-
