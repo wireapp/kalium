@@ -2,13 +2,13 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
 
-data class CallMetaDataProfile(
-    val data: Map<String, CallMetaData>
+data class CallMetadataProfile(
+    val data: Map<String, CallMetadata>
 ) {
-    operator fun get(conversationId: String): CallMetaData? = data[conversationId]
+    operator fun get(conversationId: String): CallMetadata? = data[conversationId]
 }
 
-data class CallMetaData(
+data class CallMetadata(
     val isMuted: Boolean,
     val isCameraOn: Boolean,
     val conversationName: String?,
