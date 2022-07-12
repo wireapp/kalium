@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -207,39 +207,25 @@ class ConversationDataSource(
         Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
         // TODO(user-metadata): get actual legal hold status
         Conversation.Type.GROUP -> flowOf(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED))
-        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> {
-            val selfUser = userRepository.observeSelfUser().first()
-            when (val conversationMembers = getConversationMembers(conversation.id)) {
-                is Either.Left -> logMemberDetailsError(conversation, conversationMembers)
-                is Either.Right -> fetchConversationDetailsOneToOne(conversation, conversationMembers, selfUser)
-            }
-        }
+        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
     }
 
-    private fun logMemberDetailsError(conversation: Conversation, storageFailure: Either.Left<StorageFailure>): Flow<ConversationDetails> {
-        when (val error = storageFailure.value) {
-            StorageFailure.DataNotFound -> {
-                kaliumLogger.e("DataNotFound when fetching conversation members: $error")
-            }
-
-            is StorageFailure.Generic -> {
-                kaliumLogger.e("Failure getting other 1:1 user for $conversation", error.rootCause)
-            }
-        }
-        return emptyFlow()
-    }
-
-    private suspend fun fetchConversationDetailsOneToOne(
-        conversation: Conversation,
-        conversationMembers: Either.Right<List<UserId>>,
-        selfUser: SelfUser
-    ): Flow<ConversationDetails> {
-        return conversationMembers.map { members ->
+    private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> {
+        val selfUser = userRepository.observeSelfUser().first()
+        return getConversationMembers(conversation.id).map { members ->
             members.firstOrNull { itemId -> itemId != selfUser.id }
         }.fold(
-            { emptyFlow() },
+            { storageFailure -> logMemberDetailsError(conversation, storageFailure) },
             { otherUserId -> otherUserId?.let { userRepository.getKnownUser(it) } ?: emptyFlow() }
         ).filterNotNull().map { otherUser -> conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser) }
+    }
+
+    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Flow<OtherUser> {
+        when (error) {
+            StorageFailure.DataNotFound -> kaliumLogger.e("DataNotFound when fetching conversation members: $error")
+            is StorageFailure.Generic -> kaliumLogger.e("Failure getting other 1:1 user for $conversation", error.rootCause)
+        }
+        return emptyFlow()
     }
 
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
