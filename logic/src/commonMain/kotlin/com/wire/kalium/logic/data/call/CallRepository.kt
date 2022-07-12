@@ -82,19 +82,19 @@ internal class CallDataSource(
     override fun getCallMetadataProfile(): CallMetaDataProfile = _callMetadataProfile.value
 
     override suspend fun callsFlow(): Flow<List<Call>> = callDAO
-        .getCalls()
+        .observeCalls()
         .combineWithCallsMetadata()
 
     override suspend fun incomingCallsFlow(): Flow<List<Call>> = callDAO
-        .getIncomingCalls()
+        .observeIncomingCalls()
         .combineWithCallsMetadata()
 
     override suspend fun ongoingCallsFlow(): Flow<List<Call>> = callDAO
-        .getOngoingCalls()
+        .observeOngoingCalls()
         .combineWithCallsMetadata()
 
     override suspend fun establishedCallsFlow(): Flow<List<Call>> = callDAO
-        .getEstablishedCalls()
+        .observeEstablishedCalls()
         .combineWithCallsMetadata()
 
     // This needs to be reworked the logic into the useCases
