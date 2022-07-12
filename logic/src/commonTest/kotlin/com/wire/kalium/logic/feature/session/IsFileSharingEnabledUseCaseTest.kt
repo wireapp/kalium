@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.functional.Either
@@ -18,7 +19,7 @@ class IsFileSharingEnabledUseCaseTest {
 
     @Test
     fun givenATrueValue_thenISFileSharingIsEnabled() = runTest {
-        val expectedValue = true
+        val expectedValue = FileSharingStatus(true, false)
 
         val (arrangement, isFileSharingEnabledUseCase) = Arrangement()
             .withSuccessfulResponse(expectedValue)
@@ -30,7 +31,6 @@ class IsFileSharingEnabledUseCaseTest {
         verify(arrangement.userConfigRepository).invocation { isFileSharingEnabled() }
             .wasInvoked(exactly = once)
     }
-
 
     @Test
     fun givenStorageFailure_thenDataNotFoundReturned() = runTest {
@@ -54,7 +54,7 @@ class IsFileSharingEnabledUseCaseTest {
 
         val isFileSharingEnabledUseCase = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
 
-        fun withSuccessfulResponse(expectedValue: Boolean): Arrangement {
+        fun withSuccessfulResponse(expectedValue: FileSharingStatus): Arrangement {
             given(userConfigRepository)
                 .function(userConfigRepository::isFileSharingEnabled)
                 .whenInvoked()

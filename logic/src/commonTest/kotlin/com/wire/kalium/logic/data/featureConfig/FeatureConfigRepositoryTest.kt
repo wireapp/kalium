@@ -8,9 +8,10 @@ import com.wire.kalium.network.api.featureConfigs.AppLock
 import com.wire.kalium.network.api.featureConfigs.AppLockConfig
 import com.wire.kalium.network.api.featureConfigs.ClassifiedDomains
 import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfig
-import com.wire.kalium.network.api.featureConfigs.ConfigsStatus
+import com.wire.kalium.network.api.featureConfigs.ConfigsStatusDTO
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessages
 import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfig
 import com.wire.kalium.network.exceptions.KaliumException
@@ -34,25 +35,25 @@ class FeatureConfigRepositoryTest {
         val featureConfigModel = FeatureConfigModel(
             AppLockModel(
                 AppLockConfigModel(true, 0),
-                 "enabled"
+                "enabled"
             ),
             ClassifiedDomainsModel(
                 ClassifiedDomainsConfigModel(listOf()),
-                 "enabled"
+                "enabled"
             ),
-            ConfigsStatusModel( "enabled"),
-            ConfigsStatusModel( "enabled"),
-            ConfigsStatusModel( "enabled"),
-            ConfigsStatusModel( "enabled"),
-            ConfigsStatusModel( "enabled"),
-            ConfigsStatusModel( "enabled"),
+            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel("enabled"),
             SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(0),
-                 "enabled"
+                "enabled"
             ),
-            ConfigsStatusModel( "enabled"),
-            ConfigsStatusModel( "enabled"),
-            ConfigsStatusModel( "enabled")
+            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel("enabled")
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -107,19 +108,19 @@ class FeatureConfigRepositoryTest {
     private class Arrangement {
         val featureConfigResponse = FeatureConfigResponse(
             AppLock(
-                AppLockConfig(true, 0),  "enabled"
+                AppLockConfig(true, 0), FeatureFlagStatusDTO.ENABLED
             ),
-            ClassifiedDomains(ClassifiedDomainsConfig(listOf()),  "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            SelfDeletingMessages(SelfDeletingMessagesConfig(0),  "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled"),
-            ConfigsStatus( "enabled")
+            ClassifiedDomains(ClassifiedDomainsConfig(listOf()), FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            SelfDeletingMessages(SelfDeletingMessagesConfig(0), FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
+            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED)
         )
 
         @Mock
