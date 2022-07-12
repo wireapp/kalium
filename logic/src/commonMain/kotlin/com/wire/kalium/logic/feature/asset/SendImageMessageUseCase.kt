@@ -16,7 +16,7 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
@@ -48,7 +48,7 @@ fun interface SendImageMessageUseCase {
 }
 
 internal class SendImageMessageUseCaseImpl(
-    private val messageRepository: MessageRepository,
+    private val persistMessage: PersistMessageUseCase,
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
@@ -122,7 +122,7 @@ internal class SendImageMessageUseCaseImpl(
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited
             )
-            messageRepository.persistMessage(message)
+            persistMessage(message)
         }.flatMap {
             messageSender.sendPendingMessage(conversationId, generatedMessageUuid)
         }.onFailure {
