@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
@@ -74,17 +75,17 @@ import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.EventGatherer
 import com.wire.kalium.logic.sync.EventGathererImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
+import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.UserEventReceiverImpl
-import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.event.EventProcessor
 import com.wire.kalium.logic.sync.event.EventProcessorImpl
-import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -181,7 +182,7 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.metadataDAO
         )
 
-    private val userSearchApiWrapper : UserSearchApiWrapper = UserSearchApiWrapperImpl(
+    private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
         userDatabaseProvider.conversationDAO,
     )
@@ -414,7 +415,7 @@ abstract class UserSessionScopeCommon(
 
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories
-        KaliumFileSystem(dataStoragePaths).also {
+        KaliumFileSystemImpl(dataStoragePaths).also {
             if (!it.exists(dataStoragePaths.cachePath.value.toPath())) it.createDirectory(dataStoragePaths.cachePath.value.toPath())
             if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath())) it.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
         }

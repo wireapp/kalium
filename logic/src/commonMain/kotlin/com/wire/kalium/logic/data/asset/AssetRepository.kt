@@ -25,6 +25,8 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
 import okio.Path
 import okio.Path.Companion.toPath
+import okio.buffer
+import okio.use
 import com.wire.kalium.network.api.AssetId as NetworkAssetId
 
 interface AssetRepository {
@@ -117,6 +119,8 @@ internal class AssetDataSource(
 
         // Calculate the SHA of the encrypted data
         val sha256 = calcFileSHA256(encryptedDataSource)
+        assetDataSink.close()
+        encryptedDataSource.close()
 
         val encryptionSucceeded = (encryptedDataSize > 0L && sha256 != null)
 
@@ -146,8 +150,8 @@ internal class AssetDataSource(
 
             // After successful upload we finally persist the data now to a persistent path and delete the temporary one
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)
-            kaliumFileSystem.delete(uploadAssetData.tempEncryptedDataPath)
             kaliumFileSystem.delete(decodedDataPath)
+            kaliumFileSystem.delete(uploadAssetData.tempEncryptedDataPath)
 
             assetMapper.fromUploadedAssetToDaoModel(uploadAssetData, assetResponse).let { assetEntity ->
                 // We need to update the persistent asset path with the decoded one
@@ -186,7 +190,10 @@ internal class AssetDataSource(
             }.flatMap { assetData ->
                 // Copy byte array to temp file and provide it as source
                 val tempFile = kaliumFileSystem.tempFilePath()
-                kaliumFileSystem.writeData(tempFile, assetData)
+                val tempFileSink = kaliumFileSystem.sink(tempFile)
+                tempFileSink.buffer().use {
+                    it.write(assetData)
+                }
 
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
@@ -198,9 +205,10 @@ internal class AssetDataSource(
                 val assetDataSize = if (encryptionKey != null)
                     decryptFileWithAES256(encryptedAssetDataSource, decodedAssetSink, encryptionKey)
                 else
-                    kaliumFileSystem.writeData(decodedAssetPath, encryptedAssetDataSource)
+                    kaliumFileSystem.writeData(decodedAssetSink, encryptedAssetDataSource)
 
                 // Delete temp path now that the decoded asset has been persisted correctly
+                encryptedAssetDataSource.close()
                 kaliumFileSystem.delete(tempFile)
 
                 if (assetDataSize == -1L)

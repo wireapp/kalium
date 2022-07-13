@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.flow.first
+import okio.buffer
 import java.io.IOException
 
 class MainActivity : ComponentActivity() {
@@ -40,6 +41,7 @@ class MainActivity : ComponentActivity() {
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
         login(coreLogic, serverConfig)?.let {
             val session = coreLogic.getSessionScope(it.tokens.userId)
+            val kaliumFileSystem = session.kaliumFileSystem
             val conversations = session.conversations.getConversations().let { result ->
                 when (result) {
                     is GetConversationsUseCase.Result.Failure -> {
@@ -50,8 +52,14 @@ class MainActivity : ComponentActivity() {
             }
 
             // Uploading image code
-//            val imageContent = applicationContext.assets.open("moon1.jpg").readBytes()
-//            session.users.uploadUserAvatar("image/jpg", imageContent)
+            val imageContent = applicationContext.assets.open("moon1.jpg").readBytes()
+            val tempAvatarPath = kaliumFileSystem.providePersistentAssetPath("temp_avatar.jpg")
+            val tempAvatarSink = kaliumFileSystem.sink(tempAvatarPath)
+            tempAvatarSink.buffer().use { sink ->
+                sink.write(imageContent)
+            }
+
+            session.users.uploadUserAvatar(tempAvatarPath, imageContent.size.toLong())
 
             val selfUser = session.users.getSelfUser().first()
 
@@ -80,7 +88,7 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        coreLogic.globalScope{
+        coreLogic.globalScope {
             addAuthenticatedAccount(authSession = result.userSession)
         }
 

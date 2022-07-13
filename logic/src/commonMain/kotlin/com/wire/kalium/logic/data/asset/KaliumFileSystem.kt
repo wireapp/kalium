@@ -7,7 +7,10 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
-expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) {
+expect class KaliumFileSystemImpl constructor(dataStoragePaths: DataStoragePaths, dispatcher: KaliumDispatcher = KaliumDispatcherImpl) :
+    KaliumFileSystem
+
+interface KaliumFileSystem {
     /**
      * Provides the root of the cache path, used to store temporary files
      */
@@ -78,18 +81,10 @@ expect class KaliumFileSystem constructor(dataStoragePaths: DataStoragePaths, di
     suspend fun readByteArray(inputPath: Path): ByteArray
 
     /**
-     * Writes the data contained on [dataSource] into the provided [outputPath]
-     * @param outputPath the path where the data will be written
-     * @param dataSource the data source that kaliumFileSystem will read from to write the data to the [outputPath]
+     * Writes the data contained on [dataSource] into the provided [outputSink]
+     * @param outputSink the data sink used to write the data from [dataSource]
+     * @param dataSource the data source that kaliumFileSystem will read from to write the data to the [outputSink]
      * @return the number of bytes written
      */
-    suspend fun writeData(outputPath: Path, dataSource: Source): Long
-
-    /**
-     * Writes the given blob of data into the provided [outputPath]
-     * @param outputPath the path where the data will be written
-     * @param dataBlob the data that will be written to the [outputPath]
-     * @return the data [BufferedSink] that will be used to write to the [outputPath]
-     */
-    suspend fun writeData(outputPath: Path, dataBlob: ByteArray): BufferedSink
+    suspend fun writeData(outputSink: Sink, dataSource: Source): Long
 }
