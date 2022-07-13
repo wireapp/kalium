@@ -16,7 +16,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.util.FileUtil
 
 interface MLSClientProvider {
-    fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
+    suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
 }
 
 class MLSClientProviderImpl(
@@ -26,7 +26,7 @@ class MLSClientProviderImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : MLSClientProvider {
 
-    override fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
+    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> {
         val currentClientId = clientId ?: clientRepository.currentClientId().fold({ return Either.Left(it) }, { it })
 
         val location = "$rootKeyStorePath/${currentClientId.value}".also {
