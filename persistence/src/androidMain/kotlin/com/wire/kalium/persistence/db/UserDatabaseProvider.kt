@@ -46,7 +46,6 @@ import java.io.File
 actual class UserDatabaseProvider(
     private val context: Context,
     userId: UserIDEntity,
-    kaliumPreferences: KaliumPreferences,
     storePath: File,
     cacheAssetPath: File,
     passphrase: UserDBSecret,
