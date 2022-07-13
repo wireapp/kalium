@@ -10,8 +10,8 @@ import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.conversation.ReceiptMode
-import com.wire.kalium.network.api.model.ConversationAccess
-import com.wire.kalium.network.api.model.ConversationAccessRole
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
@@ -22,8 +22,8 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
-    fun toApiModel(access: ConversationOptions.Access): ConversationAccess
-    fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole
+    fun toApiModel(access: ConversationOptions.Access): ConversationAccessDTO
+    fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
     fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
@@ -93,18 +93,18 @@ internal class ConversationMapperImpl(
         )
     }
 
-    override fun toApiModel(access: ConversationOptions.Access): ConversationAccess = when (access) {
-        ConversationOptions.Access.PRIVATE -> ConversationAccess.PRIVATE
-        ConversationOptions.Access.CODE -> ConversationAccess.CODE
-        ConversationOptions.Access.INVITE -> ConversationAccess.INVITE
-        ConversationOptions.Access.LINK -> ConversationAccess.LINK
+    override fun toApiModel(access: ConversationOptions.Access): ConversationAccessDTO = when (access) {
+        ConversationOptions.Access.PRIVATE -> ConversationAccessDTO.PRIVATE
+        ConversationOptions.Access.CODE -> ConversationAccessDTO.CODE
+        ConversationOptions.Access.INVITE -> ConversationAccessDTO.INVITE
+        ConversationOptions.Access.LINK -> ConversationAccessDTO.LINK
     }
 
-    override fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRole = when (accessRole) {
-        ConversationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRole.TEAM_MEMBER
-        ConversationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRole.NON_TEAM_MEMBER
-        ConversationOptions.AccessRole.GUEST -> ConversationAccessRole.GUEST
-        ConversationOptions.AccessRole.SERVICE -> ConversationAccessRole.SERVICE
+    override fun toApiModel(accessRole: ConversationOptions.AccessRole): ConversationAccessRoleDTO = when (accessRole) {
+        ConversationOptions.AccessRole.TEAM_MEMBER -> ConversationAccessRoleDTO.TEAM_MEMBER
+        ConversationOptions.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRoleDTO.NON_TEAM_MEMBER
+        ConversationOptions.AccessRole.GUEST -> ConversationAccessRoleDTO.GUEST
+        ConversationOptions.AccessRole.SERVICE -> ConversationAccessRoleDTO.SERVICE
     }
 
     override fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol = when (protocol) {

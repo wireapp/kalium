@@ -9,8 +9,10 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.MutedStatus
 import com.wire.kalium.network.api.conversation.ServiceReferenceDTO
-import com.wire.kalium.network.tools.KtxSerializer.json
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -37,6 +39,8 @@ object ConversationResponseJson {
             put("type", it.type.ordinal)
             put("protocol", it.protocol.toString())
             put("last_event_time", it.lastEventTime)
+            putAccessSet(it.access)
+            it.accessRole?.let { putAccessRoleSet(it) }
             it.messageTimer?.let { put("message_timer", it) }
             it.name?.let { put("name", it) }
             it.teamId?.let { put("team", it) }
@@ -62,9 +66,23 @@ object ConversationResponseJson {
             null,
             "teamID",
             ConvProtocol.PROTEUS,
-            lastEventTime = "2022-03-30T15:36:00.000Z"
+            lastEventTime = "2022-03-30T15:36:00.000Z",
+            access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
+            accessRole = setOf(
+                ConversationAccessRoleDTO.GUEST,
+                ConversationAccessRoleDTO.TEAM_MEMBER,
+                ConversationAccessRoleDTO.NON_TEAM_MEMBER
+            )
         ), conversationResponseSerializer
     )
+}
+
+fun JsonObjectBuilder.putAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) = putJsonArray("access_role_v2") {
+    accessRole.forEach { add(it.toString()) }
+}
+
+fun JsonObjectBuilder.putAccessSet(access: Set<ConversationAccessDTO>) = putJsonArray("access") {
+    access.forEach { add(it.toString()) }
 }
 
 fun JsonObjectBuilder.putQualifiedId(id: QualifiedID) = putJsonObject("qualified_id") {

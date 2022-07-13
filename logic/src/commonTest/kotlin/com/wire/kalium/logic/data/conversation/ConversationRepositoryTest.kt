@@ -18,6 +18,8 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationPagingResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -311,7 +313,6 @@ class ConversationRepositoryTest {
             ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
-
         result.shouldSucceed { }
 
         verify(conversationDAO)
@@ -354,7 +355,6 @@ class ConversationRepositoryTest {
             listOf(TestUser.USER_ID),
             ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
-
 
         result.shouldSucceed { }
 
@@ -430,7 +430,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenUserHasKnownContactAndConversation_WhenGettingConversationDetailsByExistingConversation_ReturnTheCorrectConversation() =
         runTest {
-            //given
+            // given
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getAllConversationWithOtherUser)
                 .whenInvokedWith(anything())
@@ -445,9 +445,9 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(TestUser.OTHER))
 
-            //when
+            // when
             val result = conversationRepository.getOneToOneConversationDetailsByUserId(OTHER_USER_ID)
-            //then
+            // then
             assertIs<Either.Right<ConversationDetails.OneOne>>(result)
         }
 
@@ -631,7 +631,13 @@ class ConversationRepositoryTest {
             0,
             null,
             ConvProtocol.PROTEUS,
-            lastEventTime = "2022-03-30T15:36:00.000Z"
+            lastEventTime = "2022-03-30T15:36:00.000Z",
+            access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
+            accessRole = setOf(
+                ConversationAccessRoleDTO.GUEST,
+                ConversationAccessRoleDTO.TEAM_MEMBER,
+                ConversationAccessRoleDTO.NON_TEAM_MEMBER
+            )
         )
 
         val CONVERSATION_RESPONSE_DTO = ConversationResponseDTO(
@@ -652,8 +658,7 @@ class ConversationRepositoryTest {
             teamId = null,
             protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
-            lastNotificationDate = null
+            lastNotificationDate = null,
         )
     }
-
 }

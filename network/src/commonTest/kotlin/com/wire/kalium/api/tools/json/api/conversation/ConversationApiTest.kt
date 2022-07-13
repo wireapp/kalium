@@ -7,7 +7,7 @@ import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImpl
 import com.wire.kalium.network.api.conversation.model.ConversationAccessData
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.model.ConversationAccess
+import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -102,7 +102,7 @@ class ConversationApiTest : ApiTest {
     @Test
     fun whenUpdatingAccessRole_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
         val accessRoles = ConversationAccessData(
-            setOf(ConversationAccess.PRIVATE, ConversationAccess.INVITE), null
+            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), null
         )
         val networkClient = mockAuthenticatedNetworkClient(
             "", statusCode = HttpStatusCode.NoContent,
@@ -119,7 +119,7 @@ class ConversationApiTest : ApiTest {
     @Test
     fun givenAccessUnchangedResponse_whenUpdatingAccessRole_thenAccessUnchangedIsPropagated() = runTest {
         val accessRoles = ConversationAccessData(
-            setOf(ConversationAccess.PRIVATE, ConversationAccess.INVITE), null
+            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), null
         )
         val networkClient = mockAuthenticatedNetworkClient(
             "", statusCode = HttpStatusCode.NoContent
@@ -134,7 +134,7 @@ class ConversationApiTest : ApiTest {
     @Test
     fun givenSuccessAccessUpdateResponse_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
         val accessRoles = ConversationAccessData(
-            setOf(ConversationAccess.PRIVATE, ConversationAccess.INVITE), null
+            setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), null
         )
         val networkClient = mockAuthenticatedNetworkClient(
             EventContentDTOJson.valid.rawJson, statusCode = HttpStatusCode.OK
