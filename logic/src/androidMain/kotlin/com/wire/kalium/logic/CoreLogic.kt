@@ -100,6 +100,7 @@ actual class CoreLogic(
                 globalPreferences.value,
                 kaliumConfigs
             ).also {
+                it.keyPackageManager.startObservingKeyPackageCount()
                 userSessionScopeProvider.add(userId, it)
             }
         }
