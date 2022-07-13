@@ -104,7 +104,7 @@ class CallRepositoryTest {
     @Test
     fun givenEmptyListOfCalls_whenGetAllCallsIsCalled_thenReturnAnEmptyListOfCalls() = runTest {
         given(callDAO)
-            .suspendFunction(callDAO::getCalls)
+            .suspendFunction(callDAO::observeCalls)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -118,7 +118,7 @@ class CallRepositoryTest {
     @Test
     fun givenAListOfCallProfiles_whenGetAllCallsIsCalled_thenReturnAListOfCalls() = runTest {
         given(callDAO)
-            .suspendFunction(callDAO::getCalls)
+            .suspendFunction(callDAO::observeCalls)
             .whenInvoked()
             .thenReturn(
                 flowOf(
@@ -133,7 +133,7 @@ class CallRepositoryTest {
             )
 
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false,
@@ -216,7 +216,7 @@ class CallRepositoryTest {
         )
 
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false
@@ -329,7 +329,7 @@ class CallRepositoryTest {
         )
 
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false
@@ -485,7 +485,7 @@ class CallRepositoryTest {
         )
 
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false
@@ -600,7 +600,7 @@ class CallRepositoryTest {
         )
 
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false
@@ -707,7 +707,7 @@ class CallRepositoryTest {
         val callEntity = createCallEntity()
 
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false
@@ -753,7 +753,7 @@ class CallRepositoryTest {
         // given
         val expectedValue = false
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = true
@@ -786,7 +786,7 @@ class CallRepositoryTest {
         // given
         val expectedValue = false
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isCameraOn = true
@@ -828,7 +828,7 @@ class CallRepositoryTest {
             )
         )
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         participants = emptyList(),
@@ -872,7 +872,7 @@ class CallRepositoryTest {
         val participantsList = listOf(participant)
         val expectedParticipantsList = listOf(participant.copy(isSpeaking = true))
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         participants = emptyList(),
@@ -914,7 +914,7 @@ class CallRepositoryTest {
     fun givenAnIncomingCall_whenRequestingIncomingCalls_thenReturnTheIncomingCall() = runTest {
         // given
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false,
@@ -939,7 +939,7 @@ class CallRepositoryTest {
         )
 
         given(callDAO)
-            .suspendFunction(callDAO::getIncomingCalls)
+            .suspendFunction(callDAO::observeIncomingCalls)
             .whenInvoked()
             .thenReturn(flowOf(listOf(callEntity)))
 
@@ -961,7 +961,7 @@ class CallRepositoryTest {
     fun givenAnOngoingCall_whenRequestingOngoingCalls_thenReturnTheOngoingCall() = runTest {
         // given
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false,
@@ -986,7 +986,7 @@ class CallRepositoryTest {
         )
 
         given(callDAO)
-            .suspendFunction(callDAO::getOngoingCalls)
+            .suspendFunction(callDAO::observeOngoingCalls)
             .whenInvoked()
             .thenReturn(flowOf(listOf(callEntity)))
 
@@ -1008,7 +1008,7 @@ class CallRepositoryTest {
     fun givenAnEstablishedCall_whenRequestingEstablishedCalls_thenReturnTheEstablishedCall() = runTest {
         // given
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to createCallMetadata().copy(
                         isMuted = false,
@@ -1033,7 +1033,7 @@ class CallRepositoryTest {
         )
 
         given(callDAO)
-            .suspendFunction(callDAO::getEstablishedCalls)
+            .suspendFunction(callDAO::observeEstablishedCalls)
             .whenInvoked()
             .thenReturn(flowOf(listOf(callEntity)))
 
@@ -1063,7 +1063,7 @@ class CallRepositoryTest {
             callerTeamName = "team_1"
         )
         callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetaDataProfile(
+            callMetadataProfile = CallMetadataProfile(
                 data = mapOf(
                     conversationId.toString() to metadata,
                     randomConversationId.toString() to metadata.copy(
@@ -1102,7 +1102,7 @@ class CallRepositoryTest {
         )
 
         given(callDAO)
-            .suspendFunction(callDAO::getCalls)
+            .suspendFunction(callDAO::observeCalls)
             .whenInvoked()
             .thenReturn(flowOf(listOf(missedCall, closedCall)))
 
@@ -1149,7 +1149,7 @@ class CallRepositoryTest {
         conversationType = ConversationEntity.Type.GROUP
     )
 
-    private fun createCallMetadata() = CallMetaData(
+    private fun createCallMetadata() = CallMetadata(
         isMuted = true,
         isCameraOn = false,
         conversationName = null,
