@@ -13,7 +13,8 @@ import java.time.Duration
 actual class MLSClientImpl actual constructor(
     private val rootDir: String,
     databaseKey: MlsDBSecret,
-    clientId: CryptoQualifiedClientId) : MLSClient {
+    clientId: CryptoQualifiedClientId
+) : MLSClient {
 
     private val coreCrypto: CoreCrypto
     private val keyRotationDuration: Duration = Duration.ofDays(30)

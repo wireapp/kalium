@@ -16,7 +16,6 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
     private val driver: AndroidSqliteDriver
     private val database: GlobalDatabase
 
-
     init {
         val onConnectCallback = object : AndroidSqliteDriver.Callback(GlobalDatabase.Schema) {
             override fun onOpen(db: SupportSQLiteDatabase) {
@@ -41,7 +40,6 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
             )
 
         }
-
 
         database = GlobalDatabase(
             driver, ServerConfiguration.Adapter(

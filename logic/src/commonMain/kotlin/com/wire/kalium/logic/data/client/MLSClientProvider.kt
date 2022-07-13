@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.util.FileUtil
@@ -36,10 +35,7 @@ class MLSClientProviderImpl(
 
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
-        val mlsClient =
-            Either.Right(mlsClient(cryptoUserId, currentClientId, location, SecurityHelper(kaliumPreferences).mlsDBSecret(userId)))
-
-        return mlsClient
+        return Either.Right(mlsClient(cryptoUserId, currentClientId, location, SecurityHelper(kaliumPreferences).mlsDBSecret(userId)))
     }
 
     private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String, passphrase: MlsDBSecret): MLSClient {
@@ -53,5 +49,4 @@ class MLSClientProviderImpl(
     private companion object {
         const val KEYSTORE_NAME = "keystore"
     }
-
 }

@@ -35,7 +35,6 @@ class SecurityHelperTest {
         assertTrue(secret1.value.contentEquals(secret2.value))
     }
 
-
     @Test
     fun whenCallingUserDBSecretFor2DifferentUsers_thenEachHasADifferentSecret() {
         val securityHelper = SecurityHelper(kaliumPreferences)
@@ -45,7 +44,6 @@ class SecurityHelperTest {
         val secret2 = securityHelper.userDBSecret(user2)
         assertFalse(secret1.value.contentEquals(secret2.value))
     }
-
 
     @Test
     fun whenCallingMlsDBSecretTwiceForTheSameUser_thenTheSameValueIsReturned() {

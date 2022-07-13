@@ -51,7 +51,8 @@ interface MLSClient {
      */
     fun createConversation(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): Pair<HandshakeMessage, WelcomeMessage>?
+        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+    ): Pair<HandshakeMessage, WelcomeMessage>?
 
     /**
      * Process an incoming welcome message
@@ -71,7 +72,8 @@ interface MLSClient {
      */
     fun encryptMessage(
         groupId: MLSGroupId,
-        message: PlainMessage): ApplicationMessage
+        message: PlainMessage
+    ): ApplicationMessage
 
     /**
      * Decrypt an application message or a handshake message
@@ -85,7 +87,8 @@ interface MLSClient {
      */
     fun decryptMessage(
         groupId: MLSGroupId,
-        message: ApplicationMessage): PlainMessage?
+        message: ApplicationMessage
+    ): PlainMessage?
 
     /**
      * Add a user/client to an existing MLS group
@@ -97,7 +100,8 @@ interface MLSClient {
      */
     fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): Pair<HandshakeMessage, WelcomeMessage>?
+        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+    ): Pair<HandshakeMessage, WelcomeMessage>?
 
     /**
      * Remove a user/client from an existing MLS group
@@ -109,10 +113,11 @@ interface MLSClient {
      */
     fun removeMember(
         groupId: MLSGroupId,
-        members: List<CryptoQualifiedClientId>): HandshakeMessage?
+        members: List<CryptoQualifiedClientId>
+    ): HandshakeMessage?
 }
 
 @JvmInline
 value class MlsDBSecret(val value: String)
 
-expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId): MLSClient
+expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient
