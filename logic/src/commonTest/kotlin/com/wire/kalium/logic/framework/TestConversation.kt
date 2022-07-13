@@ -14,6 +14,8 @@ import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
@@ -89,7 +91,13 @@ object TestConversation {
         0,
         null,
         ConvProtocol.PROTEUS,
-        lastEventTime = "2022-03-30T15:36:00.000Z"
+        lastEventTime = "2022-03-30T15:36:00.000Z",
+        access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
+        accessRole = setOf(
+            ConversationAccessRoleDTO.GUEST,
+            ConversationAccessRoleDTO.TEAM_MEMBER,
+            ConversationAccessRoleDTO.NON_TEAM_MEMBER
+        )
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
