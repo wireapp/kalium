@@ -45,6 +45,7 @@ interface GetNotificationsUseCase {
  * @return Flow<List<LocalNotificationConversation>> - Flow of Notification List that should be shown to the user.
  * That Flow emits everytime when the list is changed
  */
+@Suppress("LongParameterList")
 class GetNotificationsUseCaseImpl(
     private val observeConnectionList: ObserveConnectionListUseCase,
     private val messageRepository: MessageRepository,
@@ -192,10 +193,10 @@ class GetNotificationsUseCaseImpl(
         conversation: Conversation
     ): List<Message> =
         filter { message ->
-            message.senderUserId != selfUser.id
+            (message.senderUserId != selfUser.id
                     && shouldMessageBeVisibleAsNotification(message)
                     && isMessageContentSupportedInNotifications(message)
-                    && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus)
+                    && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus))
         }
 
     private fun shouldIncludeMessageForNotifications(
@@ -226,24 +227,32 @@ class GetNotificationsUseCaseImpl(
         }
 
     private fun allNotificationsAllowed(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        conversationMutedStatus == MutedConversationStatus.AllAllowed
+        (conversationMutedStatus == MutedConversationStatus.AllAllowed
                 && (selfUser.availabilityStatus == UserAvailabilityStatus.NONE
-                || selfUser.availabilityStatus == UserAvailabilityStatus.AVAILABLE)
+                || selfUser.availabilityStatus == UserAvailabilityStatus.AVAILABLE))
 
     private fun allMuted(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        conversationMutedStatus == MutedConversationStatus.AllMuted
-                || selfUser.availabilityStatus == UserAvailabilityStatus.AWAY
+        (conversationMutedStatus == MutedConversationStatus.AllMuted
+                || selfUser.availabilityStatus == UserAvailabilityStatus.AWAY)
 
     private fun onlyMentionsAllowed(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed
-                || selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
+        (conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed
+                || selfUser.availabilityStatus == UserAvailabilityStatus.BUSY)
 
-    private fun isMessageContentSupportedInNotifications(message: Message): Boolean =
-        (message.content !is MessageContent.Unknown
-                && message.content !is MessageContent.System
-                && message.content !is MessageContent.DeleteMessage
-                && message.content !is MessageContent.DeleteForMe)
-                || message.content is MessageContent.MissedCall
+    private fun isMessageContentSupportedInNotifications(message: Message): Boolean = when (message.content) {
+        is MessageContent.Unknown -> false
+        is MessageContent.MemberChange -> false
+        MessageContent.MissedCall -> true
+        is MessageContent.Text -> true
+        is MessageContent.Calling -> true
+        is MessageContent.Asset -> true
+        is MessageContent.DeleteMessage -> false
+        is MessageContent.TextEdited -> false
+        is MessageContent.RestrictedAsset -> true
+        is MessageContent.DeleteForMe -> false
+        MessageContent.Empty -> false
+        MessageContent.Ignored -> false
+    }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
         message.visibility == Message.Visibility.VISIBLE
