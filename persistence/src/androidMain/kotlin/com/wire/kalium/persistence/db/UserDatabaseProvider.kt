@@ -8,7 +8,6 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
-import com.wire.kalium.persistence.DBUtil
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -40,7 +39,6 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 import java.io.File
@@ -51,6 +49,7 @@ actual class UserDatabaseProvider(
     kaliumPreferences: KaliumPreferences,
     storePath: File,
     cacheAssetPath: File,
+    passphrase: UserDBSecret,
     encrypt: Boolean = true
 ) {
     private val dbName = FileNameUtil.userDBName(userId)
@@ -72,7 +71,7 @@ actual class UserDatabaseProvider(
                 schema = UserDatabase.Schema,
                 context = context,
                 name = dbName,
-                factory = SupportFactory(DBUtil.getOrGenerateSecretKey(kaliumPreferences, DATABASE_SECRET_KEY).toByteArray()),
+                factory = SupportFactory(passphrase.value),
                 callback = onConnectCallback
             )
         } else {
@@ -171,11 +170,8 @@ actual class UserDatabaseProvider(
     actual val teamDAO: TeamDAO
         get() = TeamDAOImpl(database.teamsQueries)
 
-    actual fun nuke(): Boolean = DBUtil.deleteDB(driver, context, dbName)
-
-    companion object {
-        // FIXME(IMPORTANT): The same key is used to enc/dec all user DBs
-        //                   Pain in the ass to migrate after release
-        private const val DATABASE_SECRET_KEY = "user-db-secret"
+    actual fun nuke(): Boolean {
+        driver.close()
+        return context.deleteDatabase(dbName)
     }
 }

@@ -75,6 +75,7 @@ kotlin {
                 // mocking
                 implementation(Dependencies.Test.mockative)
                 implementation(Dependencies.Test.okio)
+                implementation(Dependencies.MultiplatformSettings.test)
             }
         }
         val jvmMain by getting {}

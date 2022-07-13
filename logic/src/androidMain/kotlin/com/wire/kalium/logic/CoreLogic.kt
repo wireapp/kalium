@@ -20,6 +20,7 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorage
 import com.wire.kalium.persistence.client.SessionStorageImpl
@@ -54,7 +55,13 @@ actual class CoreLogic(
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
-        lazy { GlobalDatabaseProvider(appContext, globalPreferences.value, kaliumConfigs.shouldEncryptData) }
+        lazy {
+            GlobalDatabaseProvider(
+                appContext,
+                SecurityHelper(globalPreferences.value).globalDBSecret(),
+                kaliumConfigs.shouldEncryptData
+            )
+        }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {
@@ -75,14 +82,15 @@ actual class CoreLogic(
             val encryptedSettingsHolder =
                 EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-            val userDatabaseProvider = UserDatabaseProvider(
-                appContext,
-                userIDEntity,
-                userPreferencesSettings,
-                File(rootFileSystemPath.value),
-                File(rootCachePath.value),
-                kaliumConfigs.shouldEncryptData
-            )
+            val userDatabaseProvider =
+                UserDatabaseProvider(
+                    appContext,
+                    userIDEntity,
+                    File(rootFileSystemPath.value),
+                    File(rootCachePath.value),
+                    SecurityHelper(globalPreferences.value).userDBSecret(userId),
+                    kaliumConfigs.shouldEncryptData
+                )
             val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,
                 networkContainer,
@@ -99,7 +107,8 @@ actual class CoreLogic(
                 sessionRepository,
                 globalCallManager,
                 globalPreferences.value,
-                dataStoragePaths
+                dataStoragePaths,
+                kaliumConfigs
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }

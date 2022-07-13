@@ -86,7 +86,8 @@ actual class CoreLogic(
                 globalCallManager,
                 // TODO: make lazier
                 globalPreferences.value,
-                dataStoragePaths
+                dataStoragePaths,
+                kaliumConfigs
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }

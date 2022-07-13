@@ -35,6 +35,8 @@ import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
@@ -57,8 +59,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.featureConfig.GetFeatureConfigStatusUseCaseImpl
-import com.wire.kalium.logic.feature.featureConfig.GetRemoteFeatureConfigStatusAndPersistUseCase
+import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
+import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -72,13 +74,18 @@ import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.ConversationEventReceiver
 import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.EventGatherer
 import com.wire.kalium.logic.sync.EventGathererImpl
+import com.wire.kalium.logic.sync.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
@@ -110,9 +117,11 @@ abstract class UserSessionScopeCommon(
     private val sessionRepository: SessionRepository,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
-    dataStoragePaths: DataStoragePaths
+    dataStoragePaths: DataStoragePaths,
+    private val kaliumConfigs: KaliumConfigs
 ) {
-    private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences)
+    // we made this lazy so it will have a single instance for the storage
+    private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 
@@ -195,6 +204,9 @@ abstract class UserSessionScopeCommon(
             userSearchApiWrapper
         )
 
+    val persistMessage: PersistMessageUseCase
+        get() = PersistMessageUseCaseImpl(messageRepository, conversationRepository, userId)
+
     private val callRepository: CallRepository by lazy {
         CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
@@ -202,7 +214,7 @@ abstract class UserSessionScopeCommon(
             userRepository = userRepository,
             teamRepository = teamRepository,
             timeParser = timeParser,
-            messageRepository = messageRepository
+            persistMessage = persistMessage
         )
     }
 
@@ -260,7 +272,11 @@ abstract class UserSessionScopeCommon(
 
     private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, syncRepository)
 
-    private val eventProcessor: EventProcessor get() = EventProcessorImpl(eventRepository, conversationEventReceiver, userEventReceiver)
+    private val eventProcessor: EventProcessor
+        get() = EventProcessorImpl(
+            eventRepository,
+            conversationEventReceiver, userEventReceiver, featureConfigEventReceiver
+        )
 
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
@@ -302,6 +318,7 @@ abstract class UserSessionScopeCommon(
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
+            persistMessage,
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
@@ -316,6 +333,9 @@ abstract class UserSessionScopeCommon(
         get() = UserEventReceiverImpl(
             connectionRepository,
         )
+
+    private val featureConfigEventReceiver: FeatureConfigEventReceiver
+        get() = FeatureConfigEventReceiverImpl(userConfigRepository, kaliumConfigs)
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository
         get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
@@ -355,6 +375,7 @@ abstract class UserSessionScopeCommon(
         )
     val messages: MessageScope
         get() = MessageScope(
+            userId,
             messageRepository,
             conversationRepository,
             clientRepository,
@@ -390,12 +411,14 @@ abstract class UserSessionScopeCommon(
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
+    val observeFileSharingStatus: ObserveFileSharingStatusUseCase get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val getRemoteFeatureConfigsStatusAndPersist: GetRemoteFeatureConfigStatusAndPersistUseCase
-        get() = GetFeatureConfigStatusUseCaseImpl(
+    internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
+        get() = SyncFeatureConfigsUseCaseImpl(
             userConfigRepository,
             featureConfigRepository,
-            isFileSharingEnabled
+            isFileSharingEnabled,
+            kaliumConfigs
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)

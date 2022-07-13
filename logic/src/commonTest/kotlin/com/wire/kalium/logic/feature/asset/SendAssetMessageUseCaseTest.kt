@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -55,7 +55,7 @@ class SendAssetMessageUseCaseTest {
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
         val (_, sendAssetUseCase) = Arrangement()
             .withOutputEncryptedPath(outputEncryptedPath)
-            .withPreStoreData(assetToSend, dataPath)
+            .withStoredData(assetToSend, dataPath)
             .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
             .arrange()
 
@@ -106,8 +106,8 @@ class SendAssetMessageUseCaseTest {
         val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
 
         // Then
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::persistMessage)
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
             .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.messageSender)
@@ -134,8 +134,8 @@ class SendAssetMessageUseCaseTest {
             sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
 
             // Then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistMessage)
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
                 .with(matching {
                     val content = it.content
                     content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
@@ -146,7 +146,7 @@ class SendAssetMessageUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
         val messageSender = mock(classOf<MessageSender>())
@@ -180,7 +180,7 @@ class SendAssetMessageUseCaseTest {
             UserAvailabilityStatus.NONE
         )
 
-        fun withPreStoreData(data: ByteArray, dataPath: Path): Arrangement {
+        fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
             fakeFileSystem.write(dataPath) {
                 data
             }
@@ -205,8 +205,8 @@ class SendAssetMessageUseCaseTest {
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
-            given(messageRepository)
-                .suspendFunction(messageRepository::persistMessage)
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(messageSender)
@@ -225,7 +225,7 @@ class SendAssetMessageUseCaseTest {
         }
 
         fun arrange() = this to SendAssetMessageUseCaseImpl(
-            messageRepository,
+            persistMessage,
             clientRepository,
             assetDataSource,
             userRepository,
@@ -236,7 +236,8 @@ class SendAssetMessageUseCaseTest {
     private fun provideFileSystemDataPath(assetName: String): Path = "$userHomePath/$assetName".toPath()
 
     private fun getMockedAsset(): ByteArray =
-        "some VERY long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long asset".toByteArray()
+        ("some VERY long long long long long long long long long long long long long long long long long long long long long long" +
+                " long long long long long long long long long long long long long long long long long asset").toByteArray()
 }
 
 private val userHomePath = "/Users/me".toPath()
