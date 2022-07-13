@@ -27,7 +27,10 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -80,6 +83,33 @@ class KeyPackageRepositoryTest {
         }
     }
 
+    @Test
+    fun givenNoPreviousTimestamp_whenlastKeyPackageCountCheck_thenReturnsDistantPast() = runTest {
+        val (_, keyPackageRepository) = Arrangement()
+            .withLastKeyPackageCountCheckTimestamp(null)
+            .arrange()
+
+        val result = keyPackageRepository.lastKeyPackageCountCheck()
+
+        result.shouldSucceed { actualTimestamp ->
+            assertEquals(actualTimestamp, Instant.DISTANT_PAST)
+        }
+    }
+
+    @Test
+    fun givenPreviousTimestamp_whenlastKeyPackageCountCheck_thenReturnsExpectedTimestamp() = runTest {
+        val expectedTimestamp = Instant.DISTANT_FUTURE
+        val (_, keyPackageRepository) = Arrangement()
+            .withLastKeyPackageCountCheckTimestamp(expectedTimestamp)
+            .arrange()
+
+        val result = keyPackageRepository.lastKeyPackageCountCheck()
+
+        result.shouldSucceed { actualTimestamp ->
+            assertEquals(actualTimestamp, expectedTimestamp)
+        }
+    }
+
     class Arrangement {
 
         @Mock
@@ -121,6 +151,12 @@ class KeyPackageRepositoryTest {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
                 .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(USER_ID), SELF_CLIENT_ID.value)))
                 .thenReturn(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
+        }
+
+        fun withLastKeyPackageCountCheckTimestamp(timestamp: Instant?) = apply {
+            given(metadataDAO).suspendFunction(metadataDAO::valueByKey)
+                .whenInvokedWith(eq("LAST_KEY_PACKAGE_COUNT_CHECK"))
+                .thenReturn(flowOf(timestamp.toString()))
         }
 
         fun arrange() = this to KeyPackageDataSource(clientRepository, keyPackageApi, mlsClientProvider, metadataDAO)
