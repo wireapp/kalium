@@ -74,7 +74,7 @@ sealed class ConversationMemberDTO {
     // by Wire (i.e., no custom roles can have the same prefix)
     // in swagger conversation_role is an optional field but according to Akshay:
     // Hmm, the field is optional when sending it to the server. The server will always send the field.
-    //(The server assumes admin when the field is missing, I don't have the context behind this decision)
+    // (The server assumes admin when the field is missing, I don't have the context behind this decision)
     abstract val conversationRole: String
     abstract val id: UserId
     abstract val service: ServiceReferenceDTO?
