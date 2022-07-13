@@ -139,8 +139,6 @@ class GetNotificationsUseCaseImpl(
     private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
         return observeConnectionList()
             .map { requests ->
-                println("cyka requests: ${requests.size}")
-                println("cyka requests: $requests")
                 requests
                     .filterIsInstance<ConversationDetails.Connection>()
                     .map { localNotificationMessageMapper.fromConnectionToLocalNotificationConversation(it) }
