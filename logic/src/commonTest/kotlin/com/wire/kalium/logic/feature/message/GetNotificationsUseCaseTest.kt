@@ -380,10 +380,7 @@ class GetNotificationsUseCaseTest {
             assertEquals(2, actual.size)
             assertEquals(
                 listOf(
-                    notificationMessageComment(
-                        authorName = otherUserName(otherUserId()),
-                        commentType = LocalNotificationCommentType.CONNECTION_REQUEST
-                    )
+                    notificationMessageConnectionRequest(authorName = otherUserName(otherUserId()))
                 ),
                 actual.last().messages
             )
@@ -590,6 +587,15 @@ class GetNotificationsUseCaseTest {
                 LocalNotificationMessageAuthor(authorName, null),
                 time,
                 commentType
+            )
+
+        private fun notificationMessageConnectionRequest(
+            authorName: String = "Author Name",
+            time: String = TIME
+        ) =
+            LocalNotificationMessage.ConnectionRequest(
+                LocalNotificationMessageAuthor(authorName, null),
+                time,
             )
 
         private fun selfUserWithStatus(status: UserAvailabilityStatus = UserAvailabilityStatus.NONE) =

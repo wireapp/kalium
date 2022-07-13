@@ -20,10 +20,13 @@ sealed class LocalNotificationMessage(open val author: LocalNotificationMessageA
     //shared file, picture, reaction
     data class Comment(override val author: LocalNotificationMessageAuthor, override val time: String, val type: LocalNotificationCommentType) :
         LocalNotificationMessage(author, time)
+
+    data class ConnectionRequest(override val author: LocalNotificationMessageAuthor, override val time: String) :
+        LocalNotificationMessage(author, time)
 }
 
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: String?)
 
 enum class LocalNotificationCommentType {
-    PICTURE, FILE, REACTION, MISSED_CALL, CONNECTION_REQUEST, NOT_SUPPORTED_YET
+    PICTURE, FILE, REACTION, MISSED_CALL, NOT_SUPPORTED_YET
 }
