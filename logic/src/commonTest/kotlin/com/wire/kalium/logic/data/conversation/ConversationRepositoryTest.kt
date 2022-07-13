@@ -313,7 +313,6 @@ class ConversationRepositoryTest {
             ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
-
         result.shouldSucceed { }
 
         verify(conversationDAO)
@@ -356,7 +355,6 @@ class ConversationRepositoryTest {
             listOf(TestUser.USER_ID),
             ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
-
 
         result.shouldSucceed { }
 
@@ -663,5 +661,4 @@ class ConversationRepositoryTest {
             lastNotificationDate = null,
         )
     }
-
 }
