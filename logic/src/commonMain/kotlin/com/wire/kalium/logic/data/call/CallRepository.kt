@@ -20,6 +20,7 @@ import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
@@ -163,7 +164,9 @@ internal class CallDataSource(
                     )
                 } else { // LAST CALL IS NOT ACTIVE
                     // Save into database
-                    callDAO.insertCall(call = callEntity)
+                    wrapStorageRequest {
+                        callDAO.insertCall(call = callEntity)
+                    }
 
                     // Save into metadata
                     updateCallMetadata(
@@ -180,7 +183,9 @@ internal class CallDataSource(
                     )
                 } else { // LAST CALL NOT ACTIVE
                     // Save into database
-                    callDAO.insertCall(call = callEntity)
+                    wrapStorageRequest {
+                        callDAO.insertCall(call = callEntity)
+                    }
 
                     // Save into metadata
                     updateCallMetadata(
@@ -191,7 +196,9 @@ internal class CallDataSource(
             }
         } else if (status == CallStatus.STARTED) {
             // Save into database
-            callDAO.insertCall(call = callEntity)
+            wrapStorageRequest {
+                callDAO.insertCall(call = callEntity)
+            }
 
             // Save into metadata
             updateCallMetadata(
@@ -228,10 +235,12 @@ internal class CallDataSource(
                 this[modifiedConversationId.toString()] = call.copy(establishedTime = establishedTime)
 
                 // Update Call in Database
-                callDAO.updateLastCallStatusByConversationId(
-                    status = callMapper.toCallEntityStatus(callStatus = status),
-                    conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
-                )
+                wrapStorageRequest {
+                    callDAO.updateLastCallStatusByConversationId(
+                        status = callMapper.toCallEntityStatus(callStatus = status),
+                        conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
+                    )
+                }
 
                 // Persist Missed Call Message if necessary
                 if ((status == CallStatus.CLOSED && establishedTime == null) || status == CallStatus.MISSED) {
@@ -322,7 +331,9 @@ internal class CallDataSource(
      * To be used only in Debug mode
      */
     override suspend fun deleteAllCalls() {
-        callDAO.deleteAllCalls()
+        wrapStorageRequest {
+            callDAO.deleteAllCalls()
+        }
     }
 
     private suspend fun persistMissedCallMessage(
