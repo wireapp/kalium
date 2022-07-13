@@ -26,10 +26,17 @@ sealed class EventContentDTO {
     sealed class Conversation : EventContentDTO() {
 
         @Serializable
+        @SerialName("conversation.access-update")
+        data class AccessUpdate(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ConversationResponse,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+        ) : Conversation()
+
+        @Serializable
         @SerialName("conversation.create")
         data class NewConversationDTO(
-            @SerialName("qualified_conversation")
-            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val data: ConversationResponse,
@@ -38,8 +45,7 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("conversation.otr-message-add")
         data class NewMessageDTO(
-            @SerialName("qualified_conversation")
-            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val data: MessageEventData,
@@ -48,20 +54,17 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("conversation.member-join")
         data class MemberJoinDTO(
-            @SerialName("qualified_conversation")
-            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val members: ConversationMembers,
-            @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom"))
-            @SerialName("from") val from: String
+            @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom")) @SerialName("from") val from: String
         ) : Conversation()
 
         @Serializable
         @SerialName("conversation.member-leave")
         data class MemberLeaveDTO(
-            @SerialName("qualified_conversation")
-            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             // TODO: rename members to something else since the name is confusing (it's only userIDs)
