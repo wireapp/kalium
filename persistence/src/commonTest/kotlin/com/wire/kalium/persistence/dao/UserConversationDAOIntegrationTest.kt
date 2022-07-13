@@ -45,9 +45,11 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     @Test
     fun givenTheUserIsPartOfConversation_WHenGettingUsersNotPartOfConversation_ThenReturnUsersWithoutTheConversationMember() = runTest {
+        //given
         val userThatIsPartOfConversation = newUserEntity(QualifiedIDEntity("3", "someDomain"))
 
-        userDAO.upsertUsers(listOf(user1, user2, userThatIsPartOfConversation))
+        val allUsers = listOf(user1, user2, userThatIsPartOfConversation)
+        userDAO.upsertUsers(allUsers)
 
         val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
 
@@ -61,9 +63,11 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             )
         )
 
+        //when
         val result = userDAO.getUsersNotInConversation(conversationId)
 
-        assertTrue { !result.contains(userThatIsPartOfConversation) }
+        //then
+        assertTrue { result == (allUsers - userThatIsPartOfConversation) }
     }
 
     @Test
