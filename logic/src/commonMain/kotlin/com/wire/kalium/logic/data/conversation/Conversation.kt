@@ -17,9 +17,13 @@ data class Conversation(
     val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
-    val lastModifiedDate: String?
+    val lastModifiedDate: String?,
+    val access: List<Access>,
+    val accessRole: List<AccessRole>?
 ) {
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
+    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE }
+    enum class Access { PRIVATE, INVITE, LINK, CODE }
 }
 
 sealed class ProtocolInfo {
@@ -38,7 +42,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val otherUser: OtherUser,
         val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
-        val userType: UserType
+        val userType: UserType,
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -53,7 +57,9 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val userType: UserType,
         val lastModifiedDate: String?,
         val connection: com.wire.kalium.logic.data.user.Connection,
-        val protocolInfo: ProtocolInfo
+        val protocolInfo: ProtocolInfo,
+        val access: List<Conversation.Access>,
+        val accessRole: List<Conversation.AccessRole>?
     ) : ConversationDetails(
         Conversation(
             id = conversationId,
@@ -64,6 +70,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
+            access = access,
+            accessRole = accessRole
         )
     )
 }
