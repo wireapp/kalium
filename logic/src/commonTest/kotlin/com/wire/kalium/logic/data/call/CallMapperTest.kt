@@ -204,7 +204,7 @@ class CallMapperTest {
             callerId = callerId,
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
-        val callMetadata = CallMetaData(
+        val callMetadata = CallMetadata(
             isMuted = true,
             isCameraOn = false,
             conversationName = "conv name",
