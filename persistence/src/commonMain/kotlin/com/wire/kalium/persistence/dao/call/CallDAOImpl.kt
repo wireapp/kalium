@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao.call
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOne
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.CallsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
@@ -79,9 +80,12 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
     override suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status? =
         callsQueries.selectLastCallByConversationId(conversationId)
             .asFlow()
-            .mapToOne()
-            .map { mapper.toModel(dbEntry = it).status }
-            .firstOrNull()
+            .mapToOneOrNull()
+            .map { call ->
+                call?.let {
+                    mapper.toModel(dbEntry = it).status
+                }
+            }.firstOrNull()
 
     override suspend fun deleteAllCalls() {
         callsQueries.deleteAllCalls()
