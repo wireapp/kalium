@@ -85,7 +85,9 @@ internal class ConversationMapperImpl(
         )
 
     override fun toConversationDetailsOneToOne(
-        conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser
+        conversation: Conversation,
+        otherUser: OtherUser,
+        selfUser: SelfUser
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
@@ -144,39 +146,39 @@ internal class ConversationMapperImpl(
             ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
         }
     }
+}
 
-    private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
-        ConversationEntity.Type.SELF -> Conversation.Type.SELF
-        ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
-        ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
-        ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.CONNECTION_PENDING
-    }
+private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
+    ConversationEntity.Type.SELF -> Conversation.Type.SELF
+    ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
+    ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
+    ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.CONNECTION_PENDING
+}
 
-    private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {
-        ConversationAccessRoleDTO.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
-        ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
-        ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
-        ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
-    }
+private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {
+    ConversationAccessRoleDTO.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
+    ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
+    ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
+    ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
+}
 
-    private fun ConversationAccessDTO.toDAO(): ConversationEntity.Access = when (this) {
-        ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
-        ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
-        ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
-        ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
-    }
+private fun ConversationAccessDTO.toDAO(): ConversationEntity.Access = when (this) {
+    ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
+    ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
+    ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
+    ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
+}
 
-    private fun ConversationEntity.Access.toDomain(): Conversation.Access = when (this) {
-        ConversationEntity.Access.PRIVATE -> Conversation.Access.PRIVATE
-        ConversationEntity.Access.INVITE -> Conversation.Access.INVITE
-        ConversationEntity.Access.LINK -> Conversation.Access.LINK
-        ConversationEntity.Access.CODE -> Conversation.Access.CODE
-    }
+private fun ConversationEntity.Access.toDomain(): Conversation.Access = when (this) {
+    ConversationEntity.Access.PRIVATE -> Conversation.Access.PRIVATE
+    ConversationEntity.Access.INVITE -> Conversation.Access.INVITE
+    ConversationEntity.Access.LINK -> Conversation.Access.LINK
+    ConversationEntity.Access.CODE -> Conversation.Access.CODE
+}
 
-    private fun ConversationEntity.AccessRole.toDomain(): Conversation.AccessRole = when (this) {
-        ConversationEntity.AccessRole.TEAM_MEMBER -> Conversation.AccessRole.TEAM_MEMBER
-        ConversationEntity.AccessRole.NON_TEAM_MEMBER -> Conversation.AccessRole.NON_TEAM_MEMBER
-        ConversationEntity.AccessRole.GUEST -> Conversation.AccessRole.GUEST
-        ConversationEntity.AccessRole.SERVICE -> Conversation.AccessRole.SERVICE
-    }
+private fun ConversationEntity.AccessRole.toDomain(): Conversation.AccessRole = when (this) {
+    ConversationEntity.AccessRole.TEAM_MEMBER -> Conversation.AccessRole.TEAM_MEMBER
+    ConversationEntity.AccessRole.NON_TEAM_MEMBER -> Conversation.AccessRole.NON_TEAM_MEMBER
+    ConversationEntity.AccessRole.GUEST -> Conversation.AccessRole.GUEST
+    ConversationEntity.AccessRole.SERVICE -> Conversation.AccessRole.SERVICE
 }

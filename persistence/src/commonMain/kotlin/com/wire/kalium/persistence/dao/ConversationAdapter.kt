@@ -12,7 +12,6 @@ class ConversationAccessRoleListAdapter : ColumnAdapter<List<ConversationEntity.
 
     override fun encode(value: List<ConversationEntity.AccessRole>): String = value.joinToString(separator = SEPARATOR)
 
-
     private companion object {
         private const val SEPARATOR = ","
     }

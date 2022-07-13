@@ -444,6 +444,7 @@ class GetNotificationsUseCaseTest {
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )
+
         private fun entityTextMessage(
             conversationId: QualifiedID,
             senderId: QualifiedID = TestUser.USER_ID,
@@ -531,7 +532,6 @@ class GetNotificationsUseCaseTest {
                 time,
                 commentType
             )
-
 
         private fun selfUserWithStatus(status: UserAvailabilityStatus = UserAvailabilityStatus.NONE) =
             TestUser.SELF.copy(availabilityStatus = status)

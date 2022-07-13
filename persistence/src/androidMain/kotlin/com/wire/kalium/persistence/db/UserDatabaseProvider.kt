@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.ConversationAccessListAdapter
 import com.wire.kalium.persistence.dao.ConversationAccessRoleListAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.MemberRoleAdapter
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl

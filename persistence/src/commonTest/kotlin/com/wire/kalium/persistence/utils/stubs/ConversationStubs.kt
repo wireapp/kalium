@@ -26,4 +26,3 @@ fun newConversationEntity(id: QualifiedIDEntity) = ConversationEntity(
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
 )
-
