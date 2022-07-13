@@ -179,7 +179,7 @@ class GetNotificationsUseCaseImpl(
             timeParser.dateMinusMilliseconds(eligibleMessages.minOf { it.date }, NOTIFICATION_DATE_OFFSET)
         }
 
-        //TODO here is the place to improve:
+        // TODO here is the place to improve:
         // update NotificationDate for all needed Conversations in one, instead of doing it one by one
         // that makes conversationRepository.getConversationsForNotifications() emits new value after each DB update
         conversation.lastNotificationDate.let {
@@ -193,10 +193,10 @@ class GetNotificationsUseCaseImpl(
         conversation: Conversation
     ): List<Message> =
         filter { message ->
-            (message.senderUserId != selfUser.id
-                    && shouldMessageBeVisibleAsNotification(message)
-                    && isMessageContentSupportedInNotifications(message)
-                    && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus))
+            message.senderUserId != selfUser.id &&
+                    shouldMessageBeVisibleAsNotification(message) &&
+                    isMessageContentSupportedInNotifications(message) &&
+                    shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus)
         }
 
     private fun shouldIncludeMessageForNotifications(
@@ -227,24 +227,24 @@ class GetNotificationsUseCaseImpl(
         }
 
     private fun allNotificationsAllowed(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        (conversationMutedStatus == MutedConversationStatus.AllAllowed
-                && (selfUser.availabilityStatus == UserAvailabilityStatus.NONE
-                || selfUser.availabilityStatus == UserAvailabilityStatus.AVAILABLE))
+        conversationMutedStatus == MutedConversationStatus.AllAllowed &&
+                (selfUser.availabilityStatus == UserAvailabilityStatus.NONE ||
+                        selfUser.availabilityStatus == UserAvailabilityStatus.AVAILABLE)
 
     private fun allMuted(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        (conversationMutedStatus == MutedConversationStatus.AllMuted
-                || selfUser.availabilityStatus == UserAvailabilityStatus.AWAY)
+        conversationMutedStatus == MutedConversationStatus.AllMuted ||
+                selfUser.availabilityStatus == UserAvailabilityStatus.AWAY
 
     private fun onlyMentionsAllowed(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        (conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed
-                || selfUser.availabilityStatus == UserAvailabilityStatus.BUSY)
+        conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed ||
+                selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
     private fun isMessageContentSupportedInNotifications(message: Message): Boolean = when (message.content) {
         is MessageContent.Unknown -> false
         is MessageContent.MemberChange -> false
         MessageContent.MissedCall -> true
         is MessageContent.Text -> true
-        is MessageContent.Calling -> true
+        is MessageContent.Calling -> false
         is MessageContent.Asset -> true
         is MessageContent.DeleteMessage -> false
         is MessageContent.TextEdited -> false
