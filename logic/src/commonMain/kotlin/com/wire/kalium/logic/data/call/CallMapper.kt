@@ -67,7 +67,7 @@ class CallMapper {
 
     fun toCall(
         callEntity: CallEntity,
-        metadata: CallMetaData?
+        metadata: CallMetadata?
     ): Call = Call(
         conversationId = ConversationId(
             value = callEntity.conversationId.value,

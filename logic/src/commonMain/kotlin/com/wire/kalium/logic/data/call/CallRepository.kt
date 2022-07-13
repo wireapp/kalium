@@ -20,6 +20,7 @@ import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
@@ -34,8 +35,8 @@ import kotlin.math.max
 interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
-    fun updateCallMetadataProfileFlow(callMetadataProfile: CallMetaDataProfile)
-    fun getCallMetadataProfile(): CallMetaDataProfile
+    fun updateCallMetadataProfileFlow(callMetadataProfile: CallMetadataProfile)
+    fun getCallMetadataProfile(): CallMetadataProfile
     suspend fun callsFlow(): Flow<List<Call>>
     suspend fun incomingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
@@ -65,7 +66,7 @@ internal class CallDataSource(
     private val callMapper: CallMapper = MapperProvider.callMapper()
 ) : CallRepository {
 
-    private val _callMetadataProfile = MutableStateFlow(CallMetaDataProfile(data = emptyMap()))
+    private val _callMetadataProfile = MutableStateFlow(CallMetadataProfile(data = emptyMap()))
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
@@ -75,26 +76,26 @@ internal class CallDataSource(
         callApi.connectToSFT(url = url, data = data)
     }
 
-    override fun updateCallMetadataProfileFlow(callMetadataProfile: CallMetaDataProfile) {
+    override fun updateCallMetadataProfileFlow(callMetadataProfile: CallMetadataProfile) {
         _callMetadataProfile.value = callMetadataProfile
     }
 
-    override fun getCallMetadataProfile(): CallMetaDataProfile = _callMetadataProfile.value
+    override fun getCallMetadataProfile(): CallMetadataProfile = _callMetadataProfile.value
 
     override suspend fun callsFlow(): Flow<List<Call>> = callDAO
-        .getCalls()
+        .observeCalls()
         .combineWithCallsMetadata()
 
     override suspend fun incomingCallsFlow(): Flow<List<Call>> = callDAO
-        .getIncomingCalls()
+        .observeIncomingCalls()
         .combineWithCallsMetadata()
 
     override suspend fun ongoingCallsFlow(): Flow<List<Call>> = callDAO
-        .getOngoingCalls()
+        .observeOngoingCalls()
         .combineWithCallsMetadata()
 
     override suspend fun establishedCallsFlow(): Flow<List<Call>> = callDAO
-        .getEstablishedCalls()
+        .observeEstablishedCalls()
         .combineWithCallsMetadata()
 
     // This needs to be reworked the logic into the useCases
@@ -128,7 +129,7 @@ internal class CallDataSource(
             callerId = callerIdWithDomain
         )
 
-        val metadata = CallMetaData(
+        val metadata = CallMetadata(
             conversationName = conversation.conversation.name,
             conversationType = conversation.conversation.type,
             callerName = caller?.name,
@@ -163,7 +164,9 @@ internal class CallDataSource(
                     )
                 } else { // LAST CALL IS NOT ACTIVE
                     // Save into database
-                    callDAO.insertCall(call = callEntity)
+                    wrapStorageRequest {
+                        callDAO.insertCall(call = callEntity)
+                    }
 
                     // Save into metadata
                     updateCallMetadata(
@@ -180,7 +183,9 @@ internal class CallDataSource(
                     )
                 } else { // LAST CALL NOT ACTIVE
                     // Save into database
-                    callDAO.insertCall(call = callEntity)
+                    wrapStorageRequest {
+                        callDAO.insertCall(call = callEntity)
+                    }
 
                     // Save into metadata
                     updateCallMetadata(
@@ -191,7 +196,9 @@ internal class CallDataSource(
             }
         } else if (status == CallStatus.STARTED) {
             // Save into database
-            callDAO.insertCall(call = callEntity)
+            wrapStorageRequest {
+                callDAO.insertCall(call = callEntity)
+            }
 
             // Save into metadata
             updateCallMetadata(
@@ -203,7 +210,7 @@ internal class CallDataSource(
 
     private fun updateCallMetadata(
         conversationId: ConversationId,
-        metadata: CallMetaData
+        metadata: CallMetadata
     ) {
         val callMetadataProfile = _callMetadataProfile.value
         val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
@@ -216,10 +223,10 @@ internal class CallDataSource(
     }
 
     override suspend fun updateCallStatusById(conversationId: String, status: CallStatus) {
-        val callMetaDataProfile = _callMetadataProfile.value
+        val callMetadataProfile = _callMetadataProfile.value
         val modifiedConversationId = conversationId.toConversationId()
-        callMetaDataProfile.data[modifiedConversationId.toString()]?.let { call ->
-            val updatedCallMetadata = callMetaDataProfile.data.toMutableMap().apply {
+        callMetadataProfile.data[modifiedConversationId.toString()]?.let { call ->
+            val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                 val establishedTime =
                     if (status == CallStatus.ESTABLISHED) timeParser.currentTimeStamp()
                     else call.establishedTime
@@ -228,10 +235,12 @@ internal class CallDataSource(
                 this[modifiedConversationId.toString()] = call.copy(establishedTime = establishedTime)
 
                 // Update Call in Database
-                callDAO.updateLastCallStatusByConversationId(
-                    status = callMapper.toCallEntityStatus(callStatus = status),
-                    conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
-                )
+                wrapStorageRequest {
+                    callDAO.updateLastCallStatusByConversationId(
+                        status = callMapper.toCallEntityStatus(callStatus = status),
+                        conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
+                    )
+                }
 
                 // Persist Missed Call Message if necessary
                 if ((status == CallStatus.CLOSED && establishedTime == null) || status == CallStatus.MISSED) {
@@ -239,7 +248,7 @@ internal class CallDataSource(
                 }
             }
 
-            _callMetadataProfile.value = callMetaDataProfile.copy(
+            _callMetadataProfile.value = callMetadataProfile.copy(
                 data = updatedCallMetadata
             )
         }
@@ -247,9 +256,9 @@ internal class CallDataSource(
 
     override fun updateIsMutedById(conversationId: String, isMuted: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
-        callMetadataProfile.data[conversationId]?.let { callMetaData ->
+        callMetadataProfile.data[conversationId]?.let { callMetadata ->
             val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = callMetaData.copy(
+                this[conversationId] = callMetadata.copy(
                     isMuted = isMuted
                 )
             }
@@ -322,7 +331,9 @@ internal class CallDataSource(
      * To be used only in Debug mode
      */
     override suspend fun deleteAllCalls() {
-        callDAO.deleteAllCalls()
+        wrapStorageRequest {
+            callDAO.deleteAllCalls()
+        }
     }
 
     private suspend fun persistMissedCallMessage(
