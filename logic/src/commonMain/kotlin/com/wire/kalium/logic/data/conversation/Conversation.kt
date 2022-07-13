@@ -51,7 +51,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val conversationId: ConversationId,
         val otherUser: OtherUser?,
         val userType: UserType,
-        val lastModifiedDate: String?,
+        val lastModifiedDate: String,
         val connection: com.wire.kalium.logic.data.user.Connection,
         val protocolInfo: ProtocolInfo
     ) : ConversationDetails(

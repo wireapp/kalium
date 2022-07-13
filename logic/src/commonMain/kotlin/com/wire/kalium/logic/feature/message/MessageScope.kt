@@ -4,6 +4,7 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
@@ -23,11 +24,14 @@ import com.wire.kalium.logic.feature.asset.SendImageMessageUseCase
 import com.wire.kalium.logic.feature.asset.SendImageMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
+import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 
 @Suppress("LongParameterList")
 class MessageScope(
+    private val connectionRepository: ConnectionRepository,
     private val userId: QualifiedID,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
@@ -127,8 +131,12 @@ class MessageScope(
             messageRepository
         )
 
+    val observeConnectionList: ObserveConnectionListUseCase
+        get() = ObserveConnectionListUseCaseImpl(connectionRepository, syncManager)
+
     val getNotifications: GetNotificationsUseCase
         get() = GetNotificationsUseCaseImpl(
+            observeConnectionList,
             messageRepository,
             userRepository,
             conversationRepository,

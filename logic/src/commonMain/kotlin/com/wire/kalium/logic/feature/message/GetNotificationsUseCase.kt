@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
@@ -16,10 +16,12 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import com.wire.kalium.logic.util.TimeParser
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flatMapMerge
@@ -32,17 +34,19 @@ interface GetNotificationsUseCase {
 
 /**
  *
+ * @param observeConnectionList ObserveConnectionListUseCase for getting connection requests
  * @param messageRepository MessageRepository for getting Messages that user should be notified about
  * @param userRepository UserRepository for getting SelfUser data, Self userId and OtherUser data (authors of messages)
  * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
  * @param timeParser TimeParser for getting current time as a formatted String and making some calculation on String TimeStamp
  * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
- * @param publicUserMapper PublicUserMapper for mapping PublicUser object into LocalNotificationMessageAuthor
+ * @param localNotificationMessageMapper LocalNotificationMessageMapper for mapping PublicUser object into LocalNotificationMessageAuthor
  *
  * @return Flow<List<LocalNotificationConversation>> - Flow of Notification List that should be shown to the user.
  * That Flow emits everytime when the list is changed
  */
 class GetNotificationsUseCaseImpl(
+    private val observeConnectionList: ObserveConnectionListUseCase,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
@@ -53,6 +57,12 @@ class GetNotificationsUseCaseImpl(
 
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
+        return observeRegularNotifications()
+            .combine(observeConnectionRequests()) { messages, connections -> messages.plus(connections) }
+            .distinctUntilChanged()
+    }
+
+    private suspend fun observeRegularNotifications(): Flow<List<LocalNotificationConversation>> {
         // Fetching the list of Conversations that have messages to notify user about
         // And SelfUser
         return conversationRepository.getConversationsForNotifications()
@@ -65,13 +75,12 @@ class GetNotificationsUseCaseImpl(
                     // If user is AWAY we don't show any notification
                     flowOf(listOf())
                 } else {
-                    val selfUserId = userRepository.getSelfUserId()
                     conversations.flatMapFromIterable { conversation ->
                         // Fetching the Messages for the Conversation that are newer than `lastNotificationDate`
                         observeMessagesList(conversation)
                             .map { messages ->
                                 // Filtering messages according to UserAvailabilityStatus and MutedConversationStatus
-                                val eligibleMessages = messages.onlyEligibleMessages(selfUserId, selfUser, conversation)
+                                val eligibleMessages = messages.onlyEligibleMessages(selfUser, conversation)
                                 // If some messages were filtered by status, we need to update lastNotificationDate,
                                 // to not notify User about that messages, when User changes status
                                 updateConversationNotificationDateIfNeeded(eligibleMessages, messages, conversation)
@@ -125,7 +134,17 @@ class GetNotificationsUseCaseImpl(
                             }
                     }
             }
-            .distinctUntilChanged()
+    }
+
+    private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
+        return observeConnectionList()
+            .map { requests ->
+                println("cyka requests: ${requests.size}")
+                println("cyka requests: $requests")
+                requests
+                    .filterIsInstance<ConversationDetails.Connection>()
+                    .map { localNotificationMessageMapper.fromConnectionToLocalNotificationConversation(it) }
+            }
     }
 
     private suspend fun observeMessagesList(conversation: Conversation) =
@@ -171,12 +190,11 @@ class GetNotificationsUseCaseImpl(
     }
 
     private fun List<Message>.onlyEligibleMessages(
-        selfUserId: QualifiedID,
         selfUser: SelfUser,
         conversation: Conversation
     ): List<Message> =
         filter { message ->
-            message.senderUserId != selfUserId
+            message.senderUserId != selfUser.id
                     && shouldMessageBeVisibleAsNotification(message)
                     && isMessageContentSupportedInNotifications(message)
                     && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus)
