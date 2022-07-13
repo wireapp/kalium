@@ -55,7 +55,13 @@ enum class UserTypeEntity {
      * A temporary user that joined using the guest web interface,
      * from outside the backend network
      */
-    GUEST;
+    GUEST,
+
+    /**
+     * A user on the same backend,
+     * when current user doesn't belongs to any team
+     */
+    NONE;
 }
 
 internal typealias UserAssetIdEntity = QualifiedIDEntity
@@ -113,8 +119,8 @@ interface UserDAO {
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
-    suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity) : List<UserEntity>
+    suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity): List<UserEntity>
     suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
-    suspend fun getUsersNotInConversationByNameOrHandleOrEmail(conversationId: QualifiedIDEntity, searchQuery: String) : List<UserEntity>
-    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String) : List<UserEntity>
+    suspend fun getUsersNotInConversationByNameOrHandleOrEmail(conversationId: QualifiedIDEntity, searchQuery: String): List<UserEntity>
+    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): List<UserEntity>
 }

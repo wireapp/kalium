@@ -151,7 +151,6 @@ actual class UserDatabaseProvider(private val storePath: File) {
     }
 
     private companion object {
-        // FIXME: user id/domain as the db name
         const val DATABASE_NAME = "main.db"
     }
 }
