@@ -75,7 +75,8 @@ object TestNetworkException {
 }
 
 object TestNetworkResponseError {
-    fun <T : Any> genericError(): NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
+    fun noNetworkConnection(): NetworkFailure = NetworkFailure.NoNetworkConnection(null)
+    fun <T : Any> genericResponseError(): NetworkResponse<T> = NetworkResponse.Error(TestNetworkException.generic)
 }
 
 fun serverMiscommunicationFailure(code: Int = HttpStatusCode.BadRequest.value, message: String = "", label: String = "") =

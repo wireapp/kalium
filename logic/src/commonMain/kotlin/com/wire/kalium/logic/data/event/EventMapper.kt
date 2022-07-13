@@ -30,6 +30,7 @@ class EventMapper(
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
                 is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
+                is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
             }
         } ?: listOf()
@@ -93,21 +94,28 @@ class EventMapper(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberJoinDTO
     ) = Event.Conversation.MemberJoin(
-        id,
-        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
-        eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
-        eventContentDTO.time
+        id = id,
+        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        addedBy = idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        members = eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
+        timestampIso = eventContentDTO.time
     )
 
     private fun memberLeave(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberLeaveDTO
     ) = Event.Conversation.MemberLeave(
-        id,
-        idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-        idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
-        eventContentDTO.members.qualifiedUserIds.map { Member(idMapper.fromApiModel(it)) },
-        eventContentDTO.time
+        id = id,
+        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        removedBy = idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
+        removedList = eventContentDTO.members.qualifiedUserIds.map { idMapper.fromApiModel(it) },
+        timestampIso = eventContentDTO.time
+    )
+
+    private fun featureConfig(
+        id: String,
+        featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO
+    ) = Event.FeatureConfig.FeatureConfigUpdated(
+        id, featureConfigUpdatedDTO.name.name, featureConfigUpdatedDTO.data.status.name
     )
 }

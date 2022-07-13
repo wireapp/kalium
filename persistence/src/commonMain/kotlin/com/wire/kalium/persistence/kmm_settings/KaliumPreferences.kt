@@ -21,6 +21,7 @@ interface KaliumPreferences {
 
     fun putBoolean(key: String, value: Boolean)
     fun getBoolean(key: String, defaultValue: Boolean = false): Boolean
+    fun getBoolean(key: String): Boolean?
 
 }
 
@@ -35,6 +36,9 @@ class KaliumPreferencesSettings(
 
     override fun getBoolean(key: String, defaultValue: Boolean): Boolean =
         encryptedSettings.getBoolean(key, defaultValue)
+
+    override fun getBoolean(key: String): Boolean? =
+        encryptedSettings.getBooleanOrNull(key)
 
     override fun remove(key: String) = encryptedSettings.remove(key)
 

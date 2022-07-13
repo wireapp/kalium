@@ -80,7 +80,7 @@ class SessionEstablisherImpl(
         detailedContacts.foldToEitherWhileRight(mutableMapOf<UserId, List<ClientId>>()) { recipient, userAccumulator ->
             getMissingClientsForRecipients(recipient).map { missingClients ->
                 if (missingClients.isNotEmpty()) {
-                    userAccumulator[recipient.member.id] = missingClients
+                    userAccumulator[recipient.id] = missingClients
                 }
                 userAccumulator
             }
@@ -90,7 +90,7 @@ class SessionEstablisherImpl(
         recipient: Recipient
     ): Either<ProteusFailure, List<ClientId>> =
         recipient.clients.foldToEitherWhileRight(mutableListOf<ClientId>()) { client, clientIdAccumulator ->
-            doesSessionExist(recipient.member.id, client).map { sessionExists ->
+            doesSessionExist(recipient.id, client).map { sessionExists ->
                 if (!sessionExists) {
                     clientIdAccumulator += client
                 }

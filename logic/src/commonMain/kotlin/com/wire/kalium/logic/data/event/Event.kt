@@ -50,9 +50,9 @@ sealed class Event(open val id: String) {
 
         data class MemberLeave(
             override val id: String,
-            override val conversationId: ConversationId,
+             override val conversationId: ConversationId,
             val removedBy: UserId,
-            val members: List<Member>,
+            val removedList: List<UserId>,
             val timestampIso: String
         ) : Conversation(id, conversationId)
 
@@ -67,6 +67,16 @@ sealed class Event(open val id: String) {
 
     }
 
+    sealed class FeatureConfig(
+        id: String,
+    ) : Event(id) {
+        data class FeatureConfigUpdated(
+            override val id: String,
+            val name: String,
+            val status: String,
+        ) : FeatureConfig(id)
+    }
+
     sealed class User(
         id: String,
     ) : Event(id) {
@@ -77,5 +87,5 @@ sealed class Event(open val id: String) {
         ) : User(id)
     }
 
-    data class Unknown(override val id: String): Event(id)
+    data class Unknown(override val id: String) : Event(id)
 }

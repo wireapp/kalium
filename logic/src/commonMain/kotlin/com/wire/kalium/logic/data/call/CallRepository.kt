@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -36,7 +36,14 @@ interface CallRepository {
     fun incomingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
     fun establishedCallsFlow(): Flow<List<Call>>
-    suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
+    suspend fun createCall(
+        conversationId: ConversationId,
+        status: CallStatus,
+        callerId: String,
+        isMuted: Boolean,
+        isCameraOn: Boolean
+    )
+
     suspend fun updateCallStatusById(conversationId: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
@@ -47,15 +54,15 @@ interface CallRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CallDataSource(
     private val callApi: CallApi,
+    private val persistMessage: PersistMessageUseCase,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
     private val timeParser: TimeParser,
-    private val messageRepository: MessageRepository,
     private val callMapper: CallMapper = MapperProvider.callMapper()
 ) : CallRepository {
 
-    //TODO(question): to be saved somewhere ?
+    // TODO(question): to be saved somewhere?
     private val _callProfile = MutableStateFlow(CallProfile(calls = emptyMap()))
     private val allCalls = _callProfile.asStateFlow()
 
@@ -111,12 +118,12 @@ internal class CallDataSource(
 
         // in OnIncomingCall we get callerId without a domain,
         // to cover that case and have a valid UserId we have that workaround
-        //TODO fix this callerId in OnIncomingCall once we support federation
+        // TODO fix this callerId in OnIncomingCall once we support federation
         val myId = userRepository.getSelfUserId()
         val callerIdWithDomain = UserId(callerId.toUserId().value, myId.domain)
         val caller = userRepository.getKnownUser(callerIdWithDomain).first()
 
-        val team = caller?.team
+        val team = caller?.teamId
             ?.let { teamId -> teamRepository.getTeam(teamId).first() }
 
         val call = Call(
@@ -239,17 +246,16 @@ internal class CallDataSource(
 
     private suspend fun persistMissedCallMessageIfNeeded(call: Call) {
         if ((call.status == CallStatus.CLOSED && call.establishedTime == null) || call.status == CallStatus.MISSED) {
-            messageRepository.persistMessage(
-                Message.System(
-                    uuid4().toString(),
-                    MessageContent.MissedCall,
-                    call.conversationId,
-                    timeParser.currentTimeStamp(),
-                    call.callerId.toUserId(),
-                    Message.Status.SENT,
-                    Message.Visibility.VISIBLE
-                )
+            val message = Message.System(
+                uuid4().toString(),
+                MessageContent.MissedCall,
+                call.conversationId,
+                timeParser.currentTimeStamp(),
+                call.callerId.toUserId(),
+                Message.Status.SENT,
+                Message.Visibility.VISIBLE
             )
+            persistMessage(message)
         }
     }
 }
