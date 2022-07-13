@@ -42,7 +42,9 @@ class GetMessageAssetUseCaseTest {
         val (fakeFileSystem, rootPath) = createFileSystem()
         val encryptedPath = "output_encrypted_path".toPath()
         val rawDataPath = copyDataToDummyPath(expectedDecodedAsset, rootPath, fakeFileSystem)
-        encryptFileWithAES256(rawDataPath, randomAES256Key, encryptedPath, fakeFileSystem)
+        val rawDataSource = fakeFileSystem.source(rawDataPath)
+        val encryptedDataSink = fakeFileSystem.sink(encryptedPath)
+        encryptFileWithAES256(rawDataSource, randomAES256Key, encryptedDataSink)
 
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
@@ -154,7 +156,7 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(anything(), anything(), matching { it.data.contentEquals(secretKey.data) })
+                .whenInvokedWith(anything(), anything(), anything(), matching { it.data.contentEquals(secretKey.data) })
                 .thenReturn(Either.Right(encodedPath))
             return this
         }
@@ -177,7 +179,7 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(any(), any(), any())
+                .whenInvokedWith(any(), any(), any(), anything())
                 .thenReturn(Either.Left(noNetworkConnection))
             return this
         }

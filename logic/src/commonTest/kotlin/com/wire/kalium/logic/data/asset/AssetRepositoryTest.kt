@@ -2,6 +2,8 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.AssetsStorageFolder
+import com.wire.kalium.logic.data.id.CacheFolder
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.util.shouldFail
@@ -16,6 +18,7 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
@@ -23,14 +26,16 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
-import io.mockative.verify
 import io.mockative.twice
+import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
+import okio.buffer
 import okio.fakefilesystem.FakeFileSystem
+import okio.use
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -41,18 +46,19 @@ class AssetRepositoryTest {
     @Test
     fun givenValidParams_whenUploadingPublicAssets_thenShouldSucceedWithAMappedResponse() = runTest {
         // Given
-        val dataNamePath = "temp_path".toPath()
+        val dataNamePath = "temp-path".toPath()
+        val fullDataPath = getTemporaryStoragePath(dataNamePath)
         val dummyData = "some-dummy-data".toByteArray()
+        val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 
         val (arrangement, assetRepository) = Arrangement()
-            .withStoredData(dummyData, dataNamePath)
-            .withPathStub(dataNamePath)
-            .withSuccessfulUpload()
+            .withStoredData(dummyData, fullDataPath)
+            .withSuccessfulUpload(expectedAssetResponse)
             .arrange()
 
         // When
         val actual = assetRepository.uploadAndPersistPublicAsset(
-            assetDataPath = dataNamePath,
+            assetDataPath = fullDataPath,
             mimeType = ImageAsset.JPEG,
             assetDataSize = dummyData.size.toLong()
         )
@@ -71,29 +77,35 @@ class AssetRepositoryTest {
     fun givenValidParams_whenUploadingPrivateAssets_thenShouldSucceedWithAMappedResponse() = runTest {
         // Given
         val dataNamePath = "dummy-path".toPath()
+        val fullDataPath = getTemporaryStoragePath(dataNamePath)
         val dummyData = "some-dummy-data".toByteArray()
         val randomAES256Key = generateRandomAES256Key()
+        val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 
         val (arrangement, assetRepository) = Arrangement()
-            .withStoredData(dummyData, dataNamePath)
-            .withPathStub(dataNamePath)
-            .withSuccessfulUpload()
+            .withStoredData(dummyData, fullDataPath)
+            .withSuccessfulUpload(expectedAssetResponse)
             .arrange()
 
         // When
         val actual = assetRepository.uploadAndPersistPrivateAsset(
-            assetDataPath = dataNamePath,
+            assetDataPath = fullDataPath,
             mimeType = ImageAsset.JPEG,
             otrKey = randomAES256Key
         )
 
         // Then
         actual.shouldSucceed {
-            assertTrue(randomAES256Key.data.equals(it.second))
+            assertEquals(expectedAssetResponse.key, it.first.key)
+            assertEquals(expectedAssetResponse.domain, it.first.domain)
+            assertEquals(expectedAssetResponse.token, it.first.assetToken)
         }
 
         verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::uploadAsset)
             .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::insertAsset)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -101,17 +113,17 @@ class AssetRepositoryTest {
     fun givenAnError_whenUploadingPublicAssets_thenShouldFail() = runTest {
         // Given
         val dataNamePath = "dummy-path".toPath()
+        val fullDataPath = getTemporaryStoragePath(dataNamePath)
         val dummyData = "some-dummy-data".toByteArray()
         val (arrangement, assetRepository) = Arrangement()
-            .withStoredData(dummyData, dataNamePath)
-            .withPathStub(dataNamePath)
+            .withStoredData(dummyData, fullDataPath)
             .withErrorUploadResponse()
             .arrange()
 
         // When
         val actual = assetRepository.uploadAndPersistPublicAsset(
             mimeType = ImageAsset.JPEG,
-            assetDataPath = dataNamePath,
+            assetDataPath = fullDataPath,
             assetDataSize = dummyData.size.toLong()
         )
 
@@ -129,21 +141,20 @@ class AssetRepositoryTest {
     fun givenAnError_whenUploadingPrivateAssets_thenShouldFail() = runTest {
         // Given
         val dummyPath = "dummy-path".toPath()
+        val fullDataPath = getTemporaryStoragePath(dummyPath)
         val dummyData = "some-dummy-data".toByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val (arrangement, assetRepository) = Arrangement()
-            .withStoredData(dummyData, dummyPath)
-            .withPathStub(dummyPath)
+            .withStoredData(dummyData, fullDataPath)
             .withErrorUploadResponse()
             .arrange()
 
         // When
-        val actual =
-            assetRepository.uploadAndPersistPrivateAsset(
-                mimeType = ImageAsset.JPEG,
-                assetDataPath = dummyPath,
-                otrKey = randomAES256Key
-            )
+        val actual = assetRepository.uploadAndPersistPrivateAsset(
+            mimeType = ImageAsset.JPEG,
+            assetDataPath = fullDataPath,
+            otrKey = randomAES256Key
+        )
 
         // Then
         actual.shouldFail {
@@ -159,11 +170,9 @@ class AssetRepositoryTest {
     fun givenAListOfAssets_whenSavingAssets_thenShouldSucceed() = runTest {
         // Given
         val assetsIdToPersist = listOf(AssetId("value1", "domain1"), AssetId("value2", "domain2"))
-        val dummyPath = "dummy-path".toPath()
         val dummyData = "some-dummy-data".toByteArray()
 
         val (arrangement, assetRepository) = Arrangement()
-            .withPathStub(dummyPath)
             .withSuccessfulDownload(assetsIdToPersist, dummyData)
             .arrange()
 
@@ -184,11 +193,9 @@ class AssetRepositoryTest {
     fun givenAnAssetId_whenDownloadingAssetsAndNotPresentInDB_thenShouldReturnItsBinaryDataFromRemoteAndPersistIt() = runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
-        val dummyPath = "dummy_path".toPath()
         val dummyData = "some-dummy-data".toByteArray()
 
         val (arrangement, assetRepository) = Arrangement()
-            .withPathStub(dummyPath)
             .withSuccessfulDownload(listOf(assetKey), dummyData)
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .arrange()
@@ -215,10 +222,8 @@ class AssetRepositoryTest {
     fun givenAnError_whenDownloadingAssets_thenShouldReturnThrowNetworkFailure() = runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
-        val dummyPath = "dummy_path".toPath()
 
         val (arrangement, assetRepository) = Arrangement()
-            .withPathStub(dummyPath)
             .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .withErrorDownloadResponse()
             .arrange()
@@ -235,10 +240,10 @@ class AssetRepositoryTest {
             verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
                 .with(matching { it == assetKey.value })
                 .wasInvoked(exactly = once)
-
             verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(eq(assetKey), eq(null))
+                .with(matching { it.value == assetKey.value }, eq(null))
                 .wasInvoked(exactly = once)
+
         }
     }
 
@@ -247,10 +252,9 @@ class AssetRepositoryTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
         val expectedImage = "my_image_asset".toByteArray()
-        val dummyPath = "dummy_path".toPath()
+        val dummyPath = getPersistentStoragePath("dummy_path".toPath())
 
         val (arrangement, assetRepository) = Arrangement()
-            .withPathStub(dummyPath)
             .withSuccessfulDownload(listOf(assetKey), expectedImage)
             .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, dummyPath, expectedImage.size.toLong()))
             .arrange()
@@ -270,16 +274,29 @@ class AssetRepositoryTest {
     }
 
     private class Arrangement {
+        private val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
+        val fakeFileSystem = FakeFileSystem()
+            .also {
+                it.allowDeletingOpenFiles = true
+                it.createDirectories(rootFileSystemPath.value.toPath())
+                it.createDirectories(rootCachePath.value.toPath())
+            }
 
-        var userHomePath = "/Users/me".toPath()
-
-        val fakeFileSystem = FakeFileSystem().also { it.createDirectories(userHomePath) }
+        val kaliumFileSystem by lazy {
+            FakeKaliumFileSystem(dataStoragePaths, fakeFileSystem)
+                .also {
+                    if (!it.exists(dataStoragePaths.cachePath.value.toPath()))
+                        it.createDirectory(
+                            dir = dataStoragePaths.cachePath.value.toPath(),
+                            mustCreate = true
+                        )
+                    if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath()))
+                        it.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
+                }
+        }
 
         @Mock
         val assetApi = mock(classOf<AssetApi>())
-
-        @Mock
-        private val kaliumFileSystem = mock(classOf<KaliumFileSystem>())
 
         @Mock
         val assetDAO = mock(classOf<AssetDAO>())
@@ -288,25 +305,15 @@ class AssetRepositoryTest {
 
         private val assetRepository = AssetDataSource(assetApi, assetDAO, assetMapper, kaliumFileSystem)
 
-        fun withPathStub(tempDataPath: Path): Arrangement {
-            given(kaliumFileSystem)
-                .function(kaliumFileSystem::source)
-                .whenInvokedWith(eq(tempDataPath))
-                .thenInvoke {
-                    fakeFileSystem.source(tempDataPath)
-                }
-            return this
-        }
 
-        fun withStoredData(data: ByteArray, dataNamePath: Path): Arrangement {
-            val fullDataPath = "$userHomePath/$dataNamePath".toPath()
-            fakeFileSystem.write(fullDataPath) {
-                data
+        fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
+            kaliumFileSystem.sink(dataPath).buffer().use {
+                it.write(data)
             }
             return this
         }
 
-        fun withSuccessfulUpload(): Arrangement {
+        fun withSuccessfulUpload(expectedAssetResponse: AssetResponse): Arrangement {
             given(assetDAO)
                 .suspendFunction(assetDAO::insertAsset)
                 .whenInvokedWith(any())
@@ -315,13 +322,7 @@ class AssetRepositoryTest {
             given(assetApi)
                 .suspendFunction(assetApi::uploadAsset)
                 .whenInvokedWith(any(), any(), any())
-                .thenReturn(
-                    NetworkResponse.Success(
-                        AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token"),
-                        mapOf(),
-                        200
-                    )
-                )
+                .thenReturn(NetworkResponse.Success(expectedAssetResponse, mapOf(), 200))
             return this
         }
 
@@ -352,7 +353,7 @@ class AssetRepositoryTest {
         fun withErrorDownloadResponse(): Arrangement {
             given(assetApi)
                 .suspendFunction(assetApi::downloadAsset)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
             return this
         }
@@ -371,10 +372,10 @@ class AssetRepositoryTest {
     private fun stubAssetEntity(assetKey: String, dataPath: Path, dataSize: Long) =
         AssetEntity(assetKey, "domain", null, dataPath.toString(), dataSize, null, 1)
 
-    private fun createFileSystem(): Pair<FakeFileSystem, Path> {
-        val userHome = "/Users/me".toPath()
-        val fileSystem = FakeFileSystem()
-        fileSystem.createDirectories(userHome)
-        return fileSystem to userHome
-    }
 }
+
+private fun getPersistentStoragePath(filePath: Path): Path = "${rootFileSystemPath.value}/$filePath".toPath()
+private fun getTemporaryStoragePath(filePath: Path): Path = "${rootCachePath.value}/$filePath".toPath()
+private var userHomePath = "/Users/me/testApp".toPath()
+private val rootFileSystemPath = AssetsStorageFolder("$userHomePath/files")
+private val rootCachePath = CacheFolder("$userHomePath/cache")

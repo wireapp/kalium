@@ -19,6 +19,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -26,6 +27,7 @@ import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UploadUserAvatarUseCaseTest {
 
     @Test
@@ -34,7 +36,6 @@ class UploadUserAvatarUseCaseTest {
         val avatarImage = "An Avatar Image (:".encodeToByteArray()
         val avatarPath = "some-image-asset".toPath()
         val (arrangement, uploadUserAvatar) = Arrangement()
-            .withPathStub(avatarPath)
             .withStoredData(avatarImage, avatarPath)
             .withSuccessfulUploadResponse(expected)
             .arrange()
@@ -63,7 +64,6 @@ class UploadUserAvatarUseCaseTest {
         val avatarImage = "An Avatar Image (:".encodeToByteArray()
         val avatarPath = "some-image-asset".toPath()
         val (arrangement, uploadUserAvatar) = Arrangement()
-            .withPathStub(avatarPath)
             .withStoredData(avatarImage, avatarPath)
             .withErrorResponse(expectedError)
             .arrange()
@@ -87,9 +87,6 @@ class UploadUserAvatarUseCaseTest {
     }
 
     private class Arrangement {
-
-        @Mock
-        val kaliumFileSystem = mock(classOf<KaliumFileSystem>())
 
         @Mock
         val assetRepository = mock(classOf<AssetRepository>())
@@ -122,16 +119,6 @@ class UploadUserAvatarUseCaseTest {
             fakeFileSystem.write(fullDataPath) {
                 data
             }
-            return this
-        }
-
-        fun withPathStub(tempDataPath: Path): Arrangement {
-            given(kaliumFileSystem)
-                .function(kaliumFileSystem::source)
-                .whenInvokedWith(eq(tempDataPath))
-                .thenInvoke {
-                    fakeFileSystem.source(tempDataPath)
-                }
             return this
         }
 

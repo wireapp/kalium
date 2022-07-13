@@ -1,0 +1,55 @@
+package com.wire.kalium.logic.data.asset
+
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
+import okio.*
+import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
+
+class FakeKaliumFileSystem(
+    private val dataStoragePaths: DataStoragePaths,
+    private val fakeFileSystem: FakeFileSystem,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+) : KaliumFileSystem {
+    override val rootCachePath: Path = dataStoragePaths.cachePath.value.toPath()
+
+    override fun sink(outputPath: Path, mustCreate: Boolean): Sink = fakeFileSystem.sink(outputPath, mustCreate)
+
+    override fun source(inputPath: Path): Source = fakeFileSystem.source(inputPath)
+
+    override fun createDirectory(dir: Path, mustCreate: Boolean) = fakeFileSystem.createDirectory(dir, mustCreate)
+
+    override fun delete(path: Path, mustExist: Boolean) = fakeFileSystem.delete(path, mustExist)
+
+    override fun exists(path: Path): Boolean = fakeFileSystem.exists(path)
+
+    override fun copy(sourcePath: Path, targetPath: Path) = fakeFileSystem.copy(sourcePath, targetPath)
+
+    override fun tempFilePath(pathString: String?): Path {
+        val filePath = pathString ?: "temp_file_path"
+        return "$rootCachePath/$filePath".toPath()
+    }
+
+    override fun providePersistentAssetPath(assetName: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
+
+    override suspend fun readByteArray(inputPath: Path): ByteArray = source(inputPath).use {
+        withContext(dispatcher.io) {
+            it.buffer().use { bufferedFileSource ->
+                bufferedFileSource.readByteArray()
+            }
+        }
+    }
+
+    override suspend fun writeData(outputSink: Sink, dataSource: Source): Long {
+        var byteCount = 0L
+        withContext(dispatcher.io) {
+            outputSink.buffer().use { bufferedFileSink ->
+                byteCount = bufferedFileSink.writeAll(dataSource)
+            }
+        }
+        return byteCount
+    }
+
+    override fun selfUserAvatarPath(): Path = providePersistentAssetPath("self_user_avatar.jpg")
+}
