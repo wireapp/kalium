@@ -11,8 +11,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
-// TODO: rename this use case to Observer since member is for conversations and there is no converation here
-class ObserveMemberDetailsByIdsUseCase(
+class ObserveUserListByIdUseCase internal constructor(
     private val userRepository: UserRepository,
     private val syncManager: SyncManager
 ) {
