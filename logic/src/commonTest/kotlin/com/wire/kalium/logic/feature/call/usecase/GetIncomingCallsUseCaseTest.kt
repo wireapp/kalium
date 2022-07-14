@@ -222,7 +222,7 @@ class GetIncomingCallsUseCaseTest {
             TestConversation.one_on_one(id).copy(mutedStatus = status)
 
         private fun incomingCall(conversationIdSuffix: Int = 0) =
-            TestCall.onOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
+            TestCall.oneOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
     }
 
 }
