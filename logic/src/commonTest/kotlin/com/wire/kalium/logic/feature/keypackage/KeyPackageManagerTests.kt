@@ -14,8 +14,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
@@ -92,11 +90,11 @@ class KeyPackageManagerTests {
                 .thenReturn(Either.Right(Unit))
         }
 
-
         fun arrange() = this to KeyPackageManagerImpl(
             syncRepository,
             keyPackageRepository,
             refillKeyPackagesUseCase,
-            TestKaliumDispatcher)
+            TestKaliumDispatcher
+        )
     }
 }

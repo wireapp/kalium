@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.hours
 // The duration in hours after which we should re-check key package count.
 internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
 
-interface  KeyPackageManager {
+interface KeyPackageManager {
 
     /**
      * Start periodically checking if key packages needs to be refilled.
@@ -33,10 +33,11 @@ interface  KeyPackageManager {
     fun stopObservingKeyPackageCount()
 }
 
-class KeyPackageManagerImpl(private val syncRepository: SyncRepository,
-                            private val keyPackageRepository: KeyPackageRepository,
-                            private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
-                            kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+class KeyPackageManagerImpl(
+    private val syncRepository: SyncRepository,
+    private val keyPackageRepository: KeyPackageRepository,
+    private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KeyPackageManager {
     /**
      * A dispatcher with limited parallelism of 1.
@@ -44,7 +45,6 @@ class KeyPackageManagerImpl(private val syncRepository: SyncRepository,
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
-
 
     private val refillKeyPackagesScope = CoroutineScope(dispatcher)
 

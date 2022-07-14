@@ -79,7 +79,6 @@ class KeyPackageDataSource(
             metadataDAO.valueByKey(LAST_KEY_PACKAGE_COUNT_CHECK).firstOrNull()?.let { Instant.parse(it) } ?: Instant.DISTANT_PAST
         }
 
-
     override suspend fun updateLastKeyPackageCountCheck(timestamp: Instant): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             metadataDAO.insertValue(timestamp.toString(), LAST_KEY_PACKAGE_COUNT_CHECK)
