@@ -10,9 +10,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class CryptoUtilsTest {
-
     @Test
     @IgnoreJS
+    @IgnoreIOS
     fun testGivenByteArray_whenCallingCalcMd5_returnsExpectedDigest() {
         // Given
         val fileSystem = FakeFileSystem()
@@ -34,6 +34,7 @@ class CryptoUtilsTest {
 
     @Test
     @IgnoreJS
+    @IgnoreIOS
     fun testGivenByteArray_whenCallingCalcSHA256_returnsExpectedDigest() {
         // Given
         val fileSystem = FakeFileSystem()
