@@ -32,7 +32,9 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        null
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
     val SELF = Conversation(
         ID.copy(value = "SELF ID"),
@@ -42,7 +44,9 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        null
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -53,7 +57,9 @@ object TestConversation {
         protocolInfo,
         MutedConversationStatus.AllAllowed,
         null,
-        null
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -64,7 +70,9 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        null
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -114,6 +122,8 @@ object TestConversation {
         "teamId",
         ConversationEntity.ProtocolInfo.Proteus,
         lastNotificationDate = null,
-        lastModifiedDate = "2022-03-30T15:36:00.000Z"
+        lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
 }

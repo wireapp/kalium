@@ -19,6 +19,8 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
+import com.wire.kalium.persistence.dao.ConversationAccessListAdapter
+import com.wire.kalium.persistence.dao.ConversationAccessRoleListAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MemberRoleAdapter
@@ -58,7 +60,9 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 typeAdapter = EnumColumnAdapter(),
                 mls_group_stateAdapter = EnumColumnAdapter(),
                 protocolAdapter = EnumColumnAdapter(),
-                muted_statusAdapter = EnumColumnAdapter()
+                muted_statusAdapter = EnumColumnAdapter(),
+                access_listAdapter = ConversationAccessListAdapter(),
+                access_role_listAdapter = ConversationAccessRoleListAdapter()
             ),
             Member.Adapter(
                 userAdapter = QualifiedIDAdapter(),

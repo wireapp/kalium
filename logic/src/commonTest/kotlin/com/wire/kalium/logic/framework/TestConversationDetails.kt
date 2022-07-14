@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.framework
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.ProtocolInfo
@@ -14,7 +15,9 @@ object TestConversationDetails {
         UserType.EXTERNAL,
         "2022-03-30T15:36:00.000Z",
         TestConnection.CONNECTION,
-        protocolInfo = ProtocolInfo.Proteus
+        protocolInfo = ProtocolInfo.Proteus,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
 
     val CONVERSATION_ONE_ONE = ConversationDetails.OneOne(

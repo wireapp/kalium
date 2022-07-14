@@ -12,7 +12,12 @@ data class ConversationEntity(
     val mutedTime: Long = 0,
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
+    val access: List<Access>,
+    val accessRole: List<AccessRole>?
 ) {
+    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE; }
+
+    enum class Access { PRIVATE, INVITE, LINK, CODE; }
 
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 

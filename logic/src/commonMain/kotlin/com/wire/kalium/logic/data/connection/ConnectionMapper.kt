@@ -54,7 +54,10 @@ internal class ConnectionMapperImpl(
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userTypEntity) } ?: UserType.GUEST,
             lastModifiedDate = connection.lastUpdate,
             connection = fromDaoToModel(connection, otherUser),
-            protocolInfo = ProtocolInfo.Proteus
+            protocolInfo = ProtocolInfo.Proteus,
+            // TODO(qol): need to be refactored
+            access = emptyList(),
+            accessRole = emptyList()
         )
     }
 
@@ -65,7 +68,7 @@ internal class ConnectionMapperImpl(
         qualifiedConversationId = idMapper.fromApiModel(state.qualifiedConversationId),
         qualifiedToId = idMapper.fromApiModel(state.qualifiedToId),
         status = statusMapper.fromApiModel(state.status),
-        toId = state.toId,
+        toId = state.toId
     )
 
     override fun modelToDao(state: Connection): ConnectionEntity = ConnectionEntity(
