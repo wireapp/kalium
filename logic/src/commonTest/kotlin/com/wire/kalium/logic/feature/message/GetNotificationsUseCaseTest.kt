@@ -498,7 +498,9 @@ class GetNotificationsUseCaseTest {
             ProtocolInfo.Proteus,
             mutedStatus,
             TIME_EARLIER,
-            TIME_EARLIER
+            TIME_EARLIER,
+            access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )
 
         private fun entityTextMessage(
@@ -623,7 +625,9 @@ class GetNotificationsUseCaseTest {
                 "told",
                 null
             ),
-            ProtocolInfo.Proteus
+            ProtocolInfo.Proteus,
+            access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )
 
     }
