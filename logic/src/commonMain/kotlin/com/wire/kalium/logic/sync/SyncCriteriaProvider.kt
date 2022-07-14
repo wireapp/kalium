@@ -54,7 +54,6 @@ internal class SyncCriteriaProviderImpl(
         .map<LogoutReason, LogoutReason?> { it }
         .onStart { emit(null) }
 
-
     override suspend fun syncCriteriaFlow(): Flow<SyncCriteriaResolution> =
         logoutReasonFlow().combine(clientRepository.observeCurrentClientId()) { logoutReason, clientId ->
             handleLogoutReason(logoutReason)
