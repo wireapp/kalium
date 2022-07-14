@@ -32,6 +32,7 @@ class EventMapper(
                 is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
                 is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
+                is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id) // TODO: update it after logic code is merged
             }
         } ?: listOf()
     }

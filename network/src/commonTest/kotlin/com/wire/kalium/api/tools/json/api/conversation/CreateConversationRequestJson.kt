@@ -6,8 +6,8 @@ import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.conversation.ReceiptMode
-import com.wire.kalium.network.api.model.ConversationAccess
-import com.wire.kalium.network.api.model.ConversationAccessRole
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 
 object CreateConversationRequestJson {
 
@@ -15,8 +15,8 @@ object CreateConversationRequestJson {
         CreateConversationRequest(
             listOf(QualifiedIDSamples.one),
             name = "NameOfThisGroupConversation",
-            listOf(ConversationAccess.PRIVATE),
-            listOf(ConversationAccessRole.TEAM_MEMBER),
+            listOf(ConversationAccessDTO.PRIVATE),
+            listOf(ConversationAccessRoleDTO.TEAM_MEMBER),
             ConvTeamInfo(false, "teamID"),
             0,
             ReceiptMode.DISABLED,
