@@ -13,7 +13,7 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 object TestCall {
 
     // Call Entity
-    val DATABASE_ID = "abcd-1234"
+    const val DATABASE_ID = "abcd-1234"
     val CALLER_ID = UserId(
         value = "callerValue",
         domain = "callerDomain"
@@ -38,9 +38,9 @@ object TestCall {
     )
 
     // Call Metadata
-    val CONVERSATION_NAME = "conv name"
-    val CALLER_NAME = "caller name"
-    val CALLER_TEAM_NAME = "caller team name"
+    const val CONVERSATION_NAME = "conv name"
+    const val CALLER_NAME = "caller name"
+    const val CALLER_TEAM_NAME = "caller team name"
 
     fun oneOnOneCallMetadata() = CallMetadata(
         isMuted = true,
