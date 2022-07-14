@@ -15,6 +15,13 @@ sealed class Event(open val id: String) {
         id: String,
         open val conversationId: ConversationId
     ) : Event(id) {
+        data class AccessUpdate(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val data: ConversationResponse,
+            val qualifiedFrom: UserId,
+        ) : Conversation(id, conversationId)
+
         data class NewMessage(
             override val id: String,
             override val conversationId: ConversationId,

@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -206,7 +205,7 @@ class GetIncomingCallsUseCaseTest {
 
         fun withConversationDetails(detailsGetter: (ConversationId) -> Either<StorageFailure, Flow<Conversation>>): Arrangement {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationDetails)
+                .suspendFunction(conversationRepository::observeById)
                 .whenInvokedWith(any())
                 .then { id -> detailsGetter(id) }
             return this
