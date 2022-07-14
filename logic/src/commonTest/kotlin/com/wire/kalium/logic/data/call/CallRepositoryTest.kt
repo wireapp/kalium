@@ -19,6 +19,7 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.call.CallApi
@@ -572,7 +573,6 @@ class CallRepositoryTest {
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
-        given(persistMessage).suspendFunction(persistMessage::invoke)
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -595,7 +595,7 @@ class CallRepositoryTest {
         verify(persistMessage)
             .suspendFunction(persistMessage::invoke)
             .with(any())
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = Times(0))
 
         verify(callDAO).suspendFunction(callDAO::insertCall)
             .with(any())
