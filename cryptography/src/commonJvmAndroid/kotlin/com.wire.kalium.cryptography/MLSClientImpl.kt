@@ -12,14 +12,15 @@ import java.time.Duration
 @OptIn(ExperimentalUnsignedTypes::class)
 actual class MLSClientImpl actual constructor(
     private val rootDir: String,
-    databaseKey: String,
-    clientId: CryptoQualifiedClientId) : MLSClient {
+    databaseKey: MlsDBSecret,
+    clientId: CryptoQualifiedClientId
+) : MLSClient {
 
     private val coreCrypto: CoreCrypto
     private val keyRotationDuration: Duration = Duration.ofDays(30)
 
     init {
-        coreCrypto = CoreCrypto(rootDir, databaseKey, clientId.toString())
+        coreCrypto = CoreCrypto(rootDir, databaseKey.value, clientId.toString())
     }
 
     override fun clearLocalFiles(): Boolean {
@@ -39,8 +40,9 @@ actual class MLSClientImpl actual constructor(
         return coreCrypto.conversationExists(toUByteList(groupId.decodeBase64Bytes()))
     }
 
-    override fun createConversation(conversationId: MLSGroupId,
-                                    members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+    override fun createConversation(
+        conversationId: MLSGroupId,
+        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
     ): Pair<HandshakeMessage, WelcomeMessage>? {
         val invitees = members.map {
             Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
@@ -81,7 +83,8 @@ actual class MLSClientImpl actual constructor(
 
     override fun addMember(
         conversationId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): Pair<HandshakeMessage, WelcomeMessage>? {
+        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+    ): Pair<HandshakeMessage, WelcomeMessage>? {
         val invitees = members.map {
             Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
         }
@@ -92,7 +95,8 @@ actual class MLSClientImpl actual constructor(
 
     override fun removeMember(
         groupId: MLSGroupId,
-        members: List<CryptoQualifiedClientId>): HandshakeMessage? {
+        members: List<CryptoQualifiedClientId>
+    ): HandshakeMessage? {
 
         // TODO currently generating a dummy key package, this should be removed when API is updated.
         val invitees = members.map {

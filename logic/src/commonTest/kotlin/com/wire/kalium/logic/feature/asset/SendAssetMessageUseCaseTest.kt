@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -77,26 +77,26 @@ class SendAssetMessageUseCaseTest {
 
     @Test
     fun givenASuccessfulSendAssetMessageRequest_whenSendingTheAsset_thenTheAssetIsPersisted() = runTest {
-            // Given
-            val assetToSend = getMockedAsset()
-            val conversationId = ConversationId("some-convo-id", "some-domain-id")
-            val (arrangement, sendAssetUseCase) = Arrangement()
-                .withSuccessfulResponse()
-                .arrange()
+        // Given
+        val assetToSend = getMockedAsset()
+        val conversationId = ConversationId("some-convo-id", "some-domain-id")
+        val (arrangement, sendAssetUseCase) = Arrangement()
+            .withSuccessfulResponse()
+            .arrange()
 
-            // When
-            sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
+        // When
+        sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
 
-            // Then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistMessage)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.messageSender)
-                .suspendFunction(arrangement.messageSender::sendPendingMessage)
-                .with(eq(conversationId), any())
-                .wasInvoked(exactly = once)
-        }
+        // Then
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendPendingMessage)
+            .with(eq(conversationId), any())
+            .wasInvoked(exactly = once)
+    }
 
     @Test
     fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
@@ -112,8 +112,8 @@ class SendAssetMessageUseCaseTest {
             sendAssetUseCase.invoke(conversationId, assetToSend, "temp_asset.txt", "text/plain")
 
             // Then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistMessage)
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
                 .with(matching {
                     val content = it.content
                     content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
@@ -124,7 +124,7 @@ class SendAssetMessageUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
         val messageSender = mock(classOf<MessageSender>())
@@ -151,13 +151,19 @@ class SendAssetMessageUseCaseTest {
             1,
             null,
             ConnectionState.ACCEPTED,
-            previewPicture = UserAssetId("value1","domain"),
-            completePicture = UserAssetId("value2","domain"),
+            previewPicture = UserAssetId("value1", "domain"),
+            completePicture = UserAssetId("value2", "domain"),
             UserAvailabilityStatus.NONE
         )
 
         val sendAssetUseCase =
-            SendAssetMessageUseCaseImpl(messageRepository, clientRepository, assetDataSource, userRepository, messageSender)
+            SendAssetMessageUseCaseImpl(
+                persistMessage,
+                clientRepository,
+                assetDataSource,
+                userRepository,
+                messageSender
+            )
 
         fun withSuccessfulResponse(): Arrangement {
             given(assetDataSource)
@@ -172,8 +178,8 @@ class SendAssetMessageUseCaseTest {
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
-            given(messageRepository)
-                .suspendFunction(messageRepository::persistMessage)
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(messageSender)
@@ -195,5 +201,6 @@ class SendAssetMessageUseCaseTest {
     }
 
     private fun getMockedAsset(): ByteArray =
-        "some VERY long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long long asset".toByteArray()
+        ("some VERY long long long long long long long long long long long long long long long long long long long long long long" +
+                " long long long long long long long long long long long long long long long long long asset").toByteArray()
 }

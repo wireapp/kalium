@@ -4,15 +4,15 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class ConversationAccessRole {
-    @SerialName("team_member")
-    TEAM_MEMBER,
-    @SerialName("non_team_member")
-    NON_TEAM_MEMBER,
-    @SerialName("guest")
-    GUEST,
-    @SerialName("service")
-    SERVICE;
+enum class ConversationAccessDTO {
+    @SerialName("private")
+    PRIVATE,
+    @SerialName("code")
+    CODE,
+    @SerialName("invite")
+    INVITE,
+    @SerialName("link")
+    LINK;
 
     override fun toString(): String {
         return this.name.lowercase()

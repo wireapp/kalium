@@ -2,6 +2,8 @@ package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.conversation.model.ConversationAccessData
+import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface ConversationApi {
@@ -33,4 +35,9 @@ interface ConversationApi {
         memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId
     ): NetworkResponse<Unit>
+
+    suspend fun updateAccessRole(
+        conversationId: ConversationId,
+        conversationAccessData: ConversationAccessData
+    ): NetworkResponse<UpdateConversationAccessResponse>
 }

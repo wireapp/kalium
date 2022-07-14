@@ -3,6 +3,8 @@ package com.wire.kalium.network.api.conversation
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -36,7 +38,10 @@ data class ConversationResponse(
     val protocol: ConvProtocol,
 
     @SerialName("last_event_time")
-    val lastEventTime: String
+    val lastEventTime: String,
+
+    @SerialName("access") val access: Set<ConversationAccessDTO>,
+    @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRoleDTO>?,
 ) {
 
     val isOneOnOneConversation: Boolean
@@ -69,7 +74,7 @@ sealed class ConversationMemberDTO {
     // by Wire (i.e., no custom roles can have the same prefix)
     // in swagger conversation_role is an optional field but according to Akshay:
     // Hmm, the field is optional when sending it to the server. The server will always send the field.
-    //(The server assumes admin when the field is missing, I don't have the context behind this decision)
+    // (The server assumes admin when the field is missing, I don't have the context behind this decision)
     abstract val conversationRole: String
     abstract val id: UserId
     abstract val service: ServiceReferenceDTO?

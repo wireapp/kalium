@@ -34,11 +34,11 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         stubsUnitByDefault = true
     }
 
-    private lateinit var observeMemberDetailsByIds: ObserveMemberDetailsByIdsUseCase
+    private lateinit var observeMemberDetailsByIds: ObserveUserListByIdUseCase
 
     @BeforeTest
     fun setup() {
-        observeMemberDetailsByIds = ObserveMemberDetailsByIdsUseCase(
+        observeMemberDetailsByIds = ObserveUserListByIdUseCase(
             userRepository,
             syncManager,
         )

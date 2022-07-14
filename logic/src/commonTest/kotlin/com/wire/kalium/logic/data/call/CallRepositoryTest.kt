@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -65,7 +66,7 @@ class CallRepositoryTest {
     private val teamRepository = mock(classOf<TeamRepository>())
 
     @Mock
-    private val messageRepository = mock(classOf<MessageRepository>())
+    private val persistMessage = mock(classOf<PersistMessageUseCase>())
 
     @Mock
     private val callDAO = configure(mock(classOf<CallDAO>())) {
@@ -83,7 +84,7 @@ class CallRepositoryTest {
             userRepository = userRepository,
             teamRepository = teamRepository,
             timeParser = TimeParserImpl(),
-            messageRepository = messageRepository
+            persistMessage = persistMessage
         )
     }
 
@@ -510,6 +511,10 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
 
+        given(persistMessage).suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
             .whenInvokedWith(eq(callEntity.conversationId))
@@ -532,6 +537,11 @@ class CallRepositoryTest {
         verify(callDAO).suspendFunction(callDAO::insertCall)
             .with(any())
             .wasInvoked(exactly = once)
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasNotInvoked()
 
         assertEquals(
             true,
@@ -562,6 +572,7 @@ class CallRepositoryTest {
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
+        given(persistMessage).suspendFunction(persistMessage::invoke)
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -581,7 +592,11 @@ class CallRepositoryTest {
             isCameraOn = false
         )
 
-        // then
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
         verify(callDAO).suspendFunction(callDAO::insertCall)
             .with(any())
             .wasInvoked(exactly = once)
@@ -625,6 +640,10 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
 
+        given(persistMessage).suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
             .whenInvokedWith(eq(callEntity.conversationId))
@@ -643,6 +662,11 @@ class CallRepositoryTest {
         verify(callDAO).suspendFunction(callDAO::insertCall)
             .with(any())
             .wasInvoked(exactly = Times(0))
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasNotInvoked()
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())
@@ -695,6 +719,11 @@ class CallRepositoryTest {
         verify(callDAO).suspendFunction(callDAO::updateLastCallStatusByConversationId)
             .with(any(), any())
             .wasInvoked(exactly = Times(0))
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasNotInvoked()
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())

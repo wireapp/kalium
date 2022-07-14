@@ -31,7 +31,9 @@ private class ConversationMapper {
             mutedStatus = conversation.muted_status,
             mutedTime = conversation.muted_time,
             lastNotificationDate = conversation.last_notified_message_date,
-            lastModifiedDate = conversation.last_modified_date
+            lastModifiedDate = conversation.last_modified_date,
+            access = conversation.access_list,
+            accessRole = conversation.access_role_list
         )
     }
 }
@@ -51,7 +53,9 @@ class ConversationDAOImpl(
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
 
-    override suspend fun getSelfConversationId() = getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
+    // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
+    override suspend fun getSelfConversationId() =
+        getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         nonSuspendingInsertConversation(conversationEntity)
@@ -67,19 +71,28 @@ class ConversationDAOImpl(
     }
 
     private fun nonSuspendingInsertConversation(conversationEntity: ConversationEntity) {
-        conversationQueries.insertConversation(
-            conversationEntity.id,
-            conversationEntity.name,
-            conversationEntity.type,
-            conversationEntity.teamId,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupId else null,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS,
-            conversationEntity.mutedStatus,
-            conversationEntity.mutedTime,
-            conversationEntity.lastModifiedDate,
-            conversationEntity.lastNotificationDate
-        )
+        with(conversationEntity) {
+            conversationQueries.insertConversation(
+                id,
+                name,
+                type,
+                teamId,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId
+                else null,
+
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupState
+                else ConversationEntity.GroupState.ESTABLISHED,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS
+                else ConversationEntity.Protocol.PROTEUS,
+
+                mutedStatus,
+                mutedTime,
+                lastModifiedDate,
+                lastNotificationDate,
+                access.toList(),
+                accessRole?.toList()
+            )
+        }
     }
 
     override suspend fun updateConversation(conversationEntity: ConversationEntity) {

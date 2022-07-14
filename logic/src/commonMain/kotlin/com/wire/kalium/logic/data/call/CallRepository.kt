@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -57,12 +57,12 @@ interface CallRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CallDataSource(
     private val callApi: CallApi,
+    private val persistMessage: PersistMessageUseCase,
     private val callDAO: CallDAO,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
     private val timeParser: TimeParser,
-    private val messageRepository: MessageRepository,
     private val callMapper: CallMapper = MapperProvider.callMapper()
 ) : CallRepository {
 
@@ -244,7 +244,7 @@ internal class CallDataSource(
 
                 // Persist Missed Call Message if necessary
                 if ((status == CallStatus.CLOSED && establishedTime == null) || status == CallStatus.MISSED) {
-                    persistMissedCallMessage(conversationId = modifiedConversationId)
+                    persistMissedCallMessageIfNeeded(conversationId = modifiedConversationId)
                 }
             }
 
@@ -336,7 +336,7 @@ internal class CallDataSource(
         }
     }
 
-    private suspend fun persistMissedCallMessage(
+    private suspend fun persistMissedCallMessageIfNeeded(
         conversationId: ConversationId
     ) {
         val callerId = callDAO.getCallerIdByConversationId(
@@ -345,17 +345,16 @@ internal class CallDataSource(
             )
         )
 
-        messageRepository.persistMessage(
-            Message.System(
-                uuid4().toString(),
-                MessageContent.MissedCall,
-                conversationId,
-                timeParser.currentTimeStamp(),
-                callerId.toUserId(),
-                Message.Status.SENT,
-                Message.Visibility.VISIBLE
-            )
+        val message = Message.System(
+            uuid4().toString(),
+            MessageContent.MissedCall,
+            conversationId,
+            timeParser.currentTimeStamp(),
+            callerId.toUserId(),
+            Message.Status.SENT,
+            Message.Visibility.VISIBLE
         )
+        persistMessage(message)
     }
 
     private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
