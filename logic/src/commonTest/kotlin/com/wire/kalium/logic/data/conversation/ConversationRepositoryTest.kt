@@ -659,6 +659,8 @@ class ConversationRepositoryTest {
             protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
             lastNotificationDate = null,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
     }
 }
