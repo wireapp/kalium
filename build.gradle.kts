@@ -39,6 +39,7 @@ plugins {
     val dokkaVersion = "1.6.10"
     id("org.jetbrains.dokka") version "$dokkaVersion"
     id("org.jetbrains.kotlinx.kover") version "0.5.1"
+    id("scripts.testing")
 }
 
 dependencies {
@@ -68,7 +69,6 @@ the<CommandExtension>().run {
     outputType = "json"
     printModulesInfo = true
 }
-tasks.register("runOnlyAffectedConnectedTest", OnlyAffectedConnectedTestTask::class)
 
 subprojects {
     this.tasks.withType<Test> {
