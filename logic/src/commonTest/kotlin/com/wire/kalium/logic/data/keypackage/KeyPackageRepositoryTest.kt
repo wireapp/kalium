@@ -155,8 +155,8 @@ class KeyPackageRepositoryTest {
 
         fun withLastKeyPackageCountCheckTimestamp(timestamp: Instant?) = apply {
             given(metadataDAO).suspendFunction(metadataDAO::valueByKey)
-                .whenInvokedWith(eq("LAST_KEY_PACKAGE_COUNT_CHECK"))
-                .thenReturn(flowOf(timestamp.toString()))
+                .whenInvokedWith(eq(LAST_KEY_PACKAGE_COUNT_CHECK))
+                .thenReturn(flowOf(timestamp?.toString()))
         }
 
         fun arrange() = this to KeyPackageDataSource(clientRepository, keyPackageApi, mlsClientProvider, metadataDAO)

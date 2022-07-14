@@ -21,9 +21,6 @@ import com.wire.kalium.network.api.keypackage.KeyPackageDTO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMap
-import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 
 interface KeyPackageRepository {
@@ -39,6 +36,8 @@ interface KeyPackageRepository {
     suspend fun updateLastKeyPackageCountCheck(timestamp: Instant): Either<StorageFailure, Unit>
 
 }
+
+internal const val LAST_KEY_PACKAGE_COUNT_CHECK = "LAST_KEY_PACKAGE_COUNT_CHECK"
 
 class KeyPackageDataSource(
     private val clientRepository: ClientRepository,
@@ -77,13 +76,13 @@ class KeyPackageDataSource(
 
     override suspend fun lastKeyPackageCountCheck(): Either<StorageFailure, Instant> =
         wrapStorageRequest {
-            metadataDAO.valueByKey("LAST_KEY_PACKAGE_COUNT_CHECK").firstOrNull()?.let { Instant.parse(it) } ?: Instant.DISTANT_PAST
+            metadataDAO.valueByKey(LAST_KEY_PACKAGE_COUNT_CHECK).firstOrNull()?.let { Instant.parse(it) } ?: Instant.DISTANT_PAST
         }
 
 
     override suspend fun updateLastKeyPackageCountCheck(timestamp: Instant): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            metadataDAO.insertValue(timestamp.toString(), "LAST_KEY_PACKAGE_COUNT_CHECK")
+            metadataDAO.insertValue(timestamp.toString(), LAST_KEY_PACKAGE_COUNT_CHECK)
         }
 
 }
