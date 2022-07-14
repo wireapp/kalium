@@ -26,39 +26,40 @@ import kotlin.test.Test
 class KeyPackageManagerTests {
 
     @Test
-    fun givenLastCheckWithinDuration_whenObservingAndSyncFinishes_refillKeyPackagesIsNotPerformed() = runTest(TestKaliumDispatcher.default) {
+    fun givenLastCheckWithinDuration_whenObservingAndSyncFinishes_refillKeyPackagesIsNotPerformed() =
+        runTest(TestKaliumDispatcher.default) {
 
-        val (arrangement, keyPackageManager) = Arrangement()
-            .withLastKeyPackageCountCheck(Clock.System.now())
-            .arrange()
+            val (arrangement, keyPackageManager) = Arrangement()
+                .withLastKeyPackageCountCheck(Clock.System.now())
+                .arrange()
 
-        keyPackageManager.startObservingKeyPackageCount()
-        arrangement.syncRepository.updateSyncState { SyncState.Live }
-        yield()
-    }
+            keyPackageManager.startObservingKeyPackageCount()
+            arrangement.syncRepository.updateSyncState { SyncState.Live }
+            yield()
+        }
 
     @Test
-    fun givenLastCheckAfterDuration_whenObservingSyncFinishes_refillKeyPackagesIsPerformed() = runTest(TestKaliumDispatcher.default) {
+    fun givenLastCheckAfterDuration_whenObservingSyncFinishes_refillKeyPackagesIsPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, keyPackageManager) = Arrangement()
+                .withLastKeyPackageCountCheck(Clock.System.now() - KEY_PACKAGE_COUNT_CHECK_DURATION)
+                .withRefillKeyPackagesUseCaseSuccessful()
+                .withUpdateLastKeyPackageCountCheckSuccessful()
+                .arrange()
 
-        val (arrangement, keyPackageManager) = Arrangement()
-            .withLastKeyPackageCountCheck(Clock.System.now() - KEY_PACKAGE_COUNT_CHECK_DURATION)
-            .withRefillKeyPackagesUseCaseSuccessful()
-            .withUpdateLastKeyPackageCountCheckSuccessful()
-            .arrange()
+            keyPackageManager.startObservingKeyPackageCount()
+            arrangement.syncRepository.updateSyncState { SyncState.Live }
+            yield()
 
-        keyPackageManager.startObservingKeyPackageCount()
-        arrangement.syncRepository.updateSyncState { SyncState.Live }
-        yield()
+            verify(arrangement.refillKeyPackagesUseCase)
+                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
+                .wasInvoked(once)
 
-        verify(arrangement.refillKeyPackagesUseCase)
-            .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::updateLastKeyPackageCountCheck)
-            .with(anything())
-            .wasInvoked(once)
-    }
+            verify(arrangement.keyPackageRepository)
+                .suspendFunction(arrangement.keyPackageRepository::updateLastKeyPackageCountCheck)
+                .with(anything())
+                .wasInvoked(once)
+        }
 
     class Arrangement {
 
