@@ -1,4 +1,6 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
+import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
+import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 
 buildscript {
     val kotlinVersion = "1.6.10"
@@ -24,6 +26,7 @@ buildscript {
         classpath("com.google.protobuf:protobuf-gradle-plugin:$protobufCodegenVersion")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion")
         classpath("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
+        classpath("com.github.leandroborgesferreira:dag-command:1.5.3")
     }
 }
 
@@ -57,6 +60,15 @@ allprojects {
         maven(url = "https://raw.githubusercontent.com/wireapp/wire-maven/main/releases")
     }
 }
+
+apply<DagCommandPlugin>()
+the<CommandExtension>().run {
+    filter = "all"
+    defaultBranch = "origin/develop"
+    outputType = "json"
+    printModulesInfo = true
+}
+tasks.register("runOnlyAffectedConnectedTest", OnlyAffectedConnectedTestTask::class)
 
 subprojects {
     this.tasks.withType<Test> {
