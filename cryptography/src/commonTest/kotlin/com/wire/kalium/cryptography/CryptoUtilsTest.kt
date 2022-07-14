@@ -13,6 +13,7 @@ class CryptoUtilsTest {
     @Test
     @IgnoreJS
     @IgnoreIOS
+    @IgnoreAndroidTest
     fun testGivenByteArray_whenCallingCalcMd5_returnsExpectedDigest() {
         // Given
         val fileSystem = FakeFileSystem()
@@ -35,6 +36,7 @@ class CryptoUtilsTest {
     @Test
     @IgnoreJS
     @IgnoreIOS
+    @IgnoreAndroidTest
     fun testGivenByteArray_whenCallingCalcSHA256_returnsExpectedDigest() {
         // Given
         val fileSystem = FakeFileSystem()
@@ -59,6 +61,7 @@ class CryptoUtilsTest {
     @Test
     @IgnoreJS
     @IgnoreIOS
+    @IgnoreAndroidTest
     fun givenSomeDummyFile_whenEncryptedAndDecryptedWithAES256_returnsExpectedOriginalFile() {
         // Given
         val input = readBinaryResource("dummy.pdf")
@@ -96,6 +99,7 @@ class CryptoUtilsTest {
     @Test
     @IgnoreJS
     @IgnoreIOS
+    @IgnoreAndroidTest
     fun givenSomeDummyFile_whenEncryptedAsDataAndDecryptedWithAES256AsAFile_returnsExpectedOriginalFileContent() {
         // Given
         val input = readBinaryResource("dummy.zip")
@@ -132,6 +136,7 @@ class CryptoUtilsTest {
     @Test
     @IgnoreJS
     @IgnoreIOS
+    @IgnoreAndroidTest
     fun givenSomeDummyFile_whenEncryptedAsAFileAndDecryptedWithAES256AsData_returnsExpectedOriginalFileContent() {
         // Given
         val input = readBinaryResource("dummy.pdf")
@@ -166,6 +171,7 @@ class CryptoUtilsTest {
     @Test
     @IgnoreJS
     @IgnoreIOS
+    @IgnoreAndroidTest
     fun givenDummyText_whenEncryptedAndDecryptedWithAES256_returnsOriginalText() {
         // Given
         val testMessage = "Hello Crypto World"
