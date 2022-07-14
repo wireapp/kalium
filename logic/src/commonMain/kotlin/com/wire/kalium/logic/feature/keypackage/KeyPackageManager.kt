@@ -11,18 +11,33 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.hours
 
 // The duration in hours after which we should re-check key package count.
-private val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
+internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
+
+interface  KeyPackageManager {
+
+    /**
+     * Start periodically checking if key packages needs to be refilled.
+     */
+    fun startObservingKeyPackageCount()
+
+    /**
+     * Stops periodically checking if key packages needs to be refilled.
+     */
+    fun stopObservingKeyPackageCount()
+}
 
 class KeyPackageManagerImpl(private val syncRepository: SyncRepository,
                             private val keyPackageRepository: KeyPackageRepository,
                             private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
                             kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) {
+) : KeyPackageManager {
     /**
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
@@ -33,26 +48,34 @@ class KeyPackageManagerImpl(private val syncRepository: SyncRepository,
 
     private val refillKeyPackagesScope = CoroutineScope(dispatcher)
 
-    /**
-     * Start periodically checking if key packages needs to be refilled.
-     */
-    fun startObservingKeyPackageCount() {
-        refillKeyPackagesScope.launch {
-            syncRepository.syncState.collect { syncState ->
+    private var refillKeyPackageJob: Job? = null
+
+    override fun startObservingKeyPackageCount() {
+        refillKeyPackageJob = refillKeyPackagesScope.launch {
+            syncRepository.syncState.cancellable().collect { syncState ->
                 if (syncState == SyncState.Live) {
-                    keyPackageRepository.lastKeyPackageCountCheck().flatMap { timestamp ->
-                        if (timestamp.minus(Clock.System.now()) > KEY_PACKAGE_COUNT_CHECK_DURATION) {
-                            kaliumLogger.i("Checking if we need to refill key packages")
-                            when (val result = refillKeyPackagesUseCase()) {
-                                is RefillKeyPackagesResult.Success -> keyPackageRepository.updateLastKeyPackageCountCheck(Clock.System.now())
-                                is RefillKeyPackagesResult.Failure -> Either.Left(result.failure)
-                            }
-                        }
-                        Either.Right(Unit)
-                    }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
+                    refillKeyPackagesIfNeeded()
                 }
             }
         }
+    }
+
+    override fun stopObservingKeyPackageCount() {
+        refillKeyPackageJob?.cancel()
+        refillKeyPackageJob = null
+    }
+
+    private suspend fun refillKeyPackagesIfNeeded() {
+        keyPackageRepository.lastKeyPackageCountCheck().flatMap { timestamp ->
+            if (Clock.System.now().minus(timestamp) > KEY_PACKAGE_COUNT_CHECK_DURATION) {
+                kaliumLogger.i("Checking if we need to refill key packages")
+                when (val result = refillKeyPackagesUseCase()) {
+                    is RefillKeyPackagesResult.Success -> keyPackageRepository.updateLastKeyPackageCountCheck(Clock.System.now())
+                    is RefillKeyPackagesResult.Failure -> Either.Left(result.failure)
+                }
+            }
+            Either.Right(Unit)
+        }.onFailure { kaliumLogger.w("Error while refilling key packages: $it") }
     }
 
 }
