@@ -72,4 +72,23 @@ class ConnectionDAOImpl(
             conversationsQueries.deleteConversation(conversationId)
         }
     }
+
+    override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
+        return connectionsQueries.selectConnectionsForNotification()
+            .asFlow()
+            .mapToList()
+            .map { it.map(connectionMapper::toModel) }
+    }
+
+    override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) {
+        connectionsQueries.updateNotificationFlag(flag, userId)
+    }
+
+    override suspend fun updateAllNotificationFlags(flag: Boolean) {
+        connectionsQueries.transaction {
+            connectionsQueries.selectConnectionRequests()
+                .executeAsList()
+                .forEach { connectionsQueries.updateNotificationFlag(flag, it.qualified_to) }
+        }
+    }
 }

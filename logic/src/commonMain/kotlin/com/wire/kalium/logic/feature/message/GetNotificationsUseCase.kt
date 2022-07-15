@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -16,7 +17,6 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import com.wire.kalium.logic.util.TimeParser
@@ -34,7 +34,7 @@ interface GetNotificationsUseCase {
 
 /**
  *
- * @param observeConnectionList ObserveConnectionListUseCase for getting connection requests
+ * @param connectionRepository connectionRepository for observing connectionRequests that user should be notified about
  * @param messageRepository MessageRepository for getting Messages that user should be notified about
  * @param userRepository UserRepository for getting SelfUser data, Self userId and OtherUser data (authors of messages)
  * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
@@ -47,7 +47,7 @@ interface GetNotificationsUseCase {
  */
 @Suppress("LongParameterList")
 class GetNotificationsUseCaseImpl(
-    private val observeConnectionList: ObserveConnectionListUseCase,
+    private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
@@ -138,7 +138,7 @@ class GetNotificationsUseCaseImpl(
     }
 
     private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
-        return observeConnectionList()
+        return connectionRepository.observeConnectionRequestsForNotification()
             .map { requests ->
                 requests
                     .filterIsInstance<ConversationDetails.Connection>()

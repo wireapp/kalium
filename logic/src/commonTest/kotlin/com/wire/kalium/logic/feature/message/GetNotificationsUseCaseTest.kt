@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.message
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
@@ -390,7 +391,7 @@ class GetNotificationsUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val observeConnectionList: ObserveConnectionListUseCase = mock(classOf<ObserveConnectionListUseCase>())
+        val connectionRepository: ConnectionRepository = mock(classOf<ConnectionRepository>())
 
         @Mock
         val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
@@ -404,7 +405,7 @@ class GetNotificationsUseCaseTest {
         val timeParser = TimeParserImpl()
 
         val getNotificationsUseCase: GetNotificationsUseCase = GetNotificationsUseCaseImpl(
-            observeConnectionList = observeConnectionList,
+            connectionRepository = connectionRepository,
             messageRepository = messageRepository,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
@@ -468,8 +469,8 @@ class GetNotificationsUseCaseTest {
         }
 
         fun withConnectionList(connections: List<ConversationDetails>) = apply {
-            given(observeConnectionList)
-                .suspendFunction(observeConnectionList::invoke)
+            given(connectionRepository)
+                .suspendFunction(connectionRepository::observeConnectionRequestsForNotification)
                 .whenInvoked()
                 .thenReturn(flowOf(connections))
         }
@@ -598,6 +599,7 @@ class GetNotificationsUseCaseTest {
             LocalNotificationMessage.ConnectionRequest(
                 LocalNotificationMessageAuthor(authorName, null),
                 time,
+                otherUserId()
             )
 
         private fun selfUserWithStatus(status: UserAvailabilityStatus = UserAvailabilityStatus.NONE) =
@@ -606,7 +608,7 @@ class GetNotificationsUseCaseTest {
         private fun otherUser(id: QualifiedID) = TestUser.OTHER.copy(id = id, name = otherUserName(id))
 
         private fun otherUserId(number: Int = 0) =
-            QualifiedID("other_user_id_${number}_value", "other_user_id_${number}_domain")
+            QualifiedID("other_user_id_${number}_value", "domain")
 
         private fun otherUserName(id: QualifiedID) = "Other User Name ${id.value}"
 

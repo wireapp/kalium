@@ -3,9 +3,7 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -64,6 +62,9 @@ interface ConnectionRepository {
     suspend fun observeConnectionList(): Flow<List<ConversationDetails>>
     suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
     suspend fun getConnectionRequests(): List<Connection>
+    suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
+    suspend fun setConnectionAsNotified(userId: UserId)
+    suspend fun setAllConnectionsAsNotified()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -173,6 +174,24 @@ internal class ConnectionDataSource(
             val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
             connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
         }
+    }
+
+    override suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>> {
+        return connectionDAO.getConnectionRequestsForNotification()
+            .map {
+                it.map { connection ->
+                    val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+                    connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
+                }
+            }
+    }
+
+    override suspend fun setConnectionAsNotified(userId: UserId) {
+        connectionDAO.updateNotificationFlag(false, idMapper.toDaoModel(userId))
+    }
+
+    override suspend fun setAllConnectionsAsNotified() {
+        connectionDAO.updateAllNotificationFlags(false)
     }
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =

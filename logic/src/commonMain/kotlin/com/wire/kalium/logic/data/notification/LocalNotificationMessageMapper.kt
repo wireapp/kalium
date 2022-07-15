@@ -15,7 +15,7 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
 
     override fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotificationConversation {
         val author = fromPublicUserToLocalNotificationMessageAuthor(connection.otherUser)
-        val message = LocalNotificationMessage.ConnectionRequest(author, connection.lastModifiedDate,)
+        val message = LocalNotificationMessage.ConnectionRequest(author, connection.lastModifiedDate, connection.connection.qualifiedToId)
         return LocalNotificationConversation(
             connection.conversationId,
             connection.conversation.name ?: "",
