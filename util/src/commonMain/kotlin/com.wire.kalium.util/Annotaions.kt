@@ -1,4 +1,6 @@
+@file:Suppress("MatchingDeclarationName")
 package com.wire.kalium.util
+
 
 @Target(
     AnnotationTarget.CLASS,
@@ -10,7 +12,6 @@ package com.wire.kalium.util
     AnnotationTarget.PROPERTY_GETTER,
     AnnotationTarget.TYPEALIAS
 )
-@MustBeDocumented
 @Retention(AnnotationRetention.BINARY)
 @RequiresOptIn(
     level = RequiresOptIn.Level.WARNING,
