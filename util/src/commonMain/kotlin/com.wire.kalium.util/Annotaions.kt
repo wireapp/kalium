@@ -1,6 +1,6 @@
 @file:Suppress("MatchingDeclarationName")
-package com.wire.kalium.util
 
+package com.wire.kalium.util
 
 @Target(
     AnnotationTarget.CLASS,

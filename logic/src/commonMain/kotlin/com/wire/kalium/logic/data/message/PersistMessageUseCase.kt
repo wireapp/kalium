@@ -21,7 +21,6 @@ internal class PersistMessageUseCaseImpl(
     private val userId: QualifiedID,
 ) : PersistMessageUseCase {
 
-
     override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> {
         @OptIn(DelicateKaliumApi::class)
         return messageRepository.persistMessage(message)
