@@ -39,13 +39,13 @@ internal class SyncFeatureConfigsUseCaseImpl(
             userConfigRepository.setFileSharingStatus(false, null)
         } else {
             val status: Boolean = featureConfigModel.fileSharingModel.status.lowercase() == ENABLED
-            if (isFileSharingEnabledUseCase().isFileSharingEnabled != null){
+            if (isFileSharingEnabledUseCase().isFileSharingEnabled != null) {
                 if (status == isFileSharingEnabledUseCase().isFileSharingEnabled) {
                     userConfigRepository.setFileSharingStatus(status, false)
                 } else {
                     userConfigRepository.setFileSharingStatus(status, true)
                 }
-            }else{
+            } else {
                 userConfigRepository.setFileSharingStatus(status, false)
             }
         }
