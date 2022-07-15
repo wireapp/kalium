@@ -15,7 +15,6 @@ import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
 
@@ -95,7 +94,7 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
-internal class KaliumHttpLogger(): Logger {
+internal class KaliumHttpLogger : Logger {
     override fun log(message: String) {
         kaliumLogger.d(message)
     }

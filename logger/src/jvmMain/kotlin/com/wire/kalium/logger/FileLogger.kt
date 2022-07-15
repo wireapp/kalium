@@ -17,7 +17,7 @@ class FileLogger(outputfile: File) : LogWriter() {
     init {
         // Attempt to close & flush the output file before the process terminates
         Runtime.getRuntime().addShutdownHook(
-            Thread() {
+            Thread {
                 writer.close()
             }
         )

@@ -12,7 +12,8 @@ object CryptographyLogger {
             config = KaliumLogger.Config(
                 severity = level,
                 tag = "Crypto"
-            ), logWriterList = logWriterList
+            ),
+            logWriterList = logWriterList
         )
     }
 }

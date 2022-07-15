@@ -12,7 +12,8 @@ object NetworkLogger {
             config = KaliumLogger.Config(
                 severity = level,
                 tag = "Network"
-            ), logWriterList = logWriterList
+            ),
+            logWriterList = logWriterList
         )
     }
 

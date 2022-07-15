@@ -12,7 +12,8 @@ object PersistenceLogger {
             config = KaliumLogger.Config(
                 severity = level,
                 tag = "Persistence"
-            ), logWriterList = logWriterList
+            ),
+            logWriterList = logWriterList
         )
     }
 }

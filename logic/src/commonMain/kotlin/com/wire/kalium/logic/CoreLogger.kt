@@ -16,14 +16,16 @@ object CoreLogger {
             config = KaliumLogger.Config(
                 severity = level,
                 tag = "CoreLogic"
-            ), logWriterList = logWriterList
+            ),
+            logWriterList = logWriterList
         )
 
         callingLogger = KaliumLogger(
             config = KaliumLogger.Config(
                 severity = level,
                 tag = "Calling"
-            ), logWriterList = logWriterList
+            ),
+            logWriterList = logWriterList
         )
 
         NetworkLogger.setLoggingLevel(level = level, logWriterList = logWriterList)
