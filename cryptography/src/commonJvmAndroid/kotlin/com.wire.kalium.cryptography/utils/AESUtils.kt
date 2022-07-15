@@ -14,6 +14,7 @@ import javax.crypto.spec.SecretKeySpec
 
 internal class AESEncrypt {
 
+    @Suppress("TooGenericExceptionCaught")
     internal fun encryptFile(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long {
         var encryptedDataSize = 0L
         try {
@@ -67,6 +68,7 @@ internal class AESEncrypt {
 
 internal class AESDecrypt(private val secretKey: AES256Key) {
 
+    @Suppress("TooGenericExceptionCaught")
     internal fun decryptFile(encryptedDataSource: Source, outputSink: Sink): Long {
         var size = 0L
         try {

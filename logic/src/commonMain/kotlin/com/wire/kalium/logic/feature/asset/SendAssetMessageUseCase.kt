@@ -40,6 +40,7 @@ fun interface SendAssetMessageUseCase {
      * @param assetMimeType the type of the asset file
      * @return an [Either] tuple containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
      */
+    @Suppress("LongParameterList")
     suspend operator fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,

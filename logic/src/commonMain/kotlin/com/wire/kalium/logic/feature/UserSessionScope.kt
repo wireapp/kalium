@@ -111,6 +111,7 @@ import okio.Path.Companion.toPath
 
 expect class UserSessionScope : UserSessionScopeCommon
 
+@Suppress("LongParameterList")
 abstract class UserSessionScopeCommon(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,

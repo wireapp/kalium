@@ -23,6 +23,7 @@ actual fun calcSHA256(bytes: ByteArray): ByteArray {
     return md.digest(bytes)
 }
 
+@Suppress("TooGenericExceptionCaught")
 actual fun calcFileMd5(dataSource: Source): String? =
     try {
         dataSource.buffer().use { source ->
@@ -36,6 +37,7 @@ actual fun calcFileMd5(dataSource: Source): String? =
         null
     }
 
+@Suppress("TooGenericExceptionCaught")
 actual fun calcFileSHA256(dataSource: Source): ByteArray? =
     try {
         dataSource.buffer().use { source ->
