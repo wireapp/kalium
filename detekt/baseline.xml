@@ -300,6 +300,8 @@
     <ID>EmptyDefaultConstructor:KaliumException.kt$KaliumException.FeatureError$()</ID>
     <ID>EmptyDefaultConstructor:ServerConfigurationDAO.kt$ServerConfigMapper$()</ID>
     <ID>EmptyDefaultConstructor:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$()</ID>
+    <ID>EmptyFunctionBlock:GlobalDatabaseImpl.kt$GlobalDatabaseImpl.Schema${ }</ID>
+    <ID>EmptyFunctionBlock:UserDatabaseImpl.kt$UserDatabaseImpl.Schema${ }</ID>
     <ID>EmptyKtFile:SessionLocalRepository.kt$.SessionLocalRepository.kt</ID>
     <ID>Filename:com.wire.kalium.api.tools.json.model.IDSample.kt:1</ID>
     <ID>Filename:com.wire.kalium.logic.data.asset.KaliumFileSystem.kt:1</ID>
@@ -359,14 +361,31 @@
     <ID>FunctionParameterNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$pk_store: CryptoboxCRUDStore</ID>
     <ID>FunctionParameterNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$ed25519_key_pair: KeyPair</ID>
     <ID>FunctionParameterNaming:SetUserHandleUseCase.kt$SetUserHandleUseCase$_handle: String</ID>
+    <ID>LargeClass:MessagesQueries.kt$MessagesQueries : TransacterImpl</ID>
+    <ID>LargeClass:UsersQueries.kt$UsersQueries : TransacterImpl</ID>
+    <ID>LongMethod:UserDatabaseImpl.kt$UserDatabaseImpl.Schema$public override fun create(driver: SqlDriver): Unit</ID>
     <ID>LongParameterList:Calling.kt$Calling$( inst: Handle, msg: ByteArray, len: Int, curr_time: Uint32_t, msg_time: Uint32_t, convId: String, userId: String, clientId: String )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? )</ID>
+    <ID>LongParameterList:ConnectionsQueries.kt$ConnectionsQueries$( from_id: String, conversation_id: String, qualified_conversation: QualifiedIDEntity, to_id: String, last_update: String, qualified_to: QualifiedIDEntity, status: ConnectionEntity.State, )</ID>
+    <ID>LongParameterList:Conversation.kt$Conversation.Adapter$( public val qualified_idAdapter: ColumnAdapter&lt;QualifiedIDEntity, String>, public val typeAdapter: ColumnAdapter&lt;ConversationEntity.Type, String>, public val mls_group_stateAdapter: ColumnAdapter&lt;ConversationEntity.GroupState, String>, public val protocolAdapter: ColumnAdapter&lt;ConversationEntity.Protocol, String>, public val muted_statusAdapter: ColumnAdapter&lt;ConversationEntity.MutedStatus, String>, public val access_listAdapter: ColumnAdapter&lt;List&lt;ConversationEntity.Access>, String>, public val access_role_listAdapter: ColumnAdapter&lt;List&lt;ConversationEntity.AccessRole>, String>, )</ID>
+    <ID>LongParameterList:ConversationsQueries.kt$ConversationsQueries$( qualified_id: QualifiedIDEntity, name: String?, type: ConversationEntity.Type, team_id: String?, mls_group_id: String?, mls_group_state: ConversationEntity.GroupState, protocol: ConversationEntity.Protocol, muted_status: ConversationEntity.MutedStatus, muted_time: Long, last_modified_date: String, last_notified_message_date: String?, access_list: List&lt;ConversationEntity.Access>, access_role_list: List&lt;ConversationEntity.AccessRole>?, )</ID>
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
     <ID>LongParameterList:MessageSender.kt$MessageSenderImpl$( private val messageRepository: MessageRepository, private val conversationRepository: ConversationRepository, private val syncManager: SyncManager, private val messageSendFailureHandler: MessageSendFailureHandler, private val sessionEstablisher: SessionEstablisher, private val messageEnvelopeCreator: MessageEnvelopeCreator, private val mlsMessageCreator: MLSMessageCreator, private val messageSendingScheduler: MessageSendingScheduler, private val timeParser: TimeParser )</ID>
     <ID>LongParameterList:MessageSenderTest.kt$MessageSenderTest$( getMessageById: Boolean = true, getConversationProtocol: Boolean = true, getConversationsRecipient: Boolean = true, prepareRecipientsForNewOutGoingMessage: Boolean = true, createOutgoingEnvelope: Boolean = true, updateMessageDate: Boolean = true, updatePendingMessagesAddMillisToDate: Boolean = true, sendEnvelope: Either&lt;CoreFailure, String> = Either.Right("date"), updateMessageStatus: Boolean = true, )</ID>
+    <ID>LongParameterList:MessagesQueries.kt$MessagesQueries$( id: String, content_type: MessageEntity.ContentType, conversation_id: QualifiedIDEntity, date: String, sender_user_id: QualifiedIDEntity, sender_client_id: String?, status: MessageEntity.Status, visibility: MessageEntity.Visibility, )</ID>
+    <ID>LongParameterList:MessagesQueries.kt$MessagesQueries$( message_id: String, conversation_id: QualifiedIDEntity, asset_size: Long, asset_name: String?, asset_mime_type: String, asset_download_status: MessageEntity.DownloadStatus?, asset_otr_key: ByteArray, asset_sha256: ByteArray, asset_id: String, asset_token: String?, asset_domain: String?, asset_encryption_algorithm: String?, asset_width: Int?, asset_height: Int?, asset_duration_ms: Long?, asset_normalized_loudness: ByteArray?, )</ID>
+    <ID>LongParameterList:MessagesQueries.kt$MessagesQueries$( private val driver: SqlDriver, private val MessageAdapter: Message.Adapter, private val MessageTextContentAdapter: MessageTextContent.Adapter, private val MessageAssetContentAdapter: MessageAssetContent.Adapter, private val MessageMemberChangeContentAdapter: MessageMemberChangeContent.Adapter, private val MessageUnknownContentAdapter: MessageUnknownContent.Adapter, private val MessageRestrictedAssetContentAdapter: MessageRestrictedAssetContent.Adapter, private val MessageMissedCallContentAdapter: MessageMissedCallContent.Adapter, )</ID>
     <ID>LongParameterList:NetworkQualityChangedHandler.kt$NetworkQualityChangedHandler$( conversationId: String, userId: String, clientId: String, quality: Int, roundTripTimeInMilliseconds: Int, upstreamPacketLossPercentage: Int, downstreamPacketLossPercentage: Int, arg: Pointer? )</ID>
     <ID>LongParameterList:RegisterAccountUseCase.kt$RegisterParam.Team$( firstName: String, lastName: String, email: String, password: String, val emailActivationCode: String, val teamName: String, val teamIcon: String )</ID>
     <ID>LongParameterList:SendHandler.kt$SendHandler$( context: Pointer?, conversationId: String, userIdSelf: String, clientIdSelf: String, userIdDestination: String?, clientIdDestination: String?, data: Pointer?, length: Size_t, isTransient: Boolean, arg: Pointer? )</ID>
+    <ID>LongParameterList:ServerConfigurationQueries.kt$ServerConfigurationQueries$( id: String, apiBaseUrl: String, accountBaseUrl: String, webSocketBaseUrl: String, blackListUrl: String, teamsUrl: String, websiteUrl: String, title: String, federation: Boolean, domain: String?, commonApiVersion: Int, )</ID>
+    <ID>LongParameterList:User.kt$User.Adapter$( public val qualified_idAdapter: ColumnAdapter&lt;QualifiedIDEntity, String>, public val accent_idAdapter: ColumnAdapter&lt;Int, Long>, public val connection_statusAdapter: ColumnAdapter&lt;ConnectionEntity.State, String>, public val preview_asset_idAdapter: ColumnAdapter&lt;QualifiedIDEntity, String>, public val complete_asset_idAdapter: ColumnAdapter&lt;QualifiedIDEntity, String>, public val user_availability_statusAdapter: ColumnAdapter&lt;UserAvailabilityStatusEntity, String>, public val user_typeAdapter: ColumnAdapter&lt;UserTypeEntity, String>, )</ID>
+    <ID>LongParameterList:UserDatabase.kt$UserDatabase.Companion$( driver: SqlDriver, ClientAdapter: Client.Adapter, ConnectionAdapter: Connection.Adapter, ConversationAdapter: Conversation.Adapter, MemberAdapter: Member.Adapter, MessageAdapter: Message.Adapter, MessageAssetContentAdapter: MessageAssetContent.Adapter, MessageMemberChangeContentAdapter: MessageMemberChangeContent.Adapter, MessageMissedCallContentAdapter: MessageMissedCallContent.Adapter, MessageRestrictedAssetContentAdapter: MessageRestrictedAssetContent.Adapter, MessageTextContentAdapter: MessageTextContent.Adapter, MessageUnknownContentAdapter: MessageUnknownContent.Adapter, UserAdapter: User.Adapter, )</ID>
+    <ID>LongParameterList:UserDatabaseImpl.kt$( driver: SqlDriver, ClientAdapter: Client.Adapter, ConnectionAdapter: Connection.Adapter, ConversationAdapter: Conversation.Adapter, MemberAdapter: Member.Adapter, MessageAdapter: Message.Adapter, MessageAssetContentAdapter: MessageAssetContent.Adapter, MessageMemberChangeContentAdapter: MessageMemberChangeContent.Adapter, MessageMissedCallContentAdapter: MessageMissedCallContent.Adapter, MessageRestrictedAssetContentAdapter: MessageRestrictedAssetContent.Adapter, MessageTextContentAdapter: MessageTextContent.Adapter, MessageUnknownContentAdapter: MessageUnknownContent.Adapter, UserAdapter: User.Adapter, )</ID>
+    <ID>LongParameterList:UserDatabaseImpl.kt$UserDatabaseImpl$( driver: SqlDriver, ClientAdapter: Client.Adapter, ConnectionAdapter: Connection.Adapter, ConversationAdapter: Conversation.Adapter, MemberAdapter: Member.Adapter, MessageAdapter: Message.Adapter, MessageAssetContentAdapter: MessageAssetContent.Adapter, MessageMemberChangeContentAdapter: MessageMemberChangeContent.Adapter, MessageMissedCallContentAdapter: MessageMissedCallContent.Adapter, MessageRestrictedAssetContentAdapter: MessageRestrictedAssetContent.Adapter, MessageTextContentAdapter: MessageTextContent.Adapter, MessageUnknownContentAdapter: MessageUnknownContent.Adapter, UserAdapter: User.Adapter, )</ID>
+    <ID>LongParameterList:UsersQueries.kt$UsersQueries$( name: String?, handle: String?, email: String?, accent_id: Int, preview_asset_id: QualifiedIDEntity?, complete_asset_id: QualifiedIDEntity?, qualified_id: QualifiedIDEntity, )</ID>
+    <ID>LongParameterList:UsersQueries.kt$UsersQueries$( name: String?, handle: String?, email: String?, phone: String?, accent_id: Int, team: String?, preview_asset_id: QualifiedIDEntity?, complete_asset_id: QualifiedIDEntity?, user_type: UserTypeEntity, qualified_id: QualifiedIDEntity, )</ID>
+    <ID>LongParameterList:UsersQueries.kt$UsersQueries$( qualified_id: QualifiedIDEntity, name: String?, handle: String?, email: String?, phone: String?, accent_id: Int, team: String?, connection_status: ConnectionEntity.State, preview_asset_id: QualifiedIDEntity?, complete_asset_id: QualifiedIDEntity?, user_type: UserTypeEntity, )</ID>
     <ID>MagicNumber:AESUtils.kt$AESDecrypt$16</ID>
     <ID>MagicNumber:AESUtils.kt$AESEncrypt$16L</ID>
     <ID>MagicNumber:AESUtils.kt$AESEncrypt$256</ID>
@@ -732,6 +751,107 @@
     <ID>ModifierOrdering:com.wire.kalium.logic.data.asset.KaliumFileSystem.kt:30</ID>
     <ID>ModifierOrdering:com.wire.kalium.logic.data.asset.KaliumFileSystem.kt:32</ID>
     <ID>NestedBlockDepth:ValidateSSOCodeUseCase.kt$ValidateSSOCodeUseCaseImpl$override fun invoke(ssoCode: String): ValidateSSOCodeResult</ID>
+    <ID>NewLineAtEndOfFile:ApiVersionMapperMock.kt$com.wire.kalium.logic.configuration.server.ApiVersionMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:AssetApiMock.kt$com.wire.kalium.network.api.asset.AssetApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:AssetDAOMock.kt$com.wire.kalium.persistence.dao.asset.AssetDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:AssetMapperMock.kt$com.wire.kalium.logic.data.asset.AssetMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:AssetRepositoryMock.kt$com.wire.kalium.logic.data.asset.AssetRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:CallApiMock.kt$com.wire.kalium.network.api.call.CallApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:CallManagerMock.kt$com.wire.kalium.logic.feature.call.CallManagerMock.kt</ID>
+    <ID>NewLineAtEndOfFile:CallRepositoryMock.kt$com.wire.kalium.logic.data.call.CallRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:CallingMock.kt$com.wire.kalium.calling.CallingMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ClientApiMock.kt$com.wire.kalium.network.api.user.client.ClientApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ClientDAOMock.kt$com.wire.kalium.persistence.dao.client.ClientDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ClientRegistrationStorageMock.kt$com.wire.kalium.persistence.client.ClientRegistrationStorageMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ClientRemoteRepositoryMock.kt$com.wire.kalium.logic.data.client.remote.ClientRemoteRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ClientRepositoryMock.kt$com.wire.kalium.logic.data.client.ClientRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConnectionApiMock.kt$com.wire.kalium.network.api.user.connection.ConnectionApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConnectionDAOMock.kt$com.wire.kalium.persistence.dao.ConnectionDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConnectionRepositoryMock.kt$com.wire.kalium.logic.data.connection.ConnectionRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConversationApiMock.kt$com.wire.kalium.network.api.conversation.ConversationApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConversationDAOMock.kt$com.wire.kalium.persistence.dao.ConversationDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConversationEventReceiverMock.kt$com.wire.kalium.logic.sync.ConversationEventReceiverMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConversationRepositoryMock.kt$com.wire.kalium.logic.data.conversation.ConversationRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConversationRoleMapperMock.kt$com.wire.kalium.logic.data.conversation.ConversationRoleMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ConversationStatusMapperMock.kt$com.wire.kalium.logic.data.conversation.ConversationStatusMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:DomainUserTypeMapperMock.kt$com.wire.kalium.logic.data.user.type.DomainUserTypeMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:EventGathererMock.kt$com.wire.kalium.logic.sync.EventGathererMock.kt</ID>
+    <ID>NewLineAtEndOfFile:EventInfoStorageMock.kt$com.wire.kalium.persistence.event.EventInfoStorageMock.kt</ID>
+    <ID>NewLineAtEndOfFile:EventProcessorMock.kt$com.wire.kalium.logic.sync.event.EventProcessorMock.kt</ID>
+    <ID>NewLineAtEndOfFile:EventRepositoryMock.kt$com.wire.kalium.logic.data.event.EventRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:FeatureConfigApiMock.kt$com.wire.kalium.network.api.featureConfigs.FeatureConfigApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:FeatureConfigEventReceiverMock.kt$com.wire.kalium.logic.sync.FeatureConfigEventReceiverMock.kt</ID>
+    <ID>NewLineAtEndOfFile:FeatureConfigRepositoryMock.kt$com.wire.kalium.logic.data.featureConfig.FeatureConfigRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:FederatedIdMapperMock.kt$com.wire.kalium.logic.data.id.FederatedIdMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:IdMapperMock.kt$com.wire.kalium.logic.data.id.IdMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:IsFileSharingEnabledUseCaseMock.kt$com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseMock.kt</ID>
+    <ID>NewLineAtEndOfFile:KaliumPreferencesMock.kt$com.wire.kalium.persistence.kmm_settings.KaliumPreferencesMock.kt</ID>
+    <ID>NewLineAtEndOfFile:KeyPackageApiMock.kt$com.wire.kalium.network.api.keypackage.KeyPackageApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:KeyPackageRepositoryMock.kt$com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:LoginApiMock.kt$com.wire.kalium.network.api.user.login.LoginApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:LoginRepositoryMock.kt$com.wire.kalium.logic.data.auth.login.LoginRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:LogoutApiMock.kt$com.wire.kalium.network.api.user.logout.LogoutApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MLSClientMock.kt$com.wire.kalium.cryptography.MLSClientMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MLSClientProviderMock.kt$com.wire.kalium.logic.data.client.MLSClientProviderMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MLSConversationRepositoryMock.kt$com.wire.kalium.logic.data.conversation.MLSConversationRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MLSMessageApiMock.kt$com.wire.kalium.network.api.message.MLSMessageApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MLSMessageCreatorMock.kt$com.wire.kalium.logic.feature.message.MLSMessageCreatorMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageApiMock.kt$com.wire.kalium.network.api.message.MessageApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageDAOMock.kt$com.wire.kalium.persistence.dao.message.MessageDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageEnvelopeCreatorMock.kt$com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageMapperMock.kt$com.wire.kalium.logic.data.message.MessageMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageRepositoryMock.kt$com.wire.kalium.logic.data.message.MessageRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageSendFailureHandlerMock.kt$com.wire.kalium.logic.feature.message.MessageSendFailureHandlerMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageSenderMock.kt$com.wire.kalium.logic.feature.message.MessageSenderMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageSendingSchedulerMock.kt$com.wire.kalium.logic.feature.message.MessageSendingSchedulerMock.kt</ID>
+    <ID>NewLineAtEndOfFile:MetadataDAOMock.kt$com.wire.kalium.persistence.dao.MetadataDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:NotificationApiMock.kt$com.wire.kalium.network.api.notification.NotificationApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:NotificationTokenRepositoryMock.kt$com.wire.kalium.logic.configuration.notification.NotificationTokenRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ObserveConnectionListUseCaseMock.kt$com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ObserveConversationListDetailsUseCaseMock.kt$com.wire.kalium.logic.feature.conversation.ObserveConversationListDetailsUseCaseMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ParticipantsOrderMock.kt$com.wire.kalium.logic.feature.call.ParticipantsOrderMock.kt</ID>
+    <ID>NewLineAtEndOfFile:PersistMessageUseCaseMock.kt$com.wire.kalium.logic.data.message.PersistMessageUseCaseMock.kt</ID>
+    <ID>NewLineAtEndOfFile:PreKeyMapperMock.kt$com.wire.kalium.logic.data.prekey.PreKeyMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:PreKeyRepositoryMock.kt$com.wire.kalium.logic.data.prekey.PreKeyRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ProteusClientMock.kt$com.wire.kalium.cryptography.ProteusClientMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ProtoContentMapperMock.kt$com.wire.kalium.logic.data.message.ProtoContentMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ProtocolInfoMapperMock.kt$com.wire.kalium.logic.data.conversation.ProtocolInfoMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:PublicUserMapperMock.kt$com.wire.kalium.logic.data.publicuser.PublicUserMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:RegisterAccountRepositoryMock.kt$com.wire.kalium.logic.data.register.RegisterAccountRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:RegisterApiMock.kt$com.wire.kalium.network.api.user.register.RegisterApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SSOLoginApiMock.kt$com.wire.kalium.network.api.user.login.SSOLoginApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SSOLoginRepositoryMock.kt$com.wire.kalium.logic.data.auth.login.SSOLoginRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SearchUserRepositoryMock.kt$com.wire.kalium.logic.data.publicuser.SearchUserRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SelfApiMock.kt$com.wire.kalium.network.api.user.self.SelfApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SendMessageFailureMapperMock.kt$com.wire.kalium.logic.data.message.SendMessageFailureMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ServerConfigApiMock.kt$com.wire.kalium.network.api.configuration.ServerConfigApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ServerConfigMapperMock.kt$com.wire.kalium.logic.configuration.server.ServerConfigMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ServerConfigRepositoryMock.kt$com.wire.kalium.logic.configuration.server.ServerConfigRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ServerConfigurationDAOMock.kt$com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SessionEstablisherMock.kt$com.wire.kalium.logic.feature.message.SessionEstablisherMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SessionMapperMock.kt$com.wire.kalium.logic.data.session.SessionMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SessionRepositoryMock.kt$com.wire.kalium.logic.data.session.SessionRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SyncManagerMock.kt$com.wire.kalium.logic.sync.SyncManagerMock.kt</ID>
+    <ID>NewLineAtEndOfFile:SyncRepositoryMock.kt$com.wire.kalium.logic.data.sync.SyncRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:TeamDAOMock.kt$com.wire.kalium.persistence.dao.TeamDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:TeamMapperMock.kt$com.wire.kalium.logic.data.team.TeamMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:TeamRepositoryMock.kt$com.wire.kalium.logic.data.team.TeamRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:TeamsApiMock.kt$com.wire.kalium.network.api.teams.TeamsApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:TimeParserMock.kt$com.wire.kalium.logic.util.TimeParserMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UpdateApiVersionsUseCaseMock.kt$com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserConfigRepositoryMock.kt$com.wire.kalium.logic.configuration.UserConfigRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserDAOMock.kt$com.wire.kalium.persistence.dao.UserDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserDetailsApiMock.kt$com.wire.kalium.network.api.user.details.UserDetailsApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserEventReceiverMock.kt$com.wire.kalium.logic.sync.UserEventReceiverMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserMapperMock.kt$com.wire.kalium.logic.data.user.UserMapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserRepositoryMock.kt$com.wire.kalium.logic.data.user.UserRepositoryMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserSearchApiMock.kt$com.wire.kalium.network.api.contact.search.UserSearchApiMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserSearchApiWrapperMock.kt$com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperMock.kt</ID>
+    <ID>NewLineAtEndOfFile:UserSessionWorkSchedulerMock.kt$com.wire.kalium.logic.sync.UserSessionWorkSchedulerMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ValidateEmailUseCaseMock.kt$com.wire.kalium.logic.feature.auth.ValidateEmailUseCaseMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ValidateSSOCodeUseCaseMock.kt$com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ValidateUserHandleUseCaseMock.kt$com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseMock.kt</ID>
+    <ID>NewLineAtEndOfFile:VersionApiMock.kt$com.wire.kalium.network.api.versioning.VersionApiMock.kt</ID>
     <ID>NoConsecutiveBlankLines:com.wire.detekt.rules.EnforceSerializableFields.kt:55</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.api.ApiTest.kt:209</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.api.ApiTest.kt:232</ID>
@@ -880,6 +1000,11 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.conversation.AddParticipantRequest.kt:16</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.conversation.CreateConversationRequest.kt:16</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:50</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:3</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:35</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:44</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:53</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:62</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.model.Tokens.kt:10</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.notification.EventSerialization.kt:6</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.prekey.PreKeyApiImpl.kt:34</ID>
