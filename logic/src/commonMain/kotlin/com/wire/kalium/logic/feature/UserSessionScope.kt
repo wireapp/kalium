@@ -440,8 +440,10 @@ abstract class UserSessionScopeCommon(
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories
         KaliumFileSystemImpl(dataStoragePaths).also {
-            if (!it.exists(dataStoragePaths.cachePath.value.toPath())) it.createDirectory(dataStoragePaths.cachePath.value.toPath())
-            if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath())) it.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
+            if (!it.exists(dataStoragePaths.cachePath.value.toPath()))
+                it.createDirectory(dataStoragePaths.cachePath.value.toPath())
+            if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath()))
+                it.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
 }

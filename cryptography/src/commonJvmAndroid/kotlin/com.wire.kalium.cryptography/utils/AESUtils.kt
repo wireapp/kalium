@@ -41,7 +41,11 @@ internal class AESEncrypt {
         return sizeWithPaddingAndIV(encryptedDataSize)
     }
 
-    private fun sizeWithPaddingAndIV(size: Long): Long = size + (32L - (size % 16L))
+    private fun sizeWithPaddingAndIV(size: Long): Long {
+        val ivSize = 16L
+        val ivWithPaddingSize = 32L
+        return size + (ivWithPaddingSize - (size % ivSize))
+    }
 
     internal fun encryptData(assetData: PlainData, key: AES256Key): EncryptedData {
         // Fetch AES256 Algorithm
@@ -59,9 +63,10 @@ internal class AESEncrypt {
     }
 
     internal fun generateRandomAES256Key(): AES256Key {
+        val keySize = 256
         // AES256 Symmetric secret key generation
         val keygen = KeyGenerator.getInstance(KEY_ALGORITHM)
-        keygen.init(256)
+        keygen.init(keySize)
         return AES256Key(keygen.generateKey().encoded)
     }
 }
@@ -109,7 +114,8 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
         val decryptedData = cipher.doFinal(encryptedData.data)
 
         // We ignore the first 16 bytes as they are reserved for the Initialization Vector
-        return PlainData(decryptedData.copyOfRange(16, decryptedData.size))
+        val ivSize = 16
+        return PlainData(decryptedData.copyOfRange(ivSize, decryptedData.size))
     }
 }
 
