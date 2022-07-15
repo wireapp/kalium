@@ -159,7 +159,6 @@ internal class ConnectionDataSource(
         }
     }
 
-
     override suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
@@ -197,7 +196,7 @@ internal class ConnectionDataSource(
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
         persistConnection(event.connection)
 
-    //TODO: Vitor : Instead of duplicating, we could pass selfUser.teamId from the UseCases to this function.
+    // TODO: Vitor : Instead of duplicating, we could pass selfUser.teamId from the UseCases to this function.
     // This way, the UseCases can tie the different Repos together, calling these functions.
     private suspend fun persistConnection(
         connection: Connection,
@@ -209,7 +208,7 @@ internal class ConnectionDataSource(
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
         }.flatMap { userProfileDTO ->
             wrapStorageRequest {
-                val selfUser = getSelfUser();
+                val selfUser = getSelfUser()
                 val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
                     userDetailResponse = userProfileDTO,
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
@@ -231,7 +230,7 @@ internal class ConnectionDataSource(
         connectionDAO.deleteConnectionDataAndConversation(idMapper.toDaoModel(conversationId))
     }
 
-    //TODO: code duplication here for getting self user, the same is done inside
+    // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository, what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
     private suspend fun getSelfUser(): SelfUser {

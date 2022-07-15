@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 
 /**
