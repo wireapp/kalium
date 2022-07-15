@@ -95,6 +95,13 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
+internal class KaliumHttpLogger(): Logger {
+    override fun log(message: String) {
+        kaliumLogger.d(message)
+    }
+
+}
+
 @Suppress("MagicNumber")
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
@@ -104,7 +111,7 @@ internal fun provideBaseHttpClient(
 
     if (NetworkLogger.isRequestLoggingEnabled) {
         install(Logging) {
-            logger = Logger.SIMPLE
+            logger = KaliumHttpLogger()
             level = LogLevel.ALL
         }
     }
