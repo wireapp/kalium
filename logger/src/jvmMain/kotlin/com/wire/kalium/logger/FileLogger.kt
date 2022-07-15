@@ -10,15 +10,17 @@ import kotlin.time.DurationUnit
 
 private var LOG_FILE_FLUSH_PERIOD = 5.seconds.toLong(DurationUnit.MILLISECONDS)
 
-class FileLogger(outputfile: File): LogWriter() {
+class FileLogger(outputfile: File) : LogWriter() {
 
     private val writer = outputfile.bufferedWriter()
 
     init {
         // Attempt to close & flush the output file before the process terminates
-        Runtime.getRuntime().addShutdownHook(Thread() {
-            writer.close()
-        })
+        Runtime.getRuntime().addShutdownHook(
+            Thread() {
+                writer.close()
+            }
+        )
 
         // Flush the output file every 5 seconds for the case when there a low log output
         Timer().scheduleAtFixedRate(delay = LOG_FILE_FLUSH_PERIOD, period = LOG_FILE_FLUSH_PERIOD) {
