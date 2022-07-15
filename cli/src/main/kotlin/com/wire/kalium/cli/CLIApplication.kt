@@ -267,7 +267,7 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     override fun run() = runBlocking {
         if (logFile != null) {
-            CoreLogger.setLoggingLevel(logLevel, listOf(fileLogger))
+            CoreLogger.setLoggingLevel(logLevel, fileLogger)
         } else {
             CoreLogger.setLoggingLevel(logLevel)
         }

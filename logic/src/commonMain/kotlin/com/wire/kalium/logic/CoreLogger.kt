@@ -11,13 +11,13 @@ internal var kaliumLogger = KaliumLogger.disabled()
 internal var callingLogger = KaliumLogger.disabled()
 
 object CoreLogger {
-    fun setLoggingLevel(level: KaliumLogLevel, logWriterList: List<LogWriter>? = null) {
+    fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
         kaliumLogger = KaliumLogger(
             config = KaliumLogger.Config(
                 severity = level,
                 tag = "CoreLogic"
             ),
-            logWriterList = logWriterList
+            logWriters = logWriters
         )
 
         callingLogger = KaliumLogger(
@@ -25,11 +25,11 @@ object CoreLogger {
                 severity = level,
                 tag = "Calling"
             ),
-            logWriterList = logWriterList
+            logWriters = logWriters
         )
 
-        NetworkLogger.setLoggingLevel(level = level, logWriterList = logWriterList)
-        CryptographyLogger.setLoggingLevel(level = level, logWriterList = logWriterList)
-        PersistenceLogger.setLoggingLevel(level = level, logWriterList = logWriterList)
+        NetworkLogger.setLoggingLevel(level = level, logWriters = logWriters)
+        CryptographyLogger.setLoggingLevel(level = level, logWriters = logWriters)
+        PersistenceLogger.setLoggingLevel(level = level, logWriters = logWriters)
     }
 }

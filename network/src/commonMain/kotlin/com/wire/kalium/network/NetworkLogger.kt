@@ -7,13 +7,13 @@ import com.wire.kalium.logger.KaliumLogger
 internal var kaliumLogger = KaliumLogger.disabled()
 
 object NetworkLogger {
-    fun setLoggingLevel(level: KaliumLogLevel, logWriterList: List<LogWriter>? = null) {
+    fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
         kaliumLogger = KaliumLogger(
             config = KaliumLogger.Config(
                 severity = level,
                 tag = "Network"
             ),
-            logWriterList = logWriterList
+            logWriters = logWriters
         )
     }
 
