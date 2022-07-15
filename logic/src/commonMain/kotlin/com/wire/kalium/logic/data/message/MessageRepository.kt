@@ -35,7 +35,7 @@ interface MessageRepository {
      * @see PersistMessageUseCase
      */
     @DelicateKaliumApi(
-        message = "calling this function directly may cause an wrong conversation list order state",
+        message = "calling this function directly may cause conversation list to have an incorrect order",
         replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
     )
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
