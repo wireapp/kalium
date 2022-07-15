@@ -23,8 +23,10 @@ data class Conversation(
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
+
+
     fun isGuestAllowed(): Boolean = accessRole?.let {
-        (it.containsAll(listOf(AccessRole.GUEST, AccessRole.NON_TEAM_MEMBER)))
+        (it.contains(AccessRole.GUEST) || it.contains(AccessRole.NON_TEAM_MEMBER))
     } ?: TODO(
         "swagger: This field is optional. If it is not present, " +
                 "the default will be [team_member, non_team_member, service]"
