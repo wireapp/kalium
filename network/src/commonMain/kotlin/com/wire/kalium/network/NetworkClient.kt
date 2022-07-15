@@ -98,7 +98,6 @@ internal class KaliumHttpLogger : Logger {
     override fun log(message: String) {
         kaliumLogger.d(message)
     }
-
 }
 
 @Suppress("MagicNumber")
