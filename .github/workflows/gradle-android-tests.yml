@@ -55,7 +55,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
-          script: ./gradlew runOnlyAffectedConnectedTest
+          script: ./gradlew connectedAndroidOnlyAffectedTest
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25

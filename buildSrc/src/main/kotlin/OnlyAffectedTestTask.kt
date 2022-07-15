@@ -70,9 +70,15 @@ open class OnlyAffectedTestTask : DefaultTask() {
         }
     }
 
+    /**
+     * Helper enum, that allow to define configurations, that will be automatically added (if you want)
+     *
+     * @param taskName how the task will be named when registered
+     * @param testTarget the target test task that would be wrapped in this "smart" execution
+     */
     enum class TestTaskConfiguration(val taskName: String, val testTarget: String) {
         ANDROID_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest"),
-        IOS_TEST_TASK("connectedAIOSOnlyAffectedTest", "iosX64Test")
+        IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test")
     }
 
 }
