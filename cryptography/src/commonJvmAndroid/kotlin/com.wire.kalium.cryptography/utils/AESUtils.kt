@@ -1,12 +1,14 @@
 package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
-import okio.BufferedSink
+import io.ktor.utils.io.core.use
+import okio.Buffer
 import okio.Sink
 import okio.Source
 import okio.buffer
 import okio.cipherSink
 import okio.cipherSource
+import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.IvParameterSpec
@@ -24,27 +26,35 @@ internal class AESEncrypt {
             // Parse Secret Key from our custom AES256Key model object
             val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
 
+            // Create random iv
+            val iv = ByteArray(IV_SIZE)
+            SecureRandom().nextBytes(iv)
+
             // Init the encryption
-            cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey)
+            cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey, IvParameterSpec(iv))
+
+            // we append the IV to the beginning of the file data
+            val outputBuffer = outputSink.buffer()
+            outputBuffer.write(cipher.iv)
+            outputBuffer.flush()
 
             // Encrypt and write the data to given outputPath
-            outputSink.cipherSink(cipher).buffer().use { cipheredSink ->
-                cipheredSink.write(cipher.iv) // we append the IV to the beginning of the file data
+            outputBuffer.cipherSink(cipher).buffer().use { cipheredSink ->
                 encryptedDataSize = cipheredSink.writeAll(assetDataSource)
-                kaliumLogger.d("** The encrypted data size is => $encryptedDataSize")
+                cipheredSink.flush()
             }
-
-            kaliumLogger.d("** The encrypted data with IV size is => ${sizeWithPaddingAndIV(encryptedDataSize)}")
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while encrypting the asset:\n $e}")
+        } finally {
+            assetDataSource.close()
+            outputSink.close()
         }
         return sizeWithPaddingAndIV(encryptedDataSize)
     }
 
     private fun sizeWithPaddingAndIV(size: Long): Long {
-        val ivSize = 16L
-        val ivWithPaddingSize = 32L
-        return size + (ivWithPaddingSize - (size % ivSize))
+        // IV + data + pkcs7 padding
+        return IV_SIZE + size + (AES_BLOCK_SIZE - (size % AES_BLOCK_SIZE))
     }
 
     internal fun encryptData(assetData: PlainData, key: AES256Key): EncryptedData {
@@ -54,8 +64,12 @@ internal class AESEncrypt {
         // Parse Secret Key from our custom AES256Key model object
         val symmetricAESKey = SecretKeySpec(key.data, 0, key.data.size, KEY_ALGORITHM)
 
+        // Create random iv
+        val iv = ByteArray(IV_SIZE)
+        SecureRandom().nextBytes(iv)
+
         // Do the encryption
-        cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey)
+        cipher.init(Cipher.ENCRYPT_MODE, symmetricAESKey, IvParameterSpec(iv))
         val cipherData = cipher.doFinal(assetData.data)
 
         // We prefix the first 16 bytes of the final encoded array with the Initialization Vector
@@ -63,10 +77,9 @@ internal class AESEncrypt {
     }
 
     internal fun generateRandomAES256Key(): AES256Key {
-        val keySize = 256
         // AES256 Symmetric secret key generation
         val keygen = KeyGenerator.getInstance(KEY_ALGORITHM)
-        keygen.init(keySize)
+        keygen.init(AES_KEYGEN_SIZE)
         return AES256Key(keygen.generateKey().encoded)
     }
 }
@@ -83,21 +96,30 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
             // Parse Secret Key from our custom AES256Key model object
             val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
 
+            // Read the first 16 bytes to get the IV
+            val buffer = Buffer()
+            encryptedDataSource.read(buffer, IV_SIZE.toLong())
+            val iv = buffer.readByteArray()
+
             // Init the decryption
-            cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
+            cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(iv))
 
             // Decrypt and write the data to given outputPath
             encryptedDataSource.cipherSource(cipher).buffer().use { bufferedSource ->
-                val dataWithIV = bufferedSource.readByteArray()
-                val data = dataWithIV.copyOfRange(16, dataWithIV.size) // We discard the first 16 bytes corresponding to the IV
+                // We discard the first 16 bytes corresponding to the IV, since we already have it in iv variable
+                val data = bufferedSource.readByteArray()
                 size = data.size.toLong()
                 outputSink.buffer().use {
                     it.write(data)
+                    it.flush()
                 }
             }
             kaliumLogger.d("WROTE $size bytes")
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while decrypting the asset:\n $e}")
+        } finally {
+            encryptedDataSource.close()
+            outputSink.close()
         }
         return size
     }
@@ -109,15 +131,20 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
         // Parse Secret Key from our custom AES256Key model object
         val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
 
+        // Get first 16 as they map with the IV
+        val iv = encryptedData.data.copyOfRange(0, IV_SIZE)
+
         // Do the decryption
-        cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(ByteArray(16)))
+        cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(iv))
         val decryptedData = cipher.doFinal(encryptedData.data)
 
         // We ignore the first 16 bytes as they are reserved for the Initialization Vector
-        val ivSize = 16
-        return PlainData(decryptedData.copyOfRange(ivSize, decryptedData.size))
+        return PlainData(decryptedData.copyOfRange(IV_SIZE, decryptedData.size))
     }
 }
 
 private const val KEY_ALGORITHM = "AES"
 private const val KEY_ALGORITHM_CONFIGURATION = "AES/CBC/PKCS5PADDING"
+private const val IV_SIZE = 16
+private const val AES_BLOCK_SIZE = 16
+private const val AES_KEYGEN_SIZE = 256
