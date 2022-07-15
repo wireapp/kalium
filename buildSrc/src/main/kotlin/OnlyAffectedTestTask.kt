@@ -19,6 +19,9 @@ open class OnlyAffectedTestTask : DefaultTask() {
     @Input
     lateinit var targetTestTask: String
 
+    @Input
+    var ignoredModules: List<String> = emptyList()
+
     init {
         group = "verification"
         description = "Installs and runs the tests for debug on connected devices (Only for affected modules)."
@@ -45,18 +48,10 @@ open class OnlyAffectedTestTask : DefaultTask() {
         executeTask(affectedModules)
     }
 
-    private fun runTargetTask(targetTask: String) {
-        println("\uD83D\uDD27 Running tests on '$targetTask'.")
-        project.exec {
-            args(targetTask)
-            executable("./gradlew")
-        }
-    }
-
     private fun executeTask(affectedModules: Set<String>) {
         val tasksName = mutableListOf<String>()
         project.childProjects.values
-            .filter { affectedModules.contains(it.name) }
+            .filter { affectedModules.contains(it.name) && !ignoredModules.contains(it.name) }
             .forEach { childProject ->
                 tasksName.addAll(childProject.tasks
                     .filter { it.name.equals(targetTestTask, true) }
@@ -64,7 +59,15 @@ open class OnlyAffectedTestTask : DefaultTask() {
                 )
             }
 
-        tasksName.forEach { runTargetTask(it) }
+        tasksName.forEach(::runTargetTask)
+    }
+
+    private fun runTargetTask(targetTask: String) {
+        println("\uD83D\uDD27 Running tests on '$targetTask'.")
+        project.exec {
+            args(targetTask)
+            executable("./gradlew")
+        }
     }
 
     enum class TestTaskConfiguration(val taskName: String, val testTarget: String) {
