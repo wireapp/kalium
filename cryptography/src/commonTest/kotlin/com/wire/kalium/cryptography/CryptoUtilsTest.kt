@@ -3,7 +3,9 @@ package com.wire.kalium.cryptography
 import com.wire.kalium.cryptography.utils.*
 import io.ktor.utils.io.core.*
 import okio.Path.Companion.toPath
+import okio.buffer
 import okio.fakefilesystem.FakeFileSystem
+import okio.use
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -78,11 +80,12 @@ class CryptoUtilsTest {
             write(input)
         }
         val rawAssetDataSource = fakeFileSystem.source(tempPath)
-        val outputEncryptedSink = fakeFileSystem.sink(encryptedDataPath)
+        val outputEncryptedSink = fakeFileSystem.appendingSink(encryptedDataPath)
         val outputDecryptedSink = fakeFileSystem.sink(decryptedDataPath)
 
         // When
         encryptFileWithAES256(rawAssetDataSource, randomAES256Key, outputEncryptedSink)
+        fakeFileSystem.source(encryptedDataPath).buffer().use { it.readByteArray() }
         val encryptedAssetDataSource = fakeFileSystem.source(encryptedDataPath)
         val decryptedDataSize = decryptFileWithAES256(encryptedAssetDataSource, outputDecryptedSink, randomAES256Key)
 
@@ -117,6 +120,7 @@ class CryptoUtilsTest {
 
         fakeFileSystem.write(encryptedDataPath) {
             write(encryptedData.data)
+            flush()
         }
         val encryptedDataSource = fakeFileSystem.source(encryptedDataPath)
         val decryptedDataSink = fakeFileSystem.sink(decryptedDataPath)
@@ -147,7 +151,6 @@ class CryptoUtilsTest {
 
         val tempPath = "$rootPath/temp_path".toPath()
         val encryptedDataPath = "encrypted_data_path.aes".toPath()
-        val decryptedDataPath = "decrypted_data_path.pdf".toPath()
         fakeFileSystem.write(tempPath) {
             write(input)
         }
