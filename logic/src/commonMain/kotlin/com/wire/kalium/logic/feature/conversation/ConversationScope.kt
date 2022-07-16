@@ -58,4 +58,6 @@ class ConversationScope(
 
     val observeConnectionList: ObserveConnectionListUseCase
         get() = ObserveConnectionListUseCaseImpl(connectionRepository, syncManager)
+
+    val updateConversationAccess: UpdateConversationAccessUseCase get() = UpdateConversationAccessUseCase(conversationRepository)
 }
