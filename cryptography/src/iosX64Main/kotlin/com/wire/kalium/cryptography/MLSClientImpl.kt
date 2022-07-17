@@ -2,7 +2,7 @@ package com.wire.kalium.cryptography
 
 actual class MLSClientImpl actual constructor(
     rootDir: String,
-    databaseKey: String,
+    databaseKey: MlsDBSecret,
     clientId: CryptoQualifiedClientId
 ) : MLSClient {
     override fun clearLocalFiles(): Boolean {

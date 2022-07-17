@@ -2,8 +2,8 @@ package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.model.ConversationAccess
-import com.wire.kalium.network.api.model.ConversationAccessRole
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -21,9 +21,9 @@ data class CreateConversationRequest(
     @SerialName("name")
     val name: String?,
     @SerialName("access")
-    val access: List<ConversationAccess>?,
+    val access: List<ConversationAccessDTO>?,
     @SerialName("access_role_v2")
-    val accessRole: List<ConversationAccessRole>?,
+    val accessRole: List<ConversationAccessRoleDTO>?,
     @SerialName("team")
     val convTeamInfo: ConvTeamInfo?,
     @SerialName("message_timer")

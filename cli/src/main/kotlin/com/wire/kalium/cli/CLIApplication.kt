@@ -5,8 +5,12 @@ import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.output.TermUi.echo
 import com.github.ajalt.clikt.output.TermUi.prompt
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
+import com.github.ajalt.clikt.parameters.types.enum
+import com.github.ajalt.clikt.parameters.types.file
+import com.wire.kalium.logger.FileLogger
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
@@ -36,6 +40,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.File
 
 private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", kaliumConfigs = KaliumConfigs())
 
@@ -255,8 +260,17 @@ class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
 
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
+    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
+    private val logFile by option(help = "output file for logs").file(canBeDir = false)
+
+    private val fileLogger: FileLogger by lazy { FileLogger(logFile ?: File("kalium.log")) }
+
     override fun run() = runBlocking {
-        CoreLogger.setLoggingLevel(KaliumLogLevel.DEBUG)
+        if (logFile != null) {
+            CoreLogger.setLoggingLevel(logLevel, fileLogger)
+        } else {
+            CoreLogger.setLoggingLevel(logLevel)
+        }
     }
 
     companion object {

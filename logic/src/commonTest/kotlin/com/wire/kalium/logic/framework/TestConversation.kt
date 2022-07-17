@@ -14,6 +14,8 @@ import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
@@ -30,7 +32,9 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        null
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
     val SELF = Conversation(
         ID.copy(value = "SELF ID"),
@@ -40,7 +44,9 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        null
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -51,7 +57,9 @@ object TestConversation {
         protocolInfo,
         MutedConversationStatus.AllAllowed,
         null,
-        null
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -62,9 +70,10 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        null
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
-
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
     val USER_1 = UserId("member1", "domainMember")
@@ -74,7 +83,6 @@ object TestConversation {
     val NETWORK_USER_ID1 = com.wire.kalium.network.api.UserId(value = "member1", domain = "domainMember")
     val NETWORK_USER_ID2 = com.wire.kalium.network.api.UserId(value = "member2", domain = "domainMember")
     val USER_ID1 = UserId(value = "member1", domain = "domainMember")
-
 
     val CONVERSATION_RESPONSE = ConversationResponse(
         "creator",
@@ -89,7 +97,13 @@ object TestConversation {
         0,
         null,
         ConvProtocol.PROTEUS,
-        lastEventTime = "2022-03-30T15:36:00.000Z"
+        lastEventTime = "2022-03-30T15:36:00.000Z",
+        access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
+        accessRole = setOf(
+            ConversationAccessRoleDTO.GUEST,
+            ConversationAccessRoleDTO.TEAM_MEMBER,
+            ConversationAccessRoleDTO.NON_TEAM_MEMBER
+        )
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
@@ -108,6 +122,8 @@ object TestConversation {
         "teamId",
         ConversationEntity.ProtocolInfo.Proteus,
         lastNotificationDate = null,
-        lastModifiedDate = "2022-03-30T15:36:00.000Z"
+        lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
 }

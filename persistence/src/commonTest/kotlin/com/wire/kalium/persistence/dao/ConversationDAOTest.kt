@@ -296,7 +296,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             lastNotificationDate = null,
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
-            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -306,7 +308,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED),
             lastNotificationDate = null,
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
-            mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED
+            mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -319,7 +323,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val member1 = Member(user1.id, Member.Role.Admin)

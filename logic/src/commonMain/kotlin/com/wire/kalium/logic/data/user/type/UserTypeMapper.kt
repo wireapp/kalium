@@ -14,6 +14,8 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
         get() = UserTypeEntity.EXTERNAL
     override val internal: UserTypeEntity
         get() = UserTypeEntity.INTERNAL
+    override val none: UserTypeEntity
+        get() = UserTypeEntity.NONE
 
 }
 
@@ -27,6 +29,8 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
         get() = UserType.EXTERNAL
     override val internal: UserType
         get() = UserType.INTERNAL
+    override val none: UserType
+        get() = UserType.NONE
 
     override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserType {
         return when (userTypeEntity) {
@@ -34,6 +38,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
             UserTypeEntity.EXTERNAL -> external
             UserTypeEntity.FEDERATED -> federated
             UserTypeEntity.GUEST -> guest
+            UserTypeEntity.NONE -> none
         }
     }
 
@@ -51,6 +56,7 @@ interface UserTypeMapper<T> {
     val federated: T
     val external: T
     val internal: T
+    val none: T
 
     @Suppress("ReturnCount")
     fun fromOtherUserTeamAndDomain(
@@ -61,7 +67,8 @@ interface UserTypeMapper<T> {
     ): T = when {
         isFromDifferentBackEnd(otherUserDomain, selfUserDomain) -> federated
         isFromTheSameTeam(otherUserTeamId, selfUserTeamId) -> internal
-        else -> guest
+        selfUserIsTeamMember(selfUserTeamId) -> guest
+        else -> none
     }
 
     private fun isFromDifferentBackEnd(otherUserDomain: String, selfDomain: String?): Boolean =
@@ -69,5 +76,7 @@ interface UserTypeMapper<T> {
 
     private fun isFromTheSameTeam(otherUserTeamId: String?, selfUserTeamId: String?): Boolean =
         otherUserTeamId?.let { it == selfUserTeamId } ?: false
+
+    private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 
 }
