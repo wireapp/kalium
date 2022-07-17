@@ -41,6 +41,7 @@ fun isValidImage(mimeType: String): Boolean =
         "image/jpg" -> true
         "image/jpeg" -> true
         "image/png" -> true
+        "image/heic" -> true
         else -> false
     }
 
