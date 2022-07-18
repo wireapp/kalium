@@ -25,7 +25,7 @@ class AddAuthenticatedUserUseCase(
                     true -> {
                         val forceReplace = sessionRepository.userSession(authSession.session.userId).fold(
                             { replace },
-                            { existSession -> existSession.session is AuthSession.Session.Invalid && replace }
+                            { existSession -> existSession.session is AuthSession.Session.Invalid || replace }
                         )
                         onUserExist(authSession, forceReplace)
                     }
