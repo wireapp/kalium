@@ -8,7 +8,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 
-class UpdateConversationAccessUseCase internal constructor(
+class UpdateConversationAccessRoleUseCase internal constructor(
     private val conversationRepository: ConversationRepository
 ) {
     suspend operator fun invoke(

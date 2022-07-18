@@ -12,6 +12,7 @@ import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
@@ -67,7 +68,7 @@ class MessageRepositoryTest {
 
     @Test
     fun givenAConversationId_whenGettingMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
-        val mappedId = TEST_QUALIFIED_ID_ENTITY
+        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
         given(idMapper)
             .function(idMapper::toDaoModel)
             .whenInvokedWith(anything())
