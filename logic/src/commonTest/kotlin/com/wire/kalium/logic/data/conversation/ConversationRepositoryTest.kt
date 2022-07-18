@@ -614,6 +614,7 @@ class ConversationRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Suppress("LongMethod")
     @Test
     fun givenUpdateAccessRoleSuccess_whenUpdatingConversationAccessInfo_thenTheNewAccessSettingsAreUpdatedLocally() = runTest {
 
@@ -686,9 +687,7 @@ class ConversationRepositoryTest {
                 }
                 .wasInvoked(exactly = once)
         }
-
     }
-
 
     private class Arrangement {
         @Mock
