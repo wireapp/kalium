@@ -1,4 +1,4 @@
 package com.wire.kalium.cryptography
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-actual annotation class IgnoreAndroid
+actual annotation class IgnoreAndroidInstrumented
