@@ -516,6 +516,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenAConversationDoesNotExist_whenFetchingConversationIfUnknown_thenShouldFetchFromAPI() = runTest {
         val conversationId = TestConversation.ID
+        val conversationIdDTO = ConversationIdDTO(value = conversationId.value, domain = conversationId.domain)
         given(conversationDAO)
             .suspendFunction(conversationDAO::getConversationByQualifiedID)
             .whenInvokedWith(any())
@@ -527,7 +528,7 @@ class ConversationRepositoryTest {
 
         given(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
-            .whenInvokedWith(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .whenInvokedWith(eq(conversationIdDTO))
             .thenReturn(NetworkResponse.Success(TestConversation.CONVERSATION_RESPONSE, mapOf(), HttpStatusCode.OK.value))
 
         conversationRepository.fetchConversationIfUnknown(conversationId)
@@ -535,7 +536,7 @@ class ConversationRepositoryTest {
 
         verify(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
-            .with(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .with(eq(conversationIdDTO))
             .wasInvoked(exactly = once)
     }
 
@@ -553,7 +554,7 @@ class ConversationRepositoryTest {
 
         given(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
-            .whenInvokedWith(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .whenInvokedWith(eq(ConversationIdDTO(value = conversationId.value, domain = conversationId.domain)))
             .thenReturn(NetworkResponse.Success(TestConversation.CONVERSATION_RESPONSE, mapOf(), HttpStatusCode.OK.value))
 
         conversationRepository.fetchConversationIfUnknown(conversationId)
