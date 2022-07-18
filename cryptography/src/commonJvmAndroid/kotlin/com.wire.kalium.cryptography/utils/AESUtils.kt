@@ -106,7 +106,6 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
 
             // Decrypt and write the data to given outputPath
             encryptedDataSource.cipherSource(cipher).buffer().use { bufferedSource ->
-                // We discard the first 16 bytes corresponding to the IV, since we already have it in iv variable
                 val data = bufferedSource.readByteArray()
                 size = data.size.toLong()
                 outputSink.buffer().use {
@@ -131,14 +130,13 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
         // Parse Secret Key from our custom AES256Key model object
         val symmetricAESKey = SecretKeySpec(secretKey.data, 0, secretKey.data.size, KEY_ALGORITHM)
 
-        // Get first 16 as they map with the IV
+        // Get first 16 as they belong to the IV
         val iv = encryptedData.data.copyOfRange(0, IV_SIZE)
 
         // Do the decryption
         cipher.init(Cipher.DECRYPT_MODE, symmetricAESKey, IvParameterSpec(iv))
         val decryptedData = cipher.doFinal(encryptedData.data)
 
-        // We ignore the first 16 bytes as they are reserved for the Initialization Vector
         return PlainData(decryptedData.copyOfRange(IV_SIZE, decryptedData.size))
     }
 }
