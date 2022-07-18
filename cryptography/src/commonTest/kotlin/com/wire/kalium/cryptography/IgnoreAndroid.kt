@@ -1,4 +1,4 @@
 package com.wire.kalium.cryptography
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-expect annotation class IgnoreAndroidTest()
+expect annotation class IgnoreAndroid()
