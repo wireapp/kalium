@@ -281,6 +281,28 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(expected, actual)
     }
 
+    @Test
+    fun givenConversation_whenUpdatingAccessInfo_thenItsUpdated() = runTest {
+        val convStored = conversationEntity1.copy(
+            accessRole = listOf(ConversationEntity.AccessRole.TEAM_MEMBER), access = listOf(ConversationEntity.Access.INVITE)
+        )
+        val newAccessRole = listOf(
+            ConversationEntity.AccessRole.TEAM_MEMBER,
+            ConversationEntity.AccessRole.NON_TEAM_MEMBER,
+            ConversationEntity.AccessRole.SERVICE
+        )
+        val newAccess = listOf(ConversationEntity.Access.INVITE, ConversationEntity.Access.CODE)
+        val expected = convStored.copy(access = newAccess, accessRole = newAccessRole)
+        conversationDAO.insertConversation(convStored)
+
+        conversationDAO.updateAccess(convStored.id, newAccess, newAccessRole)
+
+        conversationDAO.observeGetConversationByQualifiedID(convStored.id).first().also { actual ->
+            assertEquals(expected, actual)
+        }
+
+    }
+
 
     private companion object {
         val user1 = newUserEntity(id = "1")
