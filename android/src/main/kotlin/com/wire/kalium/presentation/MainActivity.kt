@@ -79,10 +79,10 @@ class MainActivity : ComponentActivity() {
         }
 
         coreLogic.globalScope {
-            addAuthenticatedAccount(authSession = AuthSession(result.userSession, backendLinks))
+            addAuthenticatedAccount(result.userSession)
         }
 
-        return AuthSession(result.userSession, backendLinks)
+        return result.userSession
     }
 }
 

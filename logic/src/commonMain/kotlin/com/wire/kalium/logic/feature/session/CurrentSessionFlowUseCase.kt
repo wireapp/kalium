@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
@@ -19,8 +18,4 @@ class CurrentSessionFlowUseCase(private val sessionRepository: SessionRepository
                 CurrentSessionResult.Success(authSession)
             })
         }
-
-    fun deleteSession(userId: QualifiedID) {
-        sessionRepository.deleteSession(userId)
-    }
 }

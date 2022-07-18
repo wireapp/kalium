@@ -11,11 +11,13 @@ import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.isLeft
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 interface LogoutUseCase {
     suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT)
+    fun deleteInvalidCurrentSession()
 }
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
@@ -42,10 +44,19 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         clearInMemoryUserSession()
     }
 
+    override fun deleteInvalidCurrentSession() {
+        // if it's invalid then delete
+        sessionRepository.currentSession().map {
+            if (it.session is AuthSession.Session.Invalid)
+                sessionRepository.deleteSession(userId)
+        }
+    }
+
     private fun isHardLogout(reason: LogoutReason) = when (reason) {
         LogoutReason.SELF_LOGOUT -> true
         LogoutReason.REMOVED_CLIENT -> false
         LogoutReason.DELETED_ACCOUNT -> false
+        LogoutReason.SESSION_EXPIRED -> false
     }
 
     private fun clearInMemoryUserSession() {
@@ -53,6 +64,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private fun clearUserSessionAndUpdateCurrent(reason: LogoutReason) {
+        // todo: update current session
         sessionRepository.logout(userId = userId, reason, isHardLogout(reason))
         sessionRepository.allSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().session.userId)
