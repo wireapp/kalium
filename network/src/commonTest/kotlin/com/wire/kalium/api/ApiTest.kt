@@ -48,7 +48,6 @@ class TestSessionManager : SessionManager {
             newRefreshTokenDTO?.value ?: session.refreshToken
         )
 
-
     override suspend fun onClientRemoved() {
         TODO("Not yet implemented")
     }
@@ -62,7 +61,6 @@ class TestSessionManager : SessionManager {
     }
 
 }
-
 
 class TestServerMetaDataManager : ServerMetaDataManager {
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? = TEST_BACKEND
@@ -209,7 +207,6 @@ internal interface ApiTest {
         ).networkClient
     }
 
-
     /**
      * Creates a mock Ktor Http client
      * @param responseBody the response body as a ByteArray
@@ -232,7 +229,6 @@ internal interface ApiTest {
         return UnboundNetworkClient(engine = mockEngine)
     }
 
-
     private fun createMockEngine(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
@@ -254,7 +250,6 @@ internal interface ApiTest {
             )
         }
     }
-
 
     // query params assertions
     /**
