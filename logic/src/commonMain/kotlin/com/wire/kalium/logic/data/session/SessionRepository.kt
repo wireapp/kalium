@@ -70,7 +70,6 @@ internal class SessionDataSource(
     override fun logoutSession(authSession: AuthSession.Session): Either<StorageFailure, Unit> =
         wrapStorageRequest { sessionStorage.addSession(sessionMapper.toPersistenceSession(AuthSession(authSession, ServerConfig.DEFAULT))) }
 
-
     override fun currentSession(): Either<StorageFailure, AuthSession> =
         wrapStorageRequest { sessionStorage.currentSession() }.map { sessionMapper.fromPersistenceSession(it) }
 
