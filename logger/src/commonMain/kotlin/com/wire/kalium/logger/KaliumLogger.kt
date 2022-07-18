@@ -48,12 +48,12 @@ enum class KaliumLogLevel {
  * in the android case we use it to write the logs on file
  *
  */
-class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
+class KaliumLogger(config: Config, vararg logWriters: LogWriter = arrayOf()) {
 
     private val kermitLogger: KermitLogger
 
     init {
-        kermitLogger = if (logWriter == null) {
+        kermitLogger = if (logWriters.isEmpty()) {
             KermitLogger(
                 config = StaticConfig(
                     minSeverity = config.severityLevel, listOf(platformLogWriter())
@@ -63,7 +63,7 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
         } else {
             KermitLogger(
                 config = StaticConfig(
-                    minSeverity = config.severityLevel, listOf(logWriter, platformLogWriter())
+                    minSeverity = config.severityLevel, logWriters.asList()
                 ),
                 tag = config.tag
             )
