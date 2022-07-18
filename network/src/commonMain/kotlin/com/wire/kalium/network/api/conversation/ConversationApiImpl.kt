@@ -101,6 +101,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         conversationId: ConversationId,
         conversationAccessInfoDTO: ConversationAccessInfoDTO
     ): NetworkResponse<UpdateConversationAccessResponse> {
+        // TODO(important): not using wrapKaliumResponse here will lead to a crash in case of device offline
         return httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
             setBody(conversationAccessInfoDTO)
         }.let { httpResponse ->
