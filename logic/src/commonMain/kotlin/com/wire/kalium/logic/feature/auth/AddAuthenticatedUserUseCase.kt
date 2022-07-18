@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
 
 class AddAuthenticatedUserUseCase(
     private val sessionRepository: SessionRepository
@@ -24,11 +23,10 @@ class AddAuthenticatedUserUseCase(
             }, {
                 when (it) {
                     true -> {
-                        // todo: fix here with better logic
-                        var forceReplace = false
-                        sessionRepository.userSession(authSession.session.userId).map { existSession ->
-                            forceReplace = existSession.session !is AuthSession.Session.Valid
-                        }
+                        val forceReplace = sessionRepository.userSession(authSession.session.userId).fold(
+                            { replace },
+                            { existSession -> existSession.session is AuthSession.Session.Invalid && replace }
+                        )
                         onUserExist(authSession, forceReplace)
                     }
 

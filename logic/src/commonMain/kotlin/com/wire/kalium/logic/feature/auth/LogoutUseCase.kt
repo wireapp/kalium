@@ -45,7 +45,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     override fun deleteInvalidCurrentSession() {
-        // if it's invalid then delete
         sessionRepository.currentSession().map {
             if (it.session is AuthSession.Session.Invalid)
                 sessionRepository.deleteSession(userId)
@@ -64,7 +63,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private fun clearUserSessionAndUpdateCurrent(reason: LogoutReason) {
-        // todo: update current session
         sessionRepository.logout(userId = userId, reason, isHardLogout(reason))
         sessionRepository.allSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().session.userId)
