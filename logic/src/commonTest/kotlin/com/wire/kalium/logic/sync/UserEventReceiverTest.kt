@@ -93,10 +93,7 @@ class UserEventReceiverTest {
 
         }
 
-
         fun arrange() = this to userEventReceiver
-
-
     }
 
     companion object {

@@ -95,7 +95,6 @@ class AddAuthenticatedUserUseCaseTest {
         verify(sessionRepository).function(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
     }
 
-
     private companion object {
         val TEST_USERID = UserId("user_id", "domain.de")
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
@@ -110,5 +109,4 @@ class AddAuthenticatedUserUseCaseTest {
                 TEST_SERVER_CONFIG.links
             )
     }
-
 }

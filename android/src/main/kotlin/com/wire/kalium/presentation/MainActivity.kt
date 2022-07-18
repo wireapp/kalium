@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        coreLogic.globalScope{
+        coreLogic.globalScope {
             addAuthenticatedAccount(authSession = result.userSession)
         }
 

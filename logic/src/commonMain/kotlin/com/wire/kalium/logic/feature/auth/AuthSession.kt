@@ -30,6 +30,4 @@ data class AuthSession(
             @SerialName("hardLogout") val hardLogout: Boolean
         ) : Session(userId)
     }
-
-
 }

@@ -44,10 +44,10 @@ class SessionManagerImpl(
         })
 
     override suspend fun onSessionExpired() {
-        //logout(false)
+        TODO()
     }
 
     override suspend fun onClientRemoved() {
-        //logout(false)
+        TODO()
     }
 }

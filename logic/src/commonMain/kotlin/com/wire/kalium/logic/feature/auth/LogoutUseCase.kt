@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
-import com.wire.kalium.logic.data.logout.LogoutReason.*
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.UserSessionScopeProvider
@@ -16,7 +15,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 interface LogoutUseCase {
-    suspend operator fun invoke(reason: LogoutReason = SELF_LOGOUT)
+    suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT)
 }
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
@@ -44,9 +43,9 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private fun isHardLogout(reason: LogoutReason) = when (reason) {
-        SELF_LOGOUT -> true
-        REMOVED_CLIENT -> false
-        DELETED_ACCOUNT -> false
+        LogoutReason.SELF_LOGOUT -> true
+        LogoutReason.REMOVED_CLIENT -> false
+        LogoutReason.DELETED_ACCOUNT -> false
     }
 
     private fun clearInMemoryUserSession() {

@@ -115,7 +115,6 @@ class SessionMapperTest {
         verify(idMapper).invocation { fromDaoModel(authSessionEntity.userId) }.wasInvoked(exactly = once)
     }
 
-
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         val userId = UserId("user_id", "user.domain.io")

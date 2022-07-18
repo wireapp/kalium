@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 
-
 class AddAuthenticatedUserUseCase(
     private val sessionRepository: SessionRepository
 ) {
@@ -55,6 +54,7 @@ class AddAuthenticatedUserUseCase(
                     }
                 )
             }
+
             false -> Result.Failure.UserAlreadyExists
         }
 }

@@ -21,7 +21,6 @@ interface SessionManager {
     suspend fun onClientRemoved()
 }
 
-
 fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
     install(Auth) {
         bearer {
