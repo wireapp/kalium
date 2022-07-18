@@ -9,7 +9,8 @@ data class ConnectionEntity(
     val qualifiedConversationId: ConversationIDEntity,
     val qualifiedToId: QualifiedIDEntity,
     val status: State,
-    val toId: String
+    val toId: String,
+    val shouldNotify: Boolean? = null
 ) {
 
     enum class State {

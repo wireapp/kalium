@@ -17,6 +17,7 @@ private class ConnectionMapper {
         qualifiedToId = state.qualified_to,
         status = state.status,
         toId = state.to_id,
+        shouldNotify = state.should_notify
     )
 }
 
