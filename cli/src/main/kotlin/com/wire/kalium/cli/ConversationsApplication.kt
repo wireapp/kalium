@@ -41,7 +41,7 @@ class InMemorySessionManager(
             newRefreshTokenDTO?.value ?: session.refreshToken
         )
 
-    override fun onSessionExpired() {
+    override suspend fun onSessionExpired() {
         throw IllegalAccessError("cookie expired userId: ${session().first.userId}")
     }
 }
