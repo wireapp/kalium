@@ -7,7 +7,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UpdateConversationAccessRequest(
+data class ConversationAccessInfoDTO(
     @SerialName("access") val access: Set<ConversationAccessDTO>,
     @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRoleDTO>?
 )

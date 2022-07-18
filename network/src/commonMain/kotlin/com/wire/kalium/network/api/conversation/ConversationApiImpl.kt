@@ -3,7 +3,7 @@ package com.wire.kalium.network.api.conversation
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.pagination.PaginationRequest
@@ -99,10 +99,10 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     override suspend fun updateAccessRole(
         conversationId: ConversationId,
-        updateConversationAccessRequest: UpdateConversationAccessRequest
+        conversationAccessInfoDTO: ConversationAccessInfoDTO
     ): NetworkResponse<UpdateConversationAccessResponse> {
         return httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
-            setBody(updateConversationAccessRequest)
+            setBody(conversationAccessInfoDTO)
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)

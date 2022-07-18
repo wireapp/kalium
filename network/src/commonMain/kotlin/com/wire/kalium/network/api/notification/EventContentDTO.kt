@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationUsers
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.featureConfigs.ConfigsStatusDTO
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
@@ -29,7 +30,7 @@ sealed class EventContentDTO {
         @SerialName("conversation.access-update")
         data class AccessUpdate(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("data") val data: ConversationResponse,
+            @SerialName("data") val data: ConversationAccessInfoDTO,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
         ) : Conversation()
 

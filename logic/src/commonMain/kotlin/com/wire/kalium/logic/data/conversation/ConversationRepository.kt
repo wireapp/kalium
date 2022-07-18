@@ -28,7 +28,7 @@ import com.wire.kalium.network.api.conversation.AddParticipantRequest
 import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -355,7 +355,7 @@ class ConversationDataSource(
         access: List<Conversation.Access>,
         accessRole: List<Conversation.AccessRole>?
     ): Either<CoreFailure, Unit> =
-        UpdateConversationAccessRequest(
+        ConversationAccessInfoDTO(
             access.map { conversationMapper.toApiModel(it) }.toSet(),
             accessRole?.map { conversationMapper.toApiModel(it) }?.toSet()
         ).let { updateConversationAccessRequest ->
