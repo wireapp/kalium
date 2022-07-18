@@ -39,6 +39,8 @@ CREATE TABLE MessageRestrictedAssetContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       asset_mime_type TEXT NOT NULL,
+      asset_size INTEGER NOT NULL,
+      asset_name TEXT,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -151,8 +153,8 @@ message_id = excluded.message_id,
 text_body = excluded.text_body;
 
 insertMessageRestrictedAssetContent:
-INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type)
-VALUES(?, ?, ?)
+INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
+VALUES(?, ?, ?,?,?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
 asset_mime_type = excluded.asset_mime_type;

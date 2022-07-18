@@ -160,7 +160,9 @@ class MessageMapperImpl(
         is MessageContent.Calling -> MessageEntityContent.Unknown()
         is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
         is MessageContent.TextEdited -> MessageEntityContent.Unknown()
-        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType)
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(
+            this.mimeType, this.sizeInBytes, this.name
+        )
         is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
         MessageContent.Empty -> MessageEntityContent.Unknown()
     }
@@ -186,7 +188,9 @@ class MessageMapperImpl(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
 
-        is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(this.mimeType)
+        is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
+            this.mimeType, this.assetSizeInBytes, this.assetName
+        )
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
     }
 
