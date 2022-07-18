@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -50,6 +51,7 @@ class AddAuthenticatedUserUseCaseTest {
     fun givenUserWithAlreadyStoredSession_whenInvoked_thenUserAlreadyExistsIsReturned() = runTest {
         val session = TEST_SESSION
         given(sessionRepository).invocation { doesSessionExist(session.session.userId) }.then { Either.Right(true) }
+        given(sessionRepository).invocation { userSession(session.session.userId) }.then { Either.Left(StorageFailure.DataNotFound) }
 
         val actual = addAuthenticatedUserUseCase(session, false)
 
