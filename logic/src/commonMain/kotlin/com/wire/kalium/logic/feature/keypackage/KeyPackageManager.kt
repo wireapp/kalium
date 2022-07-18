@@ -23,9 +23,7 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
 /**
  * Observes the MLS key package count and uploads new key packages when necessary.
  */
-interface KeyPackageManager {
-
-}
+interface KeyPackageManager
 
 class KeyPackageManagerImpl(
     private val syncRepository: SyncRepository,
