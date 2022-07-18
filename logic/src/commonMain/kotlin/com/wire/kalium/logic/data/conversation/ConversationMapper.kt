@@ -38,7 +38,9 @@ internal class ConversationMapperImpl(
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
-        apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?
+        apiModel: ConversationResponse,
+        mlsGroupState: GroupState?,
+        selfUserTeamId: TeamId?
     ): ConversationEntity = ConversationEntity(
         id = idMapper.fromApiToDao(apiModel.id),
         name = apiModel.name,

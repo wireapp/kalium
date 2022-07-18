@@ -216,7 +216,7 @@ class MessageRepositoryTest {
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
                 senderClientId = "sender",
                 status = SENT,
-                editStatus =  MessageEntity.EditStatus.NotEdited
+                editStatus = MessageEntity.EditStatus.NotEdited
             )
         val TEST_CONVERSATION_ID = ConversationId("value", "domain")
         val TEST_CLIENT_ID = ClientId("clientId")

@@ -173,7 +173,6 @@ class GetIncomingCallsUseCaseTest {
         @Mock
         val callRepository: CallRepository = mock(classOf<CallRepository>())
 
-
         val getIncomingCallsUseCase: GetIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(
             syncManager = syncManager,
             userRepository = userRepository,
@@ -224,5 +223,4 @@ class GetIncomingCallsUseCaseTest {
         private fun incomingCall(conversationIdSuffix: Int = 0) =
             TestCall.onOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
     }
-
 }

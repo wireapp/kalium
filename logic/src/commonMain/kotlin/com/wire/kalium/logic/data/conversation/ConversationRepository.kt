@@ -381,7 +381,6 @@ class ConversationDataSource(
             }
         }
 
-
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)

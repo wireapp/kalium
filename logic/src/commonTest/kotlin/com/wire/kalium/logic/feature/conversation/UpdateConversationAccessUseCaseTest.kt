@@ -40,7 +40,6 @@ class UpdateConversationAccessUseCaseTest {
         val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
-
         updateConversationAccess(conversation.id, allowGuest = true, allowNonTeamMember = true, allowServices = false).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
@@ -57,7 +56,6 @@ class UpdateConversationAccessUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenConversation_whenEnablingServices_thenUpdateAccessInfoIsCalledWithTheCorrectRoles() = runTest {
         val conversation = conversationStub.copy(
@@ -72,7 +70,6 @@ class UpdateConversationAccessUseCaseTest {
 
         val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
-
 
         updateConversationAccess(conversation.id, allowGuest = true, allowNonTeamMember = true, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
@@ -106,7 +103,6 @@ class UpdateConversationAccessUseCaseTest {
         val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
-
         updateConversationAccess(conversation.id, allowGuest = true, allowNonTeamMember = false, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
@@ -134,7 +130,6 @@ class UpdateConversationAccessUseCaseTest {
 
         val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
-
 
         updateConversationAccess(conversation.id, allowGuest = true, allowNonTeamMember = true, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
@@ -169,7 +164,6 @@ class UpdateConversationAccessUseCaseTest {
         val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
 
-
         updateConversationAccess(conversation.id, allowGuest = false, allowNonTeamMember = true, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
@@ -196,7 +190,6 @@ class UpdateConversationAccessUseCaseTest {
 
         val (arrangement, updateConversationAccess) = Arrangement().withDetailsByIdReturning(Either.Right(conversation))
             .withUpdateAccessInfoRetuning(Either.Right(Unit)).arrange()
-
 
         updateConversationAccess(conversation.id, allowGuest = false, allowNonTeamMember = true, allowServices = true).also { result ->
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
@@ -252,7 +245,6 @@ class UpdateConversationAccessUseCaseTest {
             .with(any(), any(), any()).wasInvoked(exactly = once)
     }
 
-
     companion object {
         val conversationStub = Conversation(
             ConversationId(value = "1O1 ID", domain = "conv domain"),
@@ -267,7 +259,6 @@ class UpdateConversationAccessUseCaseTest {
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )
     }
-
 
     private class Arrangement {
         @Mock

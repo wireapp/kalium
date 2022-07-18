@@ -263,7 +263,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
-
     @Test
     fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
         val convStored = conversationEntity1.copy(
@@ -302,7 +301,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
 
     }
-
 
     private companion object {
         val user1 = newUserEntity(id = "1")

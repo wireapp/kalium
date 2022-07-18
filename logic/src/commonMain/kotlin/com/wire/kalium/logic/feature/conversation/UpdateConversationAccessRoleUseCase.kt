@@ -48,7 +48,6 @@ class UpdateConversationAccessRoleUseCase internal constructor(
             })
     }
 
-
     private fun MutableSet<Conversation.AccessRole>.enableGuests() {
         add(Conversation.AccessRole.GUEST)
     }
@@ -73,10 +72,8 @@ class UpdateConversationAccessRoleUseCase internal constructor(
         remove(Conversation.AccessRole.SERVICE)
     }
 
-
     sealed interface Result {
         object Success : Result
         data class Failure(val cause: CoreFailure) : Result
     }
-
 }

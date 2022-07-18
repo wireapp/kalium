@@ -24,7 +24,6 @@ data class Conversation(
 
     fun isTeamGroup(): Boolean = (teamId != null)
 
-
     fun isGuestAllowed(): Boolean = accessRole?.let {
         (it.contains(AccessRole.GUEST))
     } ?: TODO(
