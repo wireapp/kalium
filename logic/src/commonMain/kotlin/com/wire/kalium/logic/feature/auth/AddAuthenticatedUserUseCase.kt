@@ -24,6 +24,7 @@ class AddAuthenticatedUserUseCase(
             }, {
                 when (it) {
                     true -> {
+                        // todo: fix here with better logic
                         var forceReplace = false
                         sessionRepository.userSession(authSession.session.userId).map { existSession ->
                             forceReplace = existSession.session !is AuthSession.Session.Valid

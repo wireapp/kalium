@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
-        login(coreLogic, serverConfig)?.let {
+        login(coreLogic, serverConfig).let {
             val session = coreLogic.getSessionScope(it.session.userId)
             val conversations = session.conversations.getConversations().let { result ->
                 when (result) {
@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthSession? {
+    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthSession {
         val result = coreLogic.authenticationScope(backendLinks) {
             login("jacob.persson+summer1@wire.com", "hepphepp", false)
         }
@@ -79,10 +79,10 @@ class MainActivity : ComponentActivity() {
         }
 
         coreLogic.globalScope {
-            addAuthenticatedAccount(authSession = result.userSession)
+            addAuthenticatedAccount(authSession = AuthSession(result.userSession, backendLinks))
         }
 
-        return result.userSession
+        return AuthSession(result.userSession, backendLinks)
     }
 }
 
