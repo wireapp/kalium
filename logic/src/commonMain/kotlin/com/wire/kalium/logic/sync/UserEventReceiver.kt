@@ -32,12 +32,12 @@ class UserEventReceiverImpl(
     private suspend fun handleClientRemove(event: Event.User.ClientRemove) {
         clientRepository.currentClientId().map { currentClientId ->
             if (currentClientId.value == event.id)
-                logoutUseCase.invoke(LogoutReason.REMOVED_CLIENT)
+                logoutUseCase(LogoutReason.REMOVED_CLIENT)
         }
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
-        logoutUseCase.invoke(LogoutReason.DELETED_ACCOUNT)
+        logoutUseCase(LogoutReason.DELETED_ACCOUNT)
     }
 
     private companion object {

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -31,7 +32,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(eq(false))
+            .with(eq(LogoutReason.REMOVED_CLIENT))
             .wasInvoked(exactly = once)
     }
 
@@ -62,7 +63,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(eq(false))
+            .with(eq(LogoutReason.DELETED_ACCOUNT))
             .wasInvoked(exactly = once)
     }
 
