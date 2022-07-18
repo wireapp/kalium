@@ -29,6 +29,13 @@ class ConnectionDaoTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenConnectionWithoutShouldNotifyFlag_ThenConnectionCanBeInsertedAndDefaultFlagIsUsed() = runTest {
+        db.connectionDAO.insertConnection(connection1.copy(shouldNotify = null))
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(connection1, result[0])
+    }
+
+    @Test
     fun givenConnection_WhenInsertingAlreadyExistedConnection_ThenShouldNotifyStaysOldOne() = runTest {
         db.connectionDAO.insertConnection(connection1)
         db.connectionDAO.insertConnection(connection1.copy(shouldNotify = false))
@@ -62,7 +69,8 @@ class ConnectionDaoTest : BaseDatabaseTest() {
             qualifiedConversationId = QualifiedIDEntity(id, "wire.com"),
             qualifiedToId = QualifiedIDEntity("me", "wire.com"),
             status = ConnectionEntity.State.SENT,
-            toId = "me@wire.com"
+            toId = "me@wire.com",
+            shouldNotify = true
         )
     }
 }
