@@ -27,11 +27,10 @@ class KeyPackageManagerTests {
     fun givenLastCheckWithinDuration_whenObservingAndSyncFinishes_refillKeyPackagesIsNotPerformed() =
         runTest(TestKaliumDispatcher.default) {
 
-            val (arrangement, keyPackageManager) = Arrangement()
+            val (arrangement, _) = Arrangement()
                 .withLastKeyPackageCountCheck(Clock.System.now())
                 .arrange()
 
-            keyPackageManager.startObservingKeyPackageCount()
             arrangement.syncRepository.updateSyncState { SyncState.Live }
             yield()
         }
@@ -39,13 +38,12 @@ class KeyPackageManagerTests {
     @Test
     fun givenLastCheckAfterDuration_whenObservingSyncFinishes_refillKeyPackagesIsPerformed() =
         runTest(TestKaliumDispatcher.default) {
-            val (arrangement, keyPackageManager) = Arrangement()
+            val (arrangement, _) = Arrangement()
                 .withLastKeyPackageCountCheck(Clock.System.now() - KEY_PACKAGE_COUNT_CHECK_DURATION)
                 .withRefillKeyPackagesUseCaseSuccessful()
                 .withUpdateLastKeyPackageCountCheckSuccessful()
                 .arrange()
 
-            keyPackageManager.startObservingKeyPackageCount()
             arrangement.syncRepository.updateSyncState { SyncState.Live }
             yield()
 
@@ -92,8 +90,8 @@ class KeyPackageManagerTests {
 
         fun arrange() = this to KeyPackageManagerImpl(
             syncRepository,
-            keyPackageRepository,
-            refillKeyPackagesUseCase,
+            lazy { keyPackageRepository },
+            lazy { refillKeyPackagesUseCase },
             TestKaliumDispatcher
         )
     }

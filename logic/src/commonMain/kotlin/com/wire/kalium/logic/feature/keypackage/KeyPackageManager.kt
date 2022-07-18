@@ -20,23 +20,17 @@ import kotlin.time.Duration.Companion.hours
 // The duration in hours after which we should re-check key package count.
 internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
 
+/**
+ * Observes the MLS key package count and uploads new key packages when necessary.
+ */
 interface KeyPackageManager {
 
-    /**
-     * Start periodically checking if key packages needs to be refilled.
-     */
-    fun startObservingKeyPackageCount()
-
-    /**
-     * Stops periodically checking if key packages needs to be refilled.
-     */
-    fun stopObservingKeyPackageCount()
 }
 
 class KeyPackageManagerImpl(
     private val syncRepository: SyncRepository,
-    private val keyPackageRepository: KeyPackageRepository,
-    private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
+    private val keyPackageRepository: Lazy<KeyPackageRepository>,
+    private val refillKeyPackagesUseCase: Lazy<RefillKeyPackagesUseCase>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KeyPackageManager {
     /**
@@ -50,7 +44,7 @@ class KeyPackageManagerImpl(
 
     private var refillKeyPackageJob: Job? = null
 
-    override fun startObservingKeyPackageCount() {
+    init {
         refillKeyPackageJob = refillKeyPackagesScope.launch {
             syncRepository.syncState.cancellable().collect { syncState ->
                 if (syncState == SyncState.Live) {
@@ -60,17 +54,12 @@ class KeyPackageManagerImpl(
         }
     }
 
-    override fun stopObservingKeyPackageCount() {
-        refillKeyPackageJob?.cancel()
-        refillKeyPackageJob = null
-    }
-
     private suspend fun refillKeyPackagesIfNeeded() {
-        keyPackageRepository.lastKeyPackageCountCheck().flatMap { timestamp ->
+        keyPackageRepository.value.lastKeyPackageCountCheck().flatMap { timestamp ->
             if (Clock.System.now().minus(timestamp) > KEY_PACKAGE_COUNT_CHECK_DURATION) {
                 kaliumLogger.i("Checking if we need to refill key packages")
-                when (val result = refillKeyPackagesUseCase()) {
-                    is RefillKeyPackagesResult.Success -> keyPackageRepository.updateLastKeyPackageCountCheck(Clock.System.now())
+                when (val result = refillKeyPackagesUseCase.value()) {
+                    is RefillKeyPackagesResult.Success -> keyPackageRepository.value.updateLastKeyPackageCountCheck(Clock.System.now())
                     is RefillKeyPackagesResult.Failure -> Either.Left(result.failure)
                 }
             }
