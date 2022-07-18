@@ -37,8 +37,6 @@ class UserEventReceiverImpl(
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
-        // todo: validate the userDelete event?
-        kaliumLogger.d("####### user delete")
         logoutUseCase.invoke(LogoutReason.DELETED_ACCOUNT)
     }
 

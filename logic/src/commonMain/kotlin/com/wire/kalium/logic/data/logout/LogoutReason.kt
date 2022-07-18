@@ -10,10 +10,12 @@ enum class LogoutReason {
     SELF_LOGOUT,
 
     /**
-     * The session has expired. The server rejects
-     * the credentials and there's no way around a re-authentication.
-     * It's appropriate to warn the user and ask for a new login.
+     * User deleted this client from another client.
      */
     REMOVED_CLIENT,
+
+    /**
+     * User delete their account.
+     */
     DELETED_ACCOUNT;
 }

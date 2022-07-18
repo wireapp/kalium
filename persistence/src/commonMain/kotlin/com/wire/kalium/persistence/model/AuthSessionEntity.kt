@@ -33,7 +33,7 @@ data class ServerConfigEntity(
 sealed class AuthSessionEntity(open val userId: QualifiedIDEntity) {
     @Serializable
     @SerialName("authsession.valid")
-    data class LoggedIn(
+    data class Valid(
         @SerialName("user_id") override val userId: QualifiedIDEntity,
         @SerialName("token_type") val tokenType: String,
         @SerialName("access_token") val accessToken: String,
@@ -42,26 +42,28 @@ sealed class AuthSessionEntity(open val userId: QualifiedIDEntity) {
     ) : AuthSessionEntity(userId)
 
     @Serializable
-    @SerialName("authsession.removedclient")
-    data class RemovedClient(
+    @SerialName("authsession.invalid")
+    data class Invalid(
         @SerialName("user_id") override val userId: QualifiedIDEntity,
         @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links,
+        @SerialName("reason") val reason: LogoutReason,
         @SerialName("hardLogout") val hardLogout: Boolean,
     ) : AuthSessionEntity(userId)
+}
 
-    @Serializable
-    @SerialName("authsession.userdeleted")
-    data class UserDeleted(
-        @SerialName("user_id") override val userId: QualifiedIDEntity,
-        @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links,
-        @SerialName("hardLogout") val hardLogout: Boolean,
-    ) : AuthSessionEntity(userId)
+enum class LogoutReason {
+    /**
+     * User initiated the logout manually.
+     */
+    SELF_LOGOUT,
 
-    @Serializable
-    @SerialName("authsession.selflogout")
-    data class SelfLogout(
-        @SerialName("user_id") override val userId: QualifiedIDEntity,
-        @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links,
-        @SerialName("hardLogout") val hardLogout: Boolean,
-    ) : AuthSessionEntity(userId)
+    /**
+     * User deleted this client from another client.
+     */
+    REMOVED_CLIENT,
+
+    /**
+     * User delete their account.
+     */
+    DELETED_ACCOUNT;
 }

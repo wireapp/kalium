@@ -5,9 +5,7 @@ import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
 import com.wire.kalium.network.api.notification.user.RemoveClientEventData
@@ -85,9 +83,8 @@ class EventMapper(
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
-    private fun userDelete(id: String, userId: UserId): Event.User.UserDelete {
-        kaliumLogger.i("user deleted $userId")
-        return Event.User.UserDelete("")
+    private fun userDelete(id: String, userId: String): Event.User.UserDelete {
+        return Event.User.UserDelete(id)
     }
 
     private fun clientRemove(id: String, client: RemoveClientEventData): Event.User.ClientRemove {

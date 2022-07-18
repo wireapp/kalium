@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.logout.LogoutReason
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -14,7 +15,7 @@ data class AuthSession(
     sealed class Session(open val userId: QualifiedID) {
         @Serializable
         @SerialName("auth_tokens.valid")
-        data class LoggedIn(
+        data class Valid(
             @SerialName("user_id") override val userId: QualifiedID,
             @SerialName("access_token") val accessToken: String,
             @SerialName("refresh_token") val refreshToken: String,
@@ -22,24 +23,11 @@ data class AuthSession(
         ) : Session(userId)
 
         @Serializable
-        @SerialName("auth_tokens.self_logout")
-        data class SelfLogout(
+        @SerialName("authsession.invalid")
+        data class Invalid(
             @SerialName("user_id") override val userId: QualifiedID,
-            @SerialName("hardLogout") val hardLogout: Boolean,
-        ) : Session(userId)
-
-        @Serializable
-        @SerialName("auth_tokens.user_deleted")
-        data class UserDeleted(
-            @SerialName("user_id") override val userId: QualifiedID,
-            @SerialName("hardLogout") val hardLogout: Boolean,
-        ) : Session(userId)
-
-        @Serializable
-        @SerialName("auth_tokens.removed_client")
-        data class RemovedClient(
-            @SerialName("user_id") override val userId: QualifiedID,
-            @SerialName("hardLogout") val hardLogout: Boolean,
+            @SerialName("reason") val reason: LogoutReason,
+            @SerialName("hardLogout") val hardLogout: Boolean
         ) : Session(userId)
     }
 

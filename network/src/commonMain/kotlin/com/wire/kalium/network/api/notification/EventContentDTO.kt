@@ -132,7 +132,7 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("user.delete")
         data class UserDeleteDTO(
-            @SerialName("id") val id: UserId,
+            @SerialName("id") val id: String,
         ) : User()
     }
 

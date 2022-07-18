@@ -117,7 +117,7 @@ class KaliumLogger(config: Config, vararg logWriters: LogWriter = arrayOf()) {
 
         companion object {
             val DISABLED = Config(
-                severity = KaliumLogLevel.DISABLED,
+                severity = KaliumLogLevel.VERBOSE,
                 tag = "KaliumLogger"
             )
         }

@@ -27,7 +27,7 @@ class AddAuthenticatedUserUseCase(
                     true -> {
                         var forceReplace = false
                         sessionRepository.userSession(authSession.session.userId).map { existSession ->
-                            forceReplace = existSession.session !is AuthSession.Session.LoggedIn
+                            forceReplace = existSession.session !is AuthSession.Session.Valid
                         }
                         onUserExist(authSession, forceReplace)
                     }

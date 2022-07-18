@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.logout.LogoutReason.*
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.UserSessionScopeProvider
@@ -15,7 +16,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 interface LogoutUseCase {
-    suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT, isHardLogout: Boolean = false)
+    suspend operator fun invoke(reason: LogoutReason = SELF_LOGOUT)
 }
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
@@ -31,15 +32,21 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
-    override suspend operator fun invoke(reason: LogoutReason, isHardLogout: Boolean) {
+    override suspend operator fun invoke(reason: LogoutReason) {
         deregisterTokenUseCase()
         logoutRepository.logout()
         clearCrypto()
-        if (isHardLogout) {
+        if (isHardLogout(reason)) {
             clearUserStorage()
         }
         clearUserSessionAndUpdateCurrent(reason)
         clearInMemoryUserSession()
+    }
+
+    private fun isHardLogout(reason: LogoutReason) = when (reason) {
+        SELF_LOGOUT -> true
+        REMOVED_CLIENT -> false
+        DELETED_ACCOUNT -> false
     }
 
     private fun clearInMemoryUserSession() {
@@ -47,24 +54,10 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private fun clearUserSessionAndUpdateCurrent(reason: LogoutReason) {
-        when (reason) {
-
-            LogoutReason.SELF_LOGOUT -> {
-                // self logout
-                sessionRepository.logoutSession(AuthSession.Session.SelfLogout(userId = userId, hardLogout = true))
-            }
-
-            LogoutReason.REMOVED_CLIENT -> {
-                // client removed
-                sessionRepository.logoutSession(AuthSession.Session.RemovedClient(userId = userId, hardLogout = false))
-            }
-
-            LogoutReason.DELETED_ACCOUNT -> {
-                // user deleted
-                sessionRepository.logoutSession(AuthSession.Session.UserDeleted(userId = userId, hardLogout = false))
-            }
-        }
-        // instead of deleting the session, we should update the session with the reason!
+        sessionRepository.logoutSession(
+            AuthSession.Session.Invalid(userId = userId, reason, isHardLogout(reason))
+        )
+        // updating the current session with the logout reason instead of deleting it
         sessionRepository.allSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().session.userId)
         }
@@ -77,7 +70,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private suspend fun clearCrypto() {
-        //clear clientId here
+        // clear clientId here
         authenticatedDataSourceSet.proteusClient.clearLocalFiles()
 
         clientRepository.currentClientId().let { clientID ->
