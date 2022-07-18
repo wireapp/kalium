@@ -9,7 +9,7 @@ import okio.Source
 
 actual class KaliumFileSystemImpl: KaliumFileSystem {
 
-    override fun sink(file: Path, mustCreate: Boolean): Sink = TODO("Not yet implemented")x
+    override fun sink(file: Path, mustCreate: Boolean): Sink = TODO("Not yet implemented")
 
     override actual fun source(file: Path): Source = TODO("Not yet implemented")
 
