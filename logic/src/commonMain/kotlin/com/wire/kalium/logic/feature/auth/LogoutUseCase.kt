@@ -53,10 +53,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private fun clearUserSessionAndUpdateCurrent(reason: LogoutReason) {
-        sessionRepository.logoutSession(
-            AuthSession.Session.Invalid(userId = userId, reason, isHardLogout(reason))
-        )
-        // updating the current session with the logout reason instead of deleting it
+        sessionRepository.logout(userId = userId, reason, isHardLogout(reason))
         sessionRepository.allSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().session.userId)
         }
