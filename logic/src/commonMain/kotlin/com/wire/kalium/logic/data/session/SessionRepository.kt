@@ -77,7 +77,8 @@ internal class SessionDataSource(
                             userId,
                             reason,
                             isHardLogout
-                        ), ServerConfig.DEFAULT// severConfig of the currentSession
+                        ), ServerConfig.DEFAULT
+                        // todo: severConfig of the currentSession
                     )
                 )
             )
