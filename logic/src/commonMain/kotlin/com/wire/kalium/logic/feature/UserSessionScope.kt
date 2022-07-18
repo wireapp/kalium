@@ -292,7 +292,7 @@ abstract class UserSessionScopeCommon(
     internal val keyPackageManager: KeyPackageManager
         get() = KeyPackageManagerImpl(
             syncRepository,
-            lazy { keyPackageRepository } ,
+            lazy { keyPackageRepository },
             lazy { client.refillKeyPackages }
         )
 
