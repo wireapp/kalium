@@ -362,15 +362,21 @@ class ConversationDataSource(
             wrapApiRequest {
                 conversationApi.updateAccessRole(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
             }
-        }.flatMap {
-            when(it) {
+        }.flatMap { response ->
+            when (response) {
                 UpdateConversationAccessResponse.AccessUnchanged -> {
                     // no need to update conversation
                     Either.Right(Unit)
                 }
+
                 is UpdateConversationAccessResponse.AccessUpdated -> {
-                    val selfUserTeamId = userRepository.observeSelfUser().first().teamId
-                    persistConversations(listOf(it.event.data), selfUserTeamId?.value)
+                    wrapStorageRequest {
+                        conversationDAO.updateAccess(
+                            idMapper.toDaoModel(response.event.qualifiedConversation),
+                            conversationMapper.toDAO(response.event.data.access),
+                            response.event.data.accessRole?.let { conversationMapper.toDAO(it) }
+                        )
+                    }
                 }
             }
         }
