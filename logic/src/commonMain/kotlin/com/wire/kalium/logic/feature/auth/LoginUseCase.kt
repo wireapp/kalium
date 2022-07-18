@@ -9,7 +9,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
-    data class Success(val userSession: AuthSession) : AuthenticationResult()
+    data class Success(val userSession: AuthSession.Session.Valid) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
         object InvalidCredentials : Failure()
@@ -50,7 +50,7 @@ internal class LoginUseCaseImpl(
                 is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
             }
         }, {
-            AuthenticationResult.Success(AuthSession(it, serverLinks))
+            AuthenticationResult.Success(it)
         })
     }
 

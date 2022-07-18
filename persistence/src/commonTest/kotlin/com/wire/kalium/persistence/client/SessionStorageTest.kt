@@ -39,7 +39,7 @@ class SessionDAOTest {
     @Test
     fun givenASession_WhenCallingAddSession_ThenTheSessionCanBeStoredLocally() = runTest {
         val authSessionEntity =
-            AuthSessionEntity(
+            AuthSessionEntity.Valid(
                 QualifiedIDEntity("user_id_1", "user_domain_1"),
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
@@ -54,7 +54,7 @@ class SessionDAOTest {
 
     @Test
     fun givenAnExistingSession_WhenCallingDeleteSession_ThenItWillBeRemoved() = runTest {
-        val session1 = AuthSessionEntity(
+        val session1 = AuthSessionEntity.Valid(
             QualifiedIDEntity("user_id_1", "user_domain_1"),
             "JWT",
             Random.nextBytes(32).decodeToString(),
@@ -62,7 +62,7 @@ class SessionDAOTest {
             TEST_SERVER_CONFIG.links
         )
         val sessionToDelete =
-            AuthSessionEntity(
+            AuthSessionEntity.Valid(
                 QualifiedIDEntity("user_id_2", "user_domain_2"),
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
@@ -93,7 +93,7 @@ class SessionDAOTest {
             assertNull(awaitItem())
         }
         val session1 =
-            AuthSessionEntity(
+            AuthSessionEntity.Valid(
                 QualifiedIDEntity("user_id_1", "user_domain_1"),
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
@@ -102,7 +102,7 @@ class SessionDAOTest {
             )
 
         val session2 =
-            AuthSessionEntity(
+            AuthSessionEntity.Valid(
                 QualifiedIDEntity("user_id_2", "user_domain_2"),
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),

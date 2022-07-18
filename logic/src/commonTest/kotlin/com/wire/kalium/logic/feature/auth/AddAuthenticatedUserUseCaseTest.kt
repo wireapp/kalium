@@ -61,7 +61,8 @@ class AddAuthenticatedUserUseCaseTest {
 
     @Test
     fun givenUserWithAlreadyStoredSession_whenInvokedWithReplace_thenSuccessReturned() = runTest {
-        val oldSession = AuthSession(AuthSession.Session(TEST_USERID, "access-token", "refresh-token", "type"), TEST_SERVER_CONFIG.links)
+        val oldSession =
+            AuthSession(AuthSession.Session.Valid(TEST_USERID, "access-token", "refresh-token", "type"), TEST_SERVER_CONFIG.links)
         val newSession = TEST_SESSION
         given(sessionRepository).invocation { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
         given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
@@ -79,7 +80,7 @@ class AddAuthenticatedUserUseCaseTest {
     @Test
     fun givenUserWithAlreadyStoredSessionWithDifferentServerConfig_whenInvokedWithReplace_thenUserAlreadyExistsReturned() = runTest {
         val oldSession = AuthSession(
-            AuthSession.Session(TEST_USERID, "access-token", "refresh-token", "type"),
+            AuthSession.Session.Valid(TEST_USERID, "access-token", "refresh-token", "type"),
             newServerConfig(999).links
         )
         val newSession = TEST_SESSION
@@ -100,7 +101,7 @@ class AddAuthenticatedUserUseCaseTest {
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
         val TEST_SESSION =
             AuthSession(
-                AuthSession.Session(
+                AuthSession.Session.Valid(
                     userId = TEST_USERID,
                     accessToken = "access_token",
                     refreshToken = "refresh_token",

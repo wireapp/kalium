@@ -73,7 +73,7 @@ class CurrentSessionFlowUseCaseTest {
 
         fun randomAuthSession(): AuthSession =
             AuthSession(
-                AuthSession.Session(UserId("user_id", "domain.de"), randomString, randomString, randomString),
+                AuthSession.Session.Valid(UserId("user_id", "domain.de"), randomString, randomString, randomString),
                 TEST_SERVER_CONFIG.links
             )
     }

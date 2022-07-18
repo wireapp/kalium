@@ -82,7 +82,7 @@ class UserEventReceiverTest {
 
         fun withCurrentClientIdIs(clientId: String) = apply {
             given(clientRepository)
-                .function(clientRepository::currentClientId)
+                .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(ClientId(clientId)))
 

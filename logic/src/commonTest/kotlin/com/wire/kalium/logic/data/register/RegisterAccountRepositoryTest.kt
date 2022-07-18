@@ -137,11 +137,9 @@ class RegisterAccountRepositoryTest {
             )
         }
         val authSession = with(SESSION) {
-            AuthSession(
-                AuthSession.Session(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType), serverConfig.links
-            )
+            AuthSession.Session.Valid(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType)
         }
-        val expected = Pair(selfUser, authSession.session)
+        val expected = Pair(selfUser, authSession)
 
         given(registerApi).coroutine {
             register(
@@ -149,7 +147,7 @@ class RegisterAccountRepositoryTest {
             )
         }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
         given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
-        given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authSession.session }
+        given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authSession }
 
         val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password)
 
@@ -188,12 +186,9 @@ class RegisterAccountRepositoryTest {
         }
         val authSession =
             with(SESSION) {
-                AuthSession(
-                    AuthSession.Session(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType),
-                    serverConfig.links
-                )
+                AuthSession.Session.Valid(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType)
             }
-        val expected = Pair(selfUser, authSession.session)
+        val expected = Pair(selfUser, authSession)
 
         given(registerApi).coroutine {
             register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
@@ -201,7 +196,7 @@ class RegisterAccountRepositoryTest {
         given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
         given(sessionMapper)
             .invocation { fromSessionDTO(SESSION) }
-            .then { authSession.session }
+            .then { authSession }
 
         val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon)
 
