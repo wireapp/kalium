@@ -373,8 +373,8 @@ class ConversationDataSource(
                     wrapStorageRequest {
                         conversationDAO.updateAccess(
                             idMapper.toDaoModel(response.event.qualifiedConversation),
-                            conversationMapper.toDAO(response.event.data.access),
-                            response.event.data.accessRole?.let { conversationMapper.toDAO(it) }
+                            conversationMapper.toDAOAccess(response.event.data.access),
+                            response.event.data.accessRole?.let { conversationMapper.toDAOAccessRole(it) }
                         )
                     }
                 }

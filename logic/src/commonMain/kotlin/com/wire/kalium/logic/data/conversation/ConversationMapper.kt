@@ -22,8 +22,8 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
-    fun toDAO(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
-    fun toDAO(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
+    fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
+    fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -71,7 +71,7 @@ internal class ConversationMapperImpl(
         accessRole = daoModel.accessRole?.map { it.toDomain() }
     )
 
-    override fun toDAO(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
+    override fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
         when (it) {
             ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
             ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
@@ -80,7 +80,7 @@ internal class ConversationMapperImpl(
         }
     }
 
-    override fun toDAO(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole> = accessRoleList.map {
+    override fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole> = accessRoleList.map {
         when (it) {
             ConversationAccessRoleDTO.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
             ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
