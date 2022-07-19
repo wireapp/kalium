@@ -87,8 +87,8 @@ internal class UserMapperImpl(
             id = idMapper.fromApiToDao(userProfileDTO.id),
             name = userProfileDTO.name,
             handle = userProfileDTO.handle,
-            email = null,
-            phone = null,
+            email = userProfileDTO.email,
+            phone = null, // TODO phone number not available in `UserProfileDTO`
             accentId = userProfileDTO.accentId,
             team = userProfileDTO.teamId,
             previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
