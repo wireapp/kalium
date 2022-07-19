@@ -1,8 +1,5 @@
 package com.wire.kalium.logic.data.asset
 
-import okio.FileHandle
-import okio.FileMetadata
-import okio.FileSystem
 import okio.Path
 import okio.Sink
 import okio.Source

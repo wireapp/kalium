@@ -8,6 +8,7 @@ import platform.Foundation.dataWithContentsOfFile
 import platform.posix.memcpy
 
 /** Read the given resource as binary data. */
+@Suppress("MagicNumber")
 actual fun readBinaryResource(
     resourceName: String
 ): ByteArray {
