@@ -87,10 +87,6 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
                 }
             }.firstOrNull()
 
-    override suspend fun deleteAllCalls() {
-        callsQueries.deleteAllCalls()
-    }
-
     override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
         callsQueries.selectLastClosedCallByConversationId(conversationId)
             .asFlow()

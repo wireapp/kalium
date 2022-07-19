@@ -52,9 +52,6 @@ WHERE
 ORDER BY created_at DESC
 LIMIT 1;
 
-deleteAllCalls:
-DELETE FROM Call WHERE 1=1;
-
 selectLastClosedCallByConversationId:
 SELECT *
 FROM Call

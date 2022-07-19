@@ -48,11 +48,6 @@ interface CallRepository {
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
-
-    /**
-     * To be used only in Debug mode
-     */
-    suspend fun deleteAllCalls()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -361,15 +356,6 @@ internal class CallDataSource(
                 conversationId = conversationId
             )
         )
-
-    /**
-     * To be used only in Debug mode
-     */
-    override suspend fun deleteAllCalls() {
-        wrapStorageRequest {
-            callDAO.deleteAllCalls()
-        }
-    }
 
     private suspend fun persistMissedCallMessageIfNeeded(
         conversationId: ConversationId
