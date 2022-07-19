@@ -47,6 +47,7 @@ interface CallRepository {
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
+    suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
 
     /**
      * To be used only in Debug mode
@@ -353,6 +354,13 @@ internal class CallDataSource(
             )
         }
     }
+
+    override suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?> =
+        callDAO.getLastClosedCallByConversationId(
+            conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
+                conversationId = conversationId
+            )
+        )
 
     /**
      * To be used only in Debug mode

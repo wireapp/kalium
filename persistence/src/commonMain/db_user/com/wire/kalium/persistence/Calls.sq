@@ -54,3 +54,12 @@ LIMIT 1;
 
 deleteAllCalls:
 DELETE FROM Call WHERE 1=1;
+
+selectLastClosedCallByConversationId:
+SELECT *
+FROM Call
+WHERE
+    conversation_id = ?
+    AND status = 'CLOSED'
+ORDER BY created_at DESC
+LIMIT 1;
