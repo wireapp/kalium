@@ -63,8 +63,8 @@ object TestUser {
         accentId = 0,
         team = "teamId",
         connectionStatus = ConnectionEntity.State.ACCEPTED,
-        previewAssetId = QualifiedIDEntity("value1", "domain"),
-        completeAssetId = QualifiedIDEntity("value2", "domain"),
+        previewAssetId = QualifiedIDEntity("value1", ENTITY_ID.domain),
+        completeAssetId = QualifiedIDEntity("value2", ENTITY_ID.domain),
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userTypEntity = UserTypeEntity.EXTERNAL
     )
