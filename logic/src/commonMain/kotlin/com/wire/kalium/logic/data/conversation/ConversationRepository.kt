@@ -64,7 +64,7 @@ interface ConversationRepository {
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
+    suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -206,18 +206,43 @@ class ConversationDataSource(
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
         Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
         // TODO(user-metadata): get actual legal hold status
-        Conversation.Type.GROUP -> flowOf(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED))
-        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
+        Conversation.Type.GROUP -> flowOf(
+            ConversationDetails.Group(
+                conversation = conversation,
+                legalHoldStatus = LegalHoldStatus.DISABLED,
+                unreadMessagesCount = conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+            )
+        )
+        Conversation.Type.CONNECTION_PENDING -> getOneToOneConversationDetailsFlow(
+            conversation = conversation,
+            unreadMessageCount = 0
+        )
+        Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(
+            conversation = conversation,
+            unreadMessageCount = conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+        )
     }
 
-    private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> {
+    private suspend fun getOneToOneConversationDetailsFlow(
+        conversation: Conversation,
+        unreadMessageCount: Int
+    ): Flow<ConversationDetails> {
         val selfUser = userRepository.observeSelfUser().first()
+
         return getConversationMembers(conversation.id).map { members ->
             members.firstOrNull { itemId -> itemId != selfUser.id }
         }.fold(
             { storageFailure -> logMemberDetailsError(conversation, storageFailure) },
             { otherUserId -> otherUserId?.let { userRepository.getKnownUser(it) } ?: emptyFlow() }
-        ).filterNotNull().map { otherUser -> conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser) }
+        ).filterNotNull()
+            .map { otherUser ->
+                conversationMapper.toConversationDetailsOneToOne(
+                    conversation = conversation,
+                    otherUser = otherUser,
+                    selfUser = selfUser,
+                    unreadMessageCount = unreadMessageCount
+                )
+            }
     }
 
     private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Flow<OtherUser> {
@@ -377,17 +402,11 @@ class ConversationDataSource(
             wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
         }
 
-    override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne> {
+    override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {
         return wrapStorageRequest {
             conversationDAO.getAllConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
                 .firstOrNull { it.type == ConversationEntity.Type.ONE_ON_ONE }?.let { conversationEntity ->
                     conversationMapper.fromDaoModel(conversationEntity)
-                }?.let { conversation ->
-                    userRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
-                        val selfUser = userRepository.observeSelfUser().first()
-
-                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
-                    }
                 }
         }
     }

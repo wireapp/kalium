@@ -446,7 +446,7 @@ class ConversationRepositoryTest {
                 .thenReturn(flowOf(TestUser.OTHER))
 
             // when
-            val result = conversationRepository.getOneToOneConversationDetailsByUserId(OTHER_USER_ID)
+            val result = conversationRepository.getOneToOneConversationWithOtherUser(OTHER_USER_ID)
             // then
             assertIs<Either.Right<ConversationDetails.OneOne>>(result)
         }

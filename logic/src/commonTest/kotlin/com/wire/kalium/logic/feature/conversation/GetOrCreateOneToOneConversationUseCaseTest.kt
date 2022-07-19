@@ -43,7 +43,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenDoNotCreateAConversationButReturnExisting() = runTest {
         // given
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getOneToOneConversationDetailsByUserId)
+            .suspendFunction(conversationRepository::getOneToOneConversationWithOtherUser)
             .whenInvokedWith(anything())
             .thenReturn(Either.Right(CONVERSATION_DETAILS))
 
@@ -62,7 +62,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             .wasNotInvoked()
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::getOneToOneConversationDetailsByUserId)
+            .suspendFunction(conversationRepository::getOneToOneConversationWithOtherUser)
             .with(anything())
             .wasInvoked()
     }
@@ -71,7 +71,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     fun givenConversationExist_whenCallingTheUseCase_ThenCreateAConversationAndReturn() = runTest {
         // given
         given(conversationRepository)
-            .coroutine { getOneToOneConversationDetailsByUserId(USER_ID) }
+            .coroutine { getOneToOneConversationWithOtherUser(USER_ID) }
             .then { Either.Left(StorageFailure.DataNotFound) }
 
         given(conversationRepository)

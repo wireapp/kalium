@@ -26,7 +26,12 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
-    fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
+    fun toConversationDetailsOneToOne(
+        conversation: Conversation,
+        otherUser: OtherUser,
+        selfUser: SelfUser,
+        unreadMessageCount: Int
+    ): ConversationDetails.OneOne
 }
 
 internal class ConversationMapperImpl(
@@ -87,7 +92,8 @@ internal class ConversationMapperImpl(
     override fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
-        selfUser: SelfUser
+        selfUser: SelfUser,
+        unreadMessageCount: Int,
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
