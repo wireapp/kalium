@@ -99,7 +99,7 @@ internal class CallDataSource(
         .combineWithCallsMetadata()
 
     // This needs to be reworked the logic into the useCases
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "NestedBlockDepth")
     override suspend fun createCall(
         conversationId: ConversationId,
         status: CallStatus,
