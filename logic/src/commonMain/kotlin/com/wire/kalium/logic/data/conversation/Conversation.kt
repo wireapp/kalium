@@ -69,6 +69,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             teamId = otherUser?.teamId,
             protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
+            lastSeenDate = null,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
             access = access,

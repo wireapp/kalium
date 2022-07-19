@@ -619,13 +619,12 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenThrow(IllegalStateException("Some illegal state"))
 
-
         // when
         val result = conversationRepository.updateConversationSeenDate(TestConversation.ID, "2022-03-30T15:36:00.000Z")
 
         // then
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationSeenDate)
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationSeenDate)
             .with(anything(), anything())
             .wasInvoked()
         assertIs<Either.Left<StorageFailure>>(result)
