@@ -24,7 +24,7 @@ class KaliumApplication : Application(), Configuration.Provider {
             kaliumConfigs = KaliumConfigs()
         )
         CoreLogger.setLoggingLevel(
-            level = KaliumLogLevel.DEBUG, logWriter = null
+            level = KaliumLogLevel.DEBUG
         )
     }
 

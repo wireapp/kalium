@@ -50,7 +50,8 @@ class OnParticipantListChanged(
                 userRepository.userById(mapQualifiedMemberId(memberList, member)).map {
                     val updatedParticipant = participant.copy(
                         name = it.name!!,
-                        avatarAssetId = it.completePicture
+                        avatarAssetId = it.completePicture,
+                        userType = it.userType
                     )
                     participants.add(updatedParticipant)
                 }
