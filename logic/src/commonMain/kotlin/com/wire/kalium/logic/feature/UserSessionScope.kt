@@ -368,6 +368,7 @@ abstract class UserSessionScopeCommon(
         )
     val messages: MessageScope
         get() = MessageScope(
+            connectionRepository,
             userId,
             messageRepository,
             conversationRepository,
