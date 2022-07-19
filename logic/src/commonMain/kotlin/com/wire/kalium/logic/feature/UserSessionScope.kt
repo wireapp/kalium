@@ -289,8 +289,8 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
-    internal val keyPackageManager: KeyPackageManager
-        get() = KeyPackageManagerImpl(
+    internal val keyPackageManager: KeyPackageManager =
+        KeyPackageManagerImpl(
             syncRepository,
             lazy { keyPackageRepository },
             lazy { client.refillKeyPackages }
