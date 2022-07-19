@@ -7,13 +7,13 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -701,6 +701,16 @@ class CallRepositoryTest {
             .whenInvokedWith(eq(callEntity.conversationId))
             .thenReturn(CallEntity.Status.ESTABLISHED)
 
+        given(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .whenInvokedWith(any())
+            .thenReturn("callerId@domainId")
+
+        given(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
         // when
         callRepository.createCall(
             conversationId = conversationId,
@@ -711,18 +721,18 @@ class CallRepositoryTest {
         )
 
         // then
+        verify(callDAO).suspendFunction(callDAO::updateLastCallStatusByConversationId)
+            .with(eq(CallEntity.Status.CLOSED), eq(callEntity.conversationId))
+            .wasInvoked(exactly = once)
+
         verify(callDAO).suspendFunction(callDAO::insertCall)
             .with(any())
-            .wasInvoked(exactly = Times(0))
-
-        verify(callDAO).suspendFunction(callDAO::updateLastCallStatusByConversationId)
-            .with(any(), any())
-            .wasInvoked(exactly = Times(0))
+            .wasInvoked(exactly = once)
 
         verify(persistMessage)
             .suspendFunction(persistMessage::invoke)
             .with(any())
-            .wasNotInvoked()
+            .wasInvoked(exactly = once)
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())
