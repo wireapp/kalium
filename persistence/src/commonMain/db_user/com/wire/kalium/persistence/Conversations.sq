@@ -79,3 +79,8 @@ updateConversationMutingStatus:
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
+
+getUnreadMessageCount:
+SELECT COUNT() FROM Message AS message WHERE DateTime(message.date) < (SELECT DateTime(last_modified_date) FROM Conversation WHERE qualified_id = :conversaiton_id);
+
+

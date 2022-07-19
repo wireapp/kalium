@@ -235,4 +235,8 @@ class ConversationDAOImpl(
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
     }
+
+    override suspend fun getUnreadMessageCount(qualifiedID: QualifiedIDEntity): Int {
+        return
+    }
 }
