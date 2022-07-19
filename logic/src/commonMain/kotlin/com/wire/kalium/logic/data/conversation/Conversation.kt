@@ -18,6 +18,7 @@ data class Conversation(
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
+    val lastSeenDate : String?,
     val access: List<Access>,
     val accessRole: List<AccessRole>?
 ) {
