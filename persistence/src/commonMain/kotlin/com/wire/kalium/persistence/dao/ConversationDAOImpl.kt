@@ -32,6 +32,7 @@ private class ConversationMapper {
             mutedTime = conversation.muted_time,
             lastNotificationDate = conversation.last_notified_message_date,
             lastModifiedDate = conversation.last_modified_date,
+            lastSeenDate = conversation.last_seen_date,
             access = conversation.access_list,
             accessRole = conversation.access_role_list
         )
@@ -234,5 +235,9 @@ class ConversationDAOImpl(
             .asFlow()
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
+    }
+
+    override suspend fun updateConversationSeenDate(conversationID: QualifiedIDEntity, date: String) {
+        conversationQueries.updateConversationSeenDate(date, conversationID)
     }
 }
