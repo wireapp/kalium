@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.util.DelicateKaliumApi
 
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
@@ -21,6 +22,7 @@ internal class PersistMessageUseCaseImpl(
 ) : PersistMessageUseCase {
 
     override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> {
+        @OptIn(DelicateKaliumApi::class)
         return messageRepository.persistMessage(message)
             .onSuccess {
                 if (message.content.shouldUpdateConversationOrder())
