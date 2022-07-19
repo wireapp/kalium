@@ -27,7 +27,7 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
     val mapper = CallMapper()
 
     override suspend fun insertCall(call: CallEntity) {
-        val createdTime: Long = Clock.System.now().epochSeconds
+        val createdTime: Long = Clock.System.now().toEpochMilliseconds()
 
         callsQueries.insertCall(
             conversation_id = call.conversationId,

@@ -17,9 +17,8 @@ internal class IsLastCallClosedUseCaseImpl(
         callRepository
             .getLastClosedCallCreatedByConversationId(conversationId = conversationId)
             .map {
-                val createdAt = it // format to time/long
-                // (createdAt >= startedTime) ^map
-
-                false
+                it?.let { createdAt ->
+                    createdAt.toLong() >= startedTime
+                } ?: false
             }
 }
