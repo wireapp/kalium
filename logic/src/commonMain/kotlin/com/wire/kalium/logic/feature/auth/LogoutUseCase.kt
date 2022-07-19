@@ -34,13 +34,14 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
     override suspend operator fun invoke(reason: LogoutReason) {
+        logout(reason)
         deregisterTokenUseCase()
         logoutRepository.logout()
         clearCrypto()
         if (isHardLogout(reason)) {
             clearUserStorage()
         }
-        clearUserSessionAndUpdateCurrent(reason)
+        updateCurrentSession()
         clearInMemoryUserSession()
     }
 
@@ -62,12 +63,14 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         userSessionScopeProvider.delete(userId)
     }
 
-    private fun clearUserSessionAndUpdateCurrent(reason: LogoutReason) {
-        sessionRepository.logout(userId = userId, reason, isHardLogout(reason))
+    private fun updateCurrentSession() {
         sessionRepository.allSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().session.userId)
         }
     }
+
+    private fun logout(reason: LogoutReason) =
+        sessionRepository.logout(userId = userId, reason, isHardLogout(reason))
 
     private fun clearUserStorage() {
         authenticatedDataSourceSet.userDatabaseProvider.nuke()
