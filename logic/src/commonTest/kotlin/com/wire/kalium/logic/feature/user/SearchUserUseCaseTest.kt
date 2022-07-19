@@ -2,9 +2,12 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -20,11 +23,13 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
+import io.mockative.Times
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -38,21 +43,13 @@ class SearchUserUseCaseTest {
     private val searchUserRepository = mock(classOf<SearchUserRepository>())
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
-
-    @Mock
     private val connectionRepository = mock(classOf<ConnectionRepository>())
 
     private lateinit var searchUsersUseCase: SearchUsersUseCase
 
     @BeforeTest
     fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(userRepository, searchUserRepository, connectionRepository)
-
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
+        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository)
 
         given(connectionRepository)
             .suspendFunction(connectionRepository::getConnectionRequests)
@@ -130,6 +127,57 @@ class SearchUserUseCaseTest {
 
         //then
         assertIs<Result.Failure.InvalidQuery>(actual)
+    }
+
+    @Test
+    fun givenNoSearchOptionSpecific_whenSearchingPublicUser_thenCorrectlyPropagateDefaultSearchOption() = runTest {
+        // given
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
+            .whenInvokedWith(anything(), anything(), anything(), anything())
+            .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
+
+        // when
+        searchUsersUseCase(TEST_QUERY)
+
+        // then
+        verify(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
+            .with(anything(), anything(), anything(), eq(SearchUsersOptions.Default))
+            .wasInvoked(Times(1))
+    }
+
+
+    @Test
+    fun givenSearchOptionSpecified_whenSearchingPublicUser_thenCorrectlyPropagateSearchOption() = runTest {
+        // given
+        val givenSearchUsersOptions = SearchUsersOptions(
+            conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
+                ConversationId(
+                    "someValue",
+                    "someDomain"
+                )
+            )
+        )
+
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
+            .whenInvokedWith(
+                anything(),
+                anything(),
+                anything(),
+                eq(givenSearchUsersOptions)
+            )
+            .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
+
+        // when
+        searchUsersUseCase(TEST_QUERY)
+
+        // then
+        verify(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
+            .with(anything(), anything(), anything(), eq(givenSearchUsersOptions))
+            .wasInvoked(Times(1))
     }
 
     private companion object {
