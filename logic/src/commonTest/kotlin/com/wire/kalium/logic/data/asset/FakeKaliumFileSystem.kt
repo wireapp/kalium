@@ -3,15 +3,36 @@ package com.wire.kalium.logic.data.asset
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
-import okio.*
+import okio.Path
 import okio.Path.Companion.toPath
+import okio.Sink
+import okio.Source
+import okio.buffer
 import okio.fakefilesystem.FakeFileSystem
+import okio.use
 
 class FakeKaliumFileSystem(
-    private val dataStoragePaths: DataStoragePaths,
-    private val fakeFileSystem: FakeFileSystem,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KaliumFileSystem {
+
+    private val userHomePath = "/Users/me/testApp".toPath()
+
+    private val rootFileSystemPath = AssetsStorageFolder("$userHomePath/files")
+
+    private val rootCacheSystemPath = CacheFolder("$userHomePath/cache")
+
+    private val fakeFileSystem = FakeFileSystem()
+
+    private val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCacheSystemPath)
+
+    init {
+        fakeFileSystem.allowDeletingOpenFiles = true
+        fakeFileSystem.allowReadsWhileWriting = true
+        fakeFileSystem.createDirectories(userHomePath)
+        fakeFileSystem.createDirectory(dataStoragePaths.cachePath.value.toPath())
+        fakeFileSystem.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
+    }
+
     override val rootCachePath: Path = dataStoragePaths.cachePath.value.toPath()
 
     override fun sink(outputPath: Path, mustCreate: Boolean): Sink = fakeFileSystem.sink(outputPath, mustCreate)

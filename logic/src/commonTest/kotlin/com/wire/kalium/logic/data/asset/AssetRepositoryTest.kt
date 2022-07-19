@@ -2,8 +2,6 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.id.AssetsStorageFolder
-import com.wire.kalium.logic.data.id.CacheFolder
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.util.shouldFail
@@ -32,13 +30,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Path
-import okio.Path.Companion.toPath
 import okio.buffer
-import okio.fakefilesystem.FakeFileSystem
 import okio.use
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AssetRepositoryTest {
@@ -46,8 +41,8 @@ class AssetRepositoryTest {
     @Test
     fun givenValidParams_whenUploadingPublicAssets_thenShouldSucceedWithAMappedResponse() = runTest {
         // Given
-        val dataNamePath = "temp-path".toPath()
-        val fullDataPath = getTemporaryStoragePath(dataNamePath)
+        val dataNamePath = "temp-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
         val dummyData = "some-dummy-data".toByteArray()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
 
@@ -76,8 +71,8 @@ class AssetRepositoryTest {
     @Test
     fun givenValidParams_whenUploadingPrivateAssets_thenShouldSucceedWithAMappedResponse() = runTest {
         // Given
-        val dataNamePath = "dummy-path".toPath()
-        val fullDataPath = getTemporaryStoragePath(dataNamePath)
+        val dataNamePath = "dummy-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
         val dummyData = "some-dummy-data".toByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
@@ -112,8 +107,8 @@ class AssetRepositoryTest {
     @Test
     fun givenAnError_whenUploadingPublicAssets_thenShouldFail() = runTest {
         // Given
-        val dataNamePath = "dummy-path".toPath()
-        val fullDataPath = getTemporaryStoragePath(dataNamePath)
+        val dataNamePath = "dummy-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
         val dummyData = "some-dummy-data".toByteArray()
         val (arrangement, assetRepository) = Arrangement()
             .withStoredData(dummyData, fullDataPath)
@@ -140,8 +135,8 @@ class AssetRepositoryTest {
     @Test
     fun givenAnError_whenUploadingPrivateAssets_thenShouldFail() = runTest {
         // Given
-        val dummyPath = "dummy-path".toPath()
-        val fullDataPath = getTemporaryStoragePath(dummyPath)
+        val dummyPath = "dummy-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dummyPath)
         val dummyData = "some-dummy-data".toByteArray()
         val randomAES256Key = generateRandomAES256Key()
         val (arrangement, assetRepository) = Arrangement()
@@ -252,7 +247,7 @@ class AssetRepositoryTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
         val expectedImage = "my_image_asset".toByteArray()
-        val dummyPath = getPersistentStoragePath("dummy_path".toPath())
+        val dummyPath = fakeKaliumFileSystem.providePersistentAssetPath("dummy_data_path")
 
         val (arrangement, assetRepository) = Arrangement()
             .withSuccessfulDownload(listOf(assetKey), expectedImage)
@@ -273,27 +268,7 @@ class AssetRepositoryTest {
         }
     }
 
-    private class Arrangement {
-        private val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
-        val fakeFileSystem = FakeFileSystem()
-            .also {
-                it.allowDeletingOpenFiles = true
-                it.createDirectories(rootFileSystemPath.value.toPath())
-                it.createDirectories(rootCachePath.value.toPath())
-            }
-
-        val kaliumFileSystem by lazy {
-            FakeKaliumFileSystem(dataStoragePaths, fakeFileSystem)
-                .also {
-                    if (!it.exists(dataStoragePaths.cachePath.value.toPath()))
-                        it.createDirectory(
-                            dir = dataStoragePaths.cachePath.value.toPath(),
-                            mustCreate = true
-                        )
-                    if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath()))
-                        it.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())
-                }
-        }
+    class Arrangement {
 
         @Mock
         val assetApi = mock(classOf<AssetApi>())
@@ -303,12 +278,13 @@ class AssetRepositoryTest {
 
         private val assetMapper by lazy { AssetMapperImpl() }
 
-        private val assetRepository = AssetDataSource(assetApi, assetDAO, assetMapper, kaliumFileSystem)
-
+        private val assetRepository = AssetDataSource(assetApi, assetDAO, assetMapper, fakeKaliumFileSystem)
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
-            kaliumFileSystem.sink(dataPath).buffer().use {
+            fakeKaliumFileSystem.sink(dataPath).buffer().use {
                 it.write(data)
+                it.flush()
+                it.close()
             }
             return this
         }
@@ -369,13 +345,11 @@ class AssetRepositoryTest {
         fun arrange(): Pair<Arrangement, AssetRepository> = this to assetRepository
     }
 
+    companion object {
+        val fakeKaliumFileSystem: FakeKaliumFileSystem = FakeKaliumFileSystem()
+    }
+
     private fun stubAssetEntity(assetKey: String, dataPath: Path, dataSize: Long) =
         AssetEntity(assetKey, "domain", null, dataPath.toString(), dataSize, null, 1)
 
 }
-
-private fun getPersistentStoragePath(filePath: Path): Path = "${rootFileSystemPath.value}/$filePath".toPath()
-private fun getTemporaryStoragePath(filePath: Path): Path = "${rootCachePath.value}/$filePath".toPath()
-private var userHomePath = "/Users/me/testApp".toPath()
-private val rootFileSystemPath = AssetsStorageFolder("$userHomePath/files")
-private val rootCachePath = CacheFolder("$userHomePath/cache")

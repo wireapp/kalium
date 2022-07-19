@@ -386,10 +386,6 @@
     <ID>LongParameterList:UsersQueries.kt$UsersQueries$( name: String?, handle: String?, email: String?, accent_id: Int, preview_asset_id: QualifiedIDEntity?, complete_asset_id: QualifiedIDEntity?, qualified_id: QualifiedIDEntity, )</ID>
     <ID>LongParameterList:UsersQueries.kt$UsersQueries$( name: String?, handle: String?, email: String?, phone: String?, accent_id: Int, team: String?, preview_asset_id: QualifiedIDEntity?, complete_asset_id: QualifiedIDEntity?, user_type: UserTypeEntity, qualified_id: QualifiedIDEntity, )</ID>
     <ID>LongParameterList:UsersQueries.kt$UsersQueries$( qualified_id: QualifiedIDEntity, name: String?, handle: String?, email: String?, phone: String?, accent_id: Int, team: String?, connection_status: ConnectionEntity.State, preview_asset_id: QualifiedIDEntity?, complete_asset_id: QualifiedIDEntity?, user_type: UserTypeEntity, )</ID>
-    <ID>MagicNumber:AESUtils.kt$AESDecrypt$16</ID>
-    <ID>MagicNumber:AESUtils.kt$AESEncrypt$16L</ID>
-    <ID>MagicNumber:AESUtils.kt$AESEncrypt$256</ID>
-    <ID>MagicNumber:AESUtils.kt$AESEncrypt$32L</ID>
     <ID>MagicNumber:CLIUtils.kt$CLIUtils$1024</ID>
     <ID>MagicNumber:CLIUtils.kt$CLIUtils$16</ID>
     <ID>MagicNumber:CLIUtils.kt$CLIUtils$4</ID>
@@ -475,7 +471,6 @@
     <ID>MagicNumber:otr.kt$NewOtrMessage.Companion$7</ID>
     <ID>MagicNumber:otr.kt$OtrAssetMeta.Companion$4</ID>
     <ID>MagicNumber:otr.kt$QualifiedNewOtrMessage.Companion$10</ID>
-    <ID>MagicNumber:readBinaryResource.kt$3</ID>
     <ID>MatchingDeclarationName:ClientEventsData.kt$NewClientEventData</ID>
     <ID>MatchingDeclarationName:ConversationStatus.kt$MutedConversationStatus</ID>
     <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
@@ -485,7 +480,6 @@
     <ID>MatchingDeclarationName:IDSample.kt$QualifiedIDSamples</ID>
     <ID>MatchingDeclarationName:IdentityKey.module_@wireapp_proteus.kt$IdentityKey</ID>
     <ID>MatchingDeclarationName:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair</ID>
-    <ID>MatchingDeclarationName:KaliumFileSystem.kt$KaliumFileSystemImpl : KaliumFileSystem</ID>
     <ID>MatchingDeclarationName:KeyPair.module_@wireapp_proteus.kt$KeyPair</ID>
     <ID>MatchingDeclarationName:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine : CRUDEngine</ID>
     <ID>MatchingDeclarationName:PreKey.module_@wireapp_proteus.kt$PreKey</ID>
@@ -497,7 +491,6 @@
     <ID>MatchingDeclarationName:SecretKey.module_@wireapp_proteus.kt$SecretKey</ID>
     <ID>MatchingDeclarationName:SessionResult.kt$GetAllSessionsResult</ID>
     <ID>MatchingDeclarationName:SessionStorageTest.kt$SessionDAOTest</ID>
-    <ID>MaxLineLength:AssetRepository.kt$AssetRepository$*</ID>
     <ID>MaxLineLength:ClientDAOImpl.kt$ClientDAOImpl$override suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Unit</ID>
     <ID>MaxLineLength:ClientMapper.kt$ClientMapper$capabilities</ID>
     <ID>MaxLineLength:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$external open</ID>
@@ -513,7 +506,6 @@
     <ID>MaxLineLength:TestCredentials.kt$accessToken = "eyJhbGciOiJIUzI1AnwarInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mz69.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI"</ID>
     <ID>MaxLineLength:TestCredentials.kt$refreshToken = "a123bGciOiJIUzI1NiIsInR5cCI6IkpX2fr9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ik420G4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ"</ID>
     <ID>MaxLineLength:UserDTO.kt$NewUserDTO$@SerialName("label") val label: String?</ID>
-    <ID>MaxLineLength:UserSessionScope.kt$UserSessionScopeCommon$if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath())) it.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())</ID>
     <ID>MaxLineLength:WrapApiRequestTest.kt$WrapApiRequestTest$val expected = NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "have you tried turning it off and on again?", "server_crash")))</ID>
     <ID>MaxLineLength:messages.kt$1 -> items = (items ?: pbandk.ListWithSize.Builder()).apply { this += _fieldValue as Sequence&lt;com.wire.kalium.protobuf.messages.Composite.Item> }</ID>
     <ID>MaxLineLength:messages.kt$22 -> content = GenericMessage.Content.ButtonActionConfirmation(_fieldValue as com.wire.kalium.protobuf.messages.ButtonActionConfirmation)</ID>
@@ -713,7 +705,6 @@
     <ID>MaximumLineLength:com.wire.kalium.logic.data.client.ClientMapper.kt:38</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.data.notification.LocalNotification.kt:21</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper.kt:22</ID>
-    <ID>MaximumLineLength:com.wire.kalium.logic.feature.UserSessionScope.kt:444</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.feature.message.MessageSenderTest.kt:282</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.feature.message.SessionEstablisher.kt:64</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.feature.message.SessionEstablisherTest.kt:166</ID>
@@ -1141,7 +1132,6 @@
     <ID>NoUnusedImports:com.wire.kalium.persistence.client.ClientRegistrationStorageTest.kt:6</ID>
     <ID>NoWildcardImports:com.wire.kalium.cryptography.CryptoUtilsTest.kt:3</ID>
     <ID>NoWildcardImports:com.wire.kalium.cryptography.CryptoUtilsTest.kt:4</ID>
-    <ID>NoWildcardImports:com.wire.kalium.logic.data.asset.FakeKaliumFileSystem.kt:6</ID>
     <ID>NoWildcardImports:com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseTest.kt:8</ID>
     <ID>NoWildcardImports:com.wire.kalium.logic.feature.message.MessageScope.kt:19</ID>
     <ID>NoWildcardImports:com.wire.kalium.network.defaultHttpEngine.kt:3</ID>

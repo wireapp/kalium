@@ -4,8 +4,8 @@ import android.content.Context
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.logic.data.asset.DataStoragePaths
-import com.wire.kalium.logic.data.id.AssetsStorageFolder
-import com.wire.kalium.logic.data.id.CacheFolder
+import com.wire.kalium.logic.data.asset.AssetsStorageFolder
+import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository

@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.withContext
-import okio.BufferedSink
 import okio.FileSystem.Companion.SYSTEM
 import okio.Path
 import okio.Path.Companion.toPath

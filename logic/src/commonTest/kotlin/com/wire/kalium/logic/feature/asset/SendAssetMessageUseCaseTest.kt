@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.asset
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -17,6 +18,8 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.framework.TestAsset.dummyUploadedAssetId
+import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
@@ -34,8 +37,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Path
-import okio.Path.Companion.toPath
-import okio.fakefilesystem.FakeFileSystem
+import okio.buffer
+import okio.use
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -46,22 +49,21 @@ class SendAssetMessageUseCaseTest {
     @Test
     fun givenAValidSendAssetMessageRequest_whenSendingAssetMessage_thenShouldReturnASuccessResult() = runTest {
         // Given
-        val assetToSend = getMockedAsset()
+        val assetToSend = mockedLongAssetData()
         val assetName = "some-asset.txt"
-        val outputEncryptedPath = "output-encrypted-file.aes"
-        val dataPath = provideFileSystemDataPath(assetName)
+        val inputDataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+        val outputEncryptedPath = fakeKaliumFileSystem.providePersistentAssetPath("output-encrypted-file.aes")
         val expectedAssetId = dummyUploadedAssetId
         val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
         val (_, sendAssetUseCase) = Arrangement()
-            .withOutputEncryptedPath(outputEncryptedPath)
-            .withStoredData(assetToSend, dataPath)
+            .withStoredData(assetToSend, inputDataPath)
             .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
             .arrange()
 
         // When
         val result =
-            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            sendAssetUseCase.invoke(conversationId, inputDataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
 
         // Then
         assertTrue(result is SendAssetMessageResult.Success)
@@ -70,9 +72,9 @@ class SendAssetMessageUseCaseTest {
     @Test
     fun givenAValidSendAssetMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
         // Given
-        val assetToSend = getMockedAsset()
+        val assetToSend = mockedLongAssetData()
         val assetName = "some-asset.txt"
-        val dataPath = provideFileSystemDataPath(assetName)
+        val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
         val unauthorizedException = TestNetworkException.missingAuth
         val (_, sendAssetUseCase) = Arrangement()
@@ -92,10 +94,10 @@ class SendAssetMessageUseCaseTest {
     @Test
     fun givenASuccessfulSendAssetMessageRequest_whenSendingTheAsset_thenTheAssetIsPersisted() = runTest {
         // Given
-        val assetToSend = getMockedAsset()
+        val assetToSend = mockedLongAssetData()
         val assetName = "some-asset.txt"
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val dataPath = provideFileSystemDataPath(assetName)
+        val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
         val expectedAssetId = dummyUploadedAssetId
         val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
         val (arrangement, sendAssetUseCase) = Arrangement()
@@ -120,10 +122,10 @@ class SendAssetMessageUseCaseTest {
     fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
         runTest {
             // Given
-            val assetToSend = getMockedAsset()
+            val assetToSend = mockedLongAssetData()
             val assetName = "some-asset.txt"
             val conversationId = ConversationId("some-convo-id", "some-domain-id")
-            val dataPath = provideFileSystemDataPath(assetName)
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
             val expectedAssetId = dummyUploadedAssetId
             val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
             val (arrangement, sendAssetUseCase) = Arrangement()
@@ -160,11 +162,7 @@ class SendAssetMessageUseCaseTest {
         @Mock
         private val userRepository = mock(classOf<UserRepository>())
 
-        val fakeFileSystem = FakeFileSystem().also { it.createDirectories(userHomePath) }
-
         val someClientId = ClientId("some-client-id")
-
-        lateinit var tempFilePath: Path
 
         private fun fakeSelfUser() = SelfUser(
             UserId("some_id", "some_domain"),
@@ -181,14 +179,10 @@ class SendAssetMessageUseCaseTest {
         )
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
-            fakeFileSystem.write(dataPath) {
-                data
+            fakeKaliumFileSystem.sink(dataPath).buffer().use {
+                it.write(data)
+                it.flush()
             }
-            return this
-        }
-
-        fun withOutputEncryptedPath(fileName: String): Arrangement {
-            tempFilePath = "$userHomePath/$fileName".toPath()
             return this
         }
 
@@ -233,12 +227,7 @@ class SendAssetMessageUseCaseTest {
         )
     }
 
-    private fun provideFileSystemDataPath(assetName: String): Path = "$userHomePath/$assetName".toPath()
-
-    private fun getMockedAsset(): ByteArray =
-        ("some VERY long long long long long long long long long long long long long long long long long long long long long long" +
-                " long long long long long long long long long long long long long long long long long asset").toByteArray()
+    companion object {
+        val fakeKaliumFileSystem = FakeKaliumFileSystem()
+    }
 }
-
-private val userHomePath = "/Users/me".toPath()
-val dummyUploadedAssetId = UploadedAssetId("some-asset-id", "some-domain", "some-asset-token")

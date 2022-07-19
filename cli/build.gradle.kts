@@ -34,5 +34,4 @@ dependencies {
     implementation(Dependencies.Ktor.okHttp)
     implementation(Dependencies.OkHttp.loggingInterceptor)
     implementation(Dependencies.Coroutines.core)
-    implementation(Dependencies.Okio.core)
 }

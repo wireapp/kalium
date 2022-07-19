@@ -36,13 +36,6 @@ sealed class ImageAsset(override val mimeType: String) : AssetType(mimeType) {
     object PNG : ImageAsset(mimeType = "image/png")
 }
 
-fun isValidImage(mimeType: String): Boolean =
-    when (mimeType) {
-        "image/jpg" -> true
-        "image/jpeg" -> true
-        "image/png" -> true
-        "image/heic" -> true
-        else -> false
-    }
+fun isValidImage(mimeType: String): Boolean = mimeType in setOf("image/jpg", "image/jpeg", "image/png", "image/heic")
 
 // should put other types of mimetypes, ie: media, audio, etc.
