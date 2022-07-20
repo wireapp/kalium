@@ -43,7 +43,7 @@ data class Conversation(
         CODE;
     }
 
-    fun supportsUnreadCount() =
+    fun supportsUnreadMessageCount() =
         type == Type.ONE_ON_ONE || type == Type.GROUP
 
     fun hasNewMessages() =
