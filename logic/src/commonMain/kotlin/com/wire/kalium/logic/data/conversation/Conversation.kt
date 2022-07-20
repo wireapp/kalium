@@ -18,7 +18,7 @@ data class Conversation(
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
-    val lastSeenDate: String?,
+    val lastReadDate: String?,
     val access: List<Access>,
     val accessRole: List<AccessRole>?
 ) {
@@ -47,7 +47,7 @@ data class Conversation(
         type == Type.ONE_ON_ONE || type == Type.GROUP
 
     fun hasNewMessages() =
-        if (lastModifiedDate != null && lastSeenDate != null) lastModifiedDate > lastSeenDate else false
+        if (lastModifiedDate != null && lastReadDate != null) lastModifiedDate > lastReadDate else false
 }
 
 sealed class ProtocolInfo {
@@ -94,7 +94,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             teamId = otherUser?.teamId,
             protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
-            lastSeenDate = null,
+            lastReadDate = null,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
             access = access,
