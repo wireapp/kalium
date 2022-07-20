@@ -5,7 +5,7 @@ import com.wire.kalium.api.tools.json.api.notification.EventContentDTOJson
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImpl
-import com.wire.kalium.network.api.conversation.model.ConversationAccessData
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.utils.NetworkResponse
@@ -101,7 +101,7 @@ class ConversationApiTest : ApiTest {
 
     @Test
     fun whenUpdatingAccessRole_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
-        val accessRoles = ConversationAccessData(
+        val accessRoles = ConversationAccessInfoDTO(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), null
         )
         val networkClient = mockAuthenticatedNetworkClient(
@@ -118,7 +118,7 @@ class ConversationApiTest : ApiTest {
 
     @Test
     fun givenAccessUnchangedResponse_whenUpdatingAccessRole_thenAccessUnchangedIsPropagated() = runTest {
-        val accessRoles = ConversationAccessData(
+        val accessRoles = ConversationAccessInfoDTO(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), null
         )
         val networkClient = mockAuthenticatedNetworkClient(
@@ -133,7 +133,7 @@ class ConversationApiTest : ApiTest {
 
     @Test
     fun givenSuccessAccessUpdateResponse_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
-        val accessRoles = ConversationAccessData(
+        val accessRoles = ConversationAccessInfoDTO(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), null
         )
         val networkClient = mockAuthenticatedNetworkClient(

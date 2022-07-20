@@ -238,6 +238,14 @@ class ConversationDAOImpl(
             .map { it.map(conversationMapper::toModel) }
     }
 
+    override suspend fun updateAccess(
+        conversationID: QualifiedIDEntity,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>?
+    ) {
+        conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
+    }
+
     override suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long =
         conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
 

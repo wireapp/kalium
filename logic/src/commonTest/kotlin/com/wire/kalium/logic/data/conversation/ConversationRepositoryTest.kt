@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.conversation
 import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.network.api.ConversationId as ConversationIdDTO
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -11,7 +13,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationApi
@@ -20,12 +21,16 @@ import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationPagingResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.http.HttpStatusCode
@@ -151,7 +156,7 @@ class ConversationRepositoryTest {
     fun givenTwoPagesOfConversation_whenFetchingConversationsAndItsDetails_thenThePagesShouldBeAddedAndPersistOnlyFounds() =
         runTest {
             // given
-            val response = ConversationPagingResponse(listOf(CONVERSATION_IDS_ONE, CONVERSATION_IDS_TWO), false, "")
+            val response = ConversationPagingResponse(listOf(CONVERSATION_IDS_DTO_ONE, CONVERSATION_IDS_DTO_TWO), false, "")
 
             given(conversationApi)
                 .suspendFunction(conversationApi::fetchConversationsIds)
@@ -549,6 +554,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenAConversationDoesNotExist_whenFetchingConversationIfUnknown_thenShouldFetchFromAPI() = runTest {
         val conversationId = TestConversation.ID
+        val conversationIdDTO = ConversationIdDTO(value = conversationId.value, domain = conversationId.domain)
         given(conversationDAO)
             .suspendFunction(conversationDAO::getConversationByQualifiedID)
             .whenInvokedWith(any())
@@ -560,7 +566,7 @@ class ConversationRepositoryTest {
 
         given(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
-            .whenInvokedWith(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .whenInvokedWith(eq(conversationIdDTO))
             .thenReturn(NetworkResponse.Success(TestConversation.CONVERSATION_RESPONSE, mapOf(), HttpStatusCode.OK.value))
 
         conversationRepository.fetchConversationIfUnknown(conversationId)
@@ -568,7 +574,7 @@ class ConversationRepositoryTest {
 
         verify(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
-            .with(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .with(eq(conversationIdDTO))
             .wasInvoked(exactly = once)
     }
 
@@ -586,7 +592,7 @@ class ConversationRepositoryTest {
 
         given(conversationApi)
             .suspendFunction(conversationApi::fetchConversationDetails)
-            .whenInvokedWith(eq(ConversationId(value = conversationId.value, domain = conversationId.domain)))
+            .whenInvokedWith(eq(ConversationIdDTO(value = conversationId.value, domain = conversationId.domain)))
             .thenReturn(NetworkResponse.Success(TestConversation.CONVERSATION_RESPONSE, mapOf(), HttpStatusCode.OK.value))
 
         conversationRepository.fetchConversationIfUnknown(conversationId)
@@ -858,14 +864,132 @@ class ConversationRepositoryTest {
         assertIs<Either.Left<StorageFailure>>(result)
     }
 
+    @Suppress("LongMethod")
+    @Test
+    fun givenUpdateAccessRoleSuccess_whenUpdatingConversationAccessInfo_thenTheNewAccessSettingsAreUpdatedLocally() = runTest {
+
+        val conversationIdDTO = ConversationIdDTO("conv_id", "conv_domain")
+        val newAccessIndoDTO = ConversationAccessInfoDTO(
+            accessRole = setOf(
+                ConversationAccessRoleDTO.TEAM_MEMBER,
+                ConversationAccessRoleDTO.NON_TEAM_MEMBER,
+                ConversationAccessRoleDTO.SERVICE,
+                ConversationAccessRoleDTO.GUEST,
+            ),
+            access = setOf(
+                ConversationAccessDTO.INVITE,
+                ConversationAccessDTO.CODE,
+                ConversationAccessDTO.PRIVATE,
+                ConversationAccessDTO.LINK
+            )
+        )
+        val newAccess = UpdateConversationAccessResponse.AccessUpdated(
+            EventContentDTO.Conversation.AccessUpdate(
+                conversationIdDTO,
+                data = newAccessIndoDTO,
+                qualifiedFrom = com.wire.kalium.network.api.UserId("from_id", "from_domain")
+            )
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withApiUpdateAccessRoleReturns(NetworkResponse.Success(newAccess, mapOf(), 200))
+            .withDaoUpdateAccessSuccess()
+            .arrange()
+
+        conversationRepository.updateAccessInfo(
+            conversationID = ConversationId(conversationIdDTO.value, conversationIdDTO.domain),
+            access = listOf(
+                Conversation.Access.INVITE,
+                Conversation.Access.CODE,
+                Conversation.Access.PRIVATE,
+                Conversation.Access.LINK
+            ),
+            accessRole = listOf(
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.NON_TEAM_MEMBER,
+                Conversation.AccessRole.SERVICE,
+                Conversation.AccessRole.GUEST
+            )
+        ).shouldSucceed()
+
+        with(arrange) {
+            verify(conversationApi)
+                .coroutine { conversationApi.updateAccessRole(conversationIdDTO, newAccessIndoDTO) }
+                .wasInvoked(exactly = once)
+
+            verify(conversationDAO)
+                .coroutine {
+                    conversationDAO.updateAccess(
+                        ConversationIDEntity(conversationIdDTO.value, conversationIdDTO.domain),
+                        accessList = listOf(
+                            ConversationEntity.Access.INVITE,
+                            ConversationEntity.Access.CODE,
+                            ConversationEntity.Access.PRIVATE,
+                            ConversationEntity.Access.LINK
+                        ),
+                        accessRoleList = listOf(
+                            ConversationEntity.AccessRole.TEAM_MEMBER,
+                            ConversationEntity.AccessRole.NON_TEAM_MEMBER,
+                            ConversationEntity.AccessRole.SERVICE,
+                            ConversationEntity.AccessRole.GUEST
+                        )
+                    )
+                }
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    private class Arrangement {
+        @Mock
+        val userRepository: UserRepository = mock(UserRepository::class)
+
+        @Mock
+        val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
+
+        @Mock
+        val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
+
+        @Mock
+        val conversationApi: ConversationApi = mock(ConversationApi::class)
+
+        @Mock
+        val clientApi: ClientApi = mock(ClientApi::class)
+
+        val conversationRepository =
+            ConversationDataSource(userRepository, mlsConversationRepository, conversationDAO, conversationApi, clientApi)
+
+        fun withApiUpdateAccessRoleReturns(response: NetworkResponse<UpdateConversationAccessResponse>) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateAccessRole)
+                .whenInvokedWith(any(), any())
+                .thenReturn(response)
+        }
+
+        fun withDaoUpdateAccessSuccess() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateAccess)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(Unit)
+        }
+
+        fun withDaoUpdateAccessThrows(exception: Exception) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateAccess)
+                .whenInvokedWith(any(), any(), any())
+                .thenThrow(exception)
+        }
+
+        fun arrange() = this to conversationRepository
+    }
+
     companion object {
         const val GROUP_NAME = "Group Name"
 
-        val CONVERSATION_IDS_ONE =
-            ConversationId("someValue1", "someDomain1")
+        val CONVERSATION_IDS_DTO_ONE =
+            ConversationIdDTO("someValue1", "someDomain1")
 
-        val CONVERSATION_IDS_TWO =
-            ConversationId("someValue2", "someDomain2")
+        val CONVERSATION_IDS_DTO_TWO =
+            ConversationIdDTO("someValue2", "someDomain2")
 
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
@@ -891,7 +1015,7 @@ class ConversationRepositoryTest {
 
         val CONVERSATION_RESPONSE_DTO = ConversationResponseDTO(
             conversationsFound = listOf(CONVERSATION_RESPONSE),
-            conversationsFailed = listOf(CONVERSATION_RESPONSE.copy(id = ConversationId("failedId", "someDomain"))),
+            conversationsFailed = listOf(CONVERSATION_RESPONSE.copy(id = ConversationIdDTO("failedId", "someDomain"))),
             conversationsNotFound = emptyList()
         )
 

@@ -29,6 +29,8 @@ import com.wire.kalium.network.api.conversation.AddParticipantRequest
 import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -51,7 +53,7 @@ interface ConversationRepository {
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
+    suspend fun observeById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
@@ -84,6 +86,12 @@ interface ConversationRepository {
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun getUnreadConversationCount(): Either<StorageFailure, Long>
+    suspend fun updateAccessInfo(
+        conversationID: ConversationId,
+        access: List<Conversation.Access>,
+        accessRole: List<Conversation.AccessRole>?
+    ): Either<CoreFailure, Unit>
+
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -278,7 +286,7 @@ class ConversationDataSource(
 
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
     @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
-    override suspend fun getConversationDetails(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
+    override suspend fun observeById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
         wrapStorageRequest {
             conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).filterNotNull()
                 .map(conversationMapper::fromDaoModel)
@@ -398,6 +406,37 @@ class ConversationDataSource(
 
     override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
         wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
+
+    override suspend fun updateAccessInfo(
+        conversationID: ConversationId,
+        access: List<Conversation.Access>,
+        accessRole: List<Conversation.AccessRole>?
+    ): Either<CoreFailure, Unit> =
+        ConversationAccessInfoDTO(
+            access.map { conversationMapper.toApiModel(it) }.toSet(),
+            accessRole?.map { conversationMapper.toApiModel(it) }?.toSet()
+        ).let { updateConversationAccessRequest ->
+            wrapApiRequest {
+                conversationApi.updateAccessRole(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
+            }
+        }.flatMap { response ->
+            when (response) {
+                UpdateConversationAccessResponse.AccessUnchanged -> {
+                    // no need to update conversation
+                    Either.Right(Unit)
+                }
+
+                is UpdateConversationAccessResponse.AccessUpdated -> {
+                    wrapStorageRequest {
+                        conversationDAO.updateAccess(
+                            idMapper.fromDtoToDao(response.event.qualifiedConversation),
+                            conversationMapper.toDAOAccess(response.event.data.access),
+                            response.event.data.accessRole?.let { conversationMapper.toDAOAccessRole(it) }
+                        )
+                    }
+                }
+            }
+        }
 
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

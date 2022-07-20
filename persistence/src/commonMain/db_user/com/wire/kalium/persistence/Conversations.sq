@@ -92,3 +92,7 @@ SELECT COUNT() FROM Message AS message WHERE DateTime(message.date) > (SELECT Da
 
 getUnreadConversationCount:
 SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date);
+
+
+updateAccess:
+UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
