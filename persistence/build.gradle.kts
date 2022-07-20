@@ -87,6 +87,7 @@ kotlin {
                 implementation(Dependencies.SqlDelight.primitiveAdapters)
                 implementation(Dependencies.Kotlinx.serialization)
                 implementation(Dependencies.MultiplatformSettings.settings)
+                implementation(Dependencies.Kotlinx.dateTime)
 
                 api(project(":logger"))
             }

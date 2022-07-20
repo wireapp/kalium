@@ -6,6 +6,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlin.jvm.JvmInline
@@ -20,6 +21,7 @@ expect class UserDatabaseProvider {
     val metadataDAO: MetadataDAO
     val messageDAO: MessageDAO
     val clientDAO: ClientDAO
+    val callDAO: CallDAO
     val assetDAO: AssetDAO
     val teamDAO: TeamDAO
 
