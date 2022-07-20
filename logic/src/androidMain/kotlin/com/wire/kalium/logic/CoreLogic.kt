@@ -31,7 +31,6 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import kotlinx.coroutines.runBlocking
-import java.io.File
 
 /**
  * This class is only for platform specific variables,

@@ -46,7 +46,6 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
-import java.io.File
 
 actual class UserDatabaseProvider(
     private val context: Context,
