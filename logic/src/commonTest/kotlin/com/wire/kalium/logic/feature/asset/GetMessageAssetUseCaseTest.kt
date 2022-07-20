@@ -1,8 +1,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.PlainData
-import com.wire.kalium.cryptography.utils.encryptDataWithAES256
+import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -18,11 +17,16 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import okio.Path
+import okio.Path.Companion.toPath
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -31,15 +35,21 @@ import kotlin.test.assertTrue
 class GetMessageAssetUseCaseTest {
 
     @Test
-    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedData() = runTest {
+    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedDataPath() = runTest {
         // Given
         val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 63)
         val randomAES256Key = generateRandomAES256Key()
-        val encodedAsset = encryptDataWithAES256(PlainData(expectedDecodedAsset), randomAES256Key)
+        val (fakeFileSystem, rootPath) = createFileSystem()
+        val encryptedPath = "output_encrypted_path".toPath()
+        val rawDataPath = copyDataToDummyPath(expectedDecodedAsset, rootPath, fakeFileSystem)
+        val rawDataSource = fakeFileSystem.source(rawDataPath)
+        val encryptedDataSink = fakeFileSystem.sink(encryptedPath)
+        encryptFileWithAES256(rawDataSource, randomAES256Key, encryptedDataSink)
+
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
         val (_, getMessageAsset) = Arrangement()
-            .withSuccessfulFlow(someConversationId, someMessageId, encodedAsset.data, randomAES256Key)
+            .withSuccessfulFlow(someConversationId, someMessageId, encryptedPath, randomAES256Key)
             .arrange()
 
         // When
@@ -47,8 +57,7 @@ class GetMessageAssetUseCaseTest {
 
         // Then
         assertTrue(result is MessageAssetResult.Success)
-        assertEquals(result.decodedAsset.size, expectedDecodedAsset.size)
-        assertTrue(result.decodedAsset.contentEquals(expectedDecodedAsset))
+        assertEquals(result.decodedAssetPath, encryptedPath)
     }
 
     @Test
@@ -94,14 +103,14 @@ class GetMessageAssetUseCaseTest {
 
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
-        private lateinit var encryptionKey: ByteArray
+        private var encryptionKey = AES256Key(ByteArray(1))
 
         val userId = UserId("some-user", "some-domain.com")
         val clientId = ClientId("some-client-id")
         val someAssetId = "some-asset-id"
         val someAssetToken = "==some-asset-token"
 
-        private val mockedMessage by lazy {
+        private val mockedImageMessage by lazy {
             Message.Regular(
                 id = msgId,
                 content = MessageContent.Asset(
@@ -111,7 +120,7 @@ class GetMessageAssetUseCaseTest {
                         mimeType = "image/jpeg",
                         metadata = AssetContent.AssetMetadata.Image(width = 100, height = 100),
                         remoteData = AssetContent.RemoteData(
-                            otrKey = encryptionKey,
+                            otrKey = encryptionKey.data,
                             sha256 = ByteArray(16),
                             assetId = someAssetId,
                             assetToken = someAssetToken,
@@ -135,20 +144,20 @@ class GetMessageAssetUseCaseTest {
         fun withSuccessfulFlow(
             conversationId: ConversationId,
             messageId: String,
-            encodedAsset: ByteArray,
+            encodedPath: Path,
             secretKey: AES256Key
         ): Arrangement {
             convId = conversationId
             msgId = messageId
-            encryptionKey = secretKey.data
+            encryptionKey = secretKey
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(mockedMessage))
+                .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
-                .suspendFunction(assetDataSource::downloadPrivateAsset)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(encodedAsset))
+                .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
+                .whenInvokedWith(anything(), anything(), anything(), matching { it.data.contentEquals(secretKey.data) })
+                .thenReturn(Either.Right(encodedPath))
             return this
         }
 
@@ -162,19 +171,34 @@ class GetMessageAssetUseCaseTest {
 
         fun withDownloadAssetErrorResponse(noNetworkConnection: NetworkFailure.NoNetworkConnection): Arrangement {
             convId = ConversationId("", "")
-            encryptionKey = ByteArray(0)
+            encryptionKey = AES256Key(ByteArray(0))
             msgId = ""
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(mockedMessage))
+                .thenReturn(Either.Right(mockedImageMessage))
             given(assetDataSource)
-                .suspendFunction(assetDataSource::downloadPrivateAsset)
-                .whenInvokedWith(any(), any())
+                .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
+                .whenInvokedWith(any(), any(), any(), anything())
                 .thenReturn(Either.Left(noNetworkConnection))
             return this
         }
 
         fun arrange() = this to getMessageAssetUseCase
+    }
+
+    private fun createFileSystem(): Pair<FakeFileSystem, Path> {
+        val userHome = "/Users/me".toPath()
+        val fileSystem = FakeFileSystem()
+        fileSystem.createDirectories(userHome)
+        return fileSystem to userHome
+    }
+
+    private fun copyDataToDummyPath(expectedDecodedAsset: ByteArray, rootPath: Path, fileSystem: FakeFileSystem): Path {
+        val inputPath = "$rootPath/test-text.txt".toPath()
+        fileSystem.write(inputPath) {
+            write(expectedDecodedAsset)
+        }
+        return inputPath
     }
 }
