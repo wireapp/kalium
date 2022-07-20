@@ -58,6 +58,8 @@ import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
+import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -287,6 +289,13 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
         )
 
+    internal val keyPackageManager: KeyPackageManager =
+        KeyPackageManagerImpl(
+            syncRepository,
+            lazy { keyPackageRepository },
+            lazy { client.refillKeyPackages }
+        )
+
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
@@ -341,7 +350,8 @@ abstract class UserSessionScopeCommon(
         get() = KeyPackageDataSource(
             clientRepository,
             authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi,
-            mlsClientProvider
+            mlsClientProvider,
+            authenticatedDataSourceSet.userDatabaseProvider.metadataDAO,
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
