@@ -19,6 +19,6 @@ enum class ConversationAccessRoleDTO {
     }
 
     companion object {
-        val DEFAULT_VALUE_WHEN_NULL = setOf(TEAM_MEMBER, NON_TEAM_MEMBER, GUEST)
+        val DEFAULT_VALUE_WHEN_NULL = setOf(TEAM_MEMBER, NON_TEAM_MEMBER, SERVICE)
     }
 }
