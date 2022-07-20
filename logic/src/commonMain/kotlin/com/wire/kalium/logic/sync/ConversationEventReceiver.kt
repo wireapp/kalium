@@ -307,7 +307,11 @@ class ConversationEventReceiverImpl(
                                 }
 
                         } else {
-                            val newMessage = message.copy(content = MessageContent.RestrictedAsset(content.value.mimeType))
+                            val newMessage = message.copy(
+                                content = MessageContent.RestrictedAsset(
+                                    content.value.mimeType, content.value.sizeInBytes, content.value.name ?: ""
+                                )
+                            )
                             persistMessage(newMessage)
 
                         }
