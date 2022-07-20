@@ -17,15 +17,9 @@ actual open class BaseDatabaseTest actual constructor() {
     }
 
     actual fun createDatabase(): UserDatabaseProvider {
-        val rootStoragePath = "Users/me/storage"
-        val rootCachePath = "Users/me/cache"
-        val storageFile = File(rootStoragePath)
-        val cacheFile = File(rootCachePath)
         return UserDatabaseProvider(
             ApplicationProvider.getApplicationContext(),
             userId,
-            storageFile,
-            cacheFile,
             UserDBSecret("db_secret".toByteArray())
         )
     }

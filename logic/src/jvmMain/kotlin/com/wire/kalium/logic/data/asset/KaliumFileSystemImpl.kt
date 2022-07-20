@@ -36,6 +36,11 @@ actual class KaliumFileSystemImpl actual constructor(
     override fun source(inputPath: Path): Source = SYSTEM.source(inputPath)
 
     /**
+     * It will create the provided [dir] in the current file system along with the needed subdirectories if they were not created previously
+     */
+    override fun createDirectories(dir: Path) = SYSTEM.createDirectories(dir)
+
+    /**
      * It will make sure the given [dir] gets created on the file system
      * @param mustCreate whether it is certain that [dir] doesn't exist and will need to be created
      */

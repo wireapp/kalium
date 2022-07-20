@@ -10,6 +10,8 @@ actual class KaliumFileSystemImpl : KaliumFileSystem {
 
     override fun source(inputPath: Path): Source = TODO("Not yet implemented")
 
+    override fun createDirectories(dir: Path) = TODO("Not yet implemented")
+
     override fun createDirectory(dir: Path, mustCreate: Boolean) = TODO("Not yet implemented")
 
     override fun delete(path: Path, mustExist: Boolean) = TODO("Not yet implemented")

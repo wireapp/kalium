@@ -86,8 +86,6 @@ actual class CoreLogic(
                 UserDatabaseProvider(
                     appContext,
                     userIDEntity,
-                    File(rootFileSystemPath.value),
-                    File(rootCachePath.value),
                     SecurityHelper(globalPreferences.value).userDBSecret(userId),
                     kaliumConfigs.shouldEncryptData
                 )

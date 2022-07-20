@@ -31,10 +31,15 @@ interface KaliumFileSystem {
     fun source(inputPath: Path): Source
 
     /**
+     * It will create the provided [dir] in the current file system along with the needed subdirectories if they were not created previously
+     */
+    fun createDirectories(dir: Path)
+
+    /**
      * It will make sure the given [dir] gets created on the file system
      * @param mustCreate whether it is certain that [dir] doesn't exist and will need to be created
      */
-    fun createDirectory(dir: Path, mustCreate: Boolean = true)
+    fun createDirectory(dir: Path, mustCreate: Boolean = false)
 
     /**
      * This will delete the content of the given [path]

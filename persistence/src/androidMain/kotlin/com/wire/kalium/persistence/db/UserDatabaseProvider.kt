@@ -51,8 +51,6 @@ import java.io.File
 actual class UserDatabaseProvider(
     private val context: Context,
     userId: UserIDEntity,
-    storePath: File,
-    cacheAssetPath: File,
     passphrase: UserDBSecret,
     encrypt: Boolean = true
 ) {
@@ -67,8 +65,6 @@ actual class UserDatabaseProvider(
                 db.execSQL("PRAGMA foreign_keys=ON;")
             }
         }
-        storePath.mkdirs()
-        cacheAssetPath.mkdirs()
 
         driver = if (encrypt) {
             AndroidSqliteDriver(
