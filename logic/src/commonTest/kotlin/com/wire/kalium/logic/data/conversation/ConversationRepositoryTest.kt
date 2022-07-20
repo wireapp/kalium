@@ -46,12 +46,15 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationRepositoryTest {
@@ -631,31 +634,148 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAGroupConversationHavingUnreadMessage_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
-        // given
-        val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP)
-        )
+    fun givenAGroupConversationWithLastModifiedDateAfterThenLastReadDate_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() =
+        runTest {
+            // given
+            val currentTime = Clock.System.now()
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
-            .whenInvokedWith(any())
-            .thenReturn(conversationEntityFlow)
+            val conversationEntityFlow = flowOf(
+                TestConversation.ENTITY.copy(
+                    type = ConversationEntity.Type.GROUP,
+                    lastSeenDate = currentTime.toEpochMilliseconds().toString(),
+                    lastModifiedDate = currentTime.plus(30.toDuration(DurationUnit.MINUTES)).toEpochMilliseconds().toString()
+                )
+            )
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getUnreadMessageCount)
-            .whenInvokedWith(any())
-            .thenReturn(10)
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(conversationEntityFlow)
 
-        // when
-        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
-            // then
-            val conversationDetail = awaitItem()
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getUnreadMessageCount)
+                .whenInvokedWith(any())
+                .thenReturn(10)
 
-            assertIs<ConversationDetails.Group>(conversationDetail)
-            assertTrue { conversationDetail.unreadMessagesCount == 10 }
+            // when
+            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+                // then
+                val conversationDetail = awaitItem()
+
+                assertIs<ConversationDetails.Group>(conversationDetail)
+                assertTrue { conversationDetail.unreadMessagesCount == 10 }
+
+                awaitComplete()
+            }
         }
-    }
+
+    @Test
+    fun givenAGroupConversationWithLastModifiedDateBeforeThenLastReadDate_whenGettingConversationDetails_ThenDoNoGetMessageCount() =
+        runTest {
+            // given
+            val currentTime = Clock.System.now()
+
+            val conversationEntityFlow = flowOf(
+                TestConversation.ENTITY.copy(
+                    type = ConversationEntity.Type.GROUP,
+                    lastSeenDate = currentTime.toEpochMilliseconds().toString(),
+                    lastModifiedDate = currentTime.minus(30.toDuration(DurationUnit.MINUTES)).toEpochMilliseconds().toString()
+                )
+            )
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(conversationEntityFlow)
+
+            // when
+            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+                // then
+                val conversationDetail = awaitItem()
+
+                assertIs<ConversationDetails.Group>(conversationDetail)
+                assertTrue { conversationDetail.unreadMessagesCount == 0 }
+
+                awaitComplete()
+            }
+
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::getUnreadMessageCount)
+                .with(anything())
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenAOneToOneConversationWithLastModifiedDateBeforeThenLastReadDate_whenGettingConversationDetails_ThenDoNoGetMessageCount() =
+        runTest {
+            // given
+            val currentTime = Clock.System.now()
+
+            val conversationEntityFlow = flowOf(
+                TestConversation.ENTITY.copy(
+                    type = ConversationEntity.Type.ONE_ON_ONE,
+                    lastSeenDate = currentTime.toEpochMilliseconds().toString(),
+                    lastModifiedDate = currentTime.minus(30.toDuration(DurationUnit.MINUTES)).toEpochMilliseconds().toString()
+                )
+            )
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(conversationEntityFlow)
+
+            // when
+            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+                // then
+                val conversationDetail = awaitItem()
+
+                assertIs<ConversationDetails.OneOne>(conversationDetail)
+                assertTrue { conversationDetail.unreadMessagesCount == 0 }
+
+                awaitComplete()
+            }
+
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::getUnreadMessageCount)
+                .with(anything())
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenAOneToOneConversationWithLastModifiedDateAfterThenLastReadDate_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() =
+        runTest {
+            // given
+            val currentTime = Clock.System.now()
+
+            val conversationEntityFlow = flowOf(
+                TestConversation.ENTITY.copy(
+                    type = ConversationEntity.Type.ONE_ON_ONE,
+                    lastSeenDate = currentTime.toEpochMilliseconds().toString(),
+                    lastModifiedDate = currentTime.plus(30.toDuration(DurationUnit.MINUTES)).toEpochMilliseconds().toString()
+                )
+            )
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(conversationEntityFlow)
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getUnreadMessageCount)
+                .whenInvokedWith(any())
+                .thenReturn(10)
+
+            // when
+            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+                // then
+                val conversationDetail = awaitItem()
+
+                assertIs<ConversationDetails.OneOne>(conversationDetail)
+                assertTrue { conversationDetail.unreadMessagesCount == 10 }
+
+                awaitComplete()
+            }
+        }
 
     companion object {
         const val GROUP_NAME = "Group Name"
