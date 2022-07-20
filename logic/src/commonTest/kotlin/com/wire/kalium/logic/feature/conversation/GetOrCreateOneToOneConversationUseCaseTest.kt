@@ -105,20 +105,5 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )
-        val OTHER_USER = OtherUser(
-            id =
-            USER_ID,
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            teamId = null,
-            previewPicture = null,
-            completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = UserType.EXTERNAL,
-            connectionStatus = ConnectionState.NOT_CONNECTED
-        )
     }
 }
