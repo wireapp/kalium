@@ -20,7 +20,7 @@ sealed class MessageContent {
     data class RestrictedAsset(
         val mimeType: String,
         val sizeInBytes: Long,
-        val name: String? = null,
+        val name: String
     ) : Regular()
 
     data class DeleteForMe(

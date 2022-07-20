@@ -136,7 +136,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     conversation_id = message.conversationId,
                     asset_mime_type = content.mimeType,
                     asset_size = content.assetSizeInBytes,
-                    asset_name = content.assetName
+                    asset_name = content.assetName ?: ""
                 )
                 is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
                     message_id = message.id,

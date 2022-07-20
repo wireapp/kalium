@@ -40,7 +40,7 @@ CREATE TABLE MessageRestrictedAssetContent (
 
       asset_mime_type TEXT NOT NULL,
       asset_size INTEGER NOT NULL,
-      asset_name TEXT,
+      asset_name TEXT NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
       PRIMARY KEY (message_id, conversation_id)

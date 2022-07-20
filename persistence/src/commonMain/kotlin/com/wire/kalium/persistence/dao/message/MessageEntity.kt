@@ -129,7 +129,7 @@ sealed class MessageEntityContent {
     data class RestrictedAsset(
         val mimeType: String,
         val assetSizeInBytes: Long,
-        val assetName: String? = null,
+        val assetName: String,
     ) : Regular()
 
     object MissedCall : System()
