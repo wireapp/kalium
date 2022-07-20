@@ -36,8 +36,24 @@ actual class MLSClientImpl actual constructor(
         return coreCrypto.clientKeypackages(amount.toUInt()).map { it.toUByteArray().asByteArray() }
     }
 
+    override fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?> {
+        return coreCrypto.updateKeyingMaterial(toUByteList(groupId.decodeBase64Bytes())).let { commitBundle ->
+            Pair(toByteArray(commitBundle.message), commitBundle.welcome?.let { toByteArray(it) })
+        }
+    }
+
     override fun conversationExists(groupId: MLSGroupId): Boolean {
         return coreCrypto.conversationExists(toUByteList(groupId.decodeBase64Bytes()))
+    }
+
+    override fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
+        return toByteArray(
+            coreCrypto.newExternalAddProposal(
+                toUByteList(groupId.decodeBase64Bytes()),
+                epoch,
+                toUByteList(generateKeyPackages(1).first())
+            )
+        )
     }
 
     override fun createConversation(

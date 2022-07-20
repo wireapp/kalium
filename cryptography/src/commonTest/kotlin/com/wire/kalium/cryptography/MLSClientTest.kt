@@ -30,6 +30,22 @@ class MLSClientTest: BaseMLSClientTest() {
     }
 
     @Test
+    fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() {
+        val aliceClient = createClient(ALICE)
+        val bobClient = createClient(BOB)
+
+        val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
+        val clientKeyPackageList = listOf(Pair(ALICE.qualifiedClientId, aliceKeyPackage))
+        val (_, welcome) = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)!!
+        val conversationId = aliceClient.processWelcomeMessage(welcome)
+
+        val (commit, _) = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID)
+        val result = aliceClient.decryptMessage(conversationId, commit)
+
+        assertNull(result)
+    }
+
+    @Test
     fun givenTwoClients_whenCallingCreateConversation_weCanProcessTheWelcomeMessage() {
         val aliceClient = createClient(ALICE)
         val bobClient = createClient(BOB)
@@ -38,6 +54,22 @@ class MLSClientTest: BaseMLSClientTest() {
         val clientKeyPackageList = listOf(Pair(ALICE.qualifiedClientId, aliceKeyPackage))
         val (_, welcome) = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)!!
         val conversationId = aliceClient.processWelcomeMessage(welcome)
+
+        assertEquals(MLS_CONVERSATION_ID, conversationId)
+    }
+
+    @Test
+    fun givenTwoClients_whenCallingJoinConversation_weCanProcessTheAddProposalMessage() {
+        val aliceClient = createClient(ALICE)
+        val bobClient = createClient(BOB)
+
+        bobClient.createConversation(MLS_CONVERSATION_ID, emptyList())
+        val proposal = aliceClient.joinConversation(MLS_CONVERSATION_ID, 0UL)
+        bobClient.decryptMessage(MLS_CONVERSATION_ID, proposal)
+        // updateKeyingMaterial commits any pending proposal
+        val (_, welcome) = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID)
+        val conversationId = aliceClient.processWelcomeMessage(welcome!!)
+
 
         assertEquals(MLS_CONVERSATION_ID, conversationId)
     }

@@ -17,6 +17,10 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
+    override fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?> {
+        TODO("Not yet implemented")
+    }
+
     override fun conversationExists(groupId: MLSGroupId): Boolean {
         TODO("Not yet implemented")
     }
