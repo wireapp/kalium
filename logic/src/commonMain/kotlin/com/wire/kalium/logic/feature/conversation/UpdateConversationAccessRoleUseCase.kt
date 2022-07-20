@@ -21,21 +21,9 @@ class UpdateConversationAccessRoleUseCase internal constructor(
             .map { conversation ->
                 // TODO: handle edge case where accessRole is null
                 val newAccessRoles: List<Conversation.AccessRole>? = conversation.accessRole?.toMutableSet()?.apply {
-                    if (allowGuest) {
-                        enableGuests()
-                    } else {
-                        disableGuests()
-                    }
-                    if (allowServices) {
-                        enableServices()
-                    } else {
-                        disableServices()
-                    }
-                    if (allowNonTeamMember) {
-                        enableNonTeamMember()
-                    } else {
-                        disableNonTeamMember()
-                    }
+                    handleGuestsState(allowGuest)
+                    handleServicesState(allowServices)
+                    handleNonTeamMemberState(allowNonTeamMember)
                 }?.toList()
 
                 Triple(conversation.id, newAccessRoles, conversation.access)
@@ -48,28 +36,28 @@ class UpdateConversationAccessRoleUseCase internal constructor(
             })
     }
 
-    private fun MutableSet<Conversation.AccessRole>.enableGuests() {
-        add(Conversation.AccessRole.GUEST)
+    private fun MutableSet<Conversation.AccessRole>.handleServicesState(allowServices: Boolean) {
+        if (allowServices) {
+            add(Conversation.AccessRole.SERVICE)
+        } else {
+            remove(Conversation.AccessRole.SERVICE)
+        }
     }
 
-    private fun MutableSet<Conversation.AccessRole>.disableGuests() {
-        remove(Conversation.AccessRole.GUEST)
+    private fun MutableSet<Conversation.AccessRole>.handleGuestsState(allowGuest: Boolean) {
+        if (allowGuest) {
+            add(Conversation.AccessRole.GUEST)
+        } else {
+            remove(Conversation.AccessRole.GUEST)
+        }
     }
 
-    private fun MutableSet<Conversation.AccessRole>.enableNonTeamMember() {
-        add(Conversation.AccessRole.NON_TEAM_MEMBER)
-    }
-
-    private fun MutableSet<Conversation.AccessRole>.disableNonTeamMember() {
-        remove(Conversation.AccessRole.NON_TEAM_MEMBER)
-    }
-
-    private fun MutableSet<Conversation.AccessRole>.enableServices() {
-        add(Conversation.AccessRole.SERVICE)
-    }
-
-    private fun MutableSet<Conversation.AccessRole>.disableServices() {
-        remove(Conversation.AccessRole.SERVICE)
+    private fun MutableSet<Conversation.AccessRole>.handleNonTeamMemberState(allowNonTeamMember: Boolean) {
+        if (allowNonTeamMember) {
+            add(Conversation.AccessRole.NON_TEAM_MEMBER)
+        } else {
+            remove(Conversation.AccessRole.NON_TEAM_MEMBER)
+        }
     }
 
     sealed interface Result {

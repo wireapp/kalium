@@ -372,7 +372,7 @@ class ConversationDataSource(
                 is UpdateConversationAccessResponse.AccessUpdated -> {
                     wrapStorageRequest {
                         conversationDAO.updateAccess(
-                            idMapper.fromDtoTODao(response.event.qualifiedConversation),
+                            idMapper.fromDtoToDao(response.event.qualifiedConversation),
                             conversationMapper.toDAOAccess(response.event.data.access),
                             response.event.data.accessRole?.let { conversationMapper.toDAOAccessRole(it) }
                         )
