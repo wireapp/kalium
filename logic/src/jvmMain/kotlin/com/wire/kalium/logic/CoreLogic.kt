@@ -41,7 +41,13 @@ actual class CoreLogic(
     }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
-        KaliumPreferencesSettings(EncryptedSettingsHolder(SettingOptions.AppSettings).encryptedSettings)
+        KaliumPreferencesSettings(
+            EncryptedSettingsHolder(
+                SettingOptions.AppSettings(
+                    shouldEncryptData = kaliumConfigs.shouldEncryptData
+                )
+            ).encryptedSettings
+        )
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
@@ -60,7 +66,12 @@ actual class CoreLogic(
             runBlocking { proteusClient.open() }
 
             val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(this, userId)
-            val encryptedSettingsHolder = EncryptedSettingsHolder(SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
+            val encryptedSettingsHolder = EncryptedSettingsHolder(
+                SettingOptions.UserSettings(
+                    shouldEncryptData = kaliumConfigs.shouldEncryptData,
+                    idMapper.toDaoModel(userId)
+                )
+            )
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabase = UserDatabaseProvider(File(rootStoragePath))
 

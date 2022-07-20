@@ -12,12 +12,16 @@ actual class EncryptedSettingsHolder(
     masterKeyAlias: String = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
 ) {
     actual val encryptedSettings: Settings = AndroidSettings(
-        EncryptedSharedPreferences.create(
-            options.fileName,
-            masterKeyAlias,
-            applicationContext,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        ), false
+        if (options.shouldEncryptData) {
+            EncryptedSharedPreferences.create(
+                options.fileName,
+                masterKeyAlias,
+                applicationContext,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } else {
+            applicationContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
+        }, false
     )
 }
