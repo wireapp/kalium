@@ -3,7 +3,7 @@ package com.wire.kalium.network.api.conversation
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.conversation.model.ConversationAccessData
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.pagination.PaginationRequest
@@ -99,10 +99,11 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
 
     override suspend fun updateAccessRole(
         conversationId: ConversationId,
-        conversationAccessData: ConversationAccessData
+        conversationAccessInfoDTO: ConversationAccessInfoDTO
     ): NetworkResponse<UpdateConversationAccessResponse> {
+        // TODO(important): not using wrapKaliumResponse here will lead to a crash in case of device offline
         return httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
-            setBody(conversationAccessData)
+            setBody(conversationAccessInfoDTO)
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
