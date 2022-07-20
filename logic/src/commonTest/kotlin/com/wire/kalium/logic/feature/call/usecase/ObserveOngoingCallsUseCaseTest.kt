@@ -40,7 +40,7 @@ class ObserveOngoingCallsUseCaseTest {
     @Test
     fun givenAnEmptyCallList_whenInvokingObserveOngoingCallsUseCase_thenEmitsAnEmptyListOfCalls() = runTest {
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -60,7 +60,7 @@ class ObserveOngoingCallsUseCaseTest {
     @Test
     fun givenAnOngoingCallList_whenInvokingObserveOngoingCallsUseCase_thenEmitsAnOngoingListOfCalls() = runTest {
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf(DUMMY_CALL)))
 

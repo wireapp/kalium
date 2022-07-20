@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -174,7 +173,6 @@ class GetIncomingCallsUseCaseTest {
         @Mock
         val callRepository: CallRepository = mock(classOf<CallRepository>())
 
-
         val getIncomingCallsUseCase: GetIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(
             syncManager = syncManager,
             userRepository = userRepository,
@@ -187,9 +185,10 @@ class GetIncomingCallsUseCaseTest {
             given(syncManager).invocation { startSyncIfIdle() }.thenReturn(Unit)
         }
 
-        fun withIncomingCalls(calls: List<Call>): Arrangement {
+        suspend fun withIncomingCalls(calls: List<Call>): Arrangement {
             given(callRepository)
-                .invocation { incomingCallsFlow() }
+                .suspendFunction(callRepository::incomingCallsFlow)
+                .whenInvoked()
                 .then { MutableStateFlow(calls) }
 
             return this
@@ -223,7 +222,7 @@ class GetIncomingCallsUseCaseTest {
             TestConversation.one_on_one(id).copy(mutedStatus = status)
 
         private fun incomingCall(conversationIdSuffix: Int = 0) =
-            TestCall.onOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
+            TestCall.oneOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
     }
 
 }
