@@ -70,7 +70,6 @@ class MLSClientTest: BaseMLSClientTest() {
         val (_, welcome) = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome!!)
 
-
         assertEquals(MLS_CONVERSATION_ID, conversationId)
     }
 
@@ -112,15 +111,17 @@ class MLSClientTest: BaseMLSClientTest() {
         val bobClient = createClient(BOB)
         val carolClient = createClient(CAROL)
 
-        val (_, welcome) = bobClient.createConversation(MLS_CONVERSATION_ID, listOf(
-            Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first())
-        ))!!
+        val (_, welcome) = bobClient.createConversation(
+            MLS_CONVERSATION_ID,
+            listOf(Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first()))
+        )!!
 
         aliceClient.processWelcomeMessage(welcome)
 
-        val (handshake, _) = bobClient.addMember(MLS_CONVERSATION_ID, listOf(
-            Pair(CAROL.qualifiedClientId, carolClient.generateKeyPackages(1).first())
-        ))!!
+        val (handshake, _) = bobClient.addMember(
+            MLS_CONVERSATION_ID,
+            listOf(Pair(CAROL.qualifiedClientId, carolClient.generateKeyPackages(1).first()))
+        )!!
 
         assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, handshake))
     }
@@ -150,15 +151,18 @@ class MLSClientTest: BaseMLSClientTest() {
         val ALICE = SampleUser(
             CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "wire.com"),
             CryptoClientId("fb4b58152e20"),
-            "Alice")
+            "Alice"
+        )
         val BOB = SampleUser(
             CryptoQualifiedID("6980b74d-f358-4b1b-b7ad-557a77501e40", "wire.com"),
             CryptoClientId("ab4c8153e19"),
-            "Bob")
+            "Bob"
+        )
         val CAROL = SampleUser(
             CryptoQualifiedID("2380b74d-f321-4c11-b7dd-552a74502e30", "wire.com"),
             CryptoClientId("244c2153e18"),
-            "Carol")
+            "Carol"
+        )
     }
 
 }
