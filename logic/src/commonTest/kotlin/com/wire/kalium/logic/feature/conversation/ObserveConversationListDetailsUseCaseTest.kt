@@ -56,7 +56,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -88,7 +88,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -120,7 +120,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -178,7 +178,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -230,7 +230,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -286,7 +286,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf(ongoingCall)))
 
@@ -321,7 +321,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
