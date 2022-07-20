@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
 sealed class RefillKeyPackagesResult {
 
@@ -28,15 +29,16 @@ class RefillKeyPackagesUseCaseImpl(
     private val clientRepository: ClientRepository
 ) : RefillKeyPackagesUseCase {
     override suspend operator fun invoke(): RefillKeyPackagesResult =
-
         clientRepository.currentClientId().flatMap { selfClientId ->
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
                 .flatMap {
                     if (needsRefill(it.count)) {
+                        kaliumLogger.i("Refilling key packages...")
                         keyPackageRepository.uploadNewKeyPackages(selfClientId, amount = KEY_PACKAGE_LIMIT - it.count).flatMap {
                             Either.Right(Unit)
                         }
                     } else {
+                        kaliumLogger.i("Key packages didn't need refilling")
                         Either.Right(Unit)
                     }
                 }
