@@ -147,87 +147,39 @@ internal class CallDataSource(
             CallEntity.Status.STILL_ONGOING
         )
 
-        if (status == CallStatus.INCOMING) {
-            if (isOneOnOneCall) { // ONE ON ONE CALL
-                if (isCallInCurrentSession) { // IS IN CURRENT SESSION
-                    if (lastCallStatus !in activeCallStatus) {
-                        // Save into database
-                        wrapStorageRequest {
-                            callDAO.insertCall(call = callEntity)
-                        }
-
-                        // Save into metadata
-                        updateCallMetadata(
-                            conversationId = conversationId,
-                            metadata = metadata
-                        )
-                    }
-                } else { // NOT IN CURRENT SESSION
-                    // Save into metadata
-                    updateCallMetadata(
-                        conversationId = conversationId,
-                        metadata = metadata
-                    )
-
-                    if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
-                        // Update database
-                        updateCallStatusById(
-                            conversationId = conversationId.toString(),
-                            status = CallStatus.CLOSED
-                        )
-                    }
-
-                    // Save into database
-                    wrapStorageRequest {
-                        callDAO.insertCall(call = callEntity)
-                    }
-                }
-            } else if (isGroupCall) {
-                if (isCallInCurrentSession) { // IN CURRENT SESSION
-                    if (lastCallStatus !in activeCallStatus) { // LAST CALL IS NOT ACTIVE
-                        // Save into metadata
-                        updateCallMetadata(
-                            conversationId = conversationId,
-                            metadata = metadata
-                        )
-
-                        // Save into database
-                        wrapStorageRequest {
-                            callDAO.insertCall(call = callEntity)
-                        }
-                    }
-                } else { // NOT IN CURRENT SESSION
-                    // Save into metadata
-                    updateCallMetadata(
-                        conversationId = conversationId,
-                        metadata = metadata
-                    )
-
-                    if (lastCallStatus in activeCallStatus) { // LAST CALL IS ACTIVE
-                        // Update database
-                        updateCallStatusById(
-                            conversationId = conversationId.toString(),
-                            status = CallStatus.STILL_ONGOING
-                        )
-                    } else { // LAST CALL NOT ACTIVE
-                        // Save into database
-                        wrapStorageRequest {
-                            callDAO.insertCall(call = callEntity)
-                        }
-                    }
-                }
-            }
-        } else if (status == CallStatus.STARTED) {
-            // Save into database
-            wrapStorageRequest {
-                callDAO.insertCall(call = callEntity)
-            }
-
-            // Save into metadata
+        if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
             updateCallMetadata(
                 conversationId = conversationId,
                 metadata = metadata
             )
+            val callNewStatus = if (isGroupCall) CallStatus.STILL_ONGOING else CallStatus.CLOSED
+            if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
+                // Update database
+                updateCallStatusById(
+                    conversationId = conversationId.toString(),
+                    status = callNewStatus
+                )
+            }
+
+            if ((lastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
+                // Save into database
+                wrapStorageRequest {
+                    callDAO.insertCall(call = callEntity)
+                }
+            }
+        } else {
+            if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
+                // Save into database
+                wrapStorageRequest {
+                    callDAO.insertCall(call = callEntity)
+                }
+
+                // Save into metadata
+                updateCallMetadata(
+                    conversationId = conversationId,
+                    metadata = metadata
+                )
+            }
         }
     }
 
