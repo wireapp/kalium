@@ -205,7 +205,7 @@ class GetIncomingCallsUseCaseTest {
 
         fun withConversationDetails(detailsGetter: (ConversationId) -> Either<StorageFailure, Flow<Conversation>>): Arrangement {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationDetails)
+                .suspendFunction(conversationRepository::observeById)
                 .whenInvokedWith(any())
                 .then { id -> detailsGetter(id) }
             return this
@@ -224,5 +224,4 @@ class GetIncomingCallsUseCaseTest {
         private fun incomingCall(conversationIdSuffix: Int = 0) =
             TestCall.oneOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
     }
-
 }
