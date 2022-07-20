@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -50,6 +51,7 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationRepositoryTest {
@@ -608,6 +610,26 @@ class ConversationRepositoryTest {
             .with(any(), any())
             .wasNotInvoked()
     }
+
+    @Test
+    fun givenAConversationDaoFailed_whenUpdatingTheConversationSeenDate_thenShouldNotSuceed() = runTest {
+        // given
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationSeenDate)
+            .whenInvokedWith(any(), any())
+            .thenThrow(IllegalStateException("Some illegal state"))
+
+        // when
+        val result = conversationRepository.updateConversationSeenDate(TestConversation.ID, "2022-03-30T15:36:00.000Z")
+
+        // then
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationSeenDate)
+            .with(anything(), anything())
+            .wasInvoked()
+        assertIs<Either.Left<StorageFailure>>(result)
+    }
+
 
     companion object {
         const val GROUP_NAME = "Group Name"

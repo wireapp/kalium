@@ -9,6 +9,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationDAOTest : BaseDatabaseTest() {
@@ -281,6 +282,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(expected, actual)
     }
 
+    @Test
+    fun givenExistingConversation_whenUpdatingTheConversationLastSeenDate_ThenTheConversationHasTheDate() = runTest {
+        // given
+        val expectedLastSeenDate = "2022-03-30T15:36:00.000Z"
+
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        conversationDAO.updateConversationSeenDate(conversationEntity1.id, expectedLastSeenDate)
+
+        // then
+        val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+
+        assertTrue(actual != null)
+        assertEquals(expectedLastSeenDate, actual.lastSeenDate)
+    }
 
     private companion object {
         val user1 = newUserEntity(id = "1")

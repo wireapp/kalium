@@ -50,6 +50,7 @@ internal class ConversationMapperImpl(
         protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
         mutedStatus = conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+        lastSeenDate = null,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
@@ -68,6 +69,7 @@ internal class ConversationMapperImpl(
         teamId = daoModel.teamId?.let { TeamId(it) },
         protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
         mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
+        lastSeenDate = daoModel.lastSeenDate,
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate,
         access = daoModel.access.map { it.toDomain() },
@@ -101,7 +103,8 @@ internal class ConversationMapperImpl(
             connectionState = otherUser.connectionStatus,
             // TODO(user-metadata) get actual legal hold status
             legalHoldStatus = LegalHoldStatus.DISABLED,
-            userType = otherUser.userType
+            userType = otherUser.userType,
+            unreadMessagesCount = unreadMessageCount,
         )
     }
 

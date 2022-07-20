@@ -125,7 +125,7 @@ class CallRepositoryTest {
     fun givenACallData_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED, 0)))
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
