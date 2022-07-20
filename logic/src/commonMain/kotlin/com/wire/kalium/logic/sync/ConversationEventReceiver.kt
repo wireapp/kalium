@@ -6,7 +6,6 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
@@ -296,9 +295,8 @@ class ConversationEventReceiverImpl(
                                 }
                                 .onSuccess { persistedMessage ->
                                     // Check the second asset message is from the same original sender
-                                    if (
-                                        isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
-                                        && persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
+                                    if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
+                                        persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
                                     ) {
                                         // The asset message received contains the asset decryption keys,
                                         // so update the preview message persisted previously

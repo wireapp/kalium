@@ -9,7 +9,6 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
@@ -31,6 +30,7 @@ import kotlinx.datetime.toLocalDateTime
 import java.util.concurrent.TimeUnit
 
 private val workerClass = WrapperWorker::class.java
+
 internal actual class GlobalWorkSchedulerImpl(
     private val appContext: Context
 ) : GlobalWorkScheduler {

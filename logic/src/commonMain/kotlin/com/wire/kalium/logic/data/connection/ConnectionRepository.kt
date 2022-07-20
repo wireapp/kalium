@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.connection
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONNECTIONS
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
