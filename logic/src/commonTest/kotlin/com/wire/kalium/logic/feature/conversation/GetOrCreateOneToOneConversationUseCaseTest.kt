@@ -45,7 +45,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getOneToOneConversationWithOtherUser)
             .whenInvokedWith(anything())
-            .thenReturn(Either.Right(CONVERSATION_DETAILS))
+            .thenReturn(Either.Right(CONVERSATION))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::createGroupConversation)
@@ -119,13 +119,6 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.NONE,
             userType = UserType.EXTERNAL,
             connectionStatus = ConnectionState.NOT_CONNECTED
-        )
-        val CONVERSATION_DETAILS = ConversationDetails.OneOne(
-            CONVERSATION,
-            OTHER_USER,
-            ConnectionState.ACCEPTED,
-            LegalHoldStatus.ENABLED,
-            UserType.INTERNAL
         )
     }
 }

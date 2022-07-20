@@ -185,6 +185,30 @@ class ConversationDataSource(
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID)).wrapStorageRequest().onlyRight()
             .map(conversationMapper::fromDaoModel).flatMapLatest(::getConversationDetailsFlow)
 
+    private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
+        Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
+        // TODO(user-metadata): get actual legal hold status
+        Conversation.Type.GROUP -> flowOf(
+            ConversationDetails.Group(
+                conversation = conversation,
+                legalHoldStatus = LegalHoldStatus.DISABLED,
+                unreadMessagesCount = getUnreadMessageCount(conversation)
+            )
+        )
+        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(
+            conversation = conversation,
+            unreadMessageCount = getUnreadMessageCount(conversation)
+        )
+    }
+
+    private suspend fun getUnreadMessageCount(conversation: Conversation): Int {
+        return if (conversation.supportsUnreadMessageCount() && conversation.hasNewMessages()) {
+            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+        } else {
+            0
+        }
+    }
+
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
             conversationApi.fetchConversationDetails(idMapper.toApiModel(conversationID))
@@ -201,30 +225,6 @@ class ConversationDataSource(
             fetchConversation(conversationID)
         } else {
             Either.Right(Unit)
-        }
-    }
-
-    private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
-        Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
-        // TODO(user-metadata): get actual legal hold status
-        Conversation.Type.GROUP -> flowOf(
-            ConversationDetails.Group(
-                conversation = conversation,
-                legalHoldStatus = LegalHoldStatus.DISABLED,
-                unreadMessagesCount = getUnReadMessageCount(conversation)
-            )
-        )
-        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(
-            conversation = conversation,
-            unreadMessageCount = getUnReadMessageCount(conversation)
-        )
-    }
-
-    private suspend fun getUnReadMessageCount(conversation: Conversation): Int {
-        return if (conversation.supportsUnreadMessageCount() && conversation.hasNewMessages()) {
-            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
-        } else {
-            0
         }
     }
 

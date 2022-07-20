@@ -139,13 +139,14 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
-        val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED))
+        val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED,unreadMessagesCount = 0))
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER,
             ConnectionState.ACCEPTED,
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
+            unreadMessagesCount = 0
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
@@ -153,6 +154,7 @@ class ObserveConversationListDetailsUseCaseTest {
             ConnectionState.PENDING,
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
+            unreadMessagesCount = 0
         )
 
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
@@ -195,7 +197,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         val groupConversation = TestConversation.GROUP()
-        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED,unreadMessagesCount = 0)
 
         val selfConversation = TestConversation.SELF
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
@@ -237,7 +239,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
         val groupConversation = TestConversation.GROUP()
-        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED,unreadMessagesCount = 0)
 
         val ongoingCall = Call(
             conversationId = groupConversation.id,
@@ -279,7 +281,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
         val groupConversation = TestConversation.GROUP()
-        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED,unreadMessagesCount = 0)
 
         val firstConversationsList = listOf(groupConversation)
 

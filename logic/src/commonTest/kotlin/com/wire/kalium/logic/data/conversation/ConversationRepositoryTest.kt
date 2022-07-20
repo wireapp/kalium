@@ -630,6 +630,32 @@ class ConversationRepositoryTest {
         assertIs<Either.Left<StorageFailure>>(result)
     }
 
+    @Test
+    fun givenAGroupConversationHavingUnreadMessage_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
+        // given
+        val conversationEntityFlow = flowOf(
+            TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP)
+        )
+
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
+            .whenInvokedWith(any())
+            .thenReturn(conversationEntityFlow)
+
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getUnreadMessageCount)
+            .whenInvokedWith(any())
+            .thenReturn(10)
+
+        // when
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            // then
+            val conversationDetail = awaitItem()
+
+            assertIs<ConversationDetails.Group>(conversationDetail)
+            assertTrue { conversationDetail.unreadMessagesCount == 10 }
+        }
+    }
 
     companion object {
         const val GROUP_NAME = "Group Name"
