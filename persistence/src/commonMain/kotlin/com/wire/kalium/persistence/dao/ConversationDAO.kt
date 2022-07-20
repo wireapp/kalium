@@ -13,7 +13,7 @@ data class ConversationEntity(
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>?
+    val accessRole: List<AccessRole>
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE; }
 
