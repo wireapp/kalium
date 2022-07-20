@@ -7,6 +7,9 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientDataSource
@@ -89,10 +92,10 @@ import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
+import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.event.EventProcessor
 import com.wire.kalium.logic.sync.event.EventProcessorImpl
-import com.wire.kalium.logic.sync.UserEventReceiver
 import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -107,15 +110,18 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import okio.Path.Companion.toPath
 
 expect class UserSessionScope : UserSessionScopeCommon
 
+@Suppress("LongParameterList")
 abstract class UserSessionScopeCommon(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
+    dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs
 ) {
     // we made this lazy so it will have a single instance for the storage
@@ -223,9 +229,7 @@ abstract class UserSessionScopeCommon(
         get() = TokenStorageImpl(globalPreferences)
 
     private val clientRemoteRepository: ClientRemoteRepository
-        get() = ClientRemoteDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig
-        )
+        get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userDatabaseProvider.metadataDAO)
@@ -263,7 +267,11 @@ abstract class UserSessionScopeCommon(
         )
 
     private val assetRepository: AssetRepository
-        get() = AssetDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi, userDatabaseProvider.assetDAO)
+        get() = AssetDataSource(
+            assetApi = authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi,
+            assetDao = userDatabaseProvider.assetDAO,
+            kaliumFileSystem = kaliumFileSystem
+        )
 
     private val syncRepository: SyncRepository by lazy { InMemorySyncRepository() }
 
@@ -396,7 +404,8 @@ abstract class UserSessionScopeCommon(
             assetRepository,
             syncManager,
             messageSendingScheduler,
-            timeParser
+            timeParser,
+            kaliumFileSystem
         )
     val users: UserScope
         get() = UserScope(
@@ -445,4 +454,13 @@ abstract class UserSessionScopeCommon(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
+    val kaliumFileSystem: KaliumFileSystem by lazy {
+        // Create the cache and asset storage directories
+        KaliumFileSystemImpl(dataStoragePaths).also {
+            if (!it.exists(dataStoragePaths.cachePath.value.toPath()))
+                it.createDirectories(dataStoragePaths.cachePath.value.toPath())
+            if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath()))
+                it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
+        }
+    }
 }
