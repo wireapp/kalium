@@ -211,17 +211,21 @@ class ConversationDataSource(
             ConversationDetails.Group(
                 conversation = conversation,
                 legalHoldStatus = LegalHoldStatus.DISABLED,
-                unreadMessagesCount = conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+                unreadMessagesCount = getUnReadMessageCount(conversation)
             )
         )
-        Conversation.Type.CONNECTION_PENDING -> getOneToOneConversationDetailsFlow(
+        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(
             conversation = conversation,
-            unreadMessageCount = 0
+            unreadMessageCount = getUnReadMessageCount(conversation)
         )
-        Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(
-            conversation = conversation,
-            unreadMessageCount = conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
-        )
+    }
+
+    private suspend fun getUnReadMessageCount(conversation: Conversation): Int {
+        return if (conversation.supportsUnreadCount() && conversation.hasNewMessages()) {
+            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+        } else {
+            0
+        }
     }
 
     private suspend fun getOneToOneConversationDetailsFlow(

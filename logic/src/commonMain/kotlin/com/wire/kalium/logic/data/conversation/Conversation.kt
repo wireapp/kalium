@@ -18,13 +18,36 @@ data class Conversation(
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
-    val lastSeenDate : String?,
+    val lastSeenDate: String?,
     val access: List<Access>,
     val accessRole: List<AccessRole>?
 ) {
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
-    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE }
-    enum class Access { PRIVATE, INVITE, LINK, CODE }
+    enum class Type {
+        SELF,
+        ONE_ON_ONE,
+        GROUP,
+        CONNECTION_PENDING;
+    }
+
+    enum class AccessRole {
+        TEAM_MEMBER,
+        NON_TEAM_MEMBER,
+        GUEST,
+        SERVICE;
+    }
+
+    enum class Access {
+        PRIVATE,
+        INVITE,
+        LINK,
+        CODE;
+    }
+
+    fun supportsUnreadCount() =
+        type == Type.ONE_ON_ONE || type == Type.GROUP
+
+    fun hasNewMessages() =
+        if (lastModifiedDate != null && lastSeenDate != null) lastModifiedDate > lastSeenDate else false
 }
 
 sealed class ProtocolInfo {
