@@ -126,4 +126,17 @@ object TestConversation {
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
+
+    val CONVERSATION = Conversation(
+        ConversationId("conv_id", "domain"),
+        "ONE_ON_ONE Name",
+        Conversation.Type.ONE_ON_ONE,
+        TestTeam.TEAM_ID,
+        ProtocolInfo.Proteus,
+        MutedConversationStatus.AllAllowed,
+        null,
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+    )
 }
