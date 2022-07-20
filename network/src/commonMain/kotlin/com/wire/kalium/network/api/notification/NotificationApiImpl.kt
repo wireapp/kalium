@@ -1,5 +1,7 @@
 package com.wire.kalium.network.api.notification
 
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.kaliumLogger
@@ -98,17 +100,17 @@ class NotificationApiImpl internal constructor(
                 emit(WebSocketEvent.Close(it))
             }
             .collect { frame ->
-                kaliumLogger.v("Websocket Received Frame: $frame")
+                kaliumLogger.withFlowId(EVENT_RECEIVER).v("Websocket Received Frame: $frame")
                 when (frame) {
                     is Frame.Binary -> {
                         // assuming here the byteArray is an ASCII character set
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
-                        kaliumLogger.v("Binary frame content: '$jsonString'")
+                        kaliumLogger.withFlowId(EVENT_RECEIVER).v("Binary frame content: '$jsonString'")
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
                     else -> {
-                        kaliumLogger.v("Websocket frame not handled: $frame")
+                        kaliumLogger.withFlowId(EVENT_RECEIVER).v("Websocket frame not handled: $frame")
                         emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))
                     }
                 }

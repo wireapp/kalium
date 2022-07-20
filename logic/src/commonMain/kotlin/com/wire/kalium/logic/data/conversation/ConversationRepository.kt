@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -118,27 +119,28 @@ class ConversationDataSource(
 
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
-                kaliumLogger.v("Fetching conversation page starting with pagingState $lastPagingState")
+                kaliumLogger.withFlowId(CONVERSATIONS).v("Fetching conversation page starting with pagingState $lastPagingState")
                 conversationApi.fetchConversationsIds(pagingState = lastPagingState)
             }.onSuccess { pagingResponse ->
                 wrapApiRequest {
                     conversationApi.fetchConversationsListDetails(pagingResponse.conversationsIds.toList())
                 }.onSuccess { conversations ->
                     if (conversations.conversationsFailed.isNotEmpty()) {
-                        kaliumLogger.d("Skipping ${conversations.conversationsFailed.size} conversations failed")
+                        kaliumLogger.withFlowId(CONVERSATIONS).d("Skipping ${conversations.conversationsFailed.size} conversations failed")
                     }
                     if (conversations.conversationsNotFound.isNotEmpty()) {
-                        kaliumLogger.d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
+                        kaliumLogger.withFlowId(CONVERSATIONS)
+                            .d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
                     }
                     persistConversations(conversations.conversationsFound, selfUserTeamId?.value)
                 }.onFailure {
-                    kaliumLogger.e("Error fetching conversation details $it")
+                    kaliumLogger.withFlowId(CONVERSATIONS).e("Error fetching conversation details $it")
                 }
 
                 lastPagingState = pagingResponse.pagingState
                 hasMore = pagingResponse.hasMore
             }.onFailure {
-                kaliumLogger.e("Error fetching conversation ids $it")
+                kaliumLogger.withFlowId(CONVERSATIONS).e("Error fetching conversation ids $it")
                 Either.Left(it)
             }.map { }
         }
@@ -222,8 +224,10 @@ class ConversationDataSource(
 
     private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Flow<OtherUser> {
         when (error) {
-            is StorageFailure.DataNotFound -> kaliumLogger.e("DataNotFound when fetching conversation members: $error")
-            is StorageFailure.Generic -> kaliumLogger.e("Failure getting other 1:1 user for $conversation", error.rootCause)
+            is StorageFailure.DataNotFound ->
+                kaliumLogger.withFlowId(CONVERSATIONS).e("DataNotFound when fetching conversation members: $error")
+            is StorageFailure.Generic ->
+                kaliumLogger.withFlowId(CONVERSATIONS).e("Failure getting other 1:1 user for $conversation", error.rootCause)
         }
         return emptyFlow()
     }

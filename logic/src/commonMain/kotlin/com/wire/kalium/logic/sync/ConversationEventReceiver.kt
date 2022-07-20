@@ -3,12 +3,14 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -42,7 +44,7 @@ import kotlinx.datetime.Clock
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
-//TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
+// TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 @Suppress("LongParameterList", "TooManyFunctions")
 class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
@@ -198,8 +200,11 @@ class ConversationEventReceiverImpl(
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
-                onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
-                onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
+                onSuccess {
+                    kaliumLogger.withFlowId(EVENT_RECEIVER)
+                        .v("Succeeded fetching conversation details on MemberJoin Event: $event")
+                }
+                onFailure { kaliumLogger.withFlowId(EVENT_RECEIVER).w("Failure fetching conversation details on MemberJoin Event: $event") }
                 // Even if unable to fetch conversation details, at least attempt adding the member
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
@@ -212,7 +217,7 @@ class ConversationEventReceiverImpl(
                     status = Message.Status.SENT,
                     visibility = Message.Visibility.VISIBLE
                 )
-                processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
+                processMessage(message) // TODO(exception-handling): processMessage exceptions are not caught
             }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
