@@ -153,7 +153,9 @@ class CallMapper {
             participants: List<Participant>,
             activeSpeakers: CallActiveSpeakers
         ): List<Participant> = participants.map { participant ->
-            val isSpeaking = activeSpeakers.activeSpeakers.find { it.userId == participant.id.toString() && it.clientId == participant.clientId }?.let {
+            val isSpeaking = activeSpeakers.activeSpeakers.find {
+                it.userId == participant.id.toString() && it.clientId == participant.clientId
+            }?.let {
                 it.audioLevel > 0 && it.audioLevelNow > 0
             } ?: run { false }
             participant.copy(
