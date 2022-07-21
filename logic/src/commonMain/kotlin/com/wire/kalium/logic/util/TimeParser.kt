@@ -26,6 +26,11 @@ interface TimeParser {
      * @return current time stamp
      */
     fun currentTimeStamp(): String
+
+    /**
+     * @return true of time1 is before time2 or false otherwise
+     */
+    fun isTimeBefore(time1: String, time2: String): Boolean
 }
 
 class TimeParserImpl : TimeParser {
@@ -40,6 +45,10 @@ class TimeParserImpl : TimeParser {
 
     override fun currentTimeStamp(): String {
         return Clock.System.now().toString()
+    }
+
+    override fun isTimeBefore(time1: String, time2: String): Boolean {
+        return time1.toInstant() < time2.toInstant()
     }
 
 }

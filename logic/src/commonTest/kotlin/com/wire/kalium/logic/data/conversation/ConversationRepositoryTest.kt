@@ -9,6 +9,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.conversation.AddParticipantResponse
@@ -74,6 +75,9 @@ class ConversationRepositoryTest {
     @Mock
     private val clientApi = mock(ClientApi::class)
 
+    @Mock
+    private val timeParser: TimeParser = mock(TimeParser::class)
+
     private lateinit var conversationRepository: ConversationRepository
 
     @BeforeTest
@@ -83,7 +87,8 @@ class ConversationRepositoryTest {
             mlsConversationRepository,
             conversationDAO,
             conversationApi,
-            clientApi
+            clientApi,
+            timeParser
         )
     }
 
@@ -191,6 +196,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
+        given(timeParser)
+            .function(timeParser::isTimeBefore)
+            .whenInvokedWith(any(), any())
+            .thenReturn(true)
+
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.Group>(awaitItem())
             awaitComplete()
@@ -241,6 +251,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
+        given(timeParser)
+            .function(timeParser::isTimeBefore)
+            .whenInvokedWith(any(), any())
+            .thenReturn(true)
+
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.OneOne>(awaitItem())
             awaitComplete()
@@ -276,6 +291,11 @@ class ConversationRepositoryTest {
             .suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(otherUserDetailsSequence.asFlow())
+
+        given(timeParser)
+            .function(timeParser::isTimeBefore)
+            .whenInvokedWith(any(), any())
+            .thenReturn(true)
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             val firstItem = awaitItem()
@@ -634,16 +654,12 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAGroupConversationWithLastModifiedDateAfterThenLastReadDate_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() =
+    fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() =
         runTest {
             // given
-            val currentTime = Clock.System.now()
-
             val conversationEntityFlow = flowOf(
                 TestConversation.ENTITY.copy(
                     type = ConversationEntity.Type.GROUP,
-                    lastSeenDate = currentTime.toEpochMilliseconds().toString(),
-                    lastModifiedDate = currentTime.plus(30.toDuration(DurationUnit.MINUTES)).toEpochMilliseconds().toString()
                 )
             )
 
@@ -651,6 +667,11 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
                 .whenInvokedWith(any())
                 .thenReturn(conversationEntityFlow)
+
+            given(timeParser)
+                .function(timeParser::isTimeBefore)
+                .whenInvokedWith(any(), any())
+                .thenReturn(true)
 
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getUnreadMessageCount)
@@ -670,16 +691,12 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenAGroupConversationWithLastModifiedDateBeforeThenLastReadDate_whenGettingConversationDetails_ThenDoNoGetMessageCount() =
+    fun givenAGroupConversationHasNotNewMessages_whenGettingConversationDetails_ThenDoNoGetMessageCount() =
         runTest {
             // given
-            val currentTime = Clock.System.now()
-
             val conversationEntityFlow = flowOf(
                 TestConversation.ENTITY.copy(
                     type = ConversationEntity.Type.GROUP,
-                    lastSeenDate = currentTime.toEpochMilliseconds().toString(),
-                    lastModifiedDate = currentTime.minus(30.toDuration(DurationUnit.MINUTES)).toEpochMilliseconds().toString()
                 )
             )
 
@@ -688,6 +705,10 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(conversationEntityFlow)
 
+            given(timeParser)
+                .function(timeParser::isTimeBefore)
+                .whenInvokedWith(any(), any())
+                .thenReturn(false)
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
                 // then
@@ -706,16 +727,12 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenAOneToOneConversationWithLastModifiedDateBeforeThenLastReadDate_whenGettingConversationDetails_ThenDoNoGetMessageCount() =
+    fun givenAOneToOneConversationHasNotNewMessages_whenGettingConversationDetails_ThenDoNoGetMessageCount() =
         runTest {
             // given
-            val currentTime = Clock.System.now()
-
             val conversationEntityFlow = flowOf(
                 TestConversation.ENTITY.copy(
                     type = ConversationEntity.Type.ONE_ON_ONE,
-                    lastSeenDate = currentTime.toEpochMilliseconds().toString(),
-                    lastModifiedDate = currentTime.minus(30.toDuration(DurationUnit.MINUTES)).toEpochMilliseconds().toString()
                 )
             )
 
@@ -723,6 +740,25 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
                 .whenInvokedWith(any())
                 .thenReturn(conversationEntityFlow)
+
+            given(timeParser)
+                .function(timeParser::isTimeBefore)
+                .whenInvokedWith(any(), any())
+                .thenReturn(false)
+
+            given(userRepository)
+                .coroutine { userRepository.observeSelfUser() }
+                .then { flowOf(TestUser.SELF) }
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getAllMembers)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))))
+
+            given(userRepository)
+                .suspendFunction(userRepository::getKnownUser)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(TestUser.OTHER))
 
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -742,16 +778,12 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenAOneToOneConversationWithLastModifiedDateAfterThenLastReadDate_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() =
+    fun givenAOneToOneConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() =
         runTest {
             // given
-            val currentTime = Clock.System.now()
-
             val conversationEntityFlow = flowOf(
                 TestConversation.ENTITY.copy(
                     type = ConversationEntity.Type.ONE_ON_ONE,
-                    lastSeenDate = currentTime.toEpochMilliseconds().toString(),
-                    lastModifiedDate = currentTime.plus(30.toDuration(DurationUnit.MINUTES)).toEpochMilliseconds().toString()
                 )
             )
 
@@ -760,10 +792,29 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(conversationEntityFlow)
 
+            given(timeParser)
+                .function(timeParser::isTimeBefore)
+                .whenInvokedWith(any(), any())
+                .thenReturn(true)
+
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getUnreadMessageCount)
                 .whenInvokedWith(any())
                 .thenReturn(10)
+
+            given(userRepository)
+                .coroutine { userRepository.observeSelfUser() }
+                .then { flowOf(TestUser.SELF) }
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getAllMembers)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))))
+
+            given(userRepository)
+                .suspendFunction(userRepository::getKnownUser)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(TestUser.OTHER))
 
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {

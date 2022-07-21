@@ -22,6 +22,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.AddParticipantRequest
@@ -82,7 +83,7 @@ interface ConversationRepository {
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationSeenDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
-    suspend fun getUnreadConversationCount(): Either<StorageFailure, Int>
+    suspend fun getUnreadConversationCount(): Either<StorageFailure, Long>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -92,6 +93,7 @@ class ConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
+    private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -203,12 +205,24 @@ class ConversationDataSource(
     }
 
     private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
-        return if (conversation.supportsUnreadMessageCount() && conversation.hasNewMessages()) {
+        return if (conversation.supportsUnreadMessageCount() && hasNewMessages(conversation)) {
             conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
             0
         }
     }
+
+    //TODO: as for now lastModifiedDate and lastReadDate is saved as String
+    // in ISO format, using a timestamp would make it possible to just do a comparance
+    // on if the timestamp is bigger inside the domain model or on a Instant object
+    private fun hasNewMessages(conversation: Conversation) =
+        with(conversation) {
+            if (lastModifiedDate != null && lastReadDate != null) {
+                timeParser.isTimeBefore(lastModifiedDate, lastReadDate)
+            } else {
+                false
+            }
+        }
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
@@ -379,9 +393,8 @@ class ConversationDataSource(
     override suspend fun updateConversationSeenDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationSeenDate(idMapper.toDaoModel(qualifiedID), date) }
 
-    override suspend fun getUnreadConversationCount(): Either<StorageFailure, Int> {
+    override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
         wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
-    }
 
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

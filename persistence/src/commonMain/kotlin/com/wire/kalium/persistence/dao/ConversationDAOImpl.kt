@@ -241,7 +241,7 @@ class ConversationDAOImpl(
         conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
 
     override suspend fun getUnreadConversationCount(): Long =
-        conversationQueries.getUnreadConversationCount()
+        conversationQueries.getUnreadConversationCount().executeAsOne()
 
     override suspend fun updateConversationSeenDate(conversationID: QualifiedIDEntity, date: String) {
         conversationQueries.updateConversationSeenDate(date, conversationID)
