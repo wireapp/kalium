@@ -20,29 +20,20 @@ data class Conversation(
     val lastModifiedDate: String?,
     val lastReadDate: String?,
     val access: List<Access>,
-    val accessRole: List<AccessRole>?
+    val accessRole: List<AccessRole>
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
 
-    fun isGuestAllowed(): Boolean = accessRole?.let {
+    fun isGuestAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.GUEST))
-    } ?: TODO(
-        "swagger: This field is optional. If it is not present, " +
-                "the default will be [team_member, non_team_member, service]"
-    )
-    fun isNonTeamMemberAllowed(): Boolean = accessRole?.let {
+    }
+    fun isNonTeamMemberAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.NON_TEAM_MEMBER))
-    } ?: TODO(
-        "swagger: This field is optional. If it is not present, " +
-                "the default will be [team_member, non_team_member, service]"
-    )
-    fun isServicesAllowed(): Boolean = this.accessRole?.let {
+    }
+    fun isServicesAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.SERVICE))
-    } ?: TODO(
-        "swagger: This field is optional. If it is not present, " +
-                "the default will be [team_member, non_team_member, service]"
-    )
+    }
 
     enum class Type {
         SELF,
@@ -104,7 +95,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val connection: com.wire.kalium.logic.data.user.Connection,
         val protocolInfo: ProtocolInfo,
         val access: List<Conversation.Access>,
-        val accessRole: List<Conversation.AccessRole>?
+        val accessRole: List<Conversation.AccessRole>
     ) : ConversationDetails(
         Conversation(
             id = conversationId,

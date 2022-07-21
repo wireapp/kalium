@@ -16,7 +16,7 @@ data class ConversationEntity(
     // nullable lastReadDate means that the conversation is never seen by the user
     val lastReadDate: String? = null,
     val access: List<Access>,
-    val accessRole: List<AccessRole>?
+    val accessRole: List<AccessRole>
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE; }
 
@@ -86,7 +86,7 @@ interface ConversationDAO {
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
-        accessRoleList: List<ConversationEntity.AccessRole>?
+        accessRoleList: List<ConversationEntity.AccessRole>
     )
     suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
     suspend fun getUnreadConversationCount(): Long
