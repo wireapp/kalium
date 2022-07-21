@@ -20,6 +20,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.event.EventInfoStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf

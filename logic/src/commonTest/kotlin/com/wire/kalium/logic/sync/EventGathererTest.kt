@@ -128,16 +128,17 @@ class EventGathererTest {
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
             .arrange()
 
+        // Open Websocket should trigger fetching pending events
+        liveEventsChannel.send(WebSocketEvent.Open())
+
+        liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(TestEvent.newConnection()))
+        advanceUntilIdle()
+
         eventGatherer.gatherEvents().test {
             verify(arrangement.eventRepository)
                 .suspendFunction(arrangement.eventRepository::pendingEvents)
                 .wasNotInvoked()
 
-            // Open Websocket should trigger fetching pending events
-            liveEventsChannel.send(WebSocketEvent.Open())
-
-            liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(TestEvent.newConnection()))
-            advanceUntilIdle()
             awaitComplete()
         }
     }

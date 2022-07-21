@@ -119,11 +119,17 @@ internal class SyncManagerImpl(
 
         syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
-        processingJob = eventProcessingScope.launch { gatherAndProcessEvents() }
+        processingJob = eventProcessingScope.launch {
+            gatherAndProcessEvents()
+        }
     }
 
-    private suspend fun gatherAndProcessEvents() = eventGatherer.gatherEvents().collect {
-        eventProcessor.processEvent(it)
+    private suspend fun gatherAndProcessEvents() {
+        eventGatherer.gatherEvents().collect {
+            eventProcessor.processEvent(it)
+        }
+        kaliumLogger.i("SYNC Finished gathering and processing events")
+        syncRepository.updateSyncState { SyncState.Waiting }
     }
 
     override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
