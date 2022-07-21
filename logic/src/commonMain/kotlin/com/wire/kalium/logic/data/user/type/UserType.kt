@@ -5,6 +5,10 @@ enum class UserType {
     /** Team member*/
     INTERNAL,
 
+    ADMIN,
+    // TODO add documentation
+    OWNER,
+
     // TODO(user-metadata): for now External will not be implemented
     /**Team member with limited permissions */
     EXTERNAL,
@@ -22,6 +26,11 @@ enum class UserType {
      * from outside the backend network
      */
     GUEST,
+
+    /**
+     * Service bot,
+     */
+    SERVICE,
 
     /**
      * A user on the same backend,

@@ -153,7 +153,7 @@ class TeamRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = UserTypeEntity.EXTERNAL
+            userTypeEntity = UserTypeEntity.EXTERNAL
         )
 
         given(teamsApi)

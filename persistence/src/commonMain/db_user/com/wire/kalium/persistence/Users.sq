@@ -47,7 +47,7 @@ WHERE qualified_id = ?;
 
 updateTeamMemberUser:
 UPDATE User
-SET team = ?, connection_status = ?
+SET team = ?, connection_status = ?, user_type = ?
 WHERE qualified_id = ?;
 
 insertOrIgnoreUserId:

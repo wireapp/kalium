@@ -22,7 +22,7 @@ data class Conversation(
     val accessRole: List<AccessRole>?
 ) {
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
-    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE }
+    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL }
     enum class Access { PRIVATE, INVITE, LINK, CODE }
 }
 

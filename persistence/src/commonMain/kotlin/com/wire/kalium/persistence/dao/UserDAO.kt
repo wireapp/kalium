@@ -32,11 +32,15 @@ data class UserEntity(
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
 
-    val userTypEntity: UserTypeEntity,
+    val userTypeEntity: UserTypeEntity,
 )
 
 enum class UserTypeEntity {
-    INTERNAL,
+    OWNER,
+
+    ADMIN,
+
+    INTERNAL, // TODO KBX change to member
 
     // TODO(user-metadata): for now External will not be implemented
     /**Team member with limited permissions */

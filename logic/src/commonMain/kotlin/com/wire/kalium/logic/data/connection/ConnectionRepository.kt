@@ -212,11 +212,12 @@ internal class ConnectionDataSource(
                 val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
                     userDetailResponse = userProfileDTO,
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
-                    userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
+                    userTypeEntity = userTypeEntityTypeMapper.fromTeamDomainAndPermission(
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = selfUser.teamId?.value,
                         otherUserTeamId = userProfileDTO.teamId,
-                        selfUserDomain = selfUser.id.domain
+                        selfUserDomain = selfUser.id.domain,
+                        permissionCode = null
                     )
                 )
 

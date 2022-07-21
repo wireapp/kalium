@@ -2,10 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -16,7 +13,7 @@ class DomainUserTypeMapperTest {
     @Test
     fun givenDomainAndTeamAreEqual_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
         //when
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
+        val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
             "someTeamId",
             "someTeamId",
@@ -29,7 +26,7 @@ class DomainUserTypeMapperTest {
     @Test
     fun givenCommonNotWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
         //given
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
+        val result = userTypeMapper.fromTeamDomainAndPermission(
             "domainB",
             "teamA",
             "teamB",
@@ -42,7 +39,7 @@ class DomainUserTypeMapperTest {
     @Test
     fun givenUsingSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
         //when
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
+        val result = userTypeMapper.fromTeamDomainAndPermission(
             "domain.wire.com",
             "teamA",
             "teamB",

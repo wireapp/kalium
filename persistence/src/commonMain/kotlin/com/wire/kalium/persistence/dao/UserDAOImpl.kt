@@ -22,7 +22,7 @@ class UserMapper {
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
-            userTypEntity = user.user_type
+            userTypeEntity = user.user_type,
         )
     }
 }
@@ -46,14 +46,14 @@ class UserDAOImpl(
             user.connectionStatus,
             user.previewAssetId,
             user.completeAssetId,
-            user.userTypEntity
+            user.userTypeEntity
         )
     }
 
     override suspend fun upsertTeamMembers(users: List<UserEntity>) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                userQueries.updateTeamMemberUser(user.team, user.connectionStatus, user.id)
+                userQueries.updateTeamMemberUser(user.team, user.connectionStatus, user.userTypeEntity, user.id)
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
                     userQueries.insertUser(
@@ -67,7 +67,7 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userTypEntity
+                        user.userTypeEntity
                     )
                 }
             }
@@ -86,7 +86,7 @@ class UserDAOImpl(
                     user.team,
                     user.previewAssetId,
                     user.completeAssetId,
-                    user.userTypEntity,
+                    user.userTypeEntity,
                     user.id,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
@@ -102,7 +102,7 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userTypEntity
+                        user.userTypeEntity
                     )
                 }
             }

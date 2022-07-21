@@ -10,10 +10,11 @@ class UserEntityTypeMapperTest {
 
     private val userTypeMapper : UserEntityTypeMapper = UserEntityTypeMapperImpl()
 
+    // TODO KBX write tests for permissions
     @Test
     fun givenDomainAndTeamAreEqual_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
         //when
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
+        val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
             "someTeamId",
             "someTeamId",
@@ -26,7 +27,7 @@ class UserEntityTypeMapperTest {
     @Test
     fun givenCommonNotTheSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
         //given
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
+        val result = userTypeMapper.fromTeamDomainAndPermission(
             "domainB",
             "teamA",
             "teamB",
@@ -39,7 +40,7 @@ class UserEntityTypeMapperTest {
     @Test
     fun givenUsingSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
         //when
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
+        val result = userTypeMapper.fromTeamDomainAndPermission(
             "testDomain",
             "teamA",
             "teamB",

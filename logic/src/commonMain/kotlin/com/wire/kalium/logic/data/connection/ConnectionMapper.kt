@@ -51,7 +51,7 @@ internal class ConnectionMapperImpl(
         return ConversationDetails.Connection(
             conversationId = idMapper.fromDaoModel(connection.qualifiedConversationId),
             otherUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) },
-            userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userTypEntity) } ?: UserType.GUEST,
+            userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userTypeEntity) } ?: UserType.GUEST,
             lastModifiedDate = connection.lastUpdate,
             connection = fromDaoToModel(connection, otherUser),
             protocolInfo = ProtocolInfo.Proteus,

@@ -111,6 +111,7 @@ internal class ConversationMapperImpl(
         Conversation.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRoleDTO.NON_TEAM_MEMBER
         Conversation.AccessRole.GUEST -> ConversationAccessRoleDTO.GUEST
         Conversation.AccessRole.SERVICE -> ConversationAccessRoleDTO.SERVICE
+        Conversation.AccessRole.EXTERNAL -> ConversationAccessRoleDTO.EXTERNAL
     }
 
     override fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol = when (protocol) {
@@ -160,6 +161,7 @@ private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = w
     ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
     ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
     ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
+    ConversationAccessRoleDTO.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
 }
 
 private fun ConversationAccessDTO.toDAO(): ConversationEntity.Access = when (this) {
@@ -181,4 +183,5 @@ private fun ConversationEntity.AccessRole.toDomain(): Conversation.AccessRole = 
     ConversationEntity.AccessRole.NON_TEAM_MEMBER -> Conversation.AccessRole.NON_TEAM_MEMBER
     ConversationEntity.AccessRole.GUEST -> Conversation.AccessRole.GUEST
     ConversationEntity.AccessRole.SERVICE -> Conversation.AccessRole.SERVICE
+    ConversationEntity.AccessRole.EXTERNAL -> Conversation.AccessRole.EXTERNAL
 }
