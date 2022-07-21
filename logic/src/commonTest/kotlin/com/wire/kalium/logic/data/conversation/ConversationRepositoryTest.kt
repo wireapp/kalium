@@ -201,6 +201,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(true)
 
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getUnreadMessageCount)
+            .whenInvokedWith(any())
+            .thenReturn(10)
+
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.Group>(awaitItem())
             awaitComplete()
@@ -256,6 +261,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(true)
 
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getUnreadMessageCount)
+            .whenInvokedWith(any())
+            .thenReturn(10)
+
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<ConversationDetails.OneOne>(awaitItem())
             awaitComplete()
@@ -296,6 +306,11 @@ class ConversationRepositoryTest {
             .function(timeParser::isTimeBefore)
             .whenInvokedWith(any(), any())
             .thenReturn(true)
+
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getUnreadMessageCount)
+            .whenInvokedWith(any())
+            .thenReturn(10)
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             val firstItem = awaitItem()
