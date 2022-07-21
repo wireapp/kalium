@@ -12,6 +12,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -23,9 +24,9 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
 /**
  * Observes the MLS key package count and uploads new key packages when necessary.
  */
-interface KeyPackageManager
+internal interface KeyPackageManager
 
-class KeyPackageManagerImpl(
+internal class KeyPackageManagerImpl(
     private val syncRepository: SyncRepository,
     private val keyPackageRepository: Lazy<KeyPackageRepository>,
     private val refillKeyPackagesUseCase: Lazy<RefillKeyPackagesUseCase>,
@@ -44,7 +45,8 @@ class KeyPackageManagerImpl(
 
     init {
         refillKeyPackageJob = refillKeyPackagesScope.launch {
-            syncRepository.syncState.cancellable().collect { syncState ->
+            syncRepository.syncStateState.collect { syncState ->
+                ensureActive()
                 if (syncState == SyncState.Live) {
                     refillKeyPackagesIfNeeded()
                 }

@@ -4,9 +4,11 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -16,8 +18,11 @@ import com.wire.kalium.network.api.notification.WebSocketEvent
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.takeWhile
 
 /**
  * Responsible for fetching events from a remote source, orchestrating between events missed since
@@ -32,6 +37,8 @@ internal interface EventGatherer {
      * - Emits missed events
      * - Updates status to Online
      * - Emits Websocket events as they come, omitting duplications.
+     *
+     * Will follow
      */
     suspend fun gatherEvents(): Flow<Event>
 }
@@ -50,9 +57,19 @@ internal class EventGathererImpl(
         }.flatMap {
             eventRepository.liveEvents()
         }.onSuccess { webSocketEventFlow ->
-            webSocketEventFlow.collect { webSocketEvent ->
-                handleWebsocketEvent(webSocketEvent)
-            }
+            webSocketEventFlow.combine(syncRepository.connectionPolicyState)
+                .takeWhile { (webSocketEvent, policy) ->
+                    val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
+                    val isOpenEvent = webSocketEvent is WebSocketEvent.Open
+                    // Handle all events if KEEP_ALIVE, or only handle WebSocketEvent.Open
+                    isKeepAlivePolicy || isOpenEvent
+                }
+                .map { it.first }
+                // Prevent repetition of events, in case the policy changed
+                .distinctUntilChanged()
+                .collect {
+                    handleWebsocketEvent(it)
+                }
         }.onFailure {
             // throw so it is handled by coroutineExceptionHandler
             throw KaliumSyncException("Failure when gathering events", it)
