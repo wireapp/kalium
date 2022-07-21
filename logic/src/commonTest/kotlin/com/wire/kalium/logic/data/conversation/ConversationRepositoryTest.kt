@@ -691,7 +691,7 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getUnreadMessageCount)
                 .whenInvokedWith(any())
-                .thenReturn(10)
+                .thenReturn(10L)
 
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -815,7 +815,7 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getUnreadMessageCount)
                 .whenInvokedWith(any())
-                .thenReturn(10)
+                .thenReturn(10L)
 
             given(userRepository)
                 .coroutine { userRepository.observeSelfUser() }
