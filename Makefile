@@ -8,7 +8,8 @@ all: install-rust prepare-native cryptobox-c libsodium cryptobox4j copy-all-libs
 
 .PHONY: install-rust
 install-rust:
-	brew install rust
+	@curl https://sh.rustup.rs -sSf | sh -s -- -y
+	@source "${HOME}/.cargo/env"
 
 .PHONY: clean-native
 clean-native:
