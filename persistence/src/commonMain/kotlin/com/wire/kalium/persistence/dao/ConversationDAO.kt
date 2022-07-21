@@ -80,4 +80,10 @@ interface ConversationDAO {
     )
 
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
+
+    suspend fun updateAccess(
+        conversationID: QualifiedIDEntity,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>?
+    )
 }

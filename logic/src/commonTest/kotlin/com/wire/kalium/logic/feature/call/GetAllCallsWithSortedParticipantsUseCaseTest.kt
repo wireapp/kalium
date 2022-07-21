@@ -52,7 +52,9 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
         val callsFlow = flowOf(calls1, calls2)
         given(syncManager).invocation { startSyncIfIdle() }
             .thenReturn(Unit)
-        given(callRepository).invocation { callsFlow() }
+        given(callRepository)
+            .suspendFunction(callRepository::callsFlow)
+            .whenInvoked()
             .then { callsFlow }
 
         val result = getAllCallsWithSortedParticipantsUseCase()

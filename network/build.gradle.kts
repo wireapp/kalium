@@ -62,6 +62,7 @@ kotlin {
 
                 // Okio
                 implementation(Dependencies.Okio.core)
+                implementation(Dependencies.Test.okio)
             }
         }
         val commonTest by getting {

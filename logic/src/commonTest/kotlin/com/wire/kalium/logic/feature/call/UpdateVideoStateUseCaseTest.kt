@@ -58,7 +58,7 @@ class UpdateVideoStateUseCaseTest {
             .thenDoNothing()
 
         given(callRepository)
-            .function(callRepository::callsFlow)
+            .suspendFunction(callRepository::callsFlow)
             .whenInvoked().then {
                 flowOf(listOf(establishedCall))
             }
@@ -95,7 +95,7 @@ class UpdateVideoStateUseCaseTest {
         )
 
         given(callRepository)
-            .function(callRepository::callsFlow)
+            .suspendFunction(callRepository::callsFlow)
             .whenInvoked().then {
                 flowOf(listOf(startedCall))
             }
@@ -131,7 +131,7 @@ class UpdateVideoStateUseCaseTest {
             null
         )
         given(callRepository)
-            .function(callRepository::callsFlow)
+            .suspendFunction(callRepository::callsFlow)
             .whenInvoked().then {
                 flowOf(listOf(randomCall))
             }

@@ -3,6 +3,9 @@ package com.wire.kalium.logic
 import android.content.Context
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
+import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.asset.AssetsStorageFolder
+import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -63,6 +66,9 @@ actual class CoreLogic(
         return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
+            val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
+            val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
+            val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
             val networkContainer = AuthenticatedNetworkContainer(
                 SessionManagerImpl(sessionRepository, userId),
                 ServerMetaDataManagerImpl(getGlobalScope().serverConfigRepository)
@@ -98,6 +104,7 @@ actual class CoreLogic(
                 sessionRepository,
                 globalCallManager,
                 globalPreferences.value,
+                dataStoragePaths,
                 kaliumConfigs
             ).also {
                 userSessionScopeProvider.add(userId, it)
