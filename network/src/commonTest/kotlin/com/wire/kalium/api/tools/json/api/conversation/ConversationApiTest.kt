@@ -149,7 +149,7 @@ class ConversationApiTest : ApiTest {
     }
 
     @Test
-    fun givenResponseWithNullAccessRoll_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
+    fun givenResponseWithNullAccessRole_whenUpdatingAccessRole_thenAccessUpdateEventIsPropagated() = runTest {
         val accessRoles = ConversationAccessInfoDTO(
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
         )
