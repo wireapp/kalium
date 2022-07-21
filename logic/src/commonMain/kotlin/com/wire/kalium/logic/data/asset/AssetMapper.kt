@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.cryptography.utils.calcMd5
+import com.wire.kalium.cryptography.utils.calcFileMd5
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
@@ -19,13 +19,14 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
 import kotlinx.datetime.Clock
+import okio.Path
 import pbandk.ByteArr
 
 interface AssetMapper {
-    fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest
+    fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
-    fun fromUserAssetToDaoModel(assetId: AssetId, data: ByteArray): AssetEntity
+    fun fromUserAssetToDaoModel(assetId: AssetId, mimeType: AssetType, dataPath: Path, dataSize: Long): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
@@ -36,12 +37,13 @@ interface AssetMapper {
 class AssetMapperImpl(
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper()
 ) : AssetMapper {
-    override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData): AssetMetadataRequest {
+    override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest {
+        val dataSource = kaliumFileSystem.source(uploadAssetMetadata.tempEncryptedDataPath)
         return AssetMetadataRequest(
-            uploadAssetMetadata.mimeType.name,
+            uploadAssetMetadata.assetType.mimeType,
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
-            calcMd5(uploadAssetMetadata.data)
+            calcFileMd5(dataSource) ?: ""
         )
     }
 
@@ -52,18 +54,20 @@ class AssetMapperImpl(
         return AssetEntity(
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,
-            mimeType = uploadAssetData.mimeType.name,
-            rawData = uploadAssetData.data,
+            mimeType = uploadAssetData.assetType.mimeType,
+            dataPath = uploadAssetData.tempEncryptedDataPath.toString(),
+            dataSize = uploadAssetData.dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }
 
-    override fun fromUserAssetToDaoModel(assetId: AssetId, data: ByteArray): AssetEntity {
+    override fun fromUserAssetToDaoModel(assetId: AssetId, assetType: AssetType, dataPath: Path, dataSize: Long): AssetEntity {
         return AssetEntity(
             key = assetId.value,
             domain = assetId.domain,
-            mimeType = ImageAsset.JPEG.name,
-            rawData = data,
+            mimeType = assetType.mimeType,
+            dataPath = dataPath.toString(),
+            dataSize = dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }

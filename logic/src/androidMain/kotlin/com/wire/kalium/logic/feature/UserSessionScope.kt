@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature
 import android.content.Context
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -21,8 +22,17 @@ actual class UserSessionScope(
     sessionRepository: SessionRepository,
     globalCallManager: GlobalCallManager,
     globalPreferences: KaliumPreferences,
+    dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs
-) : UserSessionScopeCommon(userId, authenticatedDataSourceSet, sessionRepository, globalCallManager, globalPreferences, kaliumConfigs) {
+) : UserSessionScopeCommon(
+    userId,
+    authenticatedDataSourceSet,
+    sessionRepository,
+    globalCallManager,
+    globalPreferences,
+    dataStoragePaths,
+    kaliumConfigs
+) {
 
     override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
 }
