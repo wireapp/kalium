@@ -1,8 +1,12 @@
 package com.wire.kalium.logic.feature.asset
 
+import com.wire.kalium.cryptography.utils.AES256Key
+
 internal class DownloadAssetMessageMetadata(
+    val assetName: String,
+    val assetSize: Long,
     val assetKey: String,
-    val assetDomain: String?,
+    val assetKeyDomain: String?,
     val assetToken: String?,
-    val assetEncryptionKey: ByteArray
+    val encryptionKey: AES256Key
 )

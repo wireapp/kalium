@@ -235,4 +235,12 @@ class ConversationDAOImpl(
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
     }
+
+    override suspend fun updateAccess(
+        conversationID: QualifiedIDEntity,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>?
+    ) {
+        conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
+    }
 }

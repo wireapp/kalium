@@ -22,6 +22,8 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
+    fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
+    fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -36,7 +38,9 @@ internal class ConversationMapperImpl(
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
-        apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?
+        apiModel: ConversationResponse,
+        mlsGroupState: GroupState?,
+        selfUserTeamId: TeamId?
     ): ConversationEntity = ConversationEntity(
         id = idMapper.fromApiToDao(apiModel.id),
         name = apiModel.name,
@@ -68,6 +72,24 @@ internal class ConversationMapperImpl(
         access = daoModel.access.map { it.toDomain() },
         accessRole = daoModel.accessRole?.map { it.toDomain() }
     )
+
+    override fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
+        when (it) {
+            ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
+            ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
+            ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
+            ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
+        }
+    }
+
+    override fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole> = accessRoleList.map {
+        when (it) {
+            ConversationAccessRoleDTO.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
+            ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
+            ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
+            ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
+        }
+    }
 
     override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
         CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {

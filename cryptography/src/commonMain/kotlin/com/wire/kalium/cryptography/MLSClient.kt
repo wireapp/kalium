@@ -33,6 +33,28 @@ interface MLSClient {
     fun generateKeyPackages(amount: Int): List<ByteArray>
 
     /**
+     * Update your keying material for an existing conversation you're a member of.
+     *
+     * @param groupId MLS group ID for an existing conversation
+     *
+     * @return commit message and a welcome message if an add proposal was pending.
+     */
+    fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?>
+
+    /**
+     * Request to join an existing conversation
+     *
+     * @param groupId MLS group ID for an existing conversation
+     * @param epoch current epoch for the conversation
+     *
+     * @return proposal for being added to the conversation
+     */
+    fun joinConversation(
+        groupId: MLSGroupId,
+        epoch: ULong
+    ): HandshakeMessage
+
+    /**
      * Query if a conversation exists
      *
      * @param groupId MLS group ID provided by BE
