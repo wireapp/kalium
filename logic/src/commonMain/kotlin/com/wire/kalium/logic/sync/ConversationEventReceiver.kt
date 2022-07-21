@@ -9,7 +9,6 @@ import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -137,7 +136,7 @@ class ConversationEventReceiverImpl(
             }
     }
 
-    private fun getReadableMessageContent(
+    private suspend fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
         event: Event.Conversation.NewMessage
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
