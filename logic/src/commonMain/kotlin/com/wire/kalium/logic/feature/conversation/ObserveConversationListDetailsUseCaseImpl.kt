@@ -24,7 +24,22 @@ internal class ObserveConversationListDetailsUseCaseImpl(
     override suspend operator fun invoke(): Flow<List<ConversationDetails>> {
         syncManager.startSyncIfIdle()
 
-        val conversationsFlow = conversationRepository.observeConversationList().map { conversations ->
+        return combine(observeLatestConversationDetails(), callRepository.ongoingCallsFlow()) { conversations, calls ->
+            conversations.map {
+                when (it) {
+                    is ConversationDetails.Self,
+                    is ConversationDetails.Connection,
+                    is ConversationDetails.OneOne -> it
+                    is ConversationDetails.Group -> it.copy(
+                        hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId })
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun observeLatestConversationDetails(): Flow<List<ConversationDetails>> {
+        return conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
                 flow {
                     emit(null)
@@ -34,19 +49,13 @@ internal class ObserveConversationListDetailsUseCaseImpl(
         }.flatMapLatest { flowsOfDetails ->
             combine(flowsOfDetails) { latestValues -> latestValues.asList().mapNotNull { it } }
         }
-
-        return combine(conversationsFlow, callRepository.ongoingCallsFlow()) { conversations, calls ->
-            conversations.map {
-                when (it) {
-                    is ConversationDetails.Self,
-                    is ConversationDetails.Connection,
-                    is ConversationDetails.OneOne -> it
-
-                    is ConversationDetails.Group -> it.copy(
-                        hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId })
-                    )
-                }
-            }
-        }
     }
 }
+
+data class ConversationListDetails(
+    val conversationList: List<ConversationDetails>,
+    val unreadConversationsCount: Int,
+    //TODO: Not implemented yet, therefore passing 0
+    val missedCallsCount: Int = 0,
+    val mentionsCount: Int = 0
+)

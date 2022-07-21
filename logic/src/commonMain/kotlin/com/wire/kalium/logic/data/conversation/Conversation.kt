@@ -67,14 +67,14 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
-        val unreadMessagesCount: Int,
+        val unreadMessagesCount: Long,
     ) : ConversationDetails(conversation)
 
     data class Group(
         override val conversation: Conversation,
         val legalHoldStatus: LegalHoldStatus,
         val hasOngoingCall: Boolean = false,
-        val unreadMessagesCount: Int,
+        val unreadMessagesCount: Long,
     ) : ConversationDetails(conversation)
 
     data class Connection(

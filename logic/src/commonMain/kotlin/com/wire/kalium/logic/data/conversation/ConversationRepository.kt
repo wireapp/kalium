@@ -82,6 +82,7 @@ interface ConversationRepository {
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationSeenDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
+    suspend fun getUnreadConversationCount(): Either<StorageFailure, Int>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -201,7 +202,7 @@ class ConversationDataSource(
         )
     }
 
-    private suspend fun getUnreadMessageCount(conversation: Conversation): Int {
+    private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
         return if (conversation.supportsUnreadMessageCount() && conversation.hasNewMessages()) {
             conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
@@ -230,7 +231,7 @@ class ConversationDataSource(
 
     private suspend fun getOneToOneConversationDetailsFlow(
         conversation: Conversation,
-        unreadMessageCount: Int
+        unreadMessageCount: Long
     ): Flow<ConversationDetails> {
         val selfUser = userRepository.observeSelfUser().first()
 
@@ -377,6 +378,10 @@ class ConversationDataSource(
      */
     override suspend fun updateConversationSeenDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationSeenDate(idMapper.toDaoModel(qualifiedID), date) }
+
+    override suspend fun getUnreadConversationCount(): Either<StorageFailure, Int> {
+        wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
+    }
 
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

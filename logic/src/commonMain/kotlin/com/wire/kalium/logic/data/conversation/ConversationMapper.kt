@@ -30,7 +30,7 @@ interface ConversationMapper {
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
-        unreadMessageCount: Int
+        unreadMessageCount: Long
     ): ConversationDetails.OneOne
 }
 
@@ -95,7 +95,7 @@ internal class ConversationMapperImpl(
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
-        unreadMessageCount: Int,
+        unreadMessageCount: Long,
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,

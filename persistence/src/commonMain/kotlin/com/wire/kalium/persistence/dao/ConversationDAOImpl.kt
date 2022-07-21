@@ -237,9 +237,11 @@ class ConversationDAOImpl(
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getUnreadMessageCount(qualifiedID: QualifiedIDEntity): Int {
-        return 0
-    }
+    override suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long =
+        conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
+
+    override suspend fun getUnreadConversationCount(): Long =
+        conversationQueries.getUnreadConversationCount()
 
     override suspend fun updateConversationSeenDate(conversationID: QualifiedIDEntity, date: String) {
         conversationQueries.updateConversationSeenDate(date, conversationID)
