@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.event
 
-§import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
