@@ -166,7 +166,6 @@ class ConversationDAOImpl(
             .executeAsList()
             .map(conversationMapper::toModel)
 
-
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) {
         conversationQueries.deleteConversation(qualifiedID)
     }
