@@ -11,23 +11,15 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
-import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.http.HttpMethod
 import io.ktor.websocket.Frame
-import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 
 class NotificationApiImpl internal constructor(
@@ -53,7 +45,7 @@ class NotificationApiImpl internal constructor(
     ): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
-    //TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
+    // TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
