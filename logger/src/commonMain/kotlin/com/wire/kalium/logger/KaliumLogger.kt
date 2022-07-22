@@ -75,32 +75,32 @@ class KaliumLogger(config: Config, vararg logWriters: LogWriter = arrayOf()) {
     @Suppress("unused")
     fun v(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.v(message, throwable)
-        } ?: kermitLogger.v(message)
+            kermitLogger.v(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.v(obfuscateLogMessage(message))
 
     @Suppress("unused")
     fun d(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.d(message, throwable)
-        } ?: kermitLogger.d(message)
+            kermitLogger.d(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.d(obfuscateLogMessage(message))
 
     @Suppress("unused")
     fun i(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.i(message, throwable)
-        } ?: kermitLogger.i(message)
+            kermitLogger.i(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.i(obfuscateLogMessage(message))
 
     @Suppress("unused")
     fun w(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.w(message, throwable)
-        } ?: kermitLogger.w(message)
+            kermitLogger.w(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.w(obfuscateLogMessage(message))
 
     @Suppress("unused")
     fun e(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.e(message, throwable)
-        } ?: kermitLogger.e(message)
+            kermitLogger.e(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.e(obfuscateLogMessage(message))
 
     class Config(
         val severity: KaliumLogLevel,

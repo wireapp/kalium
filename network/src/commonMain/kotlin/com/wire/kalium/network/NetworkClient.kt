@@ -100,7 +100,6 @@ internal class KaliumHttpLogger : Logger {
     }
 }
 
-@Suppress("MagicNumber")
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     installCompression: Boolean = true,
