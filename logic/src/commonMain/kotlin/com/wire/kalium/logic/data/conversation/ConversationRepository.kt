@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -15,6 +16,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
@@ -31,6 +33,8 @@ import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
@@ -58,6 +62,7 @@ interface ConversationRepository {
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
+    suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
 
     /**
      * Fetches a list of all members' IDs or a given conversation including self user
@@ -81,6 +86,7 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
+    suspend fun getConversationsByGroupState(groupState: com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState): Either<StorageFailure, List<Conversation>>
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
@@ -116,7 +122,18 @@ class ConversationDataSource(
     // But the Repository is too smart, does it by itself, and doesn't let the UseCase handle this.
     override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> {
         val selfUserTeamId = userRepository.observeSelfUser().first().teamId
-        return persistConversations(listOf(event.conversation), selfUserTeamId?.value)
+        return persistConversations(listOf(event.conversation), selfUserTeamId?.value, originatedFromEvent = true)
+    }
+
+    override suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
+        return if (conversation.protocol is com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS) {
+            mlsConversationRepository.requestToJoinGroup(
+                conversation.protocol.groupId,
+                conversation.protocol.epoch
+            )
+        } else {
+            Either.Right(Unit)
+        }
     }
 
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, Unit> {
@@ -155,10 +172,10 @@ class ConversationDataSource(
         return latestResult
     }
 
-    private suspend fun persistConversations(conversations: List<ConversationResponse>, selfUserTeamId: String?) = wrapStorageRequest {
+    private suspend fun persistConversations(conversations: List<ConversationResponse>, selfUserTeamId: String?, originatedFromEvent: Boolean = false) = wrapStorageRequest {
         val conversationEntities = conversations.map { conversationResponse ->
             conversationMapper.fromApiModelToDaoModel(conversationResponse,
-                mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it) },
+                mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it, originatedFromEvent) },
                 selfUserTeamId?.let { TeamId(it) })
         }
         conversationDAO.insertConversations(conversationEntities)
@@ -169,11 +186,19 @@ class ConversationDataSource(
         }
     }
 
-    private suspend fun mlsGroupState(groupId: String): ConversationEntity.GroupState =
+    private suspend fun mlsGroupState(groupId: String, originatedFromEvent: Boolean = false): ConversationEntity.GroupState =
         mlsConversationRepository.hasEstablishedMLSGroup(groupId).fold({
             throw IllegalStateException(it.toString()) // TODO find a more fitting exception?
         }, { exists ->
-            if (exists) ConversationEntity.GroupState.ESTABLISHED else ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+            if (exists) {
+                ConversationEntity.GroupState.ESTABLISHED
+            } else {
+                if (originatedFromEvent) {
+                    ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+                } else {
+                    ConversationEntity.GroupState.PENDING_JOIN
+                }
+            }
         })
 
     override suspend fun getSelfConversationId(): ConversationId = idMapper.fromDaoModel(conversationDAO.getSelfConversationId())
@@ -316,7 +341,7 @@ class ConversationDataSource(
         }.flatMap { conversationResponse ->
             val teamId = selfUser.teamId
             val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-                conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING, teamId
+                conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, teamId
             )
             val conversation = conversationMapper.fromDaoModel(conversationEntity)
 
@@ -342,6 +367,9 @@ class ConversationDataSource(
 
     override suspend fun getConversationsForNotifications(): Flow<List<Conversation>> =
         conversationDAO.getConversationsForNotifications().filterNotNull().map { it.map(conversationMapper::fromDaoModel) }
+
+    override suspend fun getConversationsByGroupState(groupState: com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState): Either<StorageFailure, List<Conversation>> =
+        wrapStorageRequest { conversationDAO.getConversationsByGroupState(conversationMapper.toDAOGroupState(groupState)).map(conversationMapper::fromDaoModel) }
 
     override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationNotificationDate(idMapper.toDaoModel(qualifiedID), date) }

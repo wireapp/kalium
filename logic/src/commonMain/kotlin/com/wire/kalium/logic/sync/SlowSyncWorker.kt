@@ -25,6 +25,7 @@ class SlowSyncWorker(
                 .flatMap { userSessionScope.connection.syncConnections() }
                 .flatMap { userSessionScope.team.syncSelfTeamUseCase() }
                 .flatMap { userSessionScope.users.syncContacts() }
+                .flatMap { userSessionScope.conversations.joinExistingMLSConversations() }
                 .onSuccess { userSessionScope.syncManager.onSlowSyncComplete() }
                 .onFailure { userSessionScope.syncManager.onSlowSyncFailure(it) }
         } catch (e: Exception) {

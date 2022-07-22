@@ -13,7 +13,8 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
             is ConversationEntity.ProtocolInfo.Proteus -> ProtocolInfo.Proteus
             is ConversationEntity.ProtocolInfo.MLS -> ProtocolInfo.MLS(
                 protocolInfo.groupId,
-                ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name)
+                ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.epoch
             )
         }
 
@@ -22,7 +23,8 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
             is ProtocolInfo.Proteus -> ConversationEntity.ProtocolInfo.Proteus
             is ProtocolInfo.MLS -> ConversationEntity.ProtocolInfo.MLS(
                 protocolInfo.groupId,
-                ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name)
+                ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.epoch
             )
         }
 }

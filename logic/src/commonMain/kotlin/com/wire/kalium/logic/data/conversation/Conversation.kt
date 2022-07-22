@@ -41,8 +41,8 @@ data class Conversation(
 
 sealed class ProtocolInfo {
     object Proteus : ProtocolInfo()
-    data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo() {
-        enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    data class MLS(val groupId: String, val groupState: GroupState, val epoch: ULong) : ProtocolInfo() {
+        enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
     }
 }
 

@@ -24,6 +24,7 @@ interface ConversationMapper {
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
+    fun toDAOGroupState(groupState: com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState): GroupState
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -91,6 +92,14 @@ internal class ConversationMapperImpl(
         }
     }
 
+    override fun toDAOGroupState(groupState: com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState): GroupState =
+        when (groupState) {
+            com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
+            com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
+            com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
+            com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
+        }
+
     override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
         CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
@@ -142,7 +151,7 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING)
+            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING_JOIN, epoch ?: 0UL)
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }
