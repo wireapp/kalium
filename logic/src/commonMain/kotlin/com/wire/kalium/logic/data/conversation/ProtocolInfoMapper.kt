@@ -28,5 +28,3 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
             )
         }
 }
-
-

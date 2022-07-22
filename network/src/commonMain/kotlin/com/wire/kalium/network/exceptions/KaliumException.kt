@@ -57,8 +57,6 @@ data class ProteusClientsChangedError(
     val errorBody: QualifiedSendMessageResponse.MissingDevicesResponse
 ) : KaliumException.FeatureError()
 
-
-
 fun KaliumException.InvalidRequestError.isInvalidCredentials(): Boolean {
     return errorResponse.label == INVALID_CREDENTIALS
 }

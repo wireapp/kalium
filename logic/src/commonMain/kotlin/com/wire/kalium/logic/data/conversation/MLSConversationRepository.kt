@@ -95,7 +95,7 @@ class MLSConversationDataSource(
     }
 
     override suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        //TODO: check for federated and non-federated members
+        // TODO: check for federated and non-federated members
         keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
             mlsClientProvider.getMLSClient().flatMap { client ->
                 val clientKeyPackageList = keyPackages

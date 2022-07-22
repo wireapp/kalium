@@ -19,8 +19,7 @@ import com.wire.kalium.network.exceptions.isMlsStaleMessage
  */
 class JoinExistingMLSConversationsUseCase(
     val conversationRepository: ConversationRepository
-    ) {
-
+) {
     suspend operator fun invoke(): Either<CoreFailure, Unit> =
         conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
             kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
@@ -50,5 +49,4 @@ class JoinExistingMLSConversationsUseCase(
                     }
                 }
             }
-
 }
