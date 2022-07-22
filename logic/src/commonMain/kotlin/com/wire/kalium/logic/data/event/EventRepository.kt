@@ -114,7 +114,8 @@ class EventDataSource(
     }
 
     private suspend fun getNextPendingEventsPage(
-        lastFetchedNotificationId: String?, clientId: ClientId
+        lastFetchedNotificationId: String?,
+        clientId: ClientId
     ): NetworkResponse<NotificationResponse> = lastFetchedNotificationId?.let {
         notificationApi.notificationsByBatch(NOTIFICATIONS_QUERY_SIZE, clientId.value, it)
     } ?: notificationApi.getAllNotifications(NOTIFICATIONS_QUERY_SIZE, clientId.value)
