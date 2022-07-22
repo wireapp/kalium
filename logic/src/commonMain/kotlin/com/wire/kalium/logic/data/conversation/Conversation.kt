@@ -37,12 +37,12 @@ data class Conversation(
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE }
     enum class Access { PRIVATE, INVITE, LINK, CODE }
-}
 
-sealed class ProtocolInfo {
-    object Proteus : ProtocolInfo()
-    data class MLS(val groupId: String, val groupState: GroupState, val epoch: ULong) : ProtocolInfo() {
-        enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    sealed class ProtocolInfo {
+        object Proteus : ProtocolInfo()
+        data class MLS(val groupId: String, val groupState: GroupState, val epoch: ULong) : ProtocolInfo() {
+            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+        }
     }
 }
 
@@ -70,7 +70,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val userType: UserType,
         val lastModifiedDate: String,
         val connection: com.wire.kalium.logic.data.user.Connection,
-        val protocolInfo: ProtocolInfo,
+        val protocolInfo: Conversation.ProtocolInfo,
         val access: List<Conversation.Access>,
         val accessRole: List<Conversation.AccessRole>
     ) : ConversationDetails(

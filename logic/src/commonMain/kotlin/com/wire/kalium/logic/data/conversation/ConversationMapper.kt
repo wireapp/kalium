@@ -24,7 +24,7 @@ interface ConversationMapper {
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
-    fun toDAOGroupState(groupState: com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState): GroupState
+    fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -92,16 +92,17 @@ internal class ConversationMapperImpl(
         }
     }
 
-    override fun toDAOGroupState(groupState: com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState): GroupState =
+    override fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState =
         when (groupState) {
-            com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
-            com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
-            com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
-            com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
+            Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
+            Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
+            Conversation.ProtocolInfo.MLS.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
+            Conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
         }
 
     override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
-        CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+        CreateConversationRequest(
+            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
         } else emptyList(),
             name = name,

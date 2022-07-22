@@ -83,7 +83,7 @@ interface ConversationRepository {
 
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
     suspend fun getConversationsByGroupState(
-        groupState: com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState
+        groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>>
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
@@ -124,7 +124,7 @@ class ConversationDataSource(
     }
 
     override suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS) {
+        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
             mlsConversationRepository.requestToJoinGroup(
                 conversation.protocol.groupId,
                 conversation.protocol.epoch
@@ -374,12 +374,11 @@ class ConversationDataSource(
         conversationDAO.getConversationsForNotifications().filterNotNull().map { it.map(conversationMapper::fromDaoModel) }
 
     override suspend fun getConversationsByGroupState(
-        groupState: com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS.GroupState
+        groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>> =
         wrapStorageRequest {
-            conversationDAO.getConversationsByGroupState(
-                conversationMapper.toDAOGroupState(groupState)
-            ).map(conversationMapper::fromDaoModel)
+            conversationDAO.getConversationsByGroupState(conversationMapper.toDAOGroupState(groupState))
+                .map(conversationMapper::fromDaoModel)
         }
 
     override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
