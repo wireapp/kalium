@@ -845,6 +845,23 @@ class ConversationRepositoryTest {
             }
         }
 
+    @Test
+    fun givenUserHasUnReadConversation_whenGettingUnReadConversationCount_ThenCorrectlyGetTheCount() =
+        runTest {
+            //given
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getUnreadConversationCount)
+                .whenInvoked()
+                .thenReturn(10L)
+
+            // when
+            val result = conversationRepository.getUnreadConversationCount()
+
+            // then
+            assertIs<Either.Right<Long>>(result)
+            assertEquals(10L, result.value)
+        }
+
     companion object {
         const val GROUP_NAME = "Group Name"
 
