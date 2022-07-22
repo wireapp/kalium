@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.pagination.PaginationRequest
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -16,6 +17,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
+import okio.IOException
 
 class ConversationApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ConversationApi {
 
@@ -77,15 +79,18 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     override suspend fun addParticipant(
         addParticipantRequest: AddParticipantRequest,
         conversationId: ConversationId
-    ): NetworkResponse<AddParticipantResponse> {
-        val response = httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
+    ): NetworkResponse<AddParticipantResponse> = try {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
             setBody(addParticipantRequest)
+        }.let { response ->
+            when (response.status) {
+                HttpStatusCode.OK -> wrapKaliumResponse<AddParticipantResponse.UserAdded> { response }
+                HttpStatusCode.NoContent -> wrapKaliumResponse<AddParticipantResponse.ConversationUnchanged> { response }
+                else -> wrapKaliumResponse { response }
+            }
         }
-        return when (response.status) {
-            HttpStatusCode.OK -> wrapKaliumResponse<AddParticipantResponse.UserAdded> { response }
-            HttpStatusCode.NoContent -> wrapKaliumResponse<AddParticipantResponse.ConversationUnchanged> { response }
-            else -> wrapKaliumResponse { response }
-        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
     }
 
     override suspend fun updateConversationMemberState(
@@ -100,9 +105,9 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     override suspend fun updateAccessRole(
         conversationId: ConversationId,
         conversationAccessInfoDTO: ConversationAccessInfoDTO
-    ): NetworkResponse<UpdateConversationAccessResponse> {
-        // TODO(important): not using wrapKaliumResponse here will lead to a crash in case of device offline
-        return httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
+    ): NetworkResponse<UpdateConversationAccessResponse> = try {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS")
+        {
             setBody(conversationAccessInfoDTO)
         }.let { httpResponse ->
             when (httpResponse.status) {
@@ -113,7 +118,10 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
                     }
             }
         }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
     }
+
 
     private companion object {
         const val PATH_CONVERSATIONS = "conversations"
