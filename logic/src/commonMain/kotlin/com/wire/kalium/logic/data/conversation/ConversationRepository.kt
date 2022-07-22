@@ -36,6 +36,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -88,7 +89,7 @@ interface ConversationRepository {
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
         access: List<Conversation.Access>,
-        accessRole: List<Conversation.AccessRole>?
+        accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit>
 }
 
@@ -190,6 +191,7 @@ class ConversationDataSource(
     /**
      * Gets a flow that allows observing of
      */
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID)).wrapStorageRequest().onlyRight()
             .map(conversationMapper::fromDaoModel).flatMapLatest(::getConversationDetailsFlow)
@@ -357,11 +359,11 @@ class ConversationDataSource(
     override suspend fun updateAccessInfo(
         conversationID: ConversationId,
         access: List<Conversation.Access>,
-        accessRole: List<Conversation.AccessRole>?
+        accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit> =
         ConversationAccessInfoDTO(
             access.map { conversationMapper.toApiModel(it) }.toSet(),
-            accessRole?.map { conversationMapper.toApiModel(it) }?.toSet()
+            accessRole.map { conversationMapper.toApiModel(it) }.toSet()
         ).let { updateConversationAccessRequest ->
             wrapApiRequest {
                 conversationApi.updateAccessRole(idMapper.toApiModel(conversationID), updateConversationAccessRequest)
@@ -378,7 +380,7 @@ class ConversationDataSource(
                         conversationDAO.updateAccess(
                             idMapper.fromDtoToDao(response.event.qualifiedConversation),
                             conversationMapper.toDAOAccess(response.event.data.access),
-                            response.event.data.accessRole?.let { conversationMapper.toDAOAccessRole(it) }
+                            response.event.data.accessRole.let { conversationMapper.toDAOAccessRole(it) }
                         )
                     }
                 }

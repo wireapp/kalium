@@ -39,4 +39,20 @@ object EventContentDTOJson {
             )
         ), jsonProvider
     )
+
+    val validNullAccessRole = """
+        |{
+        |  "qualified_conversation" : {
+        |    "id" : "conv_id",
+        |    "domain" : "conv_domain"
+        |  },
+        |  "qualified_from" : {
+        |     "id" : "userId",
+        |     "domain" : "user_domain"
+        |  }, 
+        |  "data" : {
+        |       "access": [code]
+        |  }
+        |}
+        """.trimMargin()
 }

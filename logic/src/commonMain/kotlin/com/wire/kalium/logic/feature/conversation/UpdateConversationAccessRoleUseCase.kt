@@ -20,11 +20,11 @@ class UpdateConversationAccessRoleUseCase internal constructor(
         return conversationRepository.detailsById(conversationId)
             .map { conversation ->
                 // TODO: handle edge case where accessRole is null
-                val newAccessRoles: List<Conversation.AccessRole>? = conversation.accessRole?.toMutableSet()?.apply {
+                val newAccessRoles: List<Conversation.AccessRole> = conversation.accessRole.toMutableSet().apply {
                     handleGuestsState(allowGuest)
                     handleServicesState(allowServices)
                     handleNonTeamMemberState(allowNonTeamMember)
-                }?.toList()
+                }.toList()
 
                 Triple(conversation.id, newAccessRoles, conversation.access)
             }.flatMap { (conversationId, newAccessRole, access) ->
