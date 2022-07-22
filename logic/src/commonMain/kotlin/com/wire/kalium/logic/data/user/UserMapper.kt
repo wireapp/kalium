@@ -61,7 +61,7 @@ internal class UserMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
-    private val userEntityTypeMapper: UserEntityTypeMapper,
+    private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : UserMapper {
 
     override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {

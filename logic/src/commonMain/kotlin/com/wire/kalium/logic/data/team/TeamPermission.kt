@@ -43,32 +43,3 @@ enum class TeamRole(val value: Int) {
     )
 
 }
-
-
-fun main() {
-    val collaborator = TeamPermission.CREATE_CONVERSATION.code +
-            TeamPermission.GET_TEAM_CONVERSATIONS.code
-
-    val member = collaborator +
-            TeamPermission.DELETE_CONVERSATION.code +
-            TeamPermission.ADD_REMOVE_CONV_MEMBER.code +
-            TeamPermission.MODIFY_CONV_METADATA.code +
-            TeamPermission.GET_MEMBER_PERMISSIONS.code
-
-    val admin = member +
-            TeamPermission.ADD_TEAM_MEMBER.code +
-            TeamPermission.REMOVE_TEAM_MEMBER.code +
-            TeamPermission.SET_TEAM_DATA.code +
-            TeamPermission.SET_MEMBER_PERMISSIONS.code
-
-    val owner = admin +
-            TeamPermission.GET_BILLING.code +
-            TeamPermission.SET_BILLING.code +
-            TeamPermission.DELETE_TEAM.code
-
-    println("collaborator $collaborator")
-    println("member $member")
-    println("admin $admin")
-    println("owner $owner")
- //TODO KBX move to tests
-}

@@ -77,18 +77,38 @@ class UserDAOImpl(
     override suspend fun upsertUsers(users: List<UserEntity>) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                userQueries.updateUser(
-                    user.name,
-                    user.handle,
-                    user.email,
-                    user.phone,
-                    user.accentId,
-                    user.team,
-                    user.previewAssetId,
-                    user.completeAssetId,
-                    user.userTypeEntity,
-                    user.id,
-                )
+                /**
+                 * We have only access to [UserTypeEntity] from our team
+                 * by fetching team members
+                 * So we need to avoid updating that field
+                 * when team member is fetched from different endpoint
+                 */
+                if (user.userTypeEntity == UserTypeEntity.INTERNAL) {
+                    userQueries.updateUserWithoutType(
+                        user.name,
+                        user.handle,
+                        user.email,
+                        user.phone,
+                        user.accentId,
+                        user.team,
+                        user.previewAssetId,
+                        user.completeAssetId,
+                        user.id,
+                    )
+                } else {
+                    userQueries.updateUser(
+                        user.name,
+                        user.handle,
+                        user.email,
+                        user.phone,
+                        user.accentId,
+                        user.team,
+                        user.previewAssetId,
+                        user.completeAssetId,
+                        user.userTypeEntity,
+                        user.id,
+                    )
+                }
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
                     userQueries.insertUser(
@@ -157,7 +177,7 @@ class UserDAOImpl(
         userQueries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
-    override suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity) : List<UserEntity> =
+    override suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity): List<UserEntity> =
         userQueries.getUsersNotPartOfTheConversation(conversationId)
             .executeAsList()
             .map(mapper::toModel)

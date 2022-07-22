@@ -88,6 +88,7 @@ internal class ConversationMapperImpl(
             ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
             ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
             ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
+            ConversationAccessRoleDTO.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
         }
     }
 

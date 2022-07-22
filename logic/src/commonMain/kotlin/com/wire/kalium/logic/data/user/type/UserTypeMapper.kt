@@ -92,12 +92,12 @@ interface UserTypeMapper<T> {
 
     private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 
-    // TODO KBX write tests for it
     fun teamRoleCodeToUserType(permissionCode: Int?): T = when(permissionCode) {
         TeamRole.ExternalPartner.value -> external
         TeamRole.Member.value -> internal
         TeamRole.Admin.value -> admin
         TeamRole.Owner.value -> owner
+        null -> internal
         else -> guest
     }
 

@@ -302,7 +302,7 @@ class SearchUserRepositoryTest {
 
             given(domainUserTypeMapper)
                 .function(domainUserTypeMapper::fromTeamDomainAndPermission)
-                .whenInvokedWith(any(), any(), any(), any())
+                .whenInvokedWith(any(), any(), any(), any(), any())
                 .then { _, _, _, _, _ -> UserType.FEDERATED }
 
             val expectedResult = UserSearchResult(

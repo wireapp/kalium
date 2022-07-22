@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -8,18 +9,74 @@ import kotlin.test.assertEquals
 
 class UserEntityTypeMapperTest {
 
-    private val userTypeMapper : UserEntityTypeMapper = UserEntityTypeMapperImpl()
+    private val userTypeMapper: UserEntityTypeMapper = UserEntityTypeMapperImpl()
 
-    // TODO KBX write tests for permissions
     @Test
-    fun givenDomainAndTeamAreEqual_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
+    fun givenDomainAndTeamAreEqualAndPermissionCodeIsNull_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsNone() {
         //when
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
             "someTeamId",
             "someTeamId",
-            "someDomain"
-            )
+            "someDomain",
+            null
+        )
+        //then
+        assertEquals(UserTypeEntity.NONE, result)
+    }
+
+    @Test
+    fun givenTeamMemberWithAdminPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsAdmin() {
+        //when
+        val result = userTypeMapper.fromTeamDomainAndPermission(
+            "someDomain",
+            "someTeamId",
+            "someTeamId",
+            "someDomain",
+            TeamRole.Admin.value,
+        )
+        //then
+        assertEquals(UserTypeEntity.ADMIN, result)
+    }
+
+    @Test
+    fun givenTeamMemberWithOwnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsOwner() {
+        //when
+        val result = userTypeMapper.fromTeamDomainAndPermission(
+            "someDomain",
+            "someTeamId",
+            "someTeamId",
+            "someDomain",
+            TeamRole.Owner.value
+        )
+        //then
+        assertEquals(UserTypeEntity.OWNER, result)
+    }
+
+    @Test
+    fun givenTeamMemberWithExternalPartnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsExternal() {
+        //when
+        val result = userTypeMapper.fromTeamDomainAndPermission(
+            "someDomain",
+            "someTeamId",
+            "someTeamId",
+            "someDomain",
+            TeamRole.ExternalPartner.value
+        )
+        //then
+        assertEquals(UserTypeEntity.EXTERNAL, result)
+    }
+
+    @Test
+    fun givenTeamMemberWithMemberPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
+        //when
+        val result = userTypeMapper.fromTeamDomainAndPermission(
+            "someDomain",
+            "someTeamId",
+            "someTeamId",
+            "someDomain",
+            TeamRole.Member.value
+        )
         //then
         assertEquals(UserTypeEntity.INTERNAL, result)
     }
@@ -31,8 +88,9 @@ class UserEntityTypeMapperTest {
             "domainB",
             "teamA",
             "teamB",
-            "domainA"
-            )
+            "domainA",
+            null
+        )
         //then
         assertEquals(UserTypeEntity.FEDERATED, result)
     }
@@ -44,8 +102,9 @@ class UserEntityTypeMapperTest {
             "testDomain",
             "teamA",
             "teamB",
-            "testDomain"
-            )
+            "testDomain",
+            null
+        )
         //then
         assertEquals(UserTypeEntity.GUEST, result)
     }

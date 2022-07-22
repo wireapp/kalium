@@ -45,6 +45,11 @@ UPDATE User
 SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, user_type = ?
 WHERE qualified_id = ?;
 
+updateUserWithoutType:
+UPDATE User
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?
+WHERE qualified_id = ?;
+
 updateTeamMemberUser:
 UPDATE User
 SET team = ?, connection_status = ?, user_type = ?

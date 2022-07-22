@@ -36,13 +36,16 @@ data class UserEntity(
 )
 
 enum class UserTypeEntity {
+
+    /**Team member with owner permissions */
     OWNER,
 
+    /**Team member with admin permissions */
     ADMIN,
 
-    INTERNAL, // TODO KBX change to member
+    /**Team member */
+    INTERNAL, // TODO Kubaz change to member
 
-    // TODO(user-metadata): for now External will not be implemented
     /**Team member with limited permissions */
     EXTERNAL,
 
@@ -78,16 +81,15 @@ interface UserDAO {
     suspend fun insertUser(user: UserEntity)
 
     /**
-     * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
-     * [ConnectionEntity.State.NOT_CONNECTED]
-     *
+     * This will update all columns, except [ConnectionEntity.State] and [UserTypeEntity] (if user is a team member)
+     * insert a new record with default value [ConnectionEntity.State.NOT_CONNECTED] and [UserTypeEntity.INTERNAL]
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */
     suspend fun upsertUsers(users: List<UserEntity>)
 
     /**
-     * This will update [UserEntity.team] and [UserEntity.connectionStatus] to [ConnectionState.ACCEPTED]
+     * This will update [UserEntity.team] and [UserEntity.connectionStatus] to [ConnectionEntity.State.ACCEPTED]
      * or insert a new record with default values for other columns.
      *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
