@@ -38,11 +38,11 @@ class ProtocolInfoMapperTest {
     }
 
     companion object {
-        val CONVERSATION_MLS_PROTOCOL_INFO = ProtocolInfo.MLS("GROUP_ID", groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED)
+        val CONVERSATION_MLS_PROTOCOL_INFO = ProtocolInfo.MLS("GROUP_ID", groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED, 5UL)
         val CONVERSATION_PROTEUS_PROTOCOL_INFO = ProtocolInfo.Proteus
 
         val CONV_ENTITY_MLS_PROTOCOL_INFO =
-            ConversationEntity.ProtocolInfo.MLS("GROUP_ID", groupState = ConversationEntity.GroupState.ESTABLISHED)
+            ConversationEntity.ProtocolInfo.MLS("GROUP_ID", groupState = ConversationEntity.GroupState.ESTABLISHED, 5UL)
         val CONV_ENTITY_PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
 
     }

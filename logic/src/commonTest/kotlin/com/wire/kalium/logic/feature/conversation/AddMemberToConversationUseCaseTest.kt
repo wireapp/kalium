@@ -135,7 +135,7 @@ class AddMemberToConversationUseCaseTest {
         companion object {
             const val mlsGroupId = "mlsGroupId"
             val proteusProtocolInfo = ProtocolInfo.Proteus
-            val mlsProtocolInfo = ProtocolInfo.MLS(mlsGroupId, groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED)
+            val mlsProtocolInfo = ProtocolInfo.MLS(mlsGroupId, groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED, 0UL)
 
         }
     }

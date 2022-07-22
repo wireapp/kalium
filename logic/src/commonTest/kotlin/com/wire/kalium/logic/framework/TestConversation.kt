@@ -93,6 +93,7 @@ object TestConversation {
         ConversationRepositoryTest.GROUP_NAME,
         NETWORK_ID,
         null,
+        0UL,
         ConversationResponse.Type.GROUP,
         0,
         null,
