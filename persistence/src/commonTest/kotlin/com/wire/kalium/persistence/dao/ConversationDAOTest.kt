@@ -1,10 +1,23 @@
 package com.wire.kalium.persistence.dao
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers.Unconfined
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -298,6 +311,32 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertTrue(actual != null)
         assertEquals(expectedLastSeenDate, actual.lastSeenDate)
     }
+
+    @Test
+    fun givenExistingConversation_whenUpdatingTheConversationSeenDate_thenEmitTheNewConversationStateWithTheUpdatedSeenDate() =
+        runTest {
+            val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z"
+
+            conversationDAO.insertConversation(conversationEntity1)
+
+            launch {
+                conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).test {
+                    val initialConversation = awaitItem()
+
+                    assertTrue(initialConversation != null)
+                    assertTrue(initialConversation.lastSeenDate == null)
+
+                    conversationDAO.updateConversationSeenDate(conversationEntity1.id, expectedConversationSeenDate)
+
+                    val conversationAfterUpdate = awaitItem()
+
+                    assertTrue(conversationAfterUpdate != null)
+                    assertEquals(conversationAfterUpdate.lastSeenDate, expectedConversationSeenDate)
+
+                    cancelAndIgnoreRemainingEvents()
+                }
+            }
+        }
 
     private companion object {
         val user1 = newUserEntity(id = "1")

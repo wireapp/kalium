@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 fun interface ObserveConversationListDetailsUseCase {
-    suspend operator fun invoke(): Flow<List<ConversationDetails>>
+    suspend operator fun invoke(): Flow<ConversationListDetails>
 }
 
 internal class ObserveConversationListDetailsUseCaseImpl(
@@ -21,7 +22,7 @@ internal class ObserveConversationListDetailsUseCaseImpl(
     private val callRepository: CallRepository,
 ) : ObserveConversationListDetailsUseCase {
 
-    override suspend operator fun invoke(): Flow<List<ConversationDetails>> {
+    override suspend operator fun invoke(): Flow<ConversationListDetails> {
         syncManager.startSyncIfIdle()
 
         return combine(observeLatestConversationDetails(), callRepository.ongoingCallsFlow()) { conversations, calls ->
@@ -35,6 +36,12 @@ internal class ObserveConversationListDetailsUseCaseImpl(
                     )
                 }
             }
+        }.map { conversationList ->
+            ConversationListDetails(
+                conversationList = conversationList,
+                //TODO: any better idea what to do on StorageFailure ?
+                unreadConversationsCount = conversationRepository.getUnreadConversationCount().fold({ 0 }, { it })
+            )
         }
     }
 
@@ -54,8 +61,8 @@ internal class ObserveConversationListDetailsUseCaseImpl(
 
 data class ConversationListDetails(
     val conversationList: List<ConversationDetails>,
-    val unreadConversationsCount: Int,
+    val unreadConversationsCount: Long,
     //TODO: Not implemented yet, therefore passing 0
-    val missedCallsCount: Int = 0,
-    val mentionsCount: Int = 0
+    val missedCallsCount: Long = 0L,
+    val mentionsCount: Long = 0L
 )
