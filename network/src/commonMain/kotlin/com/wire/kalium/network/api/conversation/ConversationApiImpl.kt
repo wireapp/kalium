@@ -106,8 +106,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         conversationId: ConversationId,
         conversationAccessInfoDTO: ConversationAccessInfoDTO
     ): NetworkResponse<UpdateConversationAccessResponse> = try {
-        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS")
-        {
+        httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_ACCESS") {
             setBody(conversationAccessInfoDTO)
         }.let { httpResponse ->
             when (httpResponse.status) {
@@ -121,7 +120,6 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
     }
-
 
     private companion object {
         const val PATH_CONVERSATIONS = "conversations"
