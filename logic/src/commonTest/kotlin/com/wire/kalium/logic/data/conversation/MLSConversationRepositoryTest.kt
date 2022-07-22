@@ -102,7 +102,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenAnMLSConversationAndAPISucceeds_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
+    fun givenConversation_whenCallingAddMemberToMLSGroup_thenCommitAndWelcomeMessagesAreSent() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
@@ -130,6 +130,29 @@ class MLSConversationRepositoryTest {
             .suspendFunction(arrangement.conversationDAO::insertMembers, fun2<List<Member>, String>())
             .with(anything(), anything())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenConversation_whenCallingRequestToJoinGroup_ThenGroupStateIsUpdated() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withJoinConversationSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.requestToJoinGroup(Arrangement.GROUP_ID, Arrangement.EPOCH)
+        result.shouldSucceed()
+
+        verify(Arrangement.MLS_CLIENT)
+            .function(Arrangement.MLS_CLIENT::joinConversation)
+            .with(eq(Arrangement.GROUP_ID), eq(Arrangement.EPOCH))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
+            .with(eq(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE), eq(Arrangement.GROUP_ID))
+            .wasInvoked(once)
     }
 
     class Arrangement() {
@@ -201,6 +224,13 @@ class MLSConversationRepositoryTest {
                 .thenReturn(Pair(HANDSHAKE, WELCOME))
         }
 
+        fun withJoinConversationSuccessful() = apply {
+            given(MLS_CLIENT)
+                .function(MLS_CLIENT::joinConversation)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(HANDSHAKE)
+        }
+
         fun withProcessWelcomeMessageSuccessful() = apply {
             given(MLS_CLIENT)
                 .function(MLS_CLIENT::processWelcomeMessage)
@@ -237,6 +267,7 @@ class MLSConversationRepositoryTest {
         )
 
         internal companion object {
+            val EPOCH = 5UL
             val GROUP_ID = "groupId"
             val MEMBERS = listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))
             val KEY_PACKAGE = KeyPackageDTO(

@@ -140,4 +140,17 @@ object TestConversation {
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
+
+    val MLS_CONVERSATION = Conversation(
+        ConversationId("conv_id", "domain"),
+        "MLS Name",
+        Conversation.Type.ONE_ON_ONE,
+        TestTeam.TEAM_ID,
+        ProtocolInfo.MLS("group_id", ProtocolInfo.MLS.GroupState.PENDING_JOIN, 0UL),
+        MutedConversationStatus.AllAllowed,
+        null,
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+    )
 }
