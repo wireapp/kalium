@@ -16,18 +16,13 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.api.notification.WebSocketEvent
 import io.ktor.utils.io.errors.IOException
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.transformWhile
-import kotlinx.coroutines.launch
 
 /**
  * Responsible for fetching events from a remote source, orchestrating between events missed since
@@ -72,20 +67,20 @@ internal class EventGathererImpl(
     private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
         webSocketEventFlow: Flow<WebSocketEvent<Event>>
     ) = webSocketEventFlow.combine(syncRepository.connectionPolicyState)
-            .transformWhile { (webSocketEvent, policy) ->
-                val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
-                val isOpenEvent = webSocketEvent is WebSocketEvent.Open
-                if(isKeepAlivePolicy || isOpenEvent){
-                    // Emit if keeping alive, always emit if is an Open event
-                    emit(webSocketEvent)
-                }
-                // Only continue collecting if the Policy allows it
-                isKeepAlivePolicy
+        .transformWhile { (webSocketEvent, policy) ->
+            val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
+            val isOpenEvent = webSocketEvent is WebSocketEvent.Open
+            if (isKeepAlivePolicy || isOpenEvent) {
+                // Emit if keeping alive, always emit if is an Open event
+                emit(webSocketEvent)
             }
-            // Prevent repetition of events, in case the policy changed
-            .distinctUntilChanged()
-            .cancellable()
-            .collect { handleWebsocketEvent(it) }
+            // Only continue collecting if the Policy allows it
+            isKeepAlivePolicy
+        }
+        // Prevent repetition of events, in case the policy changed
+        .distinctUntilChanged()
+        .cancellable()
+        .collect { handleWebsocketEvent(it) }
 
     private suspend fun FlowCollector<Event>.handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen()

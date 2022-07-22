@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.event
 
-import com.wire.kalium.logic.CoreFailure
+§import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -15,12 +15,9 @@ import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.api.notification.WebSocketEvent
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.event.EventInfoStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
