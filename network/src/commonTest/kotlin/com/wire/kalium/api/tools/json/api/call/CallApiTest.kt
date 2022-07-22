@@ -19,7 +19,7 @@ class CallApiTest : ApiTest {
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
-                assertPathEqual("/$PATH_CALLS/$PATH_CONFIG")
+                assertPathEqual("$PATH_CALLS/$PATH_CONFIG")
             }
         )
 
@@ -36,7 +36,7 @@ class CallApiTest : ApiTest {
                 assertGet()
                 assertQueryExist(QUERY_KEY_LIMIT)
                 assertQueryParameter(QUERY_KEY_LIMIT, hasValue = "7")
-                assertPathEqual("/$PATH_CALLS/$PATH_CONFIG")
+                assertPathEqual("$PATH_CALLS/$PATH_CONFIG")
             }
         )
 
