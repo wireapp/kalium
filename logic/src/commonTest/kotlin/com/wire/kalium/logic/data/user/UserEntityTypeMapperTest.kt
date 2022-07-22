@@ -12,7 +12,7 @@ class UserEntityTypeMapperTest {
     private val userTypeMapper: UserEntityTypeMapper = UserEntityTypeMapperImpl()
 
     @Test
-    fun givenDomainAndTeamAreEqualAndPermissionCodeIsNull_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsNone() {
+    fun givenDomainAndTeamAreEqualAndPermissionCodeIsNull_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
         //when
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
@@ -22,7 +22,7 @@ class UserEntityTypeMapperTest {
             null
         )
         //then
-        assertEquals(UserTypeEntity.NONE, result)
+        assertEquals(UserTypeEntity.INTERNAL, result)
     }
 
     @Test
