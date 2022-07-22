@@ -75,6 +75,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingMLSConversation_ThenConversationCanBeRetrievedByGroupState() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
+        val result =
+            conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.ESTABLISHED)
+        assertEquals(listOf(conversationEntity2), result)
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationGroupState(
@@ -338,7 +347,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation3",
             ConversationEntity.Type.GROUP,
             null,
-            ConversationEntity.ProtocolInfo.MLS("group3", ConversationEntity.GroupState.ESTABLISHED, 0UL),
+            ConversationEntity.ProtocolInfo.MLS("group3", ConversationEntity.GroupState.PENDING_JOIN, 0UL),
             // This conversation was modified after the last time the user was notified about it
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
