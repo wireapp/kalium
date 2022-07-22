@@ -73,7 +73,7 @@ class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = ar
     val severity = config.severity
 
     @Suppress("unused")
-    fun withFlowId(flowId: ApplicationFlow) = kermitLogger.withTag(flowId.name.lowercase())
+    fun withFeatureId(featureId: ApplicationFlow) = kermitLogger.withTag("featureId:${featureId.name.lowercase()}")
 
     @Suppress("unused")
     fun v(message: String, throwable: Throwable? = null) =

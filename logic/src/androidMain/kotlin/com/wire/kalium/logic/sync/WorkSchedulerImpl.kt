@@ -86,18 +86,18 @@ internal actual class UserSessionWorkSchedulerImpl(
     private var slowSyncJob: Job? = null
     private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
     override fun enqueueSlowSyncIfNeeded() {
-        kaliumLogger.withFlowId(SYNC).v("SlowSync: Enqueueing if needed")
+        kaliumLogger.withFeatureId(SYNC).v("SlowSync: Enqueueing if needed")
         scope.launch {
             val isRunning = slowSyncJob?.isActive ?: false
 
-            kaliumLogger.withFlowId(SYNC).v("SlowSync: Job is running = $isRunning")
+            kaliumLogger.withFeatureId(SYNC).v("SlowSync: Job is running = $isRunning")
             if (!isRunning) {
                 slowSyncJob = launch(Dispatchers.Main) {
                     SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
                 }
-                kaliumLogger.withFlowId(SYNC).d("SlowSync Started")
+                kaliumLogger.withFeatureId(SYNC).d("SlowSync Started")
             } else {
-                kaliumLogger.withFlowId(SYNC).d("SlowSync not scheduled as it's already running")
+                kaliumLogger.withFeatureId(SYNC).d("SlowSync not scheduled as it's already running")
             }
         }
     }

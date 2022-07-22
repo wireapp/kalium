@@ -30,23 +30,23 @@ internal actual class UserSessionWorkSchedulerImpl(
     private var slowSyncJob: Job? = null
     private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
     override fun enqueueSlowSyncIfNeeded() {
-        kaliumLogger.withFlowId(SYNC).v("SlowSync: Enqueueing if needed")
+        kaliumLogger.withFeatureId(SYNC).v("SlowSync: Enqueueing if needed")
         scope.launch {
             val isRunning = slowSyncJob?.isActive ?: false
 
-            kaliumLogger.withFlowId(SYNC).v("SlowSync: Job is running = $isRunning")
+            kaliumLogger.withFeatureId(SYNC).v("SlowSync: Job is running = $isRunning")
             if (!isRunning) {
                 slowSyncJob = launch(kaliumDispatcher.default) {
                     SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
                 }
             } else {
-                kaliumLogger.withFlowId(SYNC).d("SlowSync not scheduled as it's already running")
+                kaliumLogger.withFeatureId(SYNC).d("SlowSync not scheduled as it's already running")
             }
         }
     }
 
     override fun scheduleSendingOfPendingMessages() {
-        kaliumLogger.withFlowId(SYNC).w(
+        kaliumLogger.withFeatureId(SYNC).w(
             "Scheduling of messages is not supported on JVM. Pending messages won't be scheduled for sending."
         )
     }

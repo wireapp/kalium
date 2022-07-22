@@ -93,18 +93,18 @@ class NotificationApiImpl internal constructor(
                 emit(WebSocketEvent.Close(it))
             }
             .collect { frame ->
-                kaliumLogger.withFlowId(EVENT_RECEIVER).v("Websocket Received Frame: $frame")
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Websocket Received Frame: $frame")
                 when (frame) {
                     is Frame.Binary -> {
                         // assuming here the byteArray is an ASCII character set
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
-                        kaliumLogger.withFlowId(EVENT_RECEIVER).v("Binary frame content: '$jsonString'")
+                        kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Binary frame content: '$jsonString'")
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
 
                     else -> {
-                        kaliumLogger.withFlowId(EVENT_RECEIVER).v("Websocket frame not handled: $frame")
+                        kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Websocket frame not handled: $frame")
                         emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))
                     }
                 }

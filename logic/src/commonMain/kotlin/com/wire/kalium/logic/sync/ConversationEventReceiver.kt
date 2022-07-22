@@ -200,10 +200,10 @@ class ConversationEventReceiverImpl(
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
                 onSuccess {
-                    kaliumLogger.withFlowId(EVENT_RECEIVER)
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER)
                         .v("Succeeded fetching conversation details on MemberJoin Event: $event")
                 }
-                onFailure { kaliumLogger.withFlowId(EVENT_RECEIVER).w("Failure fetching conversation details on MemberJoin Event: $event") }
+                onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).w("Failure fetching conversation details on MemberJoin Event: $event") }
                 // Even if unable to fetch conversation details, at least attempt adding the member
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {

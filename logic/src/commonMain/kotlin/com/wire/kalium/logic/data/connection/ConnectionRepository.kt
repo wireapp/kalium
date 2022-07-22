@@ -91,7 +91,7 @@ internal class ConnectionDataSource(
 
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
-                kaliumLogger.withFlowId(CONNECTIONS).v("Fetching connections page starting with pagingState $lastPagingState")
+                kaliumLogger.withFeatureId(CONNECTIONS).v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
                 syncConnectionsStatuses(it.connections)
