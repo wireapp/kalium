@@ -14,18 +14,17 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpMethod
 import io.ktor.websocket.Frame
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.takeWhile
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 
 class NotificationApiImpl internal constructor(
@@ -51,7 +50,7 @@ class NotificationApiImpl internal constructor(
     ): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
-    // TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
+    //TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
@@ -88,25 +87,15 @@ class NotificationApiImpl internal constructor(
             }
 
         kaliumLogger.i("Websocket open")
-        val collectorContext = currentCoroutineContext()
-        emit(WebSocketEvent.Open())
 
-        session.launch {
-            while(collectorContext.isActive){
-                delay(250)
-            }
-            session.cancel()
-        }
+        emit(WebSocketEvent.Open())
 
         session
             .incoming
             .consumeAsFlow()
-            .takeWhile { collectorContext.isActive }
-            .cancellable()
             .onCompletion {
                 kaliumLogger.w("Websocket Closed", it)
                 emit(WebSocketEvent.Close(it))
-                session.cancel()
             }
             .collect { frame ->
                 kaliumLogger.v("Websocket Received Frame: $frame")
@@ -118,7 +107,6 @@ class NotificationApiImpl internal constructor(
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
-
                     else -> {
                         kaliumLogger.v("Websocket frame not handled: $frame")
                         emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))
