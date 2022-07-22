@@ -135,7 +135,8 @@ class ConversationDataSource(
                     conversationApi.fetchConversationsListDetails(pagingResponse.conversationsIds.toList())
                 }.onSuccess { conversations ->
                     if (conversations.conversationsFailed.isNotEmpty()) {
-                        kaliumLogger.withFeatureId(CONVERSATIONS).d("Skipping ${conversations.conversationsFailed.size} conversations failed")
+                        kaliumLogger.withFeatureId(CONVERSATIONS)
+                            .d("Skipping ${conversations.conversationsFailed.size} conversations failed")
                     }
                     if (conversations.conversationsNotFound.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
@@ -236,6 +237,7 @@ class ConversationDataSource(
         when (error) {
             is StorageFailure.DataNotFound ->
                 kaliumLogger.withFeatureId(CONVERSATIONS).e("DataNotFound when fetching conversation members: $error")
+
             is StorageFailure.Generic ->
                 kaliumLogger.withFeatureId(CONVERSATIONS).e("Failure getting other 1:1 user for $conversation", error.rootCause)
         }
