@@ -3,6 +3,10 @@ package com.wire.kalium.logic
 import android.content.Context
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
+import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.asset.AssetsStorageFolder
+import com.wire.kalium.logic.data.asset.CacheFolder
+import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -16,6 +20,7 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.SessionStorage
 import com.wire.kalium.persistence.client.SessionStorageImpl
@@ -49,12 +54,21 @@ actual class CoreLogic(
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
-        lazy { GlobalDatabaseProvider(appContext, globalPreferences.value, kaliumConfigs.shouldEncryptData) }
+        lazy {
+            GlobalDatabaseProvider(
+                appContext,
+                SecurityHelper(globalPreferences.value).globalDBSecret(),
+                kaliumConfigs.shouldEncryptData
+            )
+        }
 
     override fun getSessionScope(userId: UserId): UserSessionScope {
         return userSessionScopeProvider.get(userId) ?: run {
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
+            val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
+            val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
+            val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
             val networkContainer = AuthenticatedNetworkContainer(
                 SessionManagerImpl(sessionRepository, userId),
                 ServerMetaDataManagerImpl(getGlobalScope().serverConfigRepository)
@@ -68,7 +82,12 @@ actual class CoreLogic(
                 EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabaseProvider =
-                UserDatabaseProvider(appContext, userIDEntity, userPreferencesSettings, kaliumConfigs.shouldEncryptData)
+                UserDatabaseProvider(
+                    appContext,
+                    userIDEntity,
+                    SecurityHelper(globalPreferences.value).userDBSecret(userId),
+                    kaliumConfigs.shouldEncryptData
+                )
             val userDataSource = AuthenticatedDataSourceSet(
                 rootAccountPath,
                 networkContainer,
@@ -84,7 +103,9 @@ actual class CoreLogic(
                 userDataSource,
                 sessionRepository,
                 globalCallManager,
-                globalPreferences.value
+                globalPreferences.value,
+                dataStoragePaths,
+                kaliumConfigs
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }
@@ -92,7 +113,8 @@ actual class CoreLogic(
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
-        appContext = appContext
+        appContext = appContext,
+        federatedIdMapper = FederatedIdMapperImpl(globalPreferences.value)
     )
 
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(

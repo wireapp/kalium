@@ -14,24 +14,26 @@ import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
-    fun toModel(conversation: SQLDelightConversation): ConversationEntity {
-        return ConversationEntity(
-            conversation.qualified_id,
-            conversation.name,
-            conversation.type,
-            conversation.team_id,
-            protocolInfo = when (conversation.protocol) {
+    fun toModel(conversation: SQLDelightConversation): ConversationEntity = with(conversation) {
+        ConversationEntity(
+            qualified_id,
+            name,
+            type,
+            team_id,
+            protocolInfo = when (protocol) {
                 ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
-                    conversation.mls_group_id ?: "",
-                    conversation.mls_group_state
+                    mls_group_id ?: "",
+                    mls_group_state
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
-            mutedStatus = conversation.muted_status,
-            mutedTime = conversation.muted_time,
-            lastNotificationDate = conversation.last_notified_message_date,
-            lastModifiedDate = conversation.last_modified_date
+            mutedStatus = muted_status,
+            mutedTime = muted_time,
+            lastNotificationDate = last_notified_message_date,
+            lastModifiedDate = last_modified_date,
+            access = access_list,
+            accessRole = access_role_list
         )
     }
 }
@@ -51,7 +53,9 @@ class ConversationDAOImpl(
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
 
-    override suspend fun getSelfConversationId() = getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
+    // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
+    override suspend fun getSelfConversationId() =
+        getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         nonSuspendingInsertConversation(conversationEntity)
@@ -67,19 +71,28 @@ class ConversationDAOImpl(
     }
 
     private fun nonSuspendingInsertConversation(conversationEntity: ConversationEntity) {
-        conversationQueries.insertConversation(
-            conversationEntity.id,
-            conversationEntity.name,
-            conversationEntity.type,
-            conversationEntity.teamId,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupId else null,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS,
-            conversationEntity.mutedStatus,
-            conversationEntity.mutedTime,
-            conversationEntity.lastModifiedDate,
-            conversationEntity.lastNotificationDate
-        )
+        with(conversationEntity) {
+            conversationQueries.insertConversation(
+                id,
+                name,
+                type,
+                teamId,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId
+                else null,
+
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupState
+                else ConversationEntity.GroupState.ESTABLISHED,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS
+                else ConversationEntity.Protocol.PROTEUS,
+
+                mutedStatus,
+                mutedTime,
+                lastModifiedDate,
+                lastNotificationDate,
+                access,
+                accessRole
+            )
+        }
     }
 
     override suspend fun updateConversation(conversationEntity: ConversationEntity) {
@@ -202,7 +215,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
-        return memberQueries.selectAllMembersByConversation(qualifiedID)
+        return memberQueries.selectAllMembersByConversation(qualifiedID.value)
             .asFlow()
             .mapToList()
             .map { it.map(memberMapper::toModel) }
@@ -221,5 +234,13 @@ class ConversationDAOImpl(
             .asFlow()
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
+    }
+
+    override suspend fun updateAccess(
+        conversationID: QualifiedIDEntity,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>
+    ) {
+        conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 }

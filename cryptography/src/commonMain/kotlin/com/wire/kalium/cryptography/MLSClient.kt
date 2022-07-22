@@ -1,5 +1,7 @@
 package com.wire.kalium.cryptography
 
+import kotlin.jvm.JvmInline
+
 typealias WelcomeMessage = ByteArray
 typealias HandshakeMessage = ByteArray
 typealias ApplicationMessage = ByteArray
@@ -31,6 +33,28 @@ interface MLSClient {
     fun generateKeyPackages(amount: Int): List<ByteArray>
 
     /**
+     * Update your keying material for an existing conversation you're a member of.
+     *
+     * @param groupId MLS group ID for an existing conversation
+     *
+     * @return commit message and a welcome message if an add proposal was pending.
+     */
+    fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?>
+
+    /**
+     * Request to join an existing conversation
+     *
+     * @param groupId MLS group ID for an existing conversation
+     * @param epoch current epoch for the conversation
+     *
+     * @return proposal for being added to the conversation
+     */
+    fun joinConversation(
+        groupId: MLSGroupId,
+        epoch: ULong
+    ): HandshakeMessage
+
+    /**
      * Query if a conversation exists
      *
      * @param groupId MLS group ID provided by BE
@@ -49,7 +73,8 @@ interface MLSClient {
      */
     fun createConversation(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): Pair<HandshakeMessage, WelcomeMessage>?
+        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+    ): Pair<HandshakeMessage, WelcomeMessage>?
 
     /**
      * Process an incoming welcome message
@@ -69,7 +94,8 @@ interface MLSClient {
      */
     fun encryptMessage(
         groupId: MLSGroupId,
-        message: PlainMessage): ApplicationMessage
+        message: PlainMessage
+    ): ApplicationMessage
 
     /**
      * Decrypt an application message or a handshake message
@@ -83,7 +109,8 @@ interface MLSClient {
      */
     fun decryptMessage(
         groupId: MLSGroupId,
-        message: ApplicationMessage): PlainMessage?
+        message: ApplicationMessage
+    ): PlainMessage?
 
     /**
      * Add a user/client to an existing MLS group
@@ -95,7 +122,8 @@ interface MLSClient {
      */
     fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): Pair<HandshakeMessage, WelcomeMessage>?
+        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+    ): Pair<HandshakeMessage, WelcomeMessage>?
 
     /**
      * Remove a user/client from an existing MLS group
@@ -107,7 +135,11 @@ interface MLSClient {
      */
     fun removeMember(
         groupId: MLSGroupId,
-        members: List<CryptoQualifiedClientId>): HandshakeMessage?
+        members: List<CryptoQualifiedClientId>
+    ): HandshakeMessage?
 }
 
-expect class MLSClientImpl(rootDir: String, databaseKey: String, clientId: CryptoQualifiedClientId): MLSClient
+@JvmInline
+value class MlsDBSecret(val value: String)
+
+expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

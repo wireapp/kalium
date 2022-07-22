@@ -3,9 +3,7 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -64,6 +62,9 @@ interface ConnectionRepository {
     suspend fun observeConnectionList(): Flow<List<ConversationDetails>>
     suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
     suspend fun getConnectionRequests(): List<Connection>
+    suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
+    suspend fun setConnectionAsNotified(userId: UserId)
+    suspend fun setAllConnectionsAsNotified()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -158,7 +159,6 @@ internal class ConnectionDataSource(
         }
     }
 
-
     override suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
@@ -175,10 +175,28 @@ internal class ConnectionDataSource(
         }
     }
 
+    override suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>> {
+        return connectionDAO.getConnectionRequestsForNotification()
+            .map {
+                it.map { connection ->
+                    val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+                    connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
+                }
+            }
+    }
+
+    override suspend fun setConnectionAsNotified(userId: UserId) {
+        connectionDAO.updateNotificationFlag(false, idMapper.toDaoModel(userId))
+    }
+
+    override suspend fun setAllConnectionsAsNotified() {
+        connectionDAO.updateAllNotificationFlags(false)
+    }
+
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
         persistConnection(event.connection)
 
-    //TODO: Vitor : Instead of duplicating, we could pass selfUser.teamId from the UseCases to this function.
+    // TODO: Vitor : Instead of duplicating, we could pass selfUser.teamId from the UseCases to this function.
     // This way, the UseCases can tie the different Repos together, calling these functions.
     private suspend fun persistConnection(
         connection: Connection,
@@ -190,13 +208,15 @@ internal class ConnectionDataSource(
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
         }.flatMap { userProfileDTO ->
             wrapStorageRequest {
+                val selfUser = getSelfUser()
                 val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
                     userDetailResponse = userProfileDTO,
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
                     userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
-                        selfUserTeamId = getSelfUser().teamId,
-                        otherUserTeamId = userProfileDTO.teamId
+                        selfUserTeamId = selfUser.teamId?.value,
+                        otherUserTeamId = userProfileDTO.teamId,
+                        selfUserDomain = selfUser.id.domain
                     )
                 )
 
@@ -210,7 +230,7 @@ internal class ConnectionDataSource(
         connectionDAO.deleteConnectionDataAndConversation(idMapper.toDaoModel(conversationId))
     }
 
-    //TODO: code duplication here for getting self user, the same is done inside
+    // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository, what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
     private suspend fun getSelfUser(): SelfUser {

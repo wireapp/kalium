@@ -73,7 +73,7 @@ selectAllUsersWithConnectionStatus:
 SELECT * FROM User WHERE connection_status = ?;
 
 selectByQualifiedId:
-SELECT * FROM User WHERE qualified_id = ?;
+SELECT * FROM User WHERE qualified_id IN ?;
 
 selectByNameOrHandleOrEmailAndConnectionState:
 SELECT * FROM User
@@ -96,7 +96,21 @@ SELECT changes();
 updateUserAvailabilityStatus:
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
 
+getUsersNotInConversationByNameOrHandleOrEmail:
+SELECT * FROM User AS user
+WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
+AND  (name LIKE ('%' || :searchQuery || '%')
+OR  handle LIKE  ('%' || :searchQuery || '%')
+OR  email LIKE  ('%' || :searchQuery || '%'))
+AND connection_status = "ACCEPTED";
+
+getUsersNotInConversationByHandle:
+SELECT * FROM User AS user
+WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
+AND handle LIKE ('%' || :searchQuery || '%')
+AND connection_status = "ACCEPTED";
+
 getUsersNotPartOfTheConversation:
-SELECT * FROM User
- WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == ?)
+SELECT * FROM User AS user
+ WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
  AND connection_status = "ACCEPTED";

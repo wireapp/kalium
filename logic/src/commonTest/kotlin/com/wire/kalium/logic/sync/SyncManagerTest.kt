@@ -2,11 +2,11 @@ package com.wire.kalium.logic.sync
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.sync.event.EventProcessor
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
@@ -41,18 +41,11 @@ class SyncManagerTest {
     }
 
     @Mock
-    private val eventRepository: EventRepository = configure(mock(EventRepository::class)) { stubsUnitByDefault = true }
-
-    @Mock
-    private val conversationEventReceiver: ConversationEventReceiver =
-        configure(mock(ConversationEventReceiver::class)) { stubsUnitByDefault = true }
+    private val eventProcessor: EventProcessor =
+        configure(mock(EventProcessor::class)) { stubsUnitByDefault = true }
 
     @Mock
     private val eventGatherer: EventGatherer = mock(EventGatherer::class)
-
-    @Mock
-    private val userEventReceiver: UserEventReceiver =
-        configure(mock(UserEventReceiver::class)) { stubsUnitByDefault = true }
 
     private lateinit var syncRepository: SyncRepository
     private lateinit var syncManager: SyncManager
@@ -62,10 +55,8 @@ class SyncManagerTest {
         syncRepository = InMemorySyncRepository()
         syncManager = SyncManagerImpl(
             workScheduler,
-            eventRepository,
             syncRepository,
-            conversationEventReceiver,
-            userEventReceiver,
+            eventProcessor,
             eventGatherer,
             TestKaliumDispatcher
         )
@@ -287,7 +278,7 @@ class SyncManagerTest {
     }
 
     @Test
-    fun givenSlowSyncCompletedAndALiveEvent_whenSyncing_thenTheLastProcessedEventIdIsUpdated() = runTest(TestKaliumDispatcher.default) {
+    fun givenSlowSyncCompletedAndAnEventIsReceived_whenSyncing_thenTheEventProcessorIsCalled() = runTest(TestKaliumDispatcher.default) {
         //Given
         val event = TestEvent.memberJoin()
 
@@ -301,29 +292,8 @@ class SyncManagerTest {
         advanceUntilIdle()
 
         //Then
-        verify(eventRepository)
-            .suspendFunction(eventRepository::updateLastProcessedEventId)
-            .with(eq(event.id))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenSlowSyncCompletedAndAnEventIsReceived_whenSyncing_thenTheEventReceiverIsCalled() = runTest(TestKaliumDispatcher.default) {
-        //Given
-        val event = TestEvent.memberJoin()
-
-        given(eventGatherer)
-            .suspendFunction(eventGatherer::gatherEvents)
-            .whenInvoked()
-            .thenReturn(flowOf(event))
-
-        //When
-        syncManager.onSlowSyncComplete()
-        advanceUntilIdle()
-
-        //Then
-        verify(conversationEventReceiver)
-            .suspendFunction(conversationEventReceiver::onEvent)
+        verify(eventProcessor)
+            .suspendFunction(eventProcessor::processEvent)
             .with(eq(event))
             .wasInvoked(exactly = once)
     }

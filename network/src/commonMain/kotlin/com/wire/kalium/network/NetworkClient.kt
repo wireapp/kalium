@@ -11,13 +11,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
-
 
 /**
  * Provides a [HttpClient] that has all the
@@ -27,9 +26,12 @@ import io.ktor.serialization.kotlinx.json.json
  * necessary Authentication headers, and refresh tokens as they expire.
  */
 internal class AuthenticatedNetworkClient(
-    engine: HttpClientEngine, sessionManager: SessionManager, serverMetaDataManager: ServerMetaDataManager
+    engine: HttpClientEngine,
+    sessionManager: SessionManager,
+    serverMetaDataManager: ServerMetaDataManager,
+    installCompression: Boolean = true
 ) {
-    val httpClient: HttpClient = provideBaseHttpClient(engine) {
+    val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
         installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager)
         installAuth(sessionManager)
         install(ContentNegotiation) {
@@ -92,14 +94,30 @@ internal class AuthenticatedWebSocketClient(
         }
 }
 
+internal class KaliumHttpLogger : Logger {
+    override fun log(message: String) {
+        kaliumLogger.d(message)
+    }
+}
+
+@Suppress("MagicNumber")
 internal fun provideBaseHttpClient(
-    engine: HttpClientEngine, config: HttpClientConfig<*>.() -> Unit = {}
+    engine: HttpClientEngine,
+    installCompression: Boolean = true,
+    config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
 
     if (NetworkLogger.isRequestLoggingEnabled) {
         install(KaliumKtorCustomLogging) {
-            logger = Logger.SIMPLE
+            logger = KaliumHttpLogger()
             level = LogLevel.ALL
+        }
+    }
+
+    if (installCompression) {
+        install(ContentEncoding) {
+            gzip()
+            identity()
         }
     }
 

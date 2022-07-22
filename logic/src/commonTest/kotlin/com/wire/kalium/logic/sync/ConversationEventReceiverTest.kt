@@ -19,6 +19,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -59,11 +60,9 @@ class ConversationEventReceiverTest {
     fun givenNewMessageEvent_whenHandling_shouldAskProteusClientForDecryption() = runTest {
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
-            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
             .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown()))
-            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .arrange()
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
@@ -104,10 +103,8 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
-            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
-            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withProtoContentMapperReturning(matching { it.data.contentEquals(emptyArray) }, externalInstructions)
             .withProtoContentMapperReturning(
                 matching { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
@@ -121,8 +118,8 @@ class ConversationEventReceiverTest {
 
         eventReceiver.onEvent(messageEvent)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::persistMessage)
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching { it.content == decryptedExternalContent })
             .wasInvoked(exactly = once)
     }
@@ -178,11 +175,10 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
-            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -200,11 +196,10 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
-            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -222,9 +217,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
-            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
             .arrange()
@@ -244,17 +237,15 @@ class ConversationEventReceiverTest {
 
         val (arrangement, eventReceiver) = Arrangement()
             .withSelfUserIdReturning(TestUser.USER_ID)
-            .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withUpdateConversationNotificationDateReturning(Either.Right(Unit))
-            .withRepositoryPersistingMessageDateReturning(Either.Right(Unit))
+            .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
             .arrange()
 
         eventReceiver.onEvent(event)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::persistMessage)
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
                 it is Message.System && it.content is MessageContent.MemberChange
             })
@@ -264,6 +255,9 @@ class ConversationEventReceiverTest {
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
+
+        @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
@@ -288,6 +282,7 @@ class ConversationEventReceiverTest {
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             proteusClient,
+            persistMessage,
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
@@ -319,16 +314,9 @@ class ConversationEventReceiverTest {
                 .thenReturn(selfUserId)
         }
 
-        fun withUpdateConversationNotificationDateReturning(result: Either<StorageFailure, Unit>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateConversationNotificationDate)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
-        }
-
-        fun withRepositoryPersistingMessageDateReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::persistMessage)
+        fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
@@ -366,6 +354,13 @@ class ConversationEventReceiverTest {
                 .suspendFunction(conversationRepository::persistMembers)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
 
         fun newMessageEvent(

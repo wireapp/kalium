@@ -5,8 +5,12 @@ import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.output.TermUi.echo
 import com.github.ajalt.clikt.output.TermUi.prompt
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
+import com.github.ajalt.clikt.parameters.types.enum
+import com.github.ajalt.clikt.parameters.types.file
+import com.wire.kalium.logger.FileLogger
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
@@ -15,7 +19,7 @@ import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -25,6 +29,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.feature.session.GetAllSessionsResult
@@ -35,6 +40,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.File
 
 private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", kaliumConfigs = KaliumConfigs())
 
@@ -156,8 +162,8 @@ class LoginCommand : CliktCommand(name = "login") {
     private val environment: String? by option(help = "Choose backend environment: can be production or staging")
 
     private val serverConfig: ServerConfig.Links by lazy {
-        if (environment == "production") {
-            ServerConfig.PRODUCTION
+        if (environment == "staging") {
+            ServerConfig.STAGING
         } else {
             ServerConfig.DEFAULT
         }
@@ -175,12 +181,12 @@ class LoginCommand : CliktCommand(name = "login") {
         }
 
         val userId = coreLogic.globalScope {
-            val allSessionsResult = this.session.allSessions()
-            if (allSessionsResult !is GetAllSessionsResult.Success) {
-                throw PrintMessage("Failed retrieve existing sessions")
+            val sessions = when (val result = this.session.allSessions()) {
+                is GetAllSessionsResult.Success -> result.sessions
+                is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
+                is GetAllSessionsResult.Failure.Generic -> throw PrintMessage("Failed retrieve existing sessions: ${result.genericFailure}")
             }
-
-            if (allSessionsResult.sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
+            if (sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
                 this.session.updateCurrentSession(loginResult.tokens.userId)
             } else {
                 val addAccountResult = addAuthenticatedAccount(loginResult, true)
@@ -218,7 +224,6 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
                     }
                 }
             }
-
         }
 
         while (true) {
@@ -226,7 +231,6 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
             userSession.messages.sendTextMessage(conversationID, message)
         }
     }
-
 }
 
 class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
@@ -241,10 +245,30 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
     }
 }
 
+class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
+    override fun run() = runBlocking {
+        val userSession = currentUserSession()
+
+        when (val result = userSession.client.refillKeyPackages()) {
+            is RefillKeyPackagesResult.Success -> echo("key packages were refilled")
+            is RefillKeyPackagesResult.Failure -> throw PrintMessage("refill key packages failed: ${result.failure}")
+        }
+    }
+}
+
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
+    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
+    private val logFile by option(help = "output file for logs").file(canBeDir = false)
+
+    private val fileLogger: FileLogger by lazy { FileLogger(logFile ?: File("kalium.log")) }
+
     override fun run() = runBlocking {
-        CoreLogger.setLoggingLevel(KaliumLogLevel.DEBUG)
+        if (logFile != null) {
+            CoreLogger.setLoggingLevel(logLevel, fileLogger)
+        } else {
+            CoreLogger.setLoggingLevel(logLevel)
+        }
     }
 
     companion object {
@@ -254,5 +278,10 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 }
 
 fun main(args: Array<String>) = CLIApplication().subcommands(
-    LoginCommand(), CreateGroupCommand(), ListenGroupCommand(), DeleteClientCommand(), AddMemberToGroupCommand()
+    LoginCommand(),
+    CreateGroupCommand(),
+    ListenGroupCommand(),
+    DeleteClientCommand(),
+    AddMemberToGroupCommand(),
+    RefillKeyPackagesCommand()
 ).main(args)

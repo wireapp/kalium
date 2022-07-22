@@ -55,7 +55,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -82,7 +82,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -109,7 +109,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -158,7 +158,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -179,13 +179,15 @@ class ObserveConversationListDetailsUseCaseTest {
 
         observeConversationsUseCase().test {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
-            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, awaitItem())
+
+            val detailList: List<ConversationDetails> = awaitItem()
+            assertContentEquals(groupConversationUpdates, detailList)
 
             oneOnOneDetailsChannel.send(secondOneOnOneDetails)
-            assertContentEquals(groupConversationUpdates + secondOneOnOneDetails, awaitItem())
+            val updatedDetailList: List<ConversationDetails> = awaitItem()
+            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, updatedDetailList)
 
-            oneOnOneDetailsChannel.close()
-            awaitComplete()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -204,7 +206,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -225,9 +227,6 @@ class ObserveConversationListDetailsUseCaseTest {
 
         observeConversationsUseCase().test {
             assertContentEquals(listOf(groupConversationDetails), awaitItem())
-
-            conversationListUpdates.send(secondConversationsList)
-            assertContentEquals(listOf(groupConversationDetails, selfConversationDetails), awaitItem())
 
             conversationListUpdates.close()
             awaitComplete()
@@ -258,7 +257,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf(ongoingCall)))
 
@@ -288,7 +287,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 

@@ -5,17 +5,16 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.connection.AcceptConnectionRequestUseCaseTest
-import com.wire.kalium.logic.feature.publicuser.Result
-import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.ErrorResponse
@@ -68,7 +67,7 @@ class SearchUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY)
@@ -89,7 +88,7 @@ class SearchUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY)
@@ -108,7 +107,7 @@ class SearchUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything())
+            .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY_FEDERATED)
@@ -124,7 +123,7 @@ class SearchUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(eq("testQuery"), eq("domain"), anything())
+            .whenInvokedWith(eq("testQuery"), eq(""), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY)
@@ -161,7 +160,7 @@ class SearchUserUseCaseTest {
                     email = null,
                     phone = null,
                     accentId = it,
-                    team = null,
+                    teamId = null,
                     connectionStatus = ConnectionState.ACCEPTED,
                     previewPicture = null,
                     completePicture = null,

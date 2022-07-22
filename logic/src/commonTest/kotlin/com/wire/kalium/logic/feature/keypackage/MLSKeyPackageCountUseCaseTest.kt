@@ -42,7 +42,7 @@ class MLSKeyPackageCountUseCaseTest {
     fun givenClientIdIsNotRegistered_ThenReturnGenericError() = runTest {
 
         val clientFetchError = CoreFailure.MissingClientRegistration
-        given(clientRepository).function(clientRepository::currentClientId).whenInvoked()
+        given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked()
             .then { Either.Left(clientFetchError) }
 
         val actual = keyPackageCountUseCase()
@@ -58,7 +58,7 @@ class MLSKeyPackageCountUseCaseTest {
         given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount).whenInvokedWith(anything())
             .then { Either.Right(KEY_PACKAGE_COUNT_DTO) }
 
-        given(clientRepository).function(clientRepository::currentClientId).whenInvoked().then { Either.Right(TestClient.CLIENT_ID) }
+        given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked().then { Either.Right(TestClient.CLIENT_ID) }
 
         val actual = keyPackageCountUseCase()
 
@@ -76,7 +76,7 @@ class MLSKeyPackageCountUseCaseTest {
         given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount).whenInvokedWith(anything())
             .then { Either.Left(networkFailure) }
 
-        given(clientRepository).function(clientRepository::currentClientId).whenInvoked().then { Either.Right(TestClient.CLIENT_ID) }
+        given(clientRepository).suspendFunction(clientRepository::currentClientId).whenInvoked().then { Either.Right(TestClient.CLIENT_ID) }
 
         val actual = keyPackageCountUseCase()
 
