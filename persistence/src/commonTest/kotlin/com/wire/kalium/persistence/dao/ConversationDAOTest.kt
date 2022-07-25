@@ -9,6 +9,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationDAOTest : BaseDatabaseTest() {
@@ -247,7 +248,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
 
-
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
         conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
@@ -262,7 +262,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(expected, actual)
         }
     }
-
 
     @Test
     fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
@@ -281,6 +280,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(expected, actual)
     }
 
+    @Test
+    fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
+        // given
+        val expectedLastReadDate = "2022-03-30T15:36:00.000Z"
+
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate)
+
+        // then
+        val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+
+        assertTrue(actual != null)
+        assertEquals(expectedLastReadDate, actual.lastReadDate)
+    }
 
     private companion object {
         val user1 = newUserEntity(id = "1")

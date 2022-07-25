@@ -33,6 +33,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        lastReadDate = null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -45,6 +46,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        lastReadDate = null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -58,6 +60,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        lastReadDate = null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -71,6 +74,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        lastReadDate = null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )

@@ -4,7 +4,6 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
@@ -441,6 +440,7 @@ class GetNotificationsUseCaseTest {
             mutedStatus,
             TIME_EARLIER,
             TIME_EARLIER,
+            lastReadDate = null,
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )

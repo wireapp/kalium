@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -607,6 +608,25 @@ class ConversationRepositoryTest {
             .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, QualifiedIDEntity>())
             .with(any(), any())
             .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAConversationDaoFailed_whenUpdatingTheConversationReadDate_thenShouldNotSucceed() = runTest {
+        // given
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationReadDate)
+            .whenInvokedWith(any(), any())
+            .thenThrow(IllegalStateException("Some illegal state"))
+
+        // when
+        val result = conversationRepository.updateConversationReadDate(TestConversation.ID, "2022-03-30T15:36:00.000Z")
+
+        // then
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::updateConversationReadDate)
+            .with(anything(), anything())
+            .wasInvoked()
+        assertIs<Either.Left<StorageFailure>>(result)
     }
 
     companion object {

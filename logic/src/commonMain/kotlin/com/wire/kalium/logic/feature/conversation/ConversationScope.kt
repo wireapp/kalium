@@ -58,4 +58,7 @@ class ConversationScope(
 
     val observeConnectionList: ObserveConnectionListUseCase
         get() = ObserveConnectionListUseCaseImpl(connectionRepository, syncManager)
+
+    val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
+        get() = UpdateConversationReadDateUseCase(conversationRepository)
 }

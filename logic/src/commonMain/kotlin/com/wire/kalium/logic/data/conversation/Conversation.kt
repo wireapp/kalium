@@ -18,6 +18,7 @@ data class Conversation(
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
+    val lastReadDate: String?,
     val access: List<Access>,
     val accessRole: List<AccessRole>?
 ) {
@@ -68,6 +69,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             teamId = otherUser?.teamId,
             protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
+            lastReadDate = null,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
             access = access,
