@@ -285,7 +285,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
         // given
-        val expectedLastSeenDate = "2022-03-30T15:36:00.000Z"
+        val expectedLastReadDate = "2022-03-30T15:36:00.000Z"
 
         conversationDAO.insertConversation(conversationEntity1)
 
