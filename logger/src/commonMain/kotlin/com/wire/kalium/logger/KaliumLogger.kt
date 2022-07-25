@@ -50,7 +50,7 @@ enum class KaliumLogLevel {
  */
 class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = arrayOf()) {
 
-    private val kermitLogger: KermitLogger
+    private var kermitLogger: KermitLogger
 
     init {
         kermitLogger = if (logWriters.isEmpty()) {
@@ -73,7 +73,11 @@ class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = ar
     val severity = config.severity
 
     @Suppress("unused")
-    fun withFeatureId(featureId: ApplicationFlow) = kermitLogger.withTag("featureId:${featureId.name.lowercase()}")
+    fun withFeatureId(featureId: ApplicationFlow): KaliumLogger {
+        val currentLogger = this
+        currentLogger.kermitLogger = kermitLogger.withTag("featureId:${featureId.name.lowercase()}")
+        return currentLogger
+    }
 
     @Suppress("unused")
     fun v(message: String, throwable: Throwable? = null) =
