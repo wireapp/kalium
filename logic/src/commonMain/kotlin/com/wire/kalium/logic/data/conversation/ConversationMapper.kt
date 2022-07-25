@@ -64,7 +64,7 @@ internal class ConversationMapperImpl(
         teamId = daoModel.teamId?.let { TeamId(it) },
         protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
         mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
-        lastReadDate = daoModel.lastSeenDate,
+        lastReadDate = daoModel.lastReadDate,
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate,
         access = daoModel.access.map { it.toDomain() },

@@ -296,7 +296,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
 
         assertTrue(actual != null)
-        assertEquals(expectedLastSeenDate, actual.lastSeenDate)
+        assertEquals(expectedLastSeenDate, actual.lastReadDate)
     }
 
     private companion object {
