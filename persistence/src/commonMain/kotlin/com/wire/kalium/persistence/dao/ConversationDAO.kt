@@ -13,8 +13,8 @@ data class ConversationEntity(
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
     // Date that indicates when the user has seen the conversation,
-    // nullable lastSeenDate means that the conversation is never seen by the user
-    val lastSeenDate: String? = null,
+    // nullable lastReadDate means that the conversation is never seen by the user
+    val lastReadDate: String? = null,
     val access: List<Access>,
     val accessRole: List<AccessRole>?
 ) {
@@ -56,7 +56,7 @@ interface ConversationDAO {
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String)
-    suspend fun updateConversationSeenDate(conversationID: QualifiedIDEntity, date: String)
+    suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String)
     suspend fun updateAllConversationsNotificationDate(date: String)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>

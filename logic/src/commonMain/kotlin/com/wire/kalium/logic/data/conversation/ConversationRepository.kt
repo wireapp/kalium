@@ -82,7 +82,7 @@ interface ConversationRepository {
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
-    suspend fun updateConversationSeenDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
+    suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun getUnreadConversationCount(): Either<StorageFailure, Long>
 }
 
@@ -393,8 +393,8 @@ class ConversationDataSource(
     /**
      * Update the conversation seen date, which is a date when the user sees the content of the conversation.
      */
-    override suspend fun updateConversationSeenDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
-        wrapStorageRequest { conversationDAO.updateConversationSeenDate(idMapper.toDaoModel(qualifiedID), date) }
+    override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.updateConversationReadDate(idMapper.toDaoModel(qualifiedID), date) }
 
     override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
         wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
