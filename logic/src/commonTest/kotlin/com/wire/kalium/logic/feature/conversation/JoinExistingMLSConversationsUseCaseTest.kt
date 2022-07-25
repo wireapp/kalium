@@ -47,7 +47,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             verify(arrangement.conversationRepository)
                 .suspendFunction(arrangement.conversationRepository::requestToJoinMLSGroup)
                 .with(eq(Arrangement.MLS_CONVERSATION2))
-                .wasInvoked(once
+                .wasInvoked(once)
         }
 
     @Test
