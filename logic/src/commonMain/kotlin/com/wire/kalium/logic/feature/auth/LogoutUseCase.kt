@@ -32,7 +32,6 @@ class LogoutUseCase @Suppress("LongParameterList") internal constructor(
     suspend operator fun invoke(reason: LogoutReason = LogoutReason.USER_INTENTION) {
         deregisterTokenUseCase()
         logoutRepository.logout()
-        logoutRepository.onLogout(reason)
         clearCrypto()
         clearUserStorage()
         clearUserSessionAndUpdateCurrent()

@@ -13,10 +13,16 @@
 
 #### Building on macOS 12
 
-Run `make`, then pass the libraries in `native/libs` and the location of `libsodium` to the VM options like so:
+Run
 
 ```
--Djava.library.path=/usr/local/lib/:/Users/tmpz/Code/Wire/kalium/native/libs
+make
+```
+
+then pass the location of the libraries in `native/libs` to the VM options like so:
+
+```
+-Djava.library.path=/Users/tmpz/Code/Wire/kalium/native/libs
 ```
 
 Note that the path needs to be adjusted for your machine.
