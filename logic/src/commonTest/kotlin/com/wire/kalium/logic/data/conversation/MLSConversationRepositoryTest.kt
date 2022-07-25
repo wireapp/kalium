@@ -29,8 +29,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -155,7 +153,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
-    class Arrangement() {
+    class Arrangement {
         @Mock
         val keyPackageRepository = mock(classOf<KeyPackageRepository>())
 
@@ -267,8 +265,8 @@ class MLSConversationRepositoryTest {
         )
 
         internal companion object {
-            val EPOCH = 5UL
-            val GROUP_ID = "groupId"
+            const val EPOCH = 5UL
+            const val GROUP_ID = "groupId"
             val MEMBERS = listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))
             val KEY_PACKAGE = KeyPackageDTO(
                 "client1",
