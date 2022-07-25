@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Unconfined
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -314,17 +315,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationSeenDate_thenEmitTheNewConversationStateWithTheUpdatedSeenDate() =
-        runTest {
+        runTest() {
             val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z"
 
-            conversationDAO.insertConversation(conversationEntity1)
-
-            launch {
+            launch(UnconfinedTestDispatcher(testScheduler)) {
                 conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).test {
                     val initialConversation = awaitItem()
 
-                    assertTrue(initialConversation != null)
-                    assertTrue(initialConversation.lastSeenDate == null)
+                    assertTrue(initialConversation == null)
+
+                    conversationDAO.insertConversation(conversationEntity1)
+
+                    val conversationAfterInsert = awaitItem()
+
+                    assertTrue(conversationAfterInsert != null)
+                    assertTrue(conversationAfterInsert.lastSeenDate == null)
 
                     conversationDAO.updateConversationSeenDate(conversationEntity1.id, expectedConversationSeenDate)
 
