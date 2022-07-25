@@ -1,21 +1,40 @@
 package com.wire.kalium.network
 
-import io.ktor.client.*
-import io.ktor.client.plugins.*
+import com.wire.kalium.logger.obfuscateLogMessage
+import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.plugins.HttpClientPlugin
+import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.observer.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.http.content.*
-import io.ktor.util.*
-import io.ktor.utils.io.*
-import io.ktor.utils.io.charsets.*
-import io.ktor.utils.io.core.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.*
-import io.ktor.client.plugins.logging.*
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.observer.ResponseHandler
+import io.ktor.client.plugins.observer.ResponseObserver
+import io.ktor.client.request.HttpRequest
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.HttpSendPipeline
+import io.ktor.client.statement.HttpReceivePipeline
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.HttpResponsePipeline
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
+import io.ktor.http.charset
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.contentType
+import io.ktor.util.AttributeKey
+import io.ktor.util.InternalAPI
+import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.core.readText
+import io.ktor.utils.io.readRemaining
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 
 /**
  * A client's logging plugin.
@@ -65,17 +84,17 @@ public class KaliumKtorCustomLogging private constructor(
 
     private suspend fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
         if (level.info) {
-            logger.log("REQUEST: ${Url(request.url)}")
-            logger.log("METHOD: ${request.method}")
+            kaliumLogger.v("REQUEST: ${Url(request.url)}")
+            kaliumLogger.v("METHOD: ${request.method}")
         }
 
         val content = request.body as OutgoingContent
 
         if (level.headers) {
-            logger.log("COMMON HEADERS")
+            kaliumLogger.v("COMMON HEADERS")
             logHeaders(request.headers.entries())
 
-            logger.log("CONTENT HEADERS")
+            kaliumLogger.v("CONTENT HEADERS")
             content.contentLength?.let { logger.logHeader(HttpHeaders.ContentLength, it.toString()) }
             content.contentType?.let { logger.logHeader(HttpHeaders.ContentType, it.toString()) }
             logHeaders(content.headers.entries())
@@ -88,35 +107,34 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun logResponse(response: HttpResponse) {
         if (level.info) {
-            logger.log("RESPONSE: ${response.status}")
-            logger.log("METHOD: ${response.call.request.method}")
-            logger.log("FROM: ${response.call.request.url}")
+            kaliumLogger.v("RESPONSE: ${response.status}")
+            kaliumLogger.v("METHOD: ${response.call.request.method}")
+            kaliumLogger.v("FROM: ${response.call.request.url}")
         }
 
         if (level.headers) {
-            logger.log("COMMON HEADERS")
+            kaliumLogger.v("COMMON HEADERS")
             logHeaders(response.headers.entries())
         }
     }
 
     private suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel): Unit = with(logger) {
-        log("BODY Content-Type: $contentType")
-        log("BODY START")
+        kaliumLogger.v("BODY Content-Type: $contentType")
+        kaliumLogger.v("BODY START")
         val message = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "[response body omitted]"
-        log(message)
-        kaliumLogger.d("Test Mo  $message")
-        log("BODY END")
+        kaliumLogger.v(message)
+        kaliumLogger.v("BODY END")
     }
 
     private fun logRequestException(context: HttpRequestBuilder, cause: Throwable) {
         if (level.info) {
-            logger.log("REQUEST ${Url(context.url)} failed with exception: $cause")
+            kaliumLogger.v("REQUEST ${Url(context.url)} failed with exception: $cause")
         }
     }
 
     private fun logResponseException(request: HttpRequest, cause: Throwable) {
         if (level.info) {
-            logger.log("RESPONSE ${request.url} failed with exception: $cause")
+            kaliumLogger.v("RESPONSE ${request.url} failed with exception: $cause")
         }
     }
 
@@ -129,21 +147,21 @@ public class KaliumKtorCustomLogging private constructor(
     }
 
     private fun Logger.logHeader(key: String, value: String) {
-        log("-> $key: $value")
+        kaliumLogger.v("-> $key: $value")
     }
 
     @OptIn(DelicateCoroutinesApi::class)
     private suspend fun logRequestBody(content: OutgoingContent): OutgoingContent? {
-        logger.log("BODY Content-Type: ${content.contentType}")
+        kaliumLogger.v("BODY Content-Type: ${content.contentType}")
 
         val charset = content.contentType?.charset() ?: Charsets.UTF_8
 
         val channel = ByteChannel()
         GlobalScope.launch(Dispatchers.Unconfined) {
             val text = channel.tryReadText(charset) ?: "[request body omitted]"
-            logger.log("BODY START")
-            logger.log(text)
-            logger.log("BODY END")
+            kaliumLogger.v("BODY START")
+            kaliumLogger.v(obfuscateLogMessage(text))
+            kaliumLogger.v("BODY END")
         }
 
         return content.observe(channel)
