@@ -1,19 +1,24 @@
 package com.wire.kalium.logic.data.sync
 
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 
-interface SyncRepository {
-    val syncState: Flow<SyncState>
+internal interface SyncRepository {
+    val syncStateState: StateFlow<SyncState>
+    val connectionPolicyState: StateFlow<ConnectionPolicy>
     fun updateSyncState(updateBlock: (currentState: SyncState) -> SyncState): SyncState
+    fun setConnectionPolicy(connectionPolicy: ConnectionPolicy)
 }
 
 internal class InMemorySyncRepository : SyncRepository {
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Waiting)
+    override val syncStateState get() = _syncState.asStateFlow()
 
-    override val syncState: Flow<SyncState> get() = _syncState
+    private val _connectionPolicy = MutableStateFlow(ConnectionPolicy.KEEP_ALIVE)
+    override val connectionPolicyState get() = _connectionPolicy.asStateFlow()
 
     override fun updateSyncState(updateBlock: (currentState: SyncState) -> SyncState): SyncState =
         _syncState.updateAndGet { currentSyncState ->
@@ -21,4 +26,9 @@ internal class InMemorySyncRepository : SyncRepository {
             kaliumLogger.i("SyncStatus Updated FROM:$currentSyncState; TO: $newSyncState")
             newSyncState
         }
+
+    override fun setConnectionPolicy(connectionPolicy: ConnectionPolicy) {
+        kaliumLogger.i("Sync Connection Policy changed: $connectionPolicy")
+        _connectionPolicy.value = connectionPolicy
+    }
 }
