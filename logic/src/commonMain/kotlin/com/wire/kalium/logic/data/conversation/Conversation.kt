@@ -19,8 +19,21 @@ data class Conversation(
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
     val access: List<Access>,
-    val accessRole: List<AccessRole>?
+    val accessRole: List<AccessRole>
 ) {
+
+    fun isTeamGroup(): Boolean = (teamId != null)
+
+    fun isGuestAllowed(): Boolean = accessRole.let {
+        (it.contains(AccessRole.GUEST))
+    }
+    fun isNonTeamMemberAllowed(): Boolean = accessRole.let {
+        (it.contains(AccessRole.NON_TEAM_MEMBER))
+    }
+    fun isServicesAllowed(): Boolean = accessRole.let {
+        (it.contains(AccessRole.SERVICE))
+    }
+
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE }
     enum class Access { PRIVATE, INVITE, LINK, CODE }
@@ -55,11 +68,11 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val conversationId: ConversationId,
         val otherUser: OtherUser?,
         val userType: UserType,
-        val lastModifiedDate: String?,
+        val lastModifiedDate: String,
         val connection: com.wire.kalium.logic.data.user.Connection,
         val protocolInfo: ProtocolInfo,
         val access: List<Conversation.Access>,
-        val accessRole: List<Conversation.AccessRole>?
+        val accessRole: List<Conversation.AccessRole>
     ) : ConversationDetails(
         Conversation(
             id = conversationId,

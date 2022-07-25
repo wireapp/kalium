@@ -14,26 +14,26 @@ import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
-    fun toModel(conversation: SQLDelightConversation): ConversationEntity {
-        return ConversationEntity(
-            conversation.qualified_id,
-            conversation.name,
-            conversation.type,
-            conversation.team_id,
-            protocolInfo = when (conversation.protocol) {
+    fun toModel(conversation: SQLDelightConversation): ConversationEntity = with(conversation) {
+        ConversationEntity(
+            qualified_id,
+            name,
+            type,
+            team_id,
+            protocolInfo = when (protocol) {
                 ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
-                    conversation.mls_group_id ?: "",
-                    conversation.mls_group_state
+                    mls_group_id ?: "",
+                    mls_group_state
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
-            mutedStatus = conversation.muted_status,
-            mutedTime = conversation.muted_time,
-            lastNotificationDate = conversation.last_notified_message_date,
-            lastModifiedDate = conversation.last_modified_date,
-            access = conversation.access_list,
-            accessRole = conversation.access_role_list
+            mutedStatus = muted_status,
+            mutedTime = muted_time,
+            lastNotificationDate = last_notified_message_date,
+            lastModifiedDate = last_modified_date,
+            access = access_list,
+            accessRole = access_role_list
         )
     }
 }
@@ -89,8 +89,8 @@ class ConversationDAOImpl(
                 mutedTime,
                 lastModifiedDate,
                 lastNotificationDate,
-                access.toList(),
-                accessRole?.toList()
+                access,
+                accessRole
             )
         }
     }
@@ -234,5 +234,13 @@ class ConversationDAOImpl(
             .asFlow()
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
+    }
+
+    override suspend fun updateAccess(
+        conversationID: QualifiedIDEntity,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>
+    ) {
+        conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 }

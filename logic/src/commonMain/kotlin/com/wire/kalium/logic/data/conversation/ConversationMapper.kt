@@ -22,6 +22,8 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
+    fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
+    fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -36,7 +38,9 @@ internal class ConversationMapperImpl(
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
-        apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?
+        apiModel: ConversationResponse,
+        mlsGroupState: GroupState?,
+        selfUserTeamId: TeamId?
     ): ConversationEntity = ConversationEntity(
         id = idMapper.fromApiToDao(apiModel.id),
         name = apiModel.name,
@@ -48,7 +52,7 @@ internal class ConversationMapperImpl(
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
-        accessRole = apiModel.accessRole?.map { it.toDAO() }
+        accessRole = apiModel.accessRole.map { it.toDAO() }
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -65,9 +69,27 @@ internal class ConversationMapperImpl(
         mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate,
-        access = daoModel.access.map { it.toDomain() },
-        accessRole = daoModel.accessRole?.map { it.toDomain() }
+        access = daoModel.access.map { it.toDAO() },
+        accessRole = daoModel.accessRole.map { it.toDAO() }
     )
+
+    override fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
+        when (it) {
+            ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
+            ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
+            ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
+            ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
+        }
+    }
+
+    override fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole> = accessRoleList.map {
+        when (it) {
+            ConversationAccessRoleDTO.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
+            ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
+            ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
+            ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
+        }
+    }
 
     override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
         CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
@@ -169,14 +191,14 @@ private fun ConversationAccessDTO.toDAO(): ConversationEntity.Access = when (thi
     ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
 }
 
-private fun ConversationEntity.Access.toDomain(): Conversation.Access = when (this) {
+private fun ConversationEntity.Access.toDAO(): Conversation.Access = when (this) {
     ConversationEntity.Access.PRIVATE -> Conversation.Access.PRIVATE
     ConversationEntity.Access.INVITE -> Conversation.Access.INVITE
     ConversationEntity.Access.LINK -> Conversation.Access.LINK
     ConversationEntity.Access.CODE -> Conversation.Access.CODE
 }
 
-private fun ConversationEntity.AccessRole.toDomain(): Conversation.AccessRole = when (this) {
+private fun ConversationEntity.AccessRole.toDAO(): Conversation.AccessRole = when (this) {
     ConversationEntity.AccessRole.TEAM_MEMBER -> Conversation.AccessRole.TEAM_MEMBER
     ConversationEntity.AccessRole.NON_TEAM_MEMBER -> Conversation.AccessRole.NON_TEAM_MEMBER
     ConversationEntity.AccessRole.GUEST -> Conversation.AccessRole.GUEST
