@@ -1,3 +1,5 @@
+@file:Suppress("MaximumLineLength", "MagicNumber", "ReturnCount", "MaxLineLength", "LongMethod")
+
 package com.wire.kalium.logger
 
 fun obfuscateLogMessage(message: String): String {
@@ -9,9 +11,9 @@ fun obfuscateLogMessage(message: String): String {
 
     val ipV6 =
         ".*(?:^|(?<=\\s))(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(?=\\s|\$).*".toRegex()
+
     val ipV6Exact =
         "(?:^|(?<=\\s))(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(?=\\s|\$)".toRegex()
-
 
     val uuid = ".*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*".toRegex()
     val uuidExact = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}".toRegex()
@@ -35,12 +37,10 @@ fun obfuscateLogMessage(message: String): String {
         return message.replace(passwordExact, "password:******")
     }
 
-
     // ipV4
     if (ipV4.containsMatchIn(message)) {
         var originalString: List<String>
-        return message.replace(ipV4Exact)
-        { matchResult ->
+        return message.replace(ipV4Exact) { matchResult ->
             originalString = matchResult.value.split(".")
             originalString[2].toCharArray().forEachIndexed { index, _ ->
                 originalString[2].toCharArray()[index] = 'x'
@@ -56,8 +56,7 @@ fun obfuscateLogMessage(message: String): String {
     // IP V6
     if (ipV6.containsMatchIn(message)) {
         var originalString: List<String>
-        return message.replace(ipV6Exact)
-        { matchResult ->
+        return message.replace(ipV6Exact) { matchResult ->
             originalString = matchResult.value.split(":")
             originalString[3].toCharArray().forEachIndexed { index, _ ->
                 originalString[3].toCharArray()[index] = 'x'

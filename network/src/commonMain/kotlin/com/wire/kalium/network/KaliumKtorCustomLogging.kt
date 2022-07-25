@@ -39,6 +39,7 @@ import kotlinx.coroutines.sync.Mutex
 /**
  * A client's logging plugin.
  */
+@Suppress("TooGenericExceptionCaught", "EmptyFinallyBlock")
 public class KaliumKtorCustomLogging private constructor(
     public val logger: Logger,
     public var level: LogLevel,
@@ -243,10 +244,12 @@ public class KaliumKtorCustomLogging private constructor(
 /**
  * Configure and install [Logging] in [HttpClient].
  */
+@Suppress("FunctionNaming")
 public fun HttpClientConfig<*>.Logging(block: Logging.Config.() -> Unit = {}) {
     install(Logging, block)
 }
 
+@Suppress("TooGenericExceptionCaught")
 internal suspend inline fun ByteReadChannel.tryReadText(charset: Charset): String? = try {
     readRemaining().readText(charset = charset)
 } catch (cause: Throwable) {

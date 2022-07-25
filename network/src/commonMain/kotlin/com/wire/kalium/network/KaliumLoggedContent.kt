@@ -7,7 +7,7 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.util.AttributeKey
 import io.ktor.utils.io.ByteReadChannel
 
-internal class KaliumLoggedContent (
+internal class KaliumLoggedContent(
     private val originalContent: OutgoingContent,
     private val channel: ByteReadChannel
 ) : OutgoingContent.ReadChannelContent() {
