@@ -46,8 +46,6 @@ data class Conversation(
     fun supportsUnreadMessageCount() =
         type == Type.ONE_ON_ONE || type == Type.GROUP
 
-    fun hasNewMessages() =
-        if (lastModifiedDate != null && lastReadDate != null) lastModifiedDate > lastReadDate else false
 }
 
 sealed class ProtocolInfo {
