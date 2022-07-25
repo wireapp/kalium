@@ -102,7 +102,6 @@ class NotificationApiImpl internal constructor(
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
-
                     else -> {
                         kaliumLogger.v("Websocket frame not handled: $frame")
                         emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))

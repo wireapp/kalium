@@ -119,23 +119,29 @@ internal class SyncManagerImpl(
 
         syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
-        processingJob = eventProcessingScope.launch { gatherAndProcessEvents() }
+        processingJob = eventProcessingScope.launch {
+            gatherAndProcessEvents()
+        }
     }
 
-    private suspend fun gatherAndProcessEvents() = eventGatherer.gatherEvents().collect {
-        eventProcessor.processEvent(it)
+    private suspend fun gatherAndProcessEvents() {
+        eventGatherer.gatherEvents().collect {
+            eventProcessor.processEvent(it)
+        }
+        kaliumLogger.i("SYNC Finished gathering and processing events")
+        syncRepository.updateSyncState { SyncState.Waiting }
     }
 
     override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
 
     override suspend fun waitUntilLive() {
         startSyncIfIdle()
-        syncRepository.syncState.first { it == SyncState.Live }
+        syncRepository.syncStateState.first { it == SyncState.Live }
     }
 
     override suspend fun waitUntilSlowSyncCompletion() {
         startSyncIfIdle()
-        syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }
+        syncRepository.syncStateState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }
     }
 
     override fun startSyncIfIdle() {
@@ -151,7 +157,7 @@ internal class SyncManagerImpl(
         }
     }
 
-    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SlowSync
+    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncStateState.first() == SyncState.SlowSync
     override suspend fun isSlowSyncCompleted(): Boolean =
-        syncRepository.syncState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.Live)
+        syncRepository.syncStateState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.Live)
 }
