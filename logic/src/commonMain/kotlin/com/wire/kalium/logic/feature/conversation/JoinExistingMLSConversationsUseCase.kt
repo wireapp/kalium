@@ -41,7 +41,7 @@ class JoinExistingMLSConversationsUseCase(
                         // Re-fetch current epoch and try again
                         conversationRepository.fetchConversation(conversation.id).flatMap {
                             conversationRepository.observeById(conversation.id).flatMap {
-                                conversationRepository.requestToJoinMLSGroup(conversation)
+                                requestToJoinMLSGroupAndRetry(conversation)
                             }
                         }
                     } else {
