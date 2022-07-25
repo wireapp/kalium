@@ -344,5 +344,6 @@ class ObserveConversationListDetailsUseCaseTest {
         observeConversationsUseCase().test {
             assertEquals(false, (awaitItem().conversationList[0] as ConversationDetails.Group).hasOngoingCall)
         }
+    }
 
 }
