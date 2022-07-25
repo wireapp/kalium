@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -41,10 +42,12 @@ class JoinExistingMLSConversationsUseCaseTest {
             verify(arrangement.conversationRepository)
                 .suspendFunction(arrangement.conversationRepository::requestToJoinMLSGroup)
                 .with(eq(Arrangement.MLS_CONVERSATION1))
+                .wasInvoked(once)
 
             verify(arrangement.conversationRepository)
                 .suspendFunction(arrangement.conversationRepository::requestToJoinMLSGroup)
                 .with(eq(Arrangement.MLS_CONVERSATION2))
+                .wasInvoked(once
         }
 
     @Test
@@ -69,6 +72,16 @@ class JoinExistingMLSConversationsUseCaseTest {
             .with(eq(Arrangement.MLS_CONVERSATION1))
             .wasInvoked(twice)
 
+    }
+
+    @Test
+    fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
+        val (_, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withGetConversationsByGroupStateSuccessful()
+            .withRequestToJoinMLSGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldFail()
     }
 
     private class Arrangement {
@@ -114,6 +127,16 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
         companion object {
+            val MLS_UNSUPPORTED_PROPOSAL_FAILURE = NetworkFailure.ServerMiscommunication(
+                KaliumException.InvalidRequestError(
+                    ErrorResponse(
+                        422,
+                        "Unsupported proposal type",
+                        "mls-unsupported-proposal"
+                    )
+                )
+            )
+
             val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(
                     ErrorResponse(
