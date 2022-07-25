@@ -255,8 +255,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
-
-
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
         conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
