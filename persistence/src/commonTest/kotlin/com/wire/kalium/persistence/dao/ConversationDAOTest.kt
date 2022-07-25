@@ -283,7 +283,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_whenUpdatingTheConversationLastSeenDate_ThenTheConversationHasTheDate() = runTest {
+    fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
         // given
         val expectedLastSeenDate = "2022-03-30T15:36:00.000Z"
 
