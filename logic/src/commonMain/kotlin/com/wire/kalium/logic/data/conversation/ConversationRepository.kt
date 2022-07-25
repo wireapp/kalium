@@ -185,8 +185,11 @@ class ConversationDataSource(
      * Gets a flow that allows observing of
      */
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
-        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID)).wrapStorageRequest().onlyRight()
-            .map(conversationMapper::fromDaoModel).flatMapLatest(::getConversationDetailsFlow)
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
+            .wrapStorageRequest()
+            .onlyRight()
+            .map(conversationMapper::fromDaoModel)
+            .flatMapLatest(::getConversationDetailsFlow)
 
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
         Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))

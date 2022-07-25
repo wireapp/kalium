@@ -92,7 +92,8 @@ class ConversationDAOImpl(
                 lastModifiedDate,
                 lastNotificationDate,
                 access.toList(),
-                accessRole?.toList()
+                accessRole?.toList(),
+                lastSeenDate
             )
         }
     }

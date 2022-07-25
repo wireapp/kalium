@@ -26,8 +26,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date, access_list, access_role_list)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date, access_list, access_role_list, last_seen_date)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -39,7 +39,8 @@ muted_time = excluded.muted_time,
 access_list = excluded.access_list,
 access_role_list = excluded.access_role_list,
 last_modified_date = last_modified_date,
-last_notified_message_date = last_notified_message_date;
+last_notified_message_date = last_notified_message_date,
+last_seen_date = last_seen_date;
 
 updateConversation:
 UPDATE Conversation
@@ -87,7 +88,7 @@ SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
 getUnreadMessageCount:
-SELECT COUNT() FROM Message AS message WHERE DateTime(message.date) < (SELECT DateTime(last_modified_date) FROM Conversation WHERE qualified_id = :conversaiton_id);
+SELECT COUNT() FROM Message AS message WHERE DateTime(message.date) > (SELECT DateTime(last_seen_date) FROM Conversation WHERE qualified_id = :conversaiton_id);
 
 getUnreadConversationCount:
-SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.last_modified_date) < DateTime(conversation.last_seen_date);
+SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_seen_date);
