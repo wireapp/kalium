@@ -611,7 +611,7 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationDaoFailed_whenUpdatingTheConversationSeenDate_thenShouldNotSuceed() = runTest {
+    fun givenAConversationDaoFailed_whenUpdatingTheConversationReadDate_thenShouldNotSucceed() = runTest {
         // given
         given(conversationDAO)
             .suspendFunction(conversationDAO::updateConversationReadDate)
