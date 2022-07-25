@@ -290,7 +290,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
 
         // when
-        conversationDAO.updateConversationSeenDate(conversationEntity1.id, expectedLastSeenDate)
+        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastSeenDate)
 
         // then
         val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)

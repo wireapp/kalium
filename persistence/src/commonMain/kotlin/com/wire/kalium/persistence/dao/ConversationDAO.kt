@@ -56,7 +56,7 @@ interface ConversationDAO {
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String)
-    suspend fun updateConversationSeenDate(conversationID: QualifiedIDEntity, date: String)
+    suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String)
     suspend fun updateAllConversationsNotificationDate(date: String)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>

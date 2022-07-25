@@ -237,7 +237,7 @@ class ConversationDAOImpl(
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun updateConversationSeenDate(conversationID: QualifiedIDEntity, date: String) {
-        conversationQueries.updateConversationSeenDate(date, conversationID)
+    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
+        conversationQueries.updateConversationReadDate(date, conversationID)
     }
 }

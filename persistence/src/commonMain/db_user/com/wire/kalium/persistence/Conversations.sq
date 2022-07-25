@@ -61,8 +61,8 @@ UPDATE Conversation
 SET last_modified_date = ?
 WHERE qualified_id = ?;
 
-updateConversationSeenDate:
-UPDATE  Conversation
+updateConversationReadDate:
+UPDATE Conversation
 SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
 
