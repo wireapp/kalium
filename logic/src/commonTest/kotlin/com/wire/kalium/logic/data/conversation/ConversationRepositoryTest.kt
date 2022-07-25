@@ -629,7 +629,6 @@ class ConversationRepositoryTest {
         assertIs<Either.Left<StorageFailure>>(result)
     }
 
-
     companion object {
         const val GROUP_NAME = "Group Name"
 
