@@ -7,8 +7,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLS.GroupState
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
@@ -52,20 +52,19 @@ class JoinExistingMLSConversationsUseCase(
 
     private suspend fun requestToJoinMLSGroupAndRetry(conversation: Conversation): Either<CoreFailure, Unit> =
         conversationRepository.requestToJoinMLSGroup(conversation)
-            .onFailure { failure ->
+            .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if (failure.kaliumException.isMlsStaleMessage()) {
                         kaliumLogger.w("Epoch out of date for conversation ${conversation.id}, re-fetching and re-trying")
 
                         // Re-fetch current epoch and try again
-                        conversationRepository.fetchConversation(conversation.id).flatMap {
+                        return conversationRepository.fetchConversation(conversation.id).flatMap {
                             conversationRepository.observeById(conversation.id).flatMap {
                                 requestToJoinMLSGroupAndRetry(conversation)
                             }
                         }
-                    } else {
-                        Either.Left(failure)
                     }
                 }
+                Either.Left(failure)
             }
 }
