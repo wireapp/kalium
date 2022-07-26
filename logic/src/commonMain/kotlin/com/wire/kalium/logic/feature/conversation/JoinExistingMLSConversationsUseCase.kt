@@ -15,7 +15,6 @@ import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 
 /**
@@ -26,29 +25,23 @@ class JoinExistingMLSConversationsUseCase(
     val conversationRepository: ConversationRepository,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
-    /**
-     * A dispatcher with limited parallelism of 10.
-     * This means using this dispatcher only a single coroutine will be processed at a time.
-     */
-    @Suppress("MagicNumber")
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val dispatcher = kaliumDispatcher.default.limitedParallelism(10)
-    suspend operator fun invoke(): Either<CoreFailure, Unit> =
-            conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
-                kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
-
-                return pendingConversations.map { conversation ->
-                    scope.async {
-                        requestToJoinMLSGroupAndRetry(conversation)
-                    }
-                }.map {
-                    it.await()
-                }.foldToEitherWhileRight(Unit) { value, _ ->
-                    value
-                }
-            }
-
+    private val dispatcher = kaliumDispatcher.io
     private val scope = CoroutineScope(dispatcher)
+
+    suspend operator fun invoke(): Either<CoreFailure, Unit> =
+        conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
+            kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
+
+            return pendingConversations.map { conversation ->
+                scope.async {
+                    requestToJoinMLSGroupAndRetry(conversation)
+                }
+            }.map {
+                it.await()
+            }.foldToEitherWhileRight(Unit) { value, _ ->
+                value
+            }
+        }
 
     private suspend fun requestToJoinMLSGroupAndRetry(conversation: Conversation): Either<CoreFailure, Unit> =
         conversationRepository.requestToJoinMLSGroup(conversation)
