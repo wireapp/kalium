@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 
 class DomainUserTypeMapperTest {
 
-    private val userTypeMapper : DomainUserTypeMapper = DomainUserTypeMapperImpl()
+    private val userTypeMapper: DomainUserTypeMapper = DomainUserTypeMapperImpl()
 
     @Test
     fun givenDomainAndTeamAreEqualAndPermissionCodeIsNull_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
@@ -90,7 +90,7 @@ class DomainUserTypeMapperTest {
             "teamB",
             "domainA",
             null
-            )
+        )
         //then
         assertEquals(UserType.FEDERATED, result)
     }

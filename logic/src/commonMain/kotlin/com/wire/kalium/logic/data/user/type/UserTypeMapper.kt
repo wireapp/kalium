@@ -92,7 +92,7 @@ interface UserTypeMapper<T> {
 
     private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 
-    fun teamRoleCodeToUserType(permissionCode: Int?): T = when(permissionCode) {
+    fun teamRoleCodeToUserType(permissionCode: Int?): T = when (permissionCode) {
         TeamRole.ExternalPartner.value -> external
         TeamRole.Member.value -> internal
         TeamRole.Admin.value -> admin

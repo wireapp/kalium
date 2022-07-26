@@ -27,9 +27,11 @@ data class Conversation(
     fun isGuestAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.GUEST))
     }
+
     fun isNonTeamMemberAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.NON_TEAM_MEMBER))
     }
+
     fun isServicesAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.SERVICE))
     }
