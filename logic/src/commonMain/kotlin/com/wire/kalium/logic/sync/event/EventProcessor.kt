@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync.event
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.kaliumLogger
@@ -28,12 +29,12 @@ internal class EventProcessorImpl(
 ) : EventProcessor {
 
     override suspend fun processEvent(event: Event) {
-        kaliumLogger.i(message = "SYNC: Processing event ${event.id}")
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "SYNC: Processing event ${event.id}")
         when (event) {
             is Event.Conversation -> conversationEventReceiver.onEvent(event)
             is Event.User -> userEventReceiver.onEvent(event)
             is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
-            is Event.Unknown -> kaliumLogger.i("Unhandled event id=${event.id}")
+            is Event.Unknown -> kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Unhandled event id=${event.id}")
         }
         eventRepository.updateLastProcessedEventId(event.id)
     }
