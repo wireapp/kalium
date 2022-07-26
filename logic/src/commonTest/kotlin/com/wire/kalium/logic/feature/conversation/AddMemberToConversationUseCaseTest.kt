@@ -29,13 +29,13 @@ class AddMemberToConversationUseCaseTest {
 
         addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
 
-        //VERIFY PROTEUS INVOKED CORRECTLY
+        // VERIFY PROTEUS INVOKED CORRECTLY
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::addMembers)
             .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
 
-        //VERIFY MLS NOT INVOKED
+        // VERIFY MLS NOT INVOKED
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
             .with(any(), any())
@@ -51,13 +51,13 @@ class AddMemberToConversationUseCaseTest {
 
         addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
 
-        //VERIFY PROTEUS INVOKED CORRECTLY
+        // VERIFY PROTEUS INVOKED CORRECTLY
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::addMembers)
             .with(any(), any())
             .wasNotInvoked()
 
-        //VERIFY MLS NOT INVOKED
+        // VERIFY MLS NOT INVOKED
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
             .with(any(), any())
@@ -73,13 +73,13 @@ class AddMemberToConversationUseCaseTest {
 
         addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
 
-        //VERIFY PROTEUS FUNCTION NOT INVOKED
+        // VERIFY PROTEUS FUNCTION NOT INVOKED
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::addMembers)
             .with(any(), any())
             .wasNotInvoked()
 
-        //VERIFY MLS FUNCTIONS INVOKED CORRECTLY
+        // VERIFY MLS FUNCTIONS INVOKED CORRECTLY
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
             .with(eq(Arrangement.mlsGroupId), eq(listOf(TestConversation.USER_1)))
