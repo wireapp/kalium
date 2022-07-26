@@ -133,12 +133,13 @@ internal class SearchUserRepositoryImpl(
                 userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.documents.map { it.qualifiedID }))
             }.map { userDetailsResponses ->
                 val selfUser = getSelfUser()
+
                 UserSearchResult(userDetailsResponses.map { userProfileDTO ->
                     publicUserMapper.fromUserDetailResponseWithUsertype(
                         userDetailResponse = userProfileDTO,
                         userType = userTypeMapper.fromOtherUserTeamAndDomain(
                             otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = getSelfUser().teamId?.value,
+                            selfUserTeamId = selfUser.teamId?.value,
                             otherUserTeamId = userProfileDTO.teamId,
                             selfUserDomain = selfUser.id.domain
                         )

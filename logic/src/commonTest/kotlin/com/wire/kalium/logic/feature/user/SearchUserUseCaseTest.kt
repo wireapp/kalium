@@ -38,21 +38,13 @@ class SearchUserUseCaseTest {
     private val searchUserRepository = mock(classOf<SearchUserRepository>())
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
-
-    @Mock
     private val connectionRepository = mock(classOf<ConnectionRepository>())
 
     private lateinit var searchUsersUseCase: SearchUsersUseCase
 
     @BeforeTest
     fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(userRepository, searchUserRepository, connectionRepository)
-
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
+        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository)
 
         given(connectionRepository)
             .suspendFunction(connectionRepository::getConnectionRequests)
