@@ -147,7 +147,8 @@ internal class CallDataSource(
             CallEntity.Status.STILL_ONGOING
         )
 
-        callingLogger.i("[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] | ConversationId: [$conversationId] | status: [$status]")
+        callingLogger.i("[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] | ConversationId: [$conversationId] " +
+                "| status: [$status]")
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
             updateCallMetadata(
                 conversationId = conversationId,
@@ -164,7 +165,8 @@ internal class CallDataSource(
             }
 
             if ((lastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
-                callingLogger.i("[CallRepository][createCall] -> Update.2 | lastCallStatus: [$lastCallStatus] | isGroupCall: [$isGroupCall] | isOneOnOneCall: [$isOneOnOneCall]")
+                callingLogger.i("[CallRepository][createCall] -> Update.2 | lastCallStatus: [$lastCallStatus] " +
+                        "| isGroupCall: [$isGroupCall] | isOneOnOneCall: [$isOneOnOneCall]")
                 // Save into database
                 wrapStorageRequest {
                     callDAO.insertCall(call = callEntity)
@@ -220,7 +222,8 @@ internal class CallDataSource(
                         status = callMapper.toCallEntityStatus(callStatus = status),
                         conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
                     )
-                    callingLogger.i("[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationId] | status: [$status]")
+                    callingLogger.i("[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationId] " +
+                            "| status: [$status]")
                 }
 
                 // Persist Missed Call Message if necessary
