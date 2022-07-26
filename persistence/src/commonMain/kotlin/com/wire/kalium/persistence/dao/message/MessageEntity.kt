@@ -126,7 +126,11 @@ sealed class MessageEntityContent {
         val memberChangeType: MessageEntity.MemberChangeType
     ) : System()
 
-    data class RestrictedAsset(val mimeType: String) : Regular()
+    data class RestrictedAsset(
+        val mimeType: String,
+        val assetSizeInBytes: Long,
+        val assetName: String,
+    ) : Regular()
 
     object MissedCall : System()
 }

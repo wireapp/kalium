@@ -20,7 +20,7 @@ class SyncRepositoryTest {
         //Given
 
         //When
-        val result = syncRepository.syncState.first()
+        val result = syncRepository.syncStateState.first()
 
         //Then
         assertEquals(SyncState.Waiting, result)
@@ -33,7 +33,7 @@ class SyncRepositoryTest {
         syncRepository.updateSyncState { updatedState }
 
         //When
-        val result = syncRepository.syncState.first()
+        val result = syncRepository.syncStateState.first()
 
         //Then
         assertEquals(updatedState, result)

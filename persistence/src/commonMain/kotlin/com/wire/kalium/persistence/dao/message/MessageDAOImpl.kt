@@ -53,8 +53,9 @@ class MessageMapper {
 
     fun toModel(content: SQLDelightMessageTextContent) = MessageEntityContent.Text(content.text_body ?: "")
 
-    fun toModel(content: MessageRestrictedAssetContent) = MessageEntityContent.RestrictedAsset(content.asset_mime_type)
-
+    fun toModel(content: MessageRestrictedAssetContent) = MessageEntityContent.RestrictedAsset(
+        content.asset_mime_type, content.asset_size, content.asset_name
+    )
 
     fun toModel(content: SQLDelightMessageAssetContent) = MessageEntityContent.Asset(
         assetSizeInBytes = content.asset_size,
@@ -133,7 +134,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
-                    asset_mime_type = content.mimeType
+                    asset_mime_type = content.mimeType,
+                    asset_size = content.assetSizeInBytes,
+                    asset_name = content.assetName ?: ""
                 )
                 is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
                     message_id = message.id,

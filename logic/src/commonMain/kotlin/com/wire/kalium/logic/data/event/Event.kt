@@ -15,6 +15,13 @@ sealed class Event(open val id: String) {
         id: String,
         open val conversationId: ConversationId
     ) : Event(id) {
+        data class AccessUpdate(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val data: ConversationResponse,
+            val qualifiedFrom: UserId,
+        ) : Conversation(id, conversationId)
+
         data class NewMessage(
             override val id: String,
             override val conversationId: ConversationId,
@@ -50,7 +57,7 @@ sealed class Event(open val id: String) {
 
         data class MemberLeave(
             override val id: String,
-             override val conversationId: ConversationId,
+            override val conversationId: ConversationId,
             val removedBy: UserId,
             val removedList: List<UserId>,
             val timestampIso: String
@@ -63,8 +70,6 @@ sealed class Event(open val id: String) {
             val message: String,
             val timestampIso: String = Clock.System.now().toString()
         ) : Conversation(id, conversationId)
-
-
     }
 
     sealed class FeatureConfig(

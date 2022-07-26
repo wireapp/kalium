@@ -15,7 +15,7 @@ CREATE TABLE Conversation (
     last_modified_date TEXT NOT NULL,
     last_notified_message_date TEXT,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
-    access_role_list TEXT AS List<ConversationEntity.AccessRole>
+    access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL
 );
 
 deleteAllConversations:
@@ -79,3 +79,7 @@ updateConversationMutingStatus:
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
+
+
+updateAccess:
+UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
