@@ -156,15 +156,20 @@ class MessageMapperImpl(
             )
         }
 
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
+
+        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption
+
+        // We store the unknown fields of the message in case we want to start handling them in the future
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
+
+        // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
+        // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
         is MessageContent.Calling -> MessageEntityContent.Unknown()
         is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
         is MessageContent.TextEdited -> MessageEntityContent.Unknown()
-        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(
-            this.mimeType, this.sizeInBytes, this.name
-        )
         is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
-        MessageContent.Empty -> MessageEntityContent.Unknown()
+        is MessageContent.Empty -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
@@ -192,6 +197,7 @@ class MessageMapperImpl(
             this.mimeType, this.assetSizeInBytes, this.assetName
         )
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
+        MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption
     }
 
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
@@ -203,7 +209,7 @@ class MessageMapperImpl(
             }
         }
 
-        is MessageEntityContent.MissedCall -> MessageContent.MissedCall
+        MessageEntityContent.MissedCall -> MessageContent.MissedCall
     }
 }
 

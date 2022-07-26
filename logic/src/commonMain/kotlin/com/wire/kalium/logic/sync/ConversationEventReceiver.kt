@@ -9,7 +9,6 @@ import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -43,7 +42,7 @@ import kotlinx.datetime.Clock
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
-//TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
+// TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 @Suppress("LongParameterList", "TooManyFunctions")
 class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
@@ -92,6 +91,7 @@ class ConversationEventReceiverImpl(
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
                     is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
+                    is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -120,12 +120,12 @@ class ConversationEventReceiverImpl(
         wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
             .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event) }
             .onFailure {
-                // TODO(important): Insert a failed message into the database to notify user that encryption is kaputt
                 when (it) {
                     is CoreFailure.Unknown -> kaliumLogger.e("$TAG - UnknownFailure when processing message: $it", it.rootCause)
                     is ProteusFailure -> kaliumLogger.e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
                     else -> kaliumLogger.e("Failure when processing message: $it")
                 }
+                handleFailedProteusDecryptedMessage(event)
             }.onSuccess { readableContent ->
                 handleContent(
                     conversationId = event.conversationId,
@@ -137,7 +137,41 @@ class ConversationEventReceiverImpl(
             }
     }
 
-    private suspend fun getReadableMessageContent(
+    private suspend fun handleFailedProteusDecryptedMessage(event: Event.Conversation.NewMessage) {
+        with(event) {
+            val message = Message.Regular(
+                id = id,
+                content = MessageContent.FailedDecryption,
+                conversationId = conversationId,
+                date = timestampIso,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId,
+                status = Message.Status.SENT,
+                editStatus = Message.EditStatus.NotEdited,
+                visibility = Message.Visibility.VISIBLE
+            )
+            processMessage(message)
+        }
+    }
+
+    private suspend fun handleFailedMLSDecryptedMessage(event: Event.Conversation.NewMLSMessage) {
+        with(event) {
+            val message = Message.Regular(
+                id = id,
+                content = MessageContent.FailedDecryption,
+                conversationId = conversationId,
+                date = timestampIso,
+                senderUserId = senderUserId,
+                senderClientId = ClientId(""),
+                status = Message.Status.SENT,
+                editStatus = Message.EditStatus.NotEdited,
+                visibility = Message.Visibility.VISIBLE
+            )
+            processMessage(message)
+        }
+    }
+
+    private fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
         event: Event.Conversation.NewMessage
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
@@ -213,7 +247,7 @@ class ConversationEventReceiverImpl(
                     status = Message.Status.SENT,
                     visibility = Message.Visibility.VISIBLE
                 )
-                processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
+                processMessage(message) // TODO(exception-handling): processMessage exceptions are not caught
             }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
@@ -248,8 +282,8 @@ class ConversationEventReceiverImpl(
     private suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) =
         mlsConversationRepository.messageFromMLSMessage(event)
             .onFailure {
-                // TODO(mls): Insert a failed message into the database to notify user that encryption is kaputt
                 kaliumLogger.e("$TAG - failure on MLS message: $it")
+                handleFailedMLSDecryptedMessage(event)
             }.onSuccess { mlsMessage ->
                 val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
                 val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)

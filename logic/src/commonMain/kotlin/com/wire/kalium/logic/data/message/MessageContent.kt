@@ -36,6 +36,7 @@ sealed class MessageContent {
     ) : Regular()
 
     object Empty : Regular()
+    object FailedDecryption : Regular()
 
     // server message content types
     // TODO: rename members to userList

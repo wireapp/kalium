@@ -121,6 +121,8 @@ sealed class MessageEntityContent {
         val encodedData: ByteArray? = null
     ) : Regular()
 
+    object FailedDecryption: Regular()
+
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,
         val memberChangeType: MessageEntity.MemberChangeType
@@ -133,4 +135,5 @@ sealed class MessageEntityContent {
     ) : Regular()
 
     object MissedCall : System()
+
 }
