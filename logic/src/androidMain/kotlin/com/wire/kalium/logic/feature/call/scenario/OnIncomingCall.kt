@@ -30,7 +30,7 @@ class OnIncomingCall(
         conversationType: Int,
         arg: Pointer?
     ) {
-        callingLogger.i("OnIncomingCall -> incoming call from $userId in conversation $conversationId at $messageTime")
+        callingLogger.i("[OnIncomingCall] -> ConversationId: $conversationId | UserId: $userId | shouldRing: $shouldRing")
         val conversationType = callMapper.fromIntToConversationType(conversationType)
         val isMuted = conversationType == ConversationType.Conference
         scope.launch {
@@ -41,7 +41,6 @@ class OnIncomingCall(
                 isMuted = isMuted,
                 isCameraOn = isVideoCall
             )
-        callingLogger.i("OnIncomingCall -> incoming call for conversation $conversationId added to data flow")
         }
     }
 }
