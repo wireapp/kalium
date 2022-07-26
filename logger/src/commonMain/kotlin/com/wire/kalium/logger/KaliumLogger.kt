@@ -86,7 +86,7 @@ class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = ar
         } ?: kermitLogger.v(message)
 
     @Suppress("unused")
-    fun std(message: String, throwable: Throwable? = null) =
+    fun d(message: String, throwable: Throwable? = null) =
         throwable?.let {
             kermitLogger.d(message, throwable)
         } ?: kermitLogger.d(message)
