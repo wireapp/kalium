@@ -7,22 +7,24 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.flatMap
 
-interface AddMemberToConversationUseCase {
+interface RemoveMemberFromConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>)
 }
 
-class AddMemberToConversationUseCaseImpl(
+class RemoveMemberFromConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository
-) : AddMemberToConversationUseCase {
+) : RemoveMemberFromConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>) {
-        // TODO: do we need to filter out self user ?
         conversationRepository.detailsById(conversationId).flatMap { conversation ->
             when (conversation.protocol) {
-                is ProtocolInfo.Proteus -> conversationRepository.addMembers(userIdList, conversationId)
+                is ProtocolInfo.Proteus ->
+                    conversationRepository.deleteMembers(userIdList, conversationId)
+
                 is ProtocolInfo.MLS ->
-                    mlsConversationRepository.addMemberToMLSGroup(conversation.protocol.groupId, userIdList)
+                    mlsConversationRepository.removeMemberFromMLSGroup(conversation.protocol.groupId, userIdList)
             }
         }
     }
+
 }

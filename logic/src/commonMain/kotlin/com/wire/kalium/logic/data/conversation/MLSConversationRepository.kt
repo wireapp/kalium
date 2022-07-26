@@ -29,6 +29,7 @@ interface MLSConversationRepository {
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
     suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun removeMemberFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
 }
 
 class MLSConversationDataSource(
@@ -105,6 +106,40 @@ class MLSConversationDataSource(
                                 Member(idMapper.toDaoModel(it), Member.Role.Member)
                             }
                             conversationDAO.insertMembers(list, groupID)
+                        }
+                    }.flatMap {
+                        Either.Right(Unit)
+                    }
+                } ?: run {
+                    Either.Right(Unit)
+                }
+            }
+        }
+
+    override suspend fun removeMemberFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
+        // TODO: check for federated and non-federated members
+        keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
+            mlsClientProvider.getMLSClient().flatMap { client ->
+                val clientKeyPackageList = keyPackages
+                    .map {
+                        Pair(
+                            CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
+                            it.keyPackage.decodeBase64Bytes()
+                        )
+                    }
+                client.addMember(groupID, clientKeyPackageList)?.let { (handshake, welcome) ->
+                    wrapApiRequest {
+                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                    }.flatMap {
+                        wrapApiRequest {
+                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
+                        }
+                    }.flatMap {
+                        wrapStorageRequest {
+                            val list = userIdList.map {
+                                idMapper.toDaoModel(it)
+                            }
+                            conversationDAO.deleteMembersByQualifiedID(list, groupID)
                         }
                     }.flatMap {
                         Either.Right(Unit)

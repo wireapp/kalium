@@ -66,6 +66,7 @@ interface ConversationDAO {
     suspend fun insertMembers(memberList: List<Member>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
+    suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String)
     suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
     suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
         member: Member,

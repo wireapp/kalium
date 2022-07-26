@@ -65,8 +65,8 @@ interface ConversationRepository {
     suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>>
     suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
+    suspend fun deleteMember(userID: UserId, conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
     suspend fun createGroupConversation(
         name: String? = null,
@@ -296,11 +296,13 @@ class ConversationDataSource(
         }
     }
 
-    override suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
-        wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(userID, conversationID) }
+    override suspend fun deleteMember(userID: UserId, conversationID: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(idMapper.toDaoModel(userID), idMapper.toDaoModel(conversationID)) }
 
-    override suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit> =
-        wrapStorageRequest { conversationDAO.deleteMembersByQualifiedID(userIDList, conversationID) }
+    override suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.deleteMembersByQualifiedID(userIDList.map { idMapper.toDaoModel(it) }, idMapper.toDaoModel(conversationID))
+        }
 
     override suspend fun createGroupConversation(
         name: String?,
