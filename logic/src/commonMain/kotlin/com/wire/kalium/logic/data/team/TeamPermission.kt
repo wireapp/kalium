@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.team
 
+@Suppress("MagicNumber")
 enum class TeamPermission(val code: Int) {
     CREATE_CONVERSATION(0x0001),
     DELETE_CONVERSATION(0x0002),
