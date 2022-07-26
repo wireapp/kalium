@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.notification
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.kaliumLogger
@@ -9,22 +10,17 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
-import io.ktor.client.plugins.websocket.webSocketSession
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
+import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.http.HttpMethod
 import io.ktor.websocket.Frame
-import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 
 class NotificationApiImpl internal constructor(
@@ -50,7 +46,7 @@ class NotificationApiImpl internal constructor(
     ): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = querySince)
 
-    //TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
+    // TODO(refactor): rename this function. It gets the first page of notifications, not all of them.
     override suspend fun getAllNotifications(querySize: Int, queryClient: String): NetworkResponse<NotificationResponse> =
         notificationsCall(querySize = querySize, queryClient = queryClient, querySince = null)
 
@@ -75,40 +71,40 @@ class NotificationApiImpl internal constructor(
     }
 
     override suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent<EventResponse>> = flow {
-
-        val session = authenticatedWebSocketClient
+        authenticatedWebSocketClient
             .createDisposableHttpClient()
-            .webSocketSession(
-                method = HttpMethod.Get
-            ) {
-                // TODO: setWSSUrl can be removed ?
-            setWSSUrl(serverLinks.webSocket, PATH_AWAIT)
+            .webSocket({
+                setWSSUrl(serverLinks.webSocket, PATH_AWAIT)
                 parameter(CLIENT_QUERY_KEY, clientId)
-            }
+            }, {
+                emitWebSocketEvents(this)
+            })
+    }
 
+    private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(
+        defaultClientWebSocketSession: DefaultClientWebSocketSession
+    ) {
         kaliumLogger.i("Websocket open")
-
         emit(WebSocketEvent.Open())
 
-        session
-            .incoming
+        defaultClientWebSocketSession.incoming
             .consumeAsFlow()
             .onCompletion {
                 kaliumLogger.w("Websocket Closed", it)
                 emit(WebSocketEvent.Close(it))
             }
             .collect { frame ->
-                kaliumLogger.v("Websocket Received Frame: $frame")
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Websocket Received Frame: $frame")
                 when (frame) {
                     is Frame.Binary -> {
                         // assuming here the byteArray is an ASCII character set
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
-                        kaliumLogger.v("Binary frame content: '$jsonString'")
+                        kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Binary frame content: '$jsonString'")
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
                     else -> {
-                        kaliumLogger.v("Websocket frame not handled: $frame")
+                        kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Websocket frame not handled: $frame")
                         emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))
                     }
                 }

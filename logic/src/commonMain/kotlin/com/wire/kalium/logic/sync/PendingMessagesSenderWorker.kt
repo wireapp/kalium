@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -30,11 +31,11 @@ internal class PendingMessagesSenderWorker(
         messageRepository.getAllPendingMessagesFromUser(userId)
             .onSuccess { pendingMessages ->
                 pendingMessages.forEach { message ->
-                    kaliumLogger.i("Attempting scheduled sending of message $message")
+                    kaliumLogger.withFeatureId(SYNC).i("Attempting scheduled sending of message $message")
                     messageSender.sendPendingMessage(message.conversationId, message.id)
                 }
             }.onFailure {
-                kaliumLogger.w("Failed to fetch and attempt retry of pending messages: $it")
+                kaliumLogger.withFeatureId(SYNC).w("Failed to fetch and attempt retry of pending messages: $it")
                 // This execution doesn't care about failures
             }
 
