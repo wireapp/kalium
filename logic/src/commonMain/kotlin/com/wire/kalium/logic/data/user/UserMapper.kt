@@ -27,7 +27,7 @@ interface UserMapper {
     ): UserEntity
 
     fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity
-    fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
+    fun fromDaoModelToSelfUser(userEntity: UserEntity, ssoId: SsoId): SelfUser
 
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
@@ -75,7 +75,8 @@ internal class UserMapperImpl(
                 ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
             completePicture = assets.getCompleteAssetOrNull()
                 ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
-            availabilityStatus = UserAvailabilityStatus.NONE
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            ssoId = ssoID?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
         )
     }
 
@@ -102,19 +103,22 @@ internal class UserMapperImpl(
         )
     }
 
-    override fun fromDaoModelToSelfUser(userEntity: UserEntity) = SelfUser(
-        idMapper.fromDaoModel(userEntity.id),
-        userEntity.name,
-        userEntity.handle,
-        userEntity.email,
-        userEntity.phone,
-        userEntity.accentId,
-        userEntity.team?.let { TeamId(it) },
-        connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
-        userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
-        availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
-    )
+    override fun fromDaoModelToSelfUser(userEntity: UserEntity, ssoId: SsoId) = with(userEntity) {
+        SelfUser(
+            idMapper.fromDaoModel(id),
+            name,
+            handle,
+            email,
+            phone,
+            accentId,
+            team?.let { TeamId(it) },
+            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewAssetId?.let { idMapper.fromDaoModel(it) },
+            completeAssetId?.let { idMapper.fromDaoModel(it) },
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            ssoId = ssoId
+        )
+    }
 
     override fun fromModelToUpdateApiModel(
         user: SelfUser,

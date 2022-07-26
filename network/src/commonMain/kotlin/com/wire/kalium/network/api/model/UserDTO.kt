@@ -3,7 +3,7 @@ package com.wire.kalium.network.api.model
 import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.UserSsoId
+import com.wire.kalium.network.api.UserSsoIdDTO
 import com.wire.kalium.network.api.user.register.NewBindingTeamDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -24,7 +24,7 @@ data class UserDTO(
     @SerialName("phone") val phone: String?,
     @SerialName("qualified_id") val id: UserId,
     @SerialName("service") val service: ServiceDTO?,
-    @SerialName("sso_id") val ssoID: UserSsoId?,
+    @SerialName("sso_id") val ssoID: UserSsoIdDTO?,
     @SerialName("team") val teamId: TeamId?
 )
 
@@ -43,7 +43,7 @@ internal data class NewUserDTO(
     @SerialName("password") val password: String?,
     @SerialName("phone") val phone: String?,
     @SerialName("phone_code") val phoneCode: String?,
-    @SerialName("sso_id") val ssoID: UserSsoId?,
+    @SerialName("sso_id") val ssoID: UserSsoIdDTO?,
     @SerialName("team") val newBindingTeamDTO: NewBindingTeamDTO?,
     @SerialName("team_code") val teamCode: String?,
     @SerialName("team_id") val teamID: TeamId?,

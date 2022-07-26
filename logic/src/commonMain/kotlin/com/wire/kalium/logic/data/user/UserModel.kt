@@ -62,6 +62,11 @@ enum class ConnectionState {
     /** The connection is complete and the conversation is in its normal state */
     ACCEPTED
 }
+data class SsoId(
+    val scimExternalId: String?,
+    val subject: String?,
+    val tenant: String?
+)
 
 data class SelfUser(
     override val id: UserId,
@@ -75,7 +80,8 @@ data class SelfUser(
     val connectionStatus: ConnectionState,
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
-    override val availabilityStatus: UserAvailabilityStatus
+    override val availabilityStatus: UserAvailabilityStatus,
+    val ssoId: SsoId?
 ) : User()
 
 data class OtherUser(
