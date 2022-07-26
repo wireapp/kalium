@@ -142,6 +142,7 @@ internal class SearchUserRepositoryImpl(
                             otherUserTeamId = userProfileDTO.teamId,
                             selfUserDomain = selfUser.id.domain,
                             permissionCode = null,
+                            userProfileDTO.service != null,
                         )
                     )
                 })

@@ -19,7 +19,8 @@ class DomainUserTypeMapperTest {
             "someTeamId",
             "someTeamId",
             "someDomain",
-            null
+            null,
+            false
         )
         //then
         assertEquals(UserType.INTERNAL, result)
@@ -33,7 +34,8 @@ class DomainUserTypeMapperTest {
             "someTeamId",
             "someTeamId",
             "someDomain",
-            TeamRole.Admin.value
+            TeamRole.Admin.value,
+            false
         )
         //then
         assertEquals(UserType.ADMIN, result)
@@ -47,7 +49,8 @@ class DomainUserTypeMapperTest {
             "someTeamId",
             "someTeamId",
             "someDomain",
-            TeamRole.Owner.value
+            TeamRole.Owner.value,
+            false
         )
         //then
         assertEquals(UserType.OWNER, result)
@@ -61,7 +64,8 @@ class DomainUserTypeMapperTest {
             "someTeamId",
             "someTeamId",
             "someDomain",
-            TeamRole.ExternalPartner.value
+            TeamRole.ExternalPartner.value,
+            false
         )
         //then
         assertEquals(UserType.EXTERNAL, result)
@@ -76,6 +80,7 @@ class DomainUserTypeMapperTest {
             "someTeamId",
             "someDomain",
             TeamRole.Member.value,
+            false
         )
         //then
         assertEquals(UserType.INTERNAL, result)
@@ -89,8 +94,9 @@ class DomainUserTypeMapperTest {
             "teamA",
             "teamB",
             "domainA",
-            null
-            )
+            null,
+            false
+        )
         //then
         assertEquals(UserType.FEDERATED, result)
     }
@@ -103,10 +109,26 @@ class DomainUserTypeMapperTest {
             "teamA",
             "teamB",
             "domain.wire.com",
-            null
+            null,
+            false
         )
         //then
         assertEquals(UserType.GUEST, result)
+    }
+
+    @Test
+    fun givenServiceBot_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsService() {
+        //when
+        val result = userTypeMapper.fromTeamDomainAndPermission(
+            "domain.wire.com",
+            "teamA",
+            "teamB",
+            "domain.wire.com",
+            null,
+            true
+        )
+        //then
+        assertEquals(UserType.SERVICE, result)
     }
 }
 

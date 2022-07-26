@@ -217,7 +217,8 @@ internal class ConnectionDataSource(
                         selfUserTeamId = selfUser.teamId?.value,
                         otherUserTeamId = userProfileDTO.teamId,
                         selfUserDomain = selfUser.id.domain,
-                        permissionCode = null
+                        permissionCode = null,
+                        userProfileDTO.service != null
                     )
                 )
 

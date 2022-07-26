@@ -19,7 +19,8 @@ class UserEntityTypeMapperTest {
             "someTeamId",
             "someTeamId",
             "someDomain",
-            null
+            null,
+            false
         )
         //then
         assertEquals(UserTypeEntity.INTERNAL, result)
@@ -34,6 +35,7 @@ class UserEntityTypeMapperTest {
             "someTeamId",
             "someDomain",
             TeamRole.Admin.value,
+            false
         )
         //then
         assertEquals(UserTypeEntity.ADMIN, result)
@@ -47,7 +49,8 @@ class UserEntityTypeMapperTest {
             "someTeamId",
             "someTeamId",
             "someDomain",
-            TeamRole.Owner.value
+            TeamRole.Owner.value,
+            false
         )
         //then
         assertEquals(UserTypeEntity.OWNER, result)
@@ -61,7 +64,8 @@ class UserEntityTypeMapperTest {
             "someTeamId",
             "someTeamId",
             "someDomain",
-            TeamRole.ExternalPartner.value
+            TeamRole.ExternalPartner.value,
+            false
         )
         //then
         assertEquals(UserTypeEntity.EXTERNAL, result)
@@ -75,7 +79,8 @@ class UserEntityTypeMapperTest {
             "someTeamId",
             "someTeamId",
             "someDomain",
-            TeamRole.Member.value
+            TeamRole.Member.value,
+            false
         )
         //then
         assertEquals(UserTypeEntity.INTERNAL, result)
@@ -89,7 +94,8 @@ class UserEntityTypeMapperTest {
             "teamA",
             "teamB",
             "domainA",
-            null
+            null,
+            false
         )
         //then
         assertEquals(UserTypeEntity.FEDERATED, result)
@@ -103,10 +109,26 @@ class UserEntityTypeMapperTest {
             "teamA",
             "teamB",
             "testDomain",
-            null
+            null,
+            false
         )
         //then
         assertEquals(UserTypeEntity.GUEST, result)
+    }
+
+    @Test
+    fun givenServiceBot_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsService() {
+        //when
+        val result = userTypeMapper.fromTeamDomainAndPermission(
+            "domain.wire.com",
+            "teamA",
+            "teamB",
+            "domain.wire.com",
+            null,
+            true
+        )
+        //then
+        assertEquals(UserTypeEntity.SERVICE, result)
     }
 }
 

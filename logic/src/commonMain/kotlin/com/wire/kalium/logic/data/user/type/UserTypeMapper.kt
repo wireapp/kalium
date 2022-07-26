@@ -18,6 +18,8 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
         get() = UserTypeEntity.ADMIN
     override val owner: UserTypeEntity
         get() = UserTypeEntity.OWNER
+    override val service: UserTypeEntity
+        get() = UserTypeEntity.SERVICE
     override val none: UserTypeEntity
         get() = UserTypeEntity.NONE
 
@@ -37,6 +39,8 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
         get() = UserType.ADMIN
     override val owner: UserType
         get() = UserType.OWNER
+    override val service: UserType
+        get() = UserType.SERVICE
     override val none: UserType
         get() = UserType.NONE
 
@@ -49,6 +53,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
             UserTypeEntity.NONE -> none
             UserTypeEntity.OWNER -> owner
             UserTypeEntity.ADMIN -> admin
+            UserTypeEntity.SERVICE -> service
         }
     }
 
@@ -68,6 +73,7 @@ interface UserTypeMapper<T> {
     val internal: T
     val admin: T
     val owner: T
+    val service: T
     val none: T
 
     @Suppress("ReturnCount")
@@ -76,8 +82,10 @@ interface UserTypeMapper<T> {
         selfUserTeamId: String?,
         otherUserTeamId: String?,
         selfUserDomain: String?,
-        permissionCode: Int?
+        permissionCode: Int?,
+        isService: Boolean,
     ): T = when {
+        isService -> service
         isFromDifferentBackEnd(otherUserDomain, selfUserDomain) -> federated
         isFromTheSameTeam(otherUserTeamId, selfUserTeamId) -> teamRoleCodeToUserType(permissionCode)
         selfUserIsTeamMember(selfUserTeamId) -> guest

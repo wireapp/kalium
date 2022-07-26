@@ -120,7 +120,8 @@ class UserDataSource(
                                 selfUserTeamId = selfUser?.teamId?.value,
                                 otherUserTeamId = userProfileDTO.teamId,
                                 selfUserDomain = selfUser?.id?.domain,
-                                permissionCode = null
+                                permissionCode = null,
+                                userProfileDTO.service != null
                             )
                         )
                     }
@@ -206,7 +207,8 @@ class UserDataSource(
                     selfUserTeamId = selfUser?.teamId?.value,
                     otherUserTeamId = userProfile.teamId,
                     selfUserDomain = selfUser?.id?.domain,
-                    permissionCode = null
+                    permissionCode = null,
+                    userProfile.service != null
                 )
             )
         }
