@@ -34,30 +34,8 @@ class RemoveMemberFromConversationUseCaseTest {
         // VERIFY PROTEUS INVOKED CORRECTLY
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::deleteMembers)
-            .with(eq(listOf(TestConversation.MEMBER_TEST1)), eq(TestConversation.ID))
+            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
-
-        // VERIFY MLS NOT INVOKED
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
-            .with(any(), any(), any())
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenMemberAndProteusConversation_WhenRemoveMemberFailed_ThenFunctionsInvokedCorrectly() = runTest {
-        val (arrangement, removeMemberUseCase) = Arrangement()
-            .withConversationProtocolIs(Arrangement.proteusProtocolInfo)
-            .withRemoveMemberFromProteusGroupFailed()
-            .arrange()
-
-        removeMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
-
-        // VERIFY PROTEUS INVOKED CORRECTLY
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteMembers)
-            .with(any(), any())
-            .wasNotInvoked()
 
         // VERIFY MLS NOT INVOKED
         verify(arrangement.mlsConversationRepository)
@@ -112,13 +90,6 @@ class RemoveMemberFromConversationUseCaseTest {
         }
 
         fun withRemoveMemberFromProteusGroupSuccessful() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::deleteMembers)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withRemoveMemberFromProteusGroupFailed() = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::deleteMembers)
                 .whenInvokedWith(any(), any())
