@@ -317,6 +317,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertTrue(actual != null)
         assertEquals(expectedLastReadDate, actual.lastReadDate)
     }
+    @Test
+    fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
+        // given
+        val expectedLastReadDate = "2022-03-30T15:36:00.000Z"
+
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate)
+
+        // then
+        val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+
+        assertTrue(actual != null)
+        assertEquals(expectedLastReadDate, actual.lastReadDate)
+    }
 
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationSeenDate_thenEmitTheNewConversationStateWithTheUpdatedSeenDate() =
