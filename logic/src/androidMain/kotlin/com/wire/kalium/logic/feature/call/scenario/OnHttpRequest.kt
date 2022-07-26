@@ -18,8 +18,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
-//TODO(testing): create unit test
-
+// TODO(testing): create unit test
 class OnHttpRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
