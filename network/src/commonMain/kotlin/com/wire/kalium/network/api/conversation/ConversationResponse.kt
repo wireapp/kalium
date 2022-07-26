@@ -41,7 +41,7 @@ data class ConversationResponse(
     val lastEventTime: String,
 
     @SerialName("access") val access: Set<ConversationAccessDTO>,
-    @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRoleDTO>?,
+    @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
 ) {
 
     val isOneOnOneConversation: Boolean

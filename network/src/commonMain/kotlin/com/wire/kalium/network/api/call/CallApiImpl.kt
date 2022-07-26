@@ -15,7 +15,7 @@ class CallApiImpl internal constructor(private val authenticatedNetworkClient: A
 
     override suspend fun getCallConfig(limit: Int?): NetworkResponse<String> =
         wrapKaliumResponse {
-            httpClient.get("/$PATH_CALLS/$PATH_CONFIG") {
+            httpClient.get("$PATH_CALLS/$PATH_CONFIG") {
                 limit?.let { parameter(QUERY_KEY_LIMIT, it) }
             }
         }
