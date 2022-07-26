@@ -142,7 +142,6 @@ class MLSConversationDataSource(
             }
         }
 
-
     private suspend fun establishMLSGroup(groupID: String, members: List<UserId>): Either<CoreFailure, Unit> =
         keyPackageRepository.claimKeyPackages(members).flatMap { keyPackages ->
             mlsClientProvider.getMLSClient().flatMap { client ->
