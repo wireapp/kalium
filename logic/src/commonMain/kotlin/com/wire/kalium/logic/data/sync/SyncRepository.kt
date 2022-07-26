@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.sync
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,12 +24,12 @@ internal class InMemorySyncRepository : SyncRepository {
     override fun updateSyncState(updateBlock: (currentState: SyncState) -> SyncState): SyncState =
         _syncState.updateAndGet { currentSyncState ->
             val newSyncState = updateBlock(currentSyncState)
-            kaliumLogger.i("SyncStatus Updated FROM:$currentSyncState; TO: $newSyncState")
+            kaliumLogger.withFeatureId(SYNC).i("SyncStatus Updated FROM:$currentSyncState; TO: $newSyncState")
             newSyncState
         }
 
     override fun setConnectionPolicy(connectionPolicy: ConnectionPolicy) {
-        kaliumLogger.i("Sync Connection Policy changed: $connectionPolicy")
+        kaliumLogger.withFeatureId(SYNC).i("Sync Connection Policy changed: $connectionPolicy")
         _connectionPolicy.value = connectionPolicy
     }
 }
