@@ -9,7 +9,6 @@ import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -268,10 +267,10 @@ class ConversationEventReceiverImpl(
     private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
         when (signaling) {
             MessageContent.Ignored -> {
-                kaliumLogger.i(message = "Ignored Signaling Message received: $signaling")
+                kaliumLogger.i(message = "$TAG Ignored Signaling Message received: $signaling")
             }
             is MessageContent.Availability -> {
-                kaliumLogger.i(message = "Availability status update received: ${signaling.status}")
+                kaliumLogger.i(message = "$TAG Availability status update received: ${signaling.status}")
                 userRepository.updateOtherUserAvailabilityStatus(senderUserId, signaling.status)
             }
         }
@@ -280,7 +279,7 @@ class ConversationEventReceiverImpl(
     // TODO(qol): split this function so it's easier to maintain
     @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
-        kaliumLogger.i(message = "Message received: $message")
+        kaliumLogger.i(message = "$TAG Message received: $message")
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {

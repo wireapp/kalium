@@ -174,6 +174,7 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             assetRepository
         )
