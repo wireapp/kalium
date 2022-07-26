@@ -44,6 +44,8 @@ class MemberMapper {
     }
 }
 
+private const val MLS_DEFAULT_EPOCH = 0L
+
 class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
     private val userQueries: UsersQueries,
@@ -82,7 +84,7 @@ class ConversationDAOImpl(
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupState
                 else ConversationEntity.GroupState.ESTABLISHED,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.epoch.toLong()
-                else 0,
+                else MLS_DEFAULT_EPOCH,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS
                 else ConversationEntity.Protocol.PROTEUS,
                 mutedStatus,
