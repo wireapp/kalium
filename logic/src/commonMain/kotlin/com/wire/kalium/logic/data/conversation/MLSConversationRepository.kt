@@ -12,10 +12,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
+import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
@@ -29,7 +31,7 @@ interface MLSConversationRepository {
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
     suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
-    suspend fun removeMembersFromMLSGroup(clientId: ClientId, groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
 }
 
 class MLSConversationDataSource(
@@ -37,7 +39,8 @@ class MLSConversationDataSource(
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
     private val conversationDAO: ConversationDAO,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val clientApi: ClientApi,
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> =
@@ -117,28 +120,31 @@ class MLSConversationDataSource(
         }
 
     override suspend fun removeMembersFromMLSGroup(
-        clientId: ClientId,
         groupID: String,
         userIdList: List<UserId>
     ): Either<CoreFailure, Unit> =
-        // TODO: check for federated and non-federated members
-        mlsClientProvider.getMLSClient().flatMap { client ->
-            val usersCryptoQualifiedClientIDs = userIdList
-                .map { CryptoQualifiedClientId(clientId.value, idMapper.toCryptoQualifiedIDId(it)) }
-            client.removeMember(groupID, usersCryptoQualifiedClientIDs)?.let { handshake ->
-                wrapApiRequest {
-                    mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
-                }.flatMap {
-                    wrapStorageRequest {
-                        conversationDAO.deleteMembersByQualifiedID(userIdList.map {
-                            idMapper.toDaoModel(it)
-                        }, groupID)
+        wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
+            val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
+                userClients.value.map { userClient ->
+                    CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
+                }
+            }
+            mlsClientProvider.getMLSClient().flatMap { client ->
+                client.removeMember(groupID, usersCryptoQualifiedClientIDs)?.let { handshake ->
+                    wrapApiRequest {
+                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                    }.flatMap {
+                        wrapStorageRequest {
+                            conversationDAO.deleteMembersByQualifiedID(userIdList.map {
+                                idMapper.toDaoModel(it)
+                            }, groupID)
+                        }
+                    }.flatMap {
+                        Either.Right(Unit)
                     }
-                }.flatMap {
+                } ?: run {
                     Either.Right(Unit)
                 }
-            } ?: run {
-                Either.Right(Unit)
             }
         }
 

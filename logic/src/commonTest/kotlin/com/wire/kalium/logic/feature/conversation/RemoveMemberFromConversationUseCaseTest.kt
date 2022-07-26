@@ -1,10 +1,8 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProtocolInfo
-import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -40,7 +38,7 @@ class RemoveMemberFromConversationUseCaseTest {
         // VERIFY MLS NOT INVOKED
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
-            .with(any(), any(), any())
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -49,7 +47,6 @@ class RemoveMemberFromConversationUseCaseTest {
         val (arrangement, removeMemberUseCase) = Arrangement()
             .withConversationProtocolIs(Arrangement.mlsProtocolInfo)
             .withRemoveMemberFromMLSGroupSuccessful()
-            .withExistingSelfClientId()
             .arrange()
 
         removeMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
@@ -63,7 +60,7 @@ class RemoveMemberFromConversationUseCaseTest {
         // VERIFY MLS FUNCTIONS INVOKED CORRECTLY
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
-            .with(eq(TestClient.CLIENT_ID), eq(Arrangement.mlsGroupId), eq(listOf(TestConversation.USER_1)))
+            .with(eq(Arrangement.mlsGroupId), eq(listOf(TestConversation.USER_1)))
             .wasInvoked(once)
     }
 
@@ -74,20 +71,10 @@ class RemoveMemberFromConversationUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
-        @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
-
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
             conversationRepository,
-            mlsConversationRepository,
-            clientRepository
+            mlsConversationRepository
         )
-
-        fun withExistingSelfClientId() = apply {
-            given(clientRepository).suspendFunction(clientRepository::currentClientId)
-                .whenInvoked()
-                .then { Either.Right(TestClient.CLIENT_ID) }
-        }
 
         fun withRemoveMemberFromProteusGroupSuccessful() = apply {
             given(conversationRepository)
@@ -99,7 +86,7 @@ class RemoveMemberFromConversationUseCaseTest {
         fun withRemoveMemberFromMLSGroupSuccessful() = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::removeMembersFromMLSGroup)
-                .whenInvokedWith(any(), any(), any())
+                .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
 
@@ -119,5 +106,4 @@ class RemoveMemberFromConversationUseCaseTest {
 
         }
     }
-
 }

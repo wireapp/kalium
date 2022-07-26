@@ -10,6 +10,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.message.MLSMessageApi
+import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -50,6 +51,9 @@ class MLSConversationRepositoryTest {
     @Mock
     private val mlsMessageApi = mock(classOf<MLSMessageApi>())
 
+    @Mock
+    private val clientApi = mock(ClientApi::class)
+
     private lateinit var mlsConversationRepository: MLSConversationRepository
 
     @BeforeTest
@@ -58,7 +62,8 @@ class MLSConversationRepositoryTest {
             keyPackageRepository,
             mlsClientProvider,
             mlsMessageApi,
-            conversationDAO
+            conversationDAO,
+            clientApi
         )
     }
 
