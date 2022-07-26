@@ -50,7 +50,7 @@ object TestConversation {
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
-        ID.copy(value = "GROUP ID"),
+        ID.copy(value = if (protocolInfo is ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"),
         "GROUP Name",
         Conversation.Type.GROUP,
         TestTeam.TEAM_ID,

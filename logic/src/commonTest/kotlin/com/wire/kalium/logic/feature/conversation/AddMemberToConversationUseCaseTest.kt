@@ -15,14 +15,11 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddMemberToConversationUseCaseTest {
 
-    // TODO: enable the tests once the issue with creating MLS conversations is solved
-    @Ignore
     @Test
     fun givenMemberAndProteusConversation_WhenAddMemberIsSuccessful_ThenMemberIsAddedToDB() = runTest {
         val (arrangement, addMemberUseCase) = Arrangement()
@@ -35,7 +32,7 @@ class AddMemberToConversationUseCaseTest {
         //VERIFY PROTEUS INVOKED CORRECTLY
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::addMembers)
-            .with(eq(listOf(TestConversation.MEMBER_TEST1)), eq(TestConversation.ID))
+            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
 
         //VERIFY MLS NOT INVOKED
@@ -44,8 +41,7 @@ class AddMemberToConversationUseCaseTest {
             .with(any(), any())
             .wasNotInvoked()
     }
-    // TODO: enable the tests once the issue with creating MLS conversations is solved
-    @Ignore
+
     @Test
     fun givenMemberAndProteusConversation_WhenAddMemberFailed_ThenFunctionsInvokedCorrectly() = runTest {
         val (arrangement, addMemberUseCase) = Arrangement()
@@ -58,8 +54,8 @@ class AddMemberToConversationUseCaseTest {
         //VERIFY PROTEUS INVOKED CORRECTLY
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::addMembers)
-            .with(eq(listOf(TestConversation.MEMBER_TEST1)), eq(TestConversation.ID))
-            .wasInvoked(exactly = once)
+            .with(any(), any())
+            .wasNotInvoked()
 
         //VERIFY MLS NOT INVOKED
         verify(arrangement.mlsConversationRepository)
@@ -86,8 +82,8 @@ class AddMemberToConversationUseCaseTest {
         //VERIFY MLS FUNCTIONS INVOKED CORRECTLY
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
-            .with(eq(Arrangement.mlsGroupId), eq(listOf(TestConversation.NETWORK_USER_ID1)))
-            .wasNotInvoked()
+            .with(eq(Arrangement.mlsGroupId), eq(listOf(TestConversation.USER_1)))
+            .wasInvoked(once)
     }
 
     private class Arrangement {

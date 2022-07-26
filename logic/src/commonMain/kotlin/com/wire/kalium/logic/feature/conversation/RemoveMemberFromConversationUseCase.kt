@@ -25,7 +25,7 @@ class RemoveMemberFromConversationUseCaseImpl(
 
                 is ProtocolInfo.MLS ->
                     clientRepository.currentClientId().flatMap { clientId ->
-                        mlsConversationRepository.removeMemberFromMLSGroup(clientId, conversation.protocol.groupId, userIdList)
+                        mlsConversationRepository.removeMembersFromMLSGroup(clientId, conversation.protocol.groupId, userIdList)
                     }
             }
         }

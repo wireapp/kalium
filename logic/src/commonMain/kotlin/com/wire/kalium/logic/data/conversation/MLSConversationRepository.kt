@@ -29,7 +29,7 @@ interface MLSConversationRepository {
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
     suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
-    suspend fun removeMemberFromMLSGroup(clientId: ClientId, groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun removeMembersFromMLSGroup(clientId: ClientId, groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
 }
 
 class MLSConversationDataSource(
@@ -116,7 +116,7 @@ class MLSConversationDataSource(
             }
         }
 
-    override suspend fun removeMemberFromMLSGroup(
+    override suspend fun removeMembersFromMLSGroup(
         clientId: ClientId,
         groupID: String,
         userIdList: List<UserId>
