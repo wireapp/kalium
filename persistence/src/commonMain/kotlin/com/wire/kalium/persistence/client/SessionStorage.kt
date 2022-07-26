@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.client
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SESSION
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -85,10 +86,10 @@ class SessionStorageImpl(
                     saveAllSessions(SessionsMap(temp))
                 }
             } ?: run {
-                kaliumLogger.d("trying to delete user session that didn't exists, userId: $userId")
+                kaliumLogger.withFeatureId(SESSION).d("trying to delete user session that didn't exists, userId: $userId")
             }
         } ?: run {
-            kaliumLogger.d("trying to delete user session but no sessions are stored userId: $userId")
+            kaliumLogger.withFeatureId(SESSION).d("trying to delete user session but no sessions are stored userId: $userId")
         }
 
 

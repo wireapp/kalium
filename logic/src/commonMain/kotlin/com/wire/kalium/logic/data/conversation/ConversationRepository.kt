@@ -109,7 +109,7 @@ class ConversationDataSource(
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
     // this will help avoid some functions getting stuck when observeSelfUser will filter nullable values
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> {
-        kaliumLogger.d("Fetching conversations")
+        kaliumLogger.withFeatureId(CONVERSATIONS).d("Fetching conversations")
         return fetchAllConversationsFromAPI()
     }
 

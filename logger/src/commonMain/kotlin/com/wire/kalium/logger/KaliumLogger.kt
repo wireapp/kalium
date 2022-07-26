@@ -86,7 +86,7 @@ class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = ar
         } ?: kermitLogger.v(message)
 
     @Suppress("unused")
-    fun d(message: String, throwable: Throwable? = null) =
+    fun std(message: String, throwable: Throwable? = null) =
         throwable?.let {
             kermitLogger.d(message, throwable)
         } ?: kermitLogger.d(message)
@@ -136,7 +136,7 @@ class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = ar
         )
 
         enum class ApplicationFlow {
-            SYNC, EVENT_RECEIVER, CONVERSATIONS, CONNECTIONS, MESSAGES, SEARCH, LOGIN, REGISTER, CLIENTS, CALLING
+            SYNC, EVENT_RECEIVER, CONVERSATIONS, CONNECTIONS, MESSAGES, SEARCH, SESSION, REGISTER, CLIENTS, CALLING
         }
     }
 }
