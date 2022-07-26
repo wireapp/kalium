@@ -92,7 +92,6 @@ class SessionStorageImpl(
             kaliumLogger.withFeatureId(SESSION).d("trying to delete user session but no sessions are stored userId: $userId")
         }
 
-
     override fun currentSession(): AuthSessionEntity? =
         kaliumPreferences.getSerializable(CURRENT_SESSION_KEY, UserIDEntity.serializer())?.let { userId ->
             allSessions()?.let { sessionMap ->
@@ -124,7 +123,6 @@ class SessionStorageImpl(
     }
 
     private fun removeAllSession() = kaliumPreferences.remove(SESSIONS_KEY)
-
 
     private companion object {
         private const val SESSIONS_KEY = "session_data_store_key"
