@@ -183,4 +183,9 @@ class UserDAOImpl(
         userQueries.selectAllUsersWithConnectionStatus(connectionState)
             .executeAsList()
             .map(mapper::toModel)
+
+    override suspend fun getAllUsersByTeam(teamId: String): List<UserEntity> =
+        userQueries.selectUsersByTeam(teamId)
+            .executeAsList()
+            .map(mapper::toModel)
 }

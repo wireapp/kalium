@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
@@ -21,6 +22,7 @@ interface ProtoContentMapper {
 
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
+    private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper()
 ) : ProtoContentMapper {
 
@@ -47,6 +49,8 @@ class ProtoContentMapperImpl(
                     qualifiedConversationId = readableContent.qualifiedConversationId
                 )
             )
+            is MessageContent.Availability ->
+                GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
 
             else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
@@ -86,7 +90,8 @@ class ProtoContentMapperImpl(
                 MessageContent.Asset(assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value))
             }
 
-            is GenericMessage.Content.Availability -> MessageContent.Ignored
+            is GenericMessage.Content.Availability ->
+                MessageContent.Availability(availabilityMapper.fromProtoAvailabilityToModel(protoContent.value))
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)

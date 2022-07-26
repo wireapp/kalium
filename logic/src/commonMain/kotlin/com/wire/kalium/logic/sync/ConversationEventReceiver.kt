@@ -108,7 +108,7 @@ class ConversationEventReceiverImpl(
             }
 
             is MessageContent.Signaling -> {
-                processSignaling(content.messageContent)
+                processSignaling(senderUserId, content.messageContent)
             }
         }
     }
@@ -124,7 +124,7 @@ class ConversationEventReceiverImpl(
                 when (it) {
                     is CoreFailure.Unknown -> kaliumLogger.e("$TAG - UnknownFailure when processing message: $it", it.rootCause)
                     is ProteusFailure -> kaliumLogger.e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
-                    else -> kaliumLogger.e("Failure when processing message: $it")
+                    else -> kaliumLogger.e("$TAG - Failure when processing message: $it")
                 }
             }.onSuccess { readableContent ->
                 handleContent(
@@ -265,10 +265,14 @@ class ConversationEventReceiverImpl(
                 )
             }
 
-    private fun processSignaling(signaling: MessageContent.Signaling) {
+    private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
         when (signaling) {
             MessageContent.Ignored -> {
                 kaliumLogger.i(message = "Ignored Signaling Message received: $signaling")
+            }
+            is MessageContent.Availability -> {
+                kaliumLogger.i(message = "Availability status update received: ${signaling.status}")
+                userRepository.updateOtherUserAvailabilityStatus(senderUserId, signaling.status)
             }
         }
     }
