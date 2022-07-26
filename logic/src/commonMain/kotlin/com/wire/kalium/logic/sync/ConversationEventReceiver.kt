@@ -42,7 +42,7 @@ import kotlinx.datetime.Clock
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
-//TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
+// TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 @Suppress("LongParameterList", "TooManyFunctions")
 class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
@@ -212,7 +212,7 @@ class ConversationEventReceiverImpl(
                     status = Message.Status.SENT,
                     visibility = Message.Visibility.VISIBLE
                 )
-                processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
+                processMessage(message) // TODO(exception-handling): processMessage exceptions are not caught
             }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
@@ -290,12 +290,13 @@ class ConversationEventReceiverImpl(
                                     // Check the second asset message is from the same original sender
                                     if (
                                         isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
-                                        && persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
+                                        && persistedMessage is Message.Regular
+                                        && persistedMessage.content is MessageContent.Asset
                                     ) {
                                         // The asset message received contains the asset decryption keys,
                                         // so update the preview message persisted previously
-                                        updateAssetMessage(persistedMessage, content.value.remoteData)?.let {
-                                            persistMessage(it)
+                                        updateAssetMessage(persistedMessage, content.value.remoteData)?.let { assetMessage ->
+                                            persistMessage(assetMessage)
                                         }
                                     }
                                 }
