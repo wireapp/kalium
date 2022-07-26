@@ -27,7 +27,7 @@ object Versions {
     const val ktxDateTime = "0.3.2"
     const val ktxSerialization = "1.3.2"
     const val multiplatformSettings = "0.8.1"
-    const val androidSecurity = "1.0.0"
+    const val androidSecurity = "1.1.0-alpha03"
     const val sqlDelight = "2.0.0-alpha01"
     const val pbandk = "0.14.1"
     const val turbine = "0.7.0"
