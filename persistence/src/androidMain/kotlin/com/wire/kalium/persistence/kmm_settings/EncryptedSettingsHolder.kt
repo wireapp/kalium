@@ -3,7 +3,6 @@ package com.wire.kalium.persistence.kmm_settings
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import androidx.security.crypto.MasterKeys
 import com.russhwolf.settings.AndroidSettings
 import com.russhwolf.settings.Settings
 
