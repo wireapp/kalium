@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProtocolInfo
@@ -13,7 +14,8 @@ interface RemoveMemberFromConversationUseCase {
 
 class RemoveMemberFromConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val mlsConversationRepository: MLSConversationRepository
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val clientRepository: ClientRepository
 ) : RemoveMemberFromConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>) {
         conversationRepository.detailsById(conversationId).flatMap { conversation ->
@@ -22,9 +24,10 @@ class RemoveMemberFromConversationUseCaseImpl(
                     conversationRepository.deleteMembers(userIdList, conversationId)
 
                 is ProtocolInfo.MLS ->
-                    mlsConversationRepository.removeMemberFromMLSGroup(conversation.protocol.groupId, userIdList)
+                    clientRepository.currentClientId().flatMap { clientId ->
+                        mlsConversationRepository.removeMemberFromMLSGroup(clientId, conversation.protocol.groupId, userIdList)
+                    }
             }
         }
     }
-
 }

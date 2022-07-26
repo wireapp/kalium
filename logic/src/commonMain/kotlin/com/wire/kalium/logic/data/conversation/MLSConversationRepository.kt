@@ -29,7 +29,7 @@ interface MLSConversationRepository {
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
     suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
-    suspend fun removeMemberFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun removeMemberFromMLSGroup(clientId: ClientId, groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
 }
 
 class MLSConversationDataSource(
@@ -83,7 +83,7 @@ class MLSConversationDataSource(
         }
 
     override suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        //TODO: check for federated and non-federated members
+        // TODO: check for federated and non-federated members
         keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
             mlsClientProvider.getMLSClient().flatMap { client ->
                 val clientKeyPackageList = keyPackages
@@ -116,39 +116,32 @@ class MLSConversationDataSource(
             }
         }
 
-    override suspend fun removeMemberFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
+    override suspend fun removeMemberFromMLSGroup(
+        clientId: ClientId,
+        groupID: String,
+        userIdList: List<UserId>
+    ): Either<CoreFailure, Unit> =
         // TODO: check for federated and non-federated members
-        keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
-            mlsClientProvider.getMLSClient().flatMap { client ->
-                val clientKeyPackageList = keyPackages
-                    .map {
-                        Pair(
-                            CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
-                            it.keyPackage.decodeBase64Bytes()
-                        )
+        mlsClientProvider.getMLSClient().flatMap { client ->
+            val usersCryptoQualifiedClientIDs = userIdList
+                .map { CryptoQualifiedClientId(clientId.value, idMapper.toCryptoQualifiedIDId(it)) }
+            client.removeMember(groupID, usersCryptoQualifiedClientIDs)?.let { handshake ->
+                wrapApiRequest {
+                    mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                }.flatMap {
+                    wrapStorageRequest {
+                        conversationDAO.deleteMembersByQualifiedID(userIdList.map {
+                            idMapper.toDaoModel(it)
+                        }, groupID)
                     }
-                client.addMember(groupID, clientKeyPackageList)?.let { (handshake, welcome) ->
-                    wrapApiRequest {
-                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
-                    }.flatMap {
-                        wrapApiRequest {
-                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            val list = userIdList.map {
-                                idMapper.toDaoModel(it)
-                            }
-                            conversationDAO.deleteMembersByQualifiedID(list, groupID)
-                        }
-                    }.flatMap {
-                        Either.Right(Unit)
-                    }
-                } ?: run {
+                }.flatMap {
                     Either.Right(Unit)
                 }
+            } ?: run {
+                Either.Right(Unit)
             }
         }
+
 
     private suspend fun establishMLSGroup(groupID: String, members: List<UserId>): Either<CoreFailure, Unit> =
         keyPackageRepository.claimKeyPackages(members).flatMap { keyPackages ->
