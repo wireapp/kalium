@@ -238,7 +238,6 @@ class MLSConversationRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     private companion object {
         val GROUP_ID = "groupId"
         val MEMBERS = listOf(Member(TestUser.ENTITY_ID, TODO()))
