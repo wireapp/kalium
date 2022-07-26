@@ -277,7 +277,11 @@ class MessageSenderTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationProtocolInfo)
             .whenInvokedWith(anything())
-            .thenReturn(if (getConversationProtocol) Either.Right(ConversationEntity.ProtocolInfo.Proteus) else Either.Left(StorageFailure.DataNotFound))
+            .thenReturn(
+                if (getConversationProtocol)
+                    Either.Right(ConversationEntity.ProtocolInfo.Proteus)
+                else Either.Left(StorageFailure.DataNotFound)
+            )
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationRecipients)

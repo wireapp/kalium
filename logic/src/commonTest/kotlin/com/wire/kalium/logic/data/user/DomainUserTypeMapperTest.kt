@@ -83,7 +83,7 @@ class DomainUserTypeMapperTest {
 
     @Test
     fun givenCommonNotWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
-        //given
+        // given
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "domainB",
             "teamA",

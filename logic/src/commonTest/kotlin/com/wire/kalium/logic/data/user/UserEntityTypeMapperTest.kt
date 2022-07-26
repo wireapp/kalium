@@ -21,7 +21,7 @@ class UserEntityTypeMapperTest {
             "someDomain",
             null
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.INTERNAL, result)
     }
 
@@ -35,7 +35,7 @@ class UserEntityTypeMapperTest {
             "someDomain",
             TeamRole.Admin.value,
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.ADMIN, result)
     }
 
@@ -49,7 +49,7 @@ class UserEntityTypeMapperTest {
             "someDomain",
             TeamRole.Owner.value
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.OWNER, result)
     }
 
@@ -63,7 +63,7 @@ class UserEntityTypeMapperTest {
             "someDomain",
             TeamRole.ExternalPartner.value
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.EXTERNAL, result)
     }
 
@@ -77,7 +77,7 @@ class UserEntityTypeMapperTest {
             "someDomain",
             TeamRole.Member.value
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.INTERNAL, result)
     }
 
@@ -91,7 +91,7 @@ class UserEntityTypeMapperTest {
             "domainA",
             null
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.FEDERATED, result)
     }
 
@@ -109,4 +109,3 @@ class UserEntityTypeMapperTest {
         assertEquals(UserTypeEntity.GUEST, result)
     }
 }
-
