@@ -1,20 +1,16 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserTypeMapper
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationOtherMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.ConversationSelfMemberResponse
 import com.wire.kalium.network.api.conversation.MutedStatus
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
@@ -34,7 +30,7 @@ class ConversationMapperTest {
     val idMapper = mock(classOf<IdMapper>())
 
     @Mock
-    val userTypeMapper = mock(classOf<UserTypeMapper>())
+    val protocolInfoMapper = mock(classOf<ProtocolInfoMapper>())
 
     @Mock
     val conversationStatusMapper = mock(classOf<ConversationStatusMapper>())
@@ -43,7 +39,7 @@ class ConversationMapperTest {
 
     @BeforeTest
     fun setup() {
-        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper, userTypeMapper)
+        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper, protocolInfoMapper)
     }
 
     @Test
@@ -160,10 +156,14 @@ class ConversationMapperTest {
         val ORIGINAL_CONVERSATION_ID = ConversationId("original", "oDomain")
         val SELF_USER_TEAM_ID = TeamId("teamID")
         val SELF_MEMBER_RESPONSE =
-            ConversationSelfMemberResponse(
-                UserId("selfId", "selfDomain"), "2022-04-11T20:24:57.237Z", MutedStatus.ALL_ALLOWED
+            ConversationMemberDTO.Self(
+                id = UserId("selfId", "selfDomain"),
+                conversationRole = "wire_member",
+                otrMutedRef = "2022-04-11T20:24:57.237Z",
+                otrMutedStatus = MutedStatus.ALL_ALLOWED
             )
-        val OTHER_MEMBERS = listOf(ConversationOtherMembersResponse(null, UserId("other1", "domain1")))
+        val OTHER_MEMBERS =
+            listOf(ConversationMemberDTO.Other(service = null, id = UserId("other1", "domain1"), conversationRole = "wire_admin"))
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, OTHER_MEMBERS)
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
@@ -175,7 +175,13 @@ class ConversationMapperTest {
             null,
             null,
             ConvProtocol.PROTEUS,
-            lastEventTime = "2022-03-30T15:36:00.000Z"
+            lastEventTime = "2022-03-30T15:36:00.000Z",
+            access = setOf(ConversationAccessDTO.INVITE, ConversationAccessDTO.CODE),
+            accessRole = setOf(
+                ConversationAccessRoleDTO.GUEST,
+                ConversationAccessRoleDTO.TEAM_MEMBER,
+                ConversationAccessRoleDTO.NON_TEAM_MEMBER
+            )
         )
     }
 }

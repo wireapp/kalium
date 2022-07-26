@@ -14,8 +14,8 @@ object MemberUpdateRequestJson {
         """
         |{
         |   "otr_muted_ref": "${it.otrMutedRef}",
-        |   "otr_muted_status": ${it.otrMutedStatus}
+        |   "otr_muted_status": ${it.otrMutedStatus?.ordinal}
         |}
-        """.trimIndent()
+        """.trimMargin()
     }
 }

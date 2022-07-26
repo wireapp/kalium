@@ -11,6 +11,8 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -26,16 +28,19 @@ class OnCloseCallTest {
 
     private lateinit var onCloseCall: OnCloseCall
 
+    private val testScope = TestScope()
+
     @BeforeTest
     fun setUp() {
         onCloseCall = OnCloseCall(
-            callRepository = callRepository
+            callRepository = callRepository,
+            scope = testScope
         )
     }
 
     @Suppress("FunctionNaming")
     @Test
-    fun givenAConversationWithAnOngoingCall_whenClosingTheCallAndTheCallIsStillOngoing_thenVerifyTheStatusIsOngoing() = runTest {
+    fun givenAConversationWithAnOngoingCall_whenClosingTheCallAndTheCallIsStillOngoing_thenVerifyTheStatusIsOngoing() = testScope.runTest {
         // given
         // when
         onCloseCall.onClosedCall(
@@ -46,17 +51,18 @@ class OnCloseCallTest {
             clientId = "clientId",
             arg = null
         )
+        advanceUntilIdle()
 
         // then
         verify(callRepository)
-            .function(callRepository::updateCallStatusById)
+            .suspendFunction(callRepository::updateCallStatusById)
             .with(eq("conversationId@domainId"), eq(CallStatus.STILL_ONGOING))
             .wasInvoked(once)
     }
 
     @Suppress("FunctionNaming")
     @Test
-    fun givenAConversationWithoutAnOngoingCall_whenClosingTheCallAndTheCallIsNotOngoing_thenVerifyTheStatusIsClosed() = runTest {
+    fun givenAConversationWithoutAnOngoingCall_whenClosingTheCallAndTheCallIsNotOngoing_thenVerifyTheStatusIsClosed() = testScope.runTest {
         // given
         // when
         onCloseCall.onClosedCall(
@@ -67,10 +73,11 @@ class OnCloseCallTest {
             clientId = "clientId",
             arg = null
         )
+        advanceUntilIdle()
 
         // then
         verify(callRepository)
-            .function(callRepository::updateCallStatusById)
+            .suspendFunction(callRepository::updateCallStatusById)
             .with(eq("conversationId@domainId"), eq(CallStatus.CLOSED))
             .wasInvoked(once)
     }

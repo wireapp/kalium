@@ -63,7 +63,7 @@ interface MessageApi {
          * Otr Message parameters
          * @param sender sender client ID
          * @param recipients Map of userid to clientIds and its preKey
-         * @param data extra data (optional)
+         * @param externalBlob extra data used for External messages, when the content is too big (optional)
          * @param nativePush push notification
          * @param priority message priority
          * @param transient
@@ -74,7 +74,7 @@ interface MessageApi {
             val nativePush: Boolean,
             val priority: MessagePriority,
             val transient: Boolean,
-            val `data`: String? = null,
+            val externalBlob: ByteArray? = null,
             val messageOption: QualifiedMessageOption
         ) : Parameters()
     }

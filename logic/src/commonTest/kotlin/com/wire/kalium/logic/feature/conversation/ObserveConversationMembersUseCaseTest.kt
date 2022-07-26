@@ -4,9 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberDetails
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.UserTypeMapper
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
@@ -18,15 +16,18 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveConversationMembersUseCaseTest {
 
     @Mock
@@ -34,9 +35,6 @@ class ObserveConversationMembersUseCaseTest {
 
     @Mock
     private val userRepository = mock(UserRepository::class)
-
-    @Mock
-    private val userTypeMapper = mock(UserTypeMapper::class)
 
     @Mock
     private val syncManager = configure(mock(SyncManager::class)) {
@@ -50,8 +48,7 @@ class ObserveConversationMembersUseCaseTest {
         observeConversationMembers = ObserveConversationMembersUseCase(
             conversationRepository,
             userRepository,
-            syncManager,
-            userTypeMapper
+            syncManager
         )
     }
 
@@ -60,7 +57,7 @@ class ObserveConversationMembersUseCaseTest {
         val conversationID = TestConversation.ID
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -86,7 +83,7 @@ class ObserveConversationMembersUseCaseTest {
         val conversationID = TestConversation.ID
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
 
@@ -115,18 +112,13 @@ class ObserveConversationMembersUseCaseTest {
         val secondSelfUser = firstSelfUser.copy(name = "Updated name")
         val selfUserUpdates = listOf(firstSelfUser, secondSelfUser)
         val members = listOf(
-            Member(firstSelfUser.id)
+            Member(firstSelfUser.id, Member.Role.Member)
         )
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(eq(firstSelfUser.id))
             .thenReturn(selfUserUpdates.asFlow())
-
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationMembers)
@@ -134,8 +126,8 @@ class ObserveConversationMembersUseCaseTest {
             .thenReturn(flowOf(members))
 
         observeConversationMembers(conversationID).test {
-            assertContentEquals(listOf(MemberDetails.Self(firstSelfUser)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Self(secondSelfUser)), awaitItem())
+            assertContentEquals(listOf(MemberDetails(firstSelfUser, Member.Role.Member)), awaitItem())
+            assertContentEquals(listOf(MemberDetails(secondSelfUser, Member.Role.Member)), awaitItem())
             awaitComplete()
         }
     }
@@ -145,34 +137,26 @@ class ObserveConversationMembersUseCaseTest {
         val conversationID = TestConversation.ID
         val firstOtherUser = TestUser.OTHER
         val secondOtherUser = firstOtherUser.copy(name = "Updated name")
-        val otherUserUpdates = listOf(firstOtherUser, secondOtherUser)
         val members = listOf(
-            Member(firstOtherUser.id)
+            Member(firstOtherUser.id, Member.Role.Member)
         )
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
-
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(anything())
-            .thenReturn(otherUserUpdates.asFlow())
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(eq(firstOtherUser.id))
+            .thenReturn(flow {
+                emit(firstOtherUser)
+                emit(secondOtherUser)
+            })
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationMembers)
             .whenInvokedWith(anything())
             .thenReturn(flowOf(members))
 
-        given(userTypeMapper)
-            .function(userTypeMapper::fromOtherUserAndSelfUser)
-            .whenInvokedWith(anything(),anything())
-            .thenReturn(UserType.GUEST)
-
         observeConversationMembers(conversationID).test {
-            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser, UserType.GUEST)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser, UserType.GUEST)), awaitItem())
+            assertContentEquals(listOf(MemberDetails(firstOtherUser, Member.Role.Member)), awaitItem())
+            assertContentEquals(listOf(MemberDetails(secondOtherUser, Member.Role.Member)), awaitItem())
             awaitComplete()
         }
     }
@@ -185,31 +169,30 @@ class ObserveConversationMembersUseCaseTest {
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(eq(TestUser.SELF.id))
             .thenReturn(flowOf(selfUser))
 
         given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(anything())
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(eq(otherUser.id))
             .thenReturn(flowOf(otherUser))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationMembers)
-            .whenInvokedWith(anything())
+            .whenInvokedWith(eq(conversationID))
             .thenReturn(membersListChannel.consumeAsFlow())
 
-        given(userTypeMapper)
-            .function(userTypeMapper::fromOtherUserAndSelfUser)
-            .whenInvokedWith(anything(),anything())
-            .thenReturn(UserType.GUEST)
-
         observeConversationMembers(conversationID).test {
-            membersListChannel.send(listOf(Member(otherUser.id)))
-            assertContentEquals(listOf(MemberDetails.Other(otherUser, UserType.GUEST)), awaitItem())
 
-            membersListChannel.send(listOf(Member(otherUser.id), Member(selfUser.id)))
-            assertContentEquals(listOf(MemberDetails.Other(otherUser, UserType.GUEST), MemberDetails.Self(selfUser)), awaitItem())
+            membersListChannel.send(listOf(Member(otherUser.id, Member.Role.Member)))
+            assertContentEquals(listOf(MemberDetails(otherUser, Member.Role.Member)), awaitItem())
+
+            membersListChannel.send(listOf(Member(otherUser.id, Member.Role.Admin), Member(selfUser.id, Member.Role.Member)))
+            assertContentEquals(
+                listOf(MemberDetails(otherUser, Member.Role.Admin), MemberDetails(selfUser, Member.Role.Member)),
+                awaitItem()
+            )
 
             membersListChannel.close()
             awaitComplete()

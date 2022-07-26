@@ -97,8 +97,30 @@ class RegisterClientUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryRegistrationFailsDueToWrongPassword_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
+    fun givenRepositoryRegistrationFailsDueMissingPassword_whenRegistering_thenPasswordAuthRequiredErrorShouldBeReturned() = runTest {
         val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerClient)
+            .whenInvokedWith(anything())
+            .then { Either.Left(wrongPasswordFailure) }
+
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+
+        assertIs<RegisterClientResult.Failure.PasswordAuthRequired>(result)
+
+        verify(preKeyRepository)
+            .suspendFunction(preKeyRepository::generateNewPreKeys)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(preKeyRepository)
+            .function(preKeyRepository::generateNewLastKey)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRepositoryRegistrationFailsDueInvalidPassword_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
+        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
         given(clientRepository)
             .suspendFunction(clientRepository::registerClient)
             .whenInvokedWith(anything())
@@ -155,7 +177,7 @@ class RegisterClientUseCaseTest {
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         verify(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -169,8 +191,8 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -180,13 +202,13 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Left(TEST_FAILURE))
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         verify(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -200,8 +222,8 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -211,7 +233,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Right(Unit))
 
         given(keyPackageRepository)
@@ -222,7 +244,7 @@ class RegisterClientUseCaseTest {
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         verify(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -236,8 +258,8 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -247,7 +269,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Right(Unit))
 
         given(keyPackageRepository)
@@ -256,15 +278,15 @@ class RegisterClientUseCaseTest {
             .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         verify(clientRepository)
-            .function(clientRepository::persistClientId)
-            .with(eq(registeredClient.clientId))
+            .suspendFunction(clientRepository::persistClientId)
+            .with(eq(registeredClient.id))
             .wasInvoked(once)
     }
 
@@ -276,8 +298,8 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(CLIENT) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -287,7 +309,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Right(Unit))
 
         given(keyPackageRepository)
@@ -297,7 +319,7 @@ class RegisterClientUseCaseTest {
 
         val persistFailure = TEST_FAILURE
         given(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Left(persistFailure) }
 
@@ -316,8 +338,8 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(CLIENT) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId))
+            .suspendFunction(mlsClientProvider::getMLSClient)
+            .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
@@ -327,7 +349,7 @@ class RegisterClientUseCaseTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.clientId), eq(MLS_PUBLIC_KEY))
+            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
             .thenReturn(Either.Right(Unit))
 
         given(keyPackageRepository)
@@ -336,7 +358,7 @@ class RegisterClientUseCaseTest {
             .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 

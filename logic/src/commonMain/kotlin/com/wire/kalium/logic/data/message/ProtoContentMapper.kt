@@ -6,11 +6,13 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
+import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.Text
+import pbandk.ByteArr
 
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
@@ -23,29 +25,40 @@ class ProtoContentMapperImpl(
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
-        if (protoContent !is ProtoContent.Readable) TODO("External message encoding not yet implemented")
+        val messageContent = when (protoContent) {
+            is ProtoContent.ExternalMessageInstructions -> mapExternalMessageToProtobuf(protoContent)
+            is ProtoContent.Readable -> mapReadableContentToProtobuf(protoContent)
+        }
 
-        val (messageUid, messageContent) = protoContent
+        val message = GenericMessage(protoContent.messageUid, messageContent)
+        return PlainMessageBlob(message.encodeToByteArray())
+    }
 
-        val content = when (messageContent) {
-            is MessageContent.Text -> GenericMessage.Content.Text(Text(content = messageContent.value))
-            is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = messageContent.value))
-            is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(messageContent.value))
-            is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = messageContent.messageId))
+    private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
+        when (val readableContent = protoContent.messageContent) {
+            is MessageContent.Text -> GenericMessage.Content.Text(Text(content = readableContent.value))
+            is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
+            is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
+            is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
                 MessageHide(
-                    messageId = messageContent.messageId,
-                    conversationId = messageContent.conversationId,
-                    qualifiedConversationId = messageContent.qualifiedConversationId
+                    messageId = readableContent.messageId,
+                    conversationId = readableContent.conversationId,
+                    qualifiedConversationId = readableContent.qualifiedConversationId
                 )
             )
 
-            else -> throw IllegalArgumentException("Unexpected message content type: $messageContent")
+            else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
 
-        val message = GenericMessage(messageUid, content)
-        return PlainMessageBlob(message.encodeToByteArray())
-    }
+    private fun mapExternalMessageToProtobuf(protoContent: ProtoContent.ExternalMessageInstructions) =
+        GenericMessage.Content.External(
+            External(
+                ByteArr(protoContent.otrKey),
+                protoContent.sha256?.let { ByteArr(it) },
+                protoContent.encryptionAlgorithm?.let { encryptionAlgorithmMapper.toProtoBufModel(it) }
+            )
+        )
 
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)

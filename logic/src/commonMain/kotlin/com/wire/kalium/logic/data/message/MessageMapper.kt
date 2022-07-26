@@ -49,6 +49,7 @@ class MessageMapperImpl(
                 },
                 visibility = visibility
             )
+
             is Message.System -> MessageEntity.System(
                 id = message.id,
                 content = message.content.toMessageEntityContent(),
@@ -88,6 +89,7 @@ class MessageMapperImpl(
                 },
                 visibility = visibility
             )
+
             is MessageEntity.System -> Message.System(
                 id = message.id,
                 content = message.content.toMessageContent(),
@@ -110,6 +112,10 @@ class MessageMapperImpl(
 
                 LocalNotificationMessage.Comment(author, message.date, type)
             }
+
+            is MessageContent.MissedCall ->
+                LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.MISSED_CALL)
+
             else -> LocalNotificationMessage.Comment(author, message.date, LocalNotificationCommentType.NOT_SUPPORTED_YET)
         }
 
@@ -149,20 +155,31 @@ class MessageMapperImpl(
                 assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
             )
         }
+
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
-        else -> MessageEntityContent.Unknown()
+        is MessageContent.Calling -> MessageEntityContent.Unknown()
+        is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
+        is MessageContent.TextEdited -> MessageEntityContent.Unknown()
+        is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(
+            this.mimeType, this.sizeInBytes, this.name
+        )
+        is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
+        MessageContent.Empty -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
         is MessageContent.MemberChange -> {
-            val memberUserIdList = this.members.map { memberMapper.toDaoModel(it).user }
+            val memberUserIdList = this.members.map { idMapper.toDaoModel(it) }
             when (this) {
                 is MessageContent.MemberChange.Added ->
                     MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.ADDED)
+
                 is MessageContent.MemberChange.Removed ->
                     MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
             }
         }
+
+        is MessageContent.MissedCall -> MessageEntityContent.MissedCall
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -170,17 +187,23 @@ class MessageMapperImpl(
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
+
+        is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
+            this.mimeType, this.assetSizeInBytes, this.assetName
+        )
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
     }
 
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
         is MessageEntityContent.MemberChange -> {
-            val memberList = this.memberUserIdList.map { memberMapper.fromDaoModel(it) }
+            val memberList = this.memberUserIdList.map { idMapper.fromDaoModel(it) }
             when (this.memberChangeType) {
                 MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
                 MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
             }
         }
+
+        is MessageEntityContent.MissedCall -> MessageContent.MissedCall
     }
 }
 

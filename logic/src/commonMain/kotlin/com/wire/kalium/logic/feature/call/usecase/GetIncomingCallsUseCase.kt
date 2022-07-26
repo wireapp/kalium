@@ -47,11 +47,13 @@ internal class GetIncomingCallsUseCaseImpl(
     }
 
     private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
-        userRepository.getSelfUser()
+        userRepository.observeSelfUser()
             .flatMapLatest {
                 //if user is AWAY we don't show any IncomingCalls
                 if (it.availabilityStatus == UserAvailabilityStatus.AWAY) flowOf(listOf())
-                else callRepository.incomingCallsFlow()
+                else callRepository.incomingCallsFlow().distinctUntilChanged {
+                        old, new -> old.firstOrNull()?.conversationId == new.firstOrNull()?.conversationId
+                }
             }
 
     private fun Flow<List<Call>>.onlyCallsInNotMutedConversations(): Flow<List<Call>> =
@@ -59,7 +61,7 @@ internal class GetIncomingCallsUseCaseImpl(
             calls
                 .flatMapFromIterable { call ->
                     //getting ConversationDetails for each Call
-                    conversationRepository.getConversationDetails(call.conversationId)
+                    conversationRepository.observeById(call.conversationId)
                         .getOrElse(flowOf(null))
                 }
                 .map { conversations ->

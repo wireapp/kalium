@@ -28,7 +28,7 @@ class ClientMapper(
     )
 
     fun fromClientResponse(response: ClientResponse): Client = Client(
-        clientId = ClientId(response.clientId),
+        id = ClientId(response.clientId),
         type = fromClientTypeDTO(response.type),
         registrationTime = response.registrationTime,
         location = response.location?.let { locationMapper.fromLocationResponse(it) } ?: run { null },

@@ -8,6 +8,8 @@ import com.wire.kalium.network.api.contact.search.UserSearchApi
 import com.wire.kalium.network.api.contact.search.UserSearchApiImpl
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImpl
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigApi
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigApiImpl
 import com.wire.kalium.network.api.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.keypackage.KeyPackageApiImpl
 import com.wire.kalium.network.api.message.MLSMessageApi
@@ -48,6 +50,9 @@ class AuthenticatedNetworkContainer(
     internal val websocketClient by lazy {
         AuthenticatedWebSocketClient(engine, sessionManager, serverMetaDataManager)
     }
+    internal val networkClientWithoutCompression by lazy {
+        AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager, false)
+    }
 
     val logoutApi: LogoutApi get() = LogoutImpl(networkClient, sessionManager)
 
@@ -63,7 +68,7 @@ class AuthenticatedNetworkContainer(
 
     val preKeyApi: PreKeyApi get() = PreKeyApiImpl(networkClient)
 
-    val assetApi: AssetApi get() = AssetApiImpl(networkClient)
+    val assetApi: AssetApi get() = AssetApiImpl(networkClientWithoutCompression)
 
     val notificationApi: NotificationApi get() = NotificationApiImpl(networkClient, websocketClient, backendConfig)
 
@@ -79,4 +84,5 @@ class AuthenticatedNetworkContainer(
 
     val connectionApi: ConnectionApi get() = ConnectionApiImpl(networkClient)
 
+    val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiImpl(networkClient)
 }

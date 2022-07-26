@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -28,7 +29,7 @@ class DeleteMessageUseCase(
 
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
         syncManager.startSyncIfIdle()
-        val selfUser = userRepository.getSelfUser().first()
+        val selfUser = userRepository.observeSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()
         return clientRepository.currentClientId().flatMap { currentClientId ->
@@ -48,9 +49,9 @@ class DeleteMessageUseCase(
             )
             messageSender.sendMessage(message)
         }.flatMap {
-            messageRepository.deleteMessage(messageId, conversationId)
+            messageRepository.markMessageAsDeleted(messageId, conversationId)
         }.onFailure {
-            kaliumLogger.w("delete message failure: $it")
+            kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $it")
             if (it is CoreFailure.Unknown) {
                 it.rootCause?.printStackTrace()
             }

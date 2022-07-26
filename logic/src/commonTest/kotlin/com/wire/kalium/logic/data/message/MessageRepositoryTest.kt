@@ -12,6 +12,7 @@ import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
@@ -21,6 +22,7 @@ import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -66,7 +68,7 @@ class MessageRepositoryTest {
 
     @Test
     fun givenAConversationId_whenGettingMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
-        val mappedId = TEST_QUALIFIED_ID_ENTITY
+        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
         given(idMapper)
             .function(idMapper::toDaoModel)
             .whenInvokedWith(anything())
@@ -147,7 +149,7 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenAMessage_whenSendingReturnsSuccess_thenUpdateTheMessageDate() = runTest {
+    fun givenAMessage_whenSendingReturnsSuccess_thenSuccessShouldBePropagatedWithServerTime() = runTest {
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
 
         given(idMapper)
@@ -171,6 +173,37 @@ class MessageRepositoryTest {
             }
     }
 
+    @Test
+    fun givenAMessageWithExternalBlob_whenSending_thenApiShouldBeCalledWithBlob() = runTest {
+        val dataBlob = EncryptedMessageBlob(byteArrayOf(0x42, 0x13, 0x69))
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf(), dataBlob)
+
+        given(idMapper)
+            .function(idMapper::toApiModel)
+            .whenInvokedWith(anything())
+            .then { TEST_NETWORK_QUALIFIED_ID_ENTITY }
+
+        given(messageApi)
+            .suspendFunction(messageApi::qualifiedSendMessage)
+            .whenInvokedWith(anything(), anything())
+            .then { _, _ ->
+                NetworkResponse.Success(
+                    QualifiedSendMessageResponse.MessageSent(TEST_DATETIME, mapOf(), mapOf(), mapOf()),
+                    emptyMap(),
+                    201
+                )
+            }
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope)
+            .shouldSucceed {
+                assertSame(it, TEST_DATETIME)
+            }
+
+        verify(messageApi)
+            .suspendFunction(messageApi::qualifiedSendMessage)
+            .with(matching { it.externalBlob!!.contentEquals(dataBlob.data) }, anything())
+            .wasInvoked(exactly = once)
+    }
+
     private companion object {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_NETWORK_QUALIFIED_ID_ENTITY = NetworkQualifiedId("value", "domain")
@@ -183,7 +216,7 @@ class MessageRepositoryTest {
                 senderUserId = TEST_QUALIFIED_ID_ENTITY,
                 senderClientId = "sender",
                 status = SENT,
-                editStatus =  MessageEntity.EditStatus.NotEdited
+                editStatus = MessageEntity.EditStatus.NotEdited
             )
         val TEST_CONVERSATION_ID = ConversationId("value", "domain")
         val TEST_CLIENT_ID = ClientId("clientId")

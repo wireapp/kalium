@@ -23,7 +23,7 @@ class RegisterApiTest : ApiTest {
                 assertPathEqual("/register")
                 assertHttps()
                 assertHostEqual(TEST_HOST)
-                assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
+                assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
         TODO()
@@ -46,7 +46,7 @@ class RegisterApiTest : ApiTest {
                 assertPathEqual("/register")
                 assertHttps()
                 assertHostEqual(TEST_HOST)
-                assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
+                assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
         TODO()
@@ -68,7 +68,7 @@ class RegisterApiTest : ApiTest {
                 assertPathEqual("/activate/send")
                 assertHttps()
                 assertHostEqual(TEST_HOST)
-                assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
+                assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
         TODO()
@@ -92,7 +92,7 @@ class RegisterApiTest : ApiTest {
                 assertPathEqual("/activate/send")
                 assertHttps()
                 assertHostEqual(TEST_HOST)
-                assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
+                assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
         TODO()
@@ -114,7 +114,7 @@ class RegisterApiTest : ApiTest {
                 assertPathEqual("/activate")
                 assertHttps()
                 assertHostEqual(TEST_HOST)
-                assertBodyContent(VALID_ACTIVATE_EMAIL.rawJson)
+                assertJsonBodyContent(VALID_ACTIVATE_EMAIL.rawJson)
             }
         )
         TODO()
@@ -138,7 +138,7 @@ class RegisterApiTest : ApiTest {
                 assertPathEqual("/activate")
                 assertHttps()
                 assertHostEqual(TEST_HOST)
-                assertBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
+                assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson)
             }
         )
         TODO()

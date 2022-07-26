@@ -4,15 +4,14 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
-import kotlin.test.BeforeTest
 
 class GetUserInfoUseCaseTestArrangement {
 
@@ -24,7 +23,8 @@ class GetUserInfoUseCaseTestArrangement {
 
     fun withSuccessfulUserRetrieve(
         localUserPresent: Boolean = true,
-        hasTeam: Boolean = true
+        hasTeam: Boolean = true,
+        userType: UserType = UserType.EXTERNAL
     ): GetUserInfoUseCaseTestArrangement {
         given(userRepository)
             .suspendFunction(userRepository::getKnownUser)
@@ -32,13 +32,13 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(
                 flowOf(
                     if (!localUserPresent) null
-                    else if (hasTeam) TestUser.OTHER else TestUser.OTHER.copy(team = null)
+                    else if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(teamId = null, userType = userType)
                 )
             )
 
         if (!localUserPresent) {
             given(userRepository)
-                .suspendFunction(userRepository::fetchUserInfo)
+                .suspendFunction(userRepository::userById)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(TestUser.OTHER))
         }
@@ -53,7 +53,7 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(flowOf(null))
 
         given(userRepository)
-            .suspendFunction(userRepository::fetchUserInfo)
+            .suspendFunction(userRepository::userById)
             .whenInvokedWith(any())
             .thenReturn(
                 Either.Left(CoreFailure.Unknown(RuntimeException("some error")))

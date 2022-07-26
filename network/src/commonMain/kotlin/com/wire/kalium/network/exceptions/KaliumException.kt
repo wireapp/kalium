@@ -14,6 +14,8 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_TEAM
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.OPERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
@@ -108,4 +110,12 @@ fun KaliumException.InvalidRequestError.isUserCreationRestricted(): Boolean {
 
 fun KaliumException.InvalidRequestError.isTooManyMembers(): Boolean {
     return errorResponse.label == TOO_MANY_MEMBERS
+}
+
+fun KaliumException.InvalidRequestError.isNoTeam(): Boolean {
+    return errorResponse.label == NO_TEAM
+}
+
+fun KaliumException.InvalidRequestError.isOperationDenied(): Boolean {
+    return errorResponse.label == OPERATION_DENIED
 }

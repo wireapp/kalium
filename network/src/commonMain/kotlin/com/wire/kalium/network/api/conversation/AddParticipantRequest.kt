@@ -10,11 +10,12 @@ data class AddParticipantRequest (
     @SerialName("qualified_users")
     val users: List<UserId>,
     @SerialName("conversation_role")
-    val conversationRole: String
+    val conversationRole: String?
 )
 
 
 sealed class AddParticipantResponse {
+    // TODO: the server response with an event aka, UserAdded model is inaccurate
     object ConversationUnchanged: AddParticipantResponse()
 
     @Serializable

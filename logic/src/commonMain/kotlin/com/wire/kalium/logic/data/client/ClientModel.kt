@@ -15,13 +15,13 @@ data class RegisterClientParam(
     val model: String?
 )
 
-data class DeleteClientParam(
-    val password: String,
-    val clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */
+data class DeleteClientParam (
+    val password: String?,
+    val clientId: ClientId
 )
 
 data class Client(
-    val clientId: ClientId,
+    val id: ClientId,
     val type: ClientType,
     val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
     val location: Location?,
@@ -30,7 +30,9 @@ data class Client(
     val cookie: String?,
     val capabilities: Capabilities?,
     val model: String?
-)
+) {
+    val name by lazy { model ?: label ?: "Unknown Client" } // TODO: ask design about the name when model/liable is null
+}
 
 data class Capabilities(
     val capabilities: List<ClientCapability>

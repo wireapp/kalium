@@ -12,7 +12,12 @@ data class ConversationEntity(
     val mutedTime: Long = 0,
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
+    val access: List<Access>,
+    val accessRole: List<AccessRole>
 ) {
+    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE; }
+
+    enum class Access { PRIVATE, INVITE, LINK, CODE; }
 
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 
@@ -28,9 +33,17 @@ data class ConversationEntity(
     }
 }
 
+// TODO: rename to MemberEntity
 data class Member(
-    val user: QualifiedIDEntity
-)
+    val user: QualifiedIDEntity,
+    val role: Role
+) {
+    sealed class Role {
+        object Member : Role()
+        object Admin : Role()
+        data class Unknown(val name: String) : Role()
+    }
+}
 
 interface ConversationDAO {
     suspend fun getSelfConversationId(): QualifiedIDEntity
@@ -46,21 +59,31 @@ interface ConversationDAO {
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getAllConversationWithOtherUser(userId: UserIDEntity): List<ConversationEntity>
     suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?>
+    suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
     suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
+    suspend fun insertMembers(memberList: List<Member>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
     suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
     suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
-        userId: UserIDEntity,
+        member: Member,
         status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     )
+
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
+
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
+
+    suspend fun updateAccess(
+        conversationID: QualifiedIDEntity,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>
+    )
 }

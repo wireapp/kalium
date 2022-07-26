@@ -67,6 +67,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingMLSConversation_ThenConversationIdCanBeRetrievedByGroupID() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        val result =
+            conversationDAO.getConversationIdByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+        assertEquals(conversationEntity2.id, result)
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationGroupState(
@@ -114,10 +122,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingMLSConversation_whenAddingMembersByGroupId_ThenAllMembersCanBeRetrieved() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertMembers(
+            listOf(member1, member2),
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity2.id).first().toSet())
+    }
+
+    @Test
     fun givenExistingConversation_ThenInsertedOrUpdatedMembersAreRetrieved() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-            userId = member1.user,
+            member = member1,
             status = ConnectionEntity.State.ACCEPTED,
             conversationID = conversationEntity1.id
         )
@@ -133,7 +152,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED))
 
         conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-            userId = member1.user,
+            member = member1,
             status = ConnectionEntity.State.SENT,
             conversationID = conversationEntity1.id
         )
@@ -244,7 +263,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
-
     @Test
     fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
         val convStored = conversationEntity1.copy(
@@ -262,6 +280,27 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(expected, actual)
     }
 
+    @Test
+    fun givenConversation_whenUpdatingAccessInfo_thenItsUpdated() = runTest {
+        val convStored = conversationEntity1.copy(
+            accessRole = listOf(ConversationEntity.AccessRole.TEAM_MEMBER), access = listOf(ConversationEntity.Access.INVITE)
+        )
+        val newAccessRole = listOf(
+            ConversationEntity.AccessRole.TEAM_MEMBER,
+            ConversationEntity.AccessRole.NON_TEAM_MEMBER,
+            ConversationEntity.AccessRole.SERVICE
+        )
+        val newAccess = listOf(ConversationEntity.Access.INVITE, ConversationEntity.Access.CODE)
+        val expected = convStored.copy(access = newAccess, accessRole = newAccessRole)
+        conversationDAO.insertConversation(convStored)
+
+        conversationDAO.updateAccess(convStored.id, newAccess, newAccessRole)
+
+        conversationDAO.observeGetConversationByQualifiedID(convStored.id).first().also { actual ->
+            assertEquals(expected, actual)
+        }
+
+    }
 
     private companion object {
         val user1 = newUserEntity(id = "1")
@@ -277,7 +316,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             lastNotificationDate = null,
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
-            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -287,7 +328,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED),
             lastNotificationDate = null,
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
-            mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED
+            mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -300,10 +343,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
-        val member1 = Member(user1.id)
-        val member2 = Member(user2.id)
+        val member1 = Member(user1.id, Member.Role.Admin)
+        val member2 = Member(user2.id, Member.Role.Member)
     }
 }

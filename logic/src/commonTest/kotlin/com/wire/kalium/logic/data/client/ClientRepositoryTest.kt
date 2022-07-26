@@ -1,9 +1,11 @@
 package com.wire.kalium.logic.data.client
 
+import app.cash.turbine.test
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.framework.TestClient
@@ -27,6 +29,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -44,11 +47,6 @@ class ClientRepositoryTest {
 
     @Mock
     private val clientRegistrationStorage = configure(mock(classOf<ClientRegistrationStorage>())) {
-        stubsUnitByDefault = true
-    }
-
-    @Mock
-    private val tokenStorage = configure(mock(classOf<TokenStorage>())) {
         stubsUnitByDefault = true
     }
 
@@ -117,7 +115,7 @@ class ClientRepositoryTest {
         clientRepository.persistClientId(clientId)
 
         verify(clientRegistrationStorage)
-            .setter(clientRegistrationStorage::registeredClientId)
+            .suspendFunction(clientRegistrationStorage::setRegisteredClientId)
             .with(eq(clientRepository))
     }
 
@@ -125,7 +123,7 @@ class ClientRepositoryTest {
     fun givenAClientIdIsStored_whenGettingRegisteredClientId_thenTheStoredValueShouldBeReturned() = runTest {
         val clientId = CLIENT_ID
         given(clientRegistrationStorage)
-            .getter(clientRegistrationStorage::registeredClientId)
+            .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
             .whenInvoked()
             .then { clientId.value }
 
@@ -139,7 +137,7 @@ class ClientRepositoryTest {
     @Test
     fun givenNoClientIdIsStored_whenGettingRegisteredClientId_thenShouldFailWithMissingRegistration() = runTest {
         given(clientRegistrationStorage)
-            .getter(clientRegistrationStorage::registeredClientId)
+            .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
             .whenInvoked()
             .then { null }
 
@@ -231,7 +229,7 @@ class ClientRepositoryTest {
         val expected = Either.Right(
             listOf(
                 Client(
-                    clientId = PlainId(value = "client_id_1"),
+                    id = PlainId(value = "client_id_1"),
                     type = ClientType.Permanent,
                     registrationTime = "31.08.1966",
                     location = null,
@@ -242,7 +240,7 @@ class ClientRepositoryTest {
                     model = "Mac ox"
                 ),
                 Client(
-                    clientId = PlainId(value = "client_id_1"),
+                    id = PlainId(value = "client_id_1"),
                     type = ClientType.Permanent,
                     registrationTime = "01.06.2022",
                     location = null,
@@ -305,6 +303,27 @@ class ClientRepositoryTest {
         verify(clientRemoteRepository).suspendFunction(clientRemoteRepository::registerToken)
             .with(any())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenClientStorageUpdatesTheClientId_whenObservingClientId_thenUpdatesShouldBePropagated() = runTest {
+        // Given
+        val values = listOf("first", "second")
+
+        given(clientRegistrationStorage)
+            .suspendFunction(clientRegistrationStorage::observeRegisteredClientId)
+            .whenInvoked()
+            .thenReturn(values.asFlow())
+
+        // When
+        clientRepository.observeCurrentClientId().test {
+
+            // Then
+            values.forEach {
+                assertEquals(ClientId(it), awaitItem())
+            }
+            cancelAndConsumeRemainingEvents()
+        }
     }
 
 

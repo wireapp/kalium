@@ -1,16 +1,17 @@
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -20,6 +21,7 @@ import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import com.wire.kalium.logic.util.TimeParser
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flatMapMerge
@@ -32,31 +34,40 @@ interface GetNotificationsUseCase {
 
 /**
  *
+ * @param connectionRepository connectionRepository for observing connectionRequests that user should be notified about
  * @param messageRepository MessageRepository for getting Messages that user should be notified about
  * @param userRepository UserRepository for getting SelfUser data, Self userId and OtherUser data (authors of messages)
  * @param conversationRepository ConversationRepository for getting conversations that have messages that user should be notified about
  * @param timeParser TimeParser for getting current time as a formatted String and making some calculation on String TimeStamp
  * @param messageMapper MessageMapper for mapping Message object into LocalNotificationMessage
- * @param publicUserMapper PublicUserMapper for mapping PublicUser object into LocalNotificationMessageAuthor
+ * @param localNotificationMessageMapper LocalNotificationMessageMapper for mapping PublicUser object into LocalNotificationMessageAuthor
  *
  * @return Flow<List<LocalNotificationConversation>> - Flow of Notification List that should be shown to the user.
  * That Flow emits everytime when the list is changed
  */
+@Suppress("LongParameterList")
 class GetNotificationsUseCaseImpl(
+    private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val timeParser: TimeParser,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper()
+    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
+        return observeRegularNotifications()
+            .combine(observeConnectionRequests()) { messages, connections -> messages.plus(connections) }
+            .distinctUntilChanged()
+    }
+
+    private suspend fun observeRegularNotifications(): Flow<List<LocalNotificationConversation>> {
         // Fetching the list of Conversations that have messages to notify user about
         // And SelfUser
         return conversationRepository.getConversationsForNotifications()
-            .combine(userRepository.getSelfUser())
+            .combine(userRepository.observeSelfUser())
             .flatMapLatest { (conversations, selfUser) ->
                 if (selfUser.availabilityStatus == UserAvailabilityStatus.AWAY) {
                     // We need to update notifiedData,
@@ -65,13 +76,12 @@ class GetNotificationsUseCaseImpl(
                     // If user is AWAY we don't show any notification
                     flowOf(listOf())
                 } else {
-                    val selfUserId = userRepository.getSelfUserId()
                     conversations.flatMapFromIterable { conversation ->
                         // Fetching the Messages for the Conversation that are newer than `lastNotificationDate`
                         observeMessagesList(conversation)
                             .map { messages ->
                                 // Filtering messages according to UserAvailabilityStatus and MutedConversationStatus
-                                val eligibleMessages = messages.onlyEligibleMessages(selfUserId, selfUser, conversation)
+                                val eligibleMessages = messages.onlyEligibleMessages(selfUser, conversation)
                                 // If some messages were filtered by status, we need to update lastNotificationDate,
                                 // to not notify User about that messages, when User changes status
                                 updateConversationNotificationDateIfNeeded(eligibleMessages, messages, conversation)
@@ -125,7 +135,15 @@ class GetNotificationsUseCaseImpl(
                             }
                     }
             }
-            .distinctUntilChanged()
+    }
+
+    private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
+        return connectionRepository.observeConnectionRequestsForNotification()
+            .map { requests ->
+                requests
+                    .filterIsInstance<ConversationDetails.Connection>()
+                    .map { localNotificationMessageMapper.fromConnectionToLocalNotificationConversation(it) }
+            }
     }
 
     private suspend fun observeMessagesList(conversation: Conversation) =
@@ -146,7 +164,7 @@ class GetNotificationsUseCaseImpl(
         }
 
     private fun getNotificationMessageAuthor(authors: List<OtherUser?>, senderUserId: UserId) =
-        publicUserMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
+        localNotificationMessageMapper.fromPublicUserToLocalNotificationMessageAuthor(authors.firstOrNull { it?.id == senderUserId })
 
     private suspend fun updateConversationNotificationDateIfNeeded(
         eligibleMessages: List<Message>,
@@ -161,7 +179,7 @@ class GetNotificationsUseCaseImpl(
             timeParser.dateMinusMilliseconds(eligibleMessages.minOf { it.date }, NOTIFICATION_DATE_OFFSET)
         }
 
-        //TODO here is the place to improve:
+        // TODO here is the place to improve:
         // update NotificationDate for all needed Conversations in one, instead of doing it one by one
         // that makes conversationRepository.getConversationsForNotifications() emits new value after each DB update
         conversation.lastNotificationDate.let {
@@ -171,15 +189,14 @@ class GetNotificationsUseCaseImpl(
     }
 
     private fun List<Message>.onlyEligibleMessages(
-        selfUserId: QualifiedID,
         selfUser: SelfUser,
         conversation: Conversation
     ): List<Message> =
         filter { message ->
-            message.senderUserId != selfUserId
-                    && shouldMessageBeVisibleAsNotification(message)
-                    && isMessageContentSupportedInNotifications(message)
-                    && shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus)
+            message.senderUserId != selfUser.id &&
+                    shouldMessageBeVisibleAsNotification(message) &&
+                    isMessageContentSupportedInNotifications(message) &&
+                    shouldIncludeMessageForNotifications(message, selfUser, conversation.mutedStatus)
         }
 
     private fun shouldIncludeMessageForNotifications(
@@ -201,6 +218,7 @@ class GetNotificationsUseCaseImpl(
 
                         containsSelfUserName or containsSelfHandle
                     }
+                    is MessageContent.MissedCall -> true
                     else -> false
                 }
             }
@@ -209,23 +227,32 @@ class GetNotificationsUseCaseImpl(
         }
 
     private fun allNotificationsAllowed(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        conversationMutedStatus == MutedConversationStatus.AllAllowed
-                && (selfUser.availabilityStatus == UserAvailabilityStatus.NONE
-                || selfUser.availabilityStatus == UserAvailabilityStatus.AVAILABLE)
+        conversationMutedStatus == MutedConversationStatus.AllAllowed &&
+                (selfUser.availabilityStatus == UserAvailabilityStatus.NONE ||
+                        selfUser.availabilityStatus == UserAvailabilityStatus.AVAILABLE)
 
     private fun allMuted(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        conversationMutedStatus == MutedConversationStatus.AllMuted
-                || selfUser.availabilityStatus == UserAvailabilityStatus.AWAY
+        conversationMutedStatus == MutedConversationStatus.AllMuted ||
+                selfUser.availabilityStatus == UserAvailabilityStatus.AWAY
 
     private fun onlyMentionsAllowed(conversationMutedStatus: MutedConversationStatus, selfUser: SelfUser) =
-        conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed
-                || selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
+        conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed ||
+                selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
-    private fun isMessageContentSupportedInNotifications(message: Message): Boolean =
-        message.content !is MessageContent.Unknown
-                && message.content !is MessageContent.System
-                && message.content !is MessageContent.DeleteMessage
-                && message.content !is MessageContent.DeleteForMe
+    private fun isMessageContentSupportedInNotifications(message: Message): Boolean = when (message.content) {
+        is MessageContent.Unknown -> false
+        is MessageContent.MemberChange -> false
+        MessageContent.MissedCall -> true
+        is MessageContent.Text -> true
+        is MessageContent.Calling -> false
+        is MessageContent.Asset -> true
+        is MessageContent.DeleteMessage -> false
+        is MessageContent.TextEdited -> false
+        is MessageContent.RestrictedAsset -> true
+        is MessageContent.DeleteForMe -> false
+        MessageContent.Empty -> false
+        MessageContent.Ignored -> false
+    }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
         message.visibility == Message.Visibility.VISIBLE

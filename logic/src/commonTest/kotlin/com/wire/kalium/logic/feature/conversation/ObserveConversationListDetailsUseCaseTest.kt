@@ -6,8 +6,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
-import com.wire.kalium.logic.data.conversation.UserType
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -43,19 +43,19 @@ class ObserveConversationListDetailsUseCaseTest {
     @Mock
     private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
 
-    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCase
+    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCaseImpl
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCase(conversationRepository, syncManager, callRepository)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, syncManager, callRepository)
     }
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -79,10 +79,10 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenSyncManagerShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -106,10 +106,10 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP)
+        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -136,7 +136,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversationsDetailsAreUpdated_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         val oneOnOneConversation = TestConversation.ONE_ON_ONE
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
         val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED))
@@ -158,7 +158,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -179,20 +179,22 @@ class ObserveConversationListDetailsUseCaseTest {
 
         observeConversationsUseCase().test {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
-            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, awaitItem())
+
+            val detailList: List<ConversationDetails> = awaitItem()
+            assertContentEquals(groupConversationUpdates, detailList)
 
             oneOnOneDetailsChannel.send(secondOneOnOneDetails)
-            assertContentEquals(groupConversationUpdates + secondOneOnOneDetails, awaitItem())
+            val updatedDetailList: List<ConversationDetails> = awaitItem()
+            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, updatedDetailList)
 
-            oneOnOneDetailsChannel.close()
-            awaitComplete()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Suppress("FunctionNaming")
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val selfConversation = TestConversation.SELF
@@ -204,7 +206,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
@@ -226,9 +228,6 @@ class ObserveConversationListDetailsUseCaseTest {
         observeConversationsUseCase().test {
             assertContentEquals(listOf(groupConversationDetails), awaitItem())
 
-            conversationListUpdates.send(secondConversationsList)
-            assertContentEquals(listOf(groupConversationDetails, selfConversationDetails), awaitItem())
-
             conversationListUpdates.close()
             awaitComplete()
         }
@@ -237,7 +236,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val ongoingCall = Call(
@@ -258,7 +257,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf(ongoingCall)))
 
@@ -279,7 +278,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
-        val groupConversation = TestConversation.GROUP
+        val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
 
         val firstConversationsList = listOf(groupConversation)
@@ -288,7 +287,7 @@ class ObserveConversationListDetailsUseCaseTest {
         conversationListUpdates.send(firstConversationsList)
 
         given(callRepository)
-            .function(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 

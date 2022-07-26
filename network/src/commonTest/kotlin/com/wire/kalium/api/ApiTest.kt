@@ -12,6 +12,7 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -25,6 +26,8 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -65,6 +68,7 @@ class TestServerMetaDataManager: ServerMetaDataManager {
 
 internal interface ApiTest {
 
+    private val json get() = KtxSerializer.json
     val TEST_SESSION_NAMAGER: TestSessionManager get() = TestSessionManager()
 
     /**
@@ -306,12 +310,13 @@ internal interface ApiTest {
     fun HttpRequestData.assertPathAndQueryEqual(pathAndQuery: String) = assertEquals(pathAndQuery, this.url.encodedPathAndQuery)
 
     // body
-    fun HttpRequestData.assertBodyContent(content: String) {
+    fun HttpRequestData.assertJsonBodyContent(content: String) {
         assertIs<TextContent>(body)
         // convert both body and the content to JsonObject, so we are not comparing strings
         // since json strings can have different values order
-        val expected = buildJsonObject { buildString { content } }
-        val actual = buildJsonObject { buildString { (body as TextContent).text } }
+
+        val expected = json.decodeFromString<JsonElement>(content)
+        val actual = json.decodeFromString<JsonElement>((body as TextContent).text)
         assertEquals(expected, actual)
     }
 

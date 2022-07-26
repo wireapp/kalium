@@ -1,16 +1,20 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.publicuser.Result
-import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.SearchUsersUseCaseImpl
+import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.ErrorResponse
@@ -36,16 +40,24 @@ class SearchUserUseCaseTest {
     @Mock
     private val userRepository = mock(classOf<UserRepository>())
 
+    @Mock
+    private val connectionRepository = mock(classOf<ConnectionRepository>())
+
     private lateinit var searchUsersUseCase: SearchUsersUseCase
 
     @BeforeTest
     fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(userRepository, searchUserRepository)
+        searchUsersUseCase = SearchUsersUseCaseImpl(userRepository, searchUserRepository, connectionRepository)
 
         given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
+            .suspendFunction(userRepository::observeSelfUser)
             .whenInvoked()
             .thenReturn(flowOf(TestUser.SELF))
+
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::getConnectionRequests)
+            .whenInvoked()
+            .thenReturn(listOf())
     }
 
     @Test
@@ -55,7 +67,7 @@ class SearchUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY)
@@ -65,13 +77,37 @@ class SearchUserUseCaseTest {
     }
 
     @Test
+    fun givenPendingConnectionRequests_whenSearchingPublicUser_thenCorrectlyPropagateUserWithConnectionStatus() = runTest {
+        //given
+        val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
+
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::getConnectionRequests)
+            .whenInvoked()
+            .thenReturn(listOf(PENDING_CONNECTION))
+
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
+            .whenInvokedWith(anything(), anything(), anything(), anything())
+            .thenReturn(expected)
+        //when
+        val actual = searchUsersUseCase(TEST_QUERY)
+        //then
+        assertIs<Result.Success>(actual)
+        assertEquals(
+            actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
+            ConnectionState.PENDING
+        )
+    }
+
+    @Test
     fun givenValidParams_federated_whenSearchingPublicUser_thenCorrectlyPropagateSuccessResult() = runTest {
         //given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything())
+            .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY_FEDERATED)
@@ -87,7 +123,7 @@ class SearchUserUseCaseTest {
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(eq("testQuery"), eq("domain"), anything())
+            .whenInvokedWith(eq("testQuery"), eq(""), anything(), anything())
             .thenReturn(expected)
         //when
         val actual = searchUsersUseCase(TEST_QUERY)
@@ -104,23 +140,33 @@ class SearchUserUseCaseTest {
             NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(ErrorResponse(404, "a", "")))
         )
 
+        val PENDING_CONNECTION = Connection(
+            "someId",
+            "from",
+            "lastUpdate",
+            QualifiedID("conversationId", "someDomain"),
+            UserId(0.toString(), "domain0"),
+            ConnectionState.PENDING,
+            "toId",
+            null
+        )
+
         val VALID_SEARCH_PUBLIC_RESULT = UserSearchResult(
-            result = buildList {
-                for (i in 0..5) {
-                    OtherUser(
-                        id = UserId(i.toString(), "domain$i"),
-                        name = "name$i",
-                        handle = null,
-                        email = null,
-                        phone = null,
-                        accentId = i,
-                        team = null,
-                        connectionStatus = ConnectionState.ACCEPTED,
-                        previewPicture = null,
-                        completePicture = null,
-                        availabilityStatus = UserAvailabilityStatus.NONE
-                    )
-                }
+            result = MutableList(size = 5) {
+                OtherUser(
+                    id = UserId(it.toString(), "domain$it"),
+                    name = "name$it",
+                    handle = null,
+                    email = null,
+                    phone = null,
+                    accentId = it,
+                    teamId = null,
+                    connectionStatus = ConnectionState.ACCEPTED,
+                    previewPicture = null,
+                    completePicture = null,
+                    availabilityStatus = UserAvailabilityStatus.NONE,
+                    userType = UserType.FEDERATED
+                )
             }
         )
     }

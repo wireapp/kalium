@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -16,11 +17,8 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -85,7 +83,6 @@ class RegisterAccountRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenApiRequestRequestSuccess_whenActivatingAnEmail_thenSuccessIsPropagated() = runTest {
         val expected = Unit
@@ -132,10 +129,10 @@ class RegisterAccountRepositoryTest {
                 email = email,
                 phone = phone,
                 accentId = accentId,
-                team = teamId,
+                teamId = teamId?.let { TeamId(it) },
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = UserAssetId("value1","domain"),
-                completePicture = UserAssetId("value2","domain"),
+                previewPicture = UserAssetId("value1", "domain"),
+                completePicture = UserAssetId("value2", "domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
@@ -182,10 +179,10 @@ class RegisterAccountRepositoryTest {
                 email = email,
                 phone = phone,
                 accentId = accentId,
-                team = teamId,
+                teamId = teamId?.let { TeamId(it) },
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = UserAssetId("value1","domain"),
-                completePicture = UserAssetId("value2","domain"),
+                previewPicture = UserAssetId("value1", "domain"),
+                completePicture = UserAssetId("value2", "domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }

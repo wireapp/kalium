@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
@@ -10,6 +11,8 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
+import com.wire.kalium.persistence.MessageMissedCallContent
+import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
@@ -17,8 +20,11 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
+import com.wire.kalium.persistence.dao.ConversationAccessListAdapter
+import com.wire.kalium.persistence.dao.ConversationAccessRoleListAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
+import com.wire.kalium.persistence.dao.MemberRoleAdapter
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
@@ -30,6 +36,8 @@ import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
+import com.wire.kalium.persistence.dao.call.CallDAO
+import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -44,6 +52,11 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
         val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
         database = UserDatabase(
             driver,
+            Call.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter(),
+                conversation_typeAdapter = EnumColumnAdapter()
+            ),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Connection.Adapter(
                 qualified_conversationAdapter = QualifiedIDAdapter(),
@@ -55,9 +68,15 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 typeAdapter = EnumColumnAdapter(),
                 mls_group_stateAdapter = EnumColumnAdapter(),
                 protocolAdapter = EnumColumnAdapter(),
-                muted_statusAdapter = EnumColumnAdapter()
+                muted_statusAdapter = EnumColumnAdapter(),
+                access_listAdapter = ConversationAccessListAdapter(),
+                access_role_listAdapter = ConversationAccessRoleListAdapter()
             ),
-            Member.Adapter(userAdapter = QualifiedIDAdapter(), conversationAdapter = QualifiedIDAdapter()),
+            Member.Adapter(
+                userAdapter = QualifiedIDAdapter(),
+                conversationAdapter = QualifiedIDAdapter(),
+                roleAdapter = MemberRoleAdapter()
+            ),
             Message.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 sender_user_idAdapter = QualifiedIDAdapter(),
@@ -76,6 +95,13 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
             ),
+            MessageMissedCallContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                caller_idAdapter = QualifiedIDAdapter()
+            ),
+            MessageRestrictedAssetContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
+            ),
             MessageTextContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter()
             ),
@@ -88,7 +114,8 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
-                complete_asset_idAdapter = QualifiedIDAdapter()
+                complete_asset_idAdapter = QualifiedIDAdapter(),
+                user_typeAdapter = EnumColumnAdapter()
             )
         )
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)
@@ -106,6 +133,9 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
 
+    actual val callDAO: CallDAO
+        get() = CallDAOImpl(database.callsQueries)
+
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)
 
@@ -120,5 +150,5 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
     }
 
     actual val connectionDAO: ConnectionDAO
-        get() = ConnectionDAOImpl(database.connectionsQueries)
+        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
 }

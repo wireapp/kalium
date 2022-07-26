@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -56,7 +57,8 @@ actual class CallManagerImpl(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-    private val callMapper: CallMapper = MapperProvider.callMapper()
+    private val callMapper: CallMapper = MapperProvider.callMapper(),
+    private val federatedIdMapper: FederatedIdMapper
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO(calling): clear job method
@@ -78,13 +80,13 @@ actual class CallManagerImpl(
         })
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
-        userRepository.getSelfUser().first().id.also {
+        userRepository.observeSelfUser().first().id.also {
             callingLogger.d("$TAG - userId $it")
         }
     }
 
     private fun startHandleAsync(): Deferred<Handle> = scope.async(start = CoroutineStart.LAZY) {
-        val selfUserId = userId.await().value
+        val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
         val selfClientId = clientId.await().value
 
         val waitInitializationJob = Job()
@@ -98,14 +100,21 @@ actual class CallManagerImpl(
                 waitInitializationJob.complete()
                 Unit
             }.keepingStrongReference(),
-            //TODO(refactor): inject all of these CallbackHandlers in class constructor
-            sendHandler = OnSendOTR(deferredHandle, calling, selfUserId, selfClientId, messageSender, scope).keepingStrongReference(),
+            // TODO(refactor): inject all of these CallbackHandlers in class constructor
+            sendHandler = OnSendOTR(
+                deferredHandle,
+                calling,
+                selfUserId,
+                selfClientId,
+                messageSender,
+                scope
+            ).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-            incomingCallHandler = OnIncomingCall(callRepository, callMapper, scope).keepingStrongReference(),
-            missedCallHandler = OnMissedCall(callRepository).keepingStrongReference(),
-            answeredCallHandler = OnAnsweredCall(callRepository).keepingStrongReference(),
-            establishedCallHandler = OnEstablishedCall(callRepository).keepingStrongReference(),
-            closeCallHandler = OnCloseCall(callRepository).keepingStrongReference(),
+            incomingCallHandler = OnIncomingCall(callRepository, callMapper, federatedIdMapper, scope).keepingStrongReference(),
+            missedCallHandler = OnMissedCall(callRepository, scope).keepingStrongReference(),
+            answeredCallHandler = OnAnsweredCall(callRepository, scope).keepingStrongReference(),
+            establishedCallHandler = OnEstablishedCall(callRepository, scope).keepingStrongReference(),
+            closeCallHandler = OnCloseCall(callRepository, scope).keepingStrongReference(),
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             }.keepingStrongReference(),
@@ -143,8 +152,8 @@ actual class CallManagerImpl(
                 len = msg.size,
                 curr_time = Uint32_t(value = currTime / 1000),
                 msg_time = Uint32_t(value = msgTime / 1000),
-                convId = message.conversationId.value,
-                userId = message.senderUserId.value,
+                convId = federatedIdMapper.parseToFederatedId(message.conversationId),
+                userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
                 clientId = message.senderClientId.value
             )
             callingLogger.i("$TAG - wcall_recv_msg() called")
@@ -158,15 +167,13 @@ actual class CallManagerImpl(
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
 
-        //TODO move call creation to the usecase since this one will run only for Android
-        val shouldMute = conversationType == ConversationType.Conference
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
             status = CallStatus.STARTED,
-            isMuted = shouldMute,
+            isMuted = false,
             isCameraOn = isCameraOn,
-            callerId = userId.await().toString()
+            callerId = federatedIdMapper.parseToFederatedId(userId.await())
         )
 
         withCalling {
@@ -174,7 +181,7 @@ actual class CallManagerImpl(
             val avsConversationType = callMapper.toConversationTypeCalling(conversationType)
             wcall_start(
                 deferredHandle.await(),
-                conversationId.value,
+                federatedIdMapper.parseToFederatedId(conversationId),
                 avsCallType.avsValue,
                 avsConversationType.avsValue,
                 isAudioCbr.toInt()
@@ -188,7 +195,7 @@ actual class CallManagerImpl(
         callingLogger.d("$TAG -> answering call for conversation = $conversationId..")
         wcall_answer(
             inst = deferredHandle.await(),
-            conversationId = conversationId.value,
+            conversationId = federatedIdMapper.parseToFederatedId(conversationId),
             callType = CallTypeCalling.AUDIO.avsValue,
             cbrEnabled = false
         )
@@ -197,13 +204,13 @@ actual class CallManagerImpl(
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> ending Call for conversation = $conversationId..")
-        wcall_end(inst = deferredHandle.await(), conversationId = conversationId.value)
+        wcall_end(inst = deferredHandle.await(), conversationId = federatedIdMapper.parseToFederatedId(conversationId))
         callingLogger.d("$TAG - wcall_end() called -> call for conversation = $conversationId ended")
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
-        wcall_reject(inst = deferredHandle.await(), conversationId = conversationId.value)
+        wcall_reject(inst = deferredHandle.await(), conversationId = federatedIdMapper.parseToFederatedId(conversationId))
         callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 
@@ -222,7 +229,11 @@ actual class CallManagerImpl(
             callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
             scope.launch {
                 val videoStateCalling = callMapper.toVideoStateCalling(videoState)
-                wcall_set_video_send_state(deferredHandle.await(), conversationId.value, videoStateCalling.avsValue)
+                wcall_set_video_send_state(
+                    deferredHandle.await(),
+                    federatedIdMapper.parseToFederatedId(conversationId),
+                    videoStateCalling.avsValue
+                )
                 callingLogger.d("$TAG -> wcall_set_video_send_state called..")
             }
         }
@@ -248,6 +259,7 @@ actual class CallManagerImpl(
                     callRepository = callRepository,
                     participantMapper = callMapper.participantMapper,
                     userRepository = userRepository,
+                    conversationRepository = conversationRepository,
                     callingScope = scope
                 ).keepingStrongReference()
 
@@ -281,12 +293,13 @@ actual class CallManagerImpl(
     private fun initClientsHandler() {
         scope.launch {
             withCalling {
-                val selfUserId = userId.await().value
+                val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
 
                 val onClientsRequest = OnClientsRequest(
                     calling = calling,
                     selfUserId = selfUserId,
                     conversationRepository = conversationRepository,
+                    federatedIdMapper = federatedIdMapper,
                     callingScope = scope
                 ).keepingStrongReference()
 

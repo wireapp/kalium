@@ -3,22 +3,47 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
 import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserType
 
 data class Conversation(
     val id: ConversationId,
     val name: String?,
     val type: Type,
     val teamId: TeamId?,
+    val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
-    val lastModifiedDate: String?
+    val lastModifiedDate: String?,
+    val access: List<Access>,
+    val accessRole: List<AccessRole>
 ) {
+
+    fun isTeamGroup(): Boolean = (teamId != null)
+
+    fun isGuestAllowed(): Boolean = accessRole.let {
+        (it.contains(AccessRole.GUEST))
+    }
+    fun isNonTeamMemberAllowed(): Boolean = accessRole.let {
+        (it.contains(AccessRole.NON_TEAM_MEMBER))
+    }
+    fun isServicesAllowed(): Boolean = accessRole.let {
+        (it.contains(AccessRole.SERVICE))
+    }
+
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
+    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE }
+    enum class Access { PRIVATE, INVITE, LINK, CODE }
+}
+
+sealed class ProtocolInfo {
+    object Proteus : ProtocolInfo()
+    data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo() {
+        enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    }
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -30,7 +55,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val otherUser: OtherUser,
         val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
-        val userType: UserType
+        val userType: UserType,
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -43,53 +68,39 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val conversationId: ConversationId,
         val otherUser: OtherUser?,
         val userType: UserType,
-        val lastModifiedDate: String?,
+        val lastModifiedDate: String,
         val connection: com.wire.kalium.logic.data.user.Connection,
+        val protocolInfo: ProtocolInfo,
+        val access: List<Conversation.Access>,
+        val accessRole: List<Conversation.AccessRole>
     ) : ConversationDetails(
         Conversation(
             id = conversationId,
             name = otherUser?.name,
             type = Conversation.Type.CONNECTION_PENDING,
-            teamId = otherUser?.team?.let { TeamId(it) },
+            teamId = otherUser?.teamId,
+            protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
+            access = access,
+            accessRole = accessRole
         )
     )
 }
 
-class MembersInfo(val self: Member, val otherMembers: List<Member>)
+data class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-class Member(override val id: UserId) : User()
-
-sealed class MemberDetails {
-    data class Self(val selfUser: SelfUser) : MemberDetails()
-    data class Other(val otherUser: OtherUser, val userType: UserType) : MemberDetails()
+data class Member(val id: UserId, val role: Role) {
+    sealed class Role {
+        object Member : Role()
+        object Admin : Role()
+        data class Unknown(val name: String) : Role()
+    }
 }
+
+data class MemberDetails(val user: User, val role: Member.Role)
 
 typealias ClientId = PlainId
 
-data class Recipient(val member: Member, val clients: List<ClientId>)
-
-enum class UserType {
-    INTERNAL,
-
-    // TODO(user-metadata): for now External will not be implemented
-    /**Team member with limited permissions */
-    EXTERNAL,
-
-    /**
-     * A user on the same backend but not on your team or,
-     * Any user on another backend using the Wire application,
-     */
-    FEDERATED,
-
-    /**
-     * Any user in wire.com using the Wire application or,
-     * A temporary user that joined using the guest web interface,
-     * from inside the backend network or,
-     * A temporary user that joined using the guest web interface,
-     * from outside the backend network
-     */
-    GUEST;
-}
+data class Recipient(val id: UserId, val clients: List<ClientId>)

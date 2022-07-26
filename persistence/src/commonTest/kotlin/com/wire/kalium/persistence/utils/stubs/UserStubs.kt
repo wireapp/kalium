@@ -4,6 +4,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 
 fun newUserEntity(id: String = "test") =
     UserEntity(
@@ -17,7 +18,8 @@ fun newUserEntity(id: String = "test") =
         ConnectionEntity.State.ACCEPTED,
         null,
         null,
-        UserAvailabilityStatusEntity.NONE
+        UserAvailabilityStatusEntity.NONE,
+        UserTypeEntity.INTERNAL
     )
 
 fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
@@ -32,5 +34,6 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         ConnectionEntity.State.ACCEPTED,
         null,
         null,
-        UserAvailabilityStatusEntity.NONE
+        UserAvailabilityStatusEntity.NONE,
+        UserTypeEntity.INTERNAL
     )

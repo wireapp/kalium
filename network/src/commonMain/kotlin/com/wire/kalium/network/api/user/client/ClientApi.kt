@@ -21,7 +21,7 @@ interface ClientApi {
 
     suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientResponse>>
 
-    suspend fun deleteClient(password: String, clientID: String): NetworkResponse<Unit>
+    suspend fun deleteClient(password: String?, clientID: String): NetworkResponse<Unit>
 
     suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientResponse>
 
@@ -62,7 +62,7 @@ class ClientApiImpl internal constructor(private val authenticatedNetworkClient:
     override suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientResponse>> =
         wrapKaliumResponse { httpClient.get(PATH_CLIENTS) }
 
-    override suspend fun deleteClient(password: String, clientID: String) =
+    override suspend fun deleteClient(password: String?, clientID: String) =
         wrapKaliumResponse<Unit> {
             httpClient.delete("$PATH_CLIENTS/$clientID") {
                 setBody(PasswordRequest(password))

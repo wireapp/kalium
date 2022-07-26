@@ -1,11 +1,13 @@
 package com.wire.kalium.logic.feature.message
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
@@ -16,9 +18,12 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
+import com.wire.kalium.logic.data.user.Connection
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -43,6 +48,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenEmptyConversationList_thenEmptyNotificationList() = runTest {
         val (_, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf())
@@ -57,6 +63,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithEmptyMessageList_thenEmptyNotificationList() = runTest {
         val (_, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation()))
@@ -72,6 +79,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithOnlyMyMessageList_thenEmptyNotificationList() = runTest {
         val (_, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation()))
@@ -92,6 +100,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithMessageListIncludingMyMessages_thenNotificationListWithoutMyMessages() = runTest {
         val (_, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
@@ -124,6 +133,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenFewConversationWithMessageLists_thenListOfFewNotifications() = runTest {
         val (_, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
@@ -166,6 +176,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenFewConversationWithMessageListsButSameAuthor_thenAuthorInfoRequestedOnce() = runTest {
         val (arrange, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
@@ -193,6 +204,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenSelfUserWithStatusAway_whenNewMessageCome_thenNoNotificationsAndAllConversationNotificationDateUpdated() = runTest {
         val (arrange, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus(UserAvailabilityStatus.AWAY))
             .withKnownUser()
@@ -223,6 +235,7 @@ class GetNotificationsUseCaseTest {
     fun givenSelfUserWithStatusBusy_whenNewMessageCome_thenNotificationsWithMentionComesAndNotificationDateUpdated() = runTest {
         val mentionMessageText = "@handle message with Mention"
         val (arrange, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus(UserAvailabilityStatus.BUSY))
             .withKnownUser()
@@ -254,6 +267,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenMutedConversation_whenNewMessageCome_thenNoNotificationsAndNotificationDateUpdated() = runTest {
         val (arrange, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.AllMuted)))
@@ -284,6 +298,7 @@ class GetNotificationsUseCaseTest {
     fun givenConversationWithOnlyMentionMuteStatus_whenNewMessageCome_thenNotificationsWithMentionComes(): TestResult = runTest {
         val mentionMessageText = "@handle message with Mention"
         val (arrange, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.OnlyMentionsAllowed)))
@@ -315,11 +330,12 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithMessageListIncludingNotAllowedMessages_thenNotificationListWithoutTheseMessages() = runTest {
         val (_, getNotifications) = Arrangement()
+            .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(listOf(entityConversation()))
-            .withMessagesByConversationAfterDate { conversationId ->
+            .withMessagesByConversationAfterDate {
                 listOf(
                     entityTextMessage(conversationId(), otherUserId(), "0"),
                     entityServerMessage(conversationId(), otherUserId(), "1"),
@@ -340,7 +356,42 @@ class GetNotificationsUseCaseTest {
         }
     }
 
+    @Test
+    fun givenConnectionRequests_thenNotificationListWithConnectionRequestMessage() = runTest {
+        val (_, getNotifications) = Arrangement()
+            .withConnectionList(listOf(connectionRequest()))
+            .withSelfUser(selfUserWithStatus())
+            .withSelfUserId(MY_ID)
+            .withKnownUser()
+            .withConversationsForNotifications(listOf(entityConversation()))
+            .withMessagesByConversationAfterDate { conversationId ->
+                listOf(
+                    entityTextMessage(conversationId),
+                    entityAssetMessage(conversationId, assetId = "test_asset"),
+                    entityTextMessage(conversationId, otherUserId()),
+                    entityAssetMessage(conversationId, otherUserId(), assetId = "test_asset")
+                )
+            }
+            .arrange()
+
+        getNotifications().test {
+            val actual = awaitItem()
+
+            assertEquals(2, actual.size)
+            assertEquals(
+                listOf(
+                    notificationMessageConnectionRequest(authorName = otherUserName(otherUserId()))
+                ),
+                actual.last().messages
+            )
+            awaitComplete()
+        }
+    }
+
     private class Arrangement {
+        @Mock
+        val connectionRepository: ConnectionRepository = mock(classOf<ConnectionRepository>())
+
         @Mock
         val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
 
@@ -353,6 +404,7 @@ class GetNotificationsUseCaseTest {
         val timeParser = TimeParserImpl()
 
         val getNotificationsUseCase: GetNotificationsUseCase = GetNotificationsUseCaseImpl(
+            connectionRepository = connectionRepository,
             messageRepository = messageRepository,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
@@ -381,7 +433,7 @@ class GetNotificationsUseCaseTest {
 
         fun withSelfUser(user: SelfUser = selfUserWithStatus()): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
+                .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
                 .then { flowOf(user) }
 
@@ -415,6 +467,13 @@ class GetNotificationsUseCaseTest {
             return this
         }
 
+        fun withConnectionList(connections: List<ConversationDetails>) = apply {
+            given(connectionRepository)
+                .suspendFunction(connectionRepository::observeConnectionRequestsForNotification)
+                .whenInvoked()
+                .thenReturn(flowOf(connections))
+        }
+
         fun arrange() = this to getNotificationsUseCase
     }
 
@@ -433,12 +492,15 @@ class GetNotificationsUseCaseTest {
             mutedStatus: MutedConversationStatus = MutedConversationStatus.AllAllowed,
         ) = Conversation(
             conversationId(number),
-            "conversation_${number}",
+            "conversation_$number",
             if (isOneOnOne) Conversation.Type.ONE_ON_ONE else Conversation.Type.GROUP,
             null,
+            ProtocolInfo.Proteus,
             mutedStatus,
             TIME_EARLIER,
-            TIME_EARLIER
+            TIME_EARLIER,
+            access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )
 
         private fun entityTextMessage(
@@ -500,7 +562,7 @@ class GetNotificationsUseCaseTest {
         ) =
             Message.System(
                 id = messageId,
-                content = MessageContent.MemberChange.Removed(listOf(Member(senderId))),
+                content = MessageContent.MemberChange.Removed(listOf(senderId)),
                 conversationId = conversationId,
                 date = "some_time",
                 senderUserId = senderId,
@@ -529,6 +591,15 @@ class GetNotificationsUseCaseTest {
                 commentType
             )
 
+        private fun notificationMessageConnectionRequest(
+            authorName: String = "Author Name",
+            time: String = TIME
+        ) =
+            LocalNotificationMessage.ConnectionRequest(
+                LocalNotificationMessageAuthor(authorName, null),
+                time,
+                otherUserId()
+            )
 
         private fun selfUserWithStatus(status: UserAvailabilityStatus = UserAvailabilityStatus.NONE) =
             TestUser.SELF.copy(availabilityStatus = status)
@@ -536,9 +607,29 @@ class GetNotificationsUseCaseTest {
         private fun otherUser(id: QualifiedID) = TestUser.OTHER.copy(id = id, name = otherUserName(id))
 
         private fun otherUserId(number: Int = 0) =
-            QualifiedID("other_user_id_${number}_value", "other_user_id_${number}_domain")
+            QualifiedID("other_user_id_${number}_value", "domain")
 
         private fun otherUserName(id: QualifiedID) = "Other User Name ${id.value}"
+
+        private fun connectionRequest() = ConversationDetails.Connection(
+            conversationId = conversationId(0),
+            otherUser = otherUser(TestUser.USER_ID.copy(value = "other_user_id_0_value")),
+            userType = UserType.EXTERNAL,
+            lastModifiedDate = TIME,
+            connection = Connection(
+                "conversationId",
+                "",
+                TIME,
+                conversationId(0),
+                TestUser.USER_ID.copy(value = "other_user_id_0_value"),
+                ConnectionState.SENT,
+                "told",
+                null
+            ),
+            ProtocolInfo.Proteus,
+            access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        )
 
     }
 }
