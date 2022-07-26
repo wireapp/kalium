@@ -212,12 +212,10 @@ class MLSConversationRepositoryTest {
             .whenInvokedWith(anything())
             .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
 
-
         given(conversationDAO)
             .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, String>())
             .whenInvokedWith(anything(), anything())
             .thenDoNothing()
-
 
         val result = mlsConversationRepository.addMemberToMLSGroup(GROUP_ID, listOf(TestConversation.USER_ID1))
 
