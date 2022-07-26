@@ -31,8 +31,8 @@ class OnIncomingCall(
         arg: Pointer?
     ) {
         callingLogger.i("[OnIncomingCall] -> ConversationId: $conversationId | UserId: $userId | shouldRing: $shouldRing")
-        val conversationType = callMapper.fromIntToConversationType(conversationType)
-        val isMuted = conversationType == ConversationType.Conference
+        val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
+        val isMuted = mappedConversationType == ConversationType.Conference
         scope.launch {
             callRepository.createCall(
                 conversationId = conversationId.toConversationId(),
