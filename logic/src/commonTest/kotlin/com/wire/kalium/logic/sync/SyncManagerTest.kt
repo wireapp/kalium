@@ -257,7 +257,7 @@ class SyncManagerTest {
             .whenInvoked()
             .thenReturn(emptyFlow())
 
-        syncRepository.syncState.test {
+        syncRepository.syncStateState.test {
             assertIs<SyncState.SlowSync>(awaitItem())
 
             //When
@@ -311,7 +311,7 @@ class SyncManagerTest {
         syncManager.onSlowSyncComplete()
         advanceUntilIdle()
 
-        assertEquals(SyncState.Failed(coreFailureCause), syncRepository.syncState.first())
+        assertEquals(SyncState.Failed(coreFailureCause), syncRepository.syncStateState.first())
     }
 
     @Test
@@ -327,7 +327,7 @@ class SyncManagerTest {
         syncManager.onSlowSyncComplete()
         advanceUntilIdle()
 
-        assertEquals(SyncState.Failed(coreFailureCause), syncRepository.syncState.first())
+        assertEquals(SyncState.Failed(coreFailureCause), syncRepository.syncStateState.first())
     }
 
     @Test
