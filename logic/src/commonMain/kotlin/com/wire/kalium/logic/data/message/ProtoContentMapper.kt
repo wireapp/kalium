@@ -107,7 +107,7 @@ class ProtoContentMapperImpl(
                     is MessageEdit.Content.Text -> {
                         MessageContent.TextEdited(replacingMessageId, editContent.value.content)
                     }
-                    //TODO: for now we do not implement it
+                    // TODO: for now we do not implement it
                     is MessageEdit.Content.Composite -> {
                         MessageContent.Unknown(typeName, encodedContent.data)
                     }

@@ -6,6 +6,7 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -42,7 +43,7 @@ import kotlinx.datetime.Clock
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
-//TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
+// TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 @Suppress("LongParameterList", "TooManyFunctions")
 class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
@@ -121,9 +122,13 @@ class ConversationEventReceiverImpl(
             .onFailure {
                 // TODO(important): Insert a failed message into the database to notify user that encryption is kaputt
                 when (it) {
-                    is CoreFailure.Unknown -> kaliumLogger.e("$TAG - UnknownFailure when processing message: $it", it.rootCause)
-                    is ProteusFailure -> kaliumLogger.e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
-                    else -> kaliumLogger.e("$TAG - Failure when processing message: $it")
+                    is CoreFailure.Unknown -> kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                        .e("$TAG - UnknownFailure when processing message: $it", it.rootCause)
+
+                    is ProteusFailure -> kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                        .e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
+
+                    else -> kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Failure when processing message: $it")
                 }
             }.onSuccess { readableContent ->
                 handleContent(
@@ -142,7 +147,7 @@ class ConversationEventReceiverImpl(
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
         is ProtoContent.Readable -> Either.Right(protoContent)
         is ProtoContent.ExternalMessageInstructions -> event.encryptedExternalContent?.let {
-            kaliumLogger.d("Solving external content '$protoContent', EncryptedData='$it'")
+            kaliumLogger.withFeatureId(EVENT_RECEIVER).d("Solving external content '$protoContent', EncryptedData='$it'")
             solveExternalContentForProteusMessage(protoContent, event.encryptedExternalContent)
         } ?: run {
             val rootCause = IllegalArgumentException("Null external content when processing external message instructions.")
@@ -155,7 +160,7 @@ class ConversationEventReceiverImpl(
         externalData: EncryptedData
     ): Either<CoreFailure, ProtoContent.Readable> = wrapCryptoRequest {
         val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
-        kaliumLogger.d("ExternalMessage - Decrypted external message content: '$decryptedExternalMessage'")
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).d("ExternalMessage - Decrypted external message content: '$decryptedExternalMessage'")
         PlainMessageBlob(decryptedExternalMessage)
     }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {
@@ -192,14 +197,19 @@ class ConversationEventReceiverImpl(
     private suspend fun handleNewConversation(event: Event.Conversation.NewConversation) =
         conversationRepository.insertConversationFromEvent(event).flatMap {
             conversationRepository.updateConversationModifiedDate(event.conversationId, Clock.System.now().toString())
-        }.onFailure { kaliumLogger.e("$TAG - failure on new conversation event: $it") }
+        }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on new conversation event: $it") }
 
     private suspend fun handleMemberJoin(event: Event.Conversation.MemberJoin) =
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
-                onSuccess { kaliumLogger.v("Succeeded fetching conversation details on MemberJoin Event: $event") }
-                onFailure { kaliumLogger.w("Failure fetching conversation details on MemberJoin Event: $event") }
+                onSuccess {
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                        .v("Succeeded fetching conversation details on MemberJoin Event: $event")
+                }
+                onFailure {
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER).w("Failure fetching conversation details on MemberJoin Event: $event")
+                }
                 // Even if unable to fetch conversation details, at least attempt adding the member
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
@@ -212,8 +222,8 @@ class ConversationEventReceiverImpl(
                     status = Message.Status.SENT,
                     visibility = Message.Visibility.VISIBLE
                 )
-                processMessage(message) //TODO(exception-handling): processMessage exceptions are not caught
-            }.onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
+                processMessage(message) // TODO(exception-handling): processMessage exceptions are not caught
+            }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
         .deleteMembers(
@@ -237,18 +247,18 @@ class ConversationEventReceiverImpl(
             )
             processMessage(message)
         }
-        .onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
+        .onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member leave event: $it") }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
         mlsConversationRepository.establishMLSGroupFromWelcome(event)
-            .onFailure { kaliumLogger.e("$TAG - failure on MLS welcome event: $it") }
+            .onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on MLS welcome event: $it") }
     }
 
     private suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) =
         mlsConversationRepository.messageFromMLSMessage(event)
             .onFailure {
                 // TODO(mls): Insert a failed message into the database to notify user that encryption is kaputt
-                kaliumLogger.e("$TAG - failure on MLS message: $it")
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on MLS message: $it")
             }.onSuccess { mlsMessage ->
                 val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
                 val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
@@ -267,10 +277,12 @@ class ConversationEventReceiverImpl(
     private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
         when (signaling) {
             MessageContent.Ignored -> {
-                kaliumLogger.i(message = "$TAG Ignored Signaling Message received: $signaling")
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .i(message = "$TAG Ignored Signaling Message received: $signaling")
             }
             is MessageContent.Availability -> {
-                kaliumLogger.i(message = "$TAG Availability status update received: ${signaling.status}")
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .i(message = "$TAG Availability status update received: ${signaling.status}")
                 userRepository.updateOtherUserAvailabilityStatus(senderUserId, signaling.status)
             }
         }
@@ -279,7 +291,7 @@ class ConversationEventReceiverImpl(
     // TODO(qol): split this function so it's easier to maintain
     @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
-        kaliumLogger.i(message = "$TAG Message received: $message")
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "$TAG Message received: $message")
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {
@@ -295,9 +307,8 @@ class ConversationEventReceiverImpl(
                                 }
                                 .onSuccess { persistedMessage ->
                                     // Check the second asset message is from the same original sender
-                                    if (
-                                        isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId)
-                                        && persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
+                                    if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
+                                        persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
                                     ) {
                                         // The asset message received contains the asset decryption keys,
                                         // so update the preview message persisted previously
@@ -325,7 +336,7 @@ class ConversationEventReceiverImpl(
                             messageUuid = content.messageId,
                             conversationId = message.conversationId
                         )
-                    else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+                    else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
 
                 is MessageContent.DeleteForMe -> {
                     /*The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
@@ -342,11 +353,11 @@ class ConversationEventReceiverImpl(
                             messageUuid = content.messageId,
                             conversationId = conversationId
                         )
-                    else kaliumLogger.i(message = "Delete message sender is not verified: $message")
+                    else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
                 }
 
                 is MessageContent.Calling -> {
-                    kaliumLogger.d("$TAG - MessageContent.Calling")
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - MessageContent.Calling")
                     callManagerImpl.value.onCallingMessageReceived(
                         message = message,
                         content = content
@@ -355,7 +366,7 @@ class ConversationEventReceiverImpl(
 
                 is MessageContent.TextEdited -> editTextHandler.handle(message, content)
                 is MessageContent.Unknown -> {
-                    kaliumLogger.i(message = "Unknown Message received: $message")
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Unknown Message received: $message")
                     persistMessage(message)
                 }
 
@@ -364,7 +375,7 @@ class ConversationEventReceiverImpl(
 
             is Message.System -> when (message.content) {
                 is MessageContent.MemberChange -> {
-                    kaliumLogger.i(message = "System MemberChange Message received: $message")
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "System MemberChange Message received: $message")
                     persistMessage(message)
                 }
             }

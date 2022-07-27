@@ -47,7 +47,7 @@ sealed class MessageContent {
 
     object MissedCall : System()
 
-    data class Availability(val status: UserAvailabilityStatus): Signaling()
+    data class Availability(val status: UserAvailabilityStatus) : Signaling()
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way

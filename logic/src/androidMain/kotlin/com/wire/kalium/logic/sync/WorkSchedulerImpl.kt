@@ -9,6 +9,7 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.kaliumLogger
@@ -29,6 +30,7 @@ import kotlinx.datetime.toLocalDateTime
 import java.util.concurrent.TimeUnit
 
 private val workerClass = WrapperWorker::class.java
+
 internal actual class GlobalWorkSchedulerImpl(
     private val appContext: Context
 ) : GlobalWorkScheduler {
@@ -84,18 +86,18 @@ internal actual class UserSessionWorkSchedulerImpl(
     private var slowSyncJob: Job? = null
     private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
     override fun enqueueSlowSyncIfNeeded() {
-        kaliumLogger.v("SlowSync: Enqueueing if needed")
+        kaliumLogger.withFeatureId(SYNC).v("SlowSync: Enqueueing if needed")
         scope.launch {
             val isRunning = slowSyncJob?.isActive ?: false
 
-            kaliumLogger.v("SlowSync: Job is running = $isRunning")
+            kaliumLogger.withFeatureId(SYNC).v("SlowSync: Job is running = $isRunning")
             if (!isRunning) {
                 slowSyncJob = launch(Dispatchers.Main) {
                     SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
                 }
-                kaliumLogger.d("SlowSync Started")
+                kaliumLogger.withFeatureId(SYNC).d("SlowSync Started")
             } else {
-                kaliumLogger.d("SlowSync not scheduled as it's already running")
+                kaliumLogger.withFeatureId(SYNC).d("SlowSync not scheduled as it's already running")
             }
         }
     }
