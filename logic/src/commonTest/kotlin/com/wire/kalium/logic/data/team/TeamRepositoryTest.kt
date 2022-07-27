@@ -153,7 +153,7 @@ class TeamRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypeEntity = UserTypeEntity.EXTERNAL
+            userType = UserTypeEntity.EXTERNAL
         )
 
         given(teamsApi)
@@ -169,7 +169,7 @@ class TeamRepositoryTest {
 
         // Verifies that userDAO insertUsers was called with the correct mapped values
         verify(userDAO)
-            .suspendFunction(userDAO::upsertTeamMembers)
+            .suspendFunction(userDAO::upsertTeamMembersTypes)
             .with(oneOf(listOf(mappedTeamMember)))
             .wasInvoked(exactly = once)
 

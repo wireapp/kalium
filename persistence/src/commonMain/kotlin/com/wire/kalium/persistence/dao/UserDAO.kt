@@ -32,7 +32,7 @@ data class UserEntity(
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
 
-    val userTypeEntity: UserTypeEntity,
+    val userType: UserTypeEntity,
 )
 
 enum class UserTypeEntity {
@@ -44,7 +44,7 @@ enum class UserTypeEntity {
     ADMIN,
 
     /**Team member */
-    INTERNAL, // TODO Kubaz change to member
+    INTERNAL, // TODO Kubaz change to STANDARD
 
     /**Team member with limited permissions */
     EXTERNAL,
@@ -84,19 +84,25 @@ interface UserDAO {
     suspend fun insertUser(user: UserEntity)
 
     /**
-     * This will update all columns, except [ConnectionEntity.State] and [UserTypeEntity] (if user is a team member)
-     * insert a new record with default value [ConnectionEntity.State.NOT_CONNECTED] and [UserTypeEntity.INTERNAL]
+     * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
+     * [ConnectionEntity.State.NOT_CONNECTED]
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */
     suspend fun upsertUsers(users: List<UserEntity>)
 
     /**
-     * This will update [UserEntity.team] and [UserEntity.connectionStatus] to [ConnectionEntity.State.ACCEPTED]
+     * This will update [UserEntity.team], [UserEntity.userType], [UserEntity.connectionStatus] to [ConnectionEntity.State.ACCEPTED]
      * or insert a new record with default values for other columns.
-     *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case when trying to insert a member, we could already have the record, so we need to pass only the data needed.
+     */
+    suspend fun upsertTeamMembersTypes(users: List<UserEntity>)
+
+    /**
+     * This will update all columns, except [UserEntity.userType] or insert a new record with default values
+     * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
+     * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */
     suspend fun upsertTeamMembers(users: List<UserEntity>)
 

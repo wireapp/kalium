@@ -30,7 +30,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-
 class MessageSenderTest {
 
     @Mock
@@ -84,23 +83,23 @@ class MessageSenderTest {
 
     @Test
     fun givenAllStepsSucceed_WhenSendingOutgoingMessage_ThenReturnSuccess() = runTest {
-        //given
+        // given
         setupGivenSuccessResults()
-        //when
+        // when
         val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-        //then
+        // then
         assertIs<Either.Right<Unit>>(result)
     }
 
     @Test
     fun givenGettingConversationProtocolFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() = runTest {
-        //given
+        // given
         setupGivenSuccessResults(
             getConversationProtocol = false
         )
-        //when
+        // when
         val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-        //then
+        // then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessageStatus)
             .with(eq(MessageEntity.Status.FAILED), anything(), anything())
@@ -111,13 +110,13 @@ class MessageSenderTest {
 
     @Test
     fun givenGettingConversationRecipientsFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() = runTest {
-        //given
+        // given
         setupGivenSuccessResults(
             getConversationsRecipient = false
         )
-        //when
+        // when
         val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-        //then
+        // then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessageStatus)
             .with(eq(MessageEntity.Status.FAILED), anything(), anything())
@@ -129,13 +128,13 @@ class MessageSenderTest {
     @Test
     fun givenPreparingRecipentsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
         runTest {
-            //given
+            // given
             setupGivenSuccessResults(
                 prepareRecipientsForNewOutGoingMessage = false
             )
-            //when
+            // when
             val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-            //then
+            // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
@@ -147,13 +146,13 @@ class MessageSenderTest {
     @Test
     fun givenCreatingOutgoingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
         runTest {
-            //given
+            // given
             setupGivenSuccessResults(
                 createOutgoingEnvelope = false
             )
-            //when
+            // when
             val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-            //then
+            // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
@@ -165,13 +164,13 @@ class MessageSenderTest {
     @Test
     fun givenSendingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
         runTest {
-            //given
+            // given
             setupGivenSuccessResults(
                 sendEnvelope = Either.Left(CoreFailure.Unknown(Throwable("some exception")))
             )
-            //when
+            // when
             val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-            //then
+            // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
@@ -183,13 +182,13 @@ class MessageSenderTest {
     @Test
     fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
         runTest {
-            //given
+            // given
             setupGivenSuccessResults(
                 updateMessageStatus = false
             )
-            //when
+            // when
             val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-            //then
+            // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
@@ -201,13 +200,13 @@ class MessageSenderTest {
     @Test
     fun givenUpdatingMessageDateFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
         runTest {
-            //given
+            // given
             setupGivenSuccessResults(
                 updateMessageDate = false
             )
-            //when
+            // when
             val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-            //then
+            // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
@@ -219,13 +218,13 @@ class MessageSenderTest {
     @Test
     fun givenUpdatePendingMessagesAddMillisToDate_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
         runTest {
-            //given
+            // given
             setupGivenSuccessResults(
                 updateMessageDate = false
             )
-            //when
+            // when
             val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
-            //then
+            // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.FAILED), anything(), anything())
@@ -278,7 +277,11 @@ class MessageSenderTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationProtocolInfo)
             .whenInvokedWith(anything())
-            .thenReturn(if (getConversationProtocol) Either.Right(ConversationEntity.ProtocolInfo.Proteus) else Either.Left(StorageFailure.DataNotFound))
+            .thenReturn(
+                if (getConversationProtocol)
+                    Either.Right(ConversationEntity.ProtocolInfo.Proteus)
+                else Either.Left(StorageFailure.DataNotFound)
+            )
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationRecipients)

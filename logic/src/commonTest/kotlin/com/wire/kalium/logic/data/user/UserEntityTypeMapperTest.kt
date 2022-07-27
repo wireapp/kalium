@@ -13,7 +13,7 @@ class UserEntityTypeMapperTest {
 
     @Test
     fun givenDomainAndTeamAreEqualAndPermissionCodeIsNull_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
-        //when
+        // when
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
             "someTeamId",
@@ -22,13 +22,13 @@ class UserEntityTypeMapperTest {
             null,
             false
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.INTERNAL, result)
     }
 
     @Test
     fun givenTeamMemberWithAdminPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsAdmin() {
-        //when
+        // when
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
             "someTeamId",
@@ -37,13 +37,13 @@ class UserEntityTypeMapperTest {
             TeamRole.Admin.value,
             false
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.ADMIN, result)
     }
 
     @Test
     fun givenTeamMemberWithOwnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsOwner() {
-        //when
+        // when
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
             "someTeamId",
@@ -52,13 +52,13 @@ class UserEntityTypeMapperTest {
             TeamRole.Owner.value,
             false
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.OWNER, result)
     }
 
     @Test
     fun givenTeamMemberWithExternalPartnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsExternal() {
-        //when
+        // when
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
             "someTeamId",
@@ -67,13 +67,13 @@ class UserEntityTypeMapperTest {
             TeamRole.ExternalPartner.value,
             false
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.EXTERNAL, result)
     }
 
     @Test
     fun givenTeamMemberWithMemberPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
-        //when
+        // when
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "someDomain",
             "someTeamId",
@@ -82,13 +82,13 @@ class UserEntityTypeMapperTest {
             TeamRole.Member.value,
             false
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.INTERNAL, result)
     }
 
     @Test
     fun givenCommonNotTheSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
-        //given
+        // given
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "domainB",
             "teamA",
@@ -97,13 +97,13 @@ class UserEntityTypeMapperTest {
             null,
             false
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.FEDERATED, result)
     }
 
     @Test
     fun givenUsingSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
-        //when
+        // when
         val result = userTypeMapper.fromTeamDomainAndPermission(
             "testDomain",
             "teamA",
@@ -112,7 +112,7 @@ class UserEntityTypeMapperTest {
             null,
             false
         )
-        //then
+        // then
         assertEquals(UserTypeEntity.GUEST, result)
     }
 
@@ -131,4 +131,3 @@ class UserEntityTypeMapperTest {
         assertEquals(UserTypeEntity.SERVICE, result)
     }
 }
-

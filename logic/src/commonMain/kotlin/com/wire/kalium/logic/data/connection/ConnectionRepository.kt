@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.connection
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONNECTIONS
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -90,7 +91,7 @@ internal class ConnectionDataSource(
 
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
-                kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
+                kaliumLogger.withFeatureId(CONNECTIONS).v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
                 syncConnectionsStatuses(it.connections)
@@ -218,7 +219,7 @@ internal class ConnectionDataSource(
                         otherUserTeamId = userProfileDTO.teamId,
                         selfUserDomain = selfUser.id.domain,
                         permissionCode = null,
-                        userProfileDTO.service != null
+                        isService = userProfileDTO.service != null
                     )
                 )
 

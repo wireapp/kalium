@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.team
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
@@ -26,7 +27,7 @@ internal class SyncSelfTeamUseCaseImpl(
                 userDomain = user.id.domain
             )
         } ?: run {
-            kaliumLogger.i("Skipping team sync because user doesn't belong to a team")
+            kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
             Either.Right(Unit)
         }
     }

@@ -59,7 +59,7 @@ class UserMapperTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypeEntity = UserTypeEntity.INTERNAL,
+            userType = UserTypeEntity.INTERNAL,
         )
         val (_, userMapper) = Arrangement().arrange()
 
