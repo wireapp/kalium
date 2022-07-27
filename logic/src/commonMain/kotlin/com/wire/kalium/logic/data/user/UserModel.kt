@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 typealias UserId = QualifiedID
 
@@ -62,10 +64,12 @@ enum class ConnectionState {
     /** The connection is complete and the conversation is in its normal state */
     ACCEPTED
 }
+
+@Serializable
 data class SsoId(
-    val scimExternalId: String?,
-    val subject: String?,
-    val tenant: String?
+    @SerialName("scim_external_id") val scimExternalId: String?,
+    @SerialName("subject") val subject: String?,
+    @SerialName("tenant") val tenant: String?
 )
 
 data class SelfUser(
@@ -80,8 +84,7 @@ data class SelfUser(
     val connectionStatus: ConnectionState,
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
-    override val availabilityStatus: UserAvailabilityStatus,
-    val ssoId: SsoId?
+    override val availabilityStatus: UserAvailabilityStatus
 ) : User()
 
 data class OtherUser(

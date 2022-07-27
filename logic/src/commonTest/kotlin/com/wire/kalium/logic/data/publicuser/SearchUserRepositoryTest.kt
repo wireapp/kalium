@@ -247,7 +247,7 @@ class SearchUserRepositoryTest {
             .then { _, _ -> PUBLIC_USER }
 
         given(metadataDAO)
-            .suspendFunction(metadataDAO::valueByKey)
+            .suspendFunction(metadataDAO::observerValueByKey)
             .whenInvokedWith(any())
             .then { flowOf(JSON_QUALIFIED_ID) }
 
@@ -287,7 +287,7 @@ class SearchUserRepositoryTest {
                 .then { _, _ -> PUBLIC_USER }
 
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::observerValueByKey)
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
@@ -330,7 +330,7 @@ class SearchUserRepositoryTest {
                 .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
 
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::observerValueByKey)
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 

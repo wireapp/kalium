@@ -36,7 +36,8 @@ internal data class NewUserDTO(
     @SerialName("email_code") val emailCode: String?,
     @SerialName("expires_in") val expiresIn: Int?,
     @SerialName("invitation_code") val invitationCode: String?, // Mutually exclusive with team|team_code ,
-    @SerialName("label") val label: String?, // An optional label to associate with the access cookie, if one is granted during account creation.
+    // An optional label to associate with the access cookie, if one is granted during account creation.
+    @SerialName("label") val label: String?,
     @SerialName("locale") val locale: String?,
     @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("name") val name: String,

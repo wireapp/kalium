@@ -16,6 +16,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.UserSsoIdDTO
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.qualifiedIds
@@ -55,6 +56,8 @@ interface UserRepository {
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
+    suspend fun storeSelfSsoId(ssoId: SsoId?): Either<StorageFailure, Unit>
+    suspend fun selfSsoId(): Either<StorageFailure, SsoId>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -77,18 +80,23 @@ class UserDataSource(
     }
 
     private suspend fun getSelfUserIDEntity(): QualifiedIDEntity {
-        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY).firstOrNull()
+        val encodedValue = metadataDAO.observerValueByKey(SELF_USER_ID_KEY).firstOrNull()
         return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
             ?: run { throw IllegalStateException() }
     }
 
-    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
+    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }.flatMap { userDTO ->
+        storeSelfSsoId(idMapper.toSsoId(userDTO.ssoID)).map { userDTO }
+    }
         .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
+            // TODO: User image is always downloaded even when it's not changed
             assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
-            userDAO.insertUser(userEntity)
-            metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
-            Either.Right(Unit)
+                .flatMap {
+                    wrapStorageRequest { userDAO.insertUser(userEntity) }
+                }.flatMap {
+                    wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
+                }
         }
 
     private fun getQualifiedUserAssetId(userEntity: UserEntity): List<UserAssetId?> {
@@ -138,7 +146,7 @@ class UserDataSource(
 
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
-        return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
+        return metadataDAO.observerValueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
@@ -220,7 +228,22 @@ class UserDataSource(
         }
     }
 
+    override suspend fun storeSelfSsoId(ssoId: SsoId?): Either<StorageFailure, Unit> =
+        ssoId?.let {
+            Json.encodeToString(it)
+                .let { ssoIdJsonString ->
+                    wrapStorageRequest { metadataDAO.insertValue(SELF_USER_SSO_ID_KEY, ssoIdJsonString) }
+                }
+        } ?: Either.Right(Unit)
+
+    override suspend fun selfSsoId(): Either<StorageFailure, SsoId> = wrapStorageRequest {
+        metadataDAO.valueByKey(SELF_USER_SSO_ID_KEY)
+    }.map {
+        Json.decodeFromString<SsoId>(it)
+    }
+
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
+        const val SELF_USER_SSO_ID_KEY = "self_user_sso_id"
     }
 }

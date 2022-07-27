@@ -21,7 +21,7 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
         metadataDAO.deleteValue(REGISTERED_CLIENT_ID_KEY)
     }
 
-    override suspend fun observeRegisteredClientId(): Flow<String?> = metadataDAO.valueByKey(REGISTERED_CLIENT_ID_KEY)
+    override suspend fun observeRegisteredClientId(): Flow<String?> = metadataDAO.observerValueByKey(REGISTERED_CLIENT_ID_KEY)
 
     private companion object {
         const val REGISTERED_CLIENT_ID_KEY = "registered_client_id"

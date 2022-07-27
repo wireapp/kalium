@@ -151,7 +151,7 @@ internal class SearchUserRepositoryImpl(
     // UserRepository, what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
     private suspend fun getSelfUser(): SelfUser {
-        return metadataDAO.valueByKey(UserDataSource.SELF_USER_ID_KEY)
+        return metadataDAO.observerValueByKey(UserDataSource.SELF_USER_ID_KEY)
             .filterNotNull()
             .flatMapMerge { encodedValue ->
                 val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)

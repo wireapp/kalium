@@ -27,7 +27,7 @@ interface UserMapper {
     ): UserEntity
 
     fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity
-    fun fromDaoModelToSelfUser(userEntity: UserEntity, ssoId: SsoId): SelfUser
+    fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
 
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
@@ -75,8 +75,7 @@ internal class UserMapperImpl(
                 ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
             completePicture = assets.getCompleteAssetOrNull()
                 ?.let { idMapper.toQualifiedAssetId(it.key, id.domain) }, // assume the same domain as the userId
-            availabilityStatus = UserAvailabilityStatus.NONE,
-            ssoId = ssoID?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
+            availabilityStatus = UserAvailabilityStatus.NONE
         )
     }
 
@@ -103,7 +102,7 @@ internal class UserMapperImpl(
         )
     }
 
-    override fun fromDaoModelToSelfUser(userEntity: UserEntity, ssoId: SsoId) = with(userEntity) {
+    override fun fromDaoModelToSelfUser(userEntity: UserEntity) = with(userEntity) {
         SelfUser(
             idMapper.fromDaoModel(id),
             name,
@@ -115,8 +114,7 @@ internal class UserMapperImpl(
             connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewAssetId?.let { idMapper.fromDaoModel(it) },
             completeAssetId?.let { idMapper.fromDaoModel(it) },
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
-            ssoId = ssoId
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
         )
     }
 
