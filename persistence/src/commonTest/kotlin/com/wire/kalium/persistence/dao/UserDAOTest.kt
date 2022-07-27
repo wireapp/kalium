@@ -441,6 +441,18 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenATeamMember_whenUpsertingTeamMember_ThenUserTypeShouldStayTheSame() = runTest {
+        //given
+        val externalMember = user1.copy(userType = UserTypeEntity.EXTERNAL)
+        db.userDAO.upsertTeamMembersTypes(listOf(externalMember))
+        //when
+        db.userDAO.upsertTeamMembers(listOf(user1))
+        //then
+        val updated1 = db.userDAO.getUserByQualifiedID(user1.id)
+        assertEquals(UserTypeEntity.EXTERNAL, updated1.first()?.userType)
+    }
+
+    @Test
     fun givenAExistingUsers_whenUpsertingUsers_ThenResultsOneUpdatedAnotherInsertedWithNoConnectionStatusOverride() = runTest {
         //given
         val newTeamId = "new team id"
