@@ -77,17 +77,16 @@ interface UserTypeMapper<T> {
     val none: T
 
     @Suppress("ReturnCount")
-    fun fromTeamDomainAndPermission(
+    fun fromTeamAndDomain(
         otherUserDomain: String,
         selfUserTeamId: String?,
         otherUserTeamId: String?,
         selfUserDomain: String?,
-        permissionCode: Int?,
         isService: Boolean,
     ): T = when {
         isService -> service
         isFromDifferentBackEnd(otherUserDomain, selfUserDomain) -> federated
-        isFromTheSameTeam(otherUserTeamId, selfUserTeamId) -> teamRoleCodeToUserType(permissionCode)
+        isFromTheSameTeam(otherUserTeamId, selfUserTeamId) -> internal
         selfUserIsTeamMember(selfUserTeamId) -> guest
         else -> none
     }
