@@ -3,19 +3,17 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.publicuser.search.Result
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -25,7 +23,6 @@ import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -54,23 +51,23 @@ class SearchUserUseCaseTest {
 
     @Test
     fun givenValidParams_whenSearchingPublicUser_thenCorrectlyPropagateSuccessResult() = runTest {
-        //given
+        // given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
-        //when
+        // when
         val actual = searchUsersUseCase(TEST_QUERY)
-        //then
+        // then
         assertIs<Result.Success>(actual)
         assertEquals(expected.value, actual.userSearchResult)
     }
 
     @Test
     fun givenPendingConnectionRequests_whenSearchingPublicUser_thenCorrectlyPropagateUserWithConnectionStatus() = runTest {
-        //given
+        // given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
         given(connectionRepository)
@@ -82,9 +79,9 @@ class SearchUserUseCaseTest {
             .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
-        //when
+        // when
         val actual = searchUsersUseCase(TEST_QUERY)
-        //then
+        // then
         assertIs<Result.Success>(actual)
         assertEquals(
             actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
@@ -94,33 +91,33 @@ class SearchUserUseCaseTest {
 
     @Test
     fun givenValidParams_federated_whenSearchingPublicUser_thenCorrectlyPropagateSuccessResult() = runTest {
-        //given
+        // given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything(), anything())
             .thenReturn(expected)
-        //when
+        // when
         val actual = searchUsersUseCase(TEST_QUERY_FEDERATED)
-        //then
+        // then
         assertIs<Result.Success>(actual)
         assertEquals(expected.value, actual.userSearchResult)
     }
 
     @Test
     fun givenFailure_whenSearchingPublicUser_thenCorrectlyPropagateFailureResult() = runTest {
-        //given
+        // given
         val expected = TEST_CORE_FAILURE
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(eq("testQuery"), eq(""), anything(), anything())
             .thenReturn(expected)
-        //when
+        // when
         val actual = searchUsersUseCase(TEST_QUERY)
 
-        //then
+        // then
         assertIs<Result.Failure.InvalidQuery>(actual)
     }
 
