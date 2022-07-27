@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
-import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
