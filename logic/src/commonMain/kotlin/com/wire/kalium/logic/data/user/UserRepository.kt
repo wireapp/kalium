@@ -145,9 +145,9 @@ class UserDataSource(
         selfUserTeamId: String?,
         userProfileDTO: UserProfileDTO,
         selfUser: SelfUser?
-    ) = (selfUserTeamId != null
-            && userProfileDTO.teamId == selfUserTeamId
-            && userProfileDTO.id.domain == selfUser?.id?.domain)
+    ) = (selfUserTeamId != null &&
+            userProfileDTO.teamId == selfUserTeamId &&
+            userProfileDTO.id.domain == selfUser?.id?.domain)
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map(idMapper::toDaoModel)
