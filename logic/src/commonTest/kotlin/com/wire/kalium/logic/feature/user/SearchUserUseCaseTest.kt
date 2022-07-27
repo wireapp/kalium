@@ -171,7 +171,7 @@ class SearchUserUseCaseTest {
             .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
 
         // when
-        searchUsersUseCase(TEST_QUERY)
+        searchUsersUseCase(searchQuery = TEST_QUERY, searchUsersOptions = givenSearchUsersOptions)
 
         // then
         verify(searchUserRepository)
