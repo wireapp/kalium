@@ -126,7 +126,7 @@ class UserSearchApiWrapperTest {
         val (_, userSearchApiWrapper) = Arrangement().withSuccessConversationExcludedFullSearch(
             conversationMembers,
             searchResultUsers,
-
+            selfUser
             ).arrange()
 
         val result = userSearchApiWrapper.search(
@@ -160,6 +160,7 @@ class UserSearchApiWrapperTest {
         )
 
         val expectedResult = listOf(
+            Arrangement.generateContactDTO(UserId("value1", "someDomain")),
             Arrangement.generateContactDTO(UserId("value2", "someDomain")),
             Arrangement.generateContactDTO(UserId("value3", "someDomain"))
         )

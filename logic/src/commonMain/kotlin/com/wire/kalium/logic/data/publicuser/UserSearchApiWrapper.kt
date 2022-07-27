@@ -81,7 +81,7 @@ internal class UserSearchApiWrapperImpl(
                     val isConversationMember = conversationMembersId?.contains(domainId) ?: false
                     val isSelfUser = selfUser.id == domainId
 
-                    // neglate it because that is exactly what we do not want to have in filter results
+                    // negate it because that is exactly what we do not want to have in filter results
                     !(isConversationMember || isSelfUser)
                 }
             } else {
