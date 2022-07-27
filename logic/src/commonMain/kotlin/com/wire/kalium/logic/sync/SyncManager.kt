@@ -32,7 +32,7 @@ interface SyncManager {
     @Deprecated(
         message = "SyncManager won't serve as a Sync Utils anymore",
         ReplaceWith(
-            expression = "SyncRepository.syncState.first { it is SyncState.Live }",
+            expression = "syncRepository.syncState.first { it is SyncState.Live }",
             imports = arrayOf(
                 "com.wire.kalium.logic.data.sync.SyncRepository",
                 "com.wire.kalium.logic.data.sync.SyncState"
@@ -52,7 +52,7 @@ interface SyncManager {
     @Deprecated(
         message = "SyncManager won't serve as a Sync Utils anymore",
         ReplaceWith(
-            expression = "SyncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }",
+            expression = "syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }",
             imports = arrayOf(
                 "com.wire.kalium.logic.data.sync.SyncRepository",
                 "com.wire.kalium.logic.data.sync.SyncState"
@@ -74,7 +74,10 @@ interface SyncManager {
      * @see waitUntilLive
      * @see waitUntilSlowSyncCompletion
      */
-    @Deprecated("Sync can't be forced to start. It will be started automatically once conditions are met")
+    @Deprecated(
+        "Sync can't be forced to start. It will be started automatically once conditions are met",
+        ReplaceWith("")
+    )
     fun startSyncIfIdle()
     suspend fun isSlowSyncOngoing(): Boolean
     suspend fun isSlowSyncCompleted(): Boolean
@@ -182,28 +185,31 @@ internal class SyncManagerImpl(
     @Deprecated(
         "SyncManager won't serve as a Sync Utils anymore",
         replaceWith = ReplaceWith(
-            "SyncRepository.syncState.first { it is SyncState.Live }",
+            "syncRepository.syncState.first { it is SyncState.Live }",
             "com.wire.kalium.logic.data.sync.SyncRepository",
             "com.wire.kalium.logic.data.sync.SyncState"
         )
     )
     override suspend fun waitUntilLive() {
-        syncRepository.syncStateState.first { it == SyncState.Live }
+        syncRepository.syncState.first { it == SyncState.Live }
     }
 
     @Deprecated(
         "SyncManager won't serve as a Sync Utils anymore",
         replaceWith = ReplaceWith(
-            "SyncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }",
+            "syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }",
             "com.wire.kalium.logic.data.sync.SyncRepository",
             "com.wire.kalium.logic.data.sync.SyncState"
         )
     )
     override suspend fun waitUntilSlowSyncCompletion() {
-        syncRepository.syncStateState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }
+        syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }
     }
 
-    @Deprecated("Sync can't be forced to start. It will be started automatically once conditions are met")
+    @Deprecated(
+        "Sync can't be forced to start. It will be started automatically once conditions are met",
+        ReplaceWith("")
+    )
     override fun startSyncIfIdle() {
         /** NO-OP **/
     }
@@ -215,12 +221,13 @@ internal class SyncManagerImpl(
                     userSessionWorkScheduler.enqueueSlowSyncIfNeeded()
                     SyncState.SlowSync
                 }
+
                 else -> it
             }
         }
     }
 
-    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncStateState.first() == SyncState.SlowSync
+    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SlowSync
     override suspend fun isSlowSyncCompleted(): Boolean =
-        syncRepository.syncStateState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.Live)
+        syncRepository.syncState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.Live)
 }
