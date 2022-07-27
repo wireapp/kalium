@@ -78,10 +78,11 @@ internal class UserSearchApiWrapperImpl(
                 userSearchResponse.documents.filter { contactDTO ->
                     val domainId = idMapper.fromApiModel(contactDTO.qualifiedID)
 
-                    val isNotMemberOfConversation = !(conversationMembersId?.contains(domainId) ?: false)
-                    val isNotSelfUser = selfUser.id != domainId
+                    val isConversationMember = conversationMembersId?.contains(domainId) ?: false
+                    val isSelfUser = selfUser.id == domainId
 
-                    isNotMemberOfConversation || isNotSelfUser
+                    // neglate it because that is exactly what we do not want to have in filter results
+                    !(isConversationMember || isSelfUser)
                 }
             } else {
                 userSearchResponse.documents.filter { contactDTO ->
