@@ -12,7 +12,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 

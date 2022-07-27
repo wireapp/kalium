@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
-import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 

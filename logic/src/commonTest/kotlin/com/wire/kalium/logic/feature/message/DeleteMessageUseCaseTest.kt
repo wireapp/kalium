@@ -59,7 +59,7 @@ class DeleteMessageUseCaseTest {
 
     @Test
     fun givenAMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
-        //given
+        // given
         val deleteForEveryone = true
         given(messageSender)
             .suspendFunction(messageSender::sendMessage)
@@ -78,11 +78,10 @@ class DeleteMessageUseCaseTest {
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
-
-        //when
+        // when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
-        //then
+        // then
         verify(messageSender)
             .suspendFunction(messageSender::sendMessage)
             .with(matching { message ->
@@ -97,7 +96,7 @@ class DeleteMessageUseCaseTest {
 
     @Test
     fun givenAMessage_WhenDeleteForEveryIsFalse_TheGeneratedMessageShouldBeCorrect() = runTest {
-        //given
+        // given
         val deleteForEveryone = false
         given(messageSender)
             .suspendFunction(messageSender::sendMessage)
@@ -116,7 +115,7 @@ class DeleteMessageUseCaseTest {
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
-        //when
+        // when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value, idMapper.toProtoModel(
@@ -124,7 +123,7 @@ class DeleteMessageUseCaseTest {
             )
         )
 
-        //then
+        // then
         verify(messageSender)
             .suspendFunction(messageSender::sendMessage)
             .with(matching { message ->

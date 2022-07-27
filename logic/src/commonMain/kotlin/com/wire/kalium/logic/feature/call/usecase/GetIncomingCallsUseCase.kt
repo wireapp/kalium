@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -45,10 +44,10 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
     private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
         userRepository.observeSelfUser()
             .flatMapLatest {
-                //if user is AWAY we don't show any IncomingCalls
+                // if user is AWAY we don't show any IncomingCalls
                 if (it.availabilityStatus == UserAvailabilityStatus.AWAY) flowOf(listOf())
-                else callRepository.incomingCallsFlow().distinctUntilChanged {
-                        old, new -> old.firstOrNull()?.conversationId == new.firstOrNull()?.conversationId
+                else callRepository.incomingCallsFlow().distinctUntilChanged { old, new ->
+                    old.firstOrNull()?.conversationId == new.firstOrNull()?.conversationId
                 }
             }
 
@@ -56,17 +55,17 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
         flatMapLatest { calls ->
             calls
                 .flatMapFromIterable { call ->
-                    //getting ConversationDetails for each Call
+                    // getting ConversationDetails for each Call
                     conversationRepository.observeById(call.conversationId)
                         .getOrElse(flowOf(null))
                 }
                 .map { conversations ->
                     val allowedConversations = conversations
                         .filter { conversationDetails ->
-                            //don't display call if ConversationDetails for it were not found
-                            conversationDetails != null
-                                    //don't display call if that Conversation is muted
-                                    && conversationDetails.mutedStatus != MutedConversationStatus.AllMuted
+                            // don't display call if ConversationDetails for it were not found
+                            conversationDetails != null &&
+                                    // don't display call if that Conversation is muted
+                                    conversationDetails.mutedStatus != MutedConversationStatus.AllMuted
                         }
                         .map { it!!.id }
 

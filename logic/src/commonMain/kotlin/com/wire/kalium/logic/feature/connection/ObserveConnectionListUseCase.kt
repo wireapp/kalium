@@ -2,8 +2,6 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.user.Connection
-import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 
 /**
