@@ -424,7 +424,7 @@ class GetNotificationsUseCaseTest {
 
         fun withSelfUserId(id: QualifiedID = MY_ID): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
+                .function(userRepository::getSelfUserId)
                 .whenInvoked()
                 .then { id }
 

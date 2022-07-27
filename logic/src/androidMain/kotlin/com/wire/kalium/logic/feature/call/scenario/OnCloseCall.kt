@@ -7,7 +7,7 @@ import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.id.toConversationId
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -15,28 +15,29 @@ import kotlinx.coroutines.launch
 @Suppress("LongParameterList")
 class OnCloseCall(
     private val callRepository: CallRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) : CloseCallHandler {
     override fun onClosedCall(
         reason: Int,
-        conversationId: String,
+        conversationIdString: String,
         messageTime: Uint32_t,
         userId: String,
         clientId: String?,
         arg: Pointer?
     ) {
-        callingLogger.i("OnCloseCall -> ConversationId $conversationId from user $userId , CLOSED for reason: $reason")
+        callingLogger.i("OnCloseCall -> ConversationId $conversationIdString from user $userId , CLOSED for reason: $reason")
 
         val avsReason = CallClosedReason.fromInt(value = reason)
         val callStatus = if (avsReason === STILL_ONGOING) CallStatus.STILL_ONGOING else CallStatus.CLOSED
-
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
         scope.launch {
             callRepository.updateCallStatusById(
-                conversationId = conversationId.toConversationId().toString(),
+                conversationIdString = conversationIdWithDomain.toString(),
                 status = callStatus
             )
         }
 
-        callingLogger.i("OnCloseCall -> incoming call status for conversation $conversationId updated to $callStatus..")
+        callingLogger.i("OnCloseCall -> incoming call status for conversation $conversationIdString updated to $callStatus..")
     }
 }

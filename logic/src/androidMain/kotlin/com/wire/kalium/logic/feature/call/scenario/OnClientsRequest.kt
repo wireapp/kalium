@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
-import com.wire.kalium.logic.data.id.toConversationId
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -21,14 +21,17 @@ internal class OnClientsRequest(
     private val selfUserId: String,
     private val conversationRepository: ConversationRepository,
     private val federatedIdMapper: FederatedIdMapper,
+    private val qualifiedIdMapper: QualifiedIdMapper,
     private val callingScope: CoroutineScope
 ) : ClientsRequestHandler {
 
-    override fun onClientsRequest(inst: Handle, conversationId: String, arg: Pointer?) {
+    override fun onClientsRequest(inst: Handle, conversationIdString: String, arg: Pointer?) {
         callingScope.launch {
-            callingLogger.d("OnClientsRequest() -> Retrieving recipients $conversationId")
-            val conversationRecipients =
-                conversationRepository.getConversationRecipients(conversationId = conversationId.toConversationId())
+            callingLogger.d("OnClientsRequest() -> Retrieving recipients $conversationIdString")
+            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
+            val conversationRecipients = conversationRepository.getConversationRecipients(
+                conversationId = conversationIdWithDomain
+            )
 
             conversationRecipients.map { recipients ->
                 callingLogger.d("OnClientsRequest() -> Mapping ${recipients.size} recipients")
@@ -50,7 +53,7 @@ internal class OnClientsRequest(
                 val callClients = avsClients.toJsonString()
                 calling.wcall_set_clients_for_conv(
                     inst = inst,
-                    convId = federatedIdMapper.parseToFederatedId(conversationId),
+                    convId = federatedIdMapper.parseToFederatedId(conversationIdString),
                     clientsJson = callClients
                 )
                 callingLogger.d("OnClientsRequest() -> Success")

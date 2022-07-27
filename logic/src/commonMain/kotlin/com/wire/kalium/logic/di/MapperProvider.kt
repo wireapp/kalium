@@ -25,8 +25,11 @@ import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
+import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
@@ -52,10 +55,12 @@ import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
+import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
@@ -91,4 +96,11 @@ internal object MapperProvider {
     fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl()
     fun userTypeEntityMapper(): UserEntityTypeMapper = UserEntityTypeMapperImpl()
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
+    fun qualifiedIdMapper(userRepository: UserRepository): QualifiedIdMapper = QualifiedIdMapper(userRepository)
+    fun federatedIdMapper(
+        userRepository: UserRepository,
+        qualifiedIdMapper: QualifiedIdMapper,
+        kaliumPreferences: KaliumPreferences
+    ): FederatedIdMapper = FederatedIdMapperImpl(userRepository, qualifiedIdMapper, kaliumPreferences)
+
 }

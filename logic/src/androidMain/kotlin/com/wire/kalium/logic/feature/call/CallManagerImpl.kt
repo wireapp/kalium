@@ -16,6 +16,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -58,7 +59,8 @@ actual class CallManagerImpl(
     private val messageSender: MessageSender,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val callMapper: CallMapper = MapperProvider.callMapper(),
-    private val federatedIdMapper: FederatedIdMapper
+    private val federatedIdMapper: FederatedIdMapper,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO(calling): clear job method
@@ -104,17 +106,18 @@ actual class CallManagerImpl(
             sendHandler = OnSendOTR(
                 deferredHandle,
                 calling,
+                qualifiedIdMapper,
                 selfUserId,
                 selfClientId,
                 messageSender,
                 scope
             ).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-            incomingCallHandler = OnIncomingCall(callRepository, callMapper, federatedIdMapper, scope).keepingStrongReference(),
+            incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, federatedIdMapper, scope).keepingStrongReference(),
             missedCallHandler = OnMissedCall(callRepository, scope).keepingStrongReference(),
             answeredCallHandler = OnAnsweredCall(callRepository, scope).keepingStrongReference(),
             establishedCallHandler = OnEstablishedCall(callRepository, scope).keepingStrongReference(),
-            closeCallHandler = OnCloseCall(callRepository, scope).keepingStrongReference(),
+            closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
             metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             }.keepingStrongReference(),
@@ -210,7 +213,10 @@ actual class CallManagerImpl(
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
-        wcall_reject(inst = deferredHandle.await(), conversationId = federatedIdMapper.parseToFederatedId(conversationId))
+        wcall_reject(
+            inst = deferredHandle.await(),
+            conversationId = federatedIdMapper.parseToFederatedId(conversationId)
+        )
         callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 
@@ -257,6 +263,7 @@ actual class CallManagerImpl(
                     handle = deferredHandle.await(),
                     calling = calling,
                     callRepository = callRepository,
+                    qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = callMapper.participantMapper,
                     userRepository = userRepository,
                     conversationRepository = conversationRepository,
@@ -300,6 +307,7 @@ actual class CallManagerImpl(
                     selfUserId = selfUserId,
                     conversationRepository = conversationRepository,
                     federatedIdMapper = federatedIdMapper,
+                    qualifiedIdMapper = qualifiedIdMapper,
                     callingScope = scope
                 ).keepingStrongReference()
 

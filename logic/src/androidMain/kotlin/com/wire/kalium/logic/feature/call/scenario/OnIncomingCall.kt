@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.FederatedIdMapper
-import com.wire.kalium.logic.data.id.toConversationId
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -17,11 +17,12 @@ import kotlinx.coroutines.launch
 class OnIncomingCall(
     private val callRepository: CallRepository,
     private val callMapper: CallMapper,
+    private val qualifiedIdMapper: QualifiedIdMapper,
     private val federatedIdMapper: FederatedIdMapper,
     private val scope: CoroutineScope
 ) : IncomingCallHandler {
     override fun onIncomingCall(
-        conversationId: String,
+        conversationIdString: String,
         messageTime: Uint32_t,
         userId: String,
         clientId: String,
@@ -30,18 +31,18 @@ class OnIncomingCall(
         conversationType: Int,
         arg: Pointer?
     ) {
-        callingLogger.i("OnIncomingCall -> incoming call from $userId in conversation $conversationId at $messageTime")
+        callingLogger.i("OnIncomingCall -> incoming call from $userId in conversation $conversationIdString at $messageTime")
         val conversationType = callMapper.fromIntToConversationType(conversationType)
         val isMuted = conversationType == ConversationType.Conference
         scope.launch {
             callRepository.createCall(
-                conversationId = conversationId.toConversationId(),
+                conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString),
                 status = CallStatus.INCOMING,
                 callerId = federatedIdMapper.parseToFederatedId(userId),
                 isMuted = isMuted,
                 isCameraOn = isVideoCall
             )
-        callingLogger.i("OnIncomingCall -> incoming call for conversation $conversationId added to data flow")
+            callingLogger.i("OnIncomingCall -> incoming call for conversation $conversationIdString added to data flow")
         }
     }
 }

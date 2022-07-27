@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.feature.publicuser.search
 
 import com.wire.kalium.logic.data.id.FEDERATION_REGEX
-import com.wire.kalium.logic.data.id.parseIntoQualifiedID
-import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.UserRepository
 
@@ -15,6 +15,7 @@ interface SearchKnownUsersUseCase {
 internal class SearchKnownUsersUseCaseImpl(
     private val searchUserRepository: SearchUserRepository,
     private val userRepository: UserRepository,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) : SearchKnownUsersUseCase {
 
     //TODO:handle failure
@@ -30,7 +31,9 @@ internal class SearchKnownUsersUseCaseImpl(
         } else {
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
                 searchQuery = if (searchQuery.matches(FEDERATION_REGEX))
-                    searchQuery.parseIntoQualifiedID().value
+                    searchQuery.run {
+                        qualifiedIdMapper.fromStringToQualifiedID(this)
+                    }.value
                 else searchQuery,
                 searchUsersOptions = searchUsersOptions
             )

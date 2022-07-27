@@ -17,7 +17,7 @@ class OnAnsweredCall(
         callingLogger.i("OnAnsweredCall -> call for conversation $conversationId answered")
         scope.launch {
             callRepository.updateCallStatusById(
-                conversationId = conversationId,
+                conversationIdString = conversationId,
                 status = CallStatus.ANSWERED
             )
         }

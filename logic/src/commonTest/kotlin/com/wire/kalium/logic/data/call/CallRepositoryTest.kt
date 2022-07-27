@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -66,6 +67,9 @@ class CallRepositoryTest {
     private val teamRepository = mock(classOf<TeamRepository>())
 
     @Mock
+    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
+    @Mock
     private val persistMessage = mock(classOf<PersistMessageUseCase>())
 
     @Mock
@@ -80,6 +84,7 @@ class CallRepositoryTest {
         callRepository = CallDataSource(
             callApi = callApi,
             callDAO = callDAO,
+            qualifiedIdMapper = qualifiedIdMapper,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
@@ -177,7 +182,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -234,7 +239,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -286,7 +291,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -347,7 +352,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -394,7 +399,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -445,7 +450,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -503,7 +508,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -565,7 +570,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -631,7 +636,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -688,7 +693,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 

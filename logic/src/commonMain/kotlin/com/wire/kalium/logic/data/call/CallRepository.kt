@@ -6,7 +6,8 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toConversationId
+import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -42,7 +43,7 @@ interface CallRepository {
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
-    suspend fun updateCallStatusById(conversationId: String, status: CallStatus)
+    suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
@@ -53,6 +54,7 @@ interface CallRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CallDataSource(
     private val callApi: CallApi,
+    private val qualifiedIdMapper: QualifiedIdMapper,
     private val persistMessage: PersistMessageUseCase,
     private val callDAO: CallDAO,
     private val conversationRepository: ConversationRepository,
@@ -156,7 +158,7 @@ internal class CallDataSource(
             if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
                 // Update database
                 updateCallStatusById(
-                    conversationId = conversationId.toString(),
+                    conversationIdString = conversationId.toString(),
                     status = callNewStatus
                 )
             }
@@ -197,9 +199,9 @@ internal class CallDataSource(
         )
     }
 
-    override suspend fun updateCallStatusById(conversationId: String, status: CallStatus) {
+    override suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus) {
         val callMetadataProfile = _callMetadataProfile.value
-        val modifiedConversationId = conversationId.toConversationId()
+        val modifiedConversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
         callMetadataProfile.data[modifiedConversationId.toString()]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                 val establishedTime =

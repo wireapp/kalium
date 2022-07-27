@@ -18,7 +18,7 @@ class OnMissedCall(
         callingLogger.i("OnMissedCall -> Missed call for conversation: $conversationId at $messageTime from user $userId..")
         scope.launch {
             callRepository.updateCallStatusById(
-                conversationId = conversationId,
+                conversationIdString = conversationId,
                 status = CallStatus.MISSED
             )
         }

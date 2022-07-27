@@ -28,7 +28,9 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
@@ -52,6 +54,7 @@ import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
@@ -214,6 +217,7 @@ abstract class UserSessionScopeCommon(
     private val callRepository: CallRepository by lazy {
         CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
+            qualifiedIdMapper = qualifiedIdMapper,
             callDAO = userDatabaseProvider.callDAO,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
@@ -306,6 +310,10 @@ abstract class UserSessionScopeCommon(
             lazy { client.refillKeyPackages }
         )
 
+    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
+
+    val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper, globalPreferences)
+
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
@@ -313,7 +321,9 @@ abstract class UserSessionScopeCommon(
             userRepository = userRepository,
             clientRepository = clientRepository,
             conversationRepository = conversationRepository,
-            messageSender = messageSender
+            messageSender = messageSender,
+            federatedIdMapper = federatedIdMapper,
+            qualifiedIdMapper = qualifiedIdMapper
         )
     }
 
@@ -414,7 +424,8 @@ abstract class UserSessionScopeCommon(
             syncManager,
             assetRepository,
             teamRepository,
-            connectionRepository
+            connectionRepository,
+            qualifiedIdMapper
         )
     val logout: LogoutUseCase
         get() = LogoutUseCase(

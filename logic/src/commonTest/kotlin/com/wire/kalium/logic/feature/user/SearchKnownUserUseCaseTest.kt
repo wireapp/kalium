@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
@@ -220,6 +221,9 @@ class SearchKnownUserUseCaseTest {
         @Mock
         val userRepository = mock(classOf<UserRepository>())
 
+        @Mock
+        val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
         fun withSuccessFullSelfUserRetrieve(
             id: QualifiedID = QualifiedID(
                 value = "selfUser",
@@ -320,7 +324,7 @@ class SearchKnownUserUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, SearchKnownUsersUseCase> {
-            return this to SearchKnownUsersUseCaseImpl(searchUserRepository, userRepository)
+            return this to SearchKnownUsersUseCaseImpl(searchUserRepository, userRepository, qualifiedIdMapper)
         }
     }
 }
