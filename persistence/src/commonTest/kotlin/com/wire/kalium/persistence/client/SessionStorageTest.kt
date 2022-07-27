@@ -47,7 +47,7 @@ class SessionDAOTest {
                 TEST_SERVER_CONFIG.links
             )
         val sessionsMap = mapOf(authSessionEntity.userId to authSessionEntity)
-        sessionStorage.addSession(authSessionEntity)
+        sessionStorage.addOrReplaceSession(authSessionEntity)
 
         assertEquals(sessionsMap, sessionStorage.allSessions())
     }
@@ -71,14 +71,14 @@ class SessionDAOTest {
             )
 
         val sessionsMapExpectedValue =
-                mapOf(
-                    session1.userId to session1,
-                    sessionToDelete.userId to sessionToDelete
+            mapOf(
+                session1.userId to session1,
+                sessionToDelete.userId to sessionToDelete
             )
         val afterDeleteExpectedValue = mapOf(session1.userId to session1)
 
-        sessionStorage.addSession(session1)
-        sessionStorage.addSession(sessionToDelete)
+        sessionStorage.addOrReplaceSession(session1)
+        sessionStorage.addOrReplaceSession(sessionToDelete)
 
         assertEquals(sessionsMapExpectedValue, sessionStorage.allSessions())
         // delete session
@@ -110,8 +110,8 @@ class SessionDAOTest {
                 TEST_SERVER_CONFIG.links
             )
 
-        sessionStorage.addSession(session1)
-        sessionStorage.addSession(session2)
+        sessionStorage.addOrReplaceSession(session1)
+        sessionStorage.addOrReplaceSession(session2)
 
         sessionStorage.setCurrentSession(QualifiedIDEntity("user_id_1", "user_domain_1"))
 

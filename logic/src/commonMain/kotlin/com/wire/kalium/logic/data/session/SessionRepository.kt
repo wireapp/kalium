@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
@@ -37,7 +36,7 @@ internal class SessionDataSource(
 ) : SessionRepository {
 
     override fun storeSession(autSession: AuthSession): Either<StorageFailure, Unit> =
-        wrapStorageRequest { sessionStorage.addSession(sessionMapper.toPersistenceSession(autSession)) }
+        wrapStorageRequest { sessionStorage.addOrReplaceSession(sessionMapper.toPersistenceSession(autSession)) }
 
     override fun allSessions(): Either<StorageFailure, List<AuthSession>> =
         wrapStorageRequest { sessionStorage.allSessions()?.values?.toList()?.map { sessionMapper.fromPersistenceSession(it) } }
@@ -69,19 +68,19 @@ internal class SessionDataSource(
         }
 
     override fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            sessionStorage.addSession(
+        userSession(userId).map { existSession ->
+            sessionStorage.addOrReplaceSession(
                 sessionMapper.toPersistenceSession(
                     AuthSession(
                         AuthSession.Session.Invalid(
                             userId,
                             reason,
                             isHardLogout
-                        ), ServerConfig.DEFAULT
-                        // todo: severConfig of the currentSession
+                        ), existSession.serverLinks
                     )
                 )
             )
+
         }
 
     override fun currentSession(): Either<StorageFailure, AuthSession> =
