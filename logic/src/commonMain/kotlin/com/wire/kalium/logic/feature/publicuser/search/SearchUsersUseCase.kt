@@ -52,6 +52,3 @@ internal class SearchUsersUseCaseImpl(
         })
     }
 }
-
-
-
