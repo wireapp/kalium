@@ -5,6 +5,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -17,8 +18,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
-//TODO(testing): create unit test
-
+// TODO(testing): create unit test
 class OnHttpRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
@@ -36,6 +36,7 @@ class OnHttpRequest(
             messageString?.let { message ->
                 when (sendCallingMessage(conversationId, avsSelfUserId, avsSelfClientId, message)) {
                     is Either.Right -> {
+                        callingLogger.i("[OnHttpRequest] -> Success")
                         calling.wcall_resp(
                             inst = handle.await(),
                             status = 200,
@@ -44,6 +45,7 @@ class OnHttpRequest(
                         )
                     }
                     is Either.Left -> {
+                        callingLogger.i("[OnHttpRequest] -> Error")
                         calling.wcall_resp(
                             inst = handle.await(),
                             status = 400, // TODO(calling): Handle the errorCode from CoreFailure
