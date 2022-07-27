@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
@@ -56,7 +57,7 @@ interface SyncManager {
     fun onSlowSyncFailure(cause: CoreFailure): SyncState
 }
 
-@Suppress("LongParameterList") //Can't take them out right now. Maybe we can extract an `EventProcessor` on a future PR
+@Suppress("LongParameterList") // Can't take them out right now. Maybe we can extract an `EventProcessor` on a future PR
 internal class SyncManagerImpl(
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val syncRepository: SyncRepository,
@@ -81,17 +82,17 @@ internal class SyncManagerImpl(
     private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
         when (throwable) {
             is CancellationException -> {
-                kaliumLogger.i("Sync job was cancelled")
+                kaliumLogger.withFeatureId(SYNC).i("Sync job was cancelled")
                 syncRepository.updateSyncState { SyncState.Waiting }
             }
 
             is KaliumSyncException -> {
-                kaliumLogger.i("SyncException during events processing", throwable)
+                kaliumLogger.withFeatureId(SYNC).i("SyncException during events processing", throwable)
                 syncRepository.updateSyncState { SyncState.Failed(throwable.coreFailureCause) }
             }
 
             else -> {
-                kaliumLogger.i("Sync job failed due to unknown reason", throwable)
+                kaliumLogger.withFeatureId(SYNC).i("Sync job failed due to unknown reason", throwable)
                 syncRepository.updateSyncState { SyncState.Failed(CoreFailure.Unknown(throwable)) }
             }
         }
@@ -109,33 +110,39 @@ internal class SyncManagerImpl(
 
     override fun onSlowSyncComplete() {
         // Processing already running, don't launch another
-        kaliumLogger.d("SyncManager.onSlowSyncComplete called")
+        kaliumLogger.withFeatureId(SYNC).d("SyncManager.onSlowSyncComplete called")
         val isRunning = processingJob?.isActive ?: false
         if (isRunning) {
-            kaliumLogger.d("SyncManager.processingJob still active. Sync won't keep going")
+            kaliumLogger.withFeatureId(SYNC).d("SyncManager.processingJob still active. Sync won't keep going")
             return
         }
         processingJob?.cancel(null)
 
         syncRepository.updateSyncState { SyncState.GatheringPendingEvents }
 
-        processingJob = eventProcessingScope.launch { gatherAndProcessEvents() }
+        processingJob = eventProcessingScope.launch {
+            gatherAndProcessEvents()
+        }
     }
 
-    private suspend fun gatherAndProcessEvents() = eventGatherer.gatherEvents().collect {
-        eventProcessor.processEvent(it)
+    private suspend fun gatherAndProcessEvents() {
+        eventGatherer.gatherEvents().collect {
+            eventProcessor.processEvent(it)
+        }
+        kaliumLogger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
+        syncRepository.updateSyncState { SyncState.Waiting }
     }
 
     override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
 
     override suspend fun waitUntilLive() {
         startSyncIfIdle()
-        syncRepository.syncState.first { it == SyncState.Live }
+        syncRepository.syncStateState.first { it == SyncState.Live }
     }
 
     override suspend fun waitUntilSlowSyncCompletion() {
         startSyncIfIdle()
-        syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }
+        syncRepository.syncStateState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }
     }
 
     override fun startSyncIfIdle() {
@@ -151,7 +158,7 @@ internal class SyncManagerImpl(
         }
     }
 
-    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SlowSync
+    override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncStateState.first() == SyncState.SlowSync
     override suspend fun isSlowSyncCompleted(): Boolean =
-        syncRepository.syncState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.Live)
+        syncRepository.syncStateState.first() in setOf(SyncState.GatheringPendingEvents, SyncState.Live)
 }

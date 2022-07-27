@@ -89,6 +89,7 @@ import com.wire.kalium.logic.sync.EventGathererImpl
 import com.wire.kalium.logic.sync.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
+import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.UserEventReceiver
@@ -367,6 +368,10 @@ abstract class UserSessionScopeCommon(
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(syncRepository)
+
+    val setConnectionPolicy: SetConnectionPolicyUseCase
+        get() = SetConnectionPolicyUseCase(syncRepository)
+
     val client: ClientScope
         get() = ClientScope(
             clientRepository,
