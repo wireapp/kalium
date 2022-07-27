@@ -218,7 +218,6 @@ actual class CallManagerImpl(
             inst = deferredHandle.await(),
             conversationId = federatedIdMapper.parseToFederatedId(conversationId)
         )
-        callingLogger.d("[$TAG][endCall] -> Called wcall_end()")
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
@@ -236,7 +235,6 @@ actual class CallManagerImpl(
             inst = deferredHandle.await(),
             conversationId = federatedIdMapper.parseToFederatedId(conversationId)
         )
-        callingLogger.d("[$TAG][rejectCall] -> Called wcall_reject()")
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {
