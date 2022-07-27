@@ -24,16 +24,12 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
     @Mock
     private val participantsOrder = mock(classOf<ParticipantsOrder>())
 
-    @Mock
-    private val syncManager = mock(classOf<SyncManager>())
-
     private lateinit var getAllCallsWithSortedParticipantsUseCase: GetAllCallsWithSortedParticipantsUseCase
 
     @BeforeTest
     fun setUp() {
         getAllCallsWithSortedParticipantsUseCase = GetAllCallsWithSortedParticipantsUseCase(
             callRepository,
-            syncManager,
             participantsOrder
         )
     }
@@ -50,8 +46,6 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
             .thenReturn(calls2.first().participants)
 
         val callsFlow = flowOf(calls1, calls2)
-        given(syncManager).invocation { startSyncIfIdle() }
-            .thenReturn(Unit)
         given(callRepository)
             .suspendFunction(callRepository::callsFlow)
             .whenInvoked()

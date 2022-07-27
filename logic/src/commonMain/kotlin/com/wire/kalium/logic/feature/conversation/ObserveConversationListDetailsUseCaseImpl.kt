@@ -17,13 +17,10 @@ fun interface ObserveConversationListDetailsUseCase {
 
 internal class ObserveConversationListDetailsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager,
     private val callRepository: CallRepository,
 ) : ObserveConversationListDetailsUseCase {
 
     override suspend operator fun invoke(): Flow<List<ConversationDetails>> {
-        syncManager.startSyncIfIdle()
-
         val conversationsFlow = conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
                 flow {
@@ -41,7 +38,6 @@ internal class ObserveConversationListDetailsUseCaseImpl(
                     is ConversationDetails.Self,
                     is ConversationDetails.Connection,
                     is ConversationDetails.OneOne -> it
-
                     is ConversationDetails.Group -> it.copy(
                         hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId })
                     )

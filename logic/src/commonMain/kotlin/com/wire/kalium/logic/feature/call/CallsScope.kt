@@ -24,29 +24,26 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")
-class CallsScope(
+class CallsScope internal constructor(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val flowManagerService: FlowManagerService,
     private val mediaManagerService: MediaManagerService,
-    private val syncManager: SyncManager
 ) {
 
     val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase
-        get() = GetAllCallsWithSortedParticipantsUseCase(callRepository, syncManager, participantsOrder)
+        get() = GetAllCallsWithSortedParticipantsUseCase(callRepository, participantsOrder)
 
     val establishedCall: ObserveEstablishedCallsUseCase
         get() = ObserveEstablishedCallsUseCase(
             callRepository = callRepository,
-            syncManager = syncManager
         )
 
     val getIncomingCalls: GetIncomingCallsUseCase
         get() = GetIncomingCallsUseCaseImpl(
             callRepository = callRepository,
-            syncManager = syncManager,
             conversationRepository = conversationRepository,
             userRepository = userRepository
         )
@@ -54,7 +51,6 @@ class CallsScope(
     val observeOngoingCalls: ObserveOngoingCallsUseCase
         get() = ObserveOngoingCallsUseCaseImpl(
             callRepository = callRepository,
-            syncManager = syncManager
         )
 
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager)

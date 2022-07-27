@@ -12,11 +12,9 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.anything
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.matching
@@ -44,9 +42,6 @@ class DeleteMessageUseCaseTest {
     val idMapper: IdMapper = IdMapperImpl()
 
     @Mock
-    private val syncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
-
-    @Mock
     private val messageSender: MessageSender = mock(MessageSender::class)
 
     private lateinit var deleteMessageUseCase: DeleteMessageUseCase
@@ -57,7 +52,6 @@ class DeleteMessageUseCaseTest {
             messageRepository,
             userRepository,
             clientRepository,
-            syncManager,
             messageSender,
             idMapper
         )
@@ -143,70 +137,6 @@ class DeleteMessageUseCaseTest {
             .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
             .wasInvoked(exactly = once)
 
-    }
-
-
-    @Test
-    fun givenAMessage_whenDeleting_thenStartSyncIsInvoked() = runTest {
-        //given
-        given(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .whenInvokedWith(anything())
-            .thenReturn(Either.Right(Unit))
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
-        given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .then { Either.Right(SELF_CLIENT_ID) }
-        given(messageRepository)
-            .suspendFunction(messageRepository::markMessageAsDeleted)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Either.Right(Unit))
-
-
-        //when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).shouldSucceed()
-
-        //then
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAMessage_whenDeleting_thenShouldNotWaitForAnyKindOfSyncState() = runTest {
-        //given
-        given(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .whenInvokedWith(anything())
-            .thenReturn(Either.Right(Unit))
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
-        given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .then { Either.Right(SELF_CLIENT_ID) }
-        given(messageRepository)
-            .suspendFunction(messageRepository::markMessageAsDeleted)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Either.Right(Unit))
-
-
-        //when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).shouldSucceed()
-
-        //then
-        verify(syncManager)
-            .suspendFunction(syncManager::waitUntilLive)
-            .wasNotInvoked()
-        verify(syncManager)
-            .suspendFunction(syncManager::waitUntilSlowSyncCompletion)
-            .wasNotInvoked()
     }
 
     companion object {

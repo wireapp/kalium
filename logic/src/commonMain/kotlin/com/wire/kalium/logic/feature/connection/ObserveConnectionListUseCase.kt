@@ -18,13 +18,11 @@ fun interface ObserveConnectionListUseCase {
     suspend operator fun invoke(): Flow<List<ConversationDetails>>
 }
 
-internal class ObserveConnectionListUseCaseImpl(
+internal class ObserveConnectionListUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
-    private val syncManager: SyncManager
 ) : ObserveConnectionListUseCase {
 
     override suspend operator fun invoke(): Flow<List<ConversationDetails>> {
-        syncManager.startSyncIfIdle()
         return connectionRepository.observeConnectionList()
     }
 }

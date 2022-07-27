@@ -26,14 +26,11 @@ class ObserveConversationDetailsUseCaseTest {
     @Mock
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
-    @Mock
-    private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
-
     private lateinit var observeConversationsUseCase: ObserveConversationDetailsUseCase
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationDetailsUseCase(conversationRepository, syncManager)
+        observeConversationsUseCase = ObserveConversationDetailsUseCase(conversationRepository)
     }
 
     @Test
@@ -50,22 +47,6 @@ class ObserveConversationDetailsUseCaseTest {
         verify(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .with(eq(conversationId))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAConversationID_whenObservingConversationUseCase_thenSyncManagerShouldBeCalled() = runTest {
-        val conversationId = TestConversation.ID
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .then { flowOf() }
-
-        observeConversationsUseCase(conversationId)
-
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
             .wasInvoked(exactly = once)
     }
 

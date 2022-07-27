@@ -126,7 +126,7 @@ abstract class UserSessionScopeCommon(
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    // we made this lazy so it will have a single instance for the storage
+    // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
@@ -445,7 +445,7 @@ abstract class UserSessionScopeCommon(
             kaliumConfigs
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
 
     val calls: CallsScope
         get() = CallsScope(
@@ -455,7 +455,6 @@ abstract class UserSessionScopeCommon(
             userRepository,
             flowManagerService,
             mediaManagerService,
-            syncManager
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)

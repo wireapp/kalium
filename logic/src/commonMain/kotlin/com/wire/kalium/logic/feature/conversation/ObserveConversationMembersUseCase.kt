@@ -14,13 +14,11 @@ import kotlinx.coroutines.flow.map
 
 class ObserveConversationMembersUseCase(
     private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository,
-    private val syncManager: SyncManager
+    private val userRepository: UserRepository
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>> {
-        syncManager.startSyncIfIdle()
         return conversationRepository.observeConversationMembers(conversationId).map { members ->
             members.map { member ->
                 userRepository.observeUser(member.id).filterNotNull().map {

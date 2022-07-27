@@ -8,11 +8,9 @@ import kotlinx.coroutines.flow.Flow
 
 class ObserveConversationDetailsUseCase(
     private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId): Flow<ConversationDetails> {
-        syncManager.startSyncIfIdle()
         return conversationRepository.observeConversationDetailsById(conversationId)
     }
 }

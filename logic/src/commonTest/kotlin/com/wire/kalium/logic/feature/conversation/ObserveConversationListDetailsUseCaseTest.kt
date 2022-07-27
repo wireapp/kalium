@@ -12,10 +12,8 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.anything
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -40,14 +38,11 @@ class ObserveConversationListDetailsUseCaseTest {
     @Mock
     private val callRepository: CallRepository = mock(CallRepository::class)
 
-    @Mock
-    private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
-
     private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCaseImpl
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, syncManager, callRepository)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository)
     }
 
     @Test
@@ -73,33 +68,6 @@ class ObserveConversationListDetailsUseCaseTest {
 
         verify(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationList)
-            .wasInvoked(exactly = once)
-
-    }
-
-    @Test
-    fun givenSomeConversations_whenObservingDetailsList_thenSyncManagerShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
-
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(flowOf(conversations))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
-        observeConversationsUseCase().collect()
-
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
             .wasInvoked(exactly = once)
 
     }

@@ -8,8 +8,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 
 class GetConversationsUseCase(
-    private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager
+    private val conversationRepository: ConversationRepository
 ) {
 
     sealed class Result {
@@ -18,7 +17,6 @@ class GetConversationsUseCase(
     }
 
     suspend operator fun invoke(): Result {
-        syncManager.startSyncIfIdle()
         return conversationRepository.getConversationList().fold({
             Result.Failure(it)
         }, {

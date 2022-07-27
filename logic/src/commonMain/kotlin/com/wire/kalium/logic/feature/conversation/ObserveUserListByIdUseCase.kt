@@ -13,12 +13,10 @@ import kotlinx.coroutines.flow.map
 
 class ObserveUserListByIdUseCase internal constructor(
     private val userRepository: UserRepository,
-    private val syncManager: SyncManager
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend operator fun invoke(userIdList: List<UserId>): Flow<List<User>> {
-        syncManager.startSyncIfIdle()
         return flowOf(userIdList).map { members ->
             members.map { userId ->
                 userRepository.observeUser(userId)

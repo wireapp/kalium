@@ -20,12 +20,10 @@ class SendTextMessageUseCase(
     private val persistMessage: PersistMessageUseCase,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
-    private val syncManager: SyncManager,
     private val messageSender: MessageSender
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> {
-        syncManager.startSyncIfIdle()
         val selfUser = userRepository.observeSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()

@@ -22,13 +22,11 @@ class DeleteMessageUseCase(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
-    private val syncManager: SyncManager,
     private val messageSender: MessageSender,
     private val idMapper: IdMapper
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
-        syncManager.startSyncIfIdle()
         val selfUser = userRepository.observeSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()

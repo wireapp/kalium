@@ -26,21 +26,17 @@ interface GetIncomingCallsUseCase {
  * and do not show any incoming calls if User is UserAvailabilityStatus.AWAY.
  * @param conversationRepository ConversationRepository for getting ConversationsDetails, to check its MutedConversationStatus
  * and do not show incoming calls from the muted conversation.
- * @param syncManager SyncManager to sync the data before checking the calls.
  *
  * @return Flow<List<Call>> - Flow of Calls List that should be shown to the user.
  * That Flow emits everytime when the list is changed
  */
-internal class GetIncomingCallsUseCaseImpl(
+internal class GetIncomingCallsUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager
 ) : GetIncomingCallsUseCase {
 
     override suspend operator fun invoke(): Flow<List<Call>> {
-        syncManager.startSyncIfIdle()
-
         return observeIncomingCallsIfUserStatusAllows()
             .onlyCallsInNotMutedConversations()
             .distinctUntilChanged()

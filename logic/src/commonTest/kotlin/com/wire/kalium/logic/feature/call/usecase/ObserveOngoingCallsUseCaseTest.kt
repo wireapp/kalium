@@ -33,7 +33,6 @@ class ObserveOngoingCallsUseCaseTest {
     fun setUp() {
         observeOngoingCalls = ObserveOngoingCallsUseCaseImpl(
             callRepository = callRepository,
-            syncManager = syncManager
         )
     }
 
@@ -43,11 +42,6 @@ class ObserveOngoingCallsUseCaseTest {
             .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
-
-        given(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .whenInvoked()
-            .thenReturn(Unit)
 
         val result = observeOngoingCalls()
 
@@ -63,11 +57,6 @@ class ObserveOngoingCallsUseCaseTest {
             .suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf(DUMMY_CALL)))
-
-        given(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .whenInvoked()
-            .thenReturn(Unit)
 
         val result = observeOngoingCalls()
 

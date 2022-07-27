@@ -12,19 +12,15 @@ interface ObserveOngoingCallsUseCase {
 /**
  *
  * @param callRepository CallRepository for getting all the ongoing calls.
- * @param syncManager SyncManager to sync the data before checking the calls.
  *
  * @return Flow<List<Call>> - Flow of Calls List that should be shown to the user.
  * That Flow emits everytime when the list is changed
  */
 internal class ObserveOngoingCallsUseCaseImpl(
-    private val callRepository: CallRepository,
-    private val syncManager: SyncManager
+    private val callRepository: CallRepository
 ) : ObserveOngoingCallsUseCase {
 
     override suspend fun invoke(): Flow<List<Call>> {
-        syncManager.startSyncIfIdle()
-
         return callRepository.ongoingCallsFlow()
     }
 }

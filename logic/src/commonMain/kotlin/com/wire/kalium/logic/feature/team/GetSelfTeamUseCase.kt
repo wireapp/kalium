@@ -10,13 +10,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetSelfTeamUseCase(
+class GetSelfTeamUseCase internal constructor(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
-    private val syncManager: SyncManager
 ) {
     suspend operator fun invoke(): Flow<Team?> {
-        syncManager.startSyncIfIdle()
         return userRepository.observeSelfUser()
             .flatMapLatest {
                 if (it.teamId != null) teamRepository.getTeam(it.teamId)

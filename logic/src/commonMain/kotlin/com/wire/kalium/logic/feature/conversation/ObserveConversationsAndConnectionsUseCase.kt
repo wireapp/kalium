@@ -15,12 +15,10 @@ fun interface ObserveConversationsAndConnectionsUseCase {
 }
 
 internal class ObserveConversationsAndConnectionsUseCaseImpl(
-    private val syncManager: SyncManager,
     private val observeConversationListDetailsUseCase: ObserveConversationListDetailsUseCase,
     private val observeConnectionListUseCase: ObserveConnectionListUseCase
 ) : ObserveConversationsAndConnectionsUseCase {
     override suspend fun invoke(): Flow<List<ConversationDetails>> {
-        syncManager.startSyncIfIdle()
         return combine(observeConversationListDetailsUseCase(), observeConnectionListUseCase()) { conversations, connections ->
             (conversations + connections).sortedByDescending { it.conversation.lastModifiedDate }
         }
