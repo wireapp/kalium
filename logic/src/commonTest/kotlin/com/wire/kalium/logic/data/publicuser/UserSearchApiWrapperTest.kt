@@ -39,7 +39,7 @@ import kotlin.test.assertTrue
 class UserSearchApiWrapperTest {
 
     @Test
-    fun givenUserSearchIncludesContactMember_whenSearchingForUsers_ThenResultDoesNotContainTheContactMembers() = runTest {
+    fun givenUserSearchIncludesContactMember_whenSearchingForUsersExcludingSelfUser_ThenResultDoesNotContainTheContactMembers() = runTest {
         val conversationMembers = listOf(
             Member(
                 user = QualifiedIDEntity(
@@ -80,7 +80,8 @@ class UserSearchApiWrapperTest {
                         "someValue",
                         "someDomain"
                     )
-                )
+                ),
+                selfUserIncluded = false
             )
         )
 
@@ -90,7 +91,7 @@ class UserSearchApiWrapperTest {
     }
 
     @Test
-    fun givenUserSearchIncludesOnlyContactMembers_WhenSearchingForUsers_ThenResultIsEmpty() = runTest {
+    fun givenUserSearchIncludesOnlyContactMembers_WhenSearchingForUsersExcludingSelfUser_ThenResultIsEmpty() = runTest {
         val conversationMembers = listOf(
             Member(
                 user = QualifiedIDEntity(
@@ -127,7 +128,7 @@ class UserSearchApiWrapperTest {
             conversationMembers,
             searchResultUsers,
             selfUser
-            ).arrange()
+        ).arrange()
 
         val result = userSearchApiWrapper.search(
             "someQuery",
@@ -139,7 +140,7 @@ class UserSearchApiWrapperTest {
                         "someValue",
                         "someDomain"
                     )
-                )
+                ), selfUserIncluded = false
             )
         )
 
@@ -149,7 +150,7 @@ class UserSearchApiWrapperTest {
     }
 
     @Test
-    fun givenUserSearchIncludesSelfUser_WhenSearchingForUsers_ThenPropagateUsersWithoutSelfUser() = runTest {
+    fun givenUserSearchIncludesSelfUser_WhenSearchingForUsersExcludingSelfUser_ThenPropagateUsersWithoutSelfUser() = runTest {
         val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
 
         val searchResultUsers = listOf(
@@ -183,7 +184,7 @@ class UserSearchApiWrapperTest {
     }
 
     @Test
-    fun givenUserSearchHasOnlySelfUser_WhenSearchingForUsers_ThenSearchResultIsEmpty() = runTest {
+    fun givenUserSearchHasOnlySelfUser_WhenSearchingForUsersExcludingSelfUser_ThenSearchResultIsEmpty() = runTest {
         val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
 
         val searchResultUsers = listOf(
@@ -199,7 +200,99 @@ class UserSearchApiWrapperTest {
             "someQuery",
             "someDomain",
             null,
-            searchUsersOptions = SearchUsersOptions.Default
+            searchUsersOptions = SearchUsersOptions.Default,
+        )
+
+        assertIs<Either.Right<UserSearchResponse>>(result)
+        assertTrue { result.value.documents.isEmpty() }
+        assertTrue { result.value.found == 0 }
+    }
+
+    @Test
+    fun givenUserSearchHasOnlySelfUser_WhenSearchingForUsersIncludingSelfUserThatIsNotInConversation_ThenSearchResultContainsSelfUser() =
+        runTest {
+            val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
+
+            val expectedResult = listOf(
+                Arrangement.generateContactDTO(UserId(selfUser.id.value, selfUser.id.domain))
+            )
+
+            val searchResultUsers = listOf(
+                Arrangement.generateContactDTO(UserId(selfUser.id.value, selfUser.id.domain))
+            )
+
+            val (_, userSearchApiWrapper) = Arrangement().withSuccessFullSearch(
+                searchResultUsers,
+                selfUser
+            ).arrange()
+
+            val result = userSearchApiWrapper.search(
+                "someQuery",
+                "someDomain",
+                null,
+                searchUsersOptions = SearchUsersOptions.Default.copy(selfUserIncluded = true),
+            )
+
+            assertIs<Either.Right<UserSearchResponse>>(result)
+            assertTrue { result.value.documents == expectedResult }
+            assertTrue { result.value.found == 1 }
+        }
+
+    @Test
+    fun givenUserSearchHasOnlySelfUser_WhenSearchingForUsersIncludingSelfUserThatIsPartOfConversation_ThenSearchResultIsEmpty() = runTest {
+        val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
+
+        val conversationMembers = listOf(
+            Member(
+                user = QualifiedIDEntity(
+                    "value1",
+                    "someDomain"
+                ),
+                role = Member.Role.Member
+            ),
+            Member(
+                user = QualifiedIDEntity(
+                    "value2",
+                    "someDomain"
+                ),
+                role = Member.Role.Member
+            ),
+            Member(
+                user = QualifiedIDEntity(
+                    "value3",
+                    "someDomain"
+                ), role = Member.Role.Member
+            ),
+            Member(
+                user = QualifiedIDEntity(
+                    selfUser.id.value,
+                    selfUser.id.domain
+                ), role = Member.Role.Member
+            )
+        )
+
+        val searchResultUsers = listOf(
+            Arrangement.generateContactDTO(UserId(selfUser.id.value, selfUser.id.domain))
+        )
+
+        val (_, userSearchApiWrapper) = Arrangement().withSuccessConversationExcludedFullSearch(
+            conversationMembers,
+            searchResultUsers,
+            selfUser
+        ).arrange()
+
+        val result = userSearchApiWrapper.search(
+            "someQuery",
+            "someDomain",
+            null,
+            searchUsersOptions = SearchUsersOptions(
+                ConversationMemberExcludedOptions.ConversationExcluded(
+                    ConversationId(
+                        "someValue",
+                        "someDomain"
+                    )
+                ), selfUserIncluded = true
+            )
         )
 
         assertIs<Either.Right<UserSearchResponse>>(result)

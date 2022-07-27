@@ -69,28 +69,36 @@ internal class UserSearchApiWrapperImpl(
     ): UserSearchResponse {
         val selfUser = getSelfUser()
 
-        val filteredContactResponse =
-            if (searchUsersOptions.conversationExcluded is ConversationMemberExcludedOptions.ConversationExcluded) {
-                val conversationMembersId = conversationDAO.getAllMembers(
-                    qualifiedID = idMapper.toDaoModel(qualifiedID = searchUsersOptions.conversationExcluded.conversationId)
-                ).firstOrNull()?.map { idMapper.fromDaoModel(it.user) }
+        // if we do not exclude the conversation members, we just return empty list
+        val conversationMembersId = if (searchUsersOptions.conversationExcluded is ConversationMemberExcludedOptions.ConversationExcluded) {
+            conversationDAO.getAllMembers(
+                qualifiedID = idMapper.toDaoModel(qualifiedID = searchUsersOptions.conversationExcluded.conversationId)
+            ).firstOrNull()?.map { idMapper.fromDaoModel(it.user) }
+        } else {
+            emptyList()
+        }
 
-                userSearchResponse.documents.filter { contactDTO ->
-                    val domainId = idMapper.fromApiModel(contactDTO.qualifiedID)
+        val filteredContactResponse = userSearchResponse.documents.filter { contactDTO ->
+            val domainId = idMapper.fromApiModel(contactDTO.qualifiedID)
 
-                    val isConversationMember = conversationMembersId?.contains(domainId) ?: false
-                    val isSelfUser = selfUser.id == domainId
+            var isConversationMember = false
 
-                    // negate it because that is exactly what we do not want to have in filter results
-                    !(isConversationMember || isSelfUser)
-                }
-            } else {
-                userSearchResponse.documents.filter { contactDTO ->
-                    val domainId = idMapper.fromApiModel(contactDTO.qualifiedID)
-
-                    selfUser.id != domainId
-                }
+            // if conversation members are empty it means there is nothing to exclude
+            // from the search results, so we keep isConversationMember to be false
+            if (!conversationMembersId.isNullOrEmpty()) {
+                isConversationMember = conversationMembersId.contains(domainId)
             }
+
+            // if we do not include the self user in the search options
+            // we always set it to false, making the final OR operation
+            // care only about isConversationMember value, since it is going to be
+            // !(isConversationMember || 0) making it a operation based only on negated isConversationMember value
+            // since !(0 || 0) = 1 , !(1 || 0) = 0
+            val isSelfUser: Boolean = if (searchUsersOptions.selfUserIncluded) false else selfUser.id == domainId
+
+            // negate it because that is exactly what we do not want to have in filter results
+            !(isConversationMember || isSelfUser)
+        }
 
         return userSearchResponse.copy(
             documents = filteredContactResponse,

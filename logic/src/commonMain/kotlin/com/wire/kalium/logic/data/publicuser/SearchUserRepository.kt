@@ -52,10 +52,12 @@ internal interface SearchUserRepository {
 
 data class SearchUsersOptions(
     val conversationExcluded: ConversationMemberExcludedOptions,
+    val selfUserIncluded: Boolean
 ) {
     companion object {
         val Default = SearchUsersOptions(
             conversationExcluded = ConversationMemberExcludedOptions.None,
+            selfUserIncluded = false
         )
     }
 }
