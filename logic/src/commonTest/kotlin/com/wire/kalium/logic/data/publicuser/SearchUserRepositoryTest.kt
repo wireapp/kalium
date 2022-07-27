@@ -496,7 +496,7 @@ class SearchUserRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userTypeEntity = UserTypeEntity.EXTERNAL
+            userType = UserTypeEntity.EXTERNAL
         )
 
         val SELF_USER = SelfUser(

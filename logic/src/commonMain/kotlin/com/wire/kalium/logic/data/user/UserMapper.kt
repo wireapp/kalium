@@ -101,7 +101,7 @@ internal class UserMapperImpl(
                 idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
             },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypeEntity = userTypeEntity ?: UserTypeEntity.INTERNAL
+            userType = userTypeEntity ?: UserTypeEntity.INTERNAL
         )
     }
 
@@ -155,7 +155,7 @@ internal class UserMapperImpl(
             completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
                 ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypeEntity = UserTypeEntity.INTERNAL
+            userType = UserTypeEntity.INTERNAL
         )
     }
 
@@ -171,7 +171,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypeEntity = UserTypeEntity.INTERNAL
+            userType = UserTypeEntity.INTERNAL
         )
     }
 
@@ -201,6 +201,6 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypeEntity = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode)
+            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode)
         )
 }

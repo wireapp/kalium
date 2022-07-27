@@ -432,7 +432,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user1)
         //when
         val updatedUser1 = user1.copy(team = newTeamId)
-        db.userDAO.upsertTeamMembers(listOf(updatedUser1, user2))
+        db.userDAO.upsertTeamMembersTypes(listOf(updatedUser1, user2))
         //then
         val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
         val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)

@@ -22,7 +22,7 @@ class UserMapper {
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
-            userTypeEntity = user.user_type,
+            userType = user.user_type,
         )
     }
 }
@@ -46,14 +46,24 @@ class UserDAOImpl(
             user.connectionStatus,
             user.previewAssetId,
             user.completeAssetId,
-            user.userTypeEntity
+            user.userType
         )
     }
 
     override suspend fun upsertTeamMembers(users: List<UserEntity>) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                userQueries.updateTeamMemberUser(user.team, user.connectionStatus, user.userTypeEntity, user.id)
+                userQueries.updateTeamMemberUser(
+                    user.name,
+                    user.handle,
+                    user.email,
+                    user.phone,
+                    user.accentId,
+                    user.team,
+                    user.previewAssetId,
+                    user.completeAssetId,
+                    user.id,
+                )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
                     userQueries.insertUser(
@@ -67,7 +77,7 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userTypeEntity
+                        user.userType
                     )
                 }
             }
@@ -77,38 +87,18 @@ class UserDAOImpl(
     override suspend fun upsertUsers(users: List<UserEntity>) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                /**
-                 * We have only access to [UserTypeEntity] from our team
-                 * by fetching team members
-                 * So we need to avoid updating that field
-                 * when team member is fetched from different endpoint
-                 */
-                if (user.userTypeEntity == UserTypeEntity.INTERNAL) {
-                    userQueries.updateUserWithoutType(
-                        user.name,
-                        user.handle,
-                        user.email,
-                        user.phone,
-                        user.accentId,
-                        user.team,
-                        user.previewAssetId,
-                        user.completeAssetId,
-                        user.id,
-                    )
-                } else {
-                    userQueries.updateUser(
-                        user.name,
-                        user.handle,
-                        user.email,
-                        user.phone,
-                        user.accentId,
-                        user.team,
-                        user.previewAssetId,
-                        user.completeAssetId,
-                        user.userTypeEntity,
-                        user.id,
-                    )
-                }
+                userQueries.updateUser(
+                    user.name,
+                    user.handle,
+                    user.email,
+                    user.phone,
+                    user.accentId,
+                    user.team,
+                    user.previewAssetId,
+                    user.completeAssetId,
+                    user.userType,
+                    user.id,
+                )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
                     userQueries.insertUser(
@@ -122,7 +112,31 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userTypeEntity
+                        user.userType
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun upsertTeamMembersTypes(users: List<UserEntity>) {
+        userQueries.transaction {
+            for (user: UserEntity in users) {
+                userQueries.updateTeamMemberType(user.team, user.connectionStatus, user.userType, user.id)
+                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+                if (recordDidNotExist) {
+                    userQueries.insertUser(
+                        user.id,
+                        user.name,
+                        user.handle,
+                        user.email,
+                        user.phone,
+                        user.accentId,
+                        user.team,
+                        user.connectionStatus,
+                        user.previewAssetId,
+                        user.completeAssetId,
+                        user.userType
                     )
                 }
             }
@@ -130,7 +144,15 @@ class UserDAOImpl(
     }
 
     override suspend fun updateSelfUser(user: UserEntity) {
-        userQueries.updateSelfUser(user.name, user.handle, user.email, user.accentId, user.previewAssetId, user.completeAssetId, user.id)
+        userQueries.updateSelfUser(
+            user.name,
+            user.handle,
+            user.email,
+            user.accentId,
+            user.previewAssetId,
+            user.completeAssetId,
+            user.id
+        )
     }
 
     override suspend fun getAllUsers(): Flow<List<UserEntity>> = userQueries.selectAllUsers()
