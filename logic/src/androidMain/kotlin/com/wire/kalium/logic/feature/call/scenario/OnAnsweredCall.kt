@@ -14,13 +14,12 @@ class OnAnsweredCall(
     private val scope: CoroutineScope
 ) : AnsweredCallHandler {
     override fun onAnsweredCall(conversationId: String, arg: Pointer?) {
-        callingLogger.i("OnAnsweredCall -> call for conversation $conversationId answered")
+        callingLogger.i("[OnAnsweredCall] -> ConversationId: $conversationId")
         scope.launch {
             callRepository.updateCallStatusById(
                 conversationId = conversationId,
                 status = CallStatus.ANSWERED
             )
         }
-        callingLogger.i("OnAnsweredCall -> incoming call status for conversation $conversationId updated to ANSWERED..")
     }
 }
