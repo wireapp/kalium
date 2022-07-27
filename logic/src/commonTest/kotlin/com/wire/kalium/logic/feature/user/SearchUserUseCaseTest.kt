@@ -144,7 +144,6 @@ class SearchUserUseCaseTest {
             .wasInvoked(Times(1))
     }
 
-
     @Test
     fun givenSearchOptionSpecified_whenSearchingPublicUser_thenCorrectlyPropagateSearchOption() = runTest {
         // given
