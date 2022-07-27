@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
@@ -86,7 +87,7 @@ internal class EventGathererImpl(
         is WebSocketEvent.Open -> onWebSocketOpen()
         is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
         is WebSocketEvent.Close -> throwOnWebSocketClosed(webSocketEvent)
-        is WebSocketEvent.NonBinaryPayloadReceived -> kaliumLogger.w("Non binary event received on Websocket")
+        is WebSocketEvent.NonBinaryPayloadReceived -> kaliumLogger.withFeatureId(SYNC).w("Non binary event received on Websocket")
     }
 
     private fun throwOnWebSocketClosed(webSocketEvent: WebSocketEvent.Close<Event>): Nothing =
@@ -104,26 +105,27 @@ internal class EventGathererImpl(
         }
 
     private suspend fun FlowCollector<Event>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Event>) {
-        kaliumLogger.i("SYNC: Websocket Received binary payload")
+        kaliumLogger.withFeatureId(SYNC).i("SYNC: Websocket Received binary payload")
         val event = webSocketEvent.payload
         if (offlineEventBuffer.contains(event)) {
             if (offlineEventBuffer.clearBufferIfLastEventEquals(event)) {
                 // Really live
-                kaliumLogger.d("SYNC: Removed most recent event from offlineEventBuffer: '${event.id}'")
+                kaliumLogger.withFeatureId(SYNC).d("SYNC: Removed most recent event from offlineEventBuffer: '${event.id}'")
             } else {
                 // Really live
-                kaliumLogger.d("SYNC: Removing event from offlineEventBuffer: ${event.id}")
+                kaliumLogger.withFeatureId(SYNC).d("SYNC: Removing event from offlineEventBuffer: ${event.id}")
                 offlineEventBuffer.remove(event)
             }
-            kaliumLogger.d("SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${event.id}")
+            kaliumLogger.withFeatureId(SYNC)
+                .d("SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${event.id}")
         } else {
-            kaliumLogger.d("SYNC: Event never seen before ${event.id} - We are live")
+            kaliumLogger.withFeatureId(SYNC).d("SYNC: Event never seen before ${event.id} - We are live")
             emit(event)
         }
     }
 
     private suspend fun FlowCollector<Event>.onWebSocketOpen() {
-        kaliumLogger.i("SYNC: Websocket Open")
+        kaliumLogger.withFeatureId(SYNC).i("SYNC: Websocket Open")
         eventRepository
             .pendingEvents()
             .mapNotNull { offlineEventOrFailure ->
@@ -133,11 +135,11 @@ internal class EventGathererImpl(
                 }
             }
             .collect {
-                kaliumLogger.i("SYNC: Collecting offline event: ${it.id}")
+                kaliumLogger.withFeatureId(SYNC).i("SYNC: Collecting offline event: ${it.id}")
                 offlineEventBuffer.add(it)
                 emit(it)
             }
-        kaliumLogger.i("SYNC: Offline events collection finished")
+        kaliumLogger.withFeatureId(SYNC).i("SYNC: Offline events collection finished")
         syncRepository.updateSyncState { SyncState.Live }
     }
 }
