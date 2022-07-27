@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.functional.Either
@@ -15,7 +16,7 @@ class SlowSyncWorker(
     // Any exception here is really unexpected, and we should log and figure out where it came from
     @Suppress("TooGenericExceptionCaught")
     override suspend fun doWork(): Result {
-        kaliumLogger.d("Sync: Starting SlowSync")
+        kaliumLogger.withFeatureId(SYNC).d("Sync: Starting SlowSync")
 
         val result = try {
             // todo : to move the feature configs call outside the sync
@@ -28,21 +29,22 @@ class SlowSyncWorker(
                 .onSuccess { userSessionScope.syncManager.onSlowSyncComplete() }
                 .onFailure { userSessionScope.syncManager.onSlowSyncFailure(it) }
         } catch (e: Exception) {
-            kaliumLogger.e("An unexpected error happening during SlowSync", e)
+            kaliumLogger.withFeatureId(SYNC).e("An unexpected error happening during SlowSync", e)
             Either.Left(CoreFailure.Unknown(e))
         }
 
         return when (result) {
             is Either.Left -> {
                 val failure = result.value
-                kaliumLogger.e("SLOW SYNC FAILED $failure")
+                kaliumLogger.withFeatureId(SYNC).e("SLOW SYNC FAILED $failure")
                 (failure as? CoreFailure.Unknown)?.let {
                     it.rootCause?.printStackTrace()
                 }
                 Result.Failure
             }
+
             is Either.Right -> {
-                kaliumLogger.i("SLOW SYNC SUCCESS $result")
+                kaliumLogger.withFeatureId(SYNC).i("SLOW SYNC SUCCESS $result")
                 Result.Success
             }
         }
