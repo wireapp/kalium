@@ -128,12 +128,12 @@ class UserDataSource(
                     otherUsers.map { userProfileDTO ->
                         userMapper.fromApiModelWithUserTypeEntityToDaoModel(
                             userProfileDTO = userProfileDTO,
-                            userTypeEntity = userTypeEntityMapper.fromTeamDomainAndPermission(
+                            userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
                                 selfUserTeamId = selfUser?.teamId?.value,
                                 otherUserTeamId = userProfileDTO.teamId,
                                 selfUserDomain = selfUser?.id?.domain,
-                                permissionCode = null
+                                isService = userProfileDTO.service != null
                             )
                         )
                     }
@@ -222,12 +222,12 @@ class UserDataSource(
             val selfUser = getSelfUser()
             publicUserMapper.fromUserDetailResponseWithUsertype(
                 userDetailResponse = userProfile,
-                userType = userTypeMapper.fromTeamDomainAndPermission(
+                userType = userTypeMapper.fromTeamAndDomain(
                     otherUserDomain = userProfile.id.domain,
                     selfUserTeamId = selfUser?.teamId?.value,
                     otherUserTeamId = userProfile.teamId,
                     selfUserDomain = selfUser?.id?.domain,
-                    permissionCode = null
+                    isService = userProfile.service != null
                 )
             )
         }
