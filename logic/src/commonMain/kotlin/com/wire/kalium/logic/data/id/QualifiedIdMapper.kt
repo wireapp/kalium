@@ -21,6 +21,8 @@ class QualifiedIdMapperImpl(
             val domain = id.substringAfterLast(VALUE_DOMAIN_SEPARATOR)
             QualifiedID(value = value, domain = domain)
 
+        } else if (count == 1) {
+            QualifiedID(value = components.first(), domain = components.last())
         } else {
             val selfUserDomain = userRepository?.getSelfUserId()?.domain ?: run { "" }
             QualifiedID(value = components.first(), domain = selfUserDomain)
