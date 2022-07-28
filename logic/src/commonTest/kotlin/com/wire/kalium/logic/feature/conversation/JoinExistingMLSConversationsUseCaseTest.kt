@@ -53,7 +53,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenOutOfDateEpochFailure_whenInvokingUseCase_ThenRetryWithNewEpoch() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
-            .withGetConversationsByGroupStateSuccessful()
+            .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_CONVERSATION1))
             .withRequestToJoinMLSGroupSuccessful()
             .withRequestToJoinMLSGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
             .withFetchConversationSuccessful()
@@ -90,12 +90,13 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         fun arrange() = this to JoinExistingMLSConversationsUseCase(conversationRepository)
 
-        fun withGetConversationsByGroupStateSuccessful() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationsByGroupState)
-                .whenInvokedWith(anything())
-                .then { Either.Right(listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) }
-        }
+        fun withGetConversationsByGroupStateSuccessful(conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) =
+            apply {
+                given(conversationRepository)
+                    .suspendFunction(conversationRepository::getConversationsByGroupState)
+                    .whenInvokedWith(anything())
+                    .then { Either.Right(conversations) }
+            }
 
         fun withFetchConversationSuccessful() = apply {
             given(conversationRepository)
