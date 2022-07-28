@@ -76,12 +76,12 @@ interface ConversationDAO {
         status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     )
-
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
-
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
+    suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
+    suspend fun getUnreadConversationCount(): Long
 }

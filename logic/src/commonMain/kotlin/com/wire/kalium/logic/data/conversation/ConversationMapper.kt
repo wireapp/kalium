@@ -26,7 +26,12 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
-    fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
+    fun toConversationDetailsOneToOne(
+        conversation: Conversation,
+        otherUser: OtherUser,
+        selfUser: SelfUser,
+        unreadMessageCount: Long
+    ): ConversationDetails.OneOne
 }
 
 internal class ConversationMapperImpl(
@@ -36,7 +41,9 @@ internal class ConversationMapperImpl(
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
-        apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?
+        apiModel: ConversationResponse,
+        mlsGroupState: GroupState?,
+        selfUserTeamId: TeamId?
     ): ConversationEntity = ConversationEntity(
         id = idMapper.fromApiToDao(apiModel.id),
         name = apiModel.name,
@@ -71,8 +78,12 @@ internal class ConversationMapperImpl(
         accessRole = daoModel.accessRole?.map { it.toDomain() }
     )
 
-    override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
-        CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+    override fun toApiModel(
+        name: String?,
+        members: List<UserId>,
+        teamId: String?,
+        options: ConversationOptions
+    ) = CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
         } else emptyList(),
             name = name,
@@ -89,7 +100,8 @@ internal class ConversationMapperImpl(
     override fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
-        selfUser: SelfUser
+        selfUser: SelfUser,
+        unreadMessageCount: Long,
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
@@ -97,7 +109,8 @@ internal class ConversationMapperImpl(
             connectionState = otherUser.connectionStatus,
             // TODO(user-metadata) get actual legal hold status
             legalHoldStatus = LegalHoldStatus.DISABLED,
-            userType = otherUser.userType
+            userType = otherUser.userType,
+            unreadMessagesCount = unreadMessageCount,
         )
     }
 

@@ -433,7 +433,7 @@ class GetNotificationsUseCaseTest {
             mutedStatus: MutedConversationStatus = MutedConversationStatus.AllAllowed,
         ) = Conversation(
             conversationId(number),
-            "conversation_${number}",
+            "conversation_$number",
             if (isOneOnOne) Conversation.Type.ONE_ON_ONE else Conversation.Type.GROUP,
             null,
             ProtocolInfo.Proteus,

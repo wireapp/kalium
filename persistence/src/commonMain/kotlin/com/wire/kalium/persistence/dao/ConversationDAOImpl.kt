@@ -91,7 +91,8 @@ class ConversationDAOImpl(
                 lastModifiedDate,
                 lastNotificationDate,
                 access.toList(),
-                accessRole?.toList()
+                accessRole?.toList(),
+                lastReadDate
             )
         }
     }
@@ -236,6 +237,12 @@ class ConversationDAOImpl(
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
     }
+
+    override suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long =
+        conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
+
+    override suspend fun getUnreadConversationCount(): Long =
+        conversationQueries.getUnreadConversationCount().executeAsOne()
 
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
         conversationQueries.updateConversationReadDate(date, conversationID)

@@ -22,6 +22,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.AddParticipantRequest
@@ -64,7 +65,7 @@ interface ConversationRepository {
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Either<CoreFailure, Unit>
-    suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
+    suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
@@ -82,6 +83,7 @@ interface ConversationRepository {
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
+    suspend fun getUnreadConversationCount(): Either<StorageFailure, Long>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -91,6 +93,7 @@ class ConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val clientApi: ClientApi,
+    private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -182,8 +185,47 @@ class ConversationDataSource(
      * Gets a flow that allows observing of
      */
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
-        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID)).wrapStorageRequest().onlyRight()
-            .map(conversationMapper::fromDaoModel).flatMapLatest(::getConversationDetailsFlow)
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
+            .wrapStorageRequest()
+            .onlyRight()
+            .map(conversationMapper::fromDaoModel)
+            .flatMapLatest(::getConversationDetailsFlow)
+
+    private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
+        Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
+        // TODO(user-metadata): get actual legal hold status
+        Conversation.Type.GROUP -> flowOf(
+            ConversationDetails.Group(
+                conversation = conversation,
+                legalHoldStatus = LegalHoldStatus.DISABLED,
+                unreadMessagesCount = getUnreadMessageCount(conversation)
+            )
+        )
+        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(
+            conversation = conversation,
+            unreadMessageCount = getUnreadMessageCount(conversation)
+        )
+    }
+
+    private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
+        return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
+            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+        } else {
+            0
+        }
+    }
+
+    // TODO: as for now lastModifiedDate and lastReadDate is saved as String
+    // in ISO format, using a timestamp would make it possible to just do a comparance
+    // on if the timestamp is bigger inside the domain model or on a Instant object
+    private fun hasNewMessages(conversation: Conversation) =
+        with(conversation) {
+            if (lastModifiedDate != null && lastReadDate != null) {
+                timeParser.isTimeBefore(lastModifiedDate, lastReadDate)
+            } else {
+                false
+            }
+        }
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
@@ -204,21 +246,26 @@ class ConversationDataSource(
         }
     }
 
-    private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
-        Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
-        // TODO(user-metadata): get actual legal hold status
-        Conversation.Type.GROUP -> flowOf(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED))
-        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
-    }
-
-    private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> {
+    private suspend fun getOneToOneConversationDetailsFlow(
+        conversation: Conversation,
+        unreadMessageCount: Long
+    ): Flow<ConversationDetails> {
         val selfUser = userRepository.observeSelfUser().first()
+
         return getConversationMembers(conversation.id).map { members ->
             members.firstOrNull { itemId -> itemId != selfUser.id }
         }.fold(
             { storageFailure -> logMemberDetailsError(conversation, storageFailure) },
             { otherUserId -> otherUserId?.let { userRepository.getKnownUser(it) } ?: emptyFlow() }
-        ).filterNotNull().map { otherUser -> conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser) }
+        ).filterNotNull()
+            .map { otherUser ->
+                conversationMapper.toConversationDetailsOneToOne(
+                    conversation = conversation,
+                    otherUser = otherUser,
+                    selfUser = selfUser,
+                    unreadMessageCount = unreadMessageCount
+                )
+            }
     }
 
     private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Flow<OtherUser> {
@@ -349,6 +396,9 @@ class ConversationDataSource(
     override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationReadDate(idMapper.toDaoModel(qualifiedID), date) }
 
+    override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
+        wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
+
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
@@ -384,17 +434,11 @@ class ConversationDataSource(
             wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
         }
 
-    override suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<StorageFailure, ConversationDetails.OneOne> {
+    override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {
         return wrapStorageRequest {
             conversationDAO.getAllConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
                 .firstOrNull { it.type == ConversationEntity.Type.ONE_ON_ONE }?.let { conversationEntity ->
                     conversationMapper.fromDaoModel(conversationEntity)
-                }?.let { conversation ->
-                    userRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
-                        val selfUser = userRepository.observeSelfUser().first()
-
-                        conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser)
-                    }
                 }
         }
     }

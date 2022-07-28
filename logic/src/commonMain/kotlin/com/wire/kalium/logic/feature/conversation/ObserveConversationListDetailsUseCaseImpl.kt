@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 fun interface ObserveConversationListDetailsUseCase {
-    suspend operator fun invoke(): Flow<List<ConversationDetails>>
+    suspend operator fun invoke(): Flow<ConversationListDetails>
 }
 
 internal class ObserveConversationListDetailsUseCaseImpl(
@@ -21,10 +22,30 @@ internal class ObserveConversationListDetailsUseCaseImpl(
     private val callRepository: CallRepository,
 ) : ObserveConversationListDetailsUseCase {
 
-    override suspend operator fun invoke(): Flow<List<ConversationDetails>> {
+    override suspend operator fun invoke(): Flow<ConversationListDetails> {
         syncManager.startSyncIfIdle()
 
-        val conversationsFlow = conversationRepository.observeConversationList().map { conversations ->
+        return combine(observeLatestConversationDetails(), callRepository.ongoingCallsFlow()) { conversations, calls ->
+            conversations.map {
+                when (it) {
+                    is ConversationDetails.Self,
+                    is ConversationDetails.Connection,
+                    is ConversationDetails.OneOne -> it
+                    is ConversationDetails.Group -> it.copy(
+                        hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId })
+                    )
+                }
+            }
+        }.map { conversationList ->
+            ConversationListDetails(
+                conversationList = conversationList,
+                unreadConversationsCount = conversationRepository.getUnreadConversationCount().fold({ 0 }, { it })
+            )
+        }
+    }
+
+    private suspend fun observeLatestConversationDetails(): Flow<List<ConversationDetails>> {
+        return conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
                 flow {
                     emit(null)
@@ -34,19 +55,13 @@ internal class ObserveConversationListDetailsUseCaseImpl(
         }.flatMapLatest { flowsOfDetails ->
             combine(flowsOfDetails) { latestValues -> latestValues.asList().mapNotNull { it } }
         }
-
-        return combine(conversationsFlow, callRepository.ongoingCallsFlow()) { conversations, calls ->
-            conversations.map {
-                when (it) {
-                    is ConversationDetails.Self,
-                    is ConversationDetails.Connection,
-                    is ConversationDetails.OneOne -> it
-
-                    is ConversationDetails.Group -> it.copy(
-                        hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId })
-                    )
-                }
-            }
-        }
     }
 }
+
+data class ConversationListDetails(
+    val conversationList: List<ConversationDetails>,
+    val unreadConversationsCount: Long,
+    // TODO: Not implemented yet, therefore passing 0
+    val missedCallsCount: Long = 0L,
+    val mentionsCount: Long = 0L
+)

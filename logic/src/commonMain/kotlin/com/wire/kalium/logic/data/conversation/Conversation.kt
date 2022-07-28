@@ -22,9 +22,30 @@ data class Conversation(
     val access: List<Access>,
     val accessRole: List<AccessRole>?
 ) {
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
-    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE }
-    enum class Access { PRIVATE, INVITE, LINK, CODE }
+    enum class Type {
+        SELF,
+        ONE_ON_ONE,
+        GROUP,
+        CONNECTION_PENDING;
+    }
+
+    enum class AccessRole {
+        TEAM_MEMBER,
+        NON_TEAM_MEMBER,
+        GUEST,
+        SERVICE;
+    }
+
+    enum class Access {
+        PRIVATE,
+        INVITE,
+        LINK,
+        CODE;
+    }
+
+    val supportsUnreadMessageCount
+        get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
+
 }
 
 sealed class ProtocolInfo {
@@ -44,12 +65,14 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
+        val unreadMessagesCount: Long,
     ) : ConversationDetails(conversation)
 
     data class Group(
         override val conversation: Conversation,
         val legalHoldStatus: LegalHoldStatus,
-        val hasOngoingCall: Boolean = false
+        val hasOngoingCall: Boolean = false,
+        val unreadMessagesCount: Long,
     ) : ConversationDetails(conversation)
 
     data class Connection(
