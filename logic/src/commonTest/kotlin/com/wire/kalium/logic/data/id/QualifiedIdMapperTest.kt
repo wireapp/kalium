@@ -14,11 +14,11 @@ class QualifiedIdMapperTest {
     @Mock
     private val userRepository = mock(classOf<UserRepository>())
 
-    lateinit var qualifiedIdMapper: QualifiedIdMapper
+    private lateinit var qualifiedIdMapper: QualifiedIdMapper
 
     @BeforeTest
     fun setUp() {
-        qualifiedIdMapper = QualifiedIdMapper(userRepository)
+        qualifiedIdMapper = QualifiedIdMapperImpl(userRepository)
     }
 
     @Test

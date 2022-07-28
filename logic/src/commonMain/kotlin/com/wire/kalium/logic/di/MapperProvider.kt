@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
@@ -96,7 +97,7 @@ internal object MapperProvider {
     fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl()
     fun userTypeEntityMapper(): UserEntityTypeMapper = UserEntityTypeMapperImpl()
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
-    fun qualifiedIdMapper(userRepository: UserRepository): QualifiedIdMapper = QualifiedIdMapper(userRepository)
+    fun qualifiedIdMapper(userRepository: UserRepository): QualifiedIdMapper = QualifiedIdMapperImpl(userRepository)
     fun federatedIdMapper(
         userRepository: UserRepository,
         qualifiedIdMapper: QualifiedIdMapper,

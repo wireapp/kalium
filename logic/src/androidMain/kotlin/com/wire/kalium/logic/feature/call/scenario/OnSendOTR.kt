@@ -48,7 +48,7 @@ class OnSendOTR(
                 context = context,
                 messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),
                 conversationId = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString),
-                avsSelfUserId = remoteClientIdSelfString.toUserId(),
+                avsSelfUserId = qualifiedIdMapper.fromStringToQualifiedID(remoteUserIdSelfString),
                 avsSelfClientId = ClientId(remoteClientIdSelfString)
             )
             AvsCallBackError.NONE.value

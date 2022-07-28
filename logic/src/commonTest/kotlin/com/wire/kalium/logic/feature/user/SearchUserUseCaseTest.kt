@@ -56,6 +56,17 @@ class SearchUserUseCaseTest {
             .suspendFunction(connectionRepository::getConnectionRequests)
             .whenInvoked()
             .thenReturn(listOf())
+
+        given(qualifiedIdMapper)
+            .function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq(TEST_QUERY))
+            .thenReturn(QualifiedID(TEST_QUERY, ""))
+
+        given(qualifiedIdMapper)
+            .function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq(TEST_QUERY_FEDERATED))
+            .thenReturn(QualifiedID(TEST_QUERY, "wire.com"))
+
     }
 
     @Test

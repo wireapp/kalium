@@ -84,7 +84,6 @@ class UserRepositoryTest {
 
     // TODO other UserRepository tests
 
-
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
