@@ -128,7 +128,7 @@ class CallMapperTest {
                 dummyParticipantWithDifferentClientId
             ),
             activeSpeakers = CallActiveSpeakers(
-                activeSpeakers = listOf(DUMMY_CALL_ACTIVE_SPEAKER)
+                activeSpeakers = listOf(DUMMY_CALL_ACTIVE_SPEAKER, DUMMY_CALL_ACTIVE_SPEAKER1)
             )
         )
 
@@ -136,7 +136,9 @@ class CallMapperTest {
             DUMMY_PARTICIPANT.copy(
                 isSpeaking = true
             ),
-            dummyParticipantWithDifferentClientId
+            dummyParticipantWithDifferentClientId.copy(
+                isSpeaking = false
+            )
         )
 
         assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
@@ -279,6 +281,12 @@ class CallMapperTest {
             clientId = "dummyClientId",
             audioLevel = 1,
             audioLevelNow = 1
+        )
+        private val DUMMY_CALL_ACTIVE_SPEAKER1 = CallActiveSpeaker(
+            userId = "dummyId@dummyDomain",
+            clientId = "anotherClientId",
+            audioLevel = 1,
+            audioLevelNow = 0
         )
         private val DUMMY_PARTICIPANT = Participant(
             id = QualifiedID(
