@@ -301,7 +301,7 @@ class SearchUserRepositoryTest {
                 .then { SELF_USER }
 
             given(domainUserTypeMapper)
-                .function(domainUserTypeMapper::fromTeamDomainAndPermission)
+                .function(domainUserTypeMapper::fromTeamAndDomain)
                 .whenInvokedWith(any(), any(), any(), any(), any())
                 .then { _, _, _, _, _ -> UserType.FEDERATED }
 
