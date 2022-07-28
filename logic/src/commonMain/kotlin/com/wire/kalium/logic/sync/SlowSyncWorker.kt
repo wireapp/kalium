@@ -19,7 +19,8 @@ class SlowSyncWorker(
         kaliumLogger.withFeatureId(SYNC).d("Sync: Starting SlowSync")
 
         val result = try {
-            // todo : to move the feature configs call outside the sync
+            // TODO: to move the feature configs call outside the sync
+            // TODO(optimization): Handle cancellation
             userSessionScope.syncFeatureConfigsUseCase()
             userSessionScope.users.syncSelfUser()
                 .flatMap { userSessionScope.conversations.syncConversations() }
@@ -43,7 +44,6 @@ class SlowSyncWorker(
                 }
                 Result.Failure
             }
-
             is Either.Right -> {
                 kaliumLogger.withFeatureId(SYNC).i("SLOW SYNC SUCCESS $result")
                 Result.Success
