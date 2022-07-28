@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.updateAndGet
 
 internal interface SyncRepository {
-    val syncStateState: StateFlow<SyncState>
+    val syncState: StateFlow<SyncState>
     val connectionPolicyState: StateFlow<ConnectionPolicy>
     fun updateSyncState(updateBlock: (currentState: SyncState) -> SyncState): SyncState
     fun setConnectionPolicy(connectionPolicy: ConnectionPolicy)
@@ -16,7 +16,7 @@ internal interface SyncRepository {
 
 internal class InMemorySyncRepository : SyncRepository {
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Waiting)
-    override val syncStateState get() = _syncState.asStateFlow()
+    override val syncState get() = _syncState.asStateFlow()
 
     private val _connectionPolicy = MutableStateFlow(ConnectionPolicy.KEEP_ALIVE)
     override val connectionPolicyState get() = _connectionPolicy.asStateFlow()
