@@ -440,21 +440,23 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user1)
 
         val message = buildList {
-            // add 5 Message before the lastReadDate
-            repeat(5) {
+            // add 9 Message before the lastReadDate
+            repeat(9) {
                 add(
                     newMessageEntity(
-                        id = it.toString(), date = "2000-01-01T12:0$it:00.000Z",
+                        id = it.toString(),
+                        date =  "2000-01-01T11:0$it:00.000Z",
                         conversationId = conversationId,
                         senderUserId = user1.id,
                     )
                 )
             }
-            // add 5 Message past the lastReadDate
-            repeat(5) {
+            // add 9 Message past the lastReadDate
+            repeat(9) {
                 add(
                     newMessageEntity(
-                        id = it.toString(), date = "2000-01-01T12:1$it:00.000Z",
+                        id = "${it + 9}",
+                        date = "2000-01-01T13:0$it:00.000Z",
                         conversationId = conversationId,
                         senderUserId = user1.id,
                     )
@@ -464,11 +466,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertMessages(message)
 
+        println(test)
         // when
         val result = conversationDAO.getUnreadMessageCount(conversationId)
 
         // then
-        assertEquals(5L, result)
+        assertEquals(9L, result)
     }
 
     @Test

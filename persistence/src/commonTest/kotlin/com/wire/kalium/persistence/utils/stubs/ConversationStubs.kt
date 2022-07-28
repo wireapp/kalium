@@ -26,7 +26,7 @@ fun newConversationEntity(
     teamId = "teamID",
     protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
     lastNotificationDate = null,
-    lastSeenDate = lastReadDate,
+    lastReadDate = lastReadDate,
     lastModifiedDate = lastModified,
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)

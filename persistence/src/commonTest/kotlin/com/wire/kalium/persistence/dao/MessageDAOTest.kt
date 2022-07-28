@@ -317,14 +317,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(
             conversationEntity1.copy(
                 lastModifiedDate = "2000-01-01T12:30:00.000Z",
-                lastSeenDate = "2000-01-01T12:00:00.000Z"
+                lastReadDate = "2000-01-01T12:00:00.000Z"
             )
         )
 
         conversationDAO.insertConversation(
             conversationEntity2.copy(
                 lastModifiedDate = "2000-01-01T12:30:00.000Z",
-                lastSeenDate = "2000-01-01T13:00:00.000Z"
+                lastReadDate = "2000-01-01T13:00:00.000Z"
             )
         )
 
