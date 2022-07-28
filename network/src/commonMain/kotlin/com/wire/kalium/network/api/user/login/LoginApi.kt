@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.user.login
 
 import com.wire.kalium.network.api.SessionDTO
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface LoginApi {
@@ -17,5 +18,5 @@ interface LoginApi {
 
     suspend fun login(
         param: LoginParam, persist: Boolean
-    ): NetworkResponse<SessionDTO>
+    ): NetworkResponse<Pair<SessionDTO, UserDTO>>
 }

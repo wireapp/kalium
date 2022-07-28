@@ -37,7 +37,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-// TODO(testing): missing unit test
 @Suppress("TooManyFunctions")
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
@@ -61,7 +60,7 @@ interface UserRepository {
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-class UserDataSource(
+internal class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
     private val selfApi: SelfApi,
@@ -85,11 +84,12 @@ class UserDataSource(
             ?: run { throw IllegalStateException() }
     }
 
-    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }.flatMap { userDTO ->
-        storeSelfSsoId(idMapper.toSsoId(userDTO.ssoID)).map { userDTO }
-    }
-        .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
-        .flatMap { userEntity ->
+    override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
+        .flatMap { userDTO ->
+            storeSelfSsoId(idMapper.toSsoId(userDTO.ssoID)).map { userDTO }
+        }.map {
+            userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED)
+        }.flatMap { userEntity ->
             // TODO: User image is always downloaded even when it's not changed
             assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
                 .flatMap {
