@@ -17,6 +17,6 @@ class OnNetworkQualityChanged : NetworkQualityChangedHandler {
         arg: Pointer?
     ) {
         // Not yet implemented
-        callingLogger.i("OnNetworkQualityChanged() - ConversationID: $conversationId - Quality: $quality")
+        callingLogger.i("[OnNetworkQualityChanged] - ConversationId: $conversationId | UserId: $userId | Quality: $quality")
     }
 }

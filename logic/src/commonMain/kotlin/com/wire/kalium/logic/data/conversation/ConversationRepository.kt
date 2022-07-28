@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -58,6 +59,7 @@ interface ConversationRepository {
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
+    suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
 
     /**
      * Fetches a list of all members' IDs or a given conversation including self user
@@ -81,6 +83,9 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
+    suspend fun getConversationsByGroupState(
+        groupState: Conversation.ProtocolInfo.MLS.GroupState
+    ): Either<StorageFailure, List<Conversation>>
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
@@ -108,7 +113,7 @@ class ConversationDataSource(
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
     // this will help avoid some functions getting stuck when observeSelfUser will filter nullable values
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> {
-        kaliumLogger.d("Fetching conversations")
+        kaliumLogger.withFeatureId(CONVERSATIONS).d("Fetching conversations")
         return fetchAllConversationsFromAPI()
     }
 
@@ -116,7 +121,18 @@ class ConversationDataSource(
     // But the Repository is too smart, does it by itself, and doesn't let the UseCase handle this.
     override suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> {
         val selfUserTeamId = userRepository.observeSelfUser().first().teamId
-        return persistConversations(listOf(event.conversation), selfUserTeamId?.value)
+        return persistConversations(listOf(event.conversation), selfUserTeamId?.value, originatedFromEvent = true)
+    }
+
+    override suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
+        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
+            mlsConversationRepository.requestToJoinGroup(
+                conversation.protocol.groupId,
+                conversation.protocol.epoch
+            )
+        } else {
+            Either.Right(Unit)
+        }
     }
 
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, Unit> {
@@ -127,27 +143,29 @@ class ConversationDataSource(
 
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
-                kaliumLogger.v("Fetching conversation page starting with pagingState $lastPagingState")
+                kaliumLogger.withFeatureId(CONVERSATIONS).v("Fetching conversation page starting with pagingState $lastPagingState")
                 conversationApi.fetchConversationsIds(pagingState = lastPagingState)
             }.onSuccess { pagingResponse ->
                 wrapApiRequest {
                     conversationApi.fetchConversationsListDetails(pagingResponse.conversationsIds.toList())
                 }.onSuccess { conversations ->
                     if (conversations.conversationsFailed.isNotEmpty()) {
-                        kaliumLogger.d("Skipping ${conversations.conversationsFailed.size} conversations failed")
+                        kaliumLogger.withFeatureId(CONVERSATIONS)
+                            .d("Skipping ${conversations.conversationsFailed.size} conversations failed")
                     }
                     if (conversations.conversationsNotFound.isNotEmpty()) {
-                        kaliumLogger.d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
+                        kaliumLogger.withFeatureId(CONVERSATIONS)
+                            .d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
                     }
                     persistConversations(conversations.conversationsFound, selfUserTeamId?.value)
                 }.onFailure {
-                    kaliumLogger.e("Error fetching conversation details $it")
+                    kaliumLogger.withFeatureId(CONVERSATIONS).e("Error fetching conversation details $it")
                 }
 
                 lastPagingState = pagingResponse.pagingState
                 hasMore = pagingResponse.hasMore
             }.onFailure {
-                kaliumLogger.e("Error fetching conversation ids $it")
+                kaliumLogger.withFeatureId(CONVERSATIONS).e("Error fetching conversation ids $it")
                 Either.Left(it)
             }.map { }
         }
@@ -155,11 +173,17 @@ class ConversationDataSource(
         return latestResult
     }
 
-    private suspend fun persistConversations(conversations: List<ConversationResponse>, selfUserTeamId: String?) = wrapStorageRequest {
+    private suspend fun persistConversations(
+        conversations: List<ConversationResponse>,
+        selfUserTeamId: String?,
+        originatedFromEvent: Boolean = false
+    ) = wrapStorageRequest {
         val conversationEntities = conversations.map { conversationResponse ->
-            conversationMapper.fromApiModelToDaoModel(conversationResponse,
-                mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it) },
-                selfUserTeamId?.let { TeamId(it) })
+            conversationMapper.fromApiModelToDaoModel(
+                conversationResponse,
+                mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it, originatedFromEvent) },
+                selfUserTeamId?.let { TeamId(it) }
+            )
         }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
@@ -169,11 +193,19 @@ class ConversationDataSource(
         }
     }
 
-    private suspend fun mlsGroupState(groupId: String): ConversationEntity.GroupState =
+    private suspend fun mlsGroupState(groupId: String, originatedFromEvent: Boolean = false): ConversationEntity.GroupState =
         mlsConversationRepository.hasEstablishedMLSGroup(groupId).fold({
             throw IllegalStateException(it.toString()) // TODO find a more fitting exception?
         }, { exists ->
-            if (exists) ConversationEntity.GroupState.ESTABLISHED else ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+            if (exists) {
+                ConversationEntity.GroupState.ESTABLISHED
+            } else {
+                if (originatedFromEvent) {
+                    ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+                } else {
+                    ConversationEntity.GroupState.PENDING_JOIN
+                }
+            }
         })
 
     override suspend fun getSelfConversationId(): ConversationId = idMapper.fromDaoModel(conversationDAO.getSelfConversationId())
@@ -232,8 +264,11 @@ class ConversationDataSource(
 
     private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Flow<OtherUser> {
         when (error) {
-            is StorageFailure.DataNotFound -> kaliumLogger.e("DataNotFound when fetching conversation members: $error")
-            is StorageFailure.Generic -> kaliumLogger.e("Failure getting other 1:1 user for $conversation", error.rootCause)
+            is StorageFailure.DataNotFound ->
+                kaliumLogger.withFeatureId(CONVERSATIONS).e("DataNotFound when fetching conversation members: $error")
+
+            is StorageFailure.Generic ->
+                kaliumLogger.withFeatureId(CONVERSATIONS).e("Failure getting other 1:1 user for $conversation", error.rootCause)
         }
         return emptyFlow()
     }
@@ -316,7 +351,7 @@ class ConversationDataSource(
         }.flatMap { conversationResponse ->
             val teamId = selfUser.teamId
             val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-                conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING, teamId
+                conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, teamId
             )
             val conversation = conversationMapper.fromDaoModel(conversationEntity)
 
@@ -332,9 +367,10 @@ class ConversationDataSource(
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
                     is ProtocolInfo.Proteus -> Either.Right(conversation)
-                    is ProtocolInfo.MLS -> mlsConversationRepository
-                        .establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)
-                        .flatMap { Either.Right(conversation) }
+                    is ProtocolInfo.MLS ->
+                        mlsConversationRepository
+                            .establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)
+                            .flatMap { Either.Right(conversation) }
                 }
             }
         }
@@ -342,6 +378,14 @@ class ConversationDataSource(
 
     override suspend fun getConversationsForNotifications(): Flow<List<Conversation>> =
         conversationDAO.getConversationsForNotifications().filterNotNull().map { it.map(conversationMapper::fromDaoModel) }
+
+    override suspend fun getConversationsByGroupState(
+        groupState: Conversation.ProtocolInfo.MLS.GroupState
+    ): Either<StorageFailure, List<Conversation>> =
+        wrapStorageRequest {
+            conversationDAO.getConversationsByGroupState(conversationMapper.toDAOGroupState(groupState))
+                .map(conversationMapper::fromDaoModel)
+        }
 
     override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationNotificationDate(idMapper.toDaoModel(qualifiedID), date) }

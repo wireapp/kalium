@@ -15,13 +15,12 @@ class OnEstablishedCall(
 ) : EstablishedCallHandler {
 
     override fun onEstablishedCall(conversationId: String, userId: String, clientId: String, arg: Pointer?) {
-        callingLogger.i("OnEstablishedCall -> call for conversation $conversationId, userId: $userId established")
+        callingLogger.i("[OnEstablishedCall] -> ConversationId: $conversationId | UserId: $userId | ClientId: $clientId")
         scope.launch {
             callRepository.updateCallStatusById(
                 conversationId,
                 CallStatus.ESTABLISHED
             )
         }
-        callingLogger.i("OnEstablishedCall -> incoming call status for conversation $conversationId updated to ESTABLISHED..")
     }
 }

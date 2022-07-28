@@ -57,9 +57,9 @@ class KeyPackageManagerTests {
                 .wasInvoked(once)
         }
 
-    class Arrangement {
+    private class Arrangement {
 
-        internal val syncRepository: SyncRepository = InMemorySyncRepository()
+        val syncRepository: SyncRepository = InMemorySyncRepository()
 
         @Mock
         val keyPackageRepository = mock(classOf<KeyPackageRepository>())

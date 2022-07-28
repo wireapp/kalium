@@ -89,6 +89,9 @@ import com.wire.kalium.logic.sync.EventGathererImpl
 import com.wire.kalium.logic.sync.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
+import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
+import com.wire.kalium.logic.sync.SyncCriteriaProvider
+import com.wire.kalium.logic.sync.SyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.UserEventReceiver
@@ -282,12 +285,16 @@ abstract class UserSessionScopeCommon(
             conversationEventReceiver, userEventReceiver, featureConfigEventReceiver
         )
 
+    private val syncCriteriaProvider: SyncCriteriaProvider
+        get() = SyncCriteriaProviderImpl(clientRepository, logoutRepository)
+
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
             authenticatedDataSourceSet.userSessionWorkScheduler,
             syncRepository,
             eventProcessor,
-            eventGatherer
+            eventGatherer,
+            syncCriteriaProvider
         )
     }
 
@@ -367,6 +374,10 @@ abstract class UserSessionScopeCommon(
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(syncRepository)
+
+    val setConnectionPolicy: SetConnectionPolicyUseCase
+        get() = SetConnectionPolicyUseCase(syncRepository)
+
     val client: ClientScope
         get() = ClientScope(
             clientRepository,

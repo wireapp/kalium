@@ -1,12 +1,15 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -16,8 +19,11 @@ import com.wire.kalium.network.api.notification.WebSocketEvent
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.transformWhile
 
 /**
  * Responsible for fetching events from a remote source, orchestrating between events missed since
@@ -32,6 +38,8 @@ internal interface EventGatherer {
      * - Emits missed events
      * - Updates status to Online
      * - Emits Websocket events as they come, omitting duplications.
+     *
+     * Will follow
      */
     suspend fun gatherEvents(): Flow<Event>
 }
@@ -50,20 +58,36 @@ internal class EventGathererImpl(
         }.flatMap {
             eventRepository.liveEvents()
         }.onSuccess { webSocketEventFlow ->
-            webSocketEventFlow.collect { webSocketEvent ->
-                handleWebsocketEvent(webSocketEvent)
-            }
+            handleWebSocketEventsWhilePolicyAllows(webSocketEventFlow)
         }.onFailure {
             // throw so it is handled by coroutineExceptionHandler
             throw KaliumSyncException("Failure when gathering events", it)
         }
     }
 
+    private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
+        webSocketEventFlow: Flow<WebSocketEvent<Event>>
+    ) = webSocketEventFlow.combine(syncRepository.connectionPolicyState)
+        .transformWhile { (webSocketEvent, policy) ->
+            val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
+            val isOpenEvent = webSocketEvent is WebSocketEvent.Open
+            if (isKeepAlivePolicy || isOpenEvent) {
+                // Emit if keeping alive, always emit if is an Open event
+                emit(webSocketEvent)
+            }
+            // Only continue collecting if the Policy allows it
+            isKeepAlivePolicy
+        }
+        // Prevent repetition of events, in case the policy changed
+        .distinctUntilChanged()
+        .cancellable()
+        .collect { handleWebsocketEvent(it) }
+
     private suspend fun FlowCollector<Event>.handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen()
         is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
         is WebSocketEvent.Close -> throwOnWebSocketClosed(webSocketEvent)
-        is WebSocketEvent.NonBinaryPayloadReceived -> kaliumLogger.w("Non binary event received on Websocket")
+        is WebSocketEvent.NonBinaryPayloadReceived -> kaliumLogger.withFeatureId(SYNC).w("Non binary event received on Websocket")
     }
 
     private fun throwOnWebSocketClosed(webSocketEvent: WebSocketEvent.Close<Event>): Nothing =
@@ -81,26 +105,27 @@ internal class EventGathererImpl(
         }
 
     private suspend fun FlowCollector<Event>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Event>) {
-        kaliumLogger.i("SYNC: Websocket Received binary payload")
+        kaliumLogger.withFeatureId(SYNC).i("SYNC: Websocket Received binary payload")
         val event = webSocketEvent.payload
         if (offlineEventBuffer.contains(event)) {
             if (offlineEventBuffer.clearBufferIfLastEventEquals(event)) {
                 // Really live
-                kaliumLogger.d("SYNC: Removed most recent event from offlineEventBuffer: '${event.id}'")
+                kaliumLogger.withFeatureId(SYNC).d("SYNC: Removed most recent event from offlineEventBuffer: '${event.id}'")
             } else {
                 // Really live
-                kaliumLogger.d("SYNC: Removing event from offlineEventBuffer: ${event.id}")
+                kaliumLogger.withFeatureId(SYNC).d("SYNC: Removing event from offlineEventBuffer: ${event.id}")
                 offlineEventBuffer.remove(event)
             }
-            kaliumLogger.d("SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${event.id}")
+            kaliumLogger.withFeatureId(SYNC)
+                .d("SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${event.id}")
         } else {
-            kaliumLogger.d("SYNC: Event never seen before ${event.id} - We are live")
+            kaliumLogger.withFeatureId(SYNC).d("SYNC: Event never seen before ${event.id} - We are live")
             emit(event)
         }
     }
 
     private suspend fun FlowCollector<Event>.onWebSocketOpen() {
-        kaliumLogger.i("SYNC: Websocket Open")
+        kaliumLogger.withFeatureId(SYNC).i("SYNC: Websocket Open")
         eventRepository
             .pendingEvents()
             .mapNotNull { offlineEventOrFailure ->
@@ -110,11 +135,11 @@ internal class EventGathererImpl(
                 }
             }
             .collect {
-                kaliumLogger.i("SYNC: Collecting offline event: ${it.id}")
+                kaliumLogger.withFeatureId(SYNC).i("SYNC: Collecting offline event: ${it.id}")
                 offlineEventBuffer.add(it)
                 emit(it)
             }
-        kaliumLogger.i("SYNC: Offline events collection finished")
+        kaliumLogger.withFeatureId(SYNC).i("SYNC: Offline events collection finished")
         syncRepository.updateSyncState { SyncState.Live }
     }
 }
