@@ -397,7 +397,6 @@ class RegisterClientUseCaseTest {
         assertEquals(failure, result.genericFailure)
     }
 
-
     @Test
     fun givenProteusClient_whenNewLastPreKeyThrowException_thenReturnProteusFailure() = runTest {
         val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
@@ -412,7 +411,6 @@ class RegisterClientUseCaseTest {
         assertIs<RegisterClientResult.Failure.Generic>(result)
         assertEquals(failure, result.genericFailure)
     }
-
 
     private companion object {
         const val KEY_PACKAGE_LIMIT = 100

@@ -37,4 +37,3 @@ data class KaliumConfigs(
     val passwordMaxAttempts: Int = 0,
     val appLockTimeout: Int = 0
 )
-

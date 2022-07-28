@@ -140,7 +140,7 @@ abstract class UserSessionScopeCommon(
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
-    private  val keyPackageLimitsProvider: KeyPackageLimitsProvider
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
 
     private val mlsClientProvider: MLSClientProvider
