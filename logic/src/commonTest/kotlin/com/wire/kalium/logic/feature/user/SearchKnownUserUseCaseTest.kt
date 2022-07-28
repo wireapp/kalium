@@ -149,7 +149,8 @@ class SearchKnownUserUseCaseTest {
         val searchUsersOptions = SearchUsersOptions(
             ConversationMemberExcludedOptions.ConversationExcluded(
                 ConversationId("someValue", "someDomain")
-            )
+            ),
+            selfUserIncluded = false
         )
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
@@ -185,7 +186,7 @@ class SearchKnownUserUseCaseTest {
         val searchUsersOptions = SearchUsersOptions(
             ConversationMemberExcludedOptions.ConversationExcluded(
                 ConversationId("someValue", "someDomain")
-            )
+            ), selfUserIncluded = false
         )
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()

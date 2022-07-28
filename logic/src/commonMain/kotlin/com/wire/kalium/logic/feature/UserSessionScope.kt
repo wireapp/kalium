@@ -203,6 +203,8 @@ abstract class UserSessionScopeCommon(
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
         userDatabaseProvider.conversationDAO,
+        userDatabaseProvider.userDAO,
+        userDatabaseProvider.metadataDAO
     )
 
     private val publicUserRepository: SearchUserRepository

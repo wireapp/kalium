@@ -52,10 +52,12 @@ internal interface SearchUserRepository {
 
 data class SearchUsersOptions(
     val conversationExcluded: ConversationMemberExcludedOptions,
+    val selfUserIncluded: Boolean
 ) {
     companion object {
         val Default = SearchUsersOptions(
             conversationExcluded = ConversationMemberExcludedOptions.None,
+            selfUserIncluded = false
         )
     }
 }
@@ -133,12 +135,13 @@ internal class SearchUserRepositoryImpl(
                 userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(it.documents.map { it.qualifiedID }))
             }.map { userDetailsResponses ->
                 val selfUser = getSelfUser()
+
                 UserSearchResult(userDetailsResponses.map { userProfileDTO ->
                     publicUserMapper.fromUserDetailResponseWithUsertype(
                         userDetailResponse = userProfileDTO,
                         userType = userTypeMapper.fromTeamAndDomain(
                             otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = getSelfUser().teamId?.value,
+                            selfUserTeamId = selfUser.teamId?.value,
                             otherUserTeamId = userProfileDTO.teamId,
                             selfUserDomain = selfUser.id.domain,
                             isService = userProfileDTO.service != null,
