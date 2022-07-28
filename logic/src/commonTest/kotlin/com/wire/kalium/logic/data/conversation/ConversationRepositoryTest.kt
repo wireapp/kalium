@@ -45,20 +45,16 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
+@Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationRepositoryTest {
 
@@ -829,7 +825,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenUserHasUnReadConversation_whenGettingUnReadConversationCount_ThenCorrectlyGetTheCount() =
         runTest {
-            //given
+            // given
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getUnreadConversationCount)
                 .whenInvoked()

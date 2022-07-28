@@ -214,7 +214,6 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertContentEquals(allMessages, result.first())
     }
 
-
     @Test
     fun givenMessagesAreInserted_whenGettingMessagesByConversation_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()

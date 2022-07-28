@@ -432,7 +432,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 add(
                     newMessageEntity(
                         id = it.toString(),
-                        date =  "2000-01-01T11:0$it:00.000Z",
+                        date = "2000-01-01T11:0$it:00.000Z",
                         conversationId = conversationId,
                         senderUserId = user1.id,
                     )
