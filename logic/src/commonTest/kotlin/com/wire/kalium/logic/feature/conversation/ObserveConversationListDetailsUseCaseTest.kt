@@ -1,20 +1,24 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
@@ -305,6 +309,37 @@ class ObserveConversationListDetailsUseCaseTest {
 
         observeConversationsUseCase().test {
             assertEquals(false, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
+        }
+    }
+
+    @Suppress("FunctionNaming")
+    @Test
+    fun givenConversationDetailsFailure_whenObservingDetailsList_thenIgnoreConversationWithFailure() = runTest {
+        val successConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("successId", "domain"))
+        val successConversationDetails = TestConversationDetails.CONVERSATION_ONE_ONE.copy(conversation = successConversation)
+        val failureConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("failedId", "domain"))
+
+        given(callRepository)
+            .suspendFunction(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationList)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf(successConversation, failureConversation)))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .then {
+                if(it == successConversation.id) flowOf(Either.Right(successConversationDetails))
+                else flowOf(Either.Left(StorageFailure.DataNotFound))
+            }
+
+        observeConversationsUseCase().test {
+            assertEquals(awaitItem(), listOf(successConversationDetails))
+            awaitComplete()
         }
     }
 }
