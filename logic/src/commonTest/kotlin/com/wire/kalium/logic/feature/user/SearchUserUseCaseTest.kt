@@ -50,7 +50,7 @@ class SearchUserUseCaseTest {
 
     @BeforeTest
     fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository)
+        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
 
         given(connectionRepository)
             .suspendFunction(connectionRepository::getConnectionRequests)

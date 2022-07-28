@@ -38,12 +38,12 @@ class OnParticipantListChanged(
     override fun onParticipantChanged(remoteConversationIdString: String, data: String, arg: Pointer?) {
         val participants = mutableListOf<Participant>()
         val clients = mutableListOf<CallClient>()
-        val conversationId = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
 
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
         callingScope.launch {
             val memberList: List<Member> = conversationRepository
-                .observeConversationMembers(conversationId)
+                .observeConversationMembers(conversationIdWithDomain)
                 .first()
 
             participantsChange.members.map { member ->
@@ -59,7 +59,6 @@ class OnParticipantListChanged(
 
                 clients.add(participantMapper.fromCallMemberToCallClient(member))
             }
-            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
 
             callRepository.updateCallParticipants(
                 conversationId = conversationIdWithDomain.toString(),

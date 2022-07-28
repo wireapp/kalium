@@ -4,6 +4,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.EstablishedCallHandler
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -11,14 +12,19 @@ import kotlinx.coroutines.launch
 //TODO(testing): create unit test
 class OnEstablishedCall(
     private val callRepository: CallRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) : EstablishedCallHandler {
 
-    override fun onEstablishedCall(conversationId: String, userId: String, clientId: String, arg: Pointer?) {
-        callingLogger.i("[OnEstablishedCall] -> ConversationId: $conversationId | UserId: $userId | ClientId: $clientId")
+    override fun onEstablishedCall(remoteConversationIdString: String, userId: String, clientId: String, arg: Pointer?) {
+        callingLogger.i(
+            "[OnEstablishedCall] -> ConversationId: $remoteConversationIdString | UserId: $userId | ClientId: $clientId"
+        )
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
+
         scope.launch {
             callRepository.updateCallStatusById(
-                conversationId,
+                conversationIdWithDomain.toString(),
                 CallStatus.ESTABLISHED
             )
         }

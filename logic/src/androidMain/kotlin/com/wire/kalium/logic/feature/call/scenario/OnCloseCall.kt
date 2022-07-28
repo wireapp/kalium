@@ -20,23 +20,23 @@ class OnCloseCall(
 ) : CloseCallHandler {
     override fun onClosedCall(
         reason: Int,
-        conversationIdString: String,
+        remoteConversationIdString: String,
         messageTime: Uint32_t,
         userId: String,
         clientId: String?,
         arg: Pointer?
     ) {
-        callingLogger.i("[OnCloseCall] -> ConversationId: $conversationIdString | UserId: $userId | Reason: $reason")
+        callingLogger.i("[OnCloseCall] -> ConversationId: $remoteConversationIdString | UserId: $userId | Reason: $reason")
 
         val avsReason = CallClosedReason.fromInt(value = reason)
         val callStatus = if (avsReason === STILL_ONGOING) CallStatus.STILL_ONGOING else CallStatus.CLOSED
-        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
         scope.launch {
             callRepository.updateCallStatusById(
                 conversationIdString = conversationIdWithDomain.toString(),
                 status = callStatus
             )
-            callingLogger.i("[OnCloseCall] -> ConversationId: $conversationIdString | callStatus: $callStatus")
+            callingLogger.i("[OnCloseCall] -> ConversationId: $remoteConversationIdString | callStatus: $callStatus")
         }
     }
 }

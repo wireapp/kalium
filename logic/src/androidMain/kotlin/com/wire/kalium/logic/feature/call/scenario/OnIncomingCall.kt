@@ -7,7 +7,6 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.ConversationType
-import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +17,6 @@ class OnIncomingCall(
     private val callRepository: CallRepository,
     private val callMapper: CallMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val federatedIdMapper: FederatedIdMapper,
     private val scope: CoroutineScope
 ) : IncomingCallHandler {
     override fun onIncomingCall(
@@ -38,7 +36,7 @@ class OnIncomingCall(
             callRepository.createCall(
                 conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString),
                 status = CallStatus.INCOMING,
-                callerId = federatedIdMapper.parseToFederatedId(userId),
+                callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
                 isMuted = isMuted,
                 isCameraOn = isVideoCall
             )

@@ -27,9 +27,9 @@ class OnSendOTR(
 ) : SendHandler {
     override fun onSend(
         context: Pointer?,
-        conversationIdString: String,
-        userIdSelfString: String,
-        clientIdSelfString: String,
+        remoteConversationIdString: String,
+        remoteUserIdSelfString: String,
+        remoteClientIdSelfString: String,
         userIdDestination: String?,
         clientIdDestination: String?,
         data: Pointer?,
@@ -37,19 +37,19 @@ class OnSendOTR(
         isTransient: Boolean,
         arg: Pointer?
     ): Int {
-        callingLogger.i("[OnSendOTR] -> ConversationId: $conversationIdString")
-        return if (selfUserId != userIdSelfString && selfClientId != clientIdSelfString) {
-            callingLogger.i("[OnSendOTR] -> selfUserId: $selfUserId != userIdSelf: $userIdSelfString")
-            callingLogger.i("[OnSendOTR] -> selfClientId: $selfClientId != clientIdSelf: $clientIdSelfString")
+        callingLogger.i("[OnSendOTR] -> ConversationId: $remoteConversationIdString")
+        return if (selfUserId != remoteUserIdSelfString && selfClientId != remoteClientIdSelfString) {
+            callingLogger.i("[OnSendOTR] -> selfUserId: $selfUserId != userIdSelf: $remoteUserIdSelfString")
+            callingLogger.i("[OnSendOTR] -> selfClientId: $selfClientId != clientIdSelf: $remoteClientIdSelfString")
             AvsCallBackError.INVALID_ARGUMENT.value
         } else {
             callingLogger.i("[OnSendOTR] -> Success")
             OnHttpRequest(handle, calling, messageSender, callingScope).sendHandlerSuccess(
                 context = context,
                 messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),
-                conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString),
-                avsSelfUserId = clientIdSelfString.toUserId(),
-                avsSelfClientId = ClientId(clientIdSelfString)
+                conversationId = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString),
+                avsSelfUserId = remoteClientIdSelfString.toUserId(),
+                avsSelfClientId = ClientId(remoteClientIdSelfString)
             )
             AvsCallBackError.NONE.value
         }
