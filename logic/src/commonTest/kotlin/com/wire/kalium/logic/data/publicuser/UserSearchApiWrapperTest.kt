@@ -479,7 +479,7 @@ class UserSearchApiWrapperTest {
                 previewAssetId = null,
                 completeAssetId = null,
                 availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-                userTypEntity = UserTypeEntity.EXTERNAL
+                userType = UserTypeEntity.EXTERNAL
             )
         }
     }
