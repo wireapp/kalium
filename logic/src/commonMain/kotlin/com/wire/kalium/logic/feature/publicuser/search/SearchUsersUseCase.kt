@@ -20,7 +20,7 @@ interface SearchUsersUseCase {
 
 internal class SearchUsersUseCaseImpl(
     private val searchUserRepository: SearchUserRepository,
-    private val connectionRepository: ConnectionRepository,
+    private val connectionRepository: ConnectionRepository
 ) : SearchUsersUseCase {
 
     override suspend operator fun invoke(
