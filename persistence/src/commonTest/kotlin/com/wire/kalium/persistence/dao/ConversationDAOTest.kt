@@ -475,8 +475,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user1)
 
         val message = buildList {
-            // add 5 Message before the lastReadDate
-            repeat(100) {
+            // add 9 Message before the lastReadDate
+            repeat(9) {
                 add(
                     newMessageEntity(
                         id = it.toString(), date = "2000-01-01T11:0$it:00.000Z",
