@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
 
 typealias UserId = QualifiedID
@@ -95,4 +94,3 @@ data class OtherUser(
 
 typealias UserAssetId = AssetId
 typealias AssetId = QualifiedID
-

@@ -57,7 +57,6 @@ class CallManagerTest {
 
     private lateinit var callManagerImpl: CallManagerImpl
 
-
     @BeforeTest
     fun setUp() {
         callManagerImpl = CallManagerImpl(
@@ -75,7 +74,7 @@ class CallManagerTest {
 
     @Test
     @Suppress("FunctionNaming") // native function has that name
-    @Ignore //This test never really worked. To be fixed in a next PR
+    @Ignore // This test never really worked. To be fixed in a next PR
     fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled() = runTest(dispatcher.main) {
         val baseHandle = Handle(value = 0)
         val expectedConversationId = "conversationId"
