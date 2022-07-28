@@ -43,8 +43,8 @@ data class Conversation(
         CODE;
     }
 
-    fun supportsUnreadMessageCount() =
-        type == Type.ONE_ON_ONE || type == Type.GROUP
+    val supportsUnreadMessageCount
+        get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
 }
 

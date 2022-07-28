@@ -27,6 +27,7 @@ import kotlinx.coroutines.withContext
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -314,23 +315,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // then
         val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
 
-        assertTrue(actual != null)
-        assertEquals(expectedLastReadDate, actual.lastReadDate)
-    }
-    @Test
-    fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
-        // given
-        val expectedLastReadDate = "2022-03-30T15:36:00.000Z"
-
-        conversationDAO.insertConversation(conversationEntity1)
-
-        // when
-        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate)
-
-        // then
-        val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
-
-        assertTrue(actual != null)
+        assertNotNull(actual)
         assertEquals(expectedLastReadDate, actual.lastReadDate)
     }
 
@@ -353,14 +338,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
                     val conversationAfterInsert = awaitItem()
 
                     assertTrue(conversationAfterInsert != null)
-                    assertTrue(conversationAfterInsert.lastSeenDate == null)
+                    assertTrue(conversationAfterInsert.lastReadDate == null)
 
-                    conversationDAO.updateConversationSeenDate(conversationEntity1.id, expectedConversationSeenDate)
+                    conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedConversationSeenDate)
 
                     val conversationAfterUpdate = awaitItem()
 
                     assertTrue(conversationAfterUpdate != null)
-                    assertEquals(conversationAfterUpdate.lastSeenDate, expectedConversationSeenDate)
+                    assertEquals(conversationAfterUpdate.lastReadDate, expectedConversationSeenDate)
 
                     cancelAndIgnoreRemainingEvents()
                 }
@@ -487,7 +472,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenTheConversationMessagesArrivedBeforeUserSawTheConversation_WhenGettingUnreadMessageCount_ThenReturnExpectedCount() = runTest {
+    fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
 

@@ -208,7 +208,7 @@ class ConversationDataSource(
     }
 
     private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
-        return if (conversation.supportsUnreadMessageCount() && hasNewMessages(conversation)) {
+        return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
             conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
             0
