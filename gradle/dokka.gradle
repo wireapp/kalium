@@ -5,6 +5,7 @@ def documentedSubprojects = [
         "app",
         "calling",
         "cli",
+        "connectivity-monitor",
         "cryptography",
         "logger",
         "logic",

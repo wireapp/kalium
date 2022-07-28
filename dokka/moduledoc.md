@@ -7,6 +7,9 @@ Wraps [wire-avs](https://github.com/wireapp/wire-avs) for each platform, providi
 # Module cryptography
 Interface to Proteus and MLS, handles all cryptographic operations. Uses [core-crypto](https://github.com/wireapp/core-crypto/).
 
+# Module connectivity-monitor
+Provides a way to detect connectivity changes on the device running the Wire client.
+
 # Module network
 Maps the [wire-server](https://github.com/wireapp/wire-server) api and handles networking communications.
 
