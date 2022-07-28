@@ -652,25 +652,6 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationDaoFailed_whenUpdatingTheConversationReadDate_thenShouldNotSucceed() = runTest {
-        // given
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::updateConversationReadDate)
-            .whenInvokedWith(any(), any())
-            .thenThrow(IllegalStateException("Some illegal state"))
-
-        // when
-        val result = conversationRepository.updateConversationReadDate(TestConversation.ID, "2022-03-30T15:36:00.000Z")
-
-        // then
-        verify(conversationDAO)
-            .suspendFunction(conversationDAO::updateConversationReadDate)
-            .with(anything(), anything())
-            .wasInvoked()
-        assertIs<Either.Left<StorageFailure>>(result)
-    }
-
-    @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() =
         runTest {
             // given
@@ -861,8 +842,6 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Long>>(result)
             assertEquals(10L, result.value)
         }
-
-
 
     @Test
     fun givenAConversationDaoFailed_whenUpdatingTheConversationReadDate_thenShouldNotSucceed() = runTest {

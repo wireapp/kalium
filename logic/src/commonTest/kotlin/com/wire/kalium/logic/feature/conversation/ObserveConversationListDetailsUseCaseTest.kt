@@ -15,7 +15,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq

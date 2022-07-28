@@ -125,7 +125,7 @@ class CallRepositoryTest {
     fun givenACallData_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED, false,0)))
+            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED, false, 0)))
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
@@ -422,7 +422,7 @@ class CallRepositoryTest {
     fun givenCallWithoutEstablishedTime_whenUpdateStatusToClose_thenMissedCallAddedToDB() = runTest {
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED,unreadMessagesCount = 0)))
+            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED, unreadMessagesCount = 0)))
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
@@ -449,7 +449,7 @@ class CallRepositoryTest {
     fun givenCallWithEstablishedTime_whenUpdateStatusToClose_thenMissedCallNotAddedToDB() = runTest {
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED,unreadMessagesCount = 0)))
+            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED, unreadMessagesCount = 0)))
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))

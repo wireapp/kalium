@@ -39,7 +39,6 @@ internal class ObserveConversationListDetailsUseCaseImpl(
         }.map { conversationList ->
             ConversationListDetails(
                 conversationList = conversationList,
-                //TODO: any better idea what to do on StorageFailure ?
                 unreadConversationsCount = conversationRepository.getUnreadConversationCount().fold({ 0 }, { it })
             )
         }
