@@ -136,11 +136,12 @@ internal class SearchUserRepositoryImpl(
                 UserSearchResult(userDetailsResponses.map { userProfileDTO ->
                     publicUserMapper.fromUserDetailResponseWithUsertype(
                         userDetailResponse = userProfileDTO,
-                        userType = userTypeMapper.fromOtherUserTeamAndDomain(
+                        userType = userTypeMapper.fromTeamDomainAndPermission(
                             otherUserDomain = userProfileDTO.id.domain,
                             selfUserTeamId = getSelfUser().teamId?.value,
                             otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUser.id.domain
+                            selfUserDomain = selfUser.id.domain,
+                            permissionCode = null,
                         )
                     )
                 })

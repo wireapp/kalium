@@ -28,9 +28,11 @@ data class Conversation(
     fun isGuestAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.GUEST))
     }
+
     fun isNonTeamMemberAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.NON_TEAM_MEMBER))
     }
+
     fun isServicesAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.SERVICE))
     }
@@ -115,7 +117,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 
 data class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-data class Member(val id: UserId, val role: Role) {
+data class Member(val id: UserId, val role: Role) { // TODO Kubaz rename to ConversationMember
     sealed class Role {
         object Member : Role()
         object Admin : Role()
