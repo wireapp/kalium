@@ -61,7 +61,7 @@ internal class ObserveConversationListDetailsUseCaseImpl(
 data class ConversationListDetails(
     val conversationList: List<ConversationDetails>,
     val unreadConversationsCount: Long,
-    //TODO: Not implemented yet, therefore passing 0
+    // TODO: Not implemented yet, therefore passing 0
     val missedCallsCount: Long = 0L,
     val mentionsCount: Long = 0L
 )
