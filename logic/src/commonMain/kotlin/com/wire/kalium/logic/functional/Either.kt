@@ -108,6 +108,16 @@ inline fun <T, L, R> Either<L, R>.flatMap(fn: (R) -> Either<L, T>): Either<L, T>
     }
 
 /**
+ * Left-biased flatMap() FP convention which means that Left is assumed to be the default case
+ * to operate on. If it is Right, operations like map, flatMap, ... return the Right value unchanged.
+ */
+inline fun <L, R> Either<L, R>.flatMapLeft(fn: (L) -> Either<L, R>): Either<L, R> =
+    when (this) {
+        is Left -> fn(value)
+        is Right -> Right(value)
+    }
+
+/**
  * Left-biased onFailure() FP convention dictates that when this class is Left, it'll perform
  * the onFailure functionality passed as a parameter, but, overall will still return an [Either]
  * object, so you chain calls.

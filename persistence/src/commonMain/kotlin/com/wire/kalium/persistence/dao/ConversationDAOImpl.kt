@@ -23,9 +23,9 @@ private class ConversationMapper {
             protocolInfo = when (protocol) {
                 ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
                     mls_group_id ?: "",
-                    mls_group_state
+                    mls_group_state,
+                    mls_epoch.toULong()
                 )
-
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
             mutedStatus = muted_status,
@@ -44,6 +44,8 @@ class MemberMapper {
         return Member(member.user, member.role)
     }
 }
+
+private const val MLS_DEFAULT_EPOCH = 0L
 
 class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
@@ -80,12 +82,12 @@ class ConversationDAOImpl(
                 teamId,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId
                 else null,
-
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupState
                 else ConversationEntity.GroupState.ESTABLISHED,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.epoch.toLong()
+                else MLS_DEFAULT_EPOCH,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS
                 else ConversationEntity.Protocol.PROTEUS,
-
                 mutedStatus,
                 mutedTime,
                 lastModifiedDate,
@@ -162,6 +164,11 @@ class ConversationDAOImpl(
 
     override suspend fun getConversationIdByGroupID(groupID: String) =
         conversationQueries.getConversationIdByGroupId(groupID).executeAsOne()
+
+    override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity> =
+        conversationQueries.selectByGroupState(groupState, ConversationEntity.Protocol.MLS)
+            .executeAsList()
+            .map(conversationMapper::toModel)
 
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) {
         conversationQueries.deleteConversation(qualifiedID)
