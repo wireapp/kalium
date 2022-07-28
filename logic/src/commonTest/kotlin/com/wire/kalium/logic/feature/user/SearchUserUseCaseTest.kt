@@ -153,7 +153,8 @@ class SearchUserUseCaseTest {
                     "someValue",
                     "someDomain"
                 )
-            )
+            ),
+            selfUserIncluded = false
         )
 
         given(searchUserRepository)
