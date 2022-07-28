@@ -83,5 +83,5 @@ interface ConversationDAO {
     )
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
     suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
-    suspend fun getUnreadConversationCount() : Long
+    suspend fun getUnreadConversationCount(): Long
 }

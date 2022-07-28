@@ -215,7 +215,7 @@ class ConversationDataSource(
         }
     }
 
-    //TODO: as for now lastModifiedDate and lastReadDate is saved as String
+    // TODO: as for now lastModifiedDate and lastReadDate is saved as String
     // in ISO format, using a timestamp would make it possible to just do a comparance
     // on if the timestamp is bigger inside the domain model or on a Instant object
     private fun hasNewMessages(conversation: Conversation) =
