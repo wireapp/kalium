@@ -200,7 +200,8 @@ class CallRepositoryTest {
             status = CallStatus.STARTED,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         // then
@@ -257,7 +258,8 @@ class CallRepositoryTest {
             status = CallStatus.STARTED,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         // then
@@ -309,7 +311,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = true
         )
 
         // then
@@ -366,7 +369,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         // then
@@ -413,7 +417,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         // then
@@ -468,7 +473,8 @@ class CallRepositoryTest {
             status = CallStatus.STARTED,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         // then
@@ -530,7 +536,8 @@ class CallRepositoryTest {
             status = CallStatus.STARTED,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         // then
@@ -588,7 +595,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         verify(persistMessage)
@@ -654,7 +662,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         // then
@@ -717,7 +726,8 @@ class CallRepositoryTest {
             status = CallStatus.INCOMING,
             callerId = callerId.value,
             isMuted = true,
-            isCameraOn = false
+            isCameraOn = false,
+            shouldRing = false
         )
 
         // then

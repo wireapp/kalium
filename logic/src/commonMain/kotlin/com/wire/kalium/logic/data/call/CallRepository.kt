@@ -42,7 +42,15 @@ interface CallRepository {
     suspend fun incomingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
-    suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
+    suspend fun createCall(
+        conversationId: ConversationId,
+        status: CallStatus,
+        callerId: String,
+        isMuted: Boolean,
+        isCameraOn: Boolean,
+        shouldRing: Boolean
+    )
+
     suspend fun updateCallStatusById(conversationId: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
@@ -103,7 +111,8 @@ internal class CallDataSource(
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,
-        isCameraOn: Boolean
+        isCameraOn: Boolean,
+        shouldRing: Boolean
     ) {
         val conversation: ConversationDetails = conversationRepository
             .observeConversationDetailsById(conversationId)
@@ -149,8 +158,10 @@ internal class CallDataSource(
             CallEntity.Status.STILL_ONGOING
         )
 
-        callingLogger.i("[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] | ConversationId: [$conversationId] " +
-                "| status: [$status]")
+        callingLogger.i(
+            "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] | ConversationId: [$conversationId] " +
+                    "| status: [$status] | shouldRing: [$shouldRing]"
+        )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
             updateCallMetadata(
                 conversationId = conversationId,
@@ -167,11 +178,18 @@ internal class CallDataSource(
             }
 
             if ((lastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
-                callingLogger.i("[CallRepository][createCall] -> Update.2 | lastCallStatus: [$lastCallStatus] " +
-                        "| isGroupCall: [$isGroupCall] | isOneOnOneCall: [$isOneOnOneCall]")
+                callingLogger.i(
+                    "[CallRepository][createCall] -> Update.2 | lastCallStatus: [$lastCallStatus] " +
+                            "| isGroupCall: [$isGroupCall] | isOneOnOneCall: [$isOneOnOneCall] | shouldRing: [$shouldRing]"
+                )
+
                 // Save into database
                 wrapStorageRequest {
-                    callDAO.insertCall(call = callEntity)
+                    callDAO.insertCall(
+                        call = callEntity.copy(
+                            status = if (shouldRing) callEntity.status else CallEntity.Status.STILL_ONGOING
+                        )
+                    )
                 }
             }
         } else {
@@ -216,8 +234,10 @@ internal class CallDataSource(
                 status = callMapper.toCallEntityStatus(callStatus = status),
                 conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
             )
-            callingLogger.i("[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationId] " +
-                    "| status: [$status]")
+            callingLogger.i(
+                "[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationId] " +
+                        "| status: [$status]"
+            )
         }
 
         callMetadataProfile.data[modifiedConversationId.toString()]?.let { call ->

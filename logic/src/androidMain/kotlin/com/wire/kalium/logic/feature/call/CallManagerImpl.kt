@@ -174,7 +174,8 @@ actual class CallManagerImpl(
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,
-            callerId = federatedIdMapper.parseToFederatedId(userId.await())
+            callerId = federatedIdMapper.parseToFederatedId(userId.await()),
+            shouldRing = true
         )
 
         withCalling {

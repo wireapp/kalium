@@ -39,7 +39,8 @@ class OnIncomingCall(
                 status = CallStatus.INCOMING,
                 callerId = federatedIdMapper.parseToFederatedId(userId),
                 isMuted = isMuted,
-                isCameraOn = isVideoCall
+                isCameraOn = isVideoCall,
+                shouldRing = shouldRing
             )
         }
     }
