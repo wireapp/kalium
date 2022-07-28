@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -49,6 +50,9 @@ class CallManagerTest {
     @Mock
     private val federatedIdMapper = mock(classOf<FederatedIdMapper>())
 
+    @Mock
+    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
     private val dispatcher = TestKaliumDispatcher
 
     private lateinit var callManagerImpl: CallManagerImpl
@@ -64,7 +68,8 @@ class CallManagerTest {
             conversationRepository = conversationRepository,
             messageSender = messageSender,
             kaliumDispatchers = dispatcher,
-            federatedIdMapper = federatedIdMapper
+            federatedIdMapper = federatedIdMapper,
+            qualifiedIdMapper = qualifiedIdMapper
         )
     }
 
