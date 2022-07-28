@@ -38,7 +38,7 @@ class UserScope internal constructor(
     val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(userRepository)
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
-    val searchUsers: SearchUsersUseCase get() = SearchUsersUseCaseImpl(userRepository, searchUserRepository, connectionRepository, qualifiedIdMapper)
+    val searchUsers: SearchUsersUseCase get() = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
     val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(searchUserRepository, userRepository, qualifiedIdMapper)
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository)
     val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(searchUserRepository)

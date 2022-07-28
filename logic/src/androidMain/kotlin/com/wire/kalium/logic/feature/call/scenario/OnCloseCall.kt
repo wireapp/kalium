@@ -26,7 +26,7 @@ class OnCloseCall(
         clientId: String?,
         arg: Pointer?
     ) {
-        callingLogger.i("OnCloseCall -> ConversationId $conversationIdString from user $userId , CLOSED for reason: $reason")
+        callingLogger.i("[OnCloseCall] -> ConversationId: $conversationIdString | UserId: $userId | Reason: $reason")
 
         val avsReason = CallClosedReason.fromInt(value = reason)
         val callStatus = if (avsReason === STILL_ONGOING) CallStatus.STILL_ONGOING else CallStatus.CLOSED
@@ -36,8 +36,7 @@ class OnCloseCall(
                 conversationIdString = conversationIdWithDomain.toString(),
                 status = callStatus
             )
+            callingLogger.i("[OnCloseCall] -> ConversationId: $conversationIdString | callStatus: $callStatus")
         }
-
-        callingLogger.i("OnCloseCall -> incoming call status for conversation $conversationIdString updated to $callStatus..")
     }
 }

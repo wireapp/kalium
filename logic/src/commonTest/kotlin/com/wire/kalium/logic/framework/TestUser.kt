@@ -66,7 +66,7 @@ object TestUser {
         previewAssetId = QualifiedIDEntity("value1", ENTITY_ID.domain),
         completeAssetId = QualifiedIDEntity("value2", ENTITY_ID.domain),
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userTypEntity = UserTypeEntity.EXTERNAL
+        userType = UserTypeEntity.EXTERNAL
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

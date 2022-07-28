@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.ConnectionEntity
@@ -58,14 +59,15 @@ class UserMapperTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = UserTypeEntity.INTERNAL,
+            userType = UserTypeEntity.INTERNAL,
         )
         val (_, userMapper) = Arrangement().arrange()
 
         val result = userMapper.fromTeamMemberToDaoModel(
             teamId = TeamId("teamId"),
             teamMemberDTO = apiModel,
-            userDomain = "userDomain"
+            userDomain = "userDomain",
+            TeamRole.Member.value
         )
 
         assertEquals(expectedResult, result)

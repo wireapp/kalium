@@ -13,6 +13,7 @@ import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -206,18 +207,37 @@ actual class CallManagerImpl(
     }
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> ending Call for conversation = $conversationId..")
-        wcall_end(inst = deferredHandle.await(), conversationId = federatedIdMapper.parseToFederatedId(conversationId))
-        callingLogger.d("$TAG - wcall_end() called -> call for conversation = $conversationId ended")
+        callingLogger.d("[$TAG][endCall] -> ConversationId: [$conversationId]")
+        val conversationType = callRepository.getLastCallConversationTypeByConversationId(conversationId = conversationId)
+
+        callingLogger.d("[$TAG][endCall] -> ConversationType: [$conversationType]")
+        callRepository.updateCallStatusById(
+            conversationId = conversationId.toString(),
+            status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
+        )
+
+        callingLogger.d("[$TAG][endCall] -> Calling wcall_end()")
+        wcall_end(
+            inst = deferredHandle.await(),
+            conversationId = federatedIdMapper.parseToFederatedId(conversationId)
+        )
     }
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
-        callingLogger.d("$TAG -> rejecting call for conversation = $conversationId..")
+        callingLogger.d("[$TAG][rejectCall] -> ConversationId: [$conversationId]")
+        val conversationType = callRepository.getLastCallConversationTypeByConversationId(conversationId = conversationId)
+
+        callingLogger.d("[$TAG][rejectCall] -> ConversationType: [$conversationType]")
+        callRepository.updateCallStatusById(
+            conversationId = conversationId.toString(),
+            status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
+        )
+
+        callingLogger.d("[$TAG][rejectCall] -> Calling wcall_reject()")
         wcall_reject(
             inst = deferredHandle.await(),
             conversationId = federatedIdMapper.parseToFederatedId(conversationId)
         )
-        callingLogger.d("$TAG - wcall_reject() called -> call for conversation = $conversationId rejected")
     }
 
     override suspend fun muteCall(shouldMute: Boolean) = withCalling {

@@ -91,7 +91,7 @@ class CallMapper {
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
-    private fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
+    fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
         ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
         else -> Conversation.Type.ONE_ON_ONE
     }

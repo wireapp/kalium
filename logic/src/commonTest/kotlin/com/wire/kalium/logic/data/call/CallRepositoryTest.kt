@@ -773,13 +773,13 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenDoNotUpdateTheStatus() = runTest {
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateTheStatus() = runTest {
         callRepository.updateCallStatusById(randomConversationIdString, CallStatus.INCOMING)
 
         verify(callDAO)
             .suspendFunction(callDAO::updateLastCallStatusByConversationId)
             .with(any(), any())
-            .wasInvoked(exactly = Times(0))
+            .wasInvoked(exactly = Times(1))
     }
 
     @Test

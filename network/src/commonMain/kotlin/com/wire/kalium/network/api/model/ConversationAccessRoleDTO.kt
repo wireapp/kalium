@@ -12,7 +12,9 @@ enum class ConversationAccessRoleDTO {
     @SerialName("guest")
     GUEST,
     @SerialName("service")
-    SERVICE;
+    SERVICE,
+    @SerialName("partner")
+    EXTERNAL;
 
     override fun toString(): String {
         return this.name.lowercase()

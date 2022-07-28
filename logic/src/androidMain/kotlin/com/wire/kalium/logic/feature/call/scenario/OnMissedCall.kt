@@ -15,13 +15,12 @@ class OnMissedCall(
     private val scope: CoroutineScope
 ) : MissedCallHandler {
     override fun onMissedCall(conversationId: String, messageTime: Uint32_t, userId: String, isVideoCall: Boolean, arg: Pointer?) {
-        callingLogger.i("OnMissedCall -> Missed call for conversation: $conversationId at $messageTime from user $userId..")
+        callingLogger.i("[OnMissedCall] -> ConversationId: $conversationId | UserId: $userId | isVideoCall: $isVideoCall")
         scope.launch {
             callRepository.updateCallStatusById(
                 conversationIdString = conversationId,
                 status = CallStatus.MISSED
             )
         }
-        callingLogger.i("OnMissedCall-> incoming call status updated to MISSED..")
     }
 }

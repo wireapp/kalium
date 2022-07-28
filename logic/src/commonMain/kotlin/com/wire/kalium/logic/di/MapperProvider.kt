@@ -69,7 +69,7 @@ internal object MapperProvider {
     fun sessionMapper(): SessionMapper = SessionMapperImpl(serverConfigMapper(), idMapper())
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
-    fun userMapper(): UserMapper = UserMapperImpl(idMapper())
+    fun userMapper(): UserMapper = UserMapperImpl(idMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
