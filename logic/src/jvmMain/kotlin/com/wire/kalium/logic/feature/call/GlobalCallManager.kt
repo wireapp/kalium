@@ -9,7 +9,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 actual class GlobalCallManager {
 
@@ -23,7 +22,7 @@ actual class GlobalCallManager {
         messageSender: MessageSender,
         callMapper: CallMapper,
         federatedIdMapper: FederatedIdMapper,
-        qualifiedIdMapper : QualifiedIdMapper
+        qualifiedIdMapper: QualifiedIdMapper
     ): CallManager = CallManagerImpl()
 
     actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl()

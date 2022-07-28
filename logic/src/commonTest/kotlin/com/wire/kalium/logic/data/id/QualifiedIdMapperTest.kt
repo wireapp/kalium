@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.id
 import com.wire.kalium.logic.data.user.UserRepository
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import kotlin.test.BeforeTest

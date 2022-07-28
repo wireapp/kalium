@@ -15,7 +15,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import kotlinx.coroutines.Dispatchers
 
 actual class GlobalCallManager(
@@ -47,8 +46,8 @@ actual class GlobalCallManager(
         conversationRepository: ConversationRepository,
         messageSender: MessageSender,
         callMapper: CallMapper,
-        federatedIdMapper : FederatedIdMapper,
-        qualifiedIdMapper : QualifiedIdMapper
+        federatedIdMapper: FederatedIdMapper,
+        qualifiedIdMapper: QualifiedIdMapper
     ): CallManager {
         return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,

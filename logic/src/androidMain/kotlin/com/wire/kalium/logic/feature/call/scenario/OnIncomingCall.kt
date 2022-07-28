@@ -12,7 +12,7 @@ import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-//TODO(testing): create unit test
+// TODO(testing): create unit test
 class OnIncomingCall(
     private val callRepository: CallRepository,
     private val callMapper: CallMapper,
@@ -29,7 +29,9 @@ class OnIncomingCall(
         conversationType: Int,
         arg: Pointer?
     ) {
-        callingLogger.i("[OnIncomingCall] -> ConversationId: $conversationIdString | UserId: $userId | shouldRing: $shouldRing")
+        callingLogger.i(
+            "[OnIncomingCall] -> ConversationId: $conversationIdString | UserId: $userId | shouldRing: $shouldRing"
+        )
         val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
         val isMuted = mappedConversationType == ConversationType.Conference
         scope.launch {

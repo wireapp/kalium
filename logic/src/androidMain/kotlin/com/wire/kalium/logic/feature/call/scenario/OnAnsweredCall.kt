@@ -9,7 +9,7 @@ import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-//TODO(testing): create unit test
+// TODO(testing): create unit test
 class OnAnsweredCall(
     private val callRepository: CallRepository,
     private val scope: CoroutineScope,
