@@ -135,14 +135,6 @@ internal class SyncManagerImpl(
 
     override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
 
-    @Deprecated(
-        "SyncManager won't serve as a Sync Utils anymore",
-        replaceWith = ReplaceWith(
-            "syncRepository.syncState.first { it is SyncState.Live }",
-            "com.wire.kalium.logic.data.sync.SyncRepository",
-            "com.wire.kalium.logic.data.sync.SyncState"
-        )
-    )
     override suspend fun waitUntilLive() {
         syncRepository.syncState.first { it == SyncState.Live }
     }
