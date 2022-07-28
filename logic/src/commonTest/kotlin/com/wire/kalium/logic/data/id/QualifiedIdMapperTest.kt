@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.id
 import com.wire.kalium.logic.data.user.UserRepository
 import io.mockative.Mock
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import kotlin.test.BeforeTest
@@ -27,6 +28,10 @@ class QualifiedIdMapperTest {
         val mockQualifiedIdValue = "mocked-value"
         val mockQualifiedIdDomain = "mocked.domain"
         val correctQualifiedIdString = "$mockQualifiedIdValue@$mockQualifiedIdDomain"
+        given(userRepository)
+            .function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(QualifiedID(mockQualifiedIdValue, mockQualifiedIdDomain))
 
         // When
         val correctQualifiedId = qualifiedIdMapper.fromStringToQualifiedID(correctQualifiedIdString)

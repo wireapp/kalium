@@ -91,6 +91,21 @@ class CallRepositoryTest {
             timeParser = TimeParserImpl(),
             persistMessage = persistMessage
         )
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("convId@domainId"))
+            .thenReturn(QualifiedID("convId", "domainId"))
+
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("random@domain"))
+            .thenReturn(QualifiedID("random", "domain"))
+
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("callerId@domain"))
+            .thenReturn(QualifiedID("callerId", "domain"))
+
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("callerId"))
+            .thenReturn(QualifiedID("callerId", ""))
     }
 
     @Test
@@ -132,7 +147,7 @@ class CallRepositoryTest {
                         createCallEntity().copy(
                             status = CallEntity.Status.ESTABLISHED,
                             conversationType = ConversationEntity.Type.ONE_ON_ONE,
-                            callerId = "caller_id@domain"
+                            callerId = "callerId@domain"
                         )
                     )
                 )
@@ -709,7 +724,7 @@ class CallRepositoryTest {
         given(callDAO)
             .suspendFunction(callDAO::getCallerIdByConversationId)
             .whenInvokedWith(any())
-            .thenReturn("callerId@domainId")
+            .thenReturn("callerId@domain")
 
         given(persistMessage)
             .suspendFunction(persistMessage::invoke)
@@ -972,7 +987,7 @@ class CallRepositoryTest {
 
         val callEntity = createCallEntity().copy(
             status = CallEntity.Status.INCOMING,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1019,7 +1034,7 @@ class CallRepositoryTest {
 
         val callEntity = createCallEntity().copy(
             status = CallEntity.Status.STILL_ONGOING,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1066,7 +1081,7 @@ class CallRepositoryTest {
 
         val callEntity = createCallEntity().copy(
             status = CallEntity.Status.ESTABLISHED,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1118,7 +1133,7 @@ class CallRepositoryTest {
 
         val missedCall = createCallEntity().copy(
             status = CallEntity.Status.MISSED,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1128,7 +1143,7 @@ class CallRepositoryTest {
                 domain = randomConversationId.domain
             ),
             status = CallEntity.Status.CLOSED,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1170,7 +1185,7 @@ class CallRepositoryTest {
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
-        callerId = "caller_id@domain",
+        callerId = "callerId@domain",
         participants = listOf(),
         isMuted = false,
         isCameraOn = false,

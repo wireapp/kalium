@@ -35,6 +35,10 @@ class FederatedIdMapperTest {
         given(kaliumPreferences)
             .invocation { getString(CURRENT_DOMAIN) }
             .then { "wire.com" }
+
+        given(qualifiedIdMapper).invocation { qualifiedIdMapper.fromStringToQualifiedID(qualifiedId) }
+            .then { QualifiedID("aaa-bbb-ccc", "wire.com") }
+
     }
 
     @Test

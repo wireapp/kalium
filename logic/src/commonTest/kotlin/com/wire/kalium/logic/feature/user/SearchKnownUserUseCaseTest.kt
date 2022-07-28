@@ -6,11 +6,16 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
+import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.feature.publicuser.search.Result
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
+import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -18,17 +23,12 @@ import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertIs
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
-import com.wire.kalium.logic.feature.publicuser.search.Result
-import com.wire.kalium.logic.data.user.OtherUser
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.framework.TestUser
 import kotlin.test.assertFalse
-import io.mockative.once
+import kotlin.test.assertIs
 
 class SearchKnownUserUseCaseTest {
 
@@ -238,6 +238,11 @@ class SearchKnownUserUseCaseTest {
                 .thenReturn(
                     selfUser
                 )
+
+            given(qualifiedIdMapper)
+                .function(qualifiedIdMapper::fromStringToQualifiedID)
+                .whenInvokedWith(eq("someSearchQuery@wire.com"))
+                .thenReturn(QualifiedID("someSearchQuery", "wire.com"))
 
             return this
         }
