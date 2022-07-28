@@ -42,6 +42,7 @@ interface CallRepository {
     suspend fun incomingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
+    @Suppress("LongParameterList")
     suspend fun createCall(
         conversationId: ConversationId,
         status: CallStatus,
@@ -105,7 +106,7 @@ internal class CallDataSource(
         .combineWithCallsMetadata()
 
     // This needs to be reworked the logic into the useCases
-    @Suppress("LongMethod", "NestedBlockDepth")
+    @Suppress("LongMethod", "NestedBlockDepth", "LongParameterList")
     override suspend fun createCall(
         conversationId: ConversationId,
         status: CallStatus,
