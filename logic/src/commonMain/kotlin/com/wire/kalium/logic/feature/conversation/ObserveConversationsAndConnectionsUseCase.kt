@@ -5,6 +5,7 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 fun interface ObserveConversationsAndConnectionsUseCase {
     /**
@@ -23,6 +24,6 @@ internal class ObserveConversationsAndConnectionsUseCaseImpl(
         syncManager.startSyncIfIdle()
         return combine(observeConversationListDetailsUseCase(), observeConnectionListUseCase()) { conversations, connections ->
             (conversations + connections).sortedByDescending { it.conversation.lastModifiedDate }
-        }
+        }.distinctUntilChanged()
     }
 }
