@@ -13,7 +13,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.toUserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
@@ -338,12 +337,14 @@ internal class CallDataSource(
             )
         )
 
+        val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
+
         val message = Message.System(
             uuid4().toString(),
             MessageContent.MissedCall,
             conversationId,
             timeParser.currentTimeStamp(),
-            callerId.toUserId(),
+            qualifiedUserId,
             Message.Status.SENT,
             Message.Visibility.VISIBLE
         )

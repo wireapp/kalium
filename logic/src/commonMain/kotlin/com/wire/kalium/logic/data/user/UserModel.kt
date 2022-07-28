@@ -96,10 +96,3 @@ data class OtherUser(
 typealias UserAssetId = AssetId
 typealias AssetId = QualifiedID
 
-fun String.toUserId(): UserId {
-    if (contains(VALUE_DOMAIN_SEPARATOR)) {
-        split(VALUE_DOMAIN_SEPARATOR).also {
-            return UserId(value = it.first(), domain = it.last())
-        }
-    } else return UserId(value = this, domain = "")
-}
