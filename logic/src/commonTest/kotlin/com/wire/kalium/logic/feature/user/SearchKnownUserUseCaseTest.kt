@@ -33,16 +33,16 @@ class SearchKnownUserUseCaseTest {
 
     @Test
     fun givenAnInputStartingWithAtSymbol_whenSearchingUsers_thenSearchOnlyByHandle() = runTest {
-        //given
+        // given
         val handleSearchQuery = "@someHandle"
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
             .withSearchByHandle(handleSearchQuery).arrange()
 
-        //when
+        // when
         searchKnownUsersUseCase(handleSearchQuery)
-        //then
+        // then
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
             .with(eq(handleSearchQuery), anything())
@@ -56,16 +56,16 @@ class SearchKnownUserUseCaseTest {
 
     @Test
     fun givenNormalInput_whenSearchingUsers_thenSearchByNameOrHandleOrEmail() = runTest {
-        //given
+        // given
         val searchQuery = "someSearchQuery"
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
             .withSearchKnownUsersByNameOrHandleOrEmail(searchQuery)
             .arrange()
-        //when
+        // when
         searchKnownUsersUseCase(searchQuery)
-        //then
+        // then
         with(arrangement) {
             verify(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
@@ -81,16 +81,16 @@ class SearchKnownUserUseCaseTest {
 
     @Test
     fun givenFederatedInput_whenSearchingUsers_thenSearchByNameOrHandleOrEmail() = runTest {
-        //given
+        // given
         val searchQuery = "someSearchQuery@wire.com"
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
             .withSearchKnownUsersByNameOrHandleOrEmail()
             .arrange()
-        //when
+        // when
         searchKnownUsersUseCase(searchQuery)
-        //then
+        // then
         with(arrangement) {
             verify(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
@@ -106,7 +106,7 @@ class SearchKnownUserUseCaseTest {
 
     @Test
     fun test() = runTest {
-        //given
+        // given
         val searchQuery = "someSearchQuery"
 
         val selfUserId = QualifiedID(
@@ -133,16 +133,16 @@ class SearchKnownUserUseCaseTest {
             .withSuccessFullSelfUserRetrieve(selfUserId)
             .withSearchKnownUsersByNameOrHandleOrEmail(searchQuery, otherUserContainingSelfUserId)
             .arrange()
-        //when
+        // when
         val result = searchKnownUsersUseCase(searchQuery)
-        //then
+        // then
         assertIs<Result.Success>(result)
         assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
     }
 
     @Test
     fun givenSearchingForHandleWithConversationExcluded_whenSearchingUsers_ThenPropagateTheSearchOption() = runTest {
-        //given
+        // given
         val searchQuery = "@someHandle"
 
         val searchUsersOptions = SearchUsersOptions(
@@ -163,13 +163,13 @@ class SearchKnownUserUseCaseTest {
             )
             .arrange()
 
-        //when
+        // when
         val result = searchKnownUsersUseCase(
             searchQuery = searchQuery,
             searchUsersOptions = searchUsersOptions
         )
 
-        //then
+        // then
         assertIs<Result.Success>(result)
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
@@ -179,7 +179,7 @@ class SearchKnownUserUseCaseTest {
 
     @Test
     fun givenSearchingForNameOrHandleOrEmailWithConversationExcluded_whenSearchingUsers_ThenPropagateTheSearchOption() = runTest {
-        //given
+        // given
         val searchQuery = "someSearchQuery"
 
         val searchUsersOptions = SearchUsersOptions(
@@ -199,13 +199,13 @@ class SearchKnownUserUseCaseTest {
             )
             .arrange()
 
-        //when
+        // when
         val result = searchKnownUsersUseCase(
             searchQuery = searchQuery,
             searchUsersOptions = searchUsersOptions
         )
 
-        //then
+        // then
         assertIs<Result.Success>(result)
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
