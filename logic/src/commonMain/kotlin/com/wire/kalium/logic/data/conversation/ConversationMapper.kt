@@ -24,6 +24,7 @@ interface ConversationMapper {
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
+    fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -88,11 +89,21 @@ internal class ConversationMapperImpl(
             ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
             ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
             ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
+            ConversationAccessRoleDTO.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
         }
     }
 
+    override fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState =
+        when (groupState) {
+            Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
+            Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
+            Conversation.ProtocolInfo.MLS.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
+            Conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
+        }
+
     override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
-        CreateConversationRequest(qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+        CreateConversationRequest(
+            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
         } else emptyList(),
             name = name,
@@ -133,6 +144,7 @@ internal class ConversationMapperImpl(
         Conversation.AccessRole.NON_TEAM_MEMBER -> ConversationAccessRoleDTO.NON_TEAM_MEMBER
         Conversation.AccessRole.GUEST -> ConversationAccessRoleDTO.GUEST
         Conversation.AccessRole.SERVICE -> ConversationAccessRoleDTO.SERVICE
+        Conversation.AccessRole.EXTERNAL -> ConversationAccessRoleDTO.EXTERNAL
     }
 
     override fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol = when (protocol) {
@@ -142,7 +154,7 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING)
+            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING_JOIN, epoch ?: 0UL)
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }
@@ -182,6 +194,7 @@ private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = w
     ConversationAccessRoleDTO.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
     ConversationAccessRoleDTO.GUEST -> ConversationEntity.AccessRole.GUEST
     ConversationAccessRoleDTO.SERVICE -> ConversationEntity.AccessRole.SERVICE
+    ConversationAccessRoleDTO.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
 }
 
 private fun ConversationAccessDTO.toDAO(): ConversationEntity.Access = when (this) {
@@ -203,4 +216,5 @@ private fun ConversationEntity.AccessRole.toDAO(): Conversation.AccessRole = whe
     ConversationEntity.AccessRole.NON_TEAM_MEMBER -> Conversation.AccessRole.NON_TEAM_MEMBER
     ConversationEntity.AccessRole.GUEST -> Conversation.AccessRole.GUEST
     ConversationEntity.AccessRole.SERVICE -> Conversation.AccessRole.SERVICE
+    ConversationEntity.AccessRole.EXTERNAL -> Conversation.AccessRole.EXTERNAL
 }

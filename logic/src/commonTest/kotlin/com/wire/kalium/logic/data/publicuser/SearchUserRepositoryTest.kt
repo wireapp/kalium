@@ -301,9 +301,9 @@ class SearchUserRepositoryTest {
                 .then { SELF_USER }
 
             given(domainUserTypeMapper)
-                .function(domainUserTypeMapper::fromOtherUserTeamAndDomain)
-                .whenInvokedWith(any(), any(), any(), any())
-                .then { _, _, _, _ -> UserType.FEDERATED }
+                .function(domainUserTypeMapper::fromTeamAndDomain)
+                .whenInvokedWith(any(), any(), any(), any(), any())
+                .then { _, _, _, _, _ -> UserType.FEDERATED }
 
             val expectedResult = UserSearchResult(
                 result = listOf(PUBLIC_USER)
@@ -372,8 +372,9 @@ class SearchUserRepositoryTest {
                 searchQuery = "someQuery",
                 searchUsersOptions = SearchUsersOptions(
                     conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
-                        ConversationId("someValue", "someDomain")
-                    )
+                        ConversationId("someValue", "someDomain"),
+                    ),
+                    selfUserIncluded = true
                 )
             )
 
@@ -407,7 +408,8 @@ class SearchUserRepositoryTest {
             searchUsersOptions = SearchUsersOptions(
                 conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
                     ConversationId("someValue", "someDomain")
-                )
+                ),
+                selfUserIncluded = true
             )
         )
 
@@ -496,7 +498,7 @@ class SearchUserRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userTypEntity = UserTypeEntity.EXTERNAL
+            userType = UserTypeEntity.EXTERNAL
         )
 
         val SELF_USER = SelfUser(
