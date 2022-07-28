@@ -12,6 +12,7 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.anything
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -170,22 +172,22 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(groupConversationUpdates.asFlow())
+            .thenReturn(groupConversationUpdates.asFlow().map { Either.Right(it) })
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(oneOnOneConversation.id))
-            .thenReturn(oneOnOneDetailsChannel.consumeAsFlow())
+            .thenReturn(oneOnOneDetailsChannel.consumeAsFlow().map { Either.Right(it) })
 
         observeConversationsUseCase().test {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
 
             val detailList: List<ConversationDetails> = awaitItem()
-            assertContentEquals(groupConversationUpdates, detailList)
+            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, detailList)
 
             oneOnOneDetailsChannel.send(secondOneOnOneDetails)
             val updatedDetailList: List<ConversationDetails> = awaitItem()
-            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, updatedDetailList)
+            assertContentEquals(groupConversationUpdates + secondOneOnOneDetails, updatedDetailList)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -218,12 +220,12 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(groupConversationDetails))
+            .thenReturn(flowOf(Either.Right(groupConversationDetails)))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(selfConversation.id))
-            .thenReturn(flowOf(selfConversationDetails))
+            .thenReturn(flowOf(Either.Right(selfConversationDetails)))
 
         observeConversationsUseCase().test {
             assertContentEquals(listOf(groupConversationDetails), awaitItem())
@@ -269,7 +271,7 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(groupConversationDetails))
+            .thenReturn(flowOf(groupConversationDetails).map { Either.Right(it) })
 
         observeConversationsUseCase().test {
             assertEquals(true, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
@@ -299,7 +301,7 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(groupConversationDetails))
+            .thenReturn(flowOf(groupConversationDetails).map { Either.Right(it) })
 
         observeConversationsUseCase().test {
             assertEquals(false, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)

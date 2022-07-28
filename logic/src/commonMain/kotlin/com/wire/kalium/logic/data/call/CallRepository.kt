@@ -19,6 +19,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -107,6 +108,7 @@ internal class CallDataSource(
     ) {
         val conversation: ConversationDetails = conversationRepository
             .observeConversationDetailsById(conversationId)
+            .onlyRight()
             .first()
 
         // in OnIncomingCall we get callerId without a domain,

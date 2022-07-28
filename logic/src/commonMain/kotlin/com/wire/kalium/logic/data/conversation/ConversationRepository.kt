@@ -51,10 +51,10 @@ interface ConversationRepository {
     suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
+    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun observeById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
+    suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
@@ -222,9 +222,15 @@ class ConversationDataSource(
      * Gets a flow that allows observing of
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
-        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID)).wrapStorageRequest().onlyRight()
-            .map(conversationMapper::fromDaoModel).flatMapLatest(::getConversationDetailsFlow)
+    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
+            .wrapStorageRequest()
+            .flatMapLatest {
+                it.fold(
+                    { flowOf(Either.Left(it)) },
+                    { getConversationDetailsFlow(conversationMapper.fromDaoModel(it)).map { Either.Right(it) } }
+                )
+            }
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
@@ -275,11 +281,10 @@ class ConversationDataSource(
 
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
     @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
-    override suspend fun observeById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
-        wrapStorageRequest {
+    override suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>> =
             conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).filterNotNull()
                 .map(conversationMapper::fromDaoModel)
-        }
+                .wrapStorageRequest()
 
     override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
         conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {

@@ -107,9 +107,9 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         fun withGetConversationByIdSuccessful() = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::observeById)
+                .suspendFunction(conversationRepository::detailsById)
                 .whenInvokedWith(anything())
-                .then { Either.Right(flowOf(MLS_CONVERSATION1)) }
+                .then { Either.Right(MLS_CONVERSATION1) }
         }
 
         fun withRequestToJoinMLSGroupSuccessful() = apply {
