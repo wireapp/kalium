@@ -20,12 +20,9 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNotEquals
-import kotlin.test.assertTrue
 
 @OptIn(ConfigurationApi::class)
 class SelfClientsUseCaseTest {
-
 
     @Mock
     private val clientRepository = configure(mock(classOf<ClientRepository>())) {

@@ -1,8 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
-import app.cash.turbine.test
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
-import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
@@ -54,7 +52,6 @@ class ObserveConversationsAndConnectionsUseCaseTest {
             .suspendFunction(observeConnectionListUseCase::invoke)
             .whenInvoked()
             .thenReturn(flowOf(listOf(TestConversationDetails.CONNECTION)))
-
 
         // when
         observeConversationsAndConnectionsUseCase().collect()
