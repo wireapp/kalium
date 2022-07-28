@@ -15,7 +15,7 @@ data class ConversationEntity(
     val access: List<Access>,
     val accessRole: List<AccessRole>
 ) {
-    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE; }
+    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
     enum class Access { PRIVATE, INVITE, LINK, CODE; }
 
