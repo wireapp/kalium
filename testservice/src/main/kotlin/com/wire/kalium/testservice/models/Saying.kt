@@ -1,4 +1,4 @@
-package com.wire.kalium.testservice.api
+package com.wire.kalium.testservice.models
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
