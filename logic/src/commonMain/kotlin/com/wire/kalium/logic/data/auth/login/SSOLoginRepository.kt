@@ -3,7 +3,9 @@ package com.wire.kalium.logic.data.auth.login
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.AuthenticationResultDTO
 import com.wire.kalium.network.api.SessionDTO
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.user.login.SSOLoginApi
 import com.wire.kalium.network.api.user.login.SSOSettingsResponse
 
@@ -17,7 +19,7 @@ interface SSOLoginRepository {
 
     suspend fun finalize(cookie: String): Either<NetworkFailure, String>
 
-    suspend fun provideLoginSession(cookie: String): Either<NetworkFailure, SessionDTO>
+    suspend fun provideLoginSession(cookie: String): Either<NetworkFailure, AuthenticationResultDTO>
 
     suspend fun metaData(): Either<NetworkFailure, String>
 
@@ -40,7 +42,7 @@ class SSOLoginRepositoryImpl(private val ssoLoginApi: SSOLoginApi) : SSOLoginRep
         ssoLoginApi.finalize(cookie)
     }
 
-    override suspend fun provideLoginSession(cookie: String): Either<NetworkFailure, SessionDTO> = wrapApiRequest {
+    override suspend fun provideLoginSession(cookie: String): Either<NetworkFailure, AuthenticationResultDTO> = wrapApiRequest {
         ssoLoginApi.provideLoginSession(cookie)
     }
 

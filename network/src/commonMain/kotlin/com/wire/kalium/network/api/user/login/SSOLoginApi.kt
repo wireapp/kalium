@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.user.login
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.AuthenticationResultDTO
 import com.wire.kalium.network.api.RefreshTokenProperties
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
@@ -33,7 +34,7 @@ interface SSOLoginApi {
 
     suspend fun finalize(cookie: String): NetworkResponse<String>
 
-    suspend fun provideLoginSession(cookie: String): NetworkResponse<SessionDTO>
+    suspend fun provideLoginSession(cookie: String): NetworkResponse<AuthenticationResultDTO>
 
     // TODO(web): ask about the response model since it's xml in swagger with no model
     suspend fun metaData(): NetworkResponse<String>
@@ -68,27 +69,26 @@ class SSOLoginApiImpl internal constructor(
         }
     }
 
-    override suspend fun provideLoginSession(cookie: String): NetworkResponse<SessionDTO> = wrapKaliumResponse<AccessTokenDTO> {
-        httpClient.post(PATH_ACCESS) {
-            header(HttpHeaders.Cookie, cookie)
-        }
-    }.flatMap { accessTokenDTOResponse ->
-        with(accessTokenDTOResponse) {
-            NetworkResponse.Success(cookie, headers, httpCode)
-        }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
-    }.flatMap { tokensPairResponse ->
-        // this is a hack to get the user QualifiedUserId on login
-        // TODO(optimization): remove this one when login endpoint return a QualifiedUserId
-        wrapKaliumResponse<UserDTO> {
-            httpClient.get(PATH_SELF) {
-                bearerAuth(tokensPairResponse.value.first.value)
+    override suspend fun provideLoginSession(cookie: String): NetworkResponse<AuthenticationResultDTO> =
+        wrapKaliumResponse<AccessTokenDTO> {
+            httpClient.post(PATH_ACCESS) {
+                header(HttpHeaders.Cookie, cookie)
             }
-        }.mapSuccess {
-            with(tokensPairResponse.value) {
-                first.toSessionDto(second, it.id)
+        }.flatMap { accessTokenDTOResponse ->
+            with(accessTokenDTOResponse) {
+                NetworkResponse.Success(cookie, headers, httpCode)
+            }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
+        }.flatMap { tokensPairResponse ->
+            wrapKaliumResponse<UserDTO> {
+                httpClient.get(PATH_SELF) {
+                    bearerAuth(tokensPairResponse.value.first.value)
+                }
+            }.mapSuccess { userIdDTO ->
+                with(tokensPairResponse.value) {
+                    AuthenticationResultDTO(first.toSessionDto(second, userIdDTO.id), userIdDTO)
+                }
             }
         }
-    }
 
     override suspend fun metaData(): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.get("$PATH_SSO/$PATH_METADATA")
@@ -97,7 +97,6 @@ class SSOLoginApiImpl internal constructor(
     override suspend fun settings(): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
         httpClient.get("$PATH_SSO/$PATH_SETTINGS")
     }
-
 
     private companion object {
         const val PATH_SSO = "sso"
