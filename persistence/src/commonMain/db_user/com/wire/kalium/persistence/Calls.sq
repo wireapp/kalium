@@ -33,13 +33,13 @@ updateLastCallStatusByConversationId:
 UPDATE Call
 SET status = ?
 WHERE
-    conversation_id = ?
-    AND id IN (
+    id IN (
         SELECT id
         FROM Call
         WHERE
             status != 'CLOSED'
             AND status != 'MISSED'
+            AND conversation_id = ?
         ORDER BY created_at DESC
         LIMIT 1
     );

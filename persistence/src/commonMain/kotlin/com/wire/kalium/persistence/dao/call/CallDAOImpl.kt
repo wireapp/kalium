@@ -5,6 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOne
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.CallsQueries
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -92,4 +93,12 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
             .asFlow()
             .mapToOneOrNull()
             .map { it?.created_at }
+
+    override suspend fun getLastCallConversationTypeByConversationId(conversationId: QualifiedIDEntity): ConversationEntity.Type? =
+        callsQueries.selectLastCallByConversationId(conversationId)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { call ->
+                call?.conversation_type
+            }.firstOrNull()
 }

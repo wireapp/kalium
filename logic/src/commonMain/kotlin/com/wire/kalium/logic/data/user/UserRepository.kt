@@ -19,6 +19,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.UserSsoIdDTO
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.ChangeHandleRequest
 import com.wire.kalium.network.api.user.self.SelfApi
@@ -119,21 +120,42 @@ internal class UserDataSource(
         }.flatMap {
             wrapStorageRequest {
                 val selfUser = getSelfUser()
-                userDAO.upsertUsers(
-                    it.map { userProfileDTO ->
+                val selfUserTeamId = selfUser?.teamId?.value
+                val teamMembers = it.filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+                val otherUsers = it.filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+                userDAO.upsertTeamMembers(
+                    teamMembers.map { userProfileDTO ->
                         userMapper.fromApiModelWithUserTypeEntityToDaoModel(
                             userProfileDTO = userProfileDTO,
-                            userTypeEntity = userTypeEntityMapper.fromOtherUserTeamAndDomain(
+                            null
+                        )
+                    }
+                )
+
+                userDAO.upsertUsers(
+                    otherUsers.map { userProfileDTO ->
+                        userMapper.fromApiModelWithUserTypeEntityToDaoModel(
+                            userProfileDTO = userProfileDTO,
+                            userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
                                 selfUserTeamId = selfUser?.teamId?.value,
                                 otherUserTeamId = userProfileDTO.teamId,
-                                selfUserDomain = selfUser?.id?.domain
+                                selfUserDomain = selfUser?.id?.domain,
+                                isService = userProfileDTO.service != null
                             )
                         )
                     }
                 )
             }
         }
+
+    private fun isTeamMember(
+        selfUserTeamId: String?,
+        userProfileDTO: UserProfileDTO,
+        selfUser: SelfUser?
+    ) = (selfUserTeamId != null &&
+            userProfileDTO.teamId == selfUserTeamId &&
+            userProfileDTO.id.domain == selfUser?.id?.domain)
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map(idMapper::toDaoModel)
@@ -208,11 +230,12 @@ internal class UserDataSource(
             val selfUser = getSelfUser()
             publicUserMapper.fromUserDetailResponseWithUsertype(
                 userDetailResponse = userProfile,
-                userType = userTypeMapper.fromOtherUserTeamAndDomain(
+                userType = userTypeMapper.fromTeamAndDomain(
                     otherUserDomain = userProfile.id.domain,
                     selfUserTeamId = selfUser?.teamId?.value,
                     otherUserTeamId = userProfile.teamId,
-                    selfUserDomain = selfUser?.id?.domain
+                    selfUserDomain = selfUser?.id?.domain,
+                    isService = userProfile.service != null
                 )
             )
         }

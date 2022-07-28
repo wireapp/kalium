@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.call
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -48,6 +49,7 @@ interface CallRepository {
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
+    suspend fun getLastCallConversationTypeByConversationId(conversationId: ConversationId): Conversation.Type
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -147,6 +149,8 @@ internal class CallDataSource(
             CallEntity.Status.STILL_ONGOING
         )
 
+        callingLogger.i("[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] | ConversationId: [$conversationId] " +
+                "| status: [$status]")
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
             updateCallMetadata(
                 conversationId = conversationId,
@@ -154,6 +158,7 @@ internal class CallDataSource(
             )
             val callNewStatus = if (isGroupCall) CallStatus.STILL_ONGOING else CallStatus.CLOSED
             if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
+                callingLogger.i("[CallRepository][createCall] -> Update.1 | callNewStatus: [$callNewStatus]")
                 // Update database
                 updateCallStatusById(
                     conversationId = conversationId.toString(),
@@ -162,13 +167,17 @@ internal class CallDataSource(
             }
 
             if ((lastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
+                callingLogger.i("[CallRepository][createCall] -> Update.2 | lastCallStatus: [$lastCallStatus] " +
+                        "| isGroupCall: [$isGroupCall] | isOneOnOneCall: [$isOneOnOneCall]")
                 // Save into database
                 wrapStorageRequest {
                     callDAO.insertCall(call = callEntity)
                 }
             }
         } else {
+            callingLogger.i("[CallRepository][createCall] -> else | lastCallStatus: [$lastCallStatus] | status: [$status]")
             if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
+                callingLogger.i("[CallRepository][createCall] -> Insert Call")
                 // Save into database
                 wrapStorageRequest {
                     callDAO.insertCall(call = callEntity)
@@ -200,6 +209,17 @@ internal class CallDataSource(
     override suspend fun updateCallStatusById(conversationId: String, status: CallStatus) {
         val callMetadataProfile = _callMetadataProfile.value
         val modifiedConversationId = conversationId.toConversationId()
+
+        // Update Call in Database
+        wrapStorageRequest {
+            callDAO.updateLastCallStatusByConversationId(
+                status = callMapper.toCallEntityStatus(callStatus = status),
+                conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
+            )
+            callingLogger.i("[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationId] " +
+                    "| status: [$status]")
+        }
+
         callMetadataProfile.data[modifiedConversationId.toString()]?.let { call ->
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                 val establishedTime =
@@ -209,16 +229,9 @@ internal class CallDataSource(
                 // Update Metadata
                 this[modifiedConversationId.toString()] = call.copy(establishedTime = establishedTime)
 
-                // Update Call in Database
-                wrapStorageRequest {
-                    callDAO.updateLastCallStatusByConversationId(
-                        status = callMapper.toCallEntityStatus(callStatus = status),
-                        conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
-                    )
-                }
-
                 // Persist Missed Call Message if necessary
                 if ((status == CallStatus.CLOSED && establishedTime == null) || status == CallStatus.MISSED) {
+                    callingLogger.i("[CallRepository][UpdateCallStatusById] -> Persist Missed Call Message")
                     persistMissedCallMessageIfNeeded(conversationId = modifiedConversationId)
                 }
             }
@@ -308,6 +321,15 @@ internal class CallDataSource(
                 conversationId = conversationId
             )
         )
+
+    override suspend fun getLastCallConversationTypeByConversationId(conversationId: ConversationId): Conversation.Type =
+        callDAO.getLastCallConversationTypeByConversationId(
+            conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
+                conversationId = conversationId
+            )
+        )?.let {
+            callMapper.toConversationType(conversationType = it)
+        } ?: Conversation.Type.ONE_ON_ONE
 
     private suspend fun persistMissedCallMessageIfNeeded(
         conversationId: ConversationId

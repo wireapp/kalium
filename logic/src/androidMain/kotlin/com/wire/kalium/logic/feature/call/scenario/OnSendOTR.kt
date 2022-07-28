@@ -36,12 +36,13 @@ class OnSendOTR(
         isTransient: Boolean,
         arg: Pointer?
     ): Int {
-        callingLogger.i("OnSendOTR: conversationId = $conversationId")
+        callingLogger.i("[OnSendOTR] -> ConversationId: $conversationId")
         return if (selfUserId != userIdSelf && selfClientId != clientIdSelf) {
-            callingLogger.i("OnSendOTR -> sendHandler error called")
+            callingLogger.i("[OnSendOTR] -> selfUserId: $selfUserId != userIdSelf: $userIdSelf")
+            callingLogger.i("[OnSendOTR] -> selfClientId: $selfClientId != clientIdSelf: $clientIdSelf")
             AvsCallBackError.INVALID_ARGUMENT.value
         } else {
-            callingLogger.i("OnSendOTR -> sendHandler success called")
+            callingLogger.i("[OnSendOTR] -> Success")
             OnHttpRequest(handle, calling, messageSender, callingScope).sendHandlerSuccess(
                 context = context,
                 messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),

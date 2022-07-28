@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
@@ -51,14 +52,16 @@ interface UserMapper {
     fun fromTeamMemberToDaoModel(
         teamId: TeamId,
         teamMemberDTO: TeamsApi.TeamMemberDTO,
-        userDomain: String
+        userDomain: String,
+        permissionsCode: Int?,
     ): UserEntity
 }
 
 internal class UserMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
-    private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
+    private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
+    private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : UserMapper {
 
     override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
@@ -98,7 +101,7 @@ internal class UserMapperImpl(
                 idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
             },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = userTypeEntity ?: UserTypeEntity.INTERNAL
+            userType = userTypeEntity ?: UserTypeEntity.INTERNAL
         )
     }
 
@@ -154,7 +157,7 @@ internal class UserMapperImpl(
             completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
                 ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = UserTypeEntity.INTERNAL
+            userType = UserTypeEntity.INTERNAL
         )
     }
 
@@ -170,7 +173,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = UserTypeEntity.INTERNAL
+            userType = UserTypeEntity.INTERNAL
         )
     }
 
@@ -182,7 +185,8 @@ internal class UserMapperImpl(
     override fun fromTeamMemberToDaoModel(
         teamId: TeamId,
         teamMemberDTO: TeamsApi.TeamMemberDTO,
-        userDomain: String
+        userDomain: String,
+        permissionsCode: Int?,
     ): UserEntity =
         UserEntity(
             id = QualifiedIDEntity(
@@ -199,6 +203,6 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = UserTypeEntity.INTERNAL
+            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode)
         )
 }
