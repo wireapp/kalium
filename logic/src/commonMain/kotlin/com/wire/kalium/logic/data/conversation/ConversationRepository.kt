@@ -251,11 +251,11 @@ class ConversationDataSource(
 
     private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> =
         when (conversation.type) {
-        Conversation.Type.SELF -> flowOf(Either.Right(ConversationDetails.Self(conversation)))
-        // TODO(user-metadata): get actual legal hold status
-        Conversation.Type.GROUP -> flowOf(Either.Right(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED)))
-        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
-    }
+            Conversation.Type.SELF -> flowOf(Either.Right(ConversationDetails.Self(conversation)))
+            // TODO(user-metadata): get actual legal hold status
+            Conversation.Type.GROUP -> flowOf(Either.Right(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED)))
+            Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
+        }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
@@ -269,7 +269,7 @@ class ConversationDataSource(
                 },
                 { otherUserId ->
                     flowOf(otherUserId)
-                        .flatMapLatest { if(it != null) userRepository.getKnownUser(it) else flowOf(it) }
+                        .flatMapLatest { if (it != null) userRepository.getKnownUser(it) else flowOf(it) }
                         .wrapStorageRequest()
                         .map { it.map { conversationMapper.toConversationDetailsOneToOne(conversation, it, selfUser) } }
                 }

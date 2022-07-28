@@ -333,7 +333,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .then {
-                if(it == successConversation.id) flowOf(Either.Right(successConversationDetails))
+                if (it == successConversation.id) flowOf(Either.Right(successConversationDetails))
                 else flowOf(Either.Left(StorageFailure.DataNotFound))
             }
 
