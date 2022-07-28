@@ -212,7 +212,7 @@ actual class CallManagerImpl(
 
         callingLogger.d("[$TAG][endCall] -> ConversationType: [$conversationType]")
         callRepository.updateCallStatusById(
-            conversationId = conversationId.toString(),
+            conversationIdString = conversationId.toString(),
             status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
         )
 
@@ -229,7 +229,7 @@ actual class CallManagerImpl(
 
         callingLogger.d("[$TAG][rejectCall] -> ConversationType: [$conversationType]")
         callRepository.updateCallStatusById(
-            conversationId = conversationId.toString(),
+            conversationIdString = conversationId.toString(),
             status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
         )
 

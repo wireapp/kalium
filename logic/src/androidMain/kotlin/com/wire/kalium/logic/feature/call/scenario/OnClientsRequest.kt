@@ -27,7 +27,7 @@ internal class OnClientsRequest(
 
     override fun onClientsRequest(inst: Handle, conversationIdString: String, arg: Pointer?) {
         callingScope.launch {
-            callingLogger.d("[OnClientsRequest] -> ConversationId: $conversationId")
+            callingLogger.d("[OnClientsRequest] -> ConversationId: $conversationIdString")
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
             val conversationRecipients = conversationRepository.getConversationRecipients(
                 conversationId = conversationIdWithDomain

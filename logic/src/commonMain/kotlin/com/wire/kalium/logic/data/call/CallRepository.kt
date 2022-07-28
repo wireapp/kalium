@@ -218,7 +218,7 @@ internal class CallDataSource(
                 status = callMapper.toCallEntityStatus(callStatus = status),
                 conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
             )
-            callingLogger.i("[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationId] " +
+            callingLogger.i("[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationIdString] " +
                     "| status: [$status]")
         }
 
