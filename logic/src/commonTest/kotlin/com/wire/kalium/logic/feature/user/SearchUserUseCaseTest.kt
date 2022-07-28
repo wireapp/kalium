@@ -4,11 +4,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
-<<<<<<< HEAD
-=======
 import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.user.UserId
->>>>>>> develop
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
@@ -16,10 +13,6 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-<<<<<<< HEAD
-import com.wire.kalium.logic.data.user.UserId
-=======
->>>>>>> develop
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.publicuser.search.Result
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
@@ -34,10 +27,7 @@ import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
-<<<<<<< HEAD
-=======
 import io.mockative.verify
->>>>>>> develop
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -163,7 +153,8 @@ class SearchUserUseCaseTest {
                     "someValue",
                     "someDomain"
                 )
-            )
+            ),
+            selfUserIncluded = false
         )
 
         given(searchUserRepository)
