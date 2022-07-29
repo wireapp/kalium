@@ -53,7 +53,6 @@ class AssetApiImpl internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-
     override suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<ByteArray> = wrapKaliumResponse {
         httpClient.get(buildAssetsPath(assetId)) {
             assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
