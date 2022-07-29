@@ -126,7 +126,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         conversationId: ConversationId,
         userId: UserId,
         conversationMemberRoleDTO: ConversationMemberRoleDTO
-        ): NetworkResponse<Unit> = wrapKaliumResponse {
+    ): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.put(
             "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
         ) {

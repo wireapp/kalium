@@ -168,7 +168,7 @@ class ConversationApiTest : ApiTest {
 
     @Test
     fun whenUpdatingMemberRole_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
-        val conversationId =  ConversationId("conversationId", "conversationDomain")
+        val conversationId = ConversationId("conversationId", "conversationDomain")
         val userId = UserId("userId", "userDomain")
         val memberRole = ConversationMemberRoleDTO("conversation_role")
         val networkClient = mockAuthenticatedNetworkClient(

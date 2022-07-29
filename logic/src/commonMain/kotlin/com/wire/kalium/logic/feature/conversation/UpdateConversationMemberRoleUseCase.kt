@@ -21,7 +21,7 @@ interface UpdateConversationMemberRoleUseCase {
 
 internal class UpdateConversationMemberRoleUseCaseImpl(
     private val conversationRepository: ConversationRepository
-): UpdateConversationMemberRoleUseCase {
+) : UpdateConversationMemberRoleUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, userId: UserId, role: Member.Role): UpdateConversationMemberRoleResult =
         conversationRepository.updateConversationMemberRole(conversationId, userId, role)
