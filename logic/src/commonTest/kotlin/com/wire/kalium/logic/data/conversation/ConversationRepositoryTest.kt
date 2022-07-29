@@ -115,7 +115,7 @@ class ConversationRepositoryTest {
             "time",
             CONVERSATION_RESPONSE.copy(groupId = groupId, protocol = ConvProtocol.MLS)
         )
-        val protocolInfo = ConversationEntity.ProtocolInfo.MLS(groupId, ConversationEntity.GroupState.ESTABLISHED)
+        val protocolInfo = ConversationEntity.ProtocolInfo.MLS(groupId, ConversationEntity.GroupState.ESTABLISHED, 0UL)
 
         given(userRepository)
             .suspendFunction(userRepository::observeSelfUser)
@@ -751,6 +751,7 @@ class ConversationRepositoryTest {
             GROUP_NAME,
             TestConversation.NETWORK_ID,
             null,
+            0UL,
             ConversationResponse.Type.GROUP,
             0,
             null,

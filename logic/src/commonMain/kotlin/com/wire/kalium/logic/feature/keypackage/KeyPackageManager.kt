@@ -44,7 +44,7 @@ internal class KeyPackageManagerImpl(
 
     init {
         refillKeyPackageJob = refillKeyPackagesScope.launch {
-            syncRepository.syncStateState.collect { syncState ->
+            syncRepository.syncState.collect { syncState ->
                 ensureActive()
                 if (syncState == SyncState.Live) {
                     refillKeyPackagesIfNeeded()

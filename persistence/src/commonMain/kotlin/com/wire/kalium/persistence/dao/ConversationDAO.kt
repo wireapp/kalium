@@ -21,7 +21,7 @@ data class ConversationEntity(
 
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 
-    enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
     enum class Protocol { PROTEUS, MLS }
 
@@ -29,7 +29,7 @@ data class ConversationEntity(
 
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
-        data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo()
+        data class MLS(val groupId: String, val groupState: GroupState, val epoch: ULong) : ProtocolInfo()
     }
 }
 
@@ -60,6 +60,7 @@ interface ConversationDAO {
     suspend fun getAllConversationWithOtherUser(userId: UserIDEntity): List<ConversationEntity>
     suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
+    suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
     suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
