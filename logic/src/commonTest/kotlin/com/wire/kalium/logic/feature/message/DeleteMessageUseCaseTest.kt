@@ -185,7 +185,6 @@ class DeleteMessageUseCaseTest {
 
     }
 
-
     @Test
     fun givenAMessage_whenDeleting_thenStartSyncIsInvoked() = runTest {
         // when
