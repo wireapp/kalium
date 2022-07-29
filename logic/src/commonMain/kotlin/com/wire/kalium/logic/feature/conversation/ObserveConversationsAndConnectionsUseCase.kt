@@ -23,7 +23,10 @@ internal class ObserveConversationsAndConnectionsUseCaseImpl(
     override suspend fun invoke(): Flow<List<ConversationDetails>> {
         syncManager.startSyncIfIdle()
         return combine(observeConversationListDetailsUseCase(), observeConnectionListUseCase()) { conversations, connections ->
-            (conversations + connections).sortedByDescending { it.conversation.lastModifiedDate }
+            (conversations + connections).sortedWith(
+                compareByDescending<ConversationDetails> { it.conversation.lastModifiedDate }
+                    .thenBy(nullsLast()) { it.conversation.name?.lowercase() }
+            )
         }.distinctUntilChanged()
     }
 }

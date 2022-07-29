@@ -372,8 +372,9 @@ class SearchUserRepositoryTest {
                 searchQuery = "someQuery",
                 searchUsersOptions = SearchUsersOptions(
                     conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
-                        ConversationId("someValue", "someDomain")
-                    )
+                        ConversationId("someValue", "someDomain"),
+                    ),
+                    selfUserIncluded = true
                 )
             )
 
@@ -407,7 +408,8 @@ class SearchUserRepositoryTest {
             searchUsersOptions = SearchUsersOptions(
                 conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
                     ConversationId("someValue", "someDomain")
-                )
+                ),
+                selfUserIncluded = true
             )
         )
 
