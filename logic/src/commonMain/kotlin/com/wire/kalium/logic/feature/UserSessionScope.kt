@@ -179,8 +179,7 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            assetRepository
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
     private val teamRepository: TeamRepository
