@@ -31,7 +31,9 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -69,6 +71,7 @@ interface UserRepository {
 class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
+    private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val clientApi: ClientApi,
     private val userDetailsApi: UserDetailsApi,
@@ -268,11 +271,10 @@ class UserDataSource(
 
     override suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>> =
         getUsersFromTeam(teamId)
-            .map { users -> users.map { idMapper.toApiModel(it.id) } }
-            .flatMap {
-                wrapApiRequest { clientApi.listClientsOfUsers(it) }
-                    .map(memberMapper::fromMapOfClientsResponseToRecipients)
+            .map { users ->
+                users.associate { user -> user.id to clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(user.id)) }
             }
+            .map(memberMapper::fromMapOfClientsToRecipients)
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
