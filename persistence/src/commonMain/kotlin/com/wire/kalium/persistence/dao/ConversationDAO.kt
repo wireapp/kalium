@@ -91,4 +91,5 @@ interface ConversationDAO {
     )
     suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
     suspend fun getUnreadConversationCount(): Long
+
 }

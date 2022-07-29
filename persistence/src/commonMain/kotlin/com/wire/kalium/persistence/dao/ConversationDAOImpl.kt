@@ -92,8 +92,8 @@ class ConversationDAOImpl(
                 mutedTime,
                 lastModifiedDate,
                 lastNotificationDate,
-                access.toList(),
-                accessRole?.toList(),
+                access,
+                accessRole,
                 lastReadDate
             )
         }

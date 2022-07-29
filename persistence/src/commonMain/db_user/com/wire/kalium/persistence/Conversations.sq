@@ -28,7 +28,7 @@ DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
 INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -97,7 +97,6 @@ SELECT COUNT() FROM Message AS message WHERE DateTime(message.date) > (SELECT Da
 
 getUnreadConversationCount:
 SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date);
-
 
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;

@@ -97,7 +97,6 @@ interface ConversationRepository {
         access: List<Conversation.Access>,
         accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit>
-
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -444,15 +443,6 @@ class ConversationDataSource(
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationModifiedDate(idMapper.toDaoModel(qualifiedID), date) }
 
-    /**
-     * Update the conversation seen date, which is a date when the user sees the content of the conversation.
-     */
-    override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
-        wrapStorageRequest { conversationDAO.updateConversationReadDate(idMapper.toDaoModel(qualifiedID), date) }
-
-    override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
-        wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
-
     override suspend fun updateAccessInfo(
         conversationID: ConversationId,
         access: List<Conversation.Access>,
@@ -483,6 +473,15 @@ class ConversationDataSource(
                 }
             }
         }
+
+    /**
+     * Update the conversation seen date, which is a date when the user sees the content of the conversation.
+     */
+    override suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+        wrapStorageRequest { conversationDAO.updateConversationReadDate(idMapper.toDaoModel(qualifiedID), date) }
+
+    override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
+        wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
 
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

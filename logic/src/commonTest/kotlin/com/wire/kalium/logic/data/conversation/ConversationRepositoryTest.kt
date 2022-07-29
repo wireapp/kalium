@@ -653,6 +653,127 @@ class ConversationRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Suppress("LongMethod")
+    @Test
+    fun givenUpdateAccessRoleSuccess_whenUpdatingConversationAccessInfo_thenTheNewAccessSettingsAreUpdatedLocally() = runTest {
+
+        val conversationIdDTO = ConversationIdDTO("conv_id", "conv_domain")
+        val newAccessIndoDTO = ConversationAccessInfoDTO(
+            accessRole = setOf(
+                ConversationAccessRoleDTO.TEAM_MEMBER,
+                ConversationAccessRoleDTO.NON_TEAM_MEMBER,
+                ConversationAccessRoleDTO.SERVICE,
+                ConversationAccessRoleDTO.GUEST,
+            ),
+            access = setOf(
+                ConversationAccessDTO.INVITE,
+                ConversationAccessDTO.CODE,
+                ConversationAccessDTO.PRIVATE,
+                ConversationAccessDTO.LINK
+            )
+        )
+        val newAccess = UpdateConversationAccessResponse.AccessUpdated(
+            EventContentDTO.Conversation.AccessUpdate(
+                conversationIdDTO,
+                data = newAccessIndoDTO,
+                qualifiedFrom = com.wire.kalium.network.api.UserId("from_id", "from_domain")
+            )
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withApiUpdateAccessRoleReturns(NetworkResponse.Success(newAccess, mapOf(), 200))
+            .withDaoUpdateAccessSuccess()
+            .arrange()
+
+        conversationRepository.updateAccessInfo(
+            conversationID = ConversationId(conversationIdDTO.value, conversationIdDTO.domain),
+            access = listOf(
+                Conversation.Access.INVITE,
+                Conversation.Access.CODE,
+                Conversation.Access.PRIVATE,
+                Conversation.Access.LINK
+            ),
+            accessRole = listOf(
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.NON_TEAM_MEMBER,
+                Conversation.AccessRole.SERVICE,
+                Conversation.AccessRole.GUEST
+            )
+        ).shouldSucceed()
+
+        with(arrange) {
+            verify(conversationApi)
+                .coroutine { conversationApi.updateAccessRole(conversationIdDTO, newAccessIndoDTO) }
+                .wasInvoked(exactly = once)
+
+            verify(conversationDAO)
+                .coroutine {
+                    conversationDAO.updateAccess(
+                        ConversationIDEntity(conversationIdDTO.value, conversationIdDTO.domain),
+                        accessList = listOf(
+                            ConversationEntity.Access.INVITE,
+                            ConversationEntity.Access.CODE,
+                            ConversationEntity.Access.PRIVATE,
+                            ConversationEntity.Access.LINK
+                        ),
+                        accessRoleList = listOf(
+                            ConversationEntity.AccessRole.TEAM_MEMBER,
+                            ConversationEntity.AccessRole.NON_TEAM_MEMBER,
+                            ConversationEntity.AccessRole.SERVICE,
+                            ConversationEntity.AccessRole.GUEST
+                        )
+                    )
+                }
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    private class Arrangement {
+        @Mock
+        val userRepository: UserRepository = mock(UserRepository::class)
+
+        @Mock
+        val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
+
+        @Mock
+        val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
+
+        @Mock
+        val conversationApi: ConversationApi = mock(ConversationApi::class)
+
+        @Mock
+        val clientApi: ClientApi = mock(ClientApi::class)
+
+        @Mock
+        val timeParser : TimeParser = mock(TimeParser::class)
+
+        val conversationRepository =
+            ConversationDataSource(userRepository, mlsConversationRepository, conversationDAO, conversationApi, clientApi, timeParser)
+
+        fun withApiUpdateAccessRoleReturns(response: NetworkResponse<UpdateConversationAccessResponse>) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateAccessRole)
+                .whenInvokedWith(any(), any())
+                .thenReturn(response)
+        }
+
+        fun withDaoUpdateAccessSuccess() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateAccess)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(Unit)
+        }
+
+        fun withDaoUpdateAccessThrows(exception: Exception) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateAccess)
+                .whenInvokedWith(any(), any(), any())
+                .thenThrow(exception)
+        }
+
+        fun arrange() = this to conversationRepository
+    }
+
     @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() =
         runTest {
@@ -862,124 +983,6 @@ class ConversationRepositoryTest {
             .with(anything(), anything())
             .wasInvoked()
         assertIs<Either.Left<StorageFailure>>(result)
-    }
-
-    @Suppress("LongMethod")
-    @Test
-    fun givenUpdateAccessRoleSuccess_whenUpdatingConversationAccessInfo_thenTheNewAccessSettingsAreUpdatedLocally() = runTest {
-
-        val conversationIdDTO = ConversationIdDTO("conv_id", "conv_domain")
-        val newAccessIndoDTO = ConversationAccessInfoDTO(
-            accessRole = setOf(
-                ConversationAccessRoleDTO.TEAM_MEMBER,
-                ConversationAccessRoleDTO.NON_TEAM_MEMBER,
-                ConversationAccessRoleDTO.SERVICE,
-                ConversationAccessRoleDTO.GUEST,
-            ),
-            access = setOf(
-                ConversationAccessDTO.INVITE,
-                ConversationAccessDTO.CODE,
-                ConversationAccessDTO.PRIVATE,
-                ConversationAccessDTO.LINK
-            )
-        )
-        val newAccess = UpdateConversationAccessResponse.AccessUpdated(
-            EventContentDTO.Conversation.AccessUpdate(
-                conversationIdDTO,
-                data = newAccessIndoDTO,
-                qualifiedFrom = com.wire.kalium.network.api.UserId("from_id", "from_domain")
-            )
-        )
-
-        val (arrange, conversationRepository) = Arrangement()
-            .withApiUpdateAccessRoleReturns(NetworkResponse.Success(newAccess, mapOf(), 200))
-            .withDaoUpdateAccessSuccess()
-            .arrange()
-
-        conversationRepository.updateAccessInfo(
-            conversationID = ConversationId(conversationIdDTO.value, conversationIdDTO.domain),
-            access = listOf(
-                Conversation.Access.INVITE,
-                Conversation.Access.CODE,
-                Conversation.Access.PRIVATE,
-                Conversation.Access.LINK
-            ),
-            accessRole = listOf(
-                Conversation.AccessRole.TEAM_MEMBER,
-                Conversation.AccessRole.NON_TEAM_MEMBER,
-                Conversation.AccessRole.SERVICE,
-                Conversation.AccessRole.GUEST
-            )
-        ).shouldSucceed()
-
-        with(arrange) {
-            verify(conversationApi)
-                .coroutine { conversationApi.updateAccessRole(conversationIdDTO, newAccessIndoDTO) }
-                .wasInvoked(exactly = once)
-
-            verify(conversationDAO)
-                .coroutine {
-                    conversationDAO.updateAccess(
-                        ConversationIDEntity(conversationIdDTO.value, conversationIdDTO.domain),
-                        accessList = listOf(
-                            ConversationEntity.Access.INVITE,
-                            ConversationEntity.Access.CODE,
-                            ConversationEntity.Access.PRIVATE,
-                            ConversationEntity.Access.LINK
-                        ),
-                        accessRoleList = listOf(
-                            ConversationEntity.AccessRole.TEAM_MEMBER,
-                            ConversationEntity.AccessRole.NON_TEAM_MEMBER,
-                            ConversationEntity.AccessRole.SERVICE,
-                            ConversationEntity.AccessRole.GUEST
-                        )
-                    )
-                }
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    private class Arrangement {
-        @Mock
-        val userRepository: UserRepository = mock(UserRepository::class)
-
-        @Mock
-        val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
-        val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
-
-        @Mock
-        val conversationApi: ConversationApi = mock(ConversationApi::class)
-
-        @Mock
-        val clientApi: ClientApi = mock(ClientApi::class)
-
-        val conversationRepository =
-            ConversationDataSource(userRepository, mlsConversationRepository, conversationDAO, conversationApi, clientApi)
-
-        fun withApiUpdateAccessRoleReturns(response: NetworkResponse<UpdateConversationAccessResponse>) = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::updateAccessRole)
-                .whenInvokedWith(any(), any())
-                .thenReturn(response)
-        }
-
-        fun withDaoUpdateAccessSuccess() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateAccess)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Unit)
-        }
-
-        fun withDaoUpdateAccessThrows(exception: Exception) = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateAccess)
-                .whenInvokedWith(any(), any(), any())
-                .thenThrow(exception)
-        }
-
-        fun arrange() = this to conversationRepository
     }
 
     companion object {

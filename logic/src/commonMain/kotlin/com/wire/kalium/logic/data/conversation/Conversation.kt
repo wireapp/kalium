@@ -48,7 +48,8 @@ data class Conversation(
         TEAM_MEMBER,
         NON_TEAM_MEMBER,
         GUEST,
-        SERVICE;
+        SERVICE,
+        EXTERNAL;
     }
 
     enum class Access {
@@ -60,7 +61,6 @@ data class Conversation(
 
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
-}
 
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
@@ -105,7 +105,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             name = otherUser?.name,
             type = Conversation.Type.CONNECTION_PENDING,
             teamId = otherUser?.teamId,
-            protocolInfo,
+            protocol = protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastReadDate = null,
             lastNotificationDate = null,

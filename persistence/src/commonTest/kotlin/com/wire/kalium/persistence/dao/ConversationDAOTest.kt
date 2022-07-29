@@ -319,6 +319,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
 
     }
+
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
         // given
