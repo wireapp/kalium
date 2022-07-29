@@ -55,30 +55,29 @@ class DeleteMessageUseCase(
             )
             messageSender.sendMessage(message)
         }
-            .onSuccess {
-                messageRepository.getMessageById(conversationId, messageId)
-                    .onSuccess { message ->
-                        val assetToRemove = when (message.content) {
-                            is MessageContent.Asset -> (message.content as MessageContent.Asset).value.remoteData
-                            else -> null
-                        }
-                        if (assetToRemove != null) {
-                            assetRepository.deleteAsset(
-                                AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
-                                assetToRemove.assetToken
-                            )
-                                .onFailure {
-                                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
-                                }
-                        }
-                    }
-            }
+            .onSuccess { removeMessageAsset(conversationId, messageId) }
             .flatMap { messageRepository.markMessageAsDeleted(messageId, conversationId) }
             .onFailure {
                 kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $it")
                 if (it is CoreFailure.Unknown) {
                     it.rootCause?.printStackTrace()
                 }
+            }
+    }
+
+    private suspend fun removeMessageAsset(conversationId: ConversationId, messageId: String) {
+        messageRepository.getMessageById(conversationId, messageId)
+            .onSuccess { message ->
+                (if (message.content is MessageContent.Asset)
+                    (message.content as MessageContent.Asset).value.remoteData else null)
+                    ?.let { assetToRemove ->
+                        assetRepository.deleteAsset(
+                            AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
+                            assetToRemove.assetToken
+                        )
+                            .onFailure { kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it") }
+                    }
+
             }
     }
 }

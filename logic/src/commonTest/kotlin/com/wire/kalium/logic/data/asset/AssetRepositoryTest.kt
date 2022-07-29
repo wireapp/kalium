@@ -268,6 +268,29 @@ class AssetRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAnApiError_whenDeletingRemotelyAsset_thenDeleteAssetLocallyShouldNotBeInvoked() = runTest {
+        // Given
+        val assetKey = UserAssetId("value1", "domain1")
+
+        val (arrangement, assetRepository) = Arrangement()
+            .withErrorDeleteResponse()
+            .arrange()
+
+        // When
+        assetRepository.deleteAsset(assetKey, "asset-token")
+
+        // Then
+        verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::deleteAsset)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::deleteAsset)
+            .with(any())
+            .wasNotInvoked()
+
+    }
+
     class Arrangement {
 
         @Mock
@@ -322,7 +345,13 @@ class AssetRepositoryTest {
             given(assetApi)
                 .suspendFunction(assetApi::uploadAsset)
                 .whenInvokedWith(any(), any(), any())
-                .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(
+                            ErrorResponse(500, "error_message", "error_label")
+                        )
+                    )
+                )
             return this
         }
 
@@ -330,7 +359,13 @@ class AssetRepositoryTest {
             given(assetApi)
                 .suspendFunction(assetApi::downloadAsset)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(
+                            ErrorResponse(500, "error_message", "error_label")
+                        )
+                    )
+                )
             return this
         }
 
@@ -339,6 +374,20 @@ class AssetRepositoryTest {
                 .suspendFunction(assetDAO::getAssetByKey)
                 .whenInvokedWith(eq(assetKey.value))
                 .thenReturn(flowOf(expectedAssetEntity))
+            return this
+        }
+
+        fun withErrorDeleteResponse(): Arrangement {
+            given(assetApi)
+                .suspendFunction(assetApi::deleteAsset)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(
+                            ErrorResponse(500, "error_message", "error_label")
+                        )
+                    )
+                )
             return this
         }
 

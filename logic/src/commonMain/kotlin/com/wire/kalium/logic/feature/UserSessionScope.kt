@@ -340,6 +340,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             persistMessage,
             messageRepository,
+            assetRepository,
             conversationRepository,
             mlsConversationRepository,
             userRepository,
