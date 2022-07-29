@@ -22,7 +22,7 @@ class QualifiedIdMapperTest {
     }
 
     @Test
-    fun `Given a valid string, when mapping to qualifiedId, then creates a QualifiedId with correct values`() {
+    fun givenAValidString_whenMappingToQualifiedId_thenCreatesAQualifiedIdWithACorrectValues() {
         // Given
         val mockQualifiedIdValue = "mocked-value"
         val mockQualifiedIdDomain = "mocked.domain"
@@ -41,7 +41,7 @@ class QualifiedIdMapperTest {
     }
 
     @Test
-    fun `Given a string without domain, when mapping to qualifiedId, then returns a correct qualifiedID with a fallback domain`() {
+    fun givenAStringWithoutDomain_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() {
         // Given
         val fallbackDomain = "wire.com"
         val conversationId = "conversationId"
@@ -61,7 +61,7 @@ class QualifiedIdMapperTest {
     }
 
     @Test
-    fun `Given a valid string that starts with '@', when mapping to qualifiedId, then returns a correct qualifiedID`() {
+    fun givenAValidStringThatStartsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedID() {
         // Given
         val conversationId = "@conversationId@dom"
 
@@ -76,7 +76,7 @@ class QualifiedIdMapperTest {
     }
 
     @Test
-    fun `Given a valid string that contains '@' in the middle, when mapping to qualifiedId, then returns a correct qualifiedID`() {
+    fun givenAValidStringThatContainsAtSignInTheMiddle_whenMappingToQualifiedId_thenReturnsACorrectQualifiedID() {
         // Given
         val conversationId = "convers@ationId@dom"
 
@@ -91,7 +91,7 @@ class QualifiedIdMapperTest {
     }
 
     @Test
-    fun `Given a valid string that ends with '@', when mapping to qualifiedId, then returns a correct qualifiedID`() {
+    fun givenAValidStringThatEndsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedID() {
         // Given
         val conversationId = "conversationId@@dom"
 
