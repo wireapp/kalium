@@ -86,18 +86,10 @@ class UserDataSource(
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
-            assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
             userDAO.insertUser(userEntity)
             metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
         }
-
-    private fun getQualifiedUserAssetId(userEntity: UserEntity): List<UserAssetId?> {
-        return mutableListOf<UserAssetId?>().also {
-            it.add(userEntity.previewAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
-            it.add(userEntity.completeAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
-        }
-    }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
