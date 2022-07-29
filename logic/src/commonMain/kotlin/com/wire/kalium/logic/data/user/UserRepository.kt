@@ -57,7 +57,7 @@ interface UserRepository {
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-class UserDataSource(
+internal class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
     private val selfApi: SelfApi,
