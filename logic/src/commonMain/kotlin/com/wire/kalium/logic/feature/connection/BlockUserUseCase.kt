@@ -25,7 +25,7 @@ internal class BlockUserUseCaseImpl(
 ) : BlockUserUseCase {
 
     override suspend fun invoke(userId: UserId): BlockUserResult {
-        return connectionRepository.updateConnectionStatus(userId, ConnectionState.IGNORED) // TODO change to ConnectionState.BLOCKED
+        return connectionRepository.updateConnectionStatus(userId, ConnectionState.BLOCKED)
             .fold({
                 kaliumLogger.e("An error occurred when blocking a user $userId")
                 BlockUserResult.Failure(it)
