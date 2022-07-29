@@ -143,7 +143,8 @@ object TestConversation {
         null,
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        lastReadDate = "2022-03-30T15:36:00.000Z"
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -156,6 +157,7 @@ object TestConversation {
         null,
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        lastReadDate = "2022-03-30T15:36:00.000Z"
     )
 }

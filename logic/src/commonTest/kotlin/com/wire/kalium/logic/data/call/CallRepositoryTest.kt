@@ -227,7 +227,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED, unreadMessagesCount = 0)))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -279,7 +279,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED,unreadMessagesCount = 0)))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -386,7 +386,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED,unreadMessagesCount = 0)))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -1209,7 +1209,8 @@ class CallRepositoryTest {
             otherUser = TestUser.OTHER,
             connectionState = ConnectionState.ACCEPTED,
             legalHoldStatus = LegalHoldStatus.ENABLED,
-            userType = UserType.INTERNAL
+            userType = UserType.INTERNAL,
+            unreadMessagesCount = 0
         )
     }
 }
