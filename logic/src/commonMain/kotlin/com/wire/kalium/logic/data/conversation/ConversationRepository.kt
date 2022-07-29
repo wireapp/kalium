@@ -30,6 +30,7 @@ import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -95,6 +96,8 @@ interface ConversationRepository {
         access: List<Conversation.Access>,
         accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit>
+
+    suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -107,7 +110,8 @@ class ConversationDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper()
+    private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
+    private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -495,6 +499,29 @@ class ConversationDataSource(
                 conversationId = idMapper.toDaoModel(conversationId),
                 mutedStatus = conversationStatusMapper.toDaoModel(mutedStatus),
                 mutedStatusTimestamp = mutedStatusTimestamp
+            )
+        }
+    }
+
+    /**
+     * Updates the conversation member role, both remotely and local
+     */
+    override suspend fun updateConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId,
+        role: Member.Role
+    ): Either<CoreFailure, Unit> = wrapApiRequest {
+        conversationApi.updateConversationMemberRole(
+            conversationId = idMapper.toApiModel(conversationId),
+            userId = idMapper.toApiModel(userId),
+            conversationMemberRoleDTO = ConversationMemberRoleDTO(conversationRole = conversationRoleMapper.toApi(role))
+        )
+    }.flatMap {
+        wrapStorageRequest {
+            conversationDAO.updateConversationMemberRole(
+                conversationId = idMapper.toDaoModel(conversationId),
+                userId = idMapper.toDaoModel(userId),
+                role = conversationRoleMapper.toDAO(role)
             )
         }
     }

@@ -4,6 +4,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.pagination.PaginationRequest
@@ -119,6 +120,18 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
         }
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
+    override suspend fun updateConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId,
+        conversationMemberRoleDTO: ConversationMemberRoleDTO
+        ): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put(
+            "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
+        ) {
+            setBody(conversationMemberRoleDTO)
+        }
     }
 
     private companion object {
