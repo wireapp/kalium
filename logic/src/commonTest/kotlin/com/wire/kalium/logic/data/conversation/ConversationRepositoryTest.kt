@@ -745,7 +745,7 @@ class ConversationRepositoryTest {
         val clientApi: ClientApi = mock(ClientApi::class)
 
         @Mock
-        val timeParser : TimeParser = mock(TimeParser::class)
+        val timeParser: TimeParser = mock(TimeParser::class)
 
         val conversationRepository =
             ConversationDataSource(userRepository, mlsConversationRepository, conversationDAO, conversationApi, clientApi, timeParser)
