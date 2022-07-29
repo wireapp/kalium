@@ -8,7 +8,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 /**
- * Use Case that allows a user to ignore a connection request from given user
+ * Use Case that allows a user to block user
  */
 fun interface BlockUserUseCase {
     /**
