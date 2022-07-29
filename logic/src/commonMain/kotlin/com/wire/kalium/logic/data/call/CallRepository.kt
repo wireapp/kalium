@@ -290,9 +290,9 @@ internal class CallDataSource(
 
     override fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers) {
         val callMetadataProfile = _callMetadataProfile.value
-        val conversationIdWithDomain = conversationId.toConversationId().toString()
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
-        callMetadataProfile.data[conversationIdWithDomain]?.let { call ->
+        callMetadataProfile.data[conversationIdWithDomain.toString()]?.let { call ->
             callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.activeSpeakers.size}")
 
             val updatedParticipants = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
@@ -301,7 +301,7 @@ internal class CallDataSource(
             )
 
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationIdWithDomain] = call.copy(
+                this[conversationIdWithDomain.toString()] = call.copy(
                     participants = updatedParticipants,
                     maxParticipants = max(call.maxParticipants, updatedParticipants.size + 1)
                 )
