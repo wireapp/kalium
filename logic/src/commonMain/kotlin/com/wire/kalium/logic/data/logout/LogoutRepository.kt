@@ -33,7 +33,7 @@ internal class LogoutDataSource(
     private val logoutApi: LogoutApi,
 ) : LogoutRepository {
 
-    private val logoutEventsChannel = Channel<LogoutReason>()
+    private val logoutEventsChannel = Channel<LogoutReason>(capacity = Channel.CONFLATED)
 
     override suspend fun observeLogout(): Flow<LogoutReason> = logoutEventsChannel.consumeAsFlow()
 
