@@ -15,6 +15,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
@@ -91,6 +92,8 @@ class UserRepositoryTest {
         @Mock
         val metadataDAO = configure(mock(classOf<MetadataDAO>())) { stubsUnitByDefault = true }
         @Mock
+        val clientDAO = configure(mock(classOf<ClientDAO>())) { stubsUnitByDefault = true }
+        @Mock
         val selfApi = mock(classOf<SelfApi>())
         @Mock
         val clientApi = mock(classOf<ClientApi>())
@@ -100,7 +103,7 @@ class UserRepositoryTest {
         val assetRepository = mock(classOf<AssetRepository>())
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, selfApi, clientApi, userDetailsApi, assetRepository)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, clientApi, userDetailsApi, assetRepository)
         }
 
         init {
