@@ -59,6 +59,8 @@ fun currentUserSession(): UserSessionScope {
 }
 
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
+    userSession.syncManager.waitUntilSlowSyncCompletion()
+
     val conversations = userSession.conversations.getConversations().let {
         when (it) {
             is GetConversationsUseCase.Result.Success -> it.convFlow.first()

@@ -140,10 +140,10 @@ internal class ConnectionDataSource(
 
     /**
      * Check if we can transition to the correct connection status
-     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] or [ConnectionState.ACCEPTED]
+     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] [ConnectionState.BLOCKED] or [ConnectionState.ACCEPTED]
      */
     private fun isValidConnectionState(connectionState: ConnectionState): Boolean = when (connectionState) {
-        IGNORED, CANCELLED, ACCEPTED -> true
+        BLOCKED, IGNORED, CANCELLED, ACCEPTED -> true
         else -> false
     }
 
@@ -213,11 +213,12 @@ internal class ConnectionDataSource(
                 val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
                     userDetailResponse = userProfileDTO,
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
-                    userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
+                    userTypeEntity = userTypeEntityTypeMapper.fromTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = selfUser.teamId?.value,
                         otherUserTeamId = userProfileDTO.teamId,
-                        selfUserDomain = selfUser.id.domain
+                        selfUserDomain = selfUser.id.domain,
+                        isService = userProfileDTO.service != null
                     )
                 )
 
