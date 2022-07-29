@@ -22,7 +22,6 @@ import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -107,9 +106,9 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         fun withGetConversationByIdSuccessful() = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::observeById)
+                .suspendFunction(conversationRepository::detailsById)
                 .whenInvokedWith(anything())
-                .then { Either.Right(flowOf(MLS_CONVERSATION1)) }
+                .then { Either.Right(MLS_CONVERSATION1) }
         }
 
         fun withRequestToJoinMLSGroupSuccessful() = apply {
