@@ -75,7 +75,6 @@ interface ConversationRoleMapper {
     fun fromApiModelToDaoModel(roleDTO: String): PersistedMember.Role
 }
 
-
 internal class ConversationRoleMapperImpl : ConversationRoleMapper {
     override fun toApi(role: Member.Role): String = when (role) {
         Member.Role.Admin -> ADMIN
