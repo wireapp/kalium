@@ -11,13 +11,11 @@ import com.wire.kalium.logic.di.UserSessionScopeProvider
 import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.isLeft
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 interface LogoutUseCase {
     suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT)
-    fun deleteInvalidCurrentSession()
 }
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
@@ -34,22 +32,15 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
     override suspend operator fun invoke(reason: LogoutReason) {
-        logout(reason)
         deregisterTokenUseCase()
         logoutRepository.logout()
+        logout(reason)
         clearCrypto()
         if (isHardLogout(reason)) {
             clearUserStorage()
         }
         updateCurrentSession()
         clearInMemoryUserSession()
-    }
-
-    override fun deleteInvalidCurrentSession() {
-        sessionRepository.currentSession().map {
-            if (it.session is AuthSession.Session.Invalid)
-                sessionRepository.deleteSession(userId)
-        }
     }
 
     private fun isHardLogout(reason: LogoutReason) = when (reason) {
