@@ -1,12 +1,5 @@
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.QualifiedID
@@ -17,7 +10,6 @@ import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -101,11 +93,9 @@ class UserRepositoryTest {
         val selfApi = mock(classOf<SelfApi>())
         @Mock
         val userDetailsApi = mock(classOf<UserDetailsApi>())
-        @Mock
-        val assetRepository = mock(classOf<AssetRepository>())
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, selfApi, userDetailsApi, assetRepository)
+            UserDataSource(userDAO, metadataDAO, selfApi, userDetailsApi)
         }
 
         init {
