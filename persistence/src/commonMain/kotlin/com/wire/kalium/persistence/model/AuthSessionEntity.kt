@@ -30,10 +30,18 @@ data class ServerConfigEntity(
 }
 
 @Serializable
+data class SsoIdEntity(
+    @SerialName("scim_external_id") val scimExternalId: String?,
+    @SerialName("subject") val subject: String?,
+    @SerialName("tenant") val tenant: String?
+)
+
+@Serializable
 data class AuthSessionEntity(
     @SerialName("user_id") val userId: QualifiedIDEntity,
     @SerialName("token_type") val tokenType: String,
     @SerialName("access_token") val accessToken: String,
     @SerialName("refresh_token") val refreshToken: String,
-    @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links
+    @SerialName("wire_server") val serverLinks: ServerConfigEntity.Links,
+    @SerialName("user_sso_id") val ssoId: SsoIdEntity?
 )

@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.persistence.model.AuthSessionEntity
@@ -11,7 +12,7 @@ interface SessionMapper {
     fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Tokens
 
     fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession
-    fun toPersistenceSession(authSession: AuthSession): AuthSessionEntity
+    fun toPersistenceSession(authSession: AuthSession, ssoId: SsoId?): AuthSessionEntity
 }
 
 internal class SessionMapperImpl(
@@ -37,13 +38,14 @@ internal class SessionMapperImpl(
         serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
     )
 
-    override fun toPersistenceSession(authSession: AuthSession): AuthSessionEntity = with(authSession) {
+    override fun toPersistenceSession(authSession: AuthSession, ssoId: SsoId?): AuthSessionEntity = with(authSession) {
         AuthSessionEntity(
             userId = idMapper.toDaoModel(tokens.userId),
             accessToken = tokens.accessToken,
             refreshToken = tokens.refreshToken,
             tokenType = tokens.tokenType,
-            serverLinks = serverConfigMapper.toEntity(serverLinks)
+            serverLinks = serverConfigMapper.toEntity(serverLinks),
+            ssoId = idMapper.toSsoIdEntity(ssoId)
         )
     }
 }

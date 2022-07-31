@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.network.api.UserSsoIdDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
@@ -27,6 +28,7 @@ interface IdMapper {
     fun toQualifiedAssetId(value: String, domain: String = ""): QualifiedID
     fun toQualifiedAssetIdEntity(value: String, domain: String = ""): PersistenceQualifiedId
     fun toSsoId(userSsoIdDTO: UserSsoIdDTO?): SsoId?
+    fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
 }
 
 @Suppress("TooManyFunctions")
@@ -67,5 +69,13 @@ internal class IdMapperImpl : IdMapper {
     override fun toQualifiedAssetIdEntity(value: String, domain: String) = PersistenceQualifiedId(value, domain)
     override fun toSsoId(userSsoIdDTO: UserSsoIdDTO?): SsoId? = with(userSsoIdDTO) {
         this?.let { SsoId(scimExternalId = scimExternalId, subject = subject, tenant = tenant) }
+    }
+
+    override fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity? = ssoId?.let {
+        SsoIdEntity(
+            tenant = ssoId.tenant,
+            subject = ssoId.subject,
+            scimExternalId = ssoId.scimExternalId
+        )
     }
 }

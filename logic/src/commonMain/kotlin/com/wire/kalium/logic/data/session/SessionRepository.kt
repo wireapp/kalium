@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface SessionRepository {
-    fun storeSession(autSession: AuthSession): Either<StorageFailure, Unit>
+    fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit>
 
     // TODO(optimization): exposing all session is unnecessary since we only need the IDs
     //                     of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
@@ -25,6 +26,7 @@ interface SessionRepository {
     fun currentSession(): Either<StorageFailure, AuthSession>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>>
     fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
+    fun
 }
 
 internal class SessionDataSource(
@@ -33,8 +35,8 @@ internal class SessionDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
 
-    override fun storeSession(autSession: AuthSession): Either<StorageFailure, Unit> =
-        wrapStorageRequest { sessionStorage.addSession(sessionMapper.toPersistenceSession(autSession)) }
+    override fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit> =
+        wrapStorageRequest { sessionStorage.addSession(sessionMapper.toPersistenceSession(autSession, ssoId)) }
 
     override fun allSessions(): Either<StorageFailure, List<AuthSession>> =
         wrapStorageRequest { sessionStorage.allSessions()?.values?.toList()?.map { sessionMapper.fromPersistenceSession(it) } }

@@ -66,7 +66,6 @@ internal class UserDataSource(
     private val metadataDAO: MetadataDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
-    private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
@@ -87,16 +86,13 @@ internal class UserDataSource(
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { userDTO ->
-            storeSelfSsoId(idMapper.toSsoId(userDTO.ssoID)).map { userDTO }
-        }.map {
-            userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED)
-        }.flatMap { userEntity ->
-            // TODO: User image is always downloaded even when it's not changed
-            assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
-                .flatMap {
+            storeSelfSsoId(idMapper.toSsoId(userDTO.ssoID))
+                .map { userMapper.fromApiSelfModelToDaoModel(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+                .flatMap { userEntity ->
                     wrapStorageRequest { userDAO.insertUser(userEntity) }
-                }.flatMap {
-                    wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
+                        .flatMap {
+                            wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
+                        }
                 }
         }
 
@@ -241,7 +237,10 @@ internal class UserDataSource(
         }
 
     override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
-        userDAO.updateUserAvailabilityStatus(getSelfUserIDEntity(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+        userDAO.updateUserAvailabilityStatus(
+            getSelfUserIDEntity(),
+            availabilityStatusMapper.fromModelAvailabilityStatusToDao(status)
+        )
     }
 
     override suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
@@ -251,13 +250,9 @@ internal class UserDataSource(
         }
     }
 
-    override suspend fun storeSelfSsoId(ssoId: SsoId?): Either<StorageFailure, Unit> =
-        ssoId?.let {
-            Json.encodeToString(it)
-                .let { ssoIdJsonString ->
-                    wrapStorageRequest { metadataDAO.insertValue(SELF_USER_SSO_ID_KEY, ssoIdJsonString) }
-                }
-        } ?: Either.Right(Unit)
+    override suspend fun storeSelfSsoId(ssoId: SsoId?): Either<StorageFailure, Unit> {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun selfSsoId(): Either<StorageFailure, SsoId> = wrapStorageRequest {
         metadataDAO.valueByKey(SELF_USER_SSO_ID_KEY)
