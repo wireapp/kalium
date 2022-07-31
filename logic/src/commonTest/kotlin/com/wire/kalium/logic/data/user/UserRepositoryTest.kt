@@ -84,7 +84,6 @@ class UserRepositoryTest {
 
     // TODO other UserRepository tests
 
-
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
@@ -94,11 +93,9 @@ class UserRepositoryTest {
         val selfApi = mock(classOf<SelfApi>())
         @Mock
         val userDetailsApi = mock(classOf<UserDetailsApi>())
-        @Mock
-        val assetRepository = mock(classOf<AssetRepository>())
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, selfApi, userDetailsApi, assetRepository)
+            UserDataSource(userDAO, metadataDAO, selfApi, userDetailsApi)
         }
 
         init {

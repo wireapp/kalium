@@ -176,8 +176,7 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            assetRepository
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
     private val teamRepository: TeamRepository
@@ -200,6 +199,8 @@ abstract class UserSessionScopeCommon(
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
         userDatabaseProvider.conversationDAO,
+        userDatabaseProvider.userDAO,
+        userDatabaseProvider.metadataDAO
     )
 
     private val publicUserRepository: SearchUserRepository

@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -16,7 +15,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.UserSsoIdDTO
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
@@ -27,7 +25,6 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -95,13 +92,6 @@ internal class UserDataSource(
                         }
                 }
         }
-
-    private fun getQualifiedUserAssetId(userEntity: UserEntity): List<UserAssetId?> {
-        return mutableListOf<UserAssetId?>().also {
-            it.add(userEntity.previewAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
-            it.add(userEntity.completeAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
-        }
-    }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
@@ -255,9 +245,7 @@ internal class UserDataSource(
     }
 
     override suspend fun selfSsoId(): Either<StorageFailure, SsoId> = wrapStorageRequest {
-        metadataDAO.valueByKey(SELF_USER_SSO_ID_KEY)
-    }.map {
-        Json.decodeFromString<SsoId>(it)
+        TODO()
     }
 
     companion object {
