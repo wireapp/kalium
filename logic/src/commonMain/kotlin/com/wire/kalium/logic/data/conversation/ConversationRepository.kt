@@ -96,6 +96,7 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
+    suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -536,6 +537,10 @@ class ConversationDataSource(
                 role = conversationRoleMapper.toDAO(role)
             )
         }
+    }
+
+    override suspend fun deleteConversation(conversationId: ConversationId) = wrapStorageRequest {
+        conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
 
     companion object {

@@ -12,6 +12,7 @@ import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
@@ -25,7 +26,10 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
@@ -93,6 +97,8 @@ interface MessageRepository {
         oldMessageId: String,
         newMessageId: String
     ): Either<CoreFailure, Unit>
+
+    suspend fun deleteAllMessagesForConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -239,6 +245,11 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateMessageId(idMapper.toDaoModel(conversationId), oldMessageId, newMessageId)
+        }
+
+    override suspend fun deleteAllMessagesForConversation(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.getMessagesByConversationId(idMapper.toDaoModel(conversationId)).collect { messageDAO.deleteMessages(it) }
         }
 
     override suspend fun updateTextMessageContent(

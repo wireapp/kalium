@@ -237,6 +237,9 @@ SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 selectById:
 SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
+selectAllMessagesByConversationId:
+SELECT * FROM Message WHERE conversation_id = ?;
+
 selectByConversationIdAndVisibility:
 SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 
