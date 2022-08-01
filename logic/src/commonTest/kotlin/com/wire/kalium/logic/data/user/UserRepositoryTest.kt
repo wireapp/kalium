@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.QualifiedID
@@ -99,11 +98,9 @@ class UserRepositoryTest {
         val clientApi = mock(classOf<ClientApi>())
         @Mock
         val userDetailsApi = mock(classOf<UserDetailsApi>())
-        @Mock
-        val assetRepository = mock(classOf<AssetRepository>())
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, clientApi, userDetailsApi, assetRepository)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi)
         }
 
         init {
