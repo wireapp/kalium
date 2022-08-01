@@ -37,5 +37,3 @@ class MessageTextEditHandler(private val messageRepository: MessageRepository) {
     }
 
 }
-
-

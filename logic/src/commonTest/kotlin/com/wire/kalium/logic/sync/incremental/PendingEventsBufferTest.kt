@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.sync.incremental.PendingEventsBuffer
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -55,7 +54,6 @@ class PendingEventsBufferTest {
 
         assertFalse { eventsBuffer.contains(event) }
     }
-
 
     @Test
     fun givenAnEventThatWasNotAdded_whenRemovingIt_thenShouldReturnFalse() = runTest {

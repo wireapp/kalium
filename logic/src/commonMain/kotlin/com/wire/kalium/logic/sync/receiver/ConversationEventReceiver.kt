@@ -292,7 +292,6 @@ class ConversationEventReceiverImpl(
             is Message.Regular -> when (val content = message.content) {
                 is MessageContent.Text -> persistMessage(message)
                 is MessageContent.Asset -> {
-
                     userConfigRepository.isFileSharingEnabled().onSuccess {
                         if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
                             messageRepository.getMessageById(message.conversationId, message.id)
