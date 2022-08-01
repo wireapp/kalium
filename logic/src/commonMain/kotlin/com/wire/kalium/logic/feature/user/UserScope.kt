@@ -24,6 +24,7 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
+@Suppress("LongParameterList")
 class UserScope internal constructor(
     private val userRepository: UserRepository,
     private val searchUserRepository: SearchUserRepository,

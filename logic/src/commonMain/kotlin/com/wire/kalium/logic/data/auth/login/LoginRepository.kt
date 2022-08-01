@@ -13,11 +13,15 @@ import com.wire.kalium.network.api.user.login.LoginApi
 
 interface LoginRepository {
     suspend fun loginWithEmail(
-        email: String, password: String, shouldPersistClient: Boolean
+        email: String,
+        password: String,
+        shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>>
 
     suspend fun loginWithHandle(
-        handle: String, password: String, shouldPersistClient: Boolean
+        handle: String,
+        password: String,
+        shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>>
 }
 
@@ -29,17 +33,22 @@ class LoginRepositoryImpl(
 ) : LoginRepository {
 
     override suspend fun loginWithEmail(
-        email: String, password: String, shouldPersistClient: Boolean
+        email: String,
+        password: String,
+        shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> =
         login(LoginApi.LoginParam.LoginWithEmail(email, password, clientLabel), shouldPersistClient)
 
     override suspend fun loginWithHandle(
-        handle: String, password: String, shouldPersistClient: Boolean
+        handle: String,
+        password: String,
+        shouldPersistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> =
         login(LoginApi.LoginParam.LoginWithHandel(handle, password, clientLabel), shouldPersistClient)
 
     private suspend fun login(
-        loginParam: LoginApi.LoginParam, persistClient: Boolean
+        loginParam: LoginApi.LoginParam,
+        persistClient: Boolean
     ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> = wrapApiRequest {
         loginApi.login(param = loginParam, persist = persistClient)
     }.map {

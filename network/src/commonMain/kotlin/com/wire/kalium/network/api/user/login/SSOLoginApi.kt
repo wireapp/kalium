@@ -3,7 +3,6 @@ package com.wire.kalium.network.api.user.login
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.AuthenticationResultDTO
 import com.wire.kalium.network.api.RefreshTokenProperties
-import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.model.toSessionDto
