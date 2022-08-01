@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
 import io.mockative.ConfigurationApi
@@ -9,6 +10,7 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
+import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -41,6 +43,8 @@ class OnCloseCallTest {
             scope = testScope,
             qualifiedIdMapper = qualifiedIdMapper
         )
+        given(qualifiedIdMapper).invocation { fromStringToQualifiedID("conversationId@domainId") }
+            .then { QualifiedID("conversationId", "domainId") }
     }
 
     @Suppress("FunctionNaming")
