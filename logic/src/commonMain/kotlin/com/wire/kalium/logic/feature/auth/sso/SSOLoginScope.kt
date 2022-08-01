@@ -9,8 +9,7 @@ import com.wire.kalium.logic.di.MapperProvider
 class SSOLoginScope internal constructor(
     private val ssoLoginRepository: SSOLoginRepository,
     private val serverLinks: ServerConfig.Links,
-    private val serverConfigRepository: ServerConfigRepository,
-    private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
+    private val serverConfigRepository: ServerConfigRepository
 ) {
     private val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
     val initiate: SSOInitiateLoginUseCase
@@ -21,7 +20,7 @@ class SSOLoginScope internal constructor(
             serverConfigRepository
         )
     val finalize: SSOFinalizeLoginUseCase get() = SSOFinalizeLoginUseCaseImpl(ssoLoginRepository)
-    val getLoginSessionGet: GetSSOLoginSessionUseCase get() = GetSSOLoginSessionUseCaseImpl(ssoLoginRepository, sessionMapper, serverLinks)
+    val getLoginSessionGet: GetSSOLoginSessionUseCase get() = GetSSOLoginSessionUseCaseImpl(ssoLoginRepository, serverLinks)
     val metaData: SSOMetaDataUseCase get() = SSOMetaDataUseCaseImpl(ssoLoginRepository)
     val settings: SSOSettingsUseCase get() = SSOSettingsUseCaseImpl(ssoLoginRepository)
 }

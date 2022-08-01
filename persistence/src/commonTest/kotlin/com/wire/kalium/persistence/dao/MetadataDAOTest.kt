@@ -28,25 +28,25 @@ class MetadataDAOTest: BaseDatabaseTest() {
     @Test
     fun givenNonExistingKey_thenValueCanBeStored() = runTest {
         db.metadataDAO.insertValue(value1, key1)
-        assertEquals(value1, db.metadataDAO.observerValueByKey(key1).first())
+        assertEquals(value1, db.metadataDAO.valueByKey(key1).first())
     }
 
     @Test
     fun givenExistingKey_thenExistingValueCanBeOverwritten() = runTest {
         db.metadataDAO.insertValue(value1, key1)
         db.metadataDAO.insertValue(value2, key1)
-        assertEquals(value2, db.metadataDAO.observerValueByKey(key1).first())
+        assertEquals(value2, db.metadataDAO.valueByKey(key1).first())
     }
 
     @Test
     fun givenExistingKey_thenValueCanBeRetrieved() = runTest {
         db.metadataDAO.insertValue(value1, key1)
-        assertEquals(value1, db.metadataDAO.observerValueByKey(key1).first())
+        assertEquals(value1, db.metadataDAO.valueByKey(key1).first())
     }
 
     @Test
     fun giveNonExistingKey_thenNullValueWillBeReturned() = runTest {
         db.metadataDAO.insertValue(value1, key1)
-        assertNull(db.metadataDAO.observerValueByKey(key2).first())
+        assertNull(db.metadataDAO.valueByKey(key2).first())
     }
 }

@@ -153,7 +153,7 @@ class KeyPackageRepositoryTest {
         }
 
         fun withLastKeyPackageCountCheckTimestamp(timestamp: Instant?) = apply {
-            given(metadataDAO).suspendFunction(metadataDAO::observerValueByKey)
+            given(metadataDAO).suspendFunction(metadataDAO::valueByKey)
                 .whenInvokedWith(eq(LAST_KEY_PACKAGE_COUNT_CHECK))
                 .thenReturn(flowOf(timestamp?.toString()))
         }

@@ -76,7 +76,7 @@ internal class UserDataSource(
     }
 
     private suspend fun getSelfUserIDEntity(): QualifiedIDEntity {
-        val encodedValue = metadataDAO.observerValueByKey(SELF_USER_ID_KEY).firstOrNull()
+        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY).firstOrNull()
         return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
             ?: run { throw IllegalStateException() }
     }
@@ -155,7 +155,7 @@ internal class UserDataSource(
 
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
-        return metadataDAO.observerValueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
+        return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()

@@ -461,7 +461,7 @@ class ConnectionRepositoryTest {
                 .whenInvokedWith(any(), any(), any())
 
             given(metaDAO)
-                .suspendFunction(metaDAO::observerValueByKey)
+                .suspendFunction(metaDAO::valueByKey)
                 .whenInvokedWith(any())
                 .then { flowOf(stubJsonQualifiedId) }
 
