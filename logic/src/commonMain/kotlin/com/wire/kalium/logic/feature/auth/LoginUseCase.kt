@@ -40,9 +40,11 @@ internal class LoginUseCaseImpl(
             validateEmailUseCase(cleanUserIdentifier) -> {
                 loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient)
             }
+
             validateUserHandleUseCase(cleanUserIdentifier).isValid -> {
                 loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient)
             }
+
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
         }.fold({
             when (it) {

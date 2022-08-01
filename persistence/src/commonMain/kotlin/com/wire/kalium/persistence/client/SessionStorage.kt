@@ -17,9 +17,9 @@ import kotlin.jvm.JvmInline
 
 interface SessionStorage {
     /**
-     * store a session locally
+     * store a session locally and override if exist
      */
-    fun addSession(authSessionEntity: AuthSessionEntity)
+    fun addOrReplaceSession(authSessionEntity: AuthSessionEntity)
 
     /**
      * delete a session from the local storage
@@ -63,7 +63,7 @@ class SessionStorageImpl(
 
     private val sessionsUpdatedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    override fun addSession(authSessionEntity: AuthSessionEntity) =
+    override fun addOrReplaceSession(authSessionEntity: AuthSessionEntity) =
         allSessions()?.let { sessionMap ->
             val temp = sessionMap.toMutableMap()
             temp[authSessionEntity.userId] = authSessionEntity

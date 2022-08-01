@@ -12,11 +12,11 @@ import com.wire.kalium.network.api.user.login.LoginApi
 interface LoginRepository {
     suspend fun loginWithEmail(
         email: String, password: String, shouldPersistClient: Boolean
-    ): Either<NetworkFailure, AuthSession.Tokens>
+    ): Either<NetworkFailure, AuthSession.Session.Valid>
 
     suspend fun loginWithHandle(
         handle: String, password: String, shouldPersistClient: Boolean
-    ): Either<NetworkFailure, AuthSession.Tokens>
+    ): Either<NetworkFailure, AuthSession.Session.Valid>
 }
 
 class LoginRepositoryImpl(
@@ -27,17 +27,17 @@ class LoginRepositoryImpl(
 
     override suspend fun loginWithEmail(
         email: String, password: String, shouldPersistClient: Boolean
-    ): Either<NetworkFailure, AuthSession.Tokens> =
+    ): Either<NetworkFailure, AuthSession.Session.Valid> =
         login(LoginApi.LoginParam.LoginWithEmail(email, password, clientLabel), shouldPersistClient)
 
     override suspend fun loginWithHandle(
         handle: String, password: String, shouldPersistClient: Boolean
-    ): Either<NetworkFailure, AuthSession.Tokens> =
+    ): Either<NetworkFailure, AuthSession.Session.Valid> =
         login(LoginApi.LoginParam.LoginWithHandel(handle, password, clientLabel), shouldPersistClient)
 
     private suspend fun login(
         loginParam: LoginApi.LoginParam, persistClient: Boolean
-    ): Either<NetworkFailure, AuthSession.Tokens> = wrapApiRequest {
+    ): Either<NetworkFailure, AuthSession.Session.Valid> = wrapApiRequest {
         loginApi.login(param = loginParam, persist = persistClient)
     }.map { sessionMapper.fromSessionDTO(it) }
 }
