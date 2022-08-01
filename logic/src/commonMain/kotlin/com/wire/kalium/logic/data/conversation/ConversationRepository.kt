@@ -287,10 +287,10 @@ class ConversationDataSource(
                         .flatMapLatest { if (it != null) userRepository.getKnownUser(it) else flowOf(it) }
                         .wrapStorageRequest()
                         .map {
-                            it.map {
+                            it.map { otherUser ->
                                 conversationMapper.toConversationDetailsOneToOne(
                                     conversation = conversation,
-                                    otherUser = it,
+                                    otherUser = otherUser,
                                     selfUser = selfUser,
                                     unreadMessageCount = getUnreadMessageCount(conversation)
                                 )
