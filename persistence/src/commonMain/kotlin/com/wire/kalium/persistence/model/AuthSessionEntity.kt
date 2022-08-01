@@ -41,7 +41,6 @@ sealed class AuthSessionEntity {
     @SerialName("user_id") abstract val userId: QualifiedIDEntity
     @SerialName("user_sso_id") abstract val ssoId: SsoIdEntity?
 
-
     @Serializable
     @SerialName("authsession.valid")
     data class Valid(

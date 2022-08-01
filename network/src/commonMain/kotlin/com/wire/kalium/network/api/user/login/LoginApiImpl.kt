@@ -41,7 +41,8 @@ class LoginApiImpl internal constructor(
     }
 
     override suspend fun login(
-        param: LoginApi.LoginParam, persist: Boolean
+        param: LoginApi.LoginParam,
+        persist: Boolean
     ): NetworkResponse<Pair<SessionDTO, UserDTO>> = wrapKaliumResponse<AccessTokenDTO> {
         httpClient.post(PATH_LOGIN) {
             parameter(QUERY_PERSIST, persist)

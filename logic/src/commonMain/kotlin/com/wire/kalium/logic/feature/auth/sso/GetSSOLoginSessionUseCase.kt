@@ -43,7 +43,7 @@ internal class GetSSOLoginSessionUseCaseImpl(
         }, {
             SSOLoginSessionResult.Success(
                 AuthSession(sessionMapper.fromSessionDTO(it.sessionDTO), serverLinks),
-                idMapper.toSsoId(it.userDTO.ssoID )
+                idMapper.toSsoId(it.userDTO.ssoID)
             )
         })
 

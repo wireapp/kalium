@@ -10,7 +10,10 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
-    data class Success(val userSession: AuthSession, val ssoId: SsoId?) : AuthenticationResult()
+    data class Success(
+        val userSession: AuthSession,
+        val ssoId: SsoId?
+    ) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
         object InvalidCredentials : Failure()
@@ -21,7 +24,9 @@ sealed class AuthenticationResult {
 
 interface LoginUseCase {
     suspend operator fun invoke(
-        userIdentifier: String, password: String, shouldPersistClient: Boolean
+        userIdentifier: String,
+        password: String,
+        shouldPersistClient: Boolean
     ): AuthenticationResult
 }
 
@@ -32,7 +37,9 @@ internal class LoginUseCaseImpl(
     private val serverLinks: ServerConfig.Links
 ) : LoginUseCase {
     override suspend operator fun invoke(
-        userIdentifier: String, password: String, shouldPersistClient: Boolean
+        userIdentifier: String,
+        password: String,
+        shouldPersistClient: Boolean
     ): AuthenticationResult {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
