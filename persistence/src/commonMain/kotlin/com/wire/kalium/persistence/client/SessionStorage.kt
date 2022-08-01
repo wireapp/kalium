@@ -5,6 +5,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.model.AuthSessionEntity
+import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -55,6 +56,8 @@ interface SessionStorage {
      * returns true if there is any session saved and false otherwise
      */
     fun sessionsExist(): Boolean
+
+    fun updateSsoId(userId: UserIDEntity, ssoIdEntity: SsoIdEntity?)
 }
 
 class SessionStorageImpl(
@@ -117,6 +120,11 @@ class SessionStorageImpl(
         }
 
     override fun sessionsExist(): Boolean = kaliumPreferences.hasValue(SESSIONS_KEY)
+    override fun updateSsoId(userId: UserIDEntity, ssoIdEntity: SsoIdEntity?) {
+        userSession(userId)?.also {
+            addSession(it.copy(ssoId = ssoIdEntity))
+        }
+    }
 
     private fun saveAllSessions(sessions: SessionsMap) {
         kaliumPreferences.putSerializable(SESSIONS_KEY, sessions, SessionsMap.serializer())

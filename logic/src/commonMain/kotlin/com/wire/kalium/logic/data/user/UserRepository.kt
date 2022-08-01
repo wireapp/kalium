@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -53,8 +54,6 @@ interface UserRepository {
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
-    suspend fun storeSelfSsoId(ssoId: SsoId?): Either<StorageFailure, Unit>
-    suspend fun selfSsoId(): Either<StorageFailure, SsoId>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -63,6 +62,7 @@ internal class UserDataSource(
     private val metadataDAO: MetadataDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
+    private val sessionRepository: SessionRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
@@ -83,7 +83,8 @@ internal class UserDataSource(
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { userDTO ->
-            storeSelfSsoId(idMapper.toSsoId(userDTO.ssoID))
+            // update self user SsoId
+            sessionRepository.updateSsoId(idMapper.fromApiModel(userDTO.id), idMapper.toSsoId(userDTO.ssoID))
                 .map { userMapper.fromApiSelfModelToDaoModel(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
                 .flatMap { userEntity ->
                     wrapStorageRequest { userDAO.insertUser(userEntity) }
@@ -238,14 +239,6 @@ internal class UserDataSource(
             userDAO.getUsersNotInConversation(idMapper.toDaoModel(conversationId))
                 .map { publicUserMapper.fromDaoModelToPublicUser(it) }
         }
-    }
-
-    override suspend fun storeSelfSsoId(ssoId: SsoId?): Either<StorageFailure, Unit> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun selfSsoId(): Either<StorageFailure, SsoId> = wrapStorageRequest {
-        TODO()
     }
 
     companion object {
