@@ -309,6 +309,23 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     }
 
+    @Test
+    fun givenMember_whenUpdatingMemberRole_thenItsUpdated() = runTest {
+        // given
+        val conversation = conversationEntity1
+        val member = member1.copy(role = Member.Role.Member)
+        val newRole = Member.Role.Admin
+        val expected = member.copy(role = newRole)
+        conversationDAO.insertConversation(conversation)
+        conversationDAO.insertMember(member, conversation.id)
+        // when
+        conversationDAO.updateConversationMemberRole(conversation.id, member.user, newRole)
+        // then
+        conversationDAO.getAllMembers(conversation.id).first().also { actual ->
+            assertEquals(expected, actual[0])
+        }
+    }
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
