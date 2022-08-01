@@ -11,8 +11,10 @@ object Versions {
     const val dropwizard = "2.1.0"
 }
 
+val mainFunctionClassName = "com.wire.kalium.testservice.TestserviceApplication"
+
 application {
-    mainClass.set("com.wire.kalium.testservice.TestserviceApplication")
+    mainClass.set(mainFunctionClassName)
 }
 
 tasks.named("run", JavaExec::class){
@@ -20,6 +22,16 @@ tasks.named("run", JavaExec::class){
     isIgnoreExitValue = true
     standardInput = System.`in`
     standardOutput = System.out
+}
+
+tasks.jar {
+    manifest.attributes["Main-Class"] = mainFunctionClassName
+    val dependencies = configurations
+        .runtimeClasspath
+        .get()
+        .map(::zipTree)
+    from(dependencies)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 dependencies {
