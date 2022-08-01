@@ -43,12 +43,12 @@ class RegisterAccountUseCaseTest {
     fun givenRepositoryCallIsSuccessful_whenRegisteringPersonalAccount_thenSuccessIsPropagated() = runTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val user = TEST_SELF_USER
-        val session = TEST_AUTH_SESSION
-        val expected = Pair(user, session)
+        val validAuthSession = TEST_VALID_AUTH_SESSION
+        val expected = Pair(user, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
         given(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
-        }.then { Either.Right(Pair(user, session.tokens)) }
+        }.then { Either.Right(Pair(user, validAuthSession)) }
 
         val actual = registerAccountUseCase(param)
 
@@ -64,14 +64,14 @@ class RegisterAccountUseCaseTest {
     fun givenRepositoryCallIsSuccessful_whenRegisteringTeamAccount_thenSuccessIsPropagated() = runTest {
         val param = TEST_TEAM_ACCOUNT_PARAM
         val user = TEST_SELF_USER
-        val session = TEST_AUTH_SESSION
-        val expected = Pair(user, session)
+        val validAuthSession = TEST_VALID_AUTH_SESSION
+        val expected = Pair(user, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
         given(registerAccountRepository).coroutine {
             registerTeamWithEmail(
                 param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
             )
-        }.then { Either.Right(Pair(user, session.tokens)) }
+        }.then { Either.Right(Pair(user, validAuthSession)) }
 
         val actual = registerAccountUseCase(param)
 
@@ -90,14 +90,14 @@ class RegisterAccountUseCaseTest {
         runTest {
             val param = TEST_PRIVATE_ACCOUNT_PARAM
             val user = TEST_SELF_USER
-            val session = TEST_AUTH_SESSION
-            val expected = Pair(user, session)
+            val validAuthSession = TEST_VALID_AUTH_SESSION
+            val expected = Pair(user, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
             given(registerAccountRepository).coroutine {
                 registerPersonalAccountWithEmail(
                     param.email, param.emailActivationCode, param.name, param.password
                 )
-            }.then { Either.Right(Pair(user, session.tokens)) }
+            }.then { Either.Right(Pair(user, validAuthSession)) }
 
             val actual = registerAccountUseCase(param)
 
@@ -205,7 +205,7 @@ class RegisterAccountUseCaseTest {
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE
         )
-        val TEST_AUTH_SESSION =
-            AuthSession(AuthSession.Tokens(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type"), TEST_SERVER_CONFIG.links)
+        val TEST_VALID_AUTH_SESSION =
+            AuthSession.Session.Valid(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type")
     }
 }
