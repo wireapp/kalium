@@ -1,9 +1,12 @@
 package com.wire.kalium.testservice.models
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.swagger.annotations.ApiModelProperty
 
 class InstanceRequest(
-    private val backend: String, private val customBackend: CustomBackend?,
+    @ApiModelProperty(notes = "Backend type", example = "staging", required = true)
+    private val backend: String,
+    private val customBackend: CustomBackend?,
     private val federationDomain: String, private val deviceClass: String?,
     private val deviceLabel: String?, private val deviceName: String?,
     private val email: String, private val isTemporary: Boolean?,

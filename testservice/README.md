@@ -19,6 +19,5 @@ Create fat jar for standalone execution:
 Run fat jar:
 
 ```shell
-cd testservice
-java -jar build/libs/testservice-*.jar server config.yml
+java -jar testservice/build/libs/testservice-*.jar server testservice/config.yml
 ```
