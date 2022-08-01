@@ -29,7 +29,7 @@ class ConversationScope(
         get() = GetConversationUseCase(conversationRepository, syncManager)
 
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
-        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, syncManager, callRepository)
+        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository)
 
     val observeConversationsAndConnectionListUseCase: ObserveConversationsAndConnectionsUseCase
         get() = ObserveConversationsAndConnectionsUseCaseImpl(syncManager, observeConversationListDetails, observeConnectionList)
