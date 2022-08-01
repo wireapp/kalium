@@ -3,12 +3,12 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
+import com.wire.kalium.network.api.notification.user.RemoveClientEventData
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 
@@ -30,6 +30,8 @@ class EventMapper(
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
                 is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
+                is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO.client)
+                is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO.id)
                 is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
                 is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id) // TODO: update it after logic code is merged
@@ -80,6 +82,14 @@ class EventMapper(
         id,
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
+
+    private fun userDelete(id: String, userId: String): Event.User.UserDelete {
+        return Event.User.UserDelete(id)
+    }
+
+    private fun clientRemove(id: String, client: RemoveClientEventData): Event.User.ClientRemove {
+        return Event.User.ClientRemove(client.clientId)
+    }
 
     private fun newConversation(
         id: String,

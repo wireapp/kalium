@@ -171,7 +171,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(Either.Right(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED))))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -228,7 +228,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(Either.Right(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED))))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -280,7 +280,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(Either.Right(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED))))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -341,7 +341,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(Either.Right(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED))))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -388,7 +388,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED)))
+            .thenReturn(flowOf(Either.Right(ConversationDetails.Group(groupConversation, LegalHoldStatus.ENABLED))))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -439,7 +439,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(oneOnOneConversationDetails))
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -497,7 +497,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(oneOnOneConversationDetails))
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -559,7 +559,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(oneOnOneConversationDetails))
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -625,7 +625,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(oneOnOneConversationDetails))
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -682,7 +682,7 @@ class CallRepositoryTest {
 
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(oneOnOneConversationDetails))
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
 
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
@@ -768,13 +768,13 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenDoNotUpdateTheStatus() = runTest {
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateTheStatus() = runTest {
         callRepository.updateCallStatusById(randomConversationIdString, CallStatus.INCOMING)
 
         verify(callDAO)
             .suspendFunction(callDAO::updateLastCallStatusByConversationId)
             .with(any(), any())
-            .wasInvoked(exactly = Times(0))
+            .wasInvoked(exactly = Times(1))
     }
 
     @Test

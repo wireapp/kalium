@@ -19,10 +19,11 @@ class OnConfigRequest(
     private val callingScope: CoroutineScope
 ) : CallConfigRequestHandler {
     override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
-        callingLogger.i("OnConfigRequest - onConfigRequest called")
+        callingLogger.i("[OnConfigRequest] - STARTED")
         callingScope.launch {
             val config = callRepository.getCallConfigResponse(limit = null)
                 .fold({
+                    callingLogger.i("[OnConfigRequest] - Error: $it")
                     TODO("Not yet implemented.")
                 }, {
                     it
@@ -33,7 +34,7 @@ class OnConfigRequest(
                 error = 0, // TODO(calling): http error from internal json
                 jsonString = config
             )
-            callingLogger.i("OnConfigRequest - wcall_config_update() called")
+            callingLogger.i("[OnConfigRequest] - wcall_config_update()")
         }
 
         return AvsCallBackError.NONE.value

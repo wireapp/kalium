@@ -25,6 +25,9 @@ data class ConversationResponse(
     @SerialName("group_id")
     val groupId: String?,
 
+    @SerialName("epoch")
+    val epoch: ULong?,
+
     @Serializable(with = ConversationTypeSerializer::class)
     val type: Type,
 

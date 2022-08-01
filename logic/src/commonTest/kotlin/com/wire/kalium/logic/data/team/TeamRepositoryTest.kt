@@ -153,7 +153,7 @@ class TeamRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = UserTypeEntity.EXTERNAL
+            userType = UserTypeEntity.EXTERNAL
         )
 
         given(teamsApi)
@@ -162,14 +162,14 @@ class TeamRepositoryTest {
             .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
 
         given(userMapper)
-            .invocation { userMapper.fromTeamMemberToDaoModel(teamId = TeamId("teamId"), teamMember, "userDomain") }
+            .invocation { userMapper.fromTeamMemberToDaoModel(teamId = TeamId("teamId"), teamMember, "userDomain", null) }
             .then { mappedTeamMember }
 
         val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
 
         // Verifies that userDAO insertUsers was called with the correct mapped values
         verify(userDAO)
-            .suspendFunction(userDAO::upsertTeamMembers)
+            .suspendFunction(userDAO::upsertTeamMembersTypes)
             .with(oneOf(listOf(mappedTeamMember)))
             .wasInvoked(exactly = once)
 

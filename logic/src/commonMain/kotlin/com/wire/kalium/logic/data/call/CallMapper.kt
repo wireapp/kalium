@@ -91,7 +91,7 @@ class CallMapper {
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
-    private fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
+    fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
         ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
         else -> Conversation.Type.ONE_ON_ONE
     }
@@ -153,10 +153,13 @@ class CallMapper {
             participants: List<Participant>,
             activeSpeakers: CallActiveSpeakers
         ): List<Participant> = participants.map { participant ->
+            val isSpeaking = activeSpeakers.activeSpeakers.find {
+                it.userId == participant.id.toString() && it.clientId == participant.clientId
+            }?.let {
+                it.audioLevel > 0 && it.audioLevelNow > 0
+            } ?: run { false }
             participant.copy(
-                isSpeaking = activeSpeakers.activeSpeakers.any {
-                    it.userId == participant.id.toString() && it.clientId == participant.clientId
-                }
+                isSpeaking = isSpeaking
             )
         }
     }

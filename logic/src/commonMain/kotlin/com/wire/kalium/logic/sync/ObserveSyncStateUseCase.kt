@@ -7,5 +7,5 @@ import kotlinx.coroutines.flow.Flow
 class ObserveSyncStateUseCase internal constructor(
     private val syncRepository: SyncRepository
 ) {
-    operator fun invoke(): Flow<SyncState> = syncRepository.syncStateState
+    operator fun invoke(): Flow<SyncState> = syncRepository.syncState
 }

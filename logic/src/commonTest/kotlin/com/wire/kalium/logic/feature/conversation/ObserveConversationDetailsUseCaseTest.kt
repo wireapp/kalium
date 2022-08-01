@@ -1,10 +1,12 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.anything
@@ -20,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class ObserveConversationDetailsUseCaseTest {
 
@@ -73,8 +76,8 @@ class ObserveConversationDetailsUseCaseTest {
     fun givenTheConversationIsUpdated_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() = runTest {
         val conversation = TestConversation.GROUP()
         val conversationDetailsValues = listOf(
-            ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED),
-            ConversationDetails.Group(conversation.copy(name = "New Name"), LegalHoldStatus.DISABLED)
+            Either.Right(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED)),
+            Either.Right(ConversationDetails.Group(conversation.copy(name = "New Name"), LegalHoldStatus.DISABLED))
         )
 
         given(conversationRepository)
@@ -83,8 +86,32 @@ class ObserveConversationDetailsUseCaseTest {
             .then { conversationDetailsValues.asFlow() }
 
         observeConversationsUseCase(TestConversation.ID).test {
-            assertEquals(conversationDetailsValues[0], awaitItem())
-            assertEquals(conversationDetailsValues[1], awaitItem())
+            awaitItem().let { item ->
+                assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
+                assertEquals(conversationDetailsValues[0].value, item.conversationDetails)
+            }
+            awaitItem().let { item ->
+                assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
+                assertEquals(conversationDetailsValues[1].value, item.conversationDetails)
+            }
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenTheStorageFailure_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() = runTest {
+        val failure = StorageFailure.DataNotFound
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(anything())
+            .then { flowOf(Either.Left(failure)) }
+
+        observeConversationsUseCase(TestConversation.ID).test {
+            awaitItem().let { item ->
+                assertIs<ObserveConversationDetailsUseCase.Result.Failure>(item)
+                assertEquals(failure, item.storageFailure)
+            }
             awaitComplete()
         }
     }

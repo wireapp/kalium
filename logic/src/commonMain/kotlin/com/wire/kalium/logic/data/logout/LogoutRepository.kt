@@ -8,7 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
 
-internal interface LogoutRepository {
+interface LogoutRepository {
 
     /**
      * Listen to a logout event.
@@ -33,7 +33,7 @@ internal class LogoutDataSource(
     private val logoutApi: LogoutApi,
 ) : LogoutRepository {
 
-    private val logoutEventsChannel = Channel<LogoutReason>()
+    private val logoutEventsChannel = Channel<LogoutReason>(capacity = Channel.CONFLATED)
 
     override suspend fun observeLogout(): Flow<LogoutReason> = logoutEventsChannel.consumeAsFlow()
 
