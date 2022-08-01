@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.fold
@@ -249,7 +248,8 @@ class MessageDataSource(
 
     override suspend fun deleteAllMessagesForConversation(conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            messageDAO.getMessagesByConversationId(idMapper.toDaoModel(conversationId)).collect { messageDAO.deleteMessages(it) }
+            val messages = messageDAO.getMessagesByConversationId(idMapper.toDaoModel(conversationId))
+            messageDAO.deleteMessages(messages)
         }
 
     override suspend fun updateTextMessageContent(

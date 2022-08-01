@@ -217,9 +217,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun getMessagesByConversationId(conversationId: QualifiedIDEntity) =
         queries.selectAllMessagesByConversationId(conversationId)
-            .asFlow()
-            .mapToList()
-            .toMessageEntityListFlow()
+            .executeAsList()
+            .mapNotNull { it.toMessageEntity() }
 
     override suspend fun deleteMessages(messages: List<MessageEntity>) {
         queries.transaction {

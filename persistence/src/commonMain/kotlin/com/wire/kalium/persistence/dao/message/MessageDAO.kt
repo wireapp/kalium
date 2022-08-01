@@ -18,7 +18,7 @@ interface MessageDAO {
     suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status)
     suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>>
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
-    suspend fun getMessagesByConversationId(conversationId: QualifiedIDEntity): Flow<List<MessageEntity>>
+    suspend fun getMessagesByConversationId(conversationId: QualifiedIDEntity): List<MessageEntity>
     suspend fun deleteMessages(messages: List<MessageEntity>)
     suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,

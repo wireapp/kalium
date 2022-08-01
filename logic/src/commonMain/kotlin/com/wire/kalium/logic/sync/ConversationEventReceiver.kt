@@ -30,7 +30,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -276,21 +275,15 @@ class ConversationEventReceiverImpl(
                 )
             }
 
-    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation): Either<CoreFailure, Unit> {
-        kaliumLogger.withFeatureId(EVENT_RECEIVER).d("Receiving delete conversation event: $event")
-        return messageRepository.deleteAllMessagesForConversation(event.conversationId)
+    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation) =
+        messageRepository.deleteAllMessagesForConversation(event.conversationId)
             .onFailure { coreFailure ->
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).e("Error deleting the contents of a conversation $coreFailure")
                 Either.Left(coreFailure)
             }.onSuccess {
-                conversationRepository.deleteConversation(event.conversationId).fold({ coreFailure ->
-                    kaliumLogger.withFeatureId(EVENT_RECEIVER).e("Error deleting a conversation $coreFailure")
-                }, {
-                    kaliumLogger.withFeatureId(EVENT_RECEIVER).d("Conversation deleted: $event")
-                    Either.Right(Unit)
-                })
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).d("Deleting the conversation $event")
+                conversationRepository.deleteConversation(event.conversationId)
             }
-    }
 
     private fun processSignaling(signaling: MessageContent.Signaling) {
         when (signaling) {
@@ -329,7 +322,6 @@ class ConversationEventReceiverImpl(
                                         }
                                     }
                                 }
-
                         } else {
                             val newMessage = message.copy(
                                 content = MessageContent.RestrictedAsset(
@@ -337,7 +329,6 @@ class ConversationEventReceiverImpl(
                                 )
                             )
                             persistMessage(newMessage)
-
                         }
                     }
                 }
@@ -397,5 +388,4 @@ class ConversationEventReceiverImpl(
     private companion object {
         const val TAG = "ConversationEventReceiver"
     }
-
 }
