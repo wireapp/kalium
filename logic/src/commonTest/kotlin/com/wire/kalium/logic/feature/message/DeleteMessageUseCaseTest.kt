@@ -97,9 +97,11 @@ class DeleteMessageUseCaseTest {
         // then
         verify(messageSender)
             .suspendFunction(messageSender::sendMessage)
-            .with(matching { message ->
-                message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
-            })
+            .with(
+                matching { message ->
+                    message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
+                }
+            )
             .wasInvoked(exactly = once)
         verify(messageRepository)
             .suspendFunction(messageRepository::markMessageAsDeleted)
@@ -180,21 +182,23 @@ class DeleteMessageUseCaseTest {
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.SENT)))
 
-
         // when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value, idMapper.toProtoModel(
+            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value,
+            idMapper.toProtoModel(
                 TEST_CONVERSATION_ID
             )
         )
 
-        //then
+        // then
         verify(messageSender)
             .suspendFunction(messageSender::sendMessage)
-            .with(matching { message ->
-                message.conversationId == TestUser.SELF.id && message.content == deletedForMeContent
-            })
+            .with(
+                matching { message ->
+                    message.conversationId == TestUser.SELF.id && message.content == deletedForMeContent
+                }
+            )
             .wasInvoked(exactly = once)
 
         verify(messageRepository)
