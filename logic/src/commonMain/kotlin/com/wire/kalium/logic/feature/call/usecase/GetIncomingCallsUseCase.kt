@@ -62,7 +62,7 @@ internal class GetIncomingCallsUseCaseImpl(
                 .flatMapFromIterable { call ->
                     //getting ConversationDetails for each Call
                     conversationRepository.observeById(call.conversationId)
-                        .getOrElse(flowOf(null))
+                        .map { it.getOrElse(null) }
                 }
                 .map { conversations ->
                     val allowedConversations = conversations

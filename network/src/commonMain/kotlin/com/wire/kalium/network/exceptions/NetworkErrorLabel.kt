@@ -16,6 +16,13 @@ internal object NetworkErrorLabel {
     const val HANDLE_EXISTS = "handle-exists"
     const val NO_TEAM = "no-team"
     const val OPERATION_DENIED = "operation-denied"
+    const val MLS_STALE_MESSAGE = "mls-stale-message"
+    const val MLS_SELF_REMOVAL_NOT_ALLOWED = "mls-self-removal-not-allowed"
+    const val MLS_COMMIT_MISSING_REFERENCES = "mls-commit-missing-references"
+    const val MLS_CLIENT_MISMATCH = "mls-client-mismatch"
+    const val MLS_UNSUPPORTED_PROPOSAL = "mls-unsupported-proposal"
+    const val MLS_KEY_PACKAGE_REF_NOT_FOUND = "mls-key-package-ref-not-found"
+    const val UNKNOWN_CLIENT = "unknown-client"
 
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"

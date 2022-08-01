@@ -62,6 +62,7 @@ object ConversationResponseJson {
             "group name",
             QualifiedIDSamples.one,
             "groupID",
+            0UL,
             ConversationResponse.Type.GROUP,
             null,
             "teamID",

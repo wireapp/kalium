@@ -23,7 +23,7 @@ class FederatedIdMapperImpl(private val kaliumPreferences: KaliumPreferences) : 
     private fun getCurrentDomain() = kaliumPreferences.getString(CURRENT_DOMAIN) ?: DEFAULT_DOMAIN
 
     override fun parseToFederatedId(qualifiedID: QualifiedID): String {
-        kaliumLogger.d(
+        kaliumLogger.v(
             "Parsing stringId: $qualifiedID, is federationEnabled? ${isFederationEnabled()} and with domain? ${getCurrentDomain()}"
         )
         return if (isFederationEnabled() && qualifiedID.domain.isNotEmpty()) {
@@ -35,7 +35,7 @@ class FederatedIdMapperImpl(private val kaliumPreferences: KaliumPreferences) : 
 
     override fun parseToFederatedId(qualifiedStringID: String): String {
         val parsedQualifiedID = qualifiedStringID.parseIntoQualifiedID()
-        kaliumLogger.d(
+        kaliumLogger.v(
             "Parsing stringId: $parsedQualifiedID, is federationEnabled? ${isFederationEnabled()} and with domain? ${getCurrentDomain()}"
         )
         return if (isFederationEnabled() && parsedQualifiedID.domain.isNotEmpty()) {

@@ -15,8 +15,6 @@ import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.api.notification.WebSocketEvent
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.event.EventInfoStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -116,7 +114,8 @@ class EventDataSource(
     }
 
     private suspend fun getNextPendingEventsPage(
-        lastFetchedNotificationId: String?, clientId: ClientId
+        lastFetchedNotificationId: String?,
+        clientId: ClientId
     ): NetworkResponse<NotificationResponse> = lastFetchedNotificationId?.let {
         notificationApi.notificationsByBatch(NOTIFICATIONS_QUERY_SIZE, clientId.value, it)
     } ?: notificationApi.getAllNotifications(NOTIFICATIONS_QUERY_SIZE, clientId.value)

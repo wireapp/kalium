@@ -49,9 +49,9 @@ enum class KaliumLogLevel {
  * in the android case we use it to write the logs on file
  *
  */
-class KaliumLogger(config: Config, vararg logWriters: LogWriter = arrayOf()) {
+class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = arrayOf()) {
 
-    private val kermitLogger: KermitLogger
+    private var kermitLogger: KermitLogger
 
     init {
         kermitLogger = if (logWriters.isEmpty()) {
@@ -72,6 +72,13 @@ class KaliumLogger(config: Config, vararg logWriters: LogWriter = arrayOf()) {
     }
 
     val severity = config.severity
+
+    @Suppress("unused")
+    fun withFeatureId(featureId: ApplicationFlow): KaliumLogger {
+        val currentLogger = this
+        currentLogger.kermitLogger = kermitLogger.withTag("featureId:${featureId.name.lowercase()}")
+        return currentLogger
+    }
 
     @Suppress("unused")
     fun v(message: String, throwable: Throwable? = null) =
@@ -128,5 +135,9 @@ class KaliumLogger(config: Config, vararg logWriters: LogWriter = arrayOf()) {
         fun disabled(): KaliumLogger = KaliumLogger(
             config = Config.DISABLED
         )
+
+        enum class ApplicationFlow {
+            SYNC, EVENT_RECEIVER, CONVERSATIONS, CONNECTIONS, MESSAGES, SEARCH, SESSION, REGISTER, CLIENTS, CALLING
+        }
     }
 }

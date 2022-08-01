@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
@@ -51,7 +51,7 @@ internal class ConnectionMapperImpl(
         return ConversationDetails.Connection(
             conversationId = idMapper.fromDaoModel(connection.qualifiedConversationId),
             otherUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) },
-            userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userTypEntity) } ?: UserType.GUEST,
+            userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
             lastModifiedDate = connection.lastUpdate,
             connection = fromDaoToModel(connection, otherUser),
             protocolInfo = ProtocolInfo.Proteus,

@@ -24,7 +24,6 @@ import kotlin.test.assertIs
 @OptIn(ConfigurationApi::class)
 class SelfClientsUseCaseTest {
 
-
     @Mock
     private val clientRepository = configure(mock(classOf<ClientRepository>())) {
         stubsUnitByDefault = true
@@ -46,10 +45,24 @@ class SelfClientsUseCaseTest {
 
         val actual = selfClientsUseCase.invoke()
         assertIs<SelfClientsResult.Success>(actual)
-        assertEquals(expected, actual.clients)
     }
 
-
+    @Test
+    fun givenSelfListOfClientsSuccess_whenGettingListOfSelfClients_thenTheListIsSortedReverseChronologically() = runTest {
+        // given
+        val list = listOf(
+            CLIENT.copy(registrationTime = "2022.01.01"),
+            CLIENT.copy(registrationTime = "2022.01.02")
+        )
+        val sorted = listOf(list[1], list[0])
+        given(clientRepository)
+            .coroutine { clientRepository.selfListOfClients() }
+            .then { Either.Right(list) }
+        // when
+        val actual = (selfClientsUseCase.invoke() as SelfClientsResult.Success)
+        // then
+        assertEquals(sorted, actual.clients)
+    }
 
     @Test
     fun givenSelfListOfClientsFail_thenTheErrorPropagated() = runTest {
@@ -64,29 +77,20 @@ class SelfClientsUseCaseTest {
     }
 
     private companion object {
+        val CLIENT = Client(
+            id = PlainId(value = "client_id_1"),
+            type = ClientType.Permanent,
+            registrationTime = "2022.01.01",
+            location = null,
+            deviceType = DeviceType.Desktop,
+            label = null,
+            cookie = null,
+            capabilities = null,
+            model = "Mac ox"
+        )
         val CLIENTS_LIST = listOf(
-            Client(
-                id = PlainId(value = "client_id_1"),
-                type = ClientType.Permanent,
-                registrationTime = "31.08.1966",
-                location = null,
-                deviceType = DeviceType.Desktop,
-                label = null,
-                cookie = null,
-                capabilities = null,
-                model = "Mac ox"
-            ),
-            Client(
-                id = PlainId(value = "client_id_1"),
-                type = ClientType.Permanent,
-                registrationTime = "01.06.2022",
-                location = null,
-                deviceType = DeviceType.Phone,
-                label = null,
-                cookie = null,
-                capabilities = null,
-                model = "iphone 15"
-            ),
+            CLIENT.copy(id = PlainId(value = "client_id_1")),
+            CLIENT.copy(id = PlainId(value = "client_id_2"))
         )
     }
 

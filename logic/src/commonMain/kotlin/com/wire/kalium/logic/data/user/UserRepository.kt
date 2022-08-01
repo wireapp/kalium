@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -18,6 +17,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.ChangeHandleRequest
 import com.wire.kalium.network.api.user.self.SelfApi
@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -58,12 +57,11 @@ interface UserRepository {
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-class UserDataSource(
+internal class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
-    private val assetRepository: AssetRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
@@ -85,18 +83,10 @@ class UserDataSource(
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
         .flatMap { userEntity ->
-            assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
             userDAO.insertUser(userEntity)
             metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
             Either.Right(Unit)
         }
-
-    private fun getQualifiedUserAssetId(userEntity: UserEntity): List<UserAssetId?> {
-        return mutableListOf<UserAssetId?>().also {
-            it.add(userEntity.previewAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
-            it.add(userEntity.completeAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
-        }
-    }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
@@ -111,21 +101,42 @@ class UserDataSource(
         }.flatMap {
             wrapStorageRequest {
                 val selfUser = getSelfUser()
-                userDAO.upsertUsers(
-                    it.map { userProfileDTO ->
+                val selfUserTeamId = selfUser?.teamId?.value
+                val teamMembers = it.filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+                val otherUsers = it.filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+                userDAO.upsertTeamMembers(
+                    teamMembers.map { userProfileDTO ->
                         userMapper.fromApiModelWithUserTypeEntityToDaoModel(
                             userProfileDTO = userProfileDTO,
-                            userTypeEntity = userTypeEntityMapper.fromOtherUserTeamAndDomain(
+                            null
+                        )
+                    }
+                )
+
+                userDAO.upsertUsers(
+                    otherUsers.map { userProfileDTO ->
+                        userMapper.fromApiModelWithUserTypeEntityToDaoModel(
+                            userProfileDTO = userProfileDTO,
+                            userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
                                 selfUserTeamId = selfUser?.teamId?.value,
                                 otherUserTeamId = userProfileDTO.teamId,
-                                selfUserDomain = selfUser?.id?.domain
+                                selfUserDomain = selfUser?.id?.domain,
+                                isService = userProfileDTO.service != null
                             )
                         )
                     }
                 )
             }
         }
+
+    private fun isTeamMember(
+        selfUserTeamId: String?,
+        userProfileDTO: UserProfileDTO,
+        selfUser: SelfUser?
+    ) = (selfUserTeamId != null &&
+            userProfileDTO.teamId == selfUserTeamId &&
+            userProfileDTO.id.domain == selfUser?.id?.domain)
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map(idMapper::toDaoModel)
@@ -200,11 +211,12 @@ class UserDataSource(
             val selfUser = getSelfUser()
             publicUserMapper.fromUserDetailResponseWithUsertype(
                 userDetailResponse = userProfile,
-                userType = userTypeMapper.fromOtherUserTeamAndDomain(
+                userType = userTypeMapper.fromTeamAndDomain(
                     otherUserDomain = userProfile.id.domain,
                     selfUserTeamId = selfUser?.teamId?.value,
                     otherUserTeamId = userProfile.teamId,
-                    selfUserDomain = selfUser?.id?.domain
+                    selfUserDomain = selfUser?.id?.domain,
+                    isService = userProfile.service != null
                 )
             )
         }
