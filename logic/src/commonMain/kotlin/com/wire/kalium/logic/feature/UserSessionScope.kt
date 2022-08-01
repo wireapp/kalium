@@ -90,6 +90,8 @@ import com.wire.kalium.logic.sync.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
+import com.wire.kalium.logic.sync.SyncCriteriaProvider
+import com.wire.kalium.logic.sync.SyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.UserEventReceiver
@@ -176,8 +178,7 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            assetRepository
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
     private val teamRepository: TeamRepository
@@ -200,6 +201,8 @@ abstract class UserSessionScopeCommon(
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
         userDatabaseProvider.conversationDAO,
+        userDatabaseProvider.userDAO,
+        userDatabaseProvider.metadataDAO
     )
 
     private val publicUserRepository: SearchUserRepository
@@ -285,12 +288,16 @@ abstract class UserSessionScopeCommon(
             conversationEventReceiver, userEventReceiver, featureConfigEventReceiver
         )
 
+    private val syncCriteriaProvider: SyncCriteriaProvider
+        get() = SyncCriteriaProviderImpl(clientRepository, logoutRepository)
+
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
             authenticatedDataSourceSet.userSessionWorkScheduler,
             syncRepository,
             eventProcessor,
-            eventGatherer
+            eventGatherer,
+            syncCriteriaProvider
         )
     }
 

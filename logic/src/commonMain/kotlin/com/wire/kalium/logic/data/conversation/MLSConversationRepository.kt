@@ -13,6 +13,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -32,6 +33,7 @@ interface MLSConversationRepository {
     suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
 }
 
 class MLSConversationDataSource(
@@ -84,6 +86,17 @@ class MLSConversationDataSource(
         getConversationMembers(groupID).flatMap { members ->
             establishMLSGroup(groupID, members)
         }
+
+    override suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit> {
+        kaliumLogger.d("Requesting to re-join MLS group $groupID with epoch $epoch")
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapApiRequest {
+                mlsMessageApi.sendMessage(MLSMessageApi.Message(mlsClient.joinConversation(groupID, epoch)))
+            }.onSuccess {
+                conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, groupID)
+            }
+        }
+    }
 
     override suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         // TODO: check for federated and non-federated members
