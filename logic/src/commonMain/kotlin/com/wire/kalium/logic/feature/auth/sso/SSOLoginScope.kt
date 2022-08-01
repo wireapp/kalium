@@ -3,8 +3,6 @@ package com.wire.kalium.logic.feature.auth.sso
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
-import com.wire.kalium.logic.data.session.SessionMapper
-import com.wire.kalium.logic.di.MapperProvider
 
 class SSOLoginScope internal constructor(
     private val ssoLoginRepository: SSOLoginRepository,
