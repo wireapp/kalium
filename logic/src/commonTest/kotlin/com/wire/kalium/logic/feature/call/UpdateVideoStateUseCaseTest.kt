@@ -37,6 +37,12 @@ class UpdateVideoStateUseCaseTest {
             .whenInvokedWith(eq(conversationId.toString()), eq(isCameraOn))
             .thenDoNothing()
 
+        given(callManager)
+            .suspendFunction(callManager::updateVideoState)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Unit)
+
+
     }
 
     @Test

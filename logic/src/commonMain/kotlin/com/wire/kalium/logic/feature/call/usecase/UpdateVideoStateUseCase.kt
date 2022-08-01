@@ -16,14 +16,14 @@ class UpdateVideoStateUseCase(
         conversationId: ConversationId,
         videoState: VideoState
     ) {
-        callRepository.updateIsCameraOnById(conversationId.toString(), videoState == VideoState.STARTED)
+        if (videoState != VideoState.PAUSED)
+            callRepository.updateIsCameraOnById(conversationId.toString(), videoState == VideoState.STARTED)
 
         //updateVideoState should be called only when the call is answered/established
         callRepository.callsFlow().first().find { call ->
-            call.conversationId == conversationId
-        }?.status?.also {
-            if (it == CallStatus.ESTABLISHED || it == CallStatus.ANSWERED)
-                callManager.value.updateVideoState(conversationId, videoState)
+            call.conversationId == conversationId && call.status == CallStatus.ESTABLISHED
+        }?.let {
+            callManager.value.updateVideoState(conversationId, videoState)
         }
     }
 }
