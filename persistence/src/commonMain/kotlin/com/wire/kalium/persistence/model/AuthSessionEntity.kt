@@ -42,7 +42,6 @@ sealed class AuthSessionEntity {
     @SerialName("user_sso_id") abstract val ssoId: SsoIdEntity?
     @SerialName("wire_server") abstract val serverLinks: ServerConfigEntity.Links
 
-
     @Serializable
     @SerialName("authsession.valid")
     data class Valid(
