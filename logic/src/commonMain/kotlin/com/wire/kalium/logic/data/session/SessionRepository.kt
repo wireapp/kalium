@@ -8,9 +8,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.persistence.client.SessionStorage
 import com.wire.kalium.persistence.model.AuthSessionEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
@@ -19,6 +22,11 @@ import kotlinx.coroutines.flow.map
 
 interface SessionRepository {
     fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit>
+    fun updateTokens(
+        userId: UserId,
+        accessTokenDTO: AccessTokenDTO,
+        refreshTokenDTO: RefreshTokenDTO?
+    ): Either<StorageFailure, AuthSession?>
 
     // TODO(optimization): exposing all session is unnecessary since we only need the IDs
     //                     of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
@@ -43,6 +51,31 @@ internal class SessionDataSource(
 
     override fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit> =
         wrapStorageRequest { sessionStorage.addOrReplaceSession(sessionMapper.toPersistenceSession(autSession, ssoId)) }
+
+    override fun updateTokens(
+        userId: UserId,
+        accessTokenDTO: AccessTokenDTO,
+        refreshTokenDTO: RefreshTokenDTO?
+    ): Either<StorageFailure, AuthSession?> =
+        wrapStorageRequest { sessionStorage.userSession(idMapper.toDaoModel(userId)) }.flatMap { oldSession ->
+            when (oldSession) {
+                is AuthSessionEntity.Invalid -> Either.Right(null)
+                is AuthSessionEntity.Valid -> {
+                    wrapStorageRequest {
+                        sessionStorage.addOrReplaceSession(
+                            AuthSessionEntity.Valid(
+                                userId = oldSession.userId,
+                                tokenType = accessTokenDTO.tokenType,
+                                accessToken = accessTokenDTO.value,
+                                refreshToken = refreshTokenDTO?.value ?: oldSession.refreshToken,
+                                oldSession.serverLinks,
+                                ssoId = oldSession.ssoId
+                            )
+                        )
+                    }.flatMap { userSession(userId) }
+                }
+            }
+        }
 
     override fun allSessions(): Either<StorageFailure, List<AuthSession>> =
         wrapStorageRequest { sessionStorage.allSessions()?.values?.toList()?.map { sessionMapper.fromPersistenceSession(it) } }
@@ -80,19 +113,20 @@ internal class SessionDataSource(
         }
 
     override fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit> =
-        userSession(userId).map { existSession ->
-            sessionStorage.addOrReplaceSession(
-                sessionMapper.toPersistenceSession(
-                    AuthSession(
-                        AuthSession.Session.Invalid(
-                            userId,
-                            reason,
-                            isHardLogout
-                        ), existSession.serverLinks
+        wrapStorageRequest {
+            sessionStorage.userSession(idMapper.toDaoModel(userId))
+        }.flatMap { existSession ->
+            wrapStorageRequest {
+                sessionStorage.addOrReplaceSession(
+                    AuthSessionEntity.Invalid(
+                        idMapper.toDaoModel(userId),
+                        existSession.serverLinks,
+                        com.wire.kalium.persistence.model.LogoutReason.values()[reason.ordinal],
+                        isHardLogout,
+                        existSession.ssoId
                     )
                 )
-            )
-
+            }
         }
 
     override fun currentSession(): Either<StorageFailure, AuthSession> =
