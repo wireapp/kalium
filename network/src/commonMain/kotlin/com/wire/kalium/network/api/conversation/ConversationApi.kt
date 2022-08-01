@@ -3,6 +3,7 @@ package com.wire.kalium.network.api.conversation
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -40,4 +41,10 @@ interface ConversationApi {
         conversationId: ConversationId,
         conversationAccessInfoDTO: ConversationAccessInfoDTO
     ): NetworkResponse<UpdateConversationAccessResponse>
+
+    suspend fun updateConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId,
+        conversationMemberRoleDTO: ConversationMemberRoleDTO
+    ): NetworkResponse<Unit>
 }

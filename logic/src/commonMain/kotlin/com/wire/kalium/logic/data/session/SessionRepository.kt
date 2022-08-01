@@ -2,16 +2,17 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.SessionStorage
+import com.wire.kalium.persistence.model.AuthSessionEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -22,9 +23,11 @@ interface SessionRepository {
     // TODO(optimization): exposing all session is unnecessary since we only need the IDs
     //                     of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
     fun allSessions(): Either<StorageFailure, List<AuthSession>>
+    fun allValidSessions(): Either<StorageFailure, List<AuthSession>>
     fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
     fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
+    fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, AuthSession>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>>
     fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
@@ -39,10 +42,16 @@ internal class SessionDataSource(
 ) : SessionRepository {
 
     override fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit> =
-        wrapStorageRequest { sessionStorage.addSession(sessionMapper.toPersistenceSession(autSession, ssoId)) }
+        wrapStorageRequest { sessionStorage.addOrReplaceSession(sessionMapper.toPersistenceSession(autSession, ssoId)) }
 
     override fun allSessions(): Either<StorageFailure, List<AuthSession>> =
         wrapStorageRequest { sessionStorage.allSessions()?.values?.toList()?.map { sessionMapper.fromPersistenceSession(it) } }
+
+    override fun allValidSessions(): Either<StorageFailure, List<AuthSession>> =
+        wrapStorageRequest {
+            sessionStorage.allSessions()?.filter { it.value is AuthSessionEntity.Valid }?.values?.toList()
+                ?.map { sessionMapper.fromPersistenceSession(it) }
+        }
 
     override fun userSession(userId: UserId): Either<StorageFailure, AuthSession> =
         idMapper.toDaoModel(userId).let { userIdEntity ->
@@ -58,7 +67,7 @@ internal class SessionDataSource(
             }
         }, { sessionsList ->
             sessionsList.forEach {
-                if (it.tokens.userId == userId) {
+                if (it.session.userId == userId) {
                     return@fold Either.Right(true)
                 }
             }
@@ -68,6 +77,22 @@ internal class SessionDataSource(
     override fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit> =
         idMapper.toDaoModel(userId).let { userIdEntity ->
             wrapStorageRequest { sessionStorage.setCurrentSession(userIdEntity) }
+        }
+
+    override fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit> =
+        userSession(userId).map { existSession ->
+            sessionStorage.addOrReplaceSession(
+                sessionMapper.toPersistenceSession(
+                    AuthSession(
+                        AuthSession.Session.Invalid(
+                            userId,
+                            reason,
+                            isHardLogout
+                        ), existSession.serverLinks
+                    )
+                )
+            )
+
         }
 
     override fun currentSession(): Either<StorageFailure, AuthSession> =
