@@ -4,6 +4,7 @@ import com.wire.kalium.testservice.api.v1.ClientResources
 import com.wire.kalium.testservice.api.v1.ConversationResources
 import com.wire.kalium.testservice.api.v1.InstanceLifecycle
 import com.wire.kalium.testservice.health.TestserviceHealthCheck
+import com.wire.kalium.testservice.managed.InstanceService
 import io.dropwizard.Application
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
@@ -24,10 +25,16 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
     }
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
-        val clientResources = ClientResources();
-        val conversationResources = ConversationResources();
-        val instanceLifecycle = InstanceLifecycle();
-        environment.healthChecks().register("template", TestserviceHealthCheck());
+
+        // managed
+        val instanceService = InstanceService()
+        environment.lifecycle().manage(instanceService)
+
+        // resources
+        val clientResources = ClientResources()
+        val conversationResources = ConversationResources()
+        val instanceLifecycle = InstanceLifecycle(instanceService)
+        environment.healthChecks().register("template", TestserviceHealthCheck())
         environment.jersey().register(clientResources)
         environment.jersey().register(conversationResources)
         environment.jersey().register(instanceLifecycle)

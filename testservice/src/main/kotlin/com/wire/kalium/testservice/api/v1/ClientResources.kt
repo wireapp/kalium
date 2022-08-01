@@ -5,6 +5,7 @@ import javax.ws.rs.POST
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
+import javax.ws.rs.WebApplicationException
 import javax.ws.rs.core.MediaType
 
 @Path("/api/v1")
@@ -15,7 +16,7 @@ class ClientResources {
     @POST
     @Path("/instance/{id}/availability")
     fun availability(@PathParam("id") id: String): Instance {
-        throw Exception("Not yet implemented")
+        throw WebApplicationException("Not yet implemented")
     }
 
     // GET /api/v1/instance/{instanceId}/clients

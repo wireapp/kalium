@@ -5,6 +5,7 @@ import javax.ws.rs.POST
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
+import javax.ws.rs.WebApplicationException
 import javax.ws.rs.core.MediaType
 
 @Path("/api/v1")
@@ -15,14 +16,14 @@ class ConversationResources {
     @POST
     @Path("/instance/{id}/archive")
     fun archive(@PathParam("id") id: String): Instance {
-        throw Exception("Not yet implemented")
+        throw WebApplicationException("Not yet implemented")
     }
 
     // clear a conversation
     @POST
     @Path("/instance/{id}/clear")
     fun clear(@PathParam("id") id: String): Instance {
-        throw Exception("Not yet implemented")
+        throw WebApplicationException("Not yet implemented")
     }
 
     // POST /api/v1/instance/{instanceId}/delete
