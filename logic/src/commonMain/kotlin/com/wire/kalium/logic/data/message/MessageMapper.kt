@@ -158,7 +158,7 @@ class MessageMapperImpl(
 
         is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
 
-        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption
+        is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(this.encodedData)
 
         // We store the unknown fields of the message in case we want to start handling them in the future
         is MessageContent.Unknown -> MessageEntityContent.Unknown(this.typeName, this.encodedData)
@@ -197,7 +197,7 @@ class MessageMapperImpl(
             this.mimeType, this.assetSizeInBytes, this.assetName
         )
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
-        MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption
+        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData)
     }
 
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {

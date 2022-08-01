@@ -36,7 +36,6 @@ internal class PersistMessageUseCaseImpl(
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
         when (this) {
             is MessageContent.MemberChange -> true
-            MessageContent.MissedCall -> true
             is MessageContent.Text -> true
             is MessageContent.Calling -> true
             is MessageContent.Asset -> true
@@ -45,6 +44,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.RestrictedAsset -> true
             is MessageContent.DeleteForMe -> false
             is MessageContent.Unknown -> false
+            is MessageContent.FailedDecryption -> true
+            MessageContent.MissedCall -> true
             MessageContent.Empty -> false
             MessageContent.Ignored -> false
         }

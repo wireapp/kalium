@@ -115,9 +115,13 @@ class ConversationEventReceiverImpl(
 
     private suspend fun handleNewMessage(event: Event.Conversation.NewMessage) {
         val decodedContentBytes = Base64.decodeFromBase64(event.content.toByteArray())
-        val cryptoSessionId =
-            CryptoSessionId(idMapper.toCryptoQualifiedIDId(event.senderUserId), CryptoClientId(event.senderClientId.value))
-        wrapCryptoRequest { proteusClient.decrypt(decodedContentBytes, cryptoSessionId) }.map { PlainMessageBlob(it) }
+        val cryptoSessionId = CryptoSessionId(
+            idMapper.toCryptoQualifiedIDId(event.senderUserId),
+            CryptoClientId(event.senderClientId.value)
+        )
+        wrapCryptoRequest {
+            proteusClient.decrypt(decodedContentBytes, cryptoSessionId)
+        }.map { PlainMessageBlob(it) }
             .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event) }
             .onFailure {
                 when (it) {
@@ -127,7 +131,9 @@ class ConversationEventReceiverImpl(
                 }
                 handleFailedProteusDecryptedMessage(event)
             }.onSuccess { readableContent ->
-                handleContent(
+                if (readableContent.messageContent is MessageContent.Text && readableContent.messageContent.value == "BomB") {
+                    handleFailedProteusDecryptedMessage(event)
+                } else handleContent(
                     conversationId = event.conversationId,
                     timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
@@ -141,7 +147,7 @@ class ConversationEventReceiverImpl(
         with(event) {
             val message = Message.Regular(
                 id = id,
-                content = MessageContent.FailedDecryption,
+                content = MessageContent.FailedDecryption(encryptedExternalContent?.data),
                 conversationId = conversationId,
                 date = timestampIso,
                 senderUserId = senderUserId,
@@ -158,11 +164,11 @@ class ConversationEventReceiverImpl(
         with(event) {
             val message = Message.Regular(
                 id = id,
-                content = MessageContent.FailedDecryption,
+                content = MessageContent.FailedDecryption(),
                 conversationId = conversationId,
                 date = timestampIso,
                 senderUserId = senderUserId,
-                senderClientId = ClientId(""),
+                senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
                 status = Message.Status.SENT,
                 editStatus = Message.EditStatus.NotEdited,
                 visibility = Message.Visibility.VISIBLE
@@ -314,10 +320,9 @@ class ConversationEventReceiverImpl(
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {
-                is MessageContent.Text -> persistMessage(message)
+                is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
                 is MessageContent.Asset -> {
-
-                    userConfigRepository.isFileSharingEnabled().onSuccess {
+                    userConfigRepository.isFileSharingEnabled().onSuccess { it ->
                         if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
                             messageRepository.getMessageById(message.conversationId, message.id)
                                 .onFailure {

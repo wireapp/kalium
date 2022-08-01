@@ -250,6 +250,7 @@ class GetNotificationsUseCaseImpl(
         is MessageContent.TextEdited -> false
         is MessageContent.RestrictedAsset -> true
         is MessageContent.DeleteForMe -> false
+        is MessageContent.FailedDecryption -> false
         MessageContent.Empty -> false
         MessageContent.Ignored -> false
     }
