@@ -62,7 +62,7 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
-    fun givenAFailedMessage_WhenDelete_TheMessageShouldBeDeleted() = runTest {
+    fun givenAFailedMessage_WhenItGetsDeletedForEveryone_TheMessageShouldBeDeleted() = runTest {
         // given
         val deleteForEveryone = true
         val (arrangement, deleteMessageUseCase) = Arrangement()
