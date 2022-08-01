@@ -56,7 +56,7 @@ class PublicUserMapperImpl(
         previewPicture = userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
         completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
-        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userTypEntity)
+        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType)
     )
 
     override fun fromUserDetailResponseWithUsertype(
@@ -95,7 +95,7 @@ class PublicUserMapperImpl(
             ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userTypEntity = userTypeEntity
+        userType = userTypeEntity
     )
 
 }

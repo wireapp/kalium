@@ -59,6 +59,8 @@ fun currentUserSession(): UserSessionScope {
 }
 
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
+    userSession.syncManager.waitUntilSlowSyncCompletion()
+
     val conversations = userSession.conversations.getConversations().let {
         when (it) {
             is GetConversationsUseCase.Result.Success -> it.convFlow.first()
@@ -224,7 +226,6 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
                     }
                 }
             }
-
         }
 
         while (true) {
@@ -232,7 +233,6 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
             userSession.messages.sendTextMessage(conversationID, message)
         }
     }
-
 }
 
 class AddMemberToGroupCommand : CliktCommand(name = "add-member") {

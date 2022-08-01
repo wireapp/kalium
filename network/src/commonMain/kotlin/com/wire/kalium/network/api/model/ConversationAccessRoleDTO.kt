@@ -12,9 +12,15 @@ enum class ConversationAccessRoleDTO {
     @SerialName("guest")
     GUEST,
     @SerialName("service")
-    SERVICE;
+    SERVICE,
+    @SerialName("partner")
+    EXTERNAL;
 
     override fun toString(): String {
         return this.name.lowercase()
+    }
+
+    companion object {
+        val DEFAULT_VALUE_WHEN_NULL = setOf(TEAM_MEMBER, NON_TEAM_MEMBER, SERVICE)
     }
 }

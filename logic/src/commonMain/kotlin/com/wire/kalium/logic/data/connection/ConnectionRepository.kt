@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.connection
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONNECTIONS
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -90,7 +91,7 @@ internal class ConnectionDataSource(
 
         while (hasMore && latestResult.isRight()) {
             latestResult = wrapApiRequest {
-                kaliumLogger.v("Fetching connections page starting with pagingState $lastPagingState")
+                kaliumLogger.withFeatureId(CONNECTIONS).v("Fetching connections page starting with pagingState $lastPagingState")
                 connectionApi.fetchSelfUserConnections(pagingState = lastPagingState)
             }.onSuccess {
                 syncConnectionsStatuses(it.connections)
@@ -139,10 +140,10 @@ internal class ConnectionDataSource(
 
     /**
      * Check if we can transition to the correct connection status
-     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] or [ConnectionState.ACCEPTED]
+     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] [ConnectionState.BLOCKED] or [ConnectionState.ACCEPTED]
      */
     private fun isValidConnectionState(connectionState: ConnectionState): Boolean = when (connectionState) {
-        IGNORED, CANCELLED, ACCEPTED -> true
+        BLOCKED, IGNORED, CANCELLED, ACCEPTED -> true
         else -> false
     }
 
@@ -212,11 +213,12 @@ internal class ConnectionDataSource(
                 val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
                     userDetailResponse = userProfileDTO,
                     connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
-                    userTypeEntity = userTypeEntityTypeMapper.fromOtherUserTeamAndDomain(
+                    userTypeEntity = userTypeEntityTypeMapper.fromTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = selfUser.teamId?.value,
                         otherUserTeamId = userProfileDTO.teamId,
-                        selfUserDomain = selfUser.id.domain
+                        selfUserDomain = selfUser.id.domain,
+                        isService = userProfileDTO.service != null
                     )
                 )
 

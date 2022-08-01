@@ -25,6 +25,9 @@ data class ConversationResponse(
     @SerialName("group_id")
     val groupId: String?,
 
+    @SerialName("epoch")
+    val epoch: ULong?,
+
     @Serializable(with = ConversationTypeSerializer::class)
     val type: Type,
 
@@ -41,7 +44,7 @@ data class ConversationResponse(
     val lastEventTime: String,
 
     @SerialName("access") val access: Set<ConversationAccessDTO>,
-    @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRoleDTO>?,
+    @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
 ) {
 
     val isOneOnOneConversation: Boolean

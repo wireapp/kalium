@@ -12,7 +12,7 @@ interface SelfClientsUseCase {
 class SelfClientsUseCaseImpl(private val clientRepository: ClientRepository) : SelfClientsUseCase {
     override suspend fun invoke(): SelfClientsResult = clientRepository.selfListOfClients().fold(
         { SelfClientsResult.Failure.Generic(it) },
-        { SelfClientsResult.Success(it) }
+        { SelfClientsResult.Success(it.sortedByDescending { it.registrationTime }) }
     )
 }
 

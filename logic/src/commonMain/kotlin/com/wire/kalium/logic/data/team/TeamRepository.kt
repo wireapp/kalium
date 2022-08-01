@@ -55,7 +55,8 @@ internal class TeamDataSource(
                 userMapper.fromTeamMemberToDaoModel(
                     teamId = teamId,
                     teamMemberDTO = teamMember,
-                    userDomain = userDomain
+                    userDomain = userDomain,
+                    permissionsCode = teamMember.permissions?.copy
                 )
             }
         } else {
@@ -63,7 +64,7 @@ internal class TeamDataSource(
         }
     }.flatMap { teamMembers ->
         wrapStorageRequest {
-            userDAO.upsertTeamMembers(teamMembers)
+            userDAO.upsertTeamMembersTypes(teamMembers)
         }
     }
 

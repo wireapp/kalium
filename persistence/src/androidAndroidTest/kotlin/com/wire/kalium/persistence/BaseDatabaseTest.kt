@@ -16,6 +16,10 @@ actual open class BaseDatabaseTest actual constructor() {
     }
 
     actual fun createDatabase(): UserDatabaseProvider {
-        return UserDatabaseProvider(ApplicationProvider.getApplicationContext(), userId, UserDBSecret("db_secret".toByteArray()))
+        return UserDatabaseProvider(
+            ApplicationProvider.getApplicationContext(),
+            userId,
+            UserDBSecret("db_secret".toByteArray())
+        )
     }
 }

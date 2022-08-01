@@ -19,39 +19,32 @@ data class Conversation(
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
     val access: List<Access>,
-    val accessRole: List<AccessRole>?
+    val accessRole: List<AccessRole>
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
 
-    fun isGuestAllowed(): Boolean = accessRole?.let {
+    fun isGuestAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.GUEST))
-    } ?: TODO(
-        "swagger: This field is optional. If it is not present, " +
-                "the default will be [team_member, non_team_member, service]"
-    )
-    fun isNonTeamMemberAllowed(): Boolean = accessRole?.let {
+    }
+
+    fun isNonTeamMemberAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.NON_TEAM_MEMBER))
-    } ?: TODO(
-        "swagger: This field is optional. If it is not present, " +
-                "the default will be [team_member, non_team_member, service]"
-    )
-    fun isServicesAllowed(): Boolean = this.accessRole?.let {
+    }
+
+    fun isServicesAllowed(): Boolean = accessRole.let {
         (it.contains(AccessRole.SERVICE))
-    } ?: TODO(
-        "swagger: This field is optional. If it is not present, " +
-                "the default will be [team_member, non_team_member, service]"
-    )
+    }
 
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
-    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE }
+    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL }
     enum class Access { PRIVATE, INVITE, LINK, CODE }
-}
 
-sealed class ProtocolInfo {
-    object Proteus : ProtocolInfo()
-    data class MLS(val groupId: String, val groupState: GroupState) : ProtocolInfo() {
-        enum class GroupState { PENDING, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+    sealed class ProtocolInfo {
+        object Proteus : ProtocolInfo()
+        data class MLS(val groupId: String, val groupState: GroupState, val epoch: ULong) : ProtocolInfo() {
+            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+        }
     }
 }
 
@@ -79,9 +72,9 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val userType: UserType,
         val lastModifiedDate: String,
         val connection: com.wire.kalium.logic.data.user.Connection,
-        val protocolInfo: ProtocolInfo,
+        val protocolInfo: Conversation.ProtocolInfo,
         val access: List<Conversation.Access>,
-        val accessRole: List<Conversation.AccessRole>?
+        val accessRole: List<Conversation.AccessRole>
     ) : ConversationDetails(
         Conversation(
             id = conversationId,
@@ -100,7 +93,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 
 data class MembersInfo(val self: Member, val otherMembers: List<Member>)
 
-data class Member(val id: UserId, val role: Role) {
+data class Member(val id: UserId, val role: Role) { // TODO Kubaz rename to ConversationMember
     sealed class Role {
         object Member : Role()
         object Admin : Role()

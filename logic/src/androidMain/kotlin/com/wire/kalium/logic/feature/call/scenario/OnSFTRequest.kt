@@ -23,6 +23,7 @@ class OnSFTRequest(
     private val callingScope: CoroutineScope
 ) : SFTRequestHandler {
     override fun onSFTRequest(ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer?): Int {
+        callingLogger.i("[OnSFTRequest] -> Start")
         callingScope.launch {
             val dataString = data?.getString(0, CallManagerImpl.UTF8_ENCODING)
             dataString?.let {
@@ -30,10 +31,10 @@ class OnSFTRequest(
                     url = url,
                     data = dataString
                 ).nullableFold({
-                    callingLogger.i("Could not connect to SFT server.")
+                    callingLogger.i("[OnSFTRequest] -> Could not connect to SFT Server: $url")
                     null
                 }, {
-                    callingLogger.i("Connected to SFT server.")
+                    callingLogger.i("[OnSFTRequest] -> Connected to SFT Server: $url")
                     it
                 })
 
@@ -41,12 +42,12 @@ class OnSFTRequest(
             }
         }
 
-        callingLogger.i("OnSFTRequest -> sftRequestHandler called")
+        callingLogger.i("[OnSFTRequest] -> sftRequestHandler called")
         return AvsCallBackError.NONE.value
     }
 
     private suspend fun onSFTResponse(data: ByteArray?, context: Pointer?) {
-        callingLogger.i("OnSFTRequest - sending SFT Response..")
+        callingLogger.i("[OnSFTRequest] -> Sending SFT Response")
         val responseData = data ?: byteArrayOf()
         calling.wcall_sft_resp(
             inst = handle.await(),
@@ -55,8 +56,7 @@ class OnSFTRequest(
             length = responseData.size,
             ctx = context
         )
-        callingLogger.i("OnSFTRequest - wcall_sft_resp() called")
-        callingLogger.i("OnSFTRequest - SFT Response sent.")
+        callingLogger.i("[OnSFTRequest] -> wcall_sft_resp() called")
     }
 
 }
