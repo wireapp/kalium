@@ -7,10 +7,15 @@ import com.russhwolf.settings.AndroidSettings
 import com.russhwolf.settings.Settings
 
 actual class EncryptedSettingsHolder(
-    private val applicationContext: Context, options: SettingOptions
+    private val applicationContext: Context,
+    options: SettingOptions
 ) {
     private fun getOrCreateMasterKey(): MasterKey =
-        MasterKey.Builder(applicationContext).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).setRequestStrongBoxBacked(true).build()
+        MasterKey
+            .Builder(applicationContext)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .setRequestStrongBoxBacked(true)
+            .build()
 
     actual val encryptedSettings: Settings = AndroidSettings(
         if (options.shouldEncryptData) {
