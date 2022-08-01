@@ -262,4 +262,7 @@ class ConversationDAOImpl(
     override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
         conversationQueries.updateConversationReadDate(date, conversationID)
     }
+
+    override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
+        memberQueries.updateMemberRole(role, userId, conversationId)
 }

@@ -1,20 +1,24 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
@@ -27,6 +31,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -190,12 +195,12 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(groupConversationUpdates.asFlow())
+            .thenReturn(groupConversationUpdates.asFlow().map { Either.Right(it) })
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(oneOnOneConversation.id))
-            .thenReturn(oneOnOneDetailsChannel.consumeAsFlow())
+            .thenReturn(oneOnOneDetailsChannel.consumeAsFlow().map { Either.Right(it) })
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::getUnreadConversationCount)
@@ -206,11 +211,11 @@ class ObserveConversationListDetailsUseCaseTest {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
 
             val conversationList: ConversationListDetails = awaitItem()
-            assertContentEquals(groupConversationUpdates, conversationList.conversationList)
+            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, conversationList.conversationList)
 
             oneOnOneDetailsChannel.send(secondOneOnOneDetails)
             val updatedConversationList: ConversationListDetails = awaitItem()
-            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, updatedConversationList.conversationList)
+            assertContentEquals(groupConversationUpdates + secondOneOnOneDetails, updatedConversationList.conversationList)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -242,12 +247,12 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(groupConversationDetails))
+            .thenReturn(flowOf(Either.Right(groupConversationDetails)))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(selfConversation.id))
-            .thenReturn(flowOf(selfConversationDetails))
+            .thenReturn(flowOf(Either.Right(selfConversationDetails)))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::getUnreadConversationCount)
@@ -298,7 +303,7 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(groupConversationDetails))
+            .thenReturn(flowOf(groupConversationDetails).map { Either.Right(it) })
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::getUnreadConversationCount)
@@ -333,7 +338,7 @@ class ObserveConversationListDetailsUseCaseTest {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(groupConversationDetails))
+            .thenReturn(flowOf(groupConversationDetails).map { Either.Right(it) })
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::getUnreadConversationCount)
@@ -342,6 +347,37 @@ class ObserveConversationListDetailsUseCaseTest {
 
         observeConversationsUseCase().test {
             assertEquals(false, (awaitItem().conversationList[0] as ConversationDetails.Group).hasOngoingCall)
+        }
+    }
+
+    @Suppress("FunctionNaming")
+    @Test
+    fun givenConversationDetailsFailure_whenObservingDetailsList_thenIgnoreConversationWithFailure() = runTest {
+        val successConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("successId", "domain"))
+        val successConversationDetails = TestConversationDetails.CONVERSATION_ONE_ONE.copy(conversation = successConversation)
+        val failureConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("failedId", "domain"))
+
+        given(callRepository)
+            .suspendFunction(callRepository::ongoingCallsFlow)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationList)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf(successConversation, failureConversation)))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .then {
+                if (it == successConversation.id) flowOf(Either.Right(successConversationDetails))
+                else flowOf(Either.Left(StorageFailure.DataNotFound))
+            }
+
+        observeConversationsUseCase().test {
+            assertEquals(awaitItem(), listOf(successConversationDetails))
+            awaitComplete()
         }
     }
 
