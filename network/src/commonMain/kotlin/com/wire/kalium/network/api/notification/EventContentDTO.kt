@@ -90,6 +90,14 @@ sealed class EventContentDTO {
             val time: String,
             @SerialName("data") val message: String,
         ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.delete")
+        data class DeletedConversationDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            val time: String
+        ) : Conversation()
     }
 
     @Serializable
