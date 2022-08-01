@@ -1,6 +1,6 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.logger.obfuscateLogMessage
+import com.wire.kalium.logger.ObfuscateUtil.obfuscateLogMessage
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
