@@ -3,7 +3,10 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.User
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
@@ -28,7 +31,9 @@ class UserScope internal constructor(
     private val syncManager: SyncManager,
     private val assetRepository: AssetRepository,
     private val teamRepository: TeamRepository,
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val selfUserId: UserId,
+    private val sessionRepository: SessionRepository
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository, syncManager)
@@ -48,4 +53,9 @@ class UserScope internal constructor(
             UpdateSelfAvailabilityStatusUseCase(userRepository, syncManager)
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
+
+    val isPasswordRequeired get() = IsPasswordRequiredUseCase(
+        selfUserId = selfUserId,
+        sessionRepository = sessionRepository
+    )
 }
