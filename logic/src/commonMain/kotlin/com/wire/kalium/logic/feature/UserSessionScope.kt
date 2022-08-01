@@ -56,6 +56,7 @@ import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -361,6 +362,8 @@ abstract class UserSessionScopeCommon(
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
             connectionRepository,
+            logout,
+            clientRepository
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
@@ -435,7 +438,7 @@ abstract class UserSessionScopeCommon(
             qualifiedIdMapper
         )
     val logout: LogoutUseCase
-        get() = LogoutUseCase(
+        get() = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
             userId,
