@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -69,12 +68,5 @@ class RemoveMemberFromConversationUseCaseTest {
         }
 
         fun arrange() = this to removeMemberUseCase
-
-        companion object {
-            const val mlsGroupId = "mlsGroupId"
-            val proteusProtocolInfo = ProtocolInfo.Proteus
-            val mlsProtocolInfo = ProtocolInfo.MLS(mlsGroupId, groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED)
-
-        }
     }
 }

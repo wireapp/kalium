@@ -167,12 +167,6 @@ class MLSConversationRepositoryTest {
         val clientApi = mock(ClientApi::class)
         @Mock
         val mlsMessageApi = mock(classOf<MLSMessageApi>())
-        fun withGetConversationByGroupIdSuccessful() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationByGroupID)
-                .whenInvokedWith(anything())
-                .then { flowOf(TestConversation.ENTITY) }
-        }
 
         fun withGetConversationByGroupIdSuccessful() = apply {
             given(conversationDAO)

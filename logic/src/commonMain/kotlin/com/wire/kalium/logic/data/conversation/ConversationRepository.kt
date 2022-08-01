@@ -347,7 +347,7 @@ class ConversationDataSource(
     override suspend fun deleteMember(userID: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         detailsById(conversationId).flatMap { conversation ->
             when (conversation.protocol) {
-                is com.wire.kalium.logic.data.conversation.ProtocolInfo.Proteus ->
+                is Conversation.ProtocolInfo.Proteus ->
                     wrapApiRequest {
                         conversationApi.removeConversationMember(idMapper.toApiModel(userID), idMapper.toApiModel(conversationId))
                     }.fold({
@@ -362,7 +362,7 @@ class ConversationDataSource(
                     }
                     )
 
-                is com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS ->
+                is Conversation.ProtocolInfo.MLS ->
                     mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userID))
             }
         }

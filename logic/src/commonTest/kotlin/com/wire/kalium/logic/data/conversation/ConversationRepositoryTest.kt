@@ -814,9 +814,14 @@ class ConversationRepositoryTest {
     }
 
     companion object {
-        const val MLS_GROUP_ID = "mlsGroupId"
+        private const val MLS_GROUP_ID = "mlsGroupId"
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
-        val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(MLS_GROUP_ID, groupState = ConversationEntity.GroupState.ESTABLISHED)
+        val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo
+            .MLS(
+                MLS_GROUP_ID,
+                groupState = ConversationEntity.GroupState.ESTABLISHED,
+                0UL
+            )
 
         const val GROUP_NAME = "Group Name"
 
