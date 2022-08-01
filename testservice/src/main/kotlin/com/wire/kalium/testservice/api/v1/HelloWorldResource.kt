@@ -1,4 +1,4 @@
-package com.wire.kalium.testservice.resources
+package com.wire.kalium.testservice.api.v1
 
 import com.codahale.metrics.annotation.Timed
 import com.wire.kalium.testservice.models.Saying

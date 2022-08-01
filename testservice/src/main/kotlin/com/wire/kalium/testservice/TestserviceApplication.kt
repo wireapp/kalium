@@ -1,6 +1,8 @@
 package com.wire.kalium.testservice
 
-import com.wire.kalium.testservice.resources.HelloWorldResource
+import com.wire.kalium.testservice.api.v1.ClientResources
+import com.wire.kalium.testservice.api.v1.ConversationResources
+import com.wire.kalium.testservice.api.v1.InstanceLifecycle
 import io.dropwizard.Application
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
@@ -21,8 +23,12 @@ class TestserviceApplication: Application<TestserviceConfiguration>() {
     }
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
-        val resource = HelloWorldResource(configuration.getTemplate(), configuration.getDefaultName())
-        environment.jersey().register(resource)
+        val clientResources = ClientResources();
+        val conversationResources = ConversationResources();
+        val instanceLifecycle = InstanceLifecycle();
+        environment.jersey().register(clientResources)
+        environment.jersey().register(conversationResources)
+        environment.jersey().register(instanceLifecycle)
     }
 
 }
