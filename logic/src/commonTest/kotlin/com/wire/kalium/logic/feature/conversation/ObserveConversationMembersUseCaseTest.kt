@@ -7,10 +7,8 @@ import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.anything
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -36,11 +34,6 @@ class ObserveConversationMembersUseCaseTest {
     @Mock
     private val userRepository = mock(UserRepository::class)
 
-    @Mock
-    private val syncManager = configure(mock(SyncManager::class)) {
-        stubsUnitByDefault = true
-    }
-
     private lateinit var observeConversationMembers: ObserveConversationMembersUseCase
 
     @BeforeTest
@@ -48,34 +41,7 @@ class ObserveConversationMembersUseCaseTest {
         observeConversationMembers = ObserveConversationMembersUseCase(
             conversationRepository,
             userRepository,
-            syncManager
         )
-    }
-
-    @Test
-    fun givenAConversationID_whenObservingMembers_thenTheSyncManagerIsCalled() = runTest {
-        val conversationID = TestConversation.ID
-
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
-
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationMembers)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
-        observeConversationMembers(conversationID)
-
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .wasInvoked(exactly = once)
     }
 
     @Test
