@@ -39,14 +39,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
-        login(coreLogic, serverConfig)?.let {
-            val session = coreLogic.getSessionScope(it.tokens.userId)
+        login(coreLogic, serverConfig).let {
+            val session = coreLogic.getSessionScope(it.session.userId)
             val kaliumFileSystem = session.kaliumFileSystem
             val conversations = session.conversations.getConversations().let { result ->
                 when (result) {
                     is GetConversationsUseCase.Result.Failure -> {
                         throw IOException()
                     }
+
                     is GetConversationsUseCase.Result.Success -> result.convFlow.first()
                 }
             }
@@ -77,7 +78,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthSession? {
+    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthSession {
         val result = coreLogic.authenticationScope(backendLinks) {
             login("jacob.persson+summer1@wire.com", "hepphepp", false)
         }
@@ -89,7 +90,7 @@ class MainActivity : ComponentActivity() {
         }
 
         coreLogic.globalScope {
-            addAuthenticatedAccount(authSession = result.userSession)
+            addAuthenticatedAccount(result.userSession)
         }
 
         return result.userSession

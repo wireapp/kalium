@@ -7,6 +7,10 @@ on:
     branches: # Runs on develop to have the coverage diff on every PR
         - 'develop'
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
 jobs:
   gradle-run-tests:
     runs-on: ubuntu-20.04

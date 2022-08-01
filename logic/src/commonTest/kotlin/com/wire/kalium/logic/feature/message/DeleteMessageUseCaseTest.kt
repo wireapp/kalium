@@ -6,10 +6,12 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
@@ -58,7 +60,50 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
-    fun givenAMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
+    fun givenASentMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
+        // given
+        val deleteForEveryone = true
+
+        given(messageSender)
+            .suspendFunction(messageSender::sendMessage)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(Unit))
+        given(userRepository)
+            .suspendFunction(userRepository::observeSelfUser)
+            .whenInvoked()
+            .thenReturn(flowOf(TestUser.SELF))
+        given(clientRepository)
+            .suspendFunction(clientRepository::currentClientId)
+            .whenInvoked()
+            .then { Either.Right(SELF_CLIENT_ID) }
+        given(messageRepository)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(Unit))
+
+given(messageRepository)
+            .suspendFunction(messageRepository::getMessageById)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.SENT)))        // when
+        val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
+
+        // then
+        verify(messageSender)
+            .suspendFunction(messageSender::sendMessage)
+            .with(
+                matching { message ->
+                    message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
+                }
+            )
+            .wasInvoked(exactly = once)
+        verify(messageRepository)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
+            .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAFailedMessage_WhenDelete_TheMessageShouldBeDeleted() = runTest {
         // given
         val deleteForEveryone = true
         given(messageSender)
@@ -78,24 +123,34 @@ class DeleteMessageUseCaseTest {
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
+        given(messageRepository)
+            .suspendFunction(messageRepository::getMessageById)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.FAILED)))
+        given(messageRepository)
+            .suspendFunction(messageRepository::deleteMessage)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(Unit))
         // when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
         // then
         verify(messageSender)
             .suspendFunction(messageSender::sendMessage)
-            .with(matching { message ->
-                message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
-            })
-            .wasInvoked(exactly = once)
+            .with(anything())
+            .wasNotInvoked()
         verify(messageRepository)
             .suspendFunction(messageRepository::markMessageAsDeleted)
+            .with(anything(), anything())
+            .wasNotInvoked()
+        verify(messageRepository)
+            .suspendFunction(messageRepository::deleteMessage)
             .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenAMessage_WhenDeleteForEveryIsFalse_TheGeneratedMessageShouldBeCorrect() = runTest {
+    fun givenASentMessage_WhenDeleteForEveryIsFalse_TheGeneratedMessageShouldBeCorrect() = runTest {
         // given
         val deleteForEveryone = false
         given(messageSender)
@@ -114,11 +169,16 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
+        given(messageRepository)
+            .suspendFunction(messageRepository::getMessageById)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.SENT)))
 
         // when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value, idMapper.toProtoModel(
+            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value,
+            idMapper.toProtoModel(
                 TEST_CONVERSATION_ID
             )
         )
@@ -126,9 +186,11 @@ class DeleteMessageUseCaseTest {
         // then
         verify(messageSender)
             .suspendFunction(messageSender::sendMessage)
-            .with(matching { message ->
-                message.conversationId == TestUser.SELF.id && message.content == deletedForMeContent
-            })
+            .with(
+                matching { message ->
+                    message.conversationId == TestUser.SELF.id && message.content == deletedForMeContent
+                }
+            )
             .wasInvoked(exactly = once)
 
         verify(messageRepository)

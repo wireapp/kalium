@@ -87,4 +87,6 @@ interface ConversationDAO {
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>
     )
+
+    suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
 }

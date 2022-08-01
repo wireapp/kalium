@@ -55,7 +55,7 @@ fun restoreSession(): AuthSession? {
 
 fun currentUserSession(): UserSessionScope {
     val authSession = restoreSession() ?: throw PrintMessage("no active session")
-    return coreLogic.getSessionScope(authSession.tokens.userId)
+    return coreLogic.getSessionScope(authSession.session.userId)
 }
 
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
@@ -188,15 +188,15 @@ class LoginCommand : CliktCommand(name = "login") {
                 is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
                 is GetAllSessionsResult.Failure.Generic -> throw PrintMessage("Failed retrieve existing sessions: ${result.genericFailure}")
             }
-            if (sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
-                this.session.updateCurrentSession(loginResult.tokens.userId)
+            if (sessions.map { it.session.userId }.contains(loginResult.session.userId)) {
+                this.session.updateCurrentSession(loginResult.session.userId)
             } else {
                 val addAccountResult = addAuthenticatedAccount(loginResult, true)
                 if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                     throw PrintMessage("Failed to save session")
                 }
             }
-            loginResult.tokens.userId
+            loginResult.session.userId
         }
 
         coreLogic.sessionScope(userId) {

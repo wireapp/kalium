@@ -25,8 +25,8 @@ class ConversationScope(
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository)
 
-    val getConversationDetails: GetConversationDetailsUseCase
-        get() = GetConversationDetailsUseCase(conversationRepository)
+    val getConversationDetails: GetConversationUseCase
+        get() = GetConversationUseCase(conversationRepository)
 
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository)
@@ -67,5 +67,9 @@ class ConversationScope(
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
         get() = JoinExistingMLSConversationsUseCase(conversationRepository)
 
-    val updateConversationAccess: UpdateConversationAccessRoleUseCase get() = UpdateConversationAccessRoleUseCase(conversationRepository)
+    val updateConversationAccess: UpdateConversationAccessRoleUseCase
+        get() = UpdateConversationAccessRoleUseCase(conversationRepository)
+
+    val updateConversationMemberRole: UpdateConversationMemberRoleUseCase
+        get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
 }

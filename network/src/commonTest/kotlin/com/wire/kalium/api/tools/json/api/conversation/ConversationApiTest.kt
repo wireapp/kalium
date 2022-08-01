@@ -3,9 +3,11 @@ package com.wire.kalium.api.tools.json.api.conversation
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.api.notification.EventContentDTOJson
 import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationApiImpl
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
@@ -162,6 +164,23 @@ class ConversationApiTest : ApiTest {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUpdated>>(it)
             assertEquals(ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL, it.value.event.data.accessRole)
         }
+    }
+
+    @Test
+    fun whenUpdatingMemberRole_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val userId = UserId("userId", "userDomain")
+        val memberRole = ConversationMemberRoleDTO("conversation_role")
+        val networkClient = mockAuthenticatedNetworkClient(
+            "", statusCode = HttpStatusCode.NoContent,
+            assertion = {
+                assertPut()
+                assertPathEqual("/conversations/conversationDomain/conversationId/members/userDomain/userId")
+            }
+        )
+
+        val conversationApi = ConversationApiImpl(networkClient)
+        conversationApi.updateConversationMemberRole(conversationId, userId, memberRole)
     }
 
     private companion object {
