@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
@@ -54,7 +53,7 @@ class UserScope internal constructor(
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 
-    val isPasswordRequeired get() = IsPasswordRequiredUseCase(
+    val isPasswordRequired get() = IsPasswordRequiredUseCase(
         selfUserId = selfUserId,
         sessionRepository = sessionRepository
     )
