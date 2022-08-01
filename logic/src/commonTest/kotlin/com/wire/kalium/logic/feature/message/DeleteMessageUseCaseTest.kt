@@ -6,10 +6,12 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
@@ -57,16 +59,16 @@ class DeleteMessageUseCaseTest {
             messageRepository,
             userRepository,
             clientRepository,
-            syncManager,
             messageSender,
             idMapper
         )
     }
 
     @Test
-    fun givenAMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
-        //given
+    fun givenASentMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
+        // given
         val deleteForEveryone = true
+
         given(messageSender)
             .suspendFunction(messageSender::sendMessage)
             .whenInvokedWith(anything())
@@ -84,11 +86,15 @@ class DeleteMessageUseCaseTest {
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
+        given(messageRepository)
+            .suspendFunction(messageRepository::getMessageById)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.SENT)))
 
-        //when
+        // when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
-        //then
+        // then
         verify(messageSender)
             .suspendFunction(messageSender::sendMessage)
             .with(matching { message ->
@@ -102,8 +108,56 @@ class DeleteMessageUseCaseTest {
     }
 
     @Test
-    fun givenAMessage_WhenDeleteForEveryIsFalse_TheGeneratedMessageShouldBeCorrect() = runTest {
-        //given
+    fun givenAFailedMessage_WhenDelete_TheMessageShouldBeDeleted() = runTest {
+        // given
+        val deleteForEveryone = true
+
+        given(messageSender)
+            .suspendFunction(messageSender::sendMessage)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(Unit))
+        given(userRepository)
+            .suspendFunction(userRepository::observeSelfUser)
+            .whenInvoked()
+            .thenReturn(flowOf(TestUser.SELF))
+        given(clientRepository)
+            .suspendFunction(clientRepository::currentClientId)
+            .whenInvoked()
+            .then { Either.Right(SELF_CLIENT_ID) }
+        given(messageRepository)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(Unit))
+
+        given(messageRepository)
+            .suspendFunction(messageRepository::getMessageById)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.FAILED)))
+        given(messageRepository)
+            .suspendFunction(messageRepository::deleteMessage)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(Unit))
+        // when
+        val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
+
+        // then
+        verify(messageSender)
+            .suspendFunction(messageSender::sendMessage)
+            .with(anything())
+            .wasNotInvoked()
+        verify(messageRepository)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
+            .with(anything(), anything())
+            .wasNotInvoked()
+        verify(messageRepository)
+            .suspendFunction(messageRepository::deleteMessage)
+            .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenASentMessage_WhenDeleteForEveryIsFalse_TheGeneratedMessageShouldBeCorrect() = runTest {
+        // given
         val deleteForEveryone = false
         given(messageSender)
             .suspendFunction(messageSender::sendMessage)
@@ -121,8 +175,13 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
+        given(messageRepository)
+            .suspendFunction(messageRepository::getMessageById)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.SENT)))
 
-        //when
+
+        // when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value, idMapper.toProtoModel(
@@ -143,70 +202,6 @@ class DeleteMessageUseCaseTest {
             .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
             .wasInvoked(exactly = once)
 
-    }
-
-
-    @Test
-    fun givenAMessage_whenDeleting_thenStartSyncIsInvoked() = runTest {
-        //given
-        given(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .whenInvokedWith(anything())
-            .thenReturn(Either.Right(Unit))
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
-        given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .then { Either.Right(SELF_CLIENT_ID) }
-        given(messageRepository)
-            .suspendFunction(messageRepository::markMessageAsDeleted)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Either.Right(Unit))
-
-
-        //when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).shouldSucceed()
-
-        //then
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAMessage_whenDeleting_thenShouldNotWaitForAnyKindOfSyncState() = runTest {
-        //given
-        given(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .whenInvokedWith(anything())
-            .thenReturn(Either.Right(Unit))
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
-        given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .then { Either.Right(SELF_CLIENT_ID) }
-        given(messageRepository)
-            .suspendFunction(messageRepository::markMessageAsDeleted)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Either.Right(Unit))
-
-
-        //when
-        deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, true).shouldSucceed()
-
-        //then
-        verify(syncManager)
-            .suspendFunction(syncManager::waitUntilLive)
-            .wasNotInvoked()
-        verify(syncManager)
-            .suspendFunction(syncManager::waitUntilSlowSyncCompletion)
-            .wasNotInvoked()
     }
 
     companion object {
