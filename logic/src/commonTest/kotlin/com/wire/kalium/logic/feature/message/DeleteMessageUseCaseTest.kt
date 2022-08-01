@@ -37,7 +37,7 @@ class DeleteMessageUseCaseTest {
 
         val (arrangement, deleteMessageUseCase) = Arrangement()
             .withSendMessageSucceed()
-            .withSelfUserIs(TestUser.SELF)
+            .withSelfUser(TestUser.SELF)
             .withCurrentClientIdIs(SELF_CLIENT_ID)
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageByStatus(Message.Status.SENT)
@@ -67,7 +67,7 @@ class DeleteMessageUseCaseTest {
         val deleteForEveryone = true
         val (arrangement, deleteMessageUseCase) = Arrangement()
             .withSendMessageSucceed()
-            .withSelfUserIs(TestUser.SELF)
+            .withSelfUser(TestUser.SELF)
             .withCurrentClientIdIs(SELF_CLIENT_ID)
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
@@ -98,7 +98,7 @@ class DeleteMessageUseCaseTest {
         val deleteForEveryone = false
         val (arrangement, deleteMessageUseCase) = Arrangement()
             .withSendMessageSucceed()
-            .withSelfUserIs(TestUser.SELF)
+            .withSelfUser(TestUser.SELF)
             .withCurrentClientIdIs(SELF_CLIENT_ID)
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageByStatus(Message.Status.SENT)
