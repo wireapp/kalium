@@ -120,9 +120,15 @@ class SessionStorageImpl(
         }
 
     override fun sessionsExist(): Boolean = kaliumPreferences.hasValue(SESSIONS_KEY)
+
+    // TODO: data race may accrue here when updating the user tokens and the user sso id
     override fun updateSsoId(userId: UserIDEntity, ssoIdEntity: SsoIdEntity?) {
         userSession(userId)?.also {
-            addSession(it.copy(ssoId = ssoIdEntity))
+            val newSession = when (it) {
+                is AuthSessionEntity.Invalid -> it.copy(ssoId = ssoIdEntity)
+                is AuthSessionEntity.Valid -> it.copy(ssoId = ssoIdEntity)
+            }
+            addOrReplaceSession(newSession)
         }
     }
 
