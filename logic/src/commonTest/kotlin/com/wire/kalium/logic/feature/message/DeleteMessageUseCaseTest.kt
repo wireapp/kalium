@@ -162,7 +162,7 @@ class DeleteMessageUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withSelfUserIs(selfUser: SelfUser) = apply {
+        fun withSelfUser(selfUser: SelfUser) = apply {
             given(userRepository)
                 .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
