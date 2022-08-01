@@ -1,8 +1,5 @@
-package com.wire.kalium.logic.data.logout
+package com.wire.kalium.persistence.model
 
-/**
- * Describes a reason that led to a logout.
- */
 enum class LogoutReason {
     /**
      * User initiated the logout manually.

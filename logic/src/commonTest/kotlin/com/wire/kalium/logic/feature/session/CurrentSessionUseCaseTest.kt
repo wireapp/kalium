@@ -67,7 +67,7 @@ class CurrentSessionUseCaseTest {
 
         fun randomAuthSession(): AuthSession =
             AuthSession(
-                AuthSession.Tokens(UserId("user_id", "domain.de"), randomString, randomString, randomString),
+                AuthSession.Session.Valid(UserId("user_id", "domain.de"), randomString, randomString, randomString),
                 TEST_SERVER_CONFIG.links
             )
     }

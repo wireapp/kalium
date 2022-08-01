@@ -8,7 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
 
-internal interface LogoutRepository {
+interface LogoutRepository {
 
     /**
      * Listen to a logout event.
