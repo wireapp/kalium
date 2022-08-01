@@ -243,6 +243,5 @@ internal class UserDataSource(
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
-        const val SELF_USER_SSO_ID_KEY = "self_user_sso_id"
     }
 }
