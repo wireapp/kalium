@@ -6,10 +6,13 @@ import com.wire.kalium.persistence.util.FileNameUtil
 
 sealed class SettingOptions {
     abstract val fileName: String
-    object AppSettings: SettingOptions() {
+    abstract val shouldEncryptData: Boolean
+
+    class AppSettings(override val shouldEncryptData: Boolean = true) : SettingOptions() {
         override val fileName: String = FileNameUtil.appPrefFile()
     }
-    class UserSettings(userIDEntity: UserIDEntity): SettingOptions() {
+
+    class UserSettings(override val shouldEncryptData: Boolean = true, userIDEntity: UserIDEntity) : SettingOptions() {
         override val fileName: String = FileNameUtil.userPrefFile(userIDEntity)
     }
 }

@@ -14,7 +14,7 @@ class LogoutRepositoryTest {
     @Test
     fun givenLogoutFlowIsBeingObserved_whenInvokingOnLogout_thenFlowShouldEmit() = runTest {
         // Given
-        val reason = LogoutReason.USER_INTENTION
+        val reason = LogoutReason.SELF_LOGOUT
 
         val (_, logoutRepository) = Arrangement().arrange()
 
