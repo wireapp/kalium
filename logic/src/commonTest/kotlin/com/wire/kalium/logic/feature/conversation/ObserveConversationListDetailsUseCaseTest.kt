@@ -48,7 +48,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository,callRepository)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository)
     }
 
     @Test
