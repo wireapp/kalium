@@ -174,16 +174,10 @@ class GetIncomingCallsUseCaseTest {
         val callRepository: CallRepository = mock(classOf<CallRepository>())
 
         val getIncomingCallsUseCase: GetIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(
-            syncManager = syncManager,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
             callRepository = callRepository
         )
-
-        init {
-            given(syncManager).suspendFunction(syncManager::waitUntilSlowSyncCompletion).whenInvoked().thenReturn(Unit)
-            given(syncManager).invocation { startSyncIfIdle() }.thenReturn(Unit)
-        }
 
         suspend fun withIncomingCalls(calls: List<Call>): Arrangement {
             given(callRepository)

@@ -83,7 +83,6 @@ class MessageScope(
             persistMessage,
             userRepository,
             clientRepository,
-            syncManager,
             messageSender
         )
 
@@ -109,7 +108,6 @@ class MessageScope(
             messageRepository,
             userRepository,
             clientRepository,
-            syncManager,
             messageSender,
             idMapper
         )
