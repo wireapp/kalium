@@ -109,7 +109,6 @@ class MessageScope(
             messageRepository,
             userRepository,
             clientRepository,
-            syncManager,
             messageSender,
             idMapper
         )
