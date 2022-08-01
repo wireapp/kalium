@@ -854,8 +854,8 @@ class ConversationRepositoryTest {
                 // then
                 val conversationDetail = awaitItem()
 
-                assertIs<ConversationDetails.Group>(conversationDetail)
-                assertTrue { conversationDetail.unreadMessagesCount == 10L }
+                assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
+                assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
 
                 awaitComplete()
             }
@@ -885,8 +885,8 @@ class ConversationRepositoryTest {
                 // then
                 val conversationDetail = awaitItem()
 
-                assertIs<ConversationDetails.Group>(conversationDetail)
-                assertTrue { conversationDetail.unreadMessagesCount == 0L }
+                assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
+                assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
 
                 awaitComplete()
             }
@@ -936,8 +936,8 @@ class ConversationRepositoryTest {
                 // then
                 val conversationDetail = awaitItem()
 
-                assertIs<ConversationDetails.OneOne>(conversationDetail)
-                assertTrue { conversationDetail.unreadMessagesCount == 0L }
+                assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
+                assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
 
                 awaitComplete()
             }
@@ -992,8 +992,8 @@ class ConversationRepositoryTest {
                 // then
                 val conversationDetail = awaitItem()
 
-                assertIs<ConversationDetails.OneOne>(conversationDetail)
-                assertTrue { conversationDetail.unreadMessagesCount == 10L }
+                assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
+                assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
 
                 awaitComplete()
             }
