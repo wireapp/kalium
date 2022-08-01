@@ -32,12 +32,12 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.Member as MemberEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
+import com.wire.kalium.persistence.dao.Member as MemberEntity
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
@@ -924,7 +924,7 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getAllMembers)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))))
+                .thenReturn(flowOf(listOf(MemberEntity(TestUser.ENTITY_ID, MemberEntity.Role.Member))))
 
             given(userRepository)
                 .suspendFunction(userRepository::getKnownUser)
@@ -980,7 +980,7 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getAllMembers)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))))
+                .thenReturn(flowOf(listOf(MemberEntity(TestUser.ENTITY_ID, MemberEntity.Role.Member))))
 
             given(userRepository)
                 .suspendFunction(userRepository::getKnownUser)

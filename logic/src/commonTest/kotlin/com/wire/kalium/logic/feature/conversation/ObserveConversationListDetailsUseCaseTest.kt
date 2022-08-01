@@ -16,11 +16,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -46,14 +44,11 @@ class ObserveConversationListDetailsUseCaseTest {
     @Mock
     private val callRepository: CallRepository = mock(CallRepository::class)
 
-    @Mock
-    private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
-
     private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCaseImpl
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, syncManager, callRepository)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository,callRepository)
     }
 
     @Test
@@ -113,11 +108,6 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(Either.Right(0L))
 
         observeConversationsUseCase().collect()
-
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .wasInvoked(exactly = once)
-
     }
 
     @Test
@@ -376,7 +366,7 @@ class ObserveConversationListDetailsUseCaseTest {
             }
 
         observeConversationsUseCase().test {
-            assertEquals(awaitItem(), listOf(successConversationDetails))
+            assertEquals(awaitItem().conversationList, listOf(successConversationDetails))
             awaitComplete()
         }
     }

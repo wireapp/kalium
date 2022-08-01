@@ -108,7 +108,7 @@ class ObserveConversationsAndConnectionsUseCaseTest {
         given(observeConversationListDetailsUseCase)
             .suspendFunction(observeConversationListDetailsUseCase::invoke)
             .whenInvoked()
-            .thenReturn(flowOf(conversations))
+            .thenReturn(flowOf(ConversationListDetails(conversations, unreadConversationsCount = 0)))
         given(observeConnectionListUseCase)
             .suspendFunction(observeConnectionListUseCase::invoke)
             .whenInvoked()

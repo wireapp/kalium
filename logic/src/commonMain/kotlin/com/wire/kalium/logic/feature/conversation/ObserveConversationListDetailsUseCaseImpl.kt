@@ -20,7 +20,6 @@ fun interface ObserveConversationListDetailsUseCase {
 
 internal class ObserveConversationListDetailsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager,
     private val callRepository: CallRepository,
 ) : ObserveConversationListDetailsUseCase {
 
