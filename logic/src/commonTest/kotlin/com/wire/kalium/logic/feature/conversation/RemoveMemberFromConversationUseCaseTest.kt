@@ -1,7 +1,8 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -16,85 +17,55 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RemoveMemberFromConversationUseCaseTest {
 
     @Test
-    fun givenMemberAndProteusConversation_WhenRemoveMemberIsSuccessful_ThenMemberIsRemovedFromDB() = runTest {
+    fun givenMemberAndConversation_WhenRemoveMemberIsSuccessful_ThenReturnSuccess() = runTest {
         val (arrangement, removeMemberUseCase) = Arrangement()
-            .withConversationProtocolIs(Arrangement.proteusProtocolInfo)
-            .withRemoveMemberFromProteusGroupSuccessful()
+            .withRemoveMemberGroupIs(Either.Right(Unit))
             .arrange()
 
-        removeMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
 
-        // VERIFY PROTEUS INVOKED CORRECTLY
+        assertIs<RemoveMemberFromConversationUseCase.Result.Success>(result)
+
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteMembers)
-            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+            .suspendFunction(arrangement.conversationRepository::deleteMember)
+            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
-
-        // VERIFY MLS NOT INVOKED
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
-            .with(any(), any())
-            .wasNotInvoked()
     }
 
     @Test
-    fun givenMemberAndMLSConversation_WhenRemoveMemberIsSuccessful_ThenMemberIsRemovedFromDB() = runTest {
+    fun givenMemberAndConversation_WhenRemoveMemberFailed_ThenReturnFailure() = runTest {
         val (arrangement, removeMemberUseCase) = Arrangement()
-            .withConversationProtocolIs(Arrangement.mlsProtocolInfo)
-            .withRemoveMemberFromMLSGroupSuccessful()
+            .withRemoveMemberGroupIs(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
-        removeMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
+        assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
 
-        // VERIFY PROTEUS FUNCTION NOT INVOKED
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteMembers)
-            .with(any(), any())
-            .wasNotInvoked()
-
-        // VERIFY MLS FUNCTIONS INVOKED CORRECTLY
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
-            .with(eq(Arrangement.mlsGroupId), eq(listOf(TestConversation.USER_1)))
-            .wasInvoked(once)
+            .suspendFunction(arrangement.conversationRepository::deleteMember)
+            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
-        @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
-
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
-            conversationRepository,
-            mlsConversationRepository
+            conversationRepository
         )
 
-        fun withRemoveMemberFromProteusGroupSuccessful() = apply {
+        fun withRemoveMemberGroupIs(either: Either<CoreFailure, Unit>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::deleteMembers)
+                .suspendFunction(conversationRepository::deleteMember)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withRemoveMemberFromMLSGroupSuccessful() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::removeMembersFromMLSGroup)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withConversationProtocolIs(protocolInfo: ProtocolInfo) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::detailsById)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(TestConversation.GROUP(protocolInfo)))
+                .thenReturn(either)
         }
 
         fun arrange() = this to removeMemberUseCase

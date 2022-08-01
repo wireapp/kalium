@@ -20,7 +20,7 @@ interface ConversationApi {
 
     suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
 
-    suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit>
+    suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<ConversationResponse>
 
     suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 

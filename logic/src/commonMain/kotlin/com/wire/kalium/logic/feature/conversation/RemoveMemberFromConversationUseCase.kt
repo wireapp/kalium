@@ -1,29 +1,30 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 
 interface RemoveMemberFromConversationUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>)
+    suspend operator fun invoke(conversationId: ConversationId, userId: UserId): Result
+    sealed interface Result {
+        object Success : Result
+        data class Failure(val cause: CoreFailure) : Result
+    }
 }
 
 class RemoveMemberFromConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val mlsConversationRepository: MLSConversationRepository,
 ) : RemoveMemberFromConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>) {
-        conversationRepository.detailsById(conversationId).flatMap { conversation ->
-            when (conversation.protocol) {
-                is ProtocolInfo.Proteus ->
-                    conversationRepository.deleteMembers(userIdList, conversationId)
+    override suspend fun invoke(
+        conversationId: ConversationId,
+        userId: UserId
+    ): RemoveMemberFromConversationUseCase.Result =
+        conversationRepository.deleteMember(userId, conversationId).fold({
+            RemoveMemberFromConversationUseCase.Result.Failure(it)
+        }, {
+            RemoveMemberFromConversationUseCase.Result.Success
+        })
 
-                is ProtocolInfo.MLS ->
-                    mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, userIdList)
-            }
-        }
-    }
 }

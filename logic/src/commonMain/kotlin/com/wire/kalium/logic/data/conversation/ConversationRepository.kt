@@ -35,6 +35,7 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -66,7 +67,7 @@ interface ConversationRepository {
     suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>>
     suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMember(userID: UserId, conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteMember(userID: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationDetailsByUserId(otherUserId: UserId): Either<CoreFailure, ConversationDetails.OneOne>
     suspend fun createGroupConversation(
@@ -160,9 +161,11 @@ class ConversationDataSource(
 
     private suspend fun persistConversations(conversations: List<ConversationResponse>, selfUserTeamId: String?) = wrapStorageRequest {
         val conversationEntities = conversations.map { conversationResponse ->
-            conversationMapper.fromApiModelToDaoModel(conversationResponse,
+            conversationMapper.fromApiModelToDaoModel(
+                conversationResponse,
                 mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(it) },
-                selfUserTeamId?.let { TeamId(it) })
+                selfUserTeamId?.let { TeamId(it) }
+            )
         }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
@@ -302,8 +305,28 @@ class ConversationDataSource(
         }
     }
 
-    override suspend fun deleteMember(userID: UserId, conversationID: ConversationId): Either<CoreFailure, Unit> =
-        wrapStorageRequest { conversationDAO.deleteMemberByQualifiedID(idMapper.toDaoModel(userID), idMapper.toDaoModel(conversationID)) }
+    override suspend fun deleteMember(userID: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
+        detailsById(conversationId).flatMap { conversation ->
+            when (conversation.protocol) {
+                is com.wire.kalium.logic.data.conversation.ProtocolInfo.Proteus ->
+                    wrapApiRequest {
+                        conversationApi.removeConversationMember(idMapper.toApiModel(userID), idMapper.toApiModel(conversationId))
+                    }.fold({
+                        Either.Left(it)
+                    }, {
+                        wrapStorageRequest {
+                            conversationDAO.deleteMemberByQualifiedID(
+                                idMapper.toDaoModel(userID),
+                                idMapper.toDaoModel(conversationId)
+                            )
+                        }
+                    }
+                    )
+
+                is com.wire.kalium.logic.data.conversation.ProtocolInfo.MLS ->
+                    mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userID))
+            }
+        }
 
     override suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
@@ -332,17 +355,18 @@ class ConversationDataSource(
                 conversationDAO.insertConversation(conversationEntity)
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
-                    is ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
+                    is Proteus -> persistMembersFromConversationResponse(conversationResponse)
                     is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(
                         conversationResponse, usersList
                     )
                 }
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
-                    is ProtocolInfo.Proteus -> Either.Right(conversation)
-                    is ProtocolInfo.MLS -> mlsConversationRepository
-                        .establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)
-                        .flatMap { Either.Right(conversation) }
+                    is Proteus -> Either.Right(conversation)
+                    is ProtocolInfo.MLS ->
+                        mlsConversationRepository
+                            .establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)
+                            .flatMap { Either.Right(conversation) }
                 }
             }
         }
