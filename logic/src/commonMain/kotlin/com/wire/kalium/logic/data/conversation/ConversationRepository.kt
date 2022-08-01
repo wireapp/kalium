@@ -260,7 +260,15 @@ class ConversationDataSource(
         when (conversation.type) {
             Conversation.Type.SELF -> flowOf(Either.Right(ConversationDetails.Self(conversation)))
             // TODO(user-metadata): get actual legal hold status
-            Conversation.Type.GROUP -> flowOf(Either.Right(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED)))
+            Conversation.Type.GROUP -> flowOf(
+                Either.Right(
+                    ConversationDetails.Group(
+                        conversation = conversation,
+                        legalHoldStatus = LegalHoldStatus.DISABLED,
+                        unreadMessagesCount = getUnreadMessageCount(conversation)
+                    )
+                )
+            )
             Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
         }
 
@@ -278,10 +286,39 @@ class ConversationDataSource(
                     flowOf(otherUserId)
                         .flatMapLatest { if (it != null) userRepository.getKnownUser(it) else flowOf(it) }
                         .wrapStorageRequest()
-                        .map { it.map { conversationMapper.toConversationDetailsOneToOne(conversation, it, selfUser,            unreadMessageCount = unreadMessageCount) } }
+                        .map {
+                            it.map {
+                                conversationMapper.toConversationDetailsOneToOne(
+                                    conversation = conversation,
+                                    otherUser = it,
+                                    selfUser = selfUser,
+                                    unreadMessageCount = getUnreadMessageCount(conversation)
+                                )
+                            }
+                        }
                 }
             )
     }
+
+    private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
+        return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
+            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+        } else {
+            0
+        }
+    }
+
+    // TODO: as for now lastModifiedDate and lastReadDate is saved as String
+    // in ISO format, using a timestamp would make it possible to just do a comparance
+    // on if the timestamp is bigger inside the domain model or on a Instant object
+    private fun hasNewMessages(conversation: Conversation) =
+        with(conversation) {
+            if (lastModifiedDate != null && lastReadDate != null) {
+                timeParser.isTimeBefore(lastModifiedDate, lastReadDate)
+            } else {
+                false
+            }
+        }
 
     private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure) {
         when (error) {

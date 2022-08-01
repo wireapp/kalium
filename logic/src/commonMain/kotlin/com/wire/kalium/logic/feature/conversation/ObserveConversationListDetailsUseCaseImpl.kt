@@ -24,10 +24,7 @@ internal class ObserveConversationListDetailsUseCaseImpl(
     private val callRepository: CallRepository,
 ) : ObserveConversationListDetailsUseCase {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend operator fun invoke(): Flow<ConversationListDetails> {
-        syncManager.startSyncIfIdle()
-
         return combine(observeLatestConversationDetails(), callRepository.ongoingCallsFlow()) { conversations, calls ->
             conversations.map {
                 when (it) {
@@ -48,7 +45,7 @@ internal class ObserveConversationListDetailsUseCaseImpl(
     }
 
     private suspend fun observeLatestConversationDetails(): Flow<List<ConversationDetails>> {
-      return conversationRepository.observeConversationList().map { conversations ->
+        return conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
                 conversationRepository.observeConversationDetailsById(conversation.id)
             }
@@ -59,6 +56,8 @@ internal class ObserveConversationListDetailsUseCaseImpl(
                     .map { (it as Either.Right<ConversationDetails>).value }
             }
         }
+    }
+
 }
 
 data class ConversationListDetails(
