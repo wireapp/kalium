@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync.handler
+package com.wire.kalium.logic.sync.receiver.message
 
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent

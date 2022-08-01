@@ -16,6 +16,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.R
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json

@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
@@ -34,7 +34,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
