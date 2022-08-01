@@ -81,10 +81,12 @@ class DeleteMessageUseCaseTest {
             .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
-given(messageRepository)
+        given(messageRepository)
             .suspendFunction(messageRepository::getMessageById)
             .whenInvokedWith(anything(), anything())
-            .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.SENT)))        // when
+            .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE(Message.Status.SENT)))
+
+        // when
         val result = deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
         // then
@@ -207,7 +209,6 @@ given(messageRepository)
         val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
         val SELF_CLIENT_ID: ClientId = PlainId("client_self")
         val deletedMessageContent = MessageContent.DeleteMessage(TEST_MESSAGE_UUID)
-
     }
 
 }
