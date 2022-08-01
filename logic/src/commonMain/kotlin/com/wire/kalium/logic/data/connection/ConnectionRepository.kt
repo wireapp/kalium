@@ -140,10 +140,10 @@ internal class ConnectionDataSource(
 
     /**
      * Check if we can transition to the correct connection status
-     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] or [ConnectionState.ACCEPTED]
+     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] [ConnectionState.BLOCKED] or [ConnectionState.ACCEPTED]
      */
     private fun isValidConnectionState(connectionState: ConnectionState): Boolean = when (connectionState) {
-        IGNORED, CANCELLED, ACCEPTED -> true
+        BLOCKED, IGNORED, CANCELLED, ACCEPTED -> true
         else -> false
     }
 

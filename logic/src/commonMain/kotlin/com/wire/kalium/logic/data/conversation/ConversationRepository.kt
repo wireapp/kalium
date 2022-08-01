@@ -9,7 +9,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -21,7 +20,6 @@ import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -30,6 +28,7 @@ import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -38,7 +37,6 @@ import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -51,10 +49,10 @@ interface ConversationRepository {
     suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails>
+    suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun observeById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>>
+    suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
@@ -86,6 +84,7 @@ interface ConversationRepository {
     suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>>
+
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit>
@@ -95,6 +94,8 @@ interface ConversationRepository {
         access: List<Conversation.Access>,
         accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit>
+
+    suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -107,7 +108,8 @@ class ConversationDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper()
+    private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
+    private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -222,9 +224,15 @@ class ConversationDataSource(
      * Gets a flow that allows observing of
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<ConversationDetails> =
-        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID)).wrapStorageRequest().onlyRight()
-            .map(conversationMapper::fromDaoModel).flatMapLatest(::getConversationDetailsFlow)
+    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
+            .wrapStorageRequest()
+            .flatMapLatest {
+                it.fold(
+                    { flowOf(Either.Left(it)) },
+                    { getConversationDetailsFlow(conversationMapper.fromDaoModel(it)) }
+                )
+            }
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
@@ -245,24 +253,34 @@ class ConversationDataSource(
         }
     }
 
-    private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> = when (conversation.type) {
-        Conversation.Type.SELF -> flowOf(ConversationDetails.Self(conversation))
-        // TODO(user-metadata): get actual legal hold status
-        Conversation.Type.GROUP -> flowOf(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED))
-        Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
-    }
+    private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> =
+        when (conversation.type) {
+            Conversation.Type.SELF -> flowOf(Either.Right(ConversationDetails.Self(conversation)))
+            // TODO(user-metadata): get actual legal hold status
+            Conversation.Type.GROUP -> flowOf(Either.Right(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED)))
+            Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
+        }
 
-    private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<ConversationDetails> {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
         val selfUser = userRepository.observeSelfUser().first()
-        return getConversationMembers(conversation.id).map { members ->
-            members.firstOrNull { itemId -> itemId != selfUser.id }
-        }.fold(
-            { storageFailure -> logMemberDetailsError(conversation, storageFailure) },
-            { otherUserId -> otherUserId?.let { userRepository.getKnownUser(it) } ?: emptyFlow() }
-        ).filterNotNull().map { otherUser -> conversationMapper.toConversationDetailsOneToOne(conversation, otherUser, selfUser) }
+        return getConversationMembers(conversation.id)
+            .map { members -> members.firstOrNull { itemId -> itemId != selfUser.id } }
+            .fold(
+                { storageFailure ->
+                    logMemberDetailsError(conversation, storageFailure)
+                    flowOf(Either.Left(storageFailure))
+                },
+                { otherUserId ->
+                    flowOf(otherUserId)
+                        .flatMapLatest { if (it != null) userRepository.getKnownUser(it) else flowOf(it) }
+                        .wrapStorageRequest()
+                        .map { it.map { conversationMapper.toConversationDetailsOneToOne(conversation, it, selfUser) } }
+                }
+            )
     }
 
-    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Flow<OtherUser> {
+    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure) {
         when (error) {
             is StorageFailure.DataNotFound ->
                 kaliumLogger.withFeatureId(CONVERSATIONS).e("DataNotFound when fetching conversation members: $error")
@@ -270,16 +288,14 @@ class ConversationDataSource(
             is StorageFailure.Generic ->
                 kaliumLogger.withFeatureId(CONVERSATIONS).e("Failure getting other 1:1 user for $conversation", error.rootCause)
         }
-        return emptyFlow()
     }
 
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
     @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
-    override suspend fun observeById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation>> =
-        wrapStorageRequest {
-            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).filterNotNull()
-                .map(conversationMapper::fromDaoModel)
-        }
+    override suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>> =
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).filterNotNull()
+            .map(conversationMapper::fromDaoModel)
+            .wrapStorageRequest()
 
     override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
         conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
@@ -495,6 +511,29 @@ class ConversationDataSource(
                 conversationId = idMapper.toDaoModel(conversationId),
                 mutedStatus = conversationStatusMapper.toDaoModel(mutedStatus),
                 mutedStatusTimestamp = mutedStatusTimestamp
+            )
+        }
+    }
+
+    /**
+     * Updates the conversation member role, both remotely and local
+     */
+    override suspend fun updateConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId,
+        role: Member.Role
+    ): Either<CoreFailure, Unit> = wrapApiRequest {
+        conversationApi.updateConversationMemberRole(
+            conversationId = idMapper.toApiModel(conversationId),
+            userId = idMapper.toApiModel(userId),
+            conversationMemberRoleDTO = ConversationMemberRoleDTO(conversationRole = conversationRoleMapper.toApi(role))
+        )
+    }.flatMap {
+        wrapStorageRequest {
+            conversationDAO.updateConversationMemberRole(
+                conversationId = idMapper.toDaoModel(conversationId),
+                userId = idMapper.toDaoModel(userId),
+                role = conversationRoleMapper.toDAO(role)
             )
         }
     }

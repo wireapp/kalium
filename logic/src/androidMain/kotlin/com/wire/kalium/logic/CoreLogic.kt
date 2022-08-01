@@ -50,7 +50,12 @@ actual class CoreLogic(
     }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
-        KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
+        KaliumPreferencesSettings(
+            EncryptedSettingsHolder(
+                appContext,
+                SettingOptions.AppSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData)
+            ).encryptedSettings
+        )
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
@@ -79,7 +84,10 @@ actual class CoreLogic(
             val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, this, userId)
             val userIDEntity = idMapper.toDaoModel(userId)
             val encryptedSettingsHolder =
-                EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
+                EncryptedSettingsHolder(
+                    appContext,
+                    SettingOptions.UserSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData, userIDEntity)
+                )
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabaseProvider =
                 UserDatabaseProvider(

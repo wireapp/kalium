@@ -53,6 +53,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -176,8 +177,7 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            assetRepository
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
 
     private val teamRepository: TeamRepository
@@ -352,6 +352,8 @@ abstract class UserSessionScopeCommon(
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
             connectionRepository,
+            logout,
+            clientRepository
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
@@ -425,7 +427,7 @@ abstract class UserSessionScopeCommon(
             connectionRepository
         )
     val logout: LogoutUseCase
-        get() = LogoutUseCase(
+        get() = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
             userId,
