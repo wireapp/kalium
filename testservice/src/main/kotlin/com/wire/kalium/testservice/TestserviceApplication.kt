@@ -8,6 +8,9 @@ import com.wire.kalium.testservice.managed.InstanceService
 import io.dropwizard.Application
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
+import io.federecio.dropwizard.swagger.SwaggerBundle
+import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
+
 
 class TestserviceApplication : Application<TestserviceConfiguration>() {
 
@@ -21,7 +24,11 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
     }
 
     override fun initialize(bootstrap: Bootstrap<TestserviceConfiguration?>?) {
-        // nothing to do yet
+        bootstrap!!.addBundle(object : SwaggerBundle<TestserviceConfiguration>() {
+            override fun getSwaggerBundleConfiguration(configuration: TestserviceConfiguration): SwaggerBundleConfiguration? {
+                return configuration.swaggerBundleConfiguration
+            }
+        })
     }
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
