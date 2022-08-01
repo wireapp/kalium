@@ -63,6 +63,7 @@ class ConversationEventReceiverImpl(
         when (event) {
             is Event.Conversation.NewMessage -> handleNewMessage(event)
             is Event.Conversation.NewConversation -> handleNewConversation(event)
+            is Event.Conversation.DeletedConversation -> handleDeletedConversation(event)
             is Event.Conversation.MemberJoin -> handleMemberJoin(event)
             is Event.Conversation.MemberLeave -> handleMemberLeave(event)
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
@@ -273,6 +274,11 @@ class ConversationEventReceiverImpl(
                     content = protoContent
                 )
             }
+
+    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation): Either<CoreFailure, Unit> {
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).d("Receiving event $event")
+        return Either.Right(Unit)
+    }
 
     private fun processSignaling(signaling: MessageContent.Signaling) {
         when (signaling) {
