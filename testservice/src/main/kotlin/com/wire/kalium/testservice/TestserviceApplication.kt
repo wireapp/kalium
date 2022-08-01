@@ -3,15 +3,16 @@ package com.wire.kalium.testservice
 import com.wire.kalium.testservice.api.v1.ClientResources
 import com.wire.kalium.testservice.api.v1.ConversationResources
 import com.wire.kalium.testservice.api.v1.InstanceLifecycle
+import com.wire.kalium.testservice.health.TestserviceHealthCheck
 import io.dropwizard.Application
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 
-
-class TestserviceApplication: Application<TestserviceConfiguration>() {
+class TestserviceApplication : Application<TestserviceConfiguration>() {
 
     companion object {
-        @JvmStatic fun main(args: Array<String>) = TestserviceApplication().run(*args)
+        @JvmStatic
+        fun main(args: Array<String>) = TestserviceApplication().run(*args)
     }
 
     override fun getName(): String? {
@@ -26,6 +27,7 @@ class TestserviceApplication: Application<TestserviceConfiguration>() {
         val clientResources = ClientResources();
         val conversationResources = ConversationResources();
         val instanceLifecycle = InstanceLifecycle();
+        environment.healthChecks().register("template", TestserviceHealthCheck());
         environment.jersey().register(clientResources)
         environment.jersey().register(conversationResources)
         environment.jersey().register(instanceLifecycle)
