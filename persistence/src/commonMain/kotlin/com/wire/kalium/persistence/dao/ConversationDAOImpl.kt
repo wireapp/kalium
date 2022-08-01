@@ -250,4 +250,7 @@ class ConversationDAOImpl(
     ) {
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
+
+    override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
+        memberQueries.updateMemberRole(role, userId, conversationId)
 }
