@@ -301,6 +301,6 @@ fun main(args: Array<String>) = CLIApplication().subcommands(
     ListenGroupCommand(),
     DeleteClientCommand(),
     AddMemberToGroupCommand(),
-    SendAssetCommand()
+    SendAssetCommand(),
     RefillKeyPackagesCommand()
 ).main(args)
