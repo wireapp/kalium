@@ -221,6 +221,12 @@ class ConversationDAOImpl(
         }
     }
 
+    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String) {
+        getConversationByGroupID(groupId).firstOrNull()?.let {
+            deleteMembersByQualifiedID(userIDList, it.id)
+        }
+    }
+
     override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID.value)
             .asFlow()
@@ -250,4 +256,7 @@ class ConversationDAOImpl(
     ) {
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
+
+    override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
+        memberQueries.updateMemberRole(role, userId, conversationId)
 }

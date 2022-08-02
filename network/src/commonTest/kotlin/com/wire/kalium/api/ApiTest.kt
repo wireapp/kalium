@@ -28,7 +28,6 @@ import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -41,8 +40,7 @@ class TestSessionManager : SessionManager {
     private var session = testCredentials
 
     override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfig.links)
-
-    override fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
+    override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
         SessionDTO(
             session.userId,
             newAccessTokenDTO.tokenType,
@@ -50,7 +48,11 @@ class TestSessionManager : SessionManager {
             newRefreshTokenDTO?.value ?: session.refreshToken
         )
 
-    override fun onSessionExpired() {
+    override suspend fun onClientRemoved() {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun onSessionExpired() {
         TODO("Not yet implemented")
     }
 
@@ -60,8 +62,7 @@ class TestSessionManager : SessionManager {
 
 }
 
-
-class TestServerMetaDataManager: ServerMetaDataManager {
+class TestServerMetaDataManager : ServerMetaDataManager {
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? = TEST_BACKEND
     override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO = TEST_BACKEND
 }
@@ -206,7 +207,6 @@ internal interface ApiTest {
         ).networkClient
     }
 
-
     /**
      * Creates a mock Ktor Http client
      * @param responseBody the response body as a ByteArray
@@ -229,7 +229,6 @@ internal interface ApiTest {
         return UnboundNetworkClient(engine = mockEngine)
     }
 
-
     private fun createMockEngine(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
@@ -251,7 +250,6 @@ internal interface ApiTest {
             )
         }
     }
-
 
     // query params assertions
     /**
