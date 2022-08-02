@@ -14,7 +14,6 @@ import io.ktor.client.plugins.ContentNegotiation
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
 
@@ -100,7 +99,6 @@ internal class KaliumHttpLogger : Logger {
     }
 }
 
-@Suppress("MagicNumber")
 internal fun provideBaseHttpClient(
     engine: HttpClientEngine,
     installCompression: Boolean = true,
@@ -108,7 +106,7 @@ internal fun provideBaseHttpClient(
 ) = HttpClient(engine) {
 
     if (NetworkLogger.isRequestLoggingEnabled) {
-        install(Logging) {
+        install(KaliumKtorCustomLogging) {
             logger = KaliumHttpLogger()
             level = LogLevel.ALL
         }
