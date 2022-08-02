@@ -41,7 +41,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     /**
      * returns 200 Member removed and 204 No change
      */
-    override suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit> =
+    override suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<ConversationResponse> =
         wrapKaliumResponse {
             httpClient.delete(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"

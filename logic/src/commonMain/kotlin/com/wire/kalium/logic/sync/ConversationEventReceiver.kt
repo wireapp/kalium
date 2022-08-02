@@ -226,10 +226,7 @@ class ConversationEventReceiverImpl(
             }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
-        .deleteMembers(
-            event.removedList.map { idMapper.toDaoModel(it) },
-            idMapper.toDaoModel(event.conversationId)
-        )
+        .deleteMembers(event.removedList, event.conversationId)
         .flatMap {
             // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
             // and keep them to properly show this member-leave message
@@ -302,12 +299,13 @@ class ConversationEventReceiverImpl(
                                 .onSuccess { persistedMessage ->
                                     // Check the second asset message is from the same original sender
                                     if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
-                                        persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
+                                        persistedMessage is Message.Regular &&
+                                        persistedMessage.content is MessageContent.Asset
                                     ) {
                                         // The asset message received contains the asset decryption keys,
                                         // so update the preview message persisted previously
-                                        updateAssetMessage(persistedMessage, content.value.remoteData)?.let {
-                                            persistMessage(it)
+                                        updateAssetMessage(persistedMessage, content.value.remoteData)?.let { assetMessage ->
+                                            persistMessage(assetMessage)
                                         }
                                     }
                                 }
