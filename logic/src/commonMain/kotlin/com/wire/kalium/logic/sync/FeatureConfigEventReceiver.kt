@@ -14,14 +14,12 @@ class FeatureConfigEventReceiverImpl(
 ) : FeatureConfigEventReceiver {
 
     override suspend fun onEvent(event: Event.FeatureConfig) {
-        when (event) {
-            is Event.FeatureConfig.FeatureConfigUpdated -> handleFeatureConfigEvent(event)
-        }
+        handleFeatureConfigEvent(event)
     }
 
-    private fun handleFeatureConfigEvent(event: Event.FeatureConfig.FeatureConfigUpdated) {
-        when (event.name) {
-            EventContentDTO.FeatureConfig.FeatureConfigNameDTO.FILE_SHARING.name -> {
+    private fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
+        when (event) {
+            is Event.FeatureConfig.FileSharingUpdated -> {
                 if (kaliumConfigs.fileRestrictionEnabled) {
                     userConfigRepository.setFileSharingStatus(false, null)
                 } else {

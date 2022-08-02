@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
 import com.wire.kalium.network.api.notification.user.RemoveClientEventData
@@ -126,7 +127,11 @@ class EventMapper(
     private fun featureConfig(
         id: String,
         featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO
-    ) = Event.FeatureConfig.FeatureConfigUpdated(
-        id, featureConfigUpdatedDTO.name.name, featureConfigUpdatedDTO.data.status.name
-    )
+    ) = when (featureConfigUpdatedDTO.data) {
+        is FeatureConfigData.FileSharing -> Event.FeatureConfig.FileSharingUpdated(
+            id,
+            (featureConfigUpdatedDTO.data as FeatureConfigData.FileSharing).status.name
+        )
+        else -> Event.FeatureConfig.UnknownFeatureUpdated(id)
+    }
 }

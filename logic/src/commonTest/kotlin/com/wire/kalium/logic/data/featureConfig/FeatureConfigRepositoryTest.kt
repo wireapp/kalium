@@ -4,15 +4,14 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.featureConfigs.AppLock
-import com.wire.kalium.network.api.featureConfigs.AppLockConfig
-import com.wire.kalium.network.api.featureConfigs.ClassifiedDomains
-import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfig
-import com.wire.kalium.network.api.featureConfigs.ConfigsStatusDTO
+import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigApi
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
-import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessages
+import com.wire.kalium.network.api.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfig
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -107,20 +106,21 @@ class FeatureConfigRepositoryTest {
 
     private class Arrangement {
         val featureConfigResponse = FeatureConfigResponse(
-            AppLock(
-                AppLockConfig(true, 0), FeatureFlagStatusDTO.ENABLED
+            FeatureConfigData.AppLock(
+                AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED
             ),
-            ClassifiedDomains(ClassifiedDomainsConfig(listOf()), FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
-            SelfDeletingMessages(SelfDeletingMessagesConfig(0), FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED),
-            ConfigsStatusDTO(FeatureFlagStatusDTO.ENABLED)
+            FeatureConfigData.ClassifiedDomains(ClassifiedDomainsConfigDTO(listOf()), FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.ConferenceCalling(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.ConversationGuestLinks(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.DigitalSignatures(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.FileSharing(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.Legalhold(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.SearchVisibility(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.SelfDeletingMessages(SelfDeletingMessagesConfig(0), FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.SecondFactorPasswordChallenge(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.SSO(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.MLS(MLSConfigDTO(emptyList(), ConvProtocol.MLS, emptyList(), 1), FeatureFlagStatusDTO.ENABLED)
         )
 
         @Mock
