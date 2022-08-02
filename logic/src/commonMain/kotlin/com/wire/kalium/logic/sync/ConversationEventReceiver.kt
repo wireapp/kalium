@@ -6,10 +6,12 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -24,6 +26,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -49,6 +52,7 @@ class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val persistMessage: PersistMessageUseCase,
     private val messageRepository: MessageRepository,
+    private val assetRepository: AssetRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
@@ -108,7 +112,7 @@ class ConversationEventReceiverImpl(
             }
 
             is MessageContent.Signaling -> {
-                processSignaling(content.messageContent)
+                processSignaling(senderUserId, content.messageContent)
             }
         }
     }
@@ -128,7 +132,7 @@ class ConversationEventReceiverImpl(
                     is ProteusFailure -> kaliumLogger.withFeatureId(EVENT_RECEIVER)
                         .e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
 
-                    else -> kaliumLogger.withFeatureId(EVENT_RECEIVER).e("Failure when processing message: $it")
+                    else -> kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Failure when processing message: $it")
                 }
             }.onSuccess { readableContent ->
                 handleContent(
@@ -226,10 +230,7 @@ class ConversationEventReceiverImpl(
             }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
-        .deleteMembers(
-            event.removedList.map { idMapper.toDaoModel(it) },
-            idMapper.toDaoModel(event.conversationId)
-        )
+        .deleteMembers(event.removedList, event.conversationId)
         .flatMap {
             // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
             // and keep them to properly show this member-leave message
@@ -274,10 +275,16 @@ class ConversationEventReceiverImpl(
                 )
             }
 
-    private fun processSignaling(signaling: MessageContent.Signaling) {
+    private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
         when (signaling) {
             MessageContent.Ignored -> {
-                kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Ignored Signaling Message received: $signaling")
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .i(message = "$TAG Ignored Signaling Message received: $signaling")
+            }
+            is MessageContent.Availability -> {
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .i(message = "$TAG Availability status update received: ${signaling.status}")
+                userRepository.updateOtherUserAvailabilityStatus(senderUserId, signaling.status)
             }
         }
     }
@@ -285,7 +292,7 @@ class ConversationEventReceiverImpl(
     // TODO(qol): split this function so it's easier to maintain
     @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
-        kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Message received: $message")
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "$TAG Message received: $message")
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {
@@ -302,12 +309,13 @@ class ConversationEventReceiverImpl(
                                 .onSuccess { persistedMessage ->
                                     // Check the second asset message is from the same original sender
                                     if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
-                                        persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
+                                        persistedMessage is Message.Regular &&
+                                        persistedMessage.content is MessageContent.Asset
                                     ) {
                                         // The asset message received contains the asset decryption keys,
                                         // so update the preview message persisted previously
-                                        updateAssetMessage(persistedMessage, content.value.remoteData)?.let {
-                                            persistMessage(it)
+                                        updateAssetMessage(persistedMessage, content.value.remoteData)?.let { assetMessage ->
+                                            persistMessage(assetMessage)
                                         }
                                     }
                                 }
@@ -324,13 +332,7 @@ class ConversationEventReceiverImpl(
                     }
                 }
 
-                is MessageContent.DeleteMessage ->
-                    if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId))
-                        messageRepository.markMessageAsDeleted(
-                            messageUuid = content.messageId,
-                            conversationId = message.conversationId
-                        )
-                    else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
+                is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
 
                 is MessageContent.DeleteForMe -> {
                     /*The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
@@ -374,6 +376,33 @@ class ConversationEventReceiverImpl(
                 }
             }
         }
+    }
+
+    private suspend fun handleDeleteMessage(
+        content: MessageContent.DeleteMessage,
+        message: Message
+    ) {
+        if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId)) {
+            messageRepository.getMessageById(message.conversationId, content.messageId)
+                .onSuccess { messageToRemove ->
+                    (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+                        assetRepository.deleteAssetLocally(
+                            AssetId(
+                                assetToRemove.assetId,
+                                assetToRemove.assetDomain.orEmpty()
+                            )
+                        )
+                            .onFailure {
+                                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ASSETS)
+                                    .w("delete messageToRemove asset locally failure: $it")
+                            }
+                    }
+                }
+            messageRepository.markMessageAsDeleted(
+                messageUuid = content.messageId,
+                conversationId = message.conversationId
+            )
+        } else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
     }
 
     private companion object {

@@ -3,6 +3,10 @@ package com.wire.kalium.logic.feature.call
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
+import com.wire.kalium.calling.callbacks.MetricsHandler
+import com.wire.kalium.calling.callbacks.ReadyHandler
+import com.wire.kalium.calling.callbacks.VideoReceiveStateHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
@@ -97,8 +101,8 @@ actual class CallManagerImpl(
         val handle = calling.wcall_create(
             userId = selfUserId,
             clientId = selfClientId,
-            readyHandler = { version: Int, arg: Pointer? ->
-                callingLogger.i("$TAG -> readyHandler")
+            readyHandler = ReadyHandler { version: Int, arg: Pointer? ->
+                callingLogger.i("$TAG -> readyHandler; version=$version; arg=$arg")
                 onCallingReady()
                 waitInitializationJob.complete()
                 Unit
@@ -119,14 +123,16 @@ actual class CallManagerImpl(
             answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
             establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
             closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
-            metricsHandler = { conversationId: String, metricsJson: String, arg: Pointer? ->
+            metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             }.keepingStrongReference(),
             callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope).keepingStrongReference(),
-            constantBitRateStateChangeHandler = { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
+            constantBitRateStateChangeHandler =
+            ConstantBitRateStateChangeHandler { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             }.keepingStrongReference(),
-            videoReceiveStateHandler = { conversationId: String, userId: String, clientId: String, state: Int, arg: Pointer? ->
+            videoReceiveStateHandler =
+            VideoReceiveStateHandler { conversationId: String, userId: String, clientId: String, state: Int, arg: Pointer? ->
                 callingLogger.i("$TAG -> videoReceiveStateHandler")
             }.keepingStrongReference(),
             arg = null

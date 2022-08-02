@@ -34,10 +34,11 @@ class OnIncomingCall(
         )
         val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
         val isMuted = mappedConversationType == ConversationType.Conference
+        val status = if (shouldRing) CallStatus.INCOMING else CallStatus.STILL_ONGOING
         scope.launch {
             callRepository.createCall(
                 conversationId = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString),
-                status = CallStatus.INCOMING,
+                status = status,
                 callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
                 isMuted = isMuted,
                 isCameraOn = isVideoCall

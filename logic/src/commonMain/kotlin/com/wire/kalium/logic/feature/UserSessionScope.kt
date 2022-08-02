@@ -32,6 +32,8 @@ import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -80,10 +82,10 @@ import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
-import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
-import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.ConversationEventReceiver
@@ -130,7 +132,7 @@ abstract class UserSessionScopeCommon(
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    // we made this lazy so it will have a single instance for the storage
+    // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
@@ -141,6 +143,9 @@ abstract class UserSessionScopeCommon(
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
+
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider
+        get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
 
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
@@ -153,8 +158,10 @@ abstract class UserSessionScopeCommon(
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
             keyPackageRepository,
-            mlsClientProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userDatabaseProvider.conversationDAO
+            mlsClientProvider,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            userDatabaseProvider.conversationDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
@@ -179,6 +186,7 @@ abstract class UserSessionScopeCommon(
         get() = UserDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
+            userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
@@ -350,6 +358,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             persistMessage,
             messageRepository,
+            assetRepository,
             conversationRepository,
             mlsConversationRepository,
             userRepository,
@@ -397,6 +406,7 @@ abstract class UserSessionScopeCommon(
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
+            keyPackageLimitsProvider,
             mlsClientProvider,
             notificationTokenRepository
         )
@@ -460,7 +470,7 @@ abstract class UserSessionScopeCommon(
             kaliumConfigs
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
 
     val calls: CallsScope
         get() = CallsScope(
@@ -470,7 +480,6 @@ abstract class UserSessionScopeCommon(
             userRepository,
             flowManagerService,
             mediaManagerService,
-            syncManager
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
