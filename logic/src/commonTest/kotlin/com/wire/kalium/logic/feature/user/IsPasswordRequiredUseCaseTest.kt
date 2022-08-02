@@ -95,7 +95,6 @@ class IsPasswordRequiredUseCaseTest {
 
         val isPasswordRequired = IsPasswordRequiredUseCase(selfUserId, sessionRepository)
 
-
         fun withSelfSsoId(ssoId: Either<StorageFailure, SsoIdEntity?>) = apply {
             given(sessionRepository).function(sessionRepository::ssoId).whenInvokedWith(any()).then { ssoId }
         }
