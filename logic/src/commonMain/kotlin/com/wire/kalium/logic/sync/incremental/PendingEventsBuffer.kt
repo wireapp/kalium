@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.data.event.Event
 import kotlinx.coroutines.sync.Mutex

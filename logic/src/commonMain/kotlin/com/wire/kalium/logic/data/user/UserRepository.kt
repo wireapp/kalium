@@ -47,7 +47,7 @@ interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
-    suspend fun getSelfUserId(): QualifiedID
+    fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
@@ -80,12 +80,12 @@ internal class UserDataSource(
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
-    override suspend fun getSelfUserId(): QualifiedID {
+    override fun getSelfUserId(): QualifiedID {
         return idMapper.fromDaoModel(getSelfUserIDEntity())
     }
 
-    private suspend fun getSelfUserIDEntity(): QualifiedIDEntity {
-        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY).firstOrNull()
+    private fun getSelfUserIDEntity(): QualifiedIDEntity {
+        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY)
         return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
             ?: run { throw IllegalStateException() }
     }
@@ -164,7 +164,7 @@ internal class UserDataSource(
 
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
-        return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
+        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()

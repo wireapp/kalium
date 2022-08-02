@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -63,7 +64,8 @@ actual class CallManagerImpl(
     private val messageSender: MessageSender,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val callMapper: CallMapper = MapperProvider.callMapper(),
-    private val federatedIdMapper: FederatedIdMapper
+    private val federatedIdMapper: FederatedIdMapper,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO(calling): clear job method
@@ -109,17 +111,18 @@ actual class CallManagerImpl(
             sendHandler = OnSendOTR(
                 deferredHandle,
                 calling,
+                qualifiedIdMapper,
                 selfUserId,
                 selfClientId,
                 messageSender,
                 scope
             ).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
-            incomingCallHandler = OnIncomingCall(callRepository, callMapper, federatedIdMapper, scope).keepingStrongReference(),
-            missedCallHandler = OnMissedCall(callRepository, scope).keepingStrongReference(),
-            answeredCallHandler = OnAnsweredCall(callRepository, scope).keepingStrongReference(),
-            establishedCallHandler = OnEstablishedCall(callRepository, scope).keepingStrongReference(),
-            closeCallHandler = OnCloseCall(callRepository, scope).keepingStrongReference(),
+            incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope).keepingStrongReference(),
+            missedCallHandler = OnMissedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+            answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+            establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+            closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
             metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
                 callingLogger.i("$TAG -> metricsHandler")
             }.keepingStrongReference(),
@@ -173,14 +176,13 @@ actual class CallManagerImpl(
         isAudioCbr: Boolean
     ) {
         callingLogger.d("$TAG -> starting call for conversation = $conversationId..")
-
         val isCameraOn = callType == CallType.VIDEO
         callRepository.createCall(
             conversationId = conversationId,
             status = CallStatus.STARTED,
             isMuted = false,
             isCameraOn = isCameraOn,
-            callerId = federatedIdMapper.parseToFederatedId(userId.await())
+            callerId = userId.await().toString()
         )
 
         withCalling {
@@ -215,7 +217,7 @@ actual class CallManagerImpl(
 
         callingLogger.d("[$TAG][endCall] -> ConversationType: [$conversationType]")
         callRepository.updateCallStatusById(
-            conversationId = conversationId.toString(),
+            conversationIdString = conversationId.toString(),
             status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
         )
 
@@ -232,7 +234,7 @@ actual class CallManagerImpl(
 
         callingLogger.d("[$TAG][rejectCall] -> ConversationType: [$conversationType]")
         callRepository.updateCallStatusById(
-            conversationId = conversationId.toString(),
+            conversationIdString = conversationId.toString(),
             status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
         )
 
@@ -286,6 +288,7 @@ actual class CallManagerImpl(
                     handle = deferredHandle.await(),
                     calling = calling,
                     callRepository = callRepository,
+                    qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = callMapper.participantMapper,
                     userRepository = userRepository,
                     conversationRepository = conversationRepository,
@@ -329,6 +332,7 @@ actual class CallManagerImpl(
                     selfUserId = selfUserId,
                     conversationRepository = conversationRepository,
                     federatedIdMapper = federatedIdMapper,
+                    qualifiedIdMapper = qualifiedIdMapper,
                     callingScope = scope
                 ).keepingStrongReference()
 
@@ -346,7 +350,8 @@ actual class CallManagerImpl(
         scope.launch {
             withCalling {
                 val activeSpeakersHandler = OnActiveSpeakers(
-                    callRepository = callRepository
+                    callRepository = callRepository,
+                    qualifiedIdMapper = qualifiedIdMapper
                 ).keepingStrongReference()
 
                 wcall_set_active_speaker_handler(
