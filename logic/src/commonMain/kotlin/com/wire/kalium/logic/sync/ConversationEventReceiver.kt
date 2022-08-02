@@ -381,20 +381,18 @@ class ConversationEventReceiverImpl(
         if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId)) {
             messageRepository.getMessageById(message.conversationId, content.messageId)
                 .onSuccess { messageToRemove ->
-                    (if (messageToRemove.content is MessageContent.Asset)
-                        (messageToRemove.content as MessageContent.Asset).value.remoteData else null)
-                        ?.let { assetToRemove ->
-                            assetRepository.deleteAssetLocally(
-                                AssetId(
-                                    assetToRemove.assetId,
-                                    assetToRemove.assetDomain.orEmpty()
-                                )
+                    (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+                        assetRepository.deleteAssetLocally(
+                            AssetId(
+                                assetToRemove.assetId,
+                                assetToRemove.assetDomain.orEmpty()
                             )
-                                .onFailure {
-                                    kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ASSETS)
-                                        .w("delete messageToRemove asset locally failure: $it")
-                                }
-                        }
+                        )
+                            .onFailure {
+                                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ASSETS)
+                                    .w("delete messageToRemove asset locally failure: $it")
+                            }
+                    }
                 }
             messageRepository.markMessageAsDeleted(
                 messageUuid = content.messageId,

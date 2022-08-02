@@ -291,6 +291,30 @@ class AssetRepositoryTest {
 
     }
 
+    @Test
+    fun givenSuccessfulResponse_whenDeletingRemotelyAsset_thenDeleteAssetLocallyShouldBeInvoked() = runTest {
+        // Given
+        val assetKey = UserAssetId("value1", "domain1")
+
+        val (arrangement, assetRepository) = Arrangement()
+            .withSuccessDeleteRemotelyResponse()
+            .withSuccessDeleteLocallyResponse()
+            .arrange()
+
+        // When
+        assetRepository.deleteAsset(assetKey, "asset-token")
+
+        // Then
+        verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::deleteAsset)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::deleteAsset)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+    }
+
     class Arrangement {
 
         @Mock
@@ -303,16 +327,15 @@ class AssetRepositoryTest {
 
         private val assetRepository = AssetDataSource(assetApi, assetDAO, assetMapper, fakeKaliumFileSystem)
 
-        fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
+        fun withStoredData(data: ByteArray, dataPath: Path): Arrangement = apply {
             fakeKaliumFileSystem.sink(dataPath).buffer().use {
                 it.write(data)
                 it.flush()
                 it.close()
             }
-            return this
         }
 
-        fun withSuccessfulUpload(expectedAssetResponse: AssetResponse): Arrangement {
+        fun withSuccessfulUpload(expectedAssetResponse: AssetResponse): Arrangement = apply {
             given(assetDAO)
                 .suspendFunction(assetDAO::insertAsset)
                 .whenInvokedWith(any())
@@ -322,10 +345,9 @@ class AssetRepositoryTest {
                 .suspendFunction(assetApi::uploadAsset)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(NetworkResponse.Success(expectedAssetResponse, mapOf(), 200))
-            return this
         }
 
-        fun withSuccessfulDownload(assetsIdToPersist: List<AssetId>, expectedData: ByteArray): Arrangement {
+        fun withSuccessfulDownload(assetsIdToPersist: List<AssetId>, expectedData: ByteArray): Arrangement = apply {
             assetsIdToPersist.forEach { assetKey ->
                 withMockedAssetDaoGetByKeyCall(assetKey, null)
                 given(assetApi)
@@ -338,10 +360,9 @@ class AssetRepositoryTest {
                     .whenInvokedWith(any())
                     .thenDoNothing()
             }
-            return this
         }
 
-        fun withErrorUploadResponse(): Arrangement {
+        fun withErrorUploadResponse(): Arrangement = apply {
             given(assetApi)
                 .suspendFunction(assetApi::uploadAsset)
                 .whenInvokedWith(any(), any(), any())
@@ -352,10 +373,9 @@ class AssetRepositoryTest {
                         )
                     )
                 )
-            return this
         }
 
-        fun withErrorDownloadResponse(): Arrangement {
+        fun withErrorDownloadResponse(): Arrangement = apply {
             given(assetApi)
                 .suspendFunction(assetApi::downloadAsset)
                 .whenInvokedWith(anything(), anything())
@@ -366,18 +386,17 @@ class AssetRepositoryTest {
                         )
                     )
                 )
-            return this
         }
 
-        fun withMockedAssetDaoGetByKeyCall(assetKey: UserAssetId, expectedAssetEntity: AssetEntity?): Arrangement {
-            given(assetDAO)
-                .suspendFunction(assetDAO::getAssetByKey)
-                .whenInvokedWith(eq(assetKey.value))
-                .thenReturn(flowOf(expectedAssetEntity))
-            return this
-        }
+        fun withMockedAssetDaoGetByKeyCall(assetKey: UserAssetId, expectedAssetEntity: AssetEntity?): Arrangement =
+            apply {
+                given(assetDAO)
+                    .suspendFunction(assetDAO::getAssetByKey)
+                    .whenInvokedWith(eq(assetKey.value))
+                    .thenReturn(flowOf(expectedAssetEntity))
+            }
 
-        fun withErrorDeleteResponse(): Arrangement {
+        fun withErrorDeleteResponse(): Arrangement = apply {
             given(assetApi)
                 .suspendFunction(assetApi::deleteAsset)
                 .whenInvokedWith(anything(), anything())
@@ -388,7 +407,20 @@ class AssetRepositoryTest {
                         )
                     )
                 )
-            return this
+        }
+
+        fun withSuccessDeleteRemotelyResponse(): Arrangement = apply {
+            given(assetApi)
+                .suspendFunction(assetApi::deleteAsset)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
+        }
+
+        fun withSuccessDeleteLocallyResponse(): Arrangement = apply {
+            given(assetDAO)
+                .suspendFunction(assetDAO::deleteAsset)
+                .whenInvokedWith(anything())
+                .thenReturn(Unit)
         }
 
         fun arrange(): Pair<Arrangement, AssetRepository> = this to assetRepository

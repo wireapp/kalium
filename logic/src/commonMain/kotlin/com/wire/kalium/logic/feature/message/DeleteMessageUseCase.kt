@@ -68,11 +68,8 @@ class DeleteMessageUseCase(
         }
 
     private suspend fun deleteMessageAsset(message: Message) {
-        val assetToRemove = when (message.content) {
-            is MessageContent.Asset -> (message.content as MessageContent.Asset).value.remoteData
-            else -> null
-        }
-        if (assetToRemove != null) {
+        (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+
             assetRepository.deleteAsset(
                 AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
                 assetToRemove.assetToken
