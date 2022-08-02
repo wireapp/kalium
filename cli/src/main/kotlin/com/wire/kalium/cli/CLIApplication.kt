@@ -59,7 +59,7 @@ fun currentUserSession(): UserSessionScope {
 }
 
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
-    userSession.syncManager.waitUntilSlowSyncCompletion()
+    userSession.syncManager.waitUntilLive()
 
     val conversations = userSession.conversations.getConversations().let {
         when (it) {

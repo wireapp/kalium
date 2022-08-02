@@ -109,7 +109,7 @@ class ConversationEventReceiverImpl(
             }
 
             is MessageContent.Signaling -> {
-                processSignaling(content.messageContent)
+                processSignaling(senderUserId, content.messageContent)
             }
         }
     }
@@ -132,7 +132,7 @@ class ConversationEventReceiverImpl(
                     is ProteusFailure -> kaliumLogger.withFeatureId(EVENT_RECEIVER)
                         .e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
 
-                    else -> kaliumLogger.withFeatureId(EVENT_RECEIVER).e("Failure when processing message: $it")
+                    else -> kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Failure when processing message: $it")
                 }
                 handleFailedProteusDecryptedMessage(event)
             }.onSuccess { readableContent ->
@@ -268,10 +268,7 @@ class ConversationEventReceiverImpl(
             }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
-        .deleteMembers(
-            event.removedList.map { idMapper.toDaoModel(it) },
-            idMapper.toDaoModel(event.conversationId)
-        )
+        .deleteMembers(event.removedList, event.conversationId)
         .flatMap {
             // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
             // and keep them to properly show this member-leave message
@@ -316,10 +313,16 @@ class ConversationEventReceiverImpl(
                 )
             }
 
-    private fun processSignaling(signaling: MessageContent.Signaling) {
+    private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
         when (signaling) {
             MessageContent.Ignored -> {
-                kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Ignored Signaling Message received: $signaling")
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .i(message = "$TAG Ignored Signaling Message received: $signaling")
+            }
+            is MessageContent.Availability -> {
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .i(message = "$TAG Availability status update received: ${signaling.status}")
+                userRepository.updateOtherUserAvailabilityStatus(senderUserId, signaling.status)
             }
         }
     }
@@ -327,7 +330,7 @@ class ConversationEventReceiverImpl(
     // TODO(qol): split this function so it's easier to maintain
     @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
-        kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Message received: $message")
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "$TAG Message received: $message")
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {

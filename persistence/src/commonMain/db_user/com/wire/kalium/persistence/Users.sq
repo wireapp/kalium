@@ -92,6 +92,9 @@ SELECT * FROM User
 WHERE handle LIKE ('%' || :searchQuery || '%')
 AND connection_status = :connectionStatus;
 
+selectUsersByTeam:
+SELECT * FROM User WHERE team = ?;
+
 updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;
 
