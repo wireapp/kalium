@@ -2,59 +2,76 @@ package com.wire.kalium.logic.sync.full
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.data.sync.SlowSyncStep
+import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
+import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
+import com.wire.kalium.logic.feature.user.SyncContactsUseCase
+import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.DefaultWorker
-import com.wire.kalium.logic.sync.Result
+import com.wire.kalium.logic.sync.KaliumSyncException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.flow
 
-class SlowSyncWorker(
-    private val userSessionScope: UserSessionScope
-) : DefaultWorker {
+internal interface SlowSyncWorker {
 
-    // Any exception here is really unexpected, and we should log and figure out where it came from
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun doWork(): Result {
+    /**
+     * Performs all [SlowSyncStep] in the correct order,
+     * emits the current ongoing step.
+     */
+    suspend fun performSlowSyncSteps(): Flow<SlowSyncStep>
+}
+
+// TODO(test): Make testable by converting internal usecases into interfaces
+@Suppress("LongParameterList")
+internal class SlowSyncWorkerImpl(
+    private val syncSelfUser: SyncSelfUserUseCase,
+    private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
+    private val syncConversations: SyncConversationsUseCase,
+    private val syncConnections: SyncConnectionsUseCase,
+    private val syncSelfTeam: SyncSelfTeamUseCase,
+    private val syncContacts: SyncContactsUseCase,
+    private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
+) : SlowSyncWorker {
+
+    override suspend fun performSlowSyncSteps(): Flow<SlowSyncStep> = flow {
+
+        suspend fun Either<CoreFailure, Unit>.continueWithStep(
+            slowSyncStep: SlowSyncStep,
+            step: suspend () -> Either<CoreFailure, Unit>
+        ) = flatMap { performStep(slowSyncStep, step) }
+
         kaliumLogger.withFeatureId(SYNC).d("Sync: Starting SlowSync")
-
-        val result = try {
-            // TODO: to move the feature configs call outside the sync
-            // TODO(optimization): Handle cancellation
-            userSessionScope.syncFeatureConfigsUseCase()
-            userSessionScope.users.syncSelfUser()
-                .flatMap { userSessionScope.conversations.syncConversations() }
-                .flatMap { userSessionScope.connection.syncConnections() }
-                .flatMap { userSessionScope.team.syncSelfTeamUseCase() }
-                .flatMap { userSessionScope.users.syncContacts() }
-                .flatMap { userSessionScope.conversations.joinExistingMLSConversations() }
-                .onSuccess { userSessionScope.syncManager.onSlowSyncComplete() }
-                .onFailure { userSessionScope.syncManager.onSlowSyncFailure(it) }
-        } catch (e: Exception) {
-            kaliumLogger.withFeatureId(SYNC).e("An unexpected error happening during SlowSync", e)
-            Either.Left(CoreFailure.Unknown(e))
-        }
-
-        return when (result) {
-            is Either.Left -> {
-                val failure = result.value
-                kaliumLogger.withFeatureId(SYNC).e("SLOW SYNC FAILED $failure")
-                (failure as? CoreFailure.Unknown)?.let {
-                    it.rootCause?.printStackTrace()
-                }
-                Result.Failure
+        // TODO: to move the feature configs call outside the sync
+        syncFeatureConfigs()
+        emit(SlowSyncStep.SELF_USER)
+        syncSelfUser()
+            .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
+            .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
+            .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
+            .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
+            .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
+            .onFailure {
+                throw KaliumSyncException("Failure during SlowSync", it)
             }
-            is Either.Right -> {
-                kaliumLogger.withFeatureId(SYNC).i("SLOW SYNC SUCCESS $result")
-                Result.Success
-            }
-        }
     }
 
-    companion object {
-        const val name: String = "SLOW_SYNC"
-    }
+    private suspend fun FlowCollector<SlowSyncStep>.performStep(
+        slowSyncStep: SlowSyncStep,
+        step: suspend () -> Either<CoreFailure, Unit>
+    ): Either<CoreFailure, Unit> {
+        // Check for cancellation
+        currentCoroutineContext().ensureActive()
 
+        emit(slowSyncStep)
+        return step()
+    }
 }

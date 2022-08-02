@@ -46,7 +46,9 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -279,6 +281,8 @@ abstract class UserSessionScopeCommon(
 
     private val syncRepository: SyncRepository by lazy { InMemorySyncRepository() }
 
+    private val slowSyncRepository: SlowSyncRepository by lazy { InMemorySlowSyncRepository() }
+
     private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, syncRepository)
 
     private val eventProcessor: EventProcessor
@@ -292,11 +296,10 @@ abstract class UserSessionScopeCommon(
 
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
-            authenticatedDataSourceSet.userSessionWorkScheduler,
             syncRepository,
             eventProcessor,
             eventGatherer,
-            syncCriteriaProvider
+            slowSyncRepository
         )
     }
 

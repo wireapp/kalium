@@ -2,6 +2,8 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.kaliumLogger
@@ -15,12 +17,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 interface SyncManager {
-    fun onSlowSyncComplete()
-
     /**
      * Suspends the caller until all pending events are processed,
      * and the client has finished processing all pending events.
@@ -35,16 +36,14 @@ interface SyncManager {
 
     suspend fun isSlowSyncOngoing(): Boolean
     suspend fun isSlowSyncCompleted(): Boolean
-    fun onSlowSyncFailure(cause: CoreFailure): SyncState
 }
 
 @Suppress("LongParameterList") // Can't take them out right now. Maybe we can extract an `EventProcessor` on a future PR
 internal class SyncManagerImpl(
-    private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val syncRepository: SyncRepository,
     private val eventProcessor: EventProcessor,
     private val eventGatherer: EventGatherer,
-    private val syncCriteriaProvider: SyncCriteriaProvider,
+    private val slowSyncRepository: SlowSyncRepository,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SyncManager {
 
@@ -84,16 +83,11 @@ internal class SyncManagerImpl(
 
     init {
         syncScope.launch {
-            syncCriteriaProvider.syncCriteriaFlow().collect {
-                if (it is SyncCriteriaResolution.Ready) {
+            slowSyncRepository.slowSyncStatus.collectLatest {
+                if (it is SlowSyncStatus.Complete) {
                     // START SYNC
                     kaliumLogger.i("Sync starting as all criteria are met")
-                    startSyncIfNotYetStarted()
-                } else {
-                    // STOP SYNC
-                    // TODO: Stop SlowSync
-                    kaliumLogger.i("Sync Stopped as criteria are not met: $it")
-                    quickSyncJob?.cancel()
+                    onSlowSyncComplete()
                 }
             }
         }
@@ -109,7 +103,7 @@ internal class SyncManagerImpl(
     private val quickSyncScope = CoroutineScope(syncSupervisorJob + eventProcessingDispatcher + coroutineExceptionHandler)
     private var quickSyncJob: Job? = null
 
-    override fun onSlowSyncComplete() {
+    private fun onSlowSyncComplete() {
         // Processing already running, don't launch another
         kaliumLogger.withFeatureId(SYNC).d("SyncManager.onSlowSyncComplete called")
         val isRunning = quickSyncJob?.isActive ?: false
@@ -134,23 +128,8 @@ internal class SyncManagerImpl(
         syncRepository.updateSyncState { SyncState.Waiting }
     }
 
-    override fun onSlowSyncFailure(cause: CoreFailure) = syncRepository.updateSyncState { SyncState.Failed(cause) }
-
     override suspend fun waitUntilLive() {
         syncRepository.syncState.first { it == SyncState.Live }
-    }
-
-    private fun startSyncIfNotYetStarted() {
-        syncRepository.updateSyncState {
-            when (it) {
-                SyncState.Waiting, is SyncState.Failed -> {
-                    userSessionWorkScheduler.enqueueSlowSyncIfNeeded()
-                    SyncState.SlowSync
-                }
-
-                else -> it
-            }
-        }
     }
 
     override suspend fun isSlowSyncOngoing(): Boolean = syncRepository.syncState.first() == SyncState.SlowSync
