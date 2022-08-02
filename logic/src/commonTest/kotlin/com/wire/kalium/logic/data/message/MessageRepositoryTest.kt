@@ -204,6 +204,31 @@ class MessageRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAConversationId_whenDeletingAllMessages_thenShouldBeRemovedLocally() = runTest {
+        given(idMapper)
+            .function(idMapper::toDaoModel)
+            .whenInvokedWith(anything())
+            .then { TEST_QUALIFIED_ID_ENTITY }
+
+        given(messageDAO)
+            .suspendFunction(messageDAO::getMessagesByConversationId)
+            .whenInvokedWith(eq(TEST_QUALIFIED_ID_ENTITY))
+            .then { listOf(TEST_MESSAGE_ENTITY) }
+
+        messageRepository.deleteAllMessagesForConversation(TEST_CONVERSATION_ID).shouldSucceed()
+
+        verify(messageDAO)
+            .suspendFunction(messageDAO::getMessagesByConversationId)
+            .with(eq(TEST_QUALIFIED_ID_ENTITY))
+            .wasInvoked(once)
+
+        verify(messageDAO)
+            .suspendFunction(messageDAO::deleteMessages)
+            .with(eq(listOf(TEST_MESSAGE_ENTITY)))
+            .wasInvoked(once)
+    }
+
     private companion object {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_NETWORK_QUALIFIED_ID_ENTITY = NetworkQualifiedId("value", "domain")
