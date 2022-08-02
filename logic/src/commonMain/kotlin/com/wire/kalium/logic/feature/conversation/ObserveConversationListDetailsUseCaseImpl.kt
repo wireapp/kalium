@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -19,14 +18,11 @@ fun interface ObserveConversationListDetailsUseCase {
 
 internal class ObserveConversationListDetailsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager,
     private val callRepository: CallRepository,
 ) : ObserveConversationListDetailsUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend operator fun invoke(): Flow<List<ConversationDetails>> {
-        syncManager.startSyncIfIdle()
-
         val conversationsFlow = conversationRepository.observeConversationList().map { conversations ->
             conversations.map { conversation ->
                 conversationRepository.observeConversationDetailsById(conversation.id)
@@ -45,7 +41,6 @@ internal class ObserveConversationListDetailsUseCaseImpl(
                     is ConversationDetails.Self,
                     is ConversationDetails.Connection,
                     is ConversationDetails.OneOne -> it
-
                     is ConversationDetails.Group -> it.copy(
                         hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId })
                     )

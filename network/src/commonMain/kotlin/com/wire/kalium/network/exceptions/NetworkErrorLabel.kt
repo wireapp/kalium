@@ -22,6 +22,7 @@ internal object NetworkErrorLabel {
     const val MLS_CLIENT_MISMATCH = "mls-client-mismatch"
     const val MLS_UNSUPPORTED_PROPOSAL = "mls-unsupported-proposal"
     const val MLS_KEY_PACKAGE_REF_NOT_FOUND = "mls-key-package-ref-not-found"
+    const val UNKNOWN_CLIENT = "unknown-client"
 
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"
