@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -26,21 +25,17 @@ interface GetIncomingCallsUseCase {
  * and do not show any incoming calls if User is UserAvailabilityStatus.AWAY.
  * @param conversationRepository ConversationRepository for getting ConversationsDetails, to check its MutedConversationStatus
  * and do not show incoming calls from the muted conversation.
- * @param syncManager SyncManager to sync the data before checking the calls.
  *
  * @return Flow<List<Call>> - Flow of Calls List that should be shown to the user.
  * That Flow emits everytime when the list is changed
  */
-internal class GetIncomingCallsUseCaseImpl(
+internal class GetIncomingCallsUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
-    private val syncManager: SyncManager
 ) : GetIncomingCallsUseCase {
 
     override suspend operator fun invoke(): Flow<List<Call>> {
-        syncManager.startSyncIfIdle()
-
         return observeIncomingCallsIfUserStatusAllows()
             .onlyCallsInNotMutedConversations()
             .distinctUntilChanged()
@@ -49,10 +44,10 @@ internal class GetIncomingCallsUseCaseImpl(
     private suspend fun observeIncomingCallsIfUserStatusAllows(): Flow<List<Call>> =
         userRepository.observeSelfUser()
             .flatMapLatest {
-                //if user is AWAY we don't show any IncomingCalls
+                // if user is AWAY we don't show any IncomingCalls
                 if (it.availabilityStatus == UserAvailabilityStatus.AWAY) flowOf(listOf())
-                else callRepository.incomingCallsFlow().distinctUntilChanged {
-                        old, new -> old.firstOrNull()?.conversationId == new.firstOrNull()?.conversationId
+                else callRepository.incomingCallsFlow().distinctUntilChanged { old, new ->
+                    old.firstOrNull()?.conversationId == new.firstOrNull()?.conversationId
                 }
             }
 
@@ -60,17 +55,17 @@ internal class GetIncomingCallsUseCaseImpl(
         flatMapLatest { calls ->
             calls
                 .flatMapFromIterable { call ->
-                    //getting ConversationDetails for each Call
+                    // getting ConversationDetails for each Call
                     conversationRepository.observeById(call.conversationId)
-                        .getOrElse(flowOf(null))
+                        .map { it.getOrElse(null) }
                 }
                 .map { conversations ->
                     val allowedConversations = conversations
                         .filter { conversationDetails ->
-                            //don't display call if ConversationDetails for it were not found
-                            conversationDetails != null
-                                    //don't display call if that Conversation is muted
-                                    && conversationDetails.mutedStatus != MutedConversationStatus.AllMuted
+                            // don't display call if ConversationDetails for it were not found
+                            conversationDetails != null &&
+                                    // don't display call if that Conversation is muted
+                                    conversationDetails.mutedStatus != MutedConversationStatus.AllMuted
                         }
                         .map { it!!.id }
 

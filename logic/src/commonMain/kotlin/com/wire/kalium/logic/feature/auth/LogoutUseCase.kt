@@ -14,8 +14,11 @@ import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
-// TODO(testing): This class is a pain to test because of AuthenticatedDataSourceSet
-class LogoutUseCase @Suppress("LongParameterList") internal constructor(
+interface LogoutUseCase {
+    suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT)
+}
+
+class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
@@ -24,37 +27,50 @@ class LogoutUseCase @Suppress("LongParameterList") internal constructor(
     private val mlsClientProvider: MLSClientProvider,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
-) {
-
+) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
-    suspend operator fun invoke(reason: LogoutReason = LogoutReason.USER_INTENTION) {
+    override suspend operator fun invoke(reason: LogoutReason) {
         deregisterTokenUseCase()
         logoutRepository.logout()
+        logout(reason)
         clearCrypto()
-        clearUserStorage()
-        clearUserSessionAndUpdateCurrent()
+        if (isHardLogout(reason)) {
+            clearUserStorage()
+        }
+        updateCurrentSession()
         clearInMemoryUserSession()
+    }
+
+    private fun isHardLogout(reason: LogoutReason) = when (reason) {
+        LogoutReason.SELF_LOGOUT -> true
+        LogoutReason.REMOVED_CLIENT -> false
+        LogoutReason.DELETED_ACCOUNT -> false
+        LogoutReason.SESSION_EXPIRED -> false
     }
 
     private fun clearInMemoryUserSession() {
         userSessionScopeProvider.delete(userId)
     }
 
-    private fun clearUserSessionAndUpdateCurrent() {
-        sessionRepository.deleteSession(userId)
+    private fun updateCurrentSession() {
         sessionRepository.allSessions().onSuccess {
-            sessionRepository.updateCurrentSession(it.first().tokens.userId)
+            sessionRepository.updateCurrentSession(it.first().session.userId)
         }
     }
 
+    private fun logout(reason: LogoutReason) =
+        sessionRepository.logout(userId = userId, reason, isHardLogout(reason))
+
     private fun clearUserStorage() {
         authenticatedDataSourceSet.userDatabaseProvider.nuke()
+        // exclude clientId clear from this step
         authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
     }
 
     private suspend fun clearCrypto() {
+        // clear clientId here
         authenticatedDataSourceSet.proteusClient.clearLocalFiles()
 
         clientRepository.currentClientId().let { clientID ->
