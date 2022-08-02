@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.flow.first
 
 class UpdateVideoStateUseCase(
