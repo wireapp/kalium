@@ -122,7 +122,7 @@ sealed class MessageEntityContent {
         val encodedData: ByteArray? = null
     ) : Regular()
 
-    data class FailedDecryption(val encodedData: ByteArray? = null): Regular()
+    data class FailedDecryption(val encodedData: ByteArray? = null) : Regular()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,

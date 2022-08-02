@@ -33,6 +33,7 @@ internal class PersistMessageUseCaseImpl(
             }
     }
 
+    @Suppress("ComplexMethod")
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
         when (this) {
             is MessageContent.MemberChange -> true
@@ -44,10 +45,10 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.RestrictedAsset -> true
             is MessageContent.DeleteForMe -> false
             is MessageContent.Unknown -> false
+            is MessageContent.Availability -> false
             is MessageContent.FailedDecryption -> true
             MessageContent.MissedCall -> true
             MessageContent.Empty -> false
             MessageContent.Ignored -> false
-            is MessageContent.Availability -> false
         }
 }
