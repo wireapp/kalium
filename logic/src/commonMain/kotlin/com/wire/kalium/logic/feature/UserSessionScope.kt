@@ -61,7 +61,11 @@ import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
+import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
+import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -78,11 +82,16 @@ import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
+import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.SyncContactsUseCase
+import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
+import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
@@ -91,6 +100,9 @@ import com.wire.kalium.logic.sync.SyncCriteriaProvider
 import com.wire.kalium.logic.sync.SyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
+import com.wire.kalium.logic.sync.full.SlowSyncManager
+import com.wire.kalium.logic.sync.full.SlowSyncWorker
+import com.wire.kalium.logic.sync.full.SlowSyncWorkerImpl
 import com.wire.kalium.logic.sync.incremental.EventGatherer
 import com.wire.kalium.logic.sync.incremental.EventGathererImpl
 import com.wire.kalium.logic.sync.incremental.EventProcessor
@@ -298,17 +310,57 @@ abstract class UserSessionScopeCommon(
         get() = SyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
     val syncManager: SyncManager by lazy {
+        incrementalSyncManager
+        slowSyncManager
         SyncManagerImpl(
             slowSyncRepository,
             incrementalSyncRepository
         )
     }
 
-    private val incrementalSyncWorker: IncrementalSyncWorker = IncrementalSyncWorkerImpl(eventGatherer, eventProcessor)
+    private val syncConversations: SyncConversationsUseCase
+        get() = SyncConversationsUseCase(conversationRepository)
 
-    private val incrementalSyncManager = IncrementalSyncManager(
-        slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository
-    )
+    internal val syncConnections: SyncConnectionsUseCase
+        get() = SyncConnectionsUseCaseImpl(
+            connectionRepository = connectionRepository
+        )
+
+    private val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(userRepository)
+    private val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
+
+    private val syncSelfTeamUseCase: SyncSelfTeamUseCase
+        get() = SyncSelfTeamUseCaseImpl(
+            userRepository = userRepository,
+            teamRepository = teamRepository
+        )
+
+    val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
+        get() = JoinExistingMLSConversationsUseCase(conversationRepository)
+
+    private val slowSyncWorker: SlowSyncWorker by lazy {
+        SlowSyncWorkerImpl(
+            syncSelfUser,
+            syncFeatureConfigsUseCase,
+            syncConversations,
+            syncConnections,
+            syncSelfTeamUseCase,
+            syncContacts,
+            joinExistingMLSConversations
+        )
+    }
+
+    private val slowSyncManager: SlowSyncManager by lazy {
+        SlowSyncManager(syncCriteriaProvider, slowSyncRepository, slowSyncWorker)
+    }
+
+    private val incrementalSyncWorker: IncrementalSyncWorker by lazy {
+        IncrementalSyncWorkerImpl(eventGatherer, eventProcessor)
+    }
+
+    private val incrementalSyncManager by lazy {
+        IncrementalSyncManager(slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository)
+    }
 
     private val timeParser: TimeParser = TimeParserImpl()
 
@@ -483,3 +535,4 @@ abstract class UserSessionScopeCommon(
         }
     }
 }
+

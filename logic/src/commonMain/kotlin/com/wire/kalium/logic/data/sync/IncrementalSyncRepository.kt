@@ -21,12 +21,12 @@ internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
     override val connectionPolicyState get() = _connectionPolicy.asStateFlow()
 
     override fun updateIncrementalSyncState(newState: IncrementalSyncStatus) {
-        kaliumLogger.withFeatureId(SYNC).i("SyncStatus Updated FROM:${_syncState.value}; TO: $newState")
+        kaliumLogger.withFeatureId(SYNC).i("IncrementalSyncStatus Updated FROM:${_syncState.value}; TO: $newState")
         _syncState.value = newState
     }
 
     override fun setConnectionPolicy(connectionPolicy: ConnectionPolicy) {
-        kaliumLogger.withFeatureId(SYNC).i("Sync Connection Policy changed: $connectionPolicy")
+        kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
         _connectionPolicy.value = connectionPolicy
     }
 }
