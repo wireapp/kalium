@@ -11,10 +11,10 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -23,11 +23,11 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.Message as SQLDelightMessage
 import com.wire.kalium.persistence.MessageAssetContent as SQLDelightMessageAssetContent
+import com.wire.kalium.persistence.MessageFailedToDecryptContent as SQLDelightFailedDecryptionMessageContent
 import com.wire.kalium.persistence.MessageMemberChangeContent as SQLDelightMessageMemberChangeContent
+import com.wire.kalium.persistence.MessageMissedCallContent as SQLDelightMessageMissedCallContent
 import com.wire.kalium.persistence.MessageTextContent as SQLDelightMessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent as SQLDelightMessageUnknownContent
-import com.wire.kalium.persistence.MessageMissedCallContent as SQLDelightMessageMissedCallContent
-import com.wire.kalium.persistence.MessageFailedToDecryptContent as SQLDelightFailedDecryptionMessageContent
 
 class MessageMapper {
     fun toModel(msg: SQLDelightMessage, content: MessageEntityContent): MessageEntity = when (content) {
@@ -42,6 +42,7 @@ class MessageMapper {
             editStatus = mapEditStatus(msg.last_edit_timestamp),
             visibility = msg.visibility
         )
+
         is MessageEntityContent.System -> MessageEntity.System(
             content = content,
             id = msg.id,
@@ -137,11 +138,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     conversation_id = message.conversationId,
                     text_body = content.messageBody
                 )
-                is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData,
-                )
+
                 is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
@@ -149,6 +146,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     asset_size = content.assetSizeInBytes,
                     asset_name = content.assetName
                 )
+
                 is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
@@ -167,18 +165,27 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     asset_duration_ms = content.assetDurationMs,
                     asset_normalized_loudness = content.assetNormalizedLoudness
                 )
+
                 is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
                     message_id = message.id,
                     conversation_id = message.conversationId,
                     unknown_encoded_data = content.encodedData,
                     unknown_type_name = content.typeName
                 )
+
+                is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    unknown_encoded_data = content.encodedData,
+                )
+
                 is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
                     message_id = message.id,
                     conversation_id = message.conversationId,
                     member_change_list = content.memberUserIdList,
                     member_change_type = content.memberChangeType
                 )
+
                 is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
                     message_id = message.id,
                     conversation_id = message.conversationId,

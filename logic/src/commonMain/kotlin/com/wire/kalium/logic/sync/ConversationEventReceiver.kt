@@ -6,10 +6,12 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -24,6 +26,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -49,6 +52,7 @@ class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val persistMessage: PersistMessageUseCase,
     private val messageRepository: MessageRepository,
+    private val assetRepository: AssetRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val userRepository: UserRepository,
@@ -63,6 +67,7 @@ class ConversationEventReceiverImpl(
         when (event) {
             is Event.Conversation.NewMessage -> handleNewMessage(event)
             is Event.Conversation.NewConversation -> handleNewConversation(event)
+            is Event.Conversation.DeletedConversation -> handleDeletedConversation(event)
             is Event.Conversation.MemberJoin -> handleMemberJoin(event)
             is Event.Conversation.MemberLeave -> handleMemberLeave(event)
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
@@ -136,9 +141,7 @@ class ConversationEventReceiverImpl(
                 }
                 handleFailedProteusDecryptedMessage(event)
             }.onSuccess { readableContent ->
-                if (readableContent.messageContent is MessageContent.Text && readableContent.messageContent.value == "BomB") {
-                    handleFailedProteusDecryptedMessage(event)
-                } else handleContent(
+                handleContent(
                     conversationId = event.conversationId,
                     timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
@@ -313,12 +316,21 @@ class ConversationEventReceiverImpl(
                 )
             }
 
+    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation) =
+        conversationRepository.deleteConversation(event.conversationId)
+            .onFailure { coreFailure ->
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
+            }.onSuccess {
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
+            }
+
     private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
         when (signaling) {
             MessageContent.Ignored -> {
                 kaliumLogger.withFeatureId(EVENT_RECEIVER)
                     .i(message = "$TAG Ignored Signaling Message received: $signaling")
             }
+
             is MessageContent.Availability -> {
                 kaliumLogger.withFeatureId(EVENT_RECEIVER)
                     .i(message = "$TAG Availability status update received: ${signaling.status}")
@@ -335,30 +347,8 @@ class ConversationEventReceiverImpl(
         when (message) {
             is Message.Regular -> when (val content = message.content) {
                 is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
-                is MessageContent.Asset -> {
-                    userConfigRepository.isFileSharingEnabled().onSuccess {
-                        if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
-                            processNonRestrictedAssetMessage(message)
-                        } else {
-                            val newMessage = message.copy(
-                                content = MessageContent.RestrictedAsset(
-                                    content.value.mimeType, content.value.sizeInBytes, content.value.name ?: ""
-                                )
-                            )
-                            persistMessage(newMessage)
-                        }
-                    }
-                }
-
-                is MessageContent.DeleteMessage -> {
-                    if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId))
-                        messageRepository.markMessageAsDeleted(
-                            messageUuid = content.messageId,
-                            conversationId = message.conversationId
-                        )
-                    else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
-                }
-
+                is MessageContent.Asset -> handleAssetMessage(message)
+                is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
                 is MessageContent.DeleteForMe -> {
                     /*The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
                     *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
@@ -390,7 +380,7 @@ class ConversationEventReceiverImpl(
                     persistMessage(message)
                 }
 
-                MessageContent.Empty -> TODO()
+                is MessageContent.Empty -> TODO()
             }
 
             is Message.System -> when (message.content) {
@@ -398,6 +388,22 @@ class ConversationEventReceiverImpl(
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "System MemberChange Message received: $message")
                     persistMessage(message)
                 }
+            }
+        }
+    }
+
+    private suspend fun handleAssetMessage(message: Message.Regular) {
+        val content = message.content as MessageContent.Asset
+        userConfigRepository.isFileSharingEnabled().onSuccess {
+            if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
+                processNonRestrictedAssetMessage(message)
+            } else {
+                val newMessage = message.copy(
+                    content = MessageContent.RestrictedAsset(
+                        content.value.mimeType, content.value.sizeInBytes, content.value.name ?: ""
+                    )
+                )
+                persistMessage(newMessage)
             }
         }
     }
@@ -411,15 +417,43 @@ class ConversationEventReceiverImpl(
             .onSuccess { persistedMessage ->
                 // Check the second asset message is from the same original sender
                 if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
-                    persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
+                    persistedMessage is Message.Regular &&
+                    persistedMessage.content is MessageContent.Asset
                 ) {
                     // The asset message received contains the asset decryption keys,
                     // so update the preview message persisted previously
-                    updateAssetMessage(persistedMessage, (message.content as MessageContent.Asset).value.remoteData)?.let {
-                        persistMessage(it)
+                    updateAssetMessage(persistedMessage, (message.content as MessageContent.Asset).value.remoteData)?.let { assetMessage ->
+                        persistMessage(assetMessage)
                     }
                 }
             }
+    }
+
+    private suspend fun handleDeleteMessage(
+        content: MessageContent.DeleteMessage,
+        message: Message
+    ) {
+        if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId)) {
+            messageRepository.getMessageById(message.conversationId, content.messageId)
+                .onSuccess { messageToRemove ->
+                    (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+                        assetRepository.deleteAssetLocally(
+                            AssetId(
+                                assetToRemove.assetId,
+                                assetToRemove.assetDomain.orEmpty()
+                            )
+                        )
+                            .onFailure {
+                                kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ASSETS)
+                                    .w("delete messageToRemove asset locally failure: $it")
+                            }
+                    }
+                }
+            messageRepository.markMessageAsDeleted(
+                messageUuid = content.messageId,
+                conversationId = message.conversationId
+            )
+        } else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
     }
 
     private companion object {

@@ -32,7 +32,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.Member as MemberEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
@@ -59,6 +58,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import com.wire.kalium.network.api.ConversationId as ConversationIdDTO
+import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationRepositoryTest {
@@ -771,6 +771,21 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocally() = runTest {
+        val (arrange, conversationRepository) = Arrangement().withDaoDeleteSucceded().arrange()
+        val conversationId = ConversationId("conv_id", "conv_domain")
+
+        conversationRepository.deleteConversation(conversationId).shouldSucceed()
+
+        with(arrange) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::deleteConversationByQualifiedID)
+                .with(eq(MapperProvider.idMapper().toDaoModel(conversationId)))
+                .wasInvoked(once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -857,6 +872,13 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::deleteMemberByQualifiedID)
                 .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
+        }
+
+        fun withDaoDeleteSucceded() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::deleteConversationByQualifiedID)
+                .whenInvokedWith(any())
                 .thenReturn(Unit)
         }
 
