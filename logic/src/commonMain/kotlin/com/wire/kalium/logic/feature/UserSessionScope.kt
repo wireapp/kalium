@@ -178,6 +178,7 @@ abstract class UserSessionScopeCommon(
         get() = UserDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
+            userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
