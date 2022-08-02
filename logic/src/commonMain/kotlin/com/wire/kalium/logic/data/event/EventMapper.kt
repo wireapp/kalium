@@ -17,7 +17,7 @@ class EventMapper(
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper
 ) {
-
+    @Suppress("ComplexMethod")
     fun fromDTO(eventResponse: EventResponse): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
