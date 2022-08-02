@@ -41,8 +41,6 @@ class UpdateVideoStateUseCaseTest {
             .suspendFunction(callManager::updateVideoState)
             .whenInvokedWith(any(), any())
             .thenReturn(Unit)
-
-
     }
 
     @Test
