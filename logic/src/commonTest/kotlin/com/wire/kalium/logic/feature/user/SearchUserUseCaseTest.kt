@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -42,16 +43,30 @@ class SearchUserUseCaseTest {
     @Mock
     private val connectionRepository = mock(classOf<ConnectionRepository>())
 
+    @Mock
+    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
     private lateinit var searchUsersUseCase: SearchUsersUseCase
 
     @BeforeTest
     fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository)
+        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
 
         given(connectionRepository)
             .suspendFunction(connectionRepository::getConnectionRequests)
             .whenInvoked()
             .thenReturn(listOf())
+
+        given(qualifiedIdMapper)
+            .function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq(TEST_QUERY))
+            .thenReturn(QualifiedID(TEST_QUERY, ""))
+
+        given(qualifiedIdMapper)
+            .function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq(TEST_QUERY_FEDERATED))
+            .thenReturn(QualifiedID(TEST_QUERY, "wire.com"))
+
     }
 
     @Test

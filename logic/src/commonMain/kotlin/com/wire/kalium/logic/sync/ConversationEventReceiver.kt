@@ -67,6 +67,7 @@ class ConversationEventReceiverImpl(
         when (event) {
             is Event.Conversation.NewMessage -> handleNewMessage(event)
             is Event.Conversation.NewConversation -> handleNewConversation(event)
+            is Event.Conversation.DeletedConversation -> handleDeletedConversation(event)
             is Event.Conversation.MemberJoin -> handleMemberJoin(event)
             is Event.Conversation.MemberLeave -> handleMemberLeave(event)
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
@@ -275,12 +276,21 @@ class ConversationEventReceiverImpl(
                 )
             }
 
+    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation) =
+        conversationRepository.deleteConversation(event.conversationId)
+            .onFailure { coreFailure ->
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
+            }.onSuccess {
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
+            }
+
     private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
         when (signaling) {
             MessageContent.Ignored -> {
                 kaliumLogger.withFeatureId(EVENT_RECEIVER)
                     .i(message = "$TAG Ignored Signaling Message received: $signaling")
             }
+
             is MessageContent.Availability -> {
                 kaliumLogger.withFeatureId(EVENT_RECEIVER)
                     .i(message = "$TAG Availability status update received: ${signaling.status}")
@@ -319,7 +329,6 @@ class ConversationEventReceiverImpl(
                                         }
                                     }
                                 }
-
                         } else {
                             val newMessage = message.copy(
                                 content = MessageContent.RestrictedAsset(
@@ -327,7 +336,6 @@ class ConversationEventReceiverImpl(
                                 )
                             )
                             persistMessage(newMessage)
-
                         }
                     }
                 }
@@ -408,5 +416,4 @@ class ConversationEventReceiverImpl(
     private companion object {
         const val TAG = "ConversationEventReceiver"
     }
-
 }

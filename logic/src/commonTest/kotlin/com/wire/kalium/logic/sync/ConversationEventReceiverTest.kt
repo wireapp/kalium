@@ -17,6 +17,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -253,6 +254,23 @@ class ConversationEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
+        val event = TestEvent.deletedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withDeletingConversationSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::deleteConversation)
+                .with(eq(TestConversation.ID))
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -314,7 +332,7 @@ class ConversationEventReceiverTest {
 
         fun withSelfUserIdReturning(selfUserId: UserId) = apply {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
+                .function(userRepository::getSelfUserId)
                 .whenInvoked()
                 .thenReturn(selfUserId)
         }
@@ -381,6 +399,13 @@ class ConversationEventReceiverTest {
             encryptedContent,
             encryptedExternalContent
         )
+
+        fun withDeletingConversationSucceeding(conversationId: ConversationId = TestConversation.ID) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::deleteConversation)
+                .whenInvokedWith((eq(conversationId)))
+                .thenReturn(Either.Right(Unit))
+        }
 
         fun arrange() = this to conversationEventReceiver
     }

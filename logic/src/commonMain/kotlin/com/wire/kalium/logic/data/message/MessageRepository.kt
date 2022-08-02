@@ -93,6 +93,7 @@ interface MessageRepository {
         oldMessageId: String,
         newMessageId: String
     ): Either<CoreFailure, Unit>
+
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
