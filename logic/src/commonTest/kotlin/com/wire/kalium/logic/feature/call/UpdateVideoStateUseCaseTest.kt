@@ -62,7 +62,7 @@ class UpdateVideoStateUseCaseTest {
             .thenDoNothing()
 
         given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::establishedCallsFlow)
             .whenInvoked().then {
                 flowOf(listOf(establishedCall))
             }
@@ -88,7 +88,7 @@ class UpdateVideoStateUseCaseTest {
     fun givenAFlowOfEstablishedCallsThatContainsNonEstablishedCall_whenUseCaseInvoked_thenDoNotInvokeUpdateVideoState() = runTest {
 
         given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
+            .suspendFunction(callRepository::establishedCallsFlow)
             .whenInvoked().then {
                 flowOf(listOf())
             }
