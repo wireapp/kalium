@@ -46,10 +46,10 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
-import com.wire.kalium.logic.data.sync.InMemorySyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -79,28 +79,31 @@ import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
-import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
-import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
-import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
-import com.wire.kalium.logic.sync.incremental.EventGatherer
-import com.wire.kalium.logic.sync.incremental.EventGathererImpl
-import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
-import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncCriteriaProvider
 import com.wire.kalium.logic.sync.SyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
-import com.wire.kalium.logic.sync.receiver.UserEventReceiver
-import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.incremental.EventGatherer
+import com.wire.kalium.logic.sync.incremental.EventGathererImpl
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.incremental.EventProcessorImpl
+import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
+import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
+import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
+import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
+import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.UserEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -279,11 +282,11 @@ abstract class UserSessionScopeCommon(
             kaliumFileSystem = kaliumFileSystem
         )
 
-    private val syncRepository: SyncRepository by lazy { InMemorySyncRepository() }
+    private val incrementalSyncRepository: IncrementalSyncRepository by lazy { InMemoryIncrementalSyncRepository() }
 
     private val slowSyncRepository: SlowSyncRepository by lazy { InMemorySlowSyncRepository() }
 
-    private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, syncRepository)
+    private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
     private val eventProcessor: EventProcessor
         get() = EventProcessorImpl(
@@ -296,12 +299,16 @@ abstract class UserSessionScopeCommon(
 
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
-            syncRepository,
-            eventProcessor,
-            eventGatherer,
-            slowSyncRepository
+            slowSyncRepository,
+            incrementalSyncRepository
         )
     }
+
+    private val incrementalSyncWorker: IncrementalSyncWorker = IncrementalSyncWorkerImpl(eventGatherer, eventProcessor)
+
+    private val incrementalSyncManager = IncrementalSyncManager(
+        slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository
+    )
 
     private val timeParser: TimeParser = TimeParserImpl()
 
@@ -312,7 +319,7 @@ abstract class UserSessionScopeCommon(
 
     internal val keyPackageManager: KeyPackageManager =
         KeyPackageManagerImpl(
-            syncRepository,
+            incrementalSyncRepository,
             lazy { keyPackageRepository },
             lazy { client.refillKeyPackages }
         )
@@ -380,10 +387,10 @@ abstract class UserSessionScopeCommon(
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
 
     val observeSyncState: ObserveSyncStateUseCase
-        get() = ObserveSyncStateUseCase(syncRepository)
+        get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
 
     val setConnectionPolicy: SetConnectionPolicyUseCase
-        get() = SetConnectionPolicyUseCase(syncRepository)
+        get() = SetConnectionPolicyUseCase(incrementalSyncRepository)
 
     val client: ClientScope
         get() = ClientScope(

@@ -3,10 +3,10 @@ package com.wire.kalium.logic.sync
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.sync.InMemorySyncRepository
+import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.sync.SyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.incremental.EventGatherer
@@ -45,7 +45,7 @@ class SyncManagerTest {
             .withEventGathererReturning(emptyFlow())
             .arrange()
 
-        arrangement.syncRepository.syncState.test {
+        arrangement.incrementalSyncRepository.incrementalSyncState.test {
             // starts with Waiting
             assertIs<SyncState.Waiting>(awaitItem())
 
@@ -73,7 +73,7 @@ class SyncManagerTest {
             .withEventGathererReturning(emptyFlow())
             .arrange()
 
-        arrangement.syncRepository.syncState.test {
+        arrangement.incrementalSyncRepository.incrementalSyncState.test {
             // Then
             assertIs<SyncState.Waiting>(awaitItem())
 
@@ -120,7 +120,7 @@ class SyncManagerTest {
         // When
         advanceUntilIdle()
 
-        assertEquals(SyncState.Failed(coreFailureCause), arrangement.syncRepository.syncState.first())
+        assertEquals(SyncState.Failed(coreFailureCause), arrangement.incrementalSyncRepository.incrementalSyncState.first())
     }
 
     @Test
@@ -135,7 +135,7 @@ class SyncManagerTest {
         // When
         advanceUntilIdle()
 
-        assertEquals(SyncState.Failed(coreFailureCause), arrangement.syncRepository.syncState.first())
+        assertEquals(SyncState.Failed(coreFailureCause), arrangement.incrementalSyncRepository.incrementalSyncState.first())
     }
 
     private class Arrangement {
@@ -149,7 +149,7 @@ class SyncManagerTest {
         @Mock
         val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
 
-        val syncRepository: SyncRepository = InMemorySyncRepository()
+        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         fun withSlowSyncRepositoryReturning(slowSyncStatusFlow: StateFlow<SlowSyncStatus>) = apply {
             given(slowSyncRepository)
@@ -177,11 +177,7 @@ class SyncManagerTest {
         }
 
         private val syncManager = SyncManagerImpl(
-            syncRepository,
-            eventProcessor,
-            eventGatherer,
-            slowSyncRepository,
-            TestKaliumDispatcher
+            incrementalSyncRepository
         )
 
         fun arrange() = this to syncManager
