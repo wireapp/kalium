@@ -159,7 +159,6 @@ class RegisterAccountUseCaseTest {
     fun givenRepositoryCallFailWithDomainBlockedForRegistration_whenRegisteringPersonalAccount_thenErrorIsPropagated() =
         testSpecificError(TestNetworkException.domainBlockedForRegistration, RegisterResult.Failure.EmailDomainBlocked)
 
-
     private fun testSpecificError(kaliumException: KaliumException, error: RegisterResult.Failure) = runTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val expected = NetworkFailure.ServerMiscommunication(kaliumException)
@@ -177,7 +176,6 @@ class RegisterAccountUseCaseTest {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.wasInvoked(exactly = once)
     }
-
 
     private companion object {
         const val TEST_EMAIL = """user@domain.com"""

@@ -26,6 +26,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import com.wire.kalium.network.api.UserId as UserIdDTO
+
 class SessionMapperTest {
 
     @Mock
@@ -40,6 +41,7 @@ class SessionMapperTest {
     fun setup() {
         sessionMapper = SessionMapperImpl(serverConfigMapper, idMapper)
     }
+
     @Test
     fun givenAnAuthSession_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
@@ -59,6 +61,7 @@ class SessionMapperTest {
         val expectedValue: SessionDTO = sessionMapper.toSessionDTO(authSession.session as AuthSession.Session.Valid)
         assertEquals(expectedValue, acuteValue)
     }
+
     @Test
     fun givenAnAuthSession_whenMappingToPersistenceSession_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
@@ -87,6 +90,7 @@ class SessionMapperTest {
         assertEquals(expected, actual)
         verify(serverConfigMapper).invocation { toEntity(authSession.serverLinks) }.wasInvoked(exactly = once)
     }
+
     @Test
     fun givenAPersistenceSession_whenMappingFromPersistenceSession_thenValuesAreMappedCorrectly() {
         val authSessionEntity: AuthSessionEntity.Valid = randomPersistenceSession()
@@ -114,13 +118,22 @@ class SessionMapperTest {
         verify(serverConfigMapper).invocation { fromEntity(authSessionEntity.serverLinks) }.wasInvoked(exactly = once)
         verify(idMapper).invocation { fromDaoModel(authSessionEntity.userId) }.wasInvoked(exactly = once)
     }
+
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         val userId = UserId("user_id", "user.domain.io")
         fun randomAuthSession(): AuthSession =
             AuthSession(AuthSession.Session.Valid(userId, randomString, randomString, randomString), TEST_CONFIG.links)
+
         fun randomPersistenceSession(): AuthSessionEntity.Valid =
-            AuthSessionEntity.Valid(UserIDEntity(userId.value, userId.domain), randomString, randomString, randomString, TEST_ENTITY.links, TEST_SSO_ID_ENTITY)
+            AuthSessionEntity.Valid(
+                UserIDEntity(userId.value, userId.domain),
+                randomString,
+                randomString,
+                randomString,
+                TEST_ENTITY.links,
+                TEST_SSO_ID_ENTITY
+            )
 
         val TEST_CONFIG: ServerConfig = newServerConfig(1)
 

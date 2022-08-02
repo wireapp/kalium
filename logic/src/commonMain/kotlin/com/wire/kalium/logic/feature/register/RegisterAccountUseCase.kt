@@ -86,7 +86,6 @@ class RegisterAccountUseCase(
     }
 }
 
-
 sealed class RegisterResult {
     class Success(
         val userSession: AuthSession,
