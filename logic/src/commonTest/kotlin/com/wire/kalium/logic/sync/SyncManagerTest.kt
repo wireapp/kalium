@@ -4,6 +4,8 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.framework.TestEvent
@@ -19,9 +21,9 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -36,47 +38,10 @@ import kotlin.test.assertIs
 class SyncManagerTest {
 
     @Test
-    fun givenSyncManagerWasCreated_whenSyncCriteriaAreMet_thenShouldStartSlowSync() = runTest(TestKaliumDispatcher.default) {
-        // Given
-        val syncCriteriaChannel = Channel<SyncCriteriaResolution>(Channel.UNLIMITED)
-
-        val (arrangement, _) = Arrangement()
-            .withCriteriaProviderReturning(syncCriteriaChannel.consumeAsFlow())
-            .arrange()
-
-        // When
-        syncCriteriaChannel.send(SyncCriteriaResolution.Ready)
-        advanceUntilIdle()
-
-        // Then
-        verify(arrangement.workScheduler)
-            .function(arrangement.workScheduler::enqueueSlowSyncIfNeeded)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenSyncManagerWasCreated_whenSyncCriteriaAreNotYetMet_thenShouldNotStartSlowSync() = runTest {
-        // Given
-        val syncCriteriaChannel = Channel<SyncCriteriaResolution>(Channel.UNLIMITED)
-
-        val (arrangement, _) = Arrangement()
-            .withCriteriaProviderReturning(syncCriteriaChannel.consumeAsFlow())
-            .arrange()
-
-        // When
-        syncCriteriaChannel.send(SyncCriteriaResolution.MissingRequirement("Test cause"))
-
-        // Then
-        verify(arrangement.workScheduler)
-            .function(arrangement.workScheduler::enqueueSlowSyncIfNeeded)
-            .wasNotInvoked()
-    }
-
-    @Test
     fun givenSyncCriteriaAreMet_whenCallingOnSlowSyncCompleted_thenShouldStartGatheringEvents() = runTest(TestKaliumDispatcher.default) {
         // Given
-        val (arrangement, syncManager) = Arrangement()
-            .withSyncCriteriaMet()
+        val (arrangement, _) = Arrangement()
+            .withSlowSyncComplete()
             .withEventGathererReturning(emptyFlow())
             .arrange()
 
@@ -85,7 +50,6 @@ class SyncManagerTest {
             assertIs<SyncState.Waiting>(awaitItem())
 
             // When
-            syncManager.onSlowSyncComplete()
             advanceUntilIdle()
 
             // Then
@@ -105,7 +69,7 @@ class SyncManagerTest {
     fun givenSyncCriteriaAreMet_whenSlowSyncIsNotYetCompleted_thenShouldNotGatherEvents() = runTest(TestKaliumDispatcher.default) {
         // Given
         val (arrangement, _) = Arrangement()
-            .withSyncCriteriaMet()
+            .withSlowSyncComplete()
             .withEventGathererReturning(emptyFlow())
             .arrange()
 
@@ -130,12 +94,11 @@ class SyncManagerTest {
         // Given
         val event = TestEvent.memberJoin()
         val (arrangement, syncManager) = Arrangement()
-            .withSyncCriteriaMet()
+            .withSlowSyncComplete()
             .withEventGathererReturning(flowOf(event))
             .arrange()
 
         // When
-        syncManager.onSlowSyncComplete()
         advanceUntilIdle()
 
         // Then
@@ -150,12 +113,11 @@ class SyncManagerTest {
         // Given
         val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
         val (arrangement, syncManager) = Arrangement()
-            .withSyncCriteriaMet()
+            .withSlowSyncComplete()
             .withEventGathererThrowing(KaliumSyncException("Oopsie", coreFailureCause))
             .arrange()
 
         // When
-        syncManager.onSlowSyncComplete()
         advanceUntilIdle()
 
         assertEquals(SyncState.Failed(coreFailureCause), arrangement.syncRepository.syncState.first())
@@ -166,12 +128,11 @@ class SyncManagerTest {
         // Given
         val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
         val (arrangement, syncManager) = Arrangement()
-            .withSyncCriteriaMet()
+            .withSlowSyncComplete()
             .withEventGathererReturning(flow { throw throw KaliumSyncException("Oopsie", coreFailureCause) })
             .arrange()
 
         // When
-        syncManager.onSlowSyncComplete()
         advanceUntilIdle()
 
         assertEquals(SyncState.Failed(coreFailureCause), arrangement.syncRepository.syncState.first())
@@ -180,30 +141,25 @@ class SyncManagerTest {
     private class Arrangement {
 
         @Mock
-        val workScheduler: UserSessionWorkScheduler = configure(mock(UserSessionWorkScheduler::class)) {
-            stubsUnitByDefault = true
-        }
-
-        @Mock
         val eventProcessor: EventProcessor = configure(mock(EventProcessor::class)) { stubsUnitByDefault = true }
 
         @Mock
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
 
         @Mock
-        val syncCriteriaProvider: SyncCriteriaProvider = mock(SyncCriteriaProvider::class)
+        val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
 
         val syncRepository: SyncRepository = InMemorySyncRepository()
 
-        fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
-            given(syncCriteriaProvider)
-                .suspendFunction(syncCriteriaProvider::syncCriteriaFlow)
+        fun withSlowSyncRepositoryReturning(slowSyncStatusFlow: StateFlow<SlowSyncStatus>) = apply {
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
                 .whenInvoked()
-                .thenReturn(criteriaFlow)
+                .thenReturn(slowSyncStatusFlow)
         }
 
-        fun withSyncCriteriaMet() = apply {
-            withCriteriaProviderReturning(flowOf(SyncCriteriaResolution.Ready))
+        fun withSlowSyncComplete() = apply {
+            withSlowSyncRepositoryReturning(MutableStateFlow(SlowSyncStatus.Complete))
         }
 
         fun withEventGathererReturning(eventFlow: Flow<Event>) = apply {
@@ -221,11 +177,10 @@ class SyncManagerTest {
         }
 
         private val syncManager = SyncManagerImpl(
-            workScheduler,
             syncRepository,
             eventProcessor,
             eventGatherer,
-            syncCriteriaProvider,
+            slowSyncRepository,
             TestKaliumDispatcher
         )
 
