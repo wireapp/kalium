@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.UserSsoIdDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
+import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
@@ -16,6 +17,7 @@ internal typealias PersistenceQualifiedId = QualifiedIDEntity
 interface IdMapper {
     fun fromApiModel(networkId: NetworkQualifiedId): QualifiedID
     fun fromSimpleClientResponse(clientResponse: SimpleClientResponse): ClientId
+    fun fromClient(clientResponse: Client): ClientId
     fun fromDaoModel(persistenceId: PersistenceQualifiedId): QualifiedID
     fun toApiModel(qualifiedID: QualifiedID): NetworkQualifiedId
     fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId
@@ -37,6 +39,8 @@ internal class IdMapperImpl : IdMapper {
     override fun fromApiModel(networkId: NetworkQualifiedId) = QualifiedID(value = networkId.value, domain = networkId.domain)
 
     override fun fromSimpleClientResponse(clientResponse: SimpleClientResponse) = ClientId(clientResponse.id)
+
+    override fun fromClient(client: Client) = ClientId(client.id)
 
     override fun fromDaoModel(persistenceId: PersistenceQualifiedId) =
         QualifiedID(value = persistenceId.value, domain = persistenceId.domain)

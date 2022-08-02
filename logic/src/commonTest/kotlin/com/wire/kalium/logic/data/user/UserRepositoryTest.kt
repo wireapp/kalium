@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.QualifiedID
+import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
@@ -14,6 +15,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
@@ -90,7 +92,11 @@ class UserRepositoryTest {
         @Mock
         val metadataDAO = configure(mock(classOf<MetadataDAO>())) { stubsUnitByDefault = true }
         @Mock
+        val clientDAO = configure(mock(classOf<ClientDAO>())) { stubsUnitByDefault = true }
+        @Mock
         val selfApi = mock(classOf<SelfApi>())
+        @Mock
+        val clientApi = mock(classOf<ClientApi>())
         @Mock
         val userDetailsApi = mock(classOf<UserDetailsApi>())
 
@@ -98,7 +104,7 @@ class UserRepositoryTest {
         val sessionRepository = mock(SessionRepository::class)
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, selfApi, userDetailsApi, sessionRepository)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository)
         }
 
         init {

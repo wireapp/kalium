@@ -3,9 +3,12 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
@@ -26,6 +29,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -53,13 +57,17 @@ interface UserRepository {
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
+    suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
     suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
+    suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
+    suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
+    private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
     private val sessionRepository: SessionRepository,
@@ -68,6 +76,7 @@ internal class UserDataSource(
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
@@ -234,12 +243,33 @@ internal class UserDataSource(
         )
     }
 
+    override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
+        userDAO.updateUserAvailabilityStatus(idMapper.toDaoModel(userId), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+    }
+
     override suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
         return wrapStorageRequest {
             userDAO.getUsersNotInConversation(idMapper.toDaoModel(conversationId))
                 .map { publicUserMapper.fromDaoModelToPublicUser(it) }
         }
     }
+
+    override suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>> {
+        return wrapStorageRequest {
+            val selfUserId = getSelfUserIDEntity()
+
+            userDAO.getAllUsersByTeam(teamId.value)
+                .filter { it.id != selfUserId }
+                .map(publicUserMapper::fromDaoModelToPublicUser)
+        }
+    }
+
+    override suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>> =
+        getUsersFromTeam(teamId)
+            .map { users ->
+                users.associate { user -> user.id to clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(user.id)) }
+            }
+            .map(memberMapper::fromMapOfClientsToRecipients)
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

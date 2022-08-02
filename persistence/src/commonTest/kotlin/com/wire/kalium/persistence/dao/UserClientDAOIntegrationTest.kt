@@ -31,7 +31,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
 
         userDAO.deleteUserByQualifiedID(user.id)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(user.id).first()
+        val result = clientDAO.getClientsOfUserByQualifiedIDFlow(user.id).first()
         assertTrue(result.isEmpty())
     }
 
