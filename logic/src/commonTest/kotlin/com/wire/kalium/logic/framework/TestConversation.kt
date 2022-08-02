@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -50,7 +50,7 @@ object TestConversation {
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
-        ID.copy(value = "GROUP ID"),
+        ID.copy(value = if (protocolInfo is ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"),
         "GROUP Name",
         Conversation.Type.GROUP,
         TestTeam.TEAM_ID,
@@ -60,6 +60,18 @@ object TestConversation {
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+    )
+
+    fun GROUP_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationEntity(
+        ENTITY_ID.copy(value = if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"),
+        "convo name",
+        ConversationEntity.Type.GROUP,
+        "teamId",
+        protocolInfo,
+        lastNotificationDate = null,
+        lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -93,6 +105,7 @@ object TestConversation {
         ConversationRepositoryTest.GROUP_NAME,
         NETWORK_ID,
         null,
+        0UL,
         ConversationResponse.Type.GROUP,
         0,
         null,
@@ -133,6 +146,19 @@ object TestConversation {
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
         ProtocolInfo.Proteus,
+        MutedConversationStatus.AllAllowed,
+        null,
+        null,
+        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+    )
+
+    val MLS_CONVERSATION = Conversation(
+        ConversationId("conv_id", "domain"),
+        "MLS Name",
+        Conversation.Type.ONE_ON_ONE,
+        TestTeam.TEAM_ID,
+        ProtocolInfo.MLS("group_id", ProtocolInfo.MLS.GroupState.PENDING_JOIN, 0UL),
         MutedConversationStatus.AllAllowed,
         null,
         null,
