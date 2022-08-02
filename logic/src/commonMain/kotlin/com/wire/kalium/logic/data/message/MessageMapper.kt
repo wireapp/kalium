@@ -44,7 +44,7 @@ class MessageMapperImpl(
                 senderClientId = message.senderClientId.value,
                 status = status,
                 editStatus = when (message.editStatus) {
-                    Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
+                    is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp)
                 },
                 visibility = visibility
@@ -210,7 +210,7 @@ class MessageMapperImpl(
             }
         }
 
-        MessageEntityContent.MissedCall -> MessageContent.MissedCall
+        is MessageEntityContent.MissedCall -> MessageContent.MissedCall
     }
 }
 

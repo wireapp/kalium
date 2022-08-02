@@ -252,9 +252,9 @@ class GetNotificationsUseCaseImpl(
         is MessageContent.DeleteForMe -> false
         is MessageContent.Availability -> false
         is MessageContent.FailedDecryption -> false
-        MessageContent.MissedCall -> true
-        MessageContent.Empty -> false
-        MessageContent.Ignored -> false
+        is MessageContent.MissedCall -> true
+        is MessageContent.Empty -> false
+        is MessageContent.Ignored -> false
     }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
