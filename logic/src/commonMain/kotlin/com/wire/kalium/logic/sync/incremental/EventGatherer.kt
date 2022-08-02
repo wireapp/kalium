@@ -6,8 +6,9 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
-import com.wire.kalium.logic.data.sync.SyncRepository
-import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.sync.IncrementalSyncOutcome
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMap
@@ -40,14 +41,14 @@ internal interface EventGatherer {
      * - Updates status to Online
      * - Emits Websocket events as they come, omitting duplications.
      *
-     * Will follow
+     * Will stop or keep gathering accordingly to the current [ConnectionPolicy]
      */
     suspend fun gatherEvents(): Flow<Event>
 }
 
 internal class EventGathererImpl(
     private val eventRepository: EventRepository,
-    private val syncRepository: SyncRepository
+    private val incrementalSyncRepository: IncrementalSyncRepository
 ) : EventGatherer {
 
     private val offlineEventBuffer = PendingEventsBuffer()
@@ -68,7 +69,7 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
         webSocketEventFlow: Flow<WebSocketEvent<Event>>
-    ) = webSocketEventFlow.combine(syncRepository.connectionPolicyState)
+    ) = webSocketEventFlow.combine(incrementalSyncRepository.connectionPolicyState)
         .transformWhile { (webSocketEvent, policy) ->
             val isKeepAlivePolicy = policy == ConnectionPolicy.KEEP_ALIVE
             val isOpenEvent = webSocketEvent is WebSocketEvent.Open
@@ -141,6 +142,6 @@ internal class EventGathererImpl(
                 emit(it)
             }
         kaliumLogger.withFeatureId(SYNC).i("SYNC: Offline events collection finished")
-        syncRepository.updateSyncState { SyncState.Live }
+        incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Complete(IncrementalSyncOutcome.LIVE))
     }
 }

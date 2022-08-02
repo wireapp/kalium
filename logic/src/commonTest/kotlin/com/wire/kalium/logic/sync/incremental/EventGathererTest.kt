@@ -5,7 +5,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
-import com.wire.kalium.logic.data.sync.SyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncOutcome
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -38,7 +40,6 @@ class EventGathererTest {
 
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withUpdateSyncStateReturningLive()
             .withPendingEventsReturning(emptyFlow())
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -66,7 +67,6 @@ class EventGathererTest {
 
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withUpdateSyncStateReturningLive()
             .withPendingEventsReturning(emptyFlow())
             .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -95,7 +95,6 @@ class EventGathererTest {
         val pendingEvent = TestEvent.newConnection()
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withUpdateSyncStateReturningLive()
             .withPendingEventsReturning(flowOf(Either.Right(pendingEvent)))
             .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -121,7 +120,6 @@ class EventGathererTest {
 
         val (arrangement, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withUpdateSyncStateReturningLive()
             .withPendingEventsReturning(emptyFlow())
             .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -144,33 +142,7 @@ class EventGathererTest {
 
     @Test
     fun givenWebSocketOpens_whenGathering_thenSyncStatusIsUpdatedToLive() = runTest {
-        val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
-
-        val (arrangement, eventGatherer) = Arrangement()
-            .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withUpdateSyncStateReturningLive()
-            .withPendingEventsReturning(emptyFlow())
-            .withKeepAliveConnectionPolicy()
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
-            .arrange()
-
-        eventGatherer.gatherEvents().test {
-            verify(arrangement.syncRepository)
-                .function(arrangement.syncRepository::updateSyncState)
-                .with(any())
-                .wasNotInvoked()
-
-            // Open Websocket should trigger fetching pending events
-            liveEventsChannel.send(WebSocketEvent.Open())
-            advanceUntilIdle()
-
-            verify(arrangement.syncRepository)
-                .function(arrangement.syncRepository::updateSyncState)
-                .with(matching { statusUpdate -> SyncState.Live == statusUpdate(SyncState.Waiting) })
-                .wasInvoked(exactly = once)
-
-            cancelAndIgnoreRemainingEvents()
-        }
+        // TODO: Propagate to the worker instead of updating the sync status directly
     }
 
     @Test
@@ -181,7 +153,6 @@ class EventGathererTest {
 
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withUpdateSyncStateReturningLive()
             .withPendingEventsReturning(flowOf(Either.Right(event)))
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -204,7 +175,6 @@ class EventGathererTest {
 
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withUpdateSyncStateReturningLive()
             .withPendingEventsReturning(emptyFlow())
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -230,7 +200,6 @@ class EventGathererTest {
 
         val (_, eventGatherer) = Arrangement()
             .withLastEventIdReturning(Either.Right("lastEventId"))
-            .withUpdateSyncStateReturningLive()
             .withPendingEventsReturning(flowOf(Either.Right(event)))
             .withKeepAliveConnectionPolicy()
             .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
@@ -257,9 +226,9 @@ class EventGathererTest {
         val eventRepository = configure(mock(EventRepository::class)) { stubsUnitByDefault = true }
 
         @Mock
-        val syncRepository = mock(SyncRepository::class)
+        val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
-        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, syncRepository)
+        val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
         fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<Event>>>) = apply {
             given(eventRepository)
@@ -283,24 +252,17 @@ class EventGathererTest {
         }
 
         fun withConnectionPolicyReturning(policyStateFlow: StateFlow<ConnectionPolicy>) = apply {
-            given(syncRepository)
-                .getter(syncRepository::connectionPolicyState)
+            given(incrementalSyncRepository)
+                .getter(incrementalSyncRepository::connectionPolicyState)
                 .whenInvoked()
                 .thenReturn(policyStateFlow)
         }
 
         fun withKeepAliveConnectionPolicy() = apply {
-            given(syncRepository)
-                .getter(syncRepository::connectionPolicyState)
+            given(incrementalSyncRepository)
+                .getter(incrementalSyncRepository::connectionPolicyState)
                 .whenInvoked()
                 .thenReturn(MutableStateFlow(ConnectionPolicy.KEEP_ALIVE))
-        }
-
-        fun withUpdateSyncStateReturningLive() = apply {
-            given(syncRepository)
-                .function(syncRepository::updateSyncState)
-                .whenInvokedWith(any())
-                .thenReturn(SyncState.Live)
         }
 
         fun arrange() = this to eventGatherer

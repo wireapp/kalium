@@ -7,12 +7,6 @@ class ConnectionScope(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
 ) {
-
-    internal val syncConnections: SyncConnectionsUseCase
-        get() = SyncConnectionsUseCaseImpl(
-            connectionRepository = connectionRepository
-        )
-
     val sendConnectionRequest: SendConnectionRequestUseCase get() = SendConnectionRequestUseCaseImpl(connectionRepository)
 
     val acceptConnectionRequest: AcceptConnectionRequestUseCase

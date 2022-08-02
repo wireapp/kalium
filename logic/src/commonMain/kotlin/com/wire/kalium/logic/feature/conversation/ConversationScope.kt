@@ -43,9 +43,6 @@ class ConversationScope(
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
 
-    val syncConversations: SyncConversationsUseCase
-        get() = SyncConversationsUseCase(conversationRepository)
-
     val createGroupConversation: CreateGroupConversationUseCase
         get() = CreateGroupConversationUseCase(conversationRepository, syncManager, clientRepository)
 
@@ -63,9 +60,6 @@ class ConversationScope(
 
     val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
-
-    val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(conversationRepository)
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCase(conversationRepository)
