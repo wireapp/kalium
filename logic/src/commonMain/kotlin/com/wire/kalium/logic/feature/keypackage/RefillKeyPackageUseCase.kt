@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -21,11 +22,9 @@ interface RefillKeyPackagesUseCase {
 
 }
 
-internal const val KEY_PACKAGE_LIMIT = 100
-internal const val KEY_PACKAGE_THRESHOLD = 0.5
-
 class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val clientRepository: ClientRepository
 ) : RefillKeyPackagesUseCase {
     override suspend operator fun invoke(): RefillKeyPackagesResult =
@@ -34,7 +33,8 @@ class RefillKeyPackagesUseCaseImpl(
                 .flatMap {
                     if (needsRefill(it.count)) {
                         kaliumLogger.i("Refilling key packages...")
-                        keyPackageRepository.uploadNewKeyPackages(selfClientId, amount = KEY_PACKAGE_LIMIT - it.count).flatMap {
+                        val amount = keyPackageLimitsProvider.keyPackageUploadLimit - it.count
+                        keyPackageRepository.uploadNewKeyPackages(selfClientId, amount).flatMap {
                             Either.Right(Unit)
                         }
                     } else {
@@ -49,6 +49,6 @@ class RefillKeyPackagesUseCaseImpl(
         })
 
     private fun needsRefill(keyPackageCount: Int): Boolean {
-        return keyPackageCount < (KEY_PACKAGE_LIMIT * KEY_PACKAGE_THRESHOLD)
+        return keyPackageCount < (keyPackageLimitsProvider.keyPackageUploadLimit * keyPackageLimitsProvider.keyPackageUploadThreshold)
     }
 }
