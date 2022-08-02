@@ -69,7 +69,7 @@ data class MLSConfigDTO(
 )
 
 @Serializable
-data class SelfDeletingMessagesConfig(
+data class SelfDeletingMessagesConfigDTO(
     @SerialName("enforcedTimeoutSeconds")
     val enforcedTimeoutSeconds: Int
 )
@@ -148,7 +148,7 @@ sealed class FeatureConfigData {
     @Serializable
     data class SelfDeletingMessages(
         @SerialName("config")
-        val config: SelfDeletingMessagesConfig,
+        val config: SelfDeletingMessagesConfigDTO,
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()

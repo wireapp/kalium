@@ -12,7 +12,7 @@ import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfig
+import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -116,7 +116,7 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.FileSharing(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.Legalhold(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.SearchVisibility(FeatureFlagStatusDTO.ENABLED),
-            FeatureConfigData.SelfDeletingMessages(SelfDeletingMessagesConfig(0), FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.SelfDeletingMessages(SelfDeletingMessagesConfigDTO(0), FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.SecondFactorPasswordChallenge(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.SSO(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),

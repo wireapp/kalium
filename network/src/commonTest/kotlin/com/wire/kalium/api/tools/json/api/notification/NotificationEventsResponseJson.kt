@@ -14,7 +14,7 @@ import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.MLS
 import com.wire.kalium.network.api.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.SelfDeletingMessages
-import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfig
+import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.user.NewClientEventData
 import kotlinx.serialization.InternalSerializationApi
@@ -173,7 +173,7 @@ object NotificationEventsResponseJson {
     private val newSelfDeletingMessagesFeatureConfigUpdate = ValidJsonProvider(
         EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
             SelfDeletingMessages(
-                SelfDeletingMessagesConfig(60),
+                SelfDeletingMessagesConfigDTO(60),
                 FeatureFlagStatusDTO.ENABLED,
             )
         ), newFeatureConfigSerializer

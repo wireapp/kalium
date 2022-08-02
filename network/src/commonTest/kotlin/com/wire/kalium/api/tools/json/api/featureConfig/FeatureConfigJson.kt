@@ -21,7 +21,7 @@ import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfig
+import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfigDTO
 
 object FeatureConfigJson {
     private val featureConfigResponseSerializer = { _: FeatureConfigResponse ->
@@ -100,7 +100,7 @@ object FeatureConfigJson {
             FileSharing(FeatureFlagStatusDTO.ENABLED),
             Legalhold(FeatureFlagStatusDTO.ENABLED),
             SearchVisibility(FeatureFlagStatusDTO.ENABLED),
-            SelfDeletingMessages(SelfDeletingMessagesConfig(0), FeatureFlagStatusDTO.ENABLED),
+            SelfDeletingMessages(SelfDeletingMessagesConfigDTO(0), FeatureFlagStatusDTO.ENABLED),
             SecondFactorPasswordChallenge(FeatureFlagStatusDTO.ENABLED),
             SSO(FeatureFlagStatusDTO.ENABLED),
             ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
