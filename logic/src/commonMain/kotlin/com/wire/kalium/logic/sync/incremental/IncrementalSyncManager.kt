@@ -15,9 +15,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 internal class IncrementalSyncManager(
@@ -50,31 +48,22 @@ internal class IncrementalSyncManager(
                 kaliumLogger.withFeatureId(SYNC).i("Sync job failed due to unknown reason", throwable)
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(CoreFailure.Unknown(throwable)))
             }
-        }
-        syncScope.launch {
-            delay(2000)
-            startObservingForSync()
+            // TODO: Trigger retry depending on failure
         }
     }
 
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
     init {
-        startObservingForSync()
-    }
-
-    private fun startObservingForSync() {
         syncScope.launch(coroutineExceptionHandler) {
-            incrementalSyncRepository.connectionPolicyState
-                .combine(slowSyncRepository.slowSyncStatus) { policy, status ->
-                    status to policy
-                }.collectLatest { (status, _) ->
-                    if (status is SlowSyncStatus.Complete) {
-                        // START SYNC
-                        kaliumLogger.i("Starting QuickSync, as SlowSync is completed")
-                        incrementalSyncWorker.performIncrementalSync()
-                    }
+            // TODO: Trigger re-sync when policy changes from DISCONNECT to KEEP_ALIVE
+            slowSyncRepository.slowSyncStatus.collectLatest { status ->
+                if (status is SlowSyncStatus.Complete) {
+                    // START SYNC
+                    kaliumLogger.i("Starting QuickSync, as SlowSync is completed")
+                    incrementalSyncWorker.performIncrementalSync()
                 }
+            }
         }
     }
 }
