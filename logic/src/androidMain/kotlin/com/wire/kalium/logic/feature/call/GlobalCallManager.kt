@@ -12,13 +12,13 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import kotlinx.coroutines.Dispatchers
 
 actual class GlobalCallManager(
-    private val appContext: Context,
-    private val federatedIdMapper: FederatedIdMapper
+    private val appContext: Context
 ) {
 
     private val callManagerHolder = hashMapOf<QualifiedID, CallManager>()
@@ -45,7 +45,9 @@ actual class GlobalCallManager(
         clientRepository: ClientRepository,
         conversationRepository: ConversationRepository,
         messageSender: MessageSender,
-        callMapper: CallMapper
+        callMapper: CallMapper,
+        federatedIdMapper: FederatedIdMapper,
+        qualifiedIdMapper: QualifiedIdMapper
     ): CallManager {
         return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,
@@ -55,7 +57,8 @@ actual class GlobalCallManager(
             callMapper = callMapper,
             messageSender = messageSender,
             conversationRepository = conversationRepository,
-            federatedIdMapper = federatedIdMapper
+            federatedIdMapper = federatedIdMapper,
+            qualifiedIdMapper = qualifiedIdMapper
         ).also {
             callManagerHolder[userId] = it
         }

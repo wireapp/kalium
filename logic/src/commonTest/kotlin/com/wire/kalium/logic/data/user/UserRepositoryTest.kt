@@ -105,7 +105,7 @@ class UserRepositoryTest {
 
         init {
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(TestUser.JSON_QUALIFIED_ID) }
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
