@@ -4,6 +4,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -25,6 +26,8 @@ interface AssetApi {
         encryptedDataSource: Source,
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse>
+
+    suspend fun deleteAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Unit>
 }
 
 class AssetApiImpl internal constructor(
@@ -72,6 +75,11 @@ class AssetApiImpl internal constructor(
                 contentType(ContentType.MultiPart.Mixed)
                 setBody(StreamAssetContent(metadata, encryptedDataSize, encryptedDataSource))
             }
+        }
+
+    override suspend fun deleteAsset(assetId: AssetId, assetToken: String?): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.delete(buildAssetsPath(assetId))
         }
 
     private companion object {
