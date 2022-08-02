@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
-import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
@@ -27,6 +27,7 @@ sealed class RegisterParam(
         firstName: String, lastName: String, email: String, password: String, val emailActivationCode: String
     ) : RegisterParam(firstName, lastName, email, password)
 
+    @Suppress("LongParameterList")
     class Team(
         firstName: String,
         lastName: String,
@@ -50,6 +51,7 @@ class RegisterAccountUseCase(
                 registerAccountRepository.registerPersonalAccountWithEmail(email, emailActivationCode, name, password)
             }
         }
+
         is RegisterParam.Team -> {
             with(param) {
                 registerAccountRepository.registerTeamWithEmail(
@@ -64,7 +66,10 @@ class RegisterAccountUseCase(
             RegisterResult.Failure.Generic(it)
         }
     }, {
-        RegisterResult.Success(Pair(it.first, AuthSession(it.second, serverLinks)))
+        RegisterResult.Success(
+            AuthSession(it.second, serverLinks),
+            it.first
+        )
     })
 
     private fun handleSpecialErrors(error: KaliumException.InvalidRequestError) = with(error) {
@@ -83,7 +88,11 @@ class RegisterAccountUseCase(
 
 
 sealed class RegisterResult {
-    class Success(val value: Pair<SelfUser, AuthSession>) : RegisterResult()
+    class Success(
+        val userSession: AuthSession,
+        val ssoId: SsoId?
+    ) : RegisterResult()
+
     sealed class Failure : RegisterResult() {
         object EmailDomainBlocked : Failure()
         object AccountAlreadyExists : Failure()

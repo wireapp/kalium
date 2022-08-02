@@ -2,11 +2,13 @@ package com.wire.kalium.logic.data.register
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -40,7 +42,7 @@ class RegisterAccountRepositoryTest {
     private val registerApi: RegisterApi = mock(classOf<RegisterApi>())
 
     @Mock
-    private val userMapper = mock(classOf<UserMapper>())
+    private val idMapper = mock(classOf<IdMapper>())
 
     @Mock
     private val sessionMapper = mock(classOf<SessionMapper>())
@@ -49,7 +51,7 @@ class RegisterAccountRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        registerAccountRepository = RegisterAccountDataSource(registerApi, userMapper, sessionMapper)
+        registerAccountRepository = RegisterAccountDataSource(registerApi, idMapper, sessionMapper)
     }
 
     @Test
@@ -120,44 +122,31 @@ class RegisterAccountRepositoryTest {
         val code = CODE
         val password = PASSWORD
         val name = NAME
-        val serverConfig = TEST_SERVER_CONFIG
-        val selfUser = with(TEST_USER) {
-            SelfUser(
-                id = QualifiedID(value = id.value, domain = id.domain),
-                name = name,
-                handle = handle,
-                email = email,
-                phone = phone,
-                accentId = accentId,
-                teamId = teamId?.let { TeamId(it) },
-                connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = UserAssetId("value1", "domain"),
-                completePicture = UserAssetId("value2", "domain"),
-                availabilityStatus = UserAvailabilityStatus.NONE
-            )
+        val ssoId = with(TEST_USER.ssoID) {
+            this?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
         }
         val authSession = with(SESSION) {
             AuthSession.Session.Valid(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType)
         }
-        val expected = Pair(selfUser, authSession)
+        val expected = Pair(ssoId, authSession)
 
         given(registerApi).coroutine {
             register(
                 RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)
             )
         }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
-        given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
+        given(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.then { ssoId }
         given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authSession }
 
         val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession.Session>>>(actual)
+        assertIs<Either.Right<Pair<SsoId?, AuthSession.Session>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)) }
             .wasInvoked(exactly = once)
         verify(sessionMapper).function(sessionMapper::fromSessionDTO).with(any()).wasInvoked(exactly = once)
-        verify(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.wasInvoked(exactly = once)
+        verify(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -168,39 +157,26 @@ class RegisterAccountRepositoryTest {
         val name = NAME
         val teamName = TEAM_NAME
         val teamIcon = TEAM_ICON
-        val serverConfig = TEST_SERVER_CONFIG
-        val selfUser = with(TEST_USER) {
-            SelfUser(
-                id = QualifiedID(value = id.value, domain = id.domain),
-                name = name,
-                handle = handle,
-                email = email,
-                phone = phone,
-                accentId = accentId,
-                teamId = teamId?.let { TeamId(it) },
-                connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = UserAssetId("value1", "domain"),
-                completePicture = UserAssetId("value2", "domain"),
-                availabilityStatus = UserAvailabilityStatus.NONE
-            )
+        val ssoId = with(TEST_USER.ssoID) {
+            this?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
         }
         val authSession =
             with(SESSION) {
                 AuthSession.Session.Valid(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType)
             }
-        val expected = Pair(selfUser, authSession)
+        val expected = Pair(ssoId, authSession)
 
         given(registerApi).coroutine {
             register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
         }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
-        given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
+        given(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.then { ssoId }
         given(sessionMapper)
             .invocation { fromSessionDTO(SESSION) }
             .then { authSession }
 
         val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession.Session>>>(actual)
+        assertIs<Either.Right<Pair<SsoId?, AuthSession.Session>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine {
@@ -209,7 +185,7 @@ class RegisterAccountRepositoryTest {
         verify(sessionMapper).invocation {
             fromSessionDTO(SESSION)
         }.wasInvoked(exactly = once)
-        verify(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.wasInvoked(exactly = once)
+        verify(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -240,7 +216,7 @@ class RegisterAccountRepositoryTest {
             .function(sessionMapper::fromSessionDTO)
             .with(any())
             .wasNotInvoked()
-        verify(userMapper).function(userMapper::fromDtoToSelfUser).with(any()).wasNotInvoked()
+        verify(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
 
     }
 
