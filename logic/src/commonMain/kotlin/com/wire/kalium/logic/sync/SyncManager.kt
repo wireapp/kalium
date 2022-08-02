@@ -5,7 +5,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.event.EventProcessor
+import com.wire.kalium.logic.sync.incremental.EventGatherer
+import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CancellationException

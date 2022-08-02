@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.periodic
 
 /**
  * Responsible for [schedulePeriodicApiVersionUpdate] and [scheduleImmediateApiVersionUpdate].
