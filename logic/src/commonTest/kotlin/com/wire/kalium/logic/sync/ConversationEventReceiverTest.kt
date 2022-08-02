@@ -332,7 +332,7 @@ class ConversationEventReceiverTest {
 
         fun withSelfUserIdReturning(selfUserId: UserId) = apply {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
+                .function(userRepository::getSelfUserId)
                 .whenInvoked()
                 .thenReturn(selfUserId)
         }

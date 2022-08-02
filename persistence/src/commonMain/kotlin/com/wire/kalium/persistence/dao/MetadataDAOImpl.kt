@@ -16,7 +16,11 @@ class MetadataDAOImpl(private val metadataQueries: MetadataQueries): MetadataDAO
         metadataQueries.deleteValue(key)
     }
 
-    override suspend fun valueByKey(key: String): Flow<String?> {
+    override suspend fun valueByKeyFlow(key: String): Flow<String?> {
         return metadataQueries.selectValueByKey(key).asFlow().mapToOneOrNull()
     }
+
+    override fun valueByKey(key: String): String =
+        metadataQueries.selectValueByKey(key).executeAsOne()
+
 }

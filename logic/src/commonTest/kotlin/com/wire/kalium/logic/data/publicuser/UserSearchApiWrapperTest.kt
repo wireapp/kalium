@@ -350,7 +350,7 @@ class UserSearchApiWrapperTest {
                 .thenReturn(flowOf(conversationMembers))
 
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
@@ -383,7 +383,7 @@ class UserSearchApiWrapperTest {
             selfUser: SelfUser = SELF_USER
         ): Arrangement {
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 

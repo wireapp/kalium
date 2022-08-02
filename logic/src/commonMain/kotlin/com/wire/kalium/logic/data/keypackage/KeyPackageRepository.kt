@@ -76,7 +76,7 @@ class KeyPackageDataSource(
 
     override suspend fun lastKeyPackageCountCheck(): Either<StorageFailure, Instant> =
         wrapStorageRequest {
-            metadataDAO.valueByKey(LAST_KEY_PACKAGE_COUNT_CHECK).firstOrNull()?.let { Instant.parse(it) } ?: Instant.DISTANT_PAST
+            metadataDAO.valueByKeyFlow(LAST_KEY_PACKAGE_COUNT_CHECK).firstOrNull()?.let { Instant.parse(it) } ?: Instant.DISTANT_PAST
         }
 
     override suspend fun updateLastKeyPackageCountCheck(timestamp: Instant): Either<StorageFailure, Unit> =
