@@ -19,7 +19,7 @@ CREATE TABLE Message (
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
 
-      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
 );
@@ -236,9 +236,6 @@ SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 
 selectById:
 SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
-
-selectAllMessagesByConversationId:
-SELECT * FROM Message WHERE conversation_id = ?;
 
 selectByConversationIdAndVisibility:
 SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;

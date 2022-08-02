@@ -94,7 +94,6 @@ interface MessageRepository {
         newMessageId: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun deleteAllMessagesForConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -241,12 +240,6 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateMessageId(idMapper.toDaoModel(conversationId), oldMessageId, newMessageId)
-        }
-
-    override suspend fun deleteAllMessagesForConversation(conversationId: ConversationId): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            val messages = messageDAO.getMessagesByConversationId(idMapper.toDaoModel(conversationId))
-            messageDAO.deleteMessages(messages)
         }
 
     override suspend fun updateTextMessageContent(

@@ -257,18 +257,12 @@ class ConversationEventReceiverTest {
     fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventReceiver) = Arrangement()
-            .withDeletingMessagesSucceeding()
             .withDeletingConversationSucceeding()
             .arrange()
 
         eventReceiver.onEvent(event)
 
         with(arrangement) {
-            verify(messageRepository)
-                .suspendFunction(messageRepository::deleteAllMessagesForConversation)
-                .with(eq(TestConversation.ID))
-                .wasInvoked(exactly = once)
-
             verify(conversationRepository)
                 .suspendFunction(conversationRepository::deleteConversation)
                 .with(eq(TestConversation.ID))
@@ -400,13 +394,6 @@ class ConversationEventReceiverTest {
             encryptedContent,
             encryptedExternalContent
         )
-
-        fun withDeletingMessagesSucceeding(conversationId: ConversationId = TestConversation.ID) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::deleteAllMessagesForConversation)
-                .whenInvokedWith((eq(conversationId)))
-                .thenReturn(Either.Right(Unit))
-        }
 
         fun withDeletingConversationSucceeding(conversationId: ConversationId = TestConversation.ID) = apply {
             given(conversationRepository)

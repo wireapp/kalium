@@ -273,13 +273,12 @@ class ConversationEventReceiverImpl(
             }
 
     private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation) =
-        messageRepository.deleteAllMessagesForConversation(event.conversationId)
+        conversationRepository.deleteConversation(event.conversationId)
             .onFailure { coreFailure ->
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
                 Either.Left(coreFailure)
             }.onSuccess {
-                kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleting the conversation $event")
-                conversationRepository.deleteConversation(event.conversationId)
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
             }
 
     private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {

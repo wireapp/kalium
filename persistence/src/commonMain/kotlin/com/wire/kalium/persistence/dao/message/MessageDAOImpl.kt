@@ -215,19 +215,6 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
             .mapToOneOrNull()
             .flatMapLatest { it?.toMessageEntityFlow() ?: flowOf(null) }
 
-    override suspend fun getMessagesByConversationId(conversationId: QualifiedIDEntity) =
-        queries.selectAllMessagesByConversationId(conversationId)
-            .executeAsList()
-            .mapNotNull { it.toMessageEntity() }
-
-    override suspend fun deleteMessages(messages: List<MessageEntity>) {
-        queries.transaction {
-            messages.forEach {
-                queries.deleteMessageById(it.id)
-            }
-        }
-    }
-
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,
