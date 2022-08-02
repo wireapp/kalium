@@ -20,7 +20,7 @@ class UpdateVideoStateUseCase(
             callRepository.updateIsCameraOnById(conversationId.toString(), videoState == VideoState.STARTED)
 
         // updateVideoState should be called only when the call is established
-        callRepository.callsFlow().first().find { call ->
+        callRepository.ongoingCallsFlow().first().find { call ->
             call.conversationId == conversationId
         }?.let {
             callManager.value.updateVideoState(conversationId, videoState)
