@@ -259,7 +259,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is MessageEntityContent.Asset -> ASSET
         is MessageEntityContent.MemberChange -> MEMBER_CHANGE
         is MessageEntityContent.MissedCall -> MISSED_CALL
-        is MessageEntityContent.Unknown, is MessageEntityContent.FailedDecryption -> UNKNOWN
+        is MessageEntityContent.Unknown -> UNKNOWN
+        is MessageEntityContent.FailedDecryption -> FAILED_DECRYPTION
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
     }
 

@@ -333,26 +333,9 @@ class ConversationEventReceiverImpl(
             is Message.Regular -> when (val content = message.content) {
                 is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
                 is MessageContent.Asset -> {
-                    userConfigRepository.isFileSharingEnabled().onSuccess { it ->
+                    userConfigRepository.isFileSharingEnabled().onSuccess {
                         if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
-                            messageRepository.getMessageById(message.conversationId, message.id)
-                                .onFailure {
-                                    // No asset message was received previously, so just persist the preview asset message
-                                    persistMessage(message)
-                                }
-                                .onSuccess { persistedMessage ->
-                                    // Check the second asset message is from the same original sender
-                                    if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
-                                        persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
-                                    ) {
-                                        // The asset message received contains the asset decryption keys,
-                                        // so update the preview message persisted previously
-                                        updateAssetMessage(persistedMessage, content.value.remoteData)?.let {
-                                            persistMessage(it)
-                                        }
-                                    }
-                                }
-
+                            processNonRestrictedAssetMessage(message)
                         } else {
                             val newMessage = message.copy(
                                 content = MessageContent.RestrictedAsset(
@@ -360,29 +343,28 @@ class ConversationEventReceiverImpl(
                                 )
                             )
                             persistMessage(newMessage)
-
                         }
                     }
                 }
 
-                is MessageContent.DeleteMessage ->
+                is MessageContent.DeleteMessage -> {
                     if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId))
                         messageRepository.markMessageAsDeleted(
                             messageUuid = content.messageId,
                             conversationId = message.conversationId
                         )
                     else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
+                }
 
                 is MessageContent.DeleteForMe -> {
                     /*The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
                     *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
-                    val conversationId =
-                        if (content.qualifiedConversationId != null)
-                            idMapper.fromProtoModel(content.qualifiedConversationId)
-                        else ConversationId(
-                            content.conversationId,
-                            message.conversationId.domain
-                        )
+                    val conversationId = if (content.qualifiedConversationId != null)
+                        idMapper.fromProtoModel(content.qualifiedConversationId)
+                    else ConversationId(
+                        content.conversationId,
+                        message.conversationId.domain
+                    )
                     if (message.conversationId == conversationRepository.getSelfConversationId())
                         messageRepository.deleteMessage(
                             messageUuid = content.messageId,
@@ -415,6 +397,26 @@ class ConversationEventReceiverImpl(
                 }
             }
         }
+    }
+
+    private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
+        messageRepository.getMessageById(message.conversationId, message.id)
+            .onFailure {
+                // No asset message was received previously, so just persist the preview asset message
+                persistMessage(message)
+            }
+            .onSuccess { persistedMessage ->
+                // Check the second asset message is from the same original sender
+                if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
+                    persistedMessage is Message.Regular && persistedMessage.content is MessageContent.Asset
+                ) {
+                    // The asset message received contains the asset decryption keys,
+                    // so update the preview message persisted previously
+                    updateAssetMessage(persistedMessage, (message.content as MessageContent.Asset).value.remoteData)?.let {
+                        persistMessage(it)
+                    }
+                }
+            }
     }
 
     private companion object {
