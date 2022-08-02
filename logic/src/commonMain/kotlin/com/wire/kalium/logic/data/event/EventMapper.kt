@@ -18,7 +18,7 @@ class EventMapper(
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper
 ) {
-
+    @Suppress("ComplexMethod")
     fun fromDTO(eventResponse: EventResponse): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
@@ -36,6 +36,7 @@ class EventMapper(
                 is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
                 is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id) // TODO: update it after logic code is merged
+                is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
             }
         } ?: listOf()
     }
@@ -134,4 +135,14 @@ class EventMapper(
         )
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id)
     }
+
+    private fun conversationDeleted(
+        id: String,
+        deletedConversationDTO: EventContentDTO.Conversation.DeletedConversationDTO
+    ) = Event.Conversation.DeletedConversation(
+        id = id,
+        conversationId = idMapper.fromApiModel(deletedConversationDTO.qualifiedConversation),
+        senderUserId = idMapper.fromApiModel(deletedConversationDTO.qualifiedFrom),
+        timestampIso = deletedConversationDTO.time
+    )
 }

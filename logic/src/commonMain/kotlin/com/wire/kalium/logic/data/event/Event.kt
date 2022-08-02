@@ -70,6 +70,13 @@ sealed class Event(open val id: String) {
             val message: String,
             val timestampIso: String = Clock.System.now().toString()
         ) : Conversation(id, conversationId)
+
+        data class DeletedConversation(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val timestampIso: String,
+        ) : Conversation(id, conversationId)
     }
 
     sealed class FeatureConfig(
