@@ -1,7 +1,8 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.periodic
 
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
-
+import com.wire.kalium.logic.sync.DefaultWorker
+import com.wire.kalium.logic.sync.Result
 
 class UpdateApiVersionsWorker(
     private val updateApiVersionsUseCase: UpdateApiVersionsUseCase

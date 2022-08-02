@@ -1,9 +1,10 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.receiver
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
+import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

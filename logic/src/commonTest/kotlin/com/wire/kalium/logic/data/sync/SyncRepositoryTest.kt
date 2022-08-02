@@ -17,42 +17,42 @@ class SyncRepositoryTest {
 
     @Test
     fun givenNoChanges_whenGettingTheCurrentSyncState_thenTheResultShouldBeWaiting() = runTest {
-        //Given
+        // Given
 
-        //When
+        // When
         val result = syncRepository.syncState.first()
 
-        //Then
+        // Then
         assertEquals(SyncState.Waiting, result)
     }
 
     @Test
     fun givenStateIsUpdated_whenGettingTheCurrentSyncState_thenTheResultIsTheUpdatedState() = runTest {
-        //Given
+        // Given
         val updatedState = SyncState.Live
         syncRepository.updateSyncState { updatedState }
 
-        //When
+        // When
         val result = syncRepository.syncState.first()
 
-        //Then
+        // Then
         assertEquals(updatedState, result)
     }
 
     @Test
     fun givenAState_whenUpdatingTheCurrentSyncState_thenTheCurrentStateIsAvailableInTheLambda() = runTest {
-        //Given
+        // Given
         val currentState = SyncState.Live
         syncRepository.updateSyncState { currentState }
 
-        //When
+        // When
         var capturedState: SyncState? = null
         val result = syncRepository.updateSyncState {
             capturedState = it
             SyncState.Waiting
         }
 
-        //Then
+        // Then
         assertEquals(currentState, capturedState)
     }
 }

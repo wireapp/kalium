@@ -10,7 +10,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
-import com.wire.kalium.logic.sync.UpdateApiVersionsScheduler
+import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 

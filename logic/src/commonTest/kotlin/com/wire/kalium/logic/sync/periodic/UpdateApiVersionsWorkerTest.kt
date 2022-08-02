@@ -1,6 +1,7 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.periodic
 
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
+import com.wire.kalium.logic.sync.Result
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given

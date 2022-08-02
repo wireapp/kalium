@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository

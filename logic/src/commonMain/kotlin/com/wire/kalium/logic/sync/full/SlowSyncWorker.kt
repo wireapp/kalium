@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.full
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
@@ -8,6 +8,8 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.DefaultWorker
+import com.wire.kalium.logic.sync.Result
 
 class SlowSyncWorker(
     private val userSessionScope: UserSessionScope
