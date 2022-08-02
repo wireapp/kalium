@@ -6,13 +6,11 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.NotificationApiImpl
 import com.wire.kalium.network.api.notification.NotificationResponse
-import com.wire.kalium.network.api.notification.eventSerializationModule
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -128,27 +126,6 @@ class NotificationApiTest : ApiTest {
 
         assertIs<NetworkResponse.Success<NotificationResponse>>(result)
         assertFalse { result.value.isMissingNotifications }
-    }
-
-    @Test
-    fun foo() {
-        val format = Json {
-            isLenient = true
-            ignoreUnknownKeys = true
-            encodeDefaults = true
-            // explicitNulls, defines whether null property
-            // values should be included in the serialized JSON string.
-            explicitNulls = false
-
-            // If API returns null or unknown values for Enums, we can use default constructor parameter to override it
-            // https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json.md#coercing-input-values
-            coerceInputValues = true
-
-
-            serializersModule = eventSerializationModule
-
-        }
-        println(format.decodeFromString(NotificationResponse.serializer(), NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition))
     }
 
     private companion object {
