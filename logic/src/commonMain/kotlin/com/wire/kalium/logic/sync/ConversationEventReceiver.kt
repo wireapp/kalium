@@ -88,7 +88,7 @@ class ConversationEventReceiverImpl(
                     is MessageContent.DeleteMessage -> Message.Visibility.HIDDEN
                     is MessageContent.TextEdited -> Message.Visibility.HIDDEN
                     is MessageContent.DeleteForMe -> Message.Visibility.HIDDEN
-                    MessageContent.Empty -> Message.Visibility.HIDDEN
+                    is MessageContent.Empty -> Message.Visibility.HIDDEN
                     is MessageContent.Unknown ->
                         if (content.messageContent.hidden) Message.Visibility.HIDDEN
                         else Message.Visibility.VISIBLE
