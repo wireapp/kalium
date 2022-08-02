@@ -4,6 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
@@ -38,7 +39,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
         if (kaliumConfigs.fileRestrictionEnabled) {
             userConfigRepository.setFileSharingStatus(false, null)
         } else {
-            val status: Boolean = featureConfigModel.fileSharingModel.status.lowercase() == ENABLED
+            val status: Boolean = featureConfigModel.fileSharingModel.status == Status.ENABLED
             val isStatusChanged = when (isFileSharingEnabledUseCase().isFileSharingEnabled) {
                 null, status -> false
                 else -> true
@@ -60,9 +61,5 @@ internal class SyncFeatureConfigsUseCaseImpl(
         } else {
             kaliumLogger.d("$networkFailure")
         }
-    }
-
-    companion object {
-        const val ENABLED = "enabled"
     }
 }

@@ -34,25 +34,25 @@ class FeatureConfigRepositoryTest {
         val featureConfigModel = FeatureConfigModel(
             AppLockModel(
                 AppLockConfigModel(true, 0),
-                "enabled"
+                Status.ENABLED
             ),
             ClassifiedDomainsModel(
                 ClassifiedDomainsConfigModel(listOf()),
-                "enabled"
+                Status.ENABLED
             ),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
             SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(0),
-                "enabled"
+                Status.ENABLED
             ),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled")
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED)
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
