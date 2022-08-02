@@ -36,6 +36,10 @@ data class EventResponse(
     @SerialName("transient") val transient: Boolean = false
 )
 
+/**
+ * Handwritten serializer of the FeatureConfigUpdatedDTO because we want to extend it with the
+ * `JsonCorrectingSerializer`, which is not possible using the plugin generated serializer.
+ */
 object FeatureConfigUpdatedDTOSerializer : KSerializer<EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO> {
 
     override val descriptor: SerialDescriptor =
@@ -64,6 +68,10 @@ object FeatureConfigUpdatedDTOSerializer : KSerializer<EventContentDTO.FeatureCo
     }
 }
 
+/**
+ * Transforms the feature config event JSON by moving the `name` field inside the data object so that
+ * we can parse the data object using a polymorphic sealed class.
+ */
 object JsonCorrectingSerializer :
     JsonTransformingSerializer<EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO>(FeatureConfigUpdatedDTOSerializer) {
     override fun transformDeserialize(element: JsonElement): JsonElement {
