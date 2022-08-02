@@ -62,6 +62,16 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
     }
 
     override suspend fun updateAsset(assetEntity: AssetEntity) {
-        queries.updateAsset(assetEntity.downloadedDate, assetEntity.dataPath, assetEntity.dataSize, assetEntity.mimeType, assetEntity.key)
+        queries.updateAsset(
+            assetEntity.downloadedDate,
+            assetEntity.dataPath,
+            assetEntity.dataSize,
+            assetEntity.mimeType,
+            assetEntity.key
+        )
+    }
+
+    override suspend fun deleteAsset(key: String) {
+        queries.deleteAsset(key)
     }
 }
