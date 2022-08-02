@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -46,7 +47,7 @@ internal class KeyPackageManagerImpl(
         refillKeyPackageJob = refillKeyPackagesScope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState == SyncState.Live) {
+                if (syncState is IncrementalSyncStatus.Complete) {
                     refillKeyPackagesIfNeeded()
                 }
             }
