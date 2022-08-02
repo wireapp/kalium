@@ -77,10 +77,10 @@ import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
-import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
-import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.ConversationEventReceiver
@@ -150,8 +150,10 @@ abstract class UserSessionScopeCommon(
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
             keyPackageRepository,
-            mlsClientProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userDatabaseProvider.conversationDAO
+            mlsClientProvider,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            userDatabaseProvider.conversationDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
@@ -176,6 +178,7 @@ abstract class UserSessionScopeCommon(
         get() = UserDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
+            userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
