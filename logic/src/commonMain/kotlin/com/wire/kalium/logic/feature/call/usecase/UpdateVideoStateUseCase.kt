@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.flow.first
 
 class UpdateVideoStateUseCase(
@@ -20,7 +19,7 @@ class UpdateVideoStateUseCase(
             callRepository.updateIsCameraOnById(conversationId.toString(), videoState == VideoState.STARTED)
 
         // updateVideoState should be called only when the call is established
-        callRepository.callsFlow().first().find { call ->
+        callRepository.ongoingCallsFlow().first().find { call ->
             call.conversationId == conversationId
         }?.let {
             callManager.value.updateVideoState(conversationId, videoState)
