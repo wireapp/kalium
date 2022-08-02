@@ -21,7 +21,7 @@ class UpdateVideoStateUseCase(
 
         // updateVideoState should be called only when the call is established
         callRepository.callsFlow().first().find { call ->
-            call.conversationId == conversationId && call.status == CallStatus.ESTABLISHED
+            call.conversationId == conversationId
         }?.let {
             callManager.value.updateVideoState(conversationId, videoState)
         }
