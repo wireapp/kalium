@@ -12,6 +12,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
@@ -281,6 +282,9 @@ class ConversationEventReceiverTest {
         val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
+        val assetRepository = mock(classOf<AssetRepository>())
+
+        @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
@@ -302,6 +306,7 @@ class ConversationEventReceiverTest {
             proteusClient,
             persistMessage,
             messageRepository,
+            assetRepository,
             conversationRepository,
             mlsConversationRepository,
             userRepository,
