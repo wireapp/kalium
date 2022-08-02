@@ -92,9 +92,9 @@ internal class SearchUserRepositoryImpl(
                 )
             },
             default = {
-                userDAO.getUserByNameOrHandleOrEmailAndConnectionState(
+                userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
                     searchQuery = searchQuery,
-                    connectionState = ConnectionEntity.State.ACCEPTED
+                    connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
                 )
             }
         )
@@ -112,9 +112,9 @@ internal class SearchUserRepositoryImpl(
                 )
             },
             default = {
-                userDAO.getUserByHandleAndConnectionState(
+                userDAO.getUserByHandleAndConnectionStates(
                     handle = handle,
-                    connectionState = ConnectionEntity.State.ACCEPTED
+                    connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
                 )
             }
         )
