@@ -112,7 +112,7 @@ class SyncCriteriaProviderTest {
             assertIs<SyncCriteriaResolution.Ready>(awaitItem())
 
             // Cause a Logout
-            logoutReasonsChannel.send(LogoutReason.EXPIRED_SESSION)
+            logoutReasonsChannel.send(LogoutReason.SESSION_EXPIRED)
             assertIs<SyncCriteriaResolution.MissingRequirement>(awaitItem())
 
             cancelAndConsumeRemainingEvents()

@@ -4,6 +4,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.sync.SyncCriteriaResolution.MissingRequirement
+import com.wire.kalium.logic.sync.SyncCriteriaResolution.Ready
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -80,8 +82,10 @@ internal class SyncCriteriaProviderImpl(
      */
     private fun handleLogoutReason(logoutReason: LogoutReason?): SyncCriteriaResolution.MissingRequirement? =
         when (logoutReason) {
-            LogoutReason.USER_INTENTION -> "Logout: user initiated"
-            LogoutReason.EXPIRED_SESSION -> "Logout: expired session"
+            LogoutReason.SELF_LOGOUT -> "Logout: SELF_LOGOUT"
+            LogoutReason.SESSION_EXPIRED -> "Logout: SESSION_EXPIRED"
+            LogoutReason.REMOVED_CLIENT -> "Logout: REMOVED_CLIENT"
+            LogoutReason.DELETED_ACCOUNT -> "Logout: DELETED_ACCOUNT"
             null -> null
         }?.let { SyncCriteriaResolution.MissingRequirement(it) }
 

@@ -24,7 +24,7 @@ internal class ClientDAOImpl(private val clientsQueries: ClientsQueries) : Clien
         }
     }
 
-    override suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
+    override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID)
             .asFlow()
             .mapToList()
@@ -32,8 +32,14 @@ internal class ClientDAOImpl(private val clientsQueries: ClientsQueries) : Clien
                 listOfEntries.map(mapper::toModel)
             }
 
-    override suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Unit = clientsQueries.deleteClientsOfUser(qualifiedID)
+    override suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): List<Client> =
+        clientsQueries.selectAllClientsByUserId(qualifiedID)
+            .executeAsList()
+            .map(mapper::toModel)
+
+    override suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Unit =
+        clientsQueries.deleteClientsOfUser(qualifiedID)
 
     override suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String) = clientsQueries.deleteClient(userId, clientId)
-    
+
 }

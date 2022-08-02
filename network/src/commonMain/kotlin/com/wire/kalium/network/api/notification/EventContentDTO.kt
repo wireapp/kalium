@@ -10,6 +10,7 @@ import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
+import com.wire.kalium.network.api.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -171,9 +172,21 @@ sealed class EventContentDTO {
         ) : User()
 
         @Serializable
+        @SerialName("user.client-remove")
+        data class ClientRemoveDTO(
+            @SerialName("client") val client: RemoveClientEventData,
+        ) : User()
+
+        @Serializable
         @SerialName("user.connection")
         data class NewConnectionDTO(
             @SerialName("connection") val connection: ConnectionDTO,
+        ) : User()
+
+        @Serializable
+        @SerialName("user.delete")
+        data class UserDeleteDTO(
+            @SerialName("id") val id: String,
         ) : User()
     }
 

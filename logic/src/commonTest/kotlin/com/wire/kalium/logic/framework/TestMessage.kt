@@ -19,6 +19,7 @@ object TestMessage {
         status = Message.Status.PENDING,
         editStatus = Message.EditStatus.NotEdited
     )
+
     val MISSED_CALL_MESSAGE = Message.System(
         id = TEST_MESSAGE_ID,
         content = MessageContent.MissedCall,

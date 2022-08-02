@@ -4,16 +4,11 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.SyncManager
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.anything
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
@@ -23,46 +18,19 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class, ConfigurationApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveMemberDetailsByIdsUseCaseTest {
 
     @Mock
     private val userRepository = mock(UserRepository::class)
-
-    @Mock
-    private val syncManager = configure(mock(SyncManager::class)) {
-        stubsUnitByDefault = true
-    }
 
     private lateinit var observeMemberDetailsByIds: ObserveUserListByIdUseCase
 
     @BeforeTest
     fun setup() {
         observeMemberDetailsByIds = ObserveUserListByIdUseCase(
-            userRepository,
-            syncManager,
+            userRepository
         )
-    }
-
-    @Test
-    fun givenAUserIdList_whenObservingMembers_thenTheSyncManagerIsCalled() = runTest {
-        val userIds = listOf(TestUser.SELF.id)
-
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
-
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
-        observeMemberDetailsByIds(userIds)
-
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .wasInvoked(exactly = once)
     }
 
     @Test
