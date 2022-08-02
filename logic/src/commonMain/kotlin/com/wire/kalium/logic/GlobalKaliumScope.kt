@@ -6,8 +6,6 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.id.FederatedIdMapper
-import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
@@ -52,8 +50,6 @@ class GlobalKaliumScope(
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainer()
     }
-
-    val federationAwareMapper: FederatedIdMapper get() = FederatedIdMapperImpl(globalPreferences.value)
 
     internal val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
