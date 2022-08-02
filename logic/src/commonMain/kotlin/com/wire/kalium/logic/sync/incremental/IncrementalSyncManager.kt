@@ -15,7 +15,9 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 internal class IncrementalSyncManager(
@@ -49,19 +51,30 @@ internal class IncrementalSyncManager(
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(CoreFailure.Unknown(throwable)))
             }
         }
+        syncScope.launch {
+            delay(2000)
+            startObservingForSync()
+        }
     }
 
-    private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher + coroutineExceptionHandler)
+    private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
     init {
-        syncScope.launch {
-            slowSyncRepository.slowSyncStatus.collectLatest {
-                if (it is SlowSyncStatus.Complete) {
-                    // START SYNC
-                    kaliumLogger.i("Starting QuickSync, as SlowSync is completed")
-                    incrementalSyncWorker.performIncrementalSync()
+        startObservingForSync()
+    }
+
+    private fun startObservingForSync() {
+        syncScope.launch(coroutineExceptionHandler) {
+            incrementalSyncRepository.connectionPolicyState
+                .combine(slowSyncRepository.slowSyncStatus) { policy, status ->
+                    status to policy
+                }.collectLatest { (status, _) ->
+                    if (status is SlowSyncStatus.Complete) {
+                        // START SYNC
+                        kaliumLogger.i("Starting QuickSync, as SlowSync is completed")
+                        incrementalSyncWorker.performIncrementalSync()
+                    }
                 }
-            }
         }
     }
 }
