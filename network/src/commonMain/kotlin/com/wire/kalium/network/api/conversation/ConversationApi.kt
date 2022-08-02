@@ -2,6 +2,9 @@ package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface ConversationApi {
@@ -18,7 +21,7 @@ interface ConversationApi {
 
     suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
 
-    suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit>
+    suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<ConversationResponse>
 
     suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 
@@ -32,5 +35,16 @@ interface ConversationApi {
     suspend fun updateConversationMemberState(
         memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId
+    ): NetworkResponse<Unit>
+
+    suspend fun updateAccessRole(
+        conversationId: ConversationId,
+        conversationAccessInfoDTO: ConversationAccessInfoDTO
+    ): NetworkResponse<UpdateConversationAccessResponse>
+
+    suspend fun updateConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId,
+        conversationMemberRoleDTO: ConversationMemberRoleDTO
     ): NetworkResponse<Unit>
 }

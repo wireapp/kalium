@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConversationEntity;
+import kotlin.collections.List;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -8,11 +9,14 @@ CREATE TABLE Conversation (
     team_id TEXT,
     mls_group_id TEXT,
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
+    mls_epoch INTEGER DEFAULT 0 NOT NULL,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     last_modified_date TEXT NOT NULL,
-    last_notified_message_date TEXT
+    last_notified_message_date TEXT,
+    access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
+    access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL
 );
 
 deleteAllConversations:
@@ -22,16 +26,19 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date, access_list, access_role_list)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
 team_id = excluded.team_id,
 mls_group_id = excluded.mls_group_id,
+mls_epoch = excluded.mls_epoch,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
+access_list = excluded.access_list,
+access_role_list = excluded.access_role_list,
 last_modified_date = last_modified_date,
 last_notified_message_date = last_notified_message_date;
 
@@ -64,6 +71,9 @@ SELECT * FROM Conversation WHERE qualified_id = ?;
 selectByGroupId:
 SELECT * FROM Conversation WHERE mls_group_id = ?;
 
+selectByGroupState:
+SELECT * FROM Conversation WHERE mls_group_state = ? AND protocol = ?;
+
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
@@ -74,3 +84,7 @@ updateConversationMutingStatus:
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
+
+
+updateAccess:
+UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;

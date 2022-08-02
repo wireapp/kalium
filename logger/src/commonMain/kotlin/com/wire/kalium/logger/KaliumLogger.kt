@@ -48,12 +48,12 @@ enum class KaliumLogLevel {
  * in the android case we use it to write the logs on file
  *
  */
-class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
+class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = arrayOf()) {
 
-    private val kermitLogger: KermitLogger
+    private var kermitLogger: KermitLogger
 
     init {
-        kermitLogger = if (logWriter == null) {
+        kermitLogger = if (logWriters.isEmpty()) {
             KermitLogger(
                 config = StaticConfig(
                     minSeverity = config.severityLevel, listOf(platformLogWriter())
@@ -63,7 +63,7 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
         } else {
             KermitLogger(
                 config = StaticConfig(
-                    minSeverity = config.severityLevel, listOf(logWriter, platformLogWriter())
+                    minSeverity = config.severityLevel, logWriters.asList()
                 ),
                 tag = config.tag
             )
@@ -71,6 +71,13 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
     }
 
     val severity = config.severity
+
+    @Suppress("unused")
+    fun withFeatureId(featureId: ApplicationFlow): KaliumLogger {
+        val currentLogger = this
+        currentLogger.kermitLogger = kermitLogger.withTag("featureId:${featureId.name.lowercase()}")
+        return currentLogger
+    }
 
     @Suppress("unused")
     fun v(message: String, throwable: Throwable? = null) =
@@ -127,5 +134,9 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
         fun disabled(): KaliumLogger = KaliumLogger(
             config = Config.DISABLED
         )
+
+        enum class ApplicationFlow {
+            SYNC, EVENT_RECEIVER, CONVERSATIONS, CONNECTIONS, MESSAGES, SEARCH, SESSION, REGISTER, CLIENTS, CALLING, ASSETS
+        }
     }
 }

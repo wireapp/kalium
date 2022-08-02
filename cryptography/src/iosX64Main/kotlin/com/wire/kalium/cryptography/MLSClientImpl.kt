@@ -2,7 +2,7 @@ package com.wire.kalium.cryptography
 
 actual class MLSClientImpl actual constructor(
     rootDir: String,
-    databaseKey: String,
+    databaseKey: MlsDBSecret,
     clientId: CryptoQualifiedClientId
 ) : MLSClient {
     override fun clearLocalFiles(): Boolean {
@@ -14,6 +14,14 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun generateKeyPackages(amount: Int): List<ByteArray> {
+        TODO("Not yet implemented")
+    }
+
+    override fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
         TODO("Not yet implemented")
     }
 

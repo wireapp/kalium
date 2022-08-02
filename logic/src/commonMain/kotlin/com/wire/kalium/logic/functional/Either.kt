@@ -56,7 +56,7 @@ sealed class Either<out L, out R> {
  * @see Left
  * @see Right
  */
-inline fun <L, R, T: Any> Either<L, R>.fold(fnL: (L) -> T, fnR: (R) -> T): T = nullableFold(fnL, fnR)!!
+inline fun <L, R, T : Any> Either<L, R>.fold(fnL: (L) -> T, fnR: (R) -> T): T = nullableFold(fnL, fnR)!!
 
 
 /**
@@ -105,6 +105,16 @@ inline fun <T, L, R> Either<L, R>.flatMap(fn: (R) -> Either<L, T>): Either<L, T>
     when (this) {
         is Left -> Left(value)
         is Right -> fn(value)
+    }
+
+/**
+ * Left-biased flatMap() FP convention which means that Left is assumed to be the default case
+ * to operate on. If it is Right, operations like map, flatMap, ... return the Right value unchanged.
+ */
+inline fun <L, R> Either<L, R>.flatMapLeft(fn: (L) -> Either<L, R>): Either<L, R> =
+    when (this) {
+        is Left -> fn(value)
+        is Right -> Right(value)
     }
 
 /**

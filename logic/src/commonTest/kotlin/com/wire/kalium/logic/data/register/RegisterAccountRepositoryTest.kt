@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.register
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -16,8 +17,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -84,7 +83,6 @@ class RegisterAccountRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenApiRequestRequestSuccess_whenActivatingAnEmail_thenSuccessIsPropagated() = runTest {
         val expected = Unit
@@ -131,19 +129,17 @@ class RegisterAccountRepositoryTest {
                 email = email,
                 phone = phone,
                 accentId = accentId,
-                teamId = teamId,
+                teamId = teamId?.let { TeamId(it) },
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = UserAssetId("value1","domain"),
-                completePicture = UserAssetId("value2","domain"),
+                previewPicture = UserAssetId("value1", "domain"),
+                completePicture = UserAssetId("value2", "domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
         val authSession = with(SESSION) {
-            AuthSession(
-                AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType), serverConfig.links
-            )
+            AuthSession.Session.Valid(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType)
         }
-        val expected = Pair(selfUser, authSession.tokens)
+        val expected = Pair(selfUser, authSession)
 
         given(registerApi).coroutine {
             register(
@@ -151,11 +147,11 @@ class RegisterAccountRepositoryTest {
             )
         }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
         given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
-        given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authSession.tokens }
+        given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { authSession }
 
         val actual = registerAccountRepository.registerPersonalAccountWithEmail(email, code, name, password)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession.Tokens>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession.Session>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine { register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password)) }
@@ -181,21 +177,18 @@ class RegisterAccountRepositoryTest {
                 email = email,
                 phone = phone,
                 accentId = accentId,
-                teamId = teamId,
+                teamId = teamId?.let { TeamId(it) },
                 connectionStatus = ConnectionState.ACCEPTED,
-                previewPicture = UserAssetId("value1","domain"),
-                completePicture = UserAssetId("value2","domain"),
+                previewPicture = UserAssetId("value1", "domain"),
+                completePicture = UserAssetId("value2", "domain"),
                 availabilityStatus = UserAvailabilityStatus.NONE
             )
         }
         val authSession =
             with(SESSION) {
-                AuthSession(
-                    AuthSession.Tokens(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType),
-                    serverConfig.links
-                )
+                AuthSession.Session.Valid(UserId(userId.value, userId.domain), accessToken, refreshToken, tokenType)
             }
-        val expected = Pair(selfUser, authSession.tokens)
+        val expected = Pair(selfUser, authSession)
 
         given(registerApi).coroutine {
             register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
@@ -203,11 +196,11 @@ class RegisterAccountRepositoryTest {
         given(userMapper).invocation { fromDtoToSelfUser(TEST_USER) }.then { selfUser }
         given(sessionMapper)
             .invocation { fromSessionDTO(SESSION) }
-            .then { authSession.tokens }
+            .then { authSession }
 
         val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon)
 
-        assertIs<Either.Right<Pair<SelfUser, AuthSession.Tokens>>>(actual)
+        assertIs<Either.Right<Pair<SelfUser, AuthSession.Session>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine {

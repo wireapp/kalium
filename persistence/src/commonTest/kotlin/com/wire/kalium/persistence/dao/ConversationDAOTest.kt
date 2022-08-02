@@ -75,6 +75,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingMLSConversation_ThenConversationCanBeRetrievedByGroupState() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
+        val result =
+            conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.ESTABLISHED)
+        assertEquals(listOf(conversationEntity2), result)
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.updateConversationGroupState(
@@ -246,8 +255,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
-
-
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
         conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
@@ -262,7 +269,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(expected, actual)
         }
     }
-
 
     @Test
     fun givenConversation_whenInsertingStoredConversation_thenLastChangesTimeIsNotChanged() = runTest {
@@ -281,6 +287,44 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(expected, actual)
     }
 
+    @Test
+    fun givenConversation_whenUpdatingAccessInfo_thenItsUpdated() = runTest {
+        val convStored = conversationEntity1.copy(
+            accessRole = listOf(ConversationEntity.AccessRole.TEAM_MEMBER), access = listOf(ConversationEntity.Access.INVITE)
+        )
+        val newAccessRole = listOf(
+            ConversationEntity.AccessRole.TEAM_MEMBER,
+            ConversationEntity.AccessRole.NON_TEAM_MEMBER,
+            ConversationEntity.AccessRole.SERVICE
+        )
+        val newAccess = listOf(ConversationEntity.Access.INVITE, ConversationEntity.Access.CODE)
+        val expected = convStored.copy(access = newAccess, accessRole = newAccessRole)
+        conversationDAO.insertConversation(convStored)
+
+        conversationDAO.updateAccess(convStored.id, newAccess, newAccessRole)
+
+        conversationDAO.observeGetConversationByQualifiedID(convStored.id).first().also { actual ->
+            assertEquals(expected, actual)
+        }
+
+    }
+
+    @Test
+    fun givenMember_whenUpdatingMemberRole_thenItsUpdated() = runTest {
+        // given
+        val conversation = conversationEntity1
+        val member = member1.copy(role = Member.Role.Member)
+        val newRole = Member.Role.Admin
+        val expected = member.copy(role = newRole)
+        conversationDAO.insertConversation(conversation)
+        conversationDAO.insertMember(member, conversation.id)
+        // when
+        conversationDAO.updateConversationMemberRole(conversation.id, member.user, newRole)
+        // then
+        conversationDAO.getAllMembers(conversation.id).first().also { actual ->
+            assertEquals(expected, actual[0])
+        }
+    }
 
     private companion object {
         val user1 = newUserEntity(id = "1")
@@ -296,17 +340,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             lastNotificationDate = null,
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
-            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
             "conversation2",
             ConversationEntity.Type.ONE_ON_ONE,
             null,
-            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED),
+            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED, 0UL),
             lastNotificationDate = null,
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
-            mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED
+            mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -314,12 +362,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation3",
             ConversationEntity.Type.GROUP,
             null,
-            ConversationEntity.ProtocolInfo.MLS("group3", ConversationEntity.GroupState.ESTABLISHED),
+            ConversationEntity.ProtocolInfo.MLS("group3", ConversationEntity.GroupState.PENDING_JOIN, 0UL),
             // This conversation was modified after the last time the user was notified about it
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user
-            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val member1 = Member(user1.id, Member.Role.Admin)

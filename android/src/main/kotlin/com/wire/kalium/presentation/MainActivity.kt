@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.flow.first
+import okio.buffer
 import java.io.IOException
 
 class MainActivity : ComponentActivity() {
@@ -38,25 +39,36 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
-        login(coreLogic, serverConfig)?.let {
-            val session = coreLogic.getSessionScope(it.tokens.userId)
+        login(coreLogic, serverConfig).let {
+            val session = coreLogic.getSessionScope(it.session.userId)
+            val kaliumFileSystem = session.kaliumFileSystem
             val conversations = session.conversations.getConversations().let { result ->
                 when (result) {
                     is GetConversationsUseCase.Result.Failure -> {
                         throw IOException()
                     }
+
                     is GetConversationsUseCase.Result.Success -> result.convFlow.first()
                 }
             }
 
             // Uploading image code
-//            val imageContent = applicationContext.assets.open("moon1.jpg").readBytes()
-//            session.users.uploadUserAvatar("image/jpg", imageContent)
+            val imageContent = applicationContext.assets.open("moon1.jpg").readBytes()
+            val tempAvatarPath = kaliumFileSystem.providePersistentAssetPath("temp_avatar.jpg")
+            val tempAvatarSink = kaliumFileSystem.sink(tempAvatarPath)
+            tempAvatarSink.buffer().use { sink ->
+                sink.write(imageContent)
+            }
+
+            session.users.uploadUserAvatar(tempAvatarPath, imageContent.size.toLong())
 
             val selfUser = session.users.getSelfUser().first()
 
             val avatarAsset = when (val publicAsset = session.users.getPublicAsset(selfUser.previewPicture!!)) {
-                is PublicAssetResult.Success -> publicAsset.asset
+                is PublicAssetResult.Success -> {
+                    // We read the avatar data stored in the assetPath
+                    session.kaliumFileSystem.readByteArray(publicAsset.assetPath)
+                }
                 else -> null
             }
 
@@ -66,7 +78,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthSession? {
+    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthSession {
         val result = coreLogic.authenticationScope(backendLinks) {
             login("jacob.persson+summer1@wire.com", "hepphepp", false)
         }
@@ -77,8 +89,8 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        coreLogic.globalScope{
-            addAuthenticatedAccount(authSession = result.userSession)
+        coreLogic.globalScope {
+            addAuthenticatedAccount(result.userSession)
         }
 
         return result.userSession

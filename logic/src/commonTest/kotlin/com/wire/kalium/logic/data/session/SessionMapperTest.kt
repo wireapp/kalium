@@ -45,12 +45,19 @@ class SessionMapperTest {
     fun givenAnAuthSession_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
 
-        given(idMapper).invocation { toApiModel(authSession.tokens.userId) }
-            .then { QualifiedID(authSession.tokens.userId.value, authSession.tokens.userId.domain) }
+        given(idMapper).invocation { toApiModel(authSession.session.userId) }
+            .then { QualifiedID(authSession.session.userId.value, authSession.session.userId.domain) }
         val acuteValue: SessionDTO =
-            with(authSession.tokens) { SessionDTO(UserIdDTO(userId.value, userId.domain), tokenType, accessToken, refreshToken) }
+            with(authSession.session as AuthSession.Session.Valid) {
+                SessionDTO(
+                    UserIdDTO(userId.value, userId.domain),
+                    tokenType,
+                    accessToken,
+                    refreshToken
+                )
+            }
 
-        val expectedValue: SessionDTO = sessionMapper.toSessionDTO(authSession)
+        val expectedValue: SessionDTO = sessionMapper.toSessionDTO(authSession.session as AuthSession.Session.Valid)
         assertEquals(expectedValue, acuteValue)
     }
 
@@ -61,12 +68,12 @@ class SessionMapperTest {
             ServerConfigEntity.Links(api, accounts, webSocket, blackList, teams, website, title)
         }
 
-        given(idMapper).invocation { toDaoModel(authSession.tokens.userId) }
-            .then { PersistenceQualifiedId(authSession.tokens.userId.value, authSession.tokens.userId.domain) }
+        given(idMapper).invocation { toDaoModel(authSession.session.userId) }
+            .then { PersistenceQualifiedId(authSession.session.userId.value, authSession.session.userId.domain) }
         given(serverConfigMapper).invocation { toEntity(authSession.serverLinks) }.then { serverConfigEntity }
 
-        val expected: AuthSessionEntity = with(authSession.tokens) {
-            AuthSessionEntity(
+        val expected: AuthSessionEntity = with(authSession.session as AuthSession.Session.Valid) {
+            AuthSessionEntity.Valid(
                 userId = UserIDEntity(userId.value, userId.domain),
                 tokenType = tokenType,
                 accessToken = accessToken,
@@ -82,7 +89,7 @@ class SessionMapperTest {
 
     @Test
     fun givenAPersistenceSession_whenMappingFromPersistenceSession_thenValuesAreMappedCorrectly() {
-        val authSessionEntity: AuthSessionEntity = randomPersistenceSession()
+        val authSessionEntity: AuthSessionEntity.Valid = randomPersistenceSession()
         val serverLinks = with(authSessionEntity.serverLinks) {
             ServerConfig.Links(api, accounts, webSocket, blackList, teams, website, title)
         }
@@ -93,7 +100,7 @@ class SessionMapperTest {
 
         val acuteValue: AuthSession = with(authSessionEntity) {
             AuthSession(
-                AuthSession.Tokens(
+                AuthSession.Session.Valid(
                     userId = UserId(userId.value, userId.domain),
                     tokenType = tokenType,
                     accessToken = accessToken,
@@ -108,16 +115,15 @@ class SessionMapperTest {
         verify(idMapper).invocation { fromDaoModel(authSessionEntity.userId) }.wasInvoked(exactly = once)
     }
 
-
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         val userId = UserId("user_id", "user.domain.io")
 
         fun randomAuthSession(): AuthSession =
-            AuthSession(AuthSession.Tokens(userId, randomString, randomString, randomString), TEST_CONFIG.links)
+            AuthSession(AuthSession.Session.Valid(userId, randomString, randomString, randomString), TEST_CONFIG.links)
 
-        fun randomPersistenceSession(): AuthSessionEntity =
-            AuthSessionEntity(UserIDEntity(userId.value, userId.domain), randomString, randomString, randomString, TEST_ENTITY.links)
+        fun randomPersistenceSession(): AuthSessionEntity.Valid =
+            AuthSessionEntity.Valid(UserIDEntity(userId.value, userId.domain), randomString, randomString, randomString, TEST_ENTITY.links)
 
         val TEST_CONFIG: ServerConfig = newServerConfig(1)
 

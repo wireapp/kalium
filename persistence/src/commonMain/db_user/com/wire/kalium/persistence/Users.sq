@@ -47,7 +47,12 @@ WHERE qualified_id = ?;
 
 updateTeamMemberUser:
 UPDATE User
-SET team = ?, connection_status = ?
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?
+WHERE qualified_id = ?;
+
+updateTeamMemberType:
+UPDATE User
+SET team = ?, connection_status = ?, user_type = ?
 WHERE qualified_id = ?;
 
 insertOrIgnoreUserId:
@@ -87,6 +92,9 @@ SELECT * FROM User
 WHERE handle LIKE ('%' || :searchQuery || '%')
 AND connection_status = :connectionStatus;
 
+selectUsersByTeam:
+SELECT * FROM User WHERE team = ?;
+
 updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;
 
@@ -96,7 +104,21 @@ SELECT changes();
 updateUserAvailabilityStatus:
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
 
+getUsersNotInConversationByNameOrHandleOrEmail:
+SELECT * FROM User AS user
+WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
+AND  (name LIKE ('%' || :searchQuery || '%')
+OR  handle LIKE  ('%' || :searchQuery || '%')
+OR  email LIKE  ('%' || :searchQuery || '%'))
+AND connection_status = "ACCEPTED";
+
+getUsersNotInConversationByHandle:
+SELECT * FROM User AS user
+WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
+AND handle LIKE ('%' || :searchQuery || '%')
+AND connection_status = "ACCEPTED";
+
 getUsersNotPartOfTheConversation:
-SELECT * FROM User
- WHERE NOT EXISTS (SELECT user FROM Member WHERE conversation == ?)
+SELECT * FROM User AS user
+ WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
  AND connection_status = "ACCEPTED";

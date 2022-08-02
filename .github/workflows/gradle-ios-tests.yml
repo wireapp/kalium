@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
 jobs:
   gradle-run-tests:
     runs-on: macos-latest
@@ -29,7 +33,7 @@ jobs:
         uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
 
       - name: iOS Tests
-        run: ./gradlew iosX64Test
+        run: ./gradlew iOSOnlyAffectedTest
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25

@@ -8,6 +8,7 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -19,23 +20,24 @@ internal class OnClientsRequest(
     private val calling: Calling,
     private val selfUserId: String,
     private val conversationRepository: ConversationRepository,
+    private val federatedIdMapper: FederatedIdMapper,
     private val callingScope: CoroutineScope
 ) : ClientsRequestHandler {
 
     override fun onClientsRequest(inst: Handle, conversationId: String, arg: Pointer?) {
         callingScope.launch {
-            callingLogger.d("OnClientsRequest() -> Retrieving recipients $conversationId")
+            callingLogger.d("[OnClientsRequest] -> ConversationId: $conversationId")
             val conversationRecipients =
                 conversationRepository.getConversationRecipients(conversationId = conversationId.toConversationId())
 
             conversationRecipients.map { recipients ->
-                callingLogger.d("OnClientsRequest() -> Mapping ${recipients.size} recipients")
+                callingLogger.d("[OnClientsRequest] -> Mapping ${recipients.size} recipients")
                 recipients
                     .filter { it.id.value != selfUserId }
                     .flatMap { recipient ->
                         recipient.clients.map { clientId ->
                             CallClient(
-                                userId = recipient.id.value,
+                                userId = federatedIdMapper.parseToFederatedId(recipient.id),
                                 clientId = clientId.value
                             )
                         }
@@ -43,17 +45,17 @@ internal class OnClientsRequest(
             }.map {
                 CallClientList(it)
             }.onSuccess { avsClients ->
-                callingLogger.d("OnClientsRequest() -> Sending recipients")
+                callingLogger.d("[OnClientsRequest] -> Sending recipients")
                 // TODO: use a json serializer and not recreate everytime it is used
                 val callClients = avsClients.toJsonString()
                 calling.wcall_set_clients_for_conv(
                     inst = inst,
-                    convId = conversationId,
+                    convId = federatedIdMapper.parseToFederatedId(conversationId),
                     clientsJson = callClients
                 )
-                callingLogger.d("OnClientsRequest() -> Success")
+                callingLogger.d("[OnClientsRequest] -> Success")
             }.onFailure {
-                callingLogger.d("OnClientsRequest() -> Failure")
+                callingLogger.d("[OnClientsRequest] -> Failure")
             }
         }
     }

@@ -25,4 +25,10 @@ class ConnectionScope(
 
     val ignoreConnectionRequest: IgnoreConnectionRequestUseCase get() = IgnoreConnectionRequestUseCaseImpl(connectionRepository)
 
+    val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
+        get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
+
+    val blockUser: BlockUserUseCase
+        get() = BlockUserUseCaseImpl(connectionRepository)
+
 }

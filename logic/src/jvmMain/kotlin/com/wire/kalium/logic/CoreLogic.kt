@@ -2,6 +2,9 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
+import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.asset.AssetsStorageFolder
+import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -41,7 +44,13 @@ actual class CoreLogic(
     }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
-        KaliumPreferencesSettings(EncryptedSettingsHolder(SettingOptions.AppSettings).encryptedSettings)
+        KaliumPreferencesSettings(
+            EncryptedSettingsHolder(
+                SettingOptions.AppSettings(
+                    shouldEncryptData = kaliumConfigs.shouldEncryptData
+                )
+            ).encryptedSettings
+        )
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
@@ -51,6 +60,9 @@ actual class CoreLogic(
             val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
             val rootProteusPath = "$rootAccountPath/proteus"
             val rootStoragePath = "$rootAccountPath/storage"
+            val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
+            val rootCachePath = CacheFolder("$rootAccountPath/cache")
+            val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
             val networkContainer = AuthenticatedNetworkContainer(
                 SessionManagerImpl(sessionRepository, userId),
                 ServerMetaDataManagerImpl(getGlobalScope().serverConfigRepository)
@@ -60,7 +72,12 @@ actual class CoreLogic(
             runBlocking { proteusClient.open() }
 
             val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(this, userId)
-            val encryptedSettingsHolder = EncryptedSettingsHolder(SettingOptions.UserSettings(idMapper.toDaoModel(userId)))
+            val encryptedSettingsHolder = EncryptedSettingsHolder(
+                SettingOptions.UserSettings(
+                    shouldEncryptData = kaliumConfigs.shouldEncryptData,
+                    idMapper.toDaoModel(userId)
+                )
+            )
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabase = UserDatabaseProvider(File(rootStoragePath))
 
@@ -79,7 +96,9 @@ actual class CoreLogic(
                 sessionRepository,
                 globalCallManager,
                 // TODO: make lazier
-                globalPreferences.value
+                globalPreferences.value,
+                dataStoragePaths,
+                kaliumConfigs
             ).also {
                 userSessionScopeProvider.add(userId, it)
             }
@@ -88,5 +107,4 @@ actual class CoreLogic(
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager()
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
-
 }

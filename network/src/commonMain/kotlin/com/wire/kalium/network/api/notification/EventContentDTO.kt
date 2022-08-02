@@ -5,8 +5,11 @@ import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationUsers
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.featureConfigs.ConfigsStatusDTO
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
+import com.wire.kalium.network.api.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,10 +28,17 @@ sealed class EventContentDTO {
     sealed class Conversation : EventContentDTO() {
 
         @Serializable
+        @SerialName("conversation.access-update")
+        data class AccessUpdate(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ConversationAccessInfoDTO,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+        ) : Conversation()
+
+        @Serializable
         @SerialName("conversation.create")
         data class NewConversationDTO(
-            @SerialName("qualified_conversation")
-            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val data: ConversationResponse,
@@ -37,8 +47,7 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("conversation.otr-message-add")
         data class NewMessageDTO(
-            @SerialName("qualified_conversation")
-            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val data: MessageEventData,
@@ -47,20 +56,17 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("conversation.member-join")
         data class MemberJoinDTO(
-            @SerialName("qualified_conversation")
-            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("data") val members: ConversationMembers,
-            @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom"))
-            @SerialName("from") val from: String
+            @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom")) @SerialName("from") val from: String
         ) : Conversation()
 
         @Serializable
         @SerialName("conversation.member-leave")
         data class MemberLeaveDTO(
-            @SerialName("qualified_conversation")
-            val qualifiedConversation: ConversationId,
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             // TODO: rename members to something else since the name is confusing (it's only userIDs)
@@ -88,6 +94,22 @@ sealed class EventContentDTO {
     }
 
     @Serializable
+    sealed class FeatureConfig : EventContentDTO() {
+        @Serializable
+        @SerialName("feature-config.update")
+        data class FeatureConfigUpdatedDTO(
+            @SerialName("name") val name: FeatureConfigNameDTO,
+            @SerialName("data") val data: ConfigsStatusDTO,
+        ) : FeatureConfig()
+
+        @Serializable
+        enum class FeatureConfigNameDTO {
+            @SerialName("fileSharing")
+            FILE_SHARING
+        }
+    }
+
+    @Serializable
     sealed class User : EventContentDTO() {
 
         @Serializable
@@ -97,9 +119,21 @@ sealed class EventContentDTO {
         ) : User()
 
         @Serializable
+        @SerialName("user.client-remove")
+        data class ClientRemoveDTO(
+            @SerialName("client") val client: RemoveClientEventData,
+        ) : User()
+
+        @Serializable
         @SerialName("user.connection")
         data class NewConnectionDTO(
             @SerialName("connection") val connection: ConnectionDTO,
+        ) : User()
+
+        @Serializable
+        @SerialName("user.delete")
+        data class UserDeleteDTO(
+            @SerialName("id") val id: String,
         ) : User()
     }
 

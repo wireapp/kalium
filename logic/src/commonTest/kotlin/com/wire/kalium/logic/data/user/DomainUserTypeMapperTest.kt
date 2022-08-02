@@ -1,52 +1,101 @@
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DomainUserTypeMapperTest {
 
-    private val userTypeMapper : DomainUserTypeMapper = DomainUserTypeMapperImpl()
+    private val userTypeMapper: DomainUserTypeMapper = DomainUserTypeMapperImpl()
 
     @Test
-    fun givenDomainAndTeamAreEqual_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
-        //when
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
+    fun givenDomainAndTeamAreEqualAndPermissionCodeIsNull_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
+        // when
+        val result = userTypeMapper.fromTeamAndDomain(
             "someDomain",
             "someTeamId",
-            "someTeamId"
+            "someTeamId",
+            "someDomain",
+            false
         )
-        //then
+        // then
+        assertEquals(UserType.INTERNAL, result)
+    }
+
+    @Test
+    fun givenTeamMemberWithAdminPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsAdmin() {
+        // when
+        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Admin.value)
+        // then
+        assertEquals(UserType.ADMIN, result)
+    }
+
+    @Test
+    fun givenTeamMemberWithOwnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsOwner() {
+        // when
+        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Owner.value)
+        // then
+        assertEquals(UserType.OWNER, result)
+    }
+
+    @Test
+    fun givenTeamMemberWithExternalPartnerPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsExternal() {
+        // when
+        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.ExternalPartner.value)
+        // then
+        assertEquals(UserType.EXTERNAL, result)
+    }
+
+    @Test
+    fun givenTeamMemberWithMemberPermissions_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsInternal() {
+        // when
+        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Member.value)
+        // then
         assertEquals(UserType.INTERNAL, result)
     }
 
     @Test
     fun givenCommonNotWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
-        //given
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
-            "someDomain",
+        // given
+        val result = userTypeMapper.fromTeamAndDomain(
+            "domainB",
             "teamA",
-            "teamB"
+            "teamB",
+            "domainA",
+            false
         )
-        //then
+        // then
         assertEquals(UserType.FEDERATED, result)
     }
 
     @Test
-    fun givenUsingWireDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
-        //when
-        val result = userTypeMapper.fromOtherUserTeamAndDomain(
-            "testDomain.wire.com",
+    fun givenUsingSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsGuest() {
+        // when
+        val result = userTypeMapper.fromTeamAndDomain(
+            "domain.wire.com",
             "teamA",
-            "teamB"
+            "teamB",
+            "domain.wire.com",
+            false
         )
-        //then
+        // then
         assertEquals(UserType.GUEST, result)
     }
-}
 
+    @Test
+    fun givenServiceBot_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsService() {
+        // when
+        val result = userTypeMapper.fromTeamAndDomain(
+            "domain.wire.com",
+            "teamA",
+            "teamB",
+            "domain.wire.com",
+            true
+        )
+        // then
+        assertEquals(UserType.SERVICE, result)
+    }
+}
