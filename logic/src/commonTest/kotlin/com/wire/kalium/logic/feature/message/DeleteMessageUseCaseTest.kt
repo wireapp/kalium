@@ -195,7 +195,6 @@ class DeleteMessageUseCaseTest {
         @Mock
         val assetRepository: AssetRepository = mock(AssetRepository::class)
 
-
         val idMapper: IdMapper = IdMapperImpl()
 
         fun arrange() = this to DeleteMessageUseCase(
@@ -262,7 +261,6 @@ class DeleteMessageUseCaseTest {
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
-
 
     }
 
