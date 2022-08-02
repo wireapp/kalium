@@ -158,6 +158,7 @@ class MessageMapperImpl(
 
         is MessageContent.RestrictedAsset -> MessageEntityContent.RestrictedAsset(this.mimeType, this.sizeInBytes, this.name)
 
+        // We store the encoded data in case we decide to try to decrypt them again in the future
         is MessageContent.FailedDecryption -> MessageEntityContent.FailedDecryption(this.encodedData)
 
         // We store the unknown fields of the message in case we want to start handling them in the future

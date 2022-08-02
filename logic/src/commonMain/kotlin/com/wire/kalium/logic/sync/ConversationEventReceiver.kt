@@ -425,5 +425,4 @@ class ConversationEventReceiverImpl(
     private companion object {
         const val TAG = "ConversationEventReceiver"
     }
-
 }
