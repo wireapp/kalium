@@ -19,7 +19,7 @@ class UpdateVideoStateUseCase(
         if (videoState != VideoState.PAUSED)
             callRepository.updateIsCameraOnById(conversationId.toString(), videoState == VideoState.STARTED)
 
-        // updateVideoState should be called only when the call is answered/established
+        // updateVideoState should be called only when the call is established
         callRepository.callsFlow().first().find { call ->
             call.conversationId == conversationId && call.status == CallStatus.ESTABLISHED
         }?.let {
