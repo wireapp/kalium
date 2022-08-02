@@ -30,4 +30,11 @@ object TestEvent {
             toId = "told?"
         )
     )
+
+    fun deletedConversation(eventId: String = "eventId") = Event.Conversation.DeletedConversation(
+        eventId,
+        TestConversation.ID,
+        TestUser.USER_ID,
+        "2022-03-30T15:36:00.000Z"
+    )
 }

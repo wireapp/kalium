@@ -10,6 +10,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.message.MLSMessageApi
+import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -162,7 +163,8 @@ class MLSConversationRepositoryTest {
 
         @Mock
         val conversationDAO = mock(classOf<ConversationDAO>())
-
+        @Mock
+        val clientApi = mock(ClientApi::class)
         @Mock
         val mlsMessageApi = mock(classOf<MLSMessageApi>())
 
@@ -250,18 +252,20 @@ class MLSConversationRepositoryTest {
                 .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
         }
 
-        fun withUpdateConversationGroupStateSuccessful() = apply {
+fun withUpdateConversationGroupStateSuccessful() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::updateConversationGroupState)
-                .whenInvokedWith(anything(), anything())
-                .thenDoNothing()
-        }
+            .whenInvokedWith(anything(), anything())
+            .thenDoNothing()
 
-        fun arrange() = this to MLSConversationDataSource(
+            }
+
+    fun arrange() = this to MLSConversationDataSource(
             keyPackageRepository,
             mlsClientProvider,
             mlsMessageApi,
-            conversationDAO
+            conversationDAO,
+        clientApi
         )
 
         internal companion object {
