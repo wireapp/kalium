@@ -4,9 +4,7 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
-import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -29,15 +27,12 @@ class ObserveConversationsAndConnectionsUseCaseTest {
     @Mock
     val observeConnectionListUseCase: ObserveConnectionListUseCase = mock(ObserveConnectionListUseCase::class)
 
-    @Mock
-    val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
-
     private lateinit var observeConversationsAndConnectionsUseCase: ObserveConversationsAndConnectionsUseCase
 
     @BeforeTest
     fun setup() {
         observeConversationsAndConnectionsUseCase =
-            ObserveConversationsAndConnectionsUseCaseImpl(syncManager, observeConversationListDetailsUseCase, observeConnectionListUseCase)
+            ObserveConversationsAndConnectionsUseCaseImpl(observeConversationListDetailsUseCase, observeConnectionListUseCase)
     }
 
     @Test
