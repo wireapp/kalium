@@ -47,5 +47,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Unknown -> false
             MessageContent.Empty -> false
             MessageContent.Ignored -> false
+            is MessageContent.Availability -> false
         }
 }
