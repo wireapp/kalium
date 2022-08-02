@@ -276,7 +276,6 @@ class ConversationEventReceiverImpl(
         conversationRepository.deleteConversation(event.conversationId)
             .onFailure { coreFailure ->
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
-                Either.Left(coreFailure)
             }.onSuccess {
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
             }
