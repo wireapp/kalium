@@ -53,6 +53,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -126,7 +127,7 @@ abstract class UserSessionScopeCommon(
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    // we made this lazy so it will have a single instance for the storage
+    // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
@@ -351,6 +352,8 @@ abstract class UserSessionScopeCommon(
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
             connectionRepository,
+            logout,
+            clientRepository
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
@@ -424,7 +427,7 @@ abstract class UserSessionScopeCommon(
             connectionRepository
         )
     val logout: LogoutUseCase
-        get() = LogoutUseCase(
+        get() = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
             userId,
@@ -446,7 +449,7 @@ abstract class UserSessionScopeCommon(
             kaliumConfigs
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
 
     val calls: CallsScope
         get() = CallsScope(
@@ -456,7 +459,6 @@ abstract class UserSessionScopeCommon(
             userRepository,
             flowManagerService,
             mediaManagerService,
-            syncManager
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)

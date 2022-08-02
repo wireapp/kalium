@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
+import com.wire.kalium.network.exceptions.isUnknownClient
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClientConfig
@@ -15,10 +16,10 @@ import io.ktor.client.plugins.auth.providers.bearer
 
 interface SessionManager {
     fun session(): Pair<SessionDTO, ServerConfigDTO.Links>
-    fun updateSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
-    fun onSessionExpired()
+    fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
+    suspend fun onSessionExpired()
+    suspend fun onClientRemoved()
 }
-
 
 fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
     install(Auth) {
@@ -39,13 +40,16 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
                     is NetworkResponse.Success -> {
                         response.value.first.let { newAccessToken -> access = newAccessToken.value }
                         response.value.second?.let { newRefreshToken -> refresh = newRefreshToken.value }
-                        sessionManager.updateSession(response.value.first, response.value.second)
+                        sessionManager.updateLoginSession(response.value.first, response.value.second)
                         BearerTokens(access, refresh)
                     }
                     is NetworkResponse.Error -> {
                         // BE return 403 with error liable invalid-credentials for expired cookies
-                        if(response.kException is KaliumException.InvalidRequestError && response.kException.isInvalidCredentials()) {
-                            sessionManager.onSessionExpired()
+                        if (response.kException is KaliumException.InvalidRequestError) {
+                            if (response.kException.isInvalidCredentials())
+                                sessionManager.onSessionExpired()
+                            if (response.kException.isUnknownClient())
+                                sessionManager.onClientRemoved()
                         }
                         null
                     }
