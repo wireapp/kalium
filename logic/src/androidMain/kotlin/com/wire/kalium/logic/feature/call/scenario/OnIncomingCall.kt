@@ -33,10 +33,11 @@ class OnIncomingCall(
         callingLogger.i("[OnIncomingCall] -> ConversationId: $conversationId | UserId: $userId | shouldRing: $shouldRing")
         val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
         val isMuted = mappedConversationType == ConversationType.Conference
+        val status = if (shouldRing) CallStatus.INCOMING else CallStatus.STILL_ONGOING
         scope.launch {
             callRepository.createCall(
                 conversationId = conversationId.toConversationId(),
-                status = CallStatus.INCOMING,
+                status = status,
                 callerId = federatedIdMapper.parseToFederatedId(userId),
                 isMuted = isMuted,
                 isCameraOn = isVideoCall
