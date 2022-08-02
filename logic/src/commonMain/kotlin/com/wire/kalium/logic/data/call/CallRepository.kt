@@ -92,7 +92,11 @@ internal class CallDataSource(
     // This needs to be reworked the logic into the useCases
     @Suppress("LongMethod", "NestedBlockDepth")
     override suspend fun createCall(
-        conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean
+        conversationId: ConversationId,
+        status: CallStatus,
+        callerId: String,
+        isMuted: Boolean,
+        isCameraOn: Boolean
     ) {
         val conversation: ConversationDetails = conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
 
@@ -178,9 +182,7 @@ internal class CallDataSource(
         }
     }
 
-    private fun updateCallMetadata(
-        conversationId: ConversationId, metadata: CallMetadata
-    ) {
+    private fun updateCallMetadata(conversationId: ConversationId, metadata: CallMetadata) {
         val callMetadataProfile = _callMetadataProfile.value
         val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
             this[conversationId.toString()] = metadata
