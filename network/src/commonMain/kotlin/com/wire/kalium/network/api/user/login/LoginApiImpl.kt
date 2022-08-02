@@ -40,10 +40,10 @@ class LoginApiImpl internal constructor(
         }
     }
 
-
     override suspend fun login(
-        param: LoginApi.LoginParam, persist: Boolean
-    ): NetworkResponse<SessionDTO> = wrapKaliumResponse<AccessTokenDTO> {
+        param: LoginApi.LoginParam,
+        persist: Boolean
+    ): NetworkResponse<Pair<SessionDTO, UserDTO>> = wrapKaliumResponse<AccessTokenDTO> {
         httpClient.post(PATH_LOGIN) {
             parameter(QUERY_PERSIST, persist)
             setBody(param.toRequestBody())
@@ -56,14 +56,13 @@ class LoginApiImpl internal constructor(
         }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
     }.flatMap { tokensPairResponse ->
         // this is a hack to get the user QualifiedUserId on login
-        // TODO(optimization): remove this one when login endpoint return a QualifiedUserId
         wrapKaliumResponse<UserDTO> {
             httpClient.get(PATH_SELF) {
                 bearerAuth(tokensPairResponse.value.first.value)
             }
-        }.mapSuccess {
+        }.mapSuccess { userDTO ->
             with(tokensPairResponse.value) {
-                first.toSessionDto(second, it.id)
+                Pair(first.toSessionDto(second, userDTO.id), userDTO)
             }
         }
     }

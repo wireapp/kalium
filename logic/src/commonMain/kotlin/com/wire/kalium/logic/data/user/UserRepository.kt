@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -39,7 +40,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-// TODO(testing): missing unit test
 @Suppress("TooManyFunctions")
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
@@ -70,6 +70,7 @@ internal class UserDataSource(
     private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
+    private val sessionRepository: SessionRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
@@ -90,11 +91,16 @@ internal class UserDataSource(
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
-        .flatMap { userEntity ->
-            userDAO.insertUser(userEntity)
-            metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
-            Either.Right(Unit)
+        .flatMap { userDTO ->
+            // update self user SsoId
+            sessionRepository.updateSsoId(idMapper.fromApiModel(userDTO.id), idMapper.toSsoId(userDTO.ssoID))
+                .map { userMapper.fromApiSelfModelToDaoModel(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+                .flatMap { userEntity ->
+                    wrapStorageRequest { userDAO.insertUser(userEntity) }
+                        .flatMap {
+                            wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
+                        }
+                }
         }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
@@ -231,7 +237,10 @@ internal class UserDataSource(
         }
 
     override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
-        userDAO.updateUserAvailabilityStatus(getSelfUserIDEntity(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+        userDAO.updateUserAvailabilityStatus(
+            getSelfUserIDEntity(),
+            availabilityStatusMapper.fromModelAvailabilityStatusToDao(status)
+        )
     }
 
     override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {

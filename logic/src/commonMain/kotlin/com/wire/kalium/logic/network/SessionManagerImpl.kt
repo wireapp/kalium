@@ -26,22 +26,12 @@ class SessionManagerImpl(
         Pair(sessionMapper.toSessionDTO(session.session as AuthSession.Session.Valid), serverConfigMapper.toDTO(session.serverLinks))
     })
 
-    override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
-        sessionRepository.userSession(userId).fold({
+    override fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
+        sessionRepository.updateTokens(userId, newAccessTokeDTO, newRefreshTokenDTO).fold({
             TODO("IMPORTANT! Not yet implemented")
-        }, { authSession ->
-            AuthSession(
-                AuthSession.Session.Valid(
-                    authSession.session.userId,
-                    newAccessTokenDTO.value,
-                    newRefreshTokenDTO?.value ?: (authSession.session as AuthSession.Session.Valid).refreshToken,
-                    newAccessTokenDTO.tokenType,
-                ),
-                authSession.serverLinks
-            ).let {
-                sessionRepository.storeSession(it)
-                sessionMapper.toSessionDTO((it.session as AuthSession.Session.Valid))
-            }
+        }, {
+            // TODO: make the function return null when the update fails and delete the type casting
+            sessionMapper.toSessionDTO(it as AuthSession.Session.Valid)
         })
 
     override suspend fun onSessionExpired() {

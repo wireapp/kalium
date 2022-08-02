@@ -16,7 +16,11 @@ import io.ktor.client.plugins.auth.providers.bearer
 
 interface SessionManager {
     fun session(): Pair<SessionDTO, ServerConfigDTO.Links>
-    fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO
+    fun updateLoginSession(
+        newAccessTokenDTO: AccessTokenDTO,
+        newRefreshTokenDTO: RefreshTokenDTO?
+    ): SessionDTO
+
     suspend fun onSessionExpired()
     suspend fun onClientRemoved()
 }
@@ -43,6 +47,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
                         sessionManager.updateLoginSession(response.value.first, response.value.second)
                         BearerTokens(access, refresh)
                     }
+
                     is NetworkResponse.Error -> {
                         // BE return 403 with error liable invalid-credentials for expired cookies
                         if (response.kException is KaliumException.InvalidRequestError) {
