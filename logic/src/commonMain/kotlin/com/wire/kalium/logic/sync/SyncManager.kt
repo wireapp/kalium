@@ -25,50 +25,13 @@ interface SyncManager {
      * and the client has finished processing all pending events.
      *
      * Suitable for operations where the user is required to be online
-     * and without any pending events to be processed, for maximum sync.
-     * @see startSyncIfIdle
-     * @see waitUntilSlowSyncCompletion
+     * and without any pending events to be processed, for example write operations, like:
+     * - Creating a conversation
+     * - Sending a connection request
+     * - Editing conversation settings, etc.
      */
     suspend fun waitUntilLive()
 
-    /**
-     * Suspends the caller until at least basic data is processed,
-     * even though Sync will run on a Job of its own.
-     *
-     * Suitable for operations where the user can be offline, but at least some basic post-login sync is done.
-     * @see startSyncIfIdle
-     * @see waitUntilLive
-     */
-    @Deprecated(
-        message = "SyncManager won't serve as a Sync Utils anymore",
-        ReplaceWith(
-            expression = "syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }",
-            imports = arrayOf(
-                "com.wire.kalium.logic.data.sync.SyncRepository",
-                "com.wire.kalium.logic.data.sync.SyncState"
-            ),
-        )
-    )
-    suspend fun waitUntilSlowSyncCompletion()
-
-    /**
-     * ### Deprecated
-     * NO-OP. Doesn't do anything. Sync will start automatically once conditions are met:
-     * - Client is Registered
-     * - There's internet connection
-     *
-     * ### Original docs
-     * Will run in a parallel job without waiting for completion.
-     *
-     * Suitable for operations that the user can perform even while offline.
-     * @see waitUntilLive
-     * @see waitUntilSlowSyncCompletion
-     */
-    @Deprecated(
-        "Sync can't be forced to start. It will be started automatically once conditions are met",
-        ReplaceWith("")
-    )
-    fun startSyncIfIdle()
     suspend fun isSlowSyncOngoing(): Boolean
     suspend fun isSlowSyncCompleted(): Boolean
     fun onSlowSyncFailure(cause: CoreFailure): SyncState
@@ -174,26 +137,6 @@ internal class SyncManagerImpl(
 
     override suspend fun waitUntilLive() {
         syncRepository.syncState.first { it == SyncState.Live }
-    }
-
-    @Deprecated(
-        "SyncManager won't serve as a Sync Utils anymore",
-        replaceWith = ReplaceWith(
-            "syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }",
-            "com.wire.kalium.logic.data.sync.SyncRepository",
-            "com.wire.kalium.logic.data.sync.SyncState"
-        )
-    )
-    override suspend fun waitUntilSlowSyncCompletion() {
-        syncRepository.syncState.first { it in setOf(SyncState.GatheringPendingEvents, SyncState.Live) }
-    }
-
-    @Deprecated(
-        "Sync can't be forced to start. It will be started automatically once conditions are met",
-        ReplaceWith("")
-    )
-    override fun startSyncIfIdle() {
-        /** NO-OP **/
     }
 
     private fun startSyncIfNotYetStarted() {

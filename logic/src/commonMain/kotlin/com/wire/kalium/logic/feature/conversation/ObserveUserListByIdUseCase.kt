@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -13,12 +12,10 @@ import kotlinx.coroutines.flow.map
 
 class ObserveUserListByIdUseCase internal constructor(
     private val userRepository: UserRepository,
-    private val syncManager: SyncManager
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend operator fun invoke(userIdList: List<UserId>): Flow<List<User>> {
-        syncManager.startSyncIfIdle()
         return flowOf(userIdList).map { members ->
             members.map { userId ->
                 userRepository.observeUser(userId)
