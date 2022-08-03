@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
 
 data class ConversationEntity(
@@ -90,4 +91,6 @@ interface ConversationDAO {
     )
 
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
+    suspend fun getMessagesByContentType(conversationId: QualifiedIDEntity, asset: MessageEntity.ContentType): List<MessageEntity>
+    suspend fun deleteAllMessages(toDaoModel: QualifiedIDEntity)
 }

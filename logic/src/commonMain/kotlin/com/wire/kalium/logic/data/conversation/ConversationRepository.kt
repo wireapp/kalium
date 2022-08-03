@@ -9,6 +9,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -36,6 +38,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -98,6 +101,11 @@ interface ConversationRepository {
 
     suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun getConversationAssetMessages(
+        conversationId: ConversationId,
+    ): Either<CoreFailure, List<Message>>
+
+    suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -112,6 +120,7 @@ class ConversationDataSource(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
+    private val messageMapper: MessageMapper
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -565,6 +574,21 @@ class ConversationDataSource(
     override suspend fun deleteConversation(conversationId: ConversationId) = wrapStorageRequest {
         conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
+
+    override suspend fun getConversationAssetMessages(
+        conversationId: ConversationId,
+    ): Either<CoreFailure, List<Message>> =
+        wrapStorageRequest {
+            conversationDAO.getMessagesByContentType(
+                idMapper.toDaoModel(conversationId),
+                MessageEntity.ContentType.ASSET
+            ).map(messageMapper::fromEntityToMessage)
+        }
+
+    override suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.deleteAllMessages(idMapper.toDaoModel(conversationId))
+        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
