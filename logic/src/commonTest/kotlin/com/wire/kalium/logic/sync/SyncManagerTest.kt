@@ -5,11 +5,7 @@ import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import io.mockative.ConfigurationApi
-import io.mockative.Mock
 import io.mockative.given
-import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
