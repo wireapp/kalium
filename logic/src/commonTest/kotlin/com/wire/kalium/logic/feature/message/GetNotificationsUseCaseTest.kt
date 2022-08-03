@@ -499,6 +499,7 @@ class GetNotificationsUseCaseTest {
             mutedStatus,
             TIME_EARLIER,
             TIME_EARLIER,
+            lastReadDate = null,
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )
