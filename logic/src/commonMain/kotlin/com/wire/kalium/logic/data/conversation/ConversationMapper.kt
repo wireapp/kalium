@@ -55,7 +55,7 @@ internal class ConversationMapperImpl(
         protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
         mutedStatus = conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
-        lastReadDate = null,
+        lastReadDate = "1970-01-01T00:00:00.000Z",
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },

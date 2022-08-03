@@ -304,7 +304,10 @@ class ConversationDataSource(
 
     private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
         return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
-            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+            val test =  conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+            println("un read message count for ${conversation.id} is :$test")
+
+            test
         } else {
             0
         }
@@ -315,8 +318,8 @@ class ConversationDataSource(
     // on if the timestamp is bigger inside the domain model or on a Instant object
     private fun hasNewMessages(conversation: Conversation) =
         with(conversation) {
-            if (lastModifiedDate != null && lastReadDate != null) {
-                timeParser.isTimeBefore(lastModifiedDate, lastReadDate)
+            if (lastModifiedDate != null) {
+                timeParser.isTimeBefore(lastReadDate, lastModifiedDate)
             } else {
                 false
             }
