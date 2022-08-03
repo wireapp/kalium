@@ -42,14 +42,13 @@ object NotificationEventsResponseJson {
         """.trimMargin()
     }
 
-
     private val clientAdd = ValidJsonProvider(
         EventContentDTO.User.NewClientDTO(
             NewClientEventData(
-                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", "temporary",
-                "desktop", "OS X 10.15 10.15"
+                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", "temporary", "desktop", "OS X 10.15 10.15"
             )
-        ), newClientSerializer
+        ),
+        newClientSerializer
     )
 
     private val mlsWelcomeSerializer = { eventData: EventContentDTO.Conversation.MLSWelcomeDTO ->
@@ -76,7 +75,8 @@ object NotificationEventsResponseJson {
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "AQABAAAAibLvHZAyYCHDxb+y8axOIdEAILa77VeJo1Yd8AfJKE009zwUxXuu7mAamu",
             "71ff8872e468a970"
-        ), mlsWelcomeSerializer
+        ),
+        mlsWelcomeSerializer
     )
 
     private val newMlsMessageSerializer = { eventData: EventContentDTO.Conversation.NewMLSMessageDTO ->
@@ -100,10 +100,14 @@ object NotificationEventsResponseJson {
     private val newMlsMessage = ValidJsonProvider(
         EventContentDTO.Conversation.NewMLSMessageDTO(
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
-            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "2022-04-12T13:57:02.414Z",
-            "AiDyKXJ/yTKaq4fIO2SXXkQIBVhU0uOiDHIfVP3Yb6HoWAAAAAAAAAABAQAAAAAo6sj3pAQr7tXmljXYG4+sRsnR2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4wCTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLitX5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4="
-        ), newMlsMessageSerializer
+            "AiDyKXJ/yTKaq4fIO2SXXkQIBVhU0uOiDHIfVP3Yb6HoWAAAAAAAAAABAQAAAAAo6sj3pAQr7tXmljXYG4+sRsn" +
+            "R2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4w" +
+            "CTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLit" +
+            "X5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4="
+        ),
+        newMlsMessageSerializer
     )
 
     private val newConversationSerializer = { eventData: EventContentDTO.Conversation.NewConversationDTO ->
@@ -131,14 +135,15 @@ object NotificationEventsResponseJson {
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "2022-04-12T13:57:02.414Z",
             ConversationResponseJson.validGroup.serializableData
-        ), newConversationSerializer
+        ),
+        newConversationSerializer
     )
 
     @OptIn(InternalSerializationApi::class)
     private val newFeatureConfigSerializer = { featureConfigUpdated: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO ->
         """
         |{
-        |  "data" : ${ Json.encodeToString(featureConfigUpdated.data) },
+        |  "data" : ${Json.encodeToString(featureConfigUpdated.data)},
         |  "time" : "2022-04-12T13:57:02.414Z",
         |  "name" : "${featureConfigUpdated.data::class.serializer().descriptor.serialName}",
         |  "type" : "feature-config.update"
@@ -149,7 +154,8 @@ object NotificationEventsResponseJson {
     private val newFileSharingFeatureConfigUpdate = ValidJsonProvider(
         EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
             FeatureConfigData.FileSharing(FeatureFlagStatusDTO.ENABLED)
-        ), newFeatureConfigSerializer
+        ),
+        newFeatureConfigSerializer
     )
 
     private val newMlsFeatureConfigUpdate = ValidJsonProvider(
@@ -158,7 +164,8 @@ object NotificationEventsResponseJson {
                 MLSConfigDTO(emptyList(), ConvProtocol.MLS, listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED,
             )
-        ), newFeatureConfigSerializer
+        ),
+        newFeatureConfigSerializer
     )
 
     private val newClassifiedDomainsFeatureConfigUpdate = ValidJsonProvider(
@@ -167,7 +174,8 @@ object NotificationEventsResponseJson {
                 ClassifiedDomainsConfigDTO(emptyList()),
                 FeatureFlagStatusDTO.ENABLED,
             )
-        ), newFeatureConfigSerializer
+        ),
+        newFeatureConfigSerializer
     )
 
     private val newSelfDeletingMessagesFeatureConfigUpdate = ValidJsonProvider(
@@ -176,16 +184,17 @@ object NotificationEventsResponseJson {
                 SelfDeletingMessagesConfigDTO(60),
                 FeatureFlagStatusDTO.ENABLED,
             )
-        ), newFeatureConfigSerializer
+        ),
+        newFeatureConfigSerializer
     )
 
     private val newAppLockFeatureConfigUpdate = ValidJsonProvider(
         EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
             AppLock(
-                AppLockConfigDTO(true, 60),
-                FeatureFlagStatusDTO.ENABLED
+                AppLockConfigDTO(true, 60), FeatureFlagStatusDTO.ENABLED
             )
-        ), newFeatureConfigSerializer
+        ),
+        newFeatureConfigSerializer
     )
 
     val notificationsWithUnknownEventAtFirstPosition = """
