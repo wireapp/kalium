@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
 
+//TODO: Regardless of how we store this in SQLite we can convert it to an Instant at this level and above.
 data class ConversationEntity(
     val id: QualifiedIDEntity,
     val name: String?,
