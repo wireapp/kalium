@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.full
 
 /**
  * Responsible for [enqueueSlowSyncIfNeeded].

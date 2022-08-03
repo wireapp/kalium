@@ -26,147 +26,102 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageRepositoryTest {
-
-    @Mock
-    val idMapper = mock(IdMapper::class)
-
-    @Mock
-    val assetMapper = mock(AssetMapper::class)
-
-    @Mock
-    val messageApi = mock(MessageApi::class)
-
-    @Mock
-    val mlsMessageApi = mock(MLSMessageApi::class)
-
-    @Mock
-    val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
-
-    @Mock
-    val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
-
-    @Mock
-    val messageMapper = mock(MessageMapper::class)
-
-    private lateinit var messageRepository: MessageRepository
-
-    @BeforeTest
-    fun setup() {
-        messageRepository =
-            MessageDataSource(messageApi, mlsMessageApi, messageDAO, messageMapper, idMapper, assetMapper, sendMessageFailureMapper)
-    }
 
     @Test
     fun givenAConversationId_whenGettingMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
+        // Given
         val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
-        given(idMapper)
-            .function(idMapper::toDaoModel)
-            .whenInvokedWith(anything())
-            .then { mappedId }
+        val (arrangement, messageRepository) = Arrangement()
+            .withMockedMessages(listOf())
+            .withMappedId(mappedId)
+            .withMappedMessageModel(TEST_MESSAGE)
+            .arrange()
 
-        given(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
-            .whenInvokedWith(anything(), anything(), anything(), anything())
-            .then { _, _, _, _ -> flowOf(listOf()) }
-
-        given(messageMapper)
-            .function(messageMapper::fromEntityToMessage)
-            .whenInvokedWith(anything())
-            .then { TEST_MESSAGE }
-
+        // When
         messageRepository.getMessagesByConversationIdAndVisibility(TEST_CONVERSATION_ID, 0, 0).collect()
 
-        verify(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
-            .with(eq(mappedId), anything(), anything(), anything())
-            .wasInvoked(exactly = once)
+        // Then
+        with(arrangement) {
+            verify(messageDAO)
+                .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
+                .with(eq(mappedId), anything(), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenABaseMessageEntityAndMapper_whenGettingMessagesOfConversation_thenTheMapperShouldBeUsed() = runTest {
+        // Given
+        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
         val entity = TEST_MESSAGE_ENTITY
         val mappedMessage = TEST_MESSAGE
-        given(messageMapper)
-            .function(messageMapper::fromEntityToMessage)
-            .whenInvokedWith(anything())
-            .then { mappedMessage }
+        val (arrangement, messageRepository) = Arrangement()
+            .withMockedMessages(listOf(entity))
+            .withMappedId(mappedId)
+            .withMappedMessageModel(mappedMessage)
+            .arrange()
 
-        given(messageDAO)
-            .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
-            .whenInvokedWith(anything(), anything(), anything(), anything())
-            .then { _, _, _, _ -> flowOf(listOf(entity)) }
-
-        given(idMapper)
-            .function(idMapper::toDaoModel)
-            .whenInvokedWith(anything())
-            .then { TEST_QUALIFIED_ID_ENTITY }
-
-        val messageList = messageRepository.getMessagesByConversationIdAndVisibility(TEST_CONVERSATION_ID, 0, 0)
-            .first()
+        // When
+        val messageList = messageRepository.getMessagesByConversationIdAndVisibility(TEST_CONVERSATION_ID, 0, 0).first()
         assertEquals(listOf(mappedMessage), messageList)
 
-        verify(messageMapper)
-            .function(messageMapper::fromEntityToMessage)
-            .with(eq(entity))
-            .wasInvoked(exactly = once)
+        // Then
+        with(arrangement) {
+            verify(messageMapper)
+                .function(messageMapper::fromEntityToMessage)
+                .with(eq(entity))
+                .wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenAMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
+        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
-        given(messageMapper)
-            .function(messageMapper::fromMessageToEntity)
-            .whenInvokedWith(anything())
-            .then { mappedEntity }
 
-        given(idMapper)
-            .function(idMapper::toDaoModel)
-            .whenInvokedWith(anything())
-            .then { TEST_QUALIFIED_ID_ENTITY }
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedId(mappedId)
+            .withMappedMessageEntity(mappedEntity)
+            .arrange()
 
         messageRepository.persistMessage(message)
 
-        verify(messageMapper)
-            .function(messageMapper::fromMessageToEntity)
-            .with(eq(message))
-            .wasInvoked(exactly = once)
+        with(arrangement) {
+            verify(messageMapper)
+                .function(messageMapper::fromMessageToEntity)
+                .with(eq(message))
+                .wasInvoked(exactly = once)
 
-        verify(messageDAO)
-            .suspendFunction(messageDAO::insertMessage)
-            .with(eq(mappedEntity))
-            .wasInvoked(exactly = once)
+            verify(messageDAO)
+                .suspendFunction(messageDAO::insertMessage)
+                .with(eq(mappedEntity))
+                .wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenAMessage_whenSendingReturnsSuccess_thenSuccessShouldBePropagatedWithServerTime() = runTest {
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+        val mappedId: NetworkQualifiedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
+        val timestamp = TEST_DATETIME
 
-        given(idMapper)
-            .function(idMapper::toApiModel)
-            .whenInvokedWith(anything())
-            .then { TEST_NETWORK_QUALIFIED_ID_ENTITY }
+        val (_, messageRepository) = Arrangement()
+            .withMappedApiModelId(mappedId)
+            .withSuccessfulMessageDelivery(timestamp)
+            .arrange()
 
-        given(messageApi)
-            .suspendFunction(messageApi::qualifiedSendMessage)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ ->
-                NetworkResponse.Success(
-                    QualifiedSendMessageResponse.MessageSent(TEST_DATETIME, mapOf(), mapOf(), mapOf()),
-                    emptyMap(),
-                    201
-                )
-            }
         messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope)
             .shouldSucceed {
                 assertSame(it, TEST_DATETIME)
@@ -175,33 +130,109 @@ class MessageRepositoryTest {
 
     @Test
     fun givenAMessageWithExternalBlob_whenSending_thenApiShouldBeCalledWithBlob() = runTest {
+        val mappedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
         val dataBlob = EncryptedMessageBlob(byteArrayOf(0x42, 0x13, 0x69))
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf(), dataBlob)
+        val timestamp = TEST_DATETIME
 
-        given(idMapper)
-            .function(idMapper::toApiModel)
-            .whenInvokedWith(anything())
-            .then { TEST_NETWORK_QUALIFIED_ID_ENTITY }
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedApiModelId(mappedId)
+            .withSuccessfulMessageDelivery(timestamp)
+            .arrange()
 
-        given(messageApi)
-            .suspendFunction(messageApi::qualifiedSendMessage)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ ->
-                NetworkResponse.Success(
-                    QualifiedSendMessageResponse.MessageSent(TEST_DATETIME, mapOf(), mapOf(), mapOf()),
-                    emptyMap(),
-                    201
-                )
-            }
         messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope)
             .shouldSucceed {
                 assertSame(it, TEST_DATETIME)
             }
 
-        verify(messageApi)
-            .suspendFunction(messageApi::qualifiedSendMessage)
-            .with(matching { it.externalBlob!!.contentEquals(dataBlob.data) }, anything())
-            .wasInvoked(exactly = once)
+        with(arrangement) {
+            verify(messageApi)
+                .suspendFunction(messageApi::qualifiedSendMessage)
+                .with(matching { it.externalBlob!!.contentEquals(dataBlob.data) }, anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val idMapper = mock(IdMapper::class)
+
+        @Mock
+        val assetMapper = mock(AssetMapper::class)
+
+        @Mock
+        val messageApi = mock(MessageApi::class)
+
+        @Mock
+        val mlsMessageApi = mock(MLSMessageApi::class)
+
+        @Mock
+        val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
+
+        @Mock
+        val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
+
+        @Mock
+        val messageMapper = mock(MessageMapper::class)
+
+        fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
+            given(messageDAO)
+                .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .then { _, _, _, _ -> flowOf(messages) }
+            return this
+        }
+
+        fun withMappedId(mappedId: QualifiedIDEntity): Arrangement {
+            given(idMapper)
+                .function(idMapper::toDaoModel)
+                .whenInvokedWith(anything())
+                .then { mappedId }
+            return this
+        }
+
+        fun withMappedApiModelId(mappedId: NetworkQualifiedId): Arrangement {
+            given(idMapper)
+                .function(idMapper::toApiModel)
+                .whenInvokedWith(anything())
+                .then { mappedId }
+            return this
+        }
+
+        fun withMappedMessageModel(message: Message.Regular): Arrangement {
+            given(messageMapper)
+                .function(messageMapper::fromEntityToMessage)
+                .whenInvokedWith(anything())
+                .then { message }
+            return this
+        }
+
+        fun withMappedMessageEntity(message: MessageEntity.Regular): Arrangement {
+            given(messageMapper)
+                .function(messageMapper::fromMessageToEntity)
+                .whenInvokedWith(anything())
+                .then { message }
+            return this
+        }
+
+        fun withSuccessfulMessageDelivery(timestamp: String): Arrangement {
+            given(messageApi)
+                .suspendFunction(messageApi::qualifiedSendMessage)
+                .whenInvokedWith(anything(), anything())
+                .then { _, _ ->
+                    NetworkResponse.Success(
+                        QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
+                        emptyMap(),
+                        201
+                    )
+                }
+            return this
+        }
+
+        fun arrange() = this to MessageDataSource(
+            messageApi, mlsMessageApi, messageDAO, messageMapper, idMapper, assetMapper, sendMessageFailureMapper
+        )
     }
 
     private companion object {
@@ -222,7 +253,7 @@ class MessageRepositoryTest {
         val TEST_CLIENT_ID = ClientId("clientId")
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
-        val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
+        const val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
         val TEST_MESSAGE = Message.Regular(
             id = "uid",
             content = TEST_CONTENT,
