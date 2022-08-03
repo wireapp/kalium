@@ -15,9 +15,14 @@ data class FeatureConfigModel(
     val validateSAMLEmailsModel: ConfigsStatusModel
 )
 
+enum class Status {
+    ENABLED,
+    DISABLED
+}
+
 data class AppLockModel(
     val config: AppLockConfigModel,
-    val status: String
+    val status: Status
 )
 
 data class AppLockConfigModel(
@@ -27,7 +32,7 @@ data class AppLockConfigModel(
 
 data class ClassifiedDomainsModel(
     val config: ClassifiedDomainsConfigModel,
-    val status: String
+    val status: Status
 )
 
 data class ClassifiedDomainsConfigModel(
@@ -35,12 +40,12 @@ data class ClassifiedDomainsConfigModel(
 )
 
 data class ConfigsStatusModel(
-    val status: String
+    val status: Status
 )
 
 data class SelfDeletingMessagesModel(
     val config: SelfDeletingMessagesConfigModel,
-    val status: String
+    val status: Status
 )
 
 data class SelfDeletingMessagesConfigModel(
