@@ -31,8 +31,13 @@ data class UserEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
-
     val userType: UserTypeEntity,
+    val botService: BotEntity?
+)
+
+data class BotEntity(
+    val id: String,
+    val provider: String
 )
 
 enum class UserTypeEntity {

@@ -13,6 +13,7 @@ import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.self.UserUpdateRequest
+import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -101,7 +102,8 @@ internal class UserMapperImpl(
                 idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
             },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userTypeEntity ?: UserTypeEntity.INTERNAL
+            userType = userTypeEntity ?: UserTypeEntity.INTERNAL,
+            botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) }
         )
     }
 
@@ -155,7 +157,8 @@ internal class UserMapperImpl(
             completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
                 ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.INTERNAL
+            userType = UserTypeEntity.INTERNAL,
+            botService = null,
         )
     }
 
@@ -171,7 +174,8 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.INTERNAL
+            userType = UserTypeEntity.INTERNAL,
+            botService = null,
         )
     }
 
@@ -201,6 +205,7 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode)
+            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode),
+            botService = null,
         )
 }

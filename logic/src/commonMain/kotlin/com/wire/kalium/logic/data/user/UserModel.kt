@@ -89,8 +89,14 @@ data class OtherUser(
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
     val userType: UserType,
-    override val availabilityStatus: UserAvailabilityStatus
+    override val availabilityStatus: UserAvailabilityStatus,
+    val botService: BotService?
 ) : User()
+
+data class BotService(
+    val id: String,
+    val provider: String
+)
 
 typealias UserAssetId = AssetId
 typealias AssetId = QualifiedID
