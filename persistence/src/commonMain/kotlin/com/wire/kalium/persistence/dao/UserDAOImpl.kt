@@ -173,17 +173,17 @@ class UserDAOImpl(
             .map { mapper.toModel(it) }
     }
 
-    override suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
+    override suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
-        connectionState: ConnectionEntity.State
-    ) = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionState)
+        connectionStates: List<ConnectionEntity.State>
+    ) = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionStates)
         .executeAsList()
         .map(mapper::toModel)
 
-    override suspend fun getUserByHandleAndConnectionState(
+    override suspend fun getUserByHandleAndConnectionStates(
         handle: String,
-        connectionState: ConnectionEntity.State
-    ) = userQueries.selectByHandleAndConnectionState(handle, connectionState)
+        connectionStates: List<ConnectionEntity.State>
+    ) = userQueries.selectByHandleAndConnectionState(handle, connectionStates)
         .executeAsList()
         .map(mapper::toModel)
 
@@ -223,6 +223,11 @@ class UserDAOImpl(
 
     override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =
         userQueries.selectAllUsersWithConnectionStatus(connectionState)
+            .executeAsList()
+            .map(mapper::toModel)
+
+    override suspend fun getAllUsersByTeam(teamId: String): List<UserEntity> =
+        userQueries.selectUsersByTeam(teamId)
             .executeAsList()
             .map(mapper::toModel)
 }

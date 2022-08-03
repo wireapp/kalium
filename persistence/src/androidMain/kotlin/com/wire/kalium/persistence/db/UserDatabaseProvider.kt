@@ -12,6 +12,7 @@ import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
@@ -121,6 +122,9 @@ actual class UserDatabaseProvider(
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter()
+            ),
+            MessageFailedToDecryptContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
             ),
             MessageMemberChangeContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),

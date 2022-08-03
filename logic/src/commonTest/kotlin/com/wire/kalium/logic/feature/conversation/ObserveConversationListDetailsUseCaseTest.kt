@@ -108,6 +108,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(Either.Right(0L))
 
         observeConversationsUseCase().collect()
+
     }
 
     @Test

@@ -37,10 +37,14 @@ class UpdateVideoStateUseCaseTest {
             .whenInvokedWith(eq(conversationId.toString()), eq(isCameraOn))
             .thenDoNothing()
 
+        given(callManager)
+            .suspendFunction(callManager::updateVideoState)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Unit)
     }
 
     @Test
-    fun givenAFlowOfCallsThatContainsAnEstablishedCall_whenUseCaseInvoked_thenInvokeUpdateVideoState() = runTest {
+    fun givenAFlowOfEstablishedCallsThatContainsAnEstablishedCall_whenUseCaseInvoked_thenInvokeUpdateVideoState() = runTest {
         val establishedCall = Call(
             conversationId,
             CallStatus.ESTABLISHED,
@@ -58,7 +62,7 @@ class UpdateVideoStateUseCaseTest {
             .thenDoNothing()
 
         given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
+            .suspendFunction(callRepository::establishedCallsFlow)
             .whenInvoked().then {
                 flowOf(listOf(establishedCall))
             }
@@ -81,59 +85,12 @@ class UpdateVideoStateUseCaseTest {
     }
 
     @Test
-    fun givenAFlowOfCallsThatContainsNonEstablishedCall_whenUseCaseInvoked_thenDoNotInvokeUpdateVideoState() = runTest {
-        val startedCall = Call(
-            conversationId,
-            CallStatus.STARTED,
-            isMuted = true,
-            isCameraOn = true,
-            callerId = "caller-id",
-            "ONE_ON_ONE Name",
-            Conversation.Type.ONE_ON_ONE,
-            null,
-            null
-        )
+    fun givenAFlowOfEstablishedCallsThatContainsNonEstablishedCall_whenUseCaseInvoked_thenDoNotInvokeUpdateVideoState() = runTest {
 
         given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
+            .suspendFunction(callRepository::establishedCallsFlow)
             .whenInvoked().then {
-                flowOf(listOf(startedCall))
-            }
-        given(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId.toString()), eq(isCameraOn))
-            .thenDoNothing()
-
-        updateVideoStateUseCase(conversationId, videoState)
-
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId.toString()), eq(isCameraOn))
-            .wasInvoked(once)
-
-        verify(callManager)
-            .suspendFunction(callManager::updateVideoState)
-            .with(any(), any())
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenAFlowOfCallsWithADifferentIdFromCurrentCall_whenUseCaseInvoked_thenDoNotInvokeUpdateVideoState() = runTest {
-        val randomCall = Call(
-            ConversationId("different", "domain"),
-            CallStatus.MISSED,
-            isMuted = true,
-            isCameraOn = true,
-            callerId = "caller-id",
-            "ONE_ON_ONE Name",
-            Conversation.Type.ONE_ON_ONE,
-            null,
-            null
-        )
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
-            .whenInvoked().then {
-                flowOf(listOf(randomCall))
+                flowOf(listOf())
             }
         given(callRepository)
             .function(callRepository::updateIsCameraOnById)

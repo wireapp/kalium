@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -66,6 +67,9 @@ class CallRepositoryTest {
     private val teamRepository = mock(classOf<TeamRepository>())
 
     @Mock
+    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
+    @Mock
     private val persistMessage = mock(classOf<PersistMessageUseCase>())
 
     @Mock
@@ -80,12 +84,28 @@ class CallRepositoryTest {
         callRepository = CallDataSource(
             callApi = callApi,
             callDAO = callDAO,
+            qualifiedIdMapper = qualifiedIdMapper,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
             timeParser = TimeParserImpl(),
             persistMessage = persistMessage
         )
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("convId@domainId"))
+            .thenReturn(QualifiedID("convId", "domainId"))
+
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("random@domain"))
+            .thenReturn(QualifiedID("random", "domain"))
+
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("callerId@domain"))
+            .thenReturn(QualifiedID("callerId", "domain"))
+
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("callerId"))
+            .thenReturn(QualifiedID("callerId", ""))
     }
 
     @Test
@@ -127,7 +147,7 @@ class CallRepositoryTest {
                         createCallEntity().copy(
                             status = CallEntity.Status.ESTABLISHED,
                             conversationType = ConversationEntity.Type.ONE_ON_ONE,
-                            callerId = "caller_id@domain"
+                            callerId = "callerId@domain"
                         )
                     )
                 )
@@ -188,7 +208,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -255,7 +275,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -317,7 +337,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -388,7 +408,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -445,7 +465,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -496,7 +516,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -554,7 +574,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -616,7 +636,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -682,7 +702,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -739,7 +759,7 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
 
@@ -755,7 +775,7 @@ class CallRepositoryTest {
         given(callDAO)
             .suspendFunction(callDAO::getCallerIdByConversationId)
             .whenInvokedWith(any())
-            .thenReturn("callerId@domainId")
+            .thenReturn("callerId@domain")
 
         given(persistMessage)
             .suspendFunction(persistMessage::invoke)
@@ -1018,7 +1038,7 @@ class CallRepositoryTest {
 
         val callEntity = createCallEntity().copy(
             status = CallEntity.Status.INCOMING,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1065,7 +1085,7 @@ class CallRepositoryTest {
 
         val callEntity = createCallEntity().copy(
             status = CallEntity.Status.STILL_ONGOING,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1112,7 +1132,7 @@ class CallRepositoryTest {
 
         val callEntity = createCallEntity().copy(
             status = CallEntity.Status.ESTABLISHED,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1164,7 +1184,7 @@ class CallRepositoryTest {
 
         val missedCall = createCallEntity().copy(
             status = CallEntity.Status.MISSED,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1174,7 +1194,7 @@ class CallRepositoryTest {
                 domain = randomConversationId.domain
             ),
             status = CallEntity.Status.CLOSED,
-            callerId = "caller_id@domain",
+            callerId = "callerId@domain",
             conversationType = ConversationEntity.Type.ONE_ON_ONE
         )
 
@@ -1216,7 +1236,7 @@ class CallRepositoryTest {
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
-        callerId = "caller_id@domain",
+        callerId = "callerId@domain",
         participants = listOf(),
         isMuted = false,
         isCameraOn = false,

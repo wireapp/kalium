@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
@@ -12,10 +12,12 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -31,7 +33,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.protobuf.encodeToByteArray
@@ -252,6 +254,23 @@ class ConversationEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
+        val event = TestEvent.deletedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withDeletingConversationSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::deleteConversation)
+                .with(eq(TestConversation.ID))
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -261,6 +280,9 @@ class ConversationEventReceiverTest {
 
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
+
+        @Mock
+        val assetRepository = mock(classOf<AssetRepository>())
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -284,6 +306,7 @@ class ConversationEventReceiverTest {
             proteusClient,
             persistMessage,
             messageRepository,
+            assetRepository,
             conversationRepository,
             mlsConversationRepository,
             userRepository,
@@ -309,7 +332,7 @@ class ConversationEventReceiverTest {
 
         fun withSelfUserIdReturning(selfUserId: UserId) = apply {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
+                .function(userRepository::getSelfUserId)
                 .whenInvoked()
                 .thenReturn(selfUserId)
         }
@@ -376,6 +399,13 @@ class ConversationEventReceiverTest {
             encryptedContent,
             encryptedExternalContent
         )
+
+        fun withDeletingConversationSucceeding(conversationId: ConversationId = TestConversation.ID) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::deleteConversation)
+                .whenInvokedWith((eq(conversationId)))
+                .thenReturn(Either.Right(Unit))
+        }
 
         fun arrange() = this to conversationEventReceiver
     }

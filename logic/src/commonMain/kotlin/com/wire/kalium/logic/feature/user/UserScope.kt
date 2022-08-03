@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
@@ -22,21 +23,28 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
+@Suppress("LongParameterList")
 class UserScope internal constructor(
     private val userRepository: UserRepository,
     private val searchUserRepository: SearchUserRepository,
     private val syncManager: SyncManager,
     private val assetRepository: AssetRepository,
     private val teamRepository: TeamRepository,
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
-    val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository, syncManager)
+    val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository)
     val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(userRepository)
     val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
-    val searchUsers: SearchUsersUseCase get() = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository)
-    val searchKnownUsers: SearchKnownUsersUseCase get() = SearchKnownUsersUseCaseImpl(searchUserRepository, userRepository)
+    val searchUsers: SearchUsersUseCase get() = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
+    val searchKnownUsers: SearchKnownUsersUseCase
+        get() = SearchKnownUsersUseCaseImpl(
+            searchUserRepository,
+            userRepository,
+            qualifiedIdMapper
+        )
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository)
     val searchUserDirectory: SearchUserDirectoryUseCase get() = SearchUserDirectoryUseCaseImpl(searchUserRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase, syncManager)
