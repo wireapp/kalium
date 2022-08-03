@@ -1,12 +1,12 @@
-package com.wire.kalium.logic.sync.event
+package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.ConversationEventReceiver
-import com.wire.kalium.logic.sync.FeatureConfigEventReceiver
-import com.wire.kalium.logic.sync.UserEventReceiver
+import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
+import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 
 /**
  * Handles incoming events from remote.

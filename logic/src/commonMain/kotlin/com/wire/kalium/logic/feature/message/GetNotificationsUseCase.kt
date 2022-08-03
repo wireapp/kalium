@@ -258,10 +258,10 @@ class GetNotificationsUseCaseImpl(
         conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed ||
                 selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
+    @Suppress("ComplexMethod")
     private fun isMessageContentSupportedInNotifications(message: Message): Boolean = when (message.content) {
         is MessageContent.Unknown -> false
         is MessageContent.MemberChange -> false
-        MessageContent.MissedCall -> true
         is MessageContent.Text -> true
         is MessageContent.Calling -> false
         is MessageContent.Asset -> true
@@ -269,9 +269,11 @@ class GetNotificationsUseCaseImpl(
         is MessageContent.TextEdited -> false
         is MessageContent.RestrictedAsset -> true
         is MessageContent.DeleteForMe -> false
-        MessageContent.Empty -> false
-        MessageContent.Ignored -> false
         is MessageContent.Availability -> false
+        is MessageContent.FailedDecryption -> false
+        is MessageContent.MissedCall -> true
+        is MessageContent.Empty -> false
+        is MessageContent.Ignored -> false
     }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =

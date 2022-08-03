@@ -1,9 +1,11 @@
 package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 
 interface FeatureConfigMapper {
     fun fromFeatureConfigsDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
+    fun fromFeatureConfigsDTO(status: FeatureFlagStatusDTO): Status
 }
 
 class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -11,27 +13,34 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         with(featureConfigResponse) {
             FeatureConfigModel(
                 appLockModel = AppLockModel(
-                    AppLockConfigModel
-                        (appLock.config.enforceAppLock, appLock.config.inactivityTimeoutSecs), appLock.status.name
+                    AppLockConfigModel(appLock.config.enforceAppLock, appLock.config.inactivityTimeoutSecs),
+                    fromFeatureConfigsDTO(appLock.status)
                 ),
                 classifiedDomainsModel = ClassifiedDomainsModel(
-                    ClassifiedDomainsConfigModel(classifiedDomains.config.domains), classifiedDomains.status.name
+                    ClassifiedDomainsConfigModel(classifiedDomains.config.domains),
+                    fromFeatureConfigsDTO(classifiedDomains.status)
                 ),
-                conferenceCallingModel = ConfigsStatusModel(conferenceCalling.status.name),
-                conversationGuestLinksModel = ConfigsStatusModel(conversationGuestLinks.status.name),
-                digitalSignaturesModel = ConfigsStatusModel(digitalSignatures.status.name),
-                fileSharingModel = ConfigsStatusModel(fileSharing.status.name),
-                legalHoldModel = ConfigsStatusModel(legalHold.status.name),
-                searchVisibilityModel = ConfigsStatusModel(searchVisibility.status.name),
+                conferenceCallingModel = ConfigsStatusModel(fromFeatureConfigsDTO(conferenceCalling.status)),
+                conversationGuestLinksModel = ConfigsStatusModel(fromFeatureConfigsDTO(conversationGuestLinks.status)),
+                digitalSignaturesModel = ConfigsStatusModel(fromFeatureConfigsDTO(digitalSignatures.status)),
+                fileSharingModel = ConfigsStatusModel(fromFeatureConfigsDTO(fileSharing.status)),
+                legalHoldModel = ConfigsStatusModel(fromFeatureConfigsDTO(legalHold.status)),
+                searchVisibilityModel = ConfigsStatusModel(fromFeatureConfigsDTO(searchVisibility.status)),
                 selfDeletingMessagesModel = SelfDeletingMessagesModel(
                     SelfDeletingMessagesConfigModel(selfDeletingMessages.config.enforcedTimeoutSeconds),
-                    selfDeletingMessages.status.name
+                    fromFeatureConfigsDTO(selfDeletingMessages.status)
                 ),
                 sndFactorPasswordChallengeModel = ConfigsStatusModel(
-                    sndFactorPasswordChallenge.status.name
+                    fromFeatureConfigsDTO(sndFactorPasswordChallenge.status)
                 ),
-                ssoModel = ConfigsStatusModel(sso.status.name),
-                validateSAMLEmailsModel = ConfigsStatusModel(validateSAMLEmails.status.name)
+                ssoModel = ConfigsStatusModel(fromFeatureConfigsDTO(sso.status)),
+                validateSAMLEmailsModel = ConfigsStatusModel(fromFeatureConfigsDTO(validateSAMLEmails.status))
             )
+        }
+
+    override fun fromFeatureConfigsDTO(status: FeatureFlagStatusDTO): Status =
+        when (status) {
+            FeatureFlagStatusDTO.ENABLED -> Status.ENABLED
+            FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
         }
 }

@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
@@ -12,6 +12,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
@@ -32,7 +33,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.protobuf.encodeToByteArray
@@ -281,6 +282,9 @@ class ConversationEventReceiverTest {
         val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
+        val assetRepository = mock(classOf<AssetRepository>())
+
+        @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
@@ -302,6 +306,7 @@ class ConversationEventReceiverTest {
             proteusClient,
             persistMessage,
             messageRepository,
+            assetRepository,
             conversationRepository,
             mlsConversationRepository,
             userRepository,
@@ -327,7 +332,7 @@ class ConversationEventReceiverTest {
 
         fun withSelfUserIdReturning(selfUserId: UserId) = apply {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
+                .function(userRepository::getSelfUserId)
                 .whenInvoked()
                 .thenReturn(selfUserId)
         }

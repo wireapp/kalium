@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -7,7 +7,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.eq

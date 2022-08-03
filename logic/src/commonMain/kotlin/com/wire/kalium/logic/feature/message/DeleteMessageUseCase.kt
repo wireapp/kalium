@@ -55,21 +55,7 @@ class DeleteMessageUseCase(
                         )
                         messageSender.sendMessage(regularMessage)
                     }
-                        .onSuccess { _ ->
-                            val assetToRemove = when (message.content) {
-                                is MessageContent.Asset -> (message.content as MessageContent.Asset).value.remoteData
-                                else -> null
-                            }
-                            if (assetToRemove != null) {
-                                assetRepository.deleteAsset(
-                                    AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
-                                    assetToRemove.assetToken
-                                )
-                                    .onFailure {
-                                        kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
-                                    }
-                            }
-                        }
+                        .onSuccess { deleteMessageAsset(message) }
                         .flatMap { messageRepository.markMessageAsDeleted(messageId, conversationId) }
                         .onFailure { failure ->
                             kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
@@ -80,4 +66,17 @@ class DeleteMessageUseCase(
                 }
             }
         }
+
+    private suspend fun deleteMessageAsset(message: Message) {
+        (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+
+            assetRepository.deleteAsset(
+                AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
+                assetToRemove.assetToken
+            )
+                .onFailure {
+                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+                }
+        }
+    }
 }

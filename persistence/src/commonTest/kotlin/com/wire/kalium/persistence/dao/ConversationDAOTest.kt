@@ -1,19 +1,28 @@
 package com.wire.kalium.persistence.dao
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationDAOTest : BaseDatabaseTest() {
 
     private lateinit var conversationDAO: ConversationDAO
+    private lateinit var messageDAO: MessageDAO
     private lateinit var userDAO: UserDAO
 
     @BeforeTest
@@ -21,6 +30,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         deleteDatabase()
         val db = createDatabase()
         conversationDAO = db.conversationDAO
+        messageDAO = db.messageDAO
         userDAO = db.userDAO
     }
 
@@ -255,6 +265,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
+
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
         conversationDAO.getAllMembers(conversationEntity1.id).first().also { actual ->
@@ -307,6 +318,213 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(expected, actual)
         }
 
+    }
+
+    @Test
+    fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest {
+        // given
+        val expectedLastReadDate = "2022-03-30T15:36:00.000Z"
+
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedLastReadDate)
+
+        // then
+        val actual = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+
+        assertNotNull(actual)
+        assertEquals(expectedLastReadDate, actual.lastReadDate)
+    }
+
+    @Test
+    fun givenExistingConversation_whenUpdatingTheConversationSeenDate_thenEmitTheNewConversationStateWithTheUpdatedSeenDate() =
+        runTest() {
+            // given
+            val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z"
+
+            launch(UnconfinedTestDispatcher(testScheduler)) {
+                // when
+                conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).test {
+                    // then
+                    val initialConversation = awaitItem()
+
+                    assertTrue(initialConversation == null)
+
+                    conversationDAO.insertConversation(conversationEntity1)
+
+                    val conversationAfterInsert = awaitItem()
+
+                    assertTrue(conversationAfterInsert != null)
+                    assertTrue(conversationAfterInsert.lastReadDate == null)
+
+                    conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedConversationSeenDate)
+
+                    val conversationAfterUpdate = awaitItem()
+
+                    assertTrue(conversationAfterUpdate != null)
+                    assertEquals(conversationAfterUpdate.lastReadDate, expectedConversationSeenDate)
+
+                    cancelAndIgnoreRemainingEvents()
+                }
+            }
+        }
+
+    @Test
+    fun givenConversationsHaveLastReadDateBeforeModified_whenGettingUnReadConversationCount_ThenReturnTheExpectedCount() = runTest {
+        // given
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = QualifiedIDEntity("1", "someDomain"),
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastModified = "2000-01-01T12:30:00.000Z"
+            )
+        )
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = QualifiedIDEntity("2", "someDomain"),
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastModified = "2000-01-01T12:30:00.000Z"
+            )
+        )
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = QualifiedIDEntity("3", "someDomain"),
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+                lastModified = "2000-01-01T12:30:00.000Z"
+            )
+        )
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = QualifiedIDEntity("3", "someDomain"),
+                lastReadDate = "2000-01-01T12:30:00.000Z",
+                lastModified = "2000-01-01T12:00:00.000Z"
+            )
+        )
+
+    }
+
+    @Test
+    fun givenConversationsHaveLastReadDateAfterModified_whenGettingUnReadConversationCount_ThenReturnTheExpectedCount() = runTest {
+        // given
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = QualifiedIDEntity("1", "someDomain"),
+                lastReadDate = "2000-01-01T12:30:00.000Z",
+                lastModified = "2000-01-01T12:00:00.000Z"
+            )
+        )
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = QualifiedIDEntity("2", "someDomain"),
+                lastReadDate = "2000-01-01T12:30:00.000Z",
+                lastModified = "2000-01-01T12:00:00.000Z"
+            )
+        )
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = QualifiedIDEntity("3", "someDomain"),
+                lastReadDate = "2000-01-01T12:30:00.000Z",
+                lastModified = "2000-01-01T12:00:00.000Z"
+            )
+        )
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = QualifiedIDEntity("3", "someDomain"),
+                lastReadDate = "2000-01-01T12:30:00.000Z",
+                lastModified = "2000-01-01T12:00:00.000Z"
+            )
+        )
+
+        // when
+        val result = conversationDAO.getUnreadConversationCount()
+
+        // then
+        assertEquals(0L, result)
+    }
+
+    @Test
+    fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(user1)
+
+        val message = buildList {
+            // add 9 Message before the lastReadDate
+            repeat(9) {
+                add(
+                    newMessageEntity(
+                        id = it.toString(),
+                        date = "2000-01-01T11:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = user1.id,
+                    )
+                )
+            }
+            // add 9 Message past the lastReadDate
+            repeat(9) {
+                add(
+                    newMessageEntity(
+                        id = "${it + 9}",
+                        date = "2000-01-01T13:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = user1.id,
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertMessages(message)
+
+        // when
+        val result = conversationDAO.getUnreadMessageCount(conversationId)
+
+        // then
+        assertEquals(9L, result)
+    }
+
+    @Test
+    fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(user1)
+
+        val message = buildList {
+            // add 9 Message before the lastReadDate
+            repeat(9) {
+                add(
+                    newMessageEntity(
+                        id = it.toString(), date = "2000-01-01T11:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = user1.id,
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertMessages(message)
+
+        // when
+        val result = conversationDAO.getUnreadMessageCount(conversationId)
+
+        // then
+        assertEquals(0L, result)
     }
 
     @Test
