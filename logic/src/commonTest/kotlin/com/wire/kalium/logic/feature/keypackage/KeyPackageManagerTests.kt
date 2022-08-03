@@ -1,9 +1,10 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.sync.InMemorySyncRepository
-import com.wire.kalium.logic.data.sync.SyncRepository
-import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncOutcome
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -31,7 +32,7 @@ class KeyPackageManagerTests {
                 .withLastKeyPackageCountCheck(Clock.System.now())
                 .arrange()
 
-            arrangement.syncRepository.updateSyncState { SyncState.Live }
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Complete(IncrementalSyncOutcome.LIVE))
             yield()
         }
 
@@ -44,7 +45,7 @@ class KeyPackageManagerTests {
                 .withUpdateLastKeyPackageCountCheckSuccessful()
                 .arrange()
 
-            arrangement.syncRepository.updateSyncState { SyncState.Live }
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Complete(IncrementalSyncOutcome.LIVE))
             yield()
 
             verify(arrangement.refillKeyPackagesUseCase)
@@ -59,7 +60,7 @@ class KeyPackageManagerTests {
 
     private class Arrangement {
 
-        val syncRepository: SyncRepository = InMemorySyncRepository()
+        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
         val keyPackageRepository = mock(classOf<KeyPackageRepository>())
@@ -89,7 +90,7 @@ class KeyPackageManagerTests {
         }
 
         fun arrange() = this to KeyPackageManagerImpl(
-            syncRepository,
+            incrementalSyncRepository,
             lazy { keyPackageRepository },
             lazy { refillKeyPackagesUseCase },
             TestKaliumDispatcher
