@@ -37,7 +37,8 @@ object EventContentDTOJson {
                 setOf(ConversationAccessDTO.CODE),
                 setOf(ConversationAccessRoleDTO.TEAM_MEMBER)
             )
-        ), jsonProvider
+        ),
+        jsonProvider
     )
 
     val validNullAccessRole = """
