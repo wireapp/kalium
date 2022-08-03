@@ -5,11 +5,14 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
+import com.wire.kalium.logic.data.notification.LocalNotificationMessage
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -25,8 +28,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 
 interface GetNotificationsUseCase {
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
@@ -137,6 +142,18 @@ class GetNotificationsUseCaseImpl(
             }
     }
 
+    private fun observeDeletedConversations(): Flow<List<LocalNotificationConversation>> {
+        return flow {
+            LocalNotificationConversation(
+                "".toConversationId(), "some convo", listOf(
+                    LocalNotificationMessage.ConversationDeleted(
+                        LocalNotificationMessageAuthor("", ""), Clock.System.now().toEpochMilliseconds().toString()
+                    )
+                ), false
+            )
+        }
+    }
+
     private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
         return connectionRepository.observeConnectionRequestsForNotification()
             .map { requests ->
@@ -218,10 +235,12 @@ class GetNotificationsUseCaseImpl(
 
                         containsSelfUserName or containsSelfHandle
                     }
+
                     is MessageContent.MissedCall -> true
                     else -> false
                 }
             }
+
             allNotificationsAllowed(conversationMutedStatus, selfUser) -> true
             else -> false
         }
