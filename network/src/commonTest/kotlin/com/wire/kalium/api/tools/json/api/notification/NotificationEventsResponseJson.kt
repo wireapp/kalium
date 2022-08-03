@@ -236,6 +236,19 @@ object NotificationEventsResponseJson {
             },
             {
               "payload": [
+                {
+                  "data" : {
+                    "status": "enabled"
+                  },
+                  "time" : "2022-04-12T13:57:02.414Z",
+                  "name" : "anUnknownFeatureConfig",
+                  "type": "feature-config.update"
+                }
+              ],
+              "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
+            },
+            {
+              "payload": [
                 ${newFileSharingFeatureConfigUpdate.rawJson}
               ],
               "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
