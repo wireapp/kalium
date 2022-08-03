@@ -93,7 +93,7 @@ SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
 getUnreadMessageCount:
-SELECT COUNT() FROM Message AS message WHERE (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id)) AND message.conversation_id IS :conversation_id;
+SELECT COUNT() FROM Message AS message WHERE  message.conversation_id IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id));
 
 getUnreadConversationCount:
 SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date);
