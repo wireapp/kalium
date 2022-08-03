@@ -19,6 +19,8 @@ application {
 }
 
 tasks.named("run", JavaExec::class){
+    // FIXME: Find solution for hardcoded path to native libraries
+    jvmArgs = listOf("-Djava.library.path=/Users/sven/workspace/kalium/native/libs/")
     args = listOf("server", "config.yml")
     isIgnoreExitValue = true
     standardInput = System.`in`

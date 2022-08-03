@@ -1,5 +1,6 @@
 package com.wire.kalium.testservice.api.v1
 
+import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.Instance
 import javax.ws.rs.POST
 import javax.ws.rs.Path
@@ -10,7 +11,7 @@ import javax.ws.rs.core.MediaType
 
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
-class ConversationResources {
+class ConversationResources(private val instanceService: InstanceService) {
 
     // archive a conversation
     @POST
@@ -71,8 +72,12 @@ class ConversationResources {
     // POST /api/v1/instance/{instanceId}/sendReaction
     // Send a reaction to a message.
 
-    // POST /api/v1/instance/{instanceId}/sendText
     // Send a text message to a conversation.
+    @POST
+    @Path("/instance/{id}/sendText")
+    fun sendText(@PathParam("id") id: String): Instance {
+        throw WebApplicationException("Not yet implemented")
+    }
 
     // POST /api/v1/instance/{instanceId}/sendTyping
     // Send a typing indicator to a conversation.

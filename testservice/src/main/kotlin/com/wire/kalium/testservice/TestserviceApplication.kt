@@ -10,6 +10,8 @@ import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
+import java.lang.invoke.MethodHandles
+import java.lang.invoke.VarHandle
 
 
 class TestserviceApplication : Application<TestserviceConfiguration>() {
@@ -32,14 +34,13 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
     }
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
-
         // managed
         val instanceService = InstanceService()
         environment.lifecycle().manage(instanceService)
 
         // resources
         val clientResources = ClientResources()
-        val conversationResources = ConversationResources()
+        val conversationResources = ConversationResources(instanceService)
         val instanceLifecycle = InstanceLifecycle(instanceService)
         environment.healthChecks().register("template", TestserviceHealthCheck())
         environment.jersey().register(clientResources)
