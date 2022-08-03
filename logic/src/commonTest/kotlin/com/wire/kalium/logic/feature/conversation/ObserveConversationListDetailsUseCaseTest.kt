@@ -359,6 +359,11 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(flowOf(listOf(successConversation, failureConversation)))
 
         given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
+
+        given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .then {
