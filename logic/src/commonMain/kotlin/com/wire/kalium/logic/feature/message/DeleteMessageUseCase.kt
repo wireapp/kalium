@@ -38,6 +38,7 @@ class DeleteMessageUseCase(
                 else -> {
                     val selfUser = userRepository.observeSelfUser().first()
                     val generatedMessageUuid = uuid4().toString()
+
                     return clientRepository.currentClientId().flatMap { currentClientId ->
                         val regularMessage = Message.Regular(
                             id = generatedMessageUuid,

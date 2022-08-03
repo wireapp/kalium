@@ -85,6 +85,13 @@ UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
-
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
+
+deleteAllMessages:
+DELETE FROM Message
+WHERE conversation_id IS :conversation_id;
+
+getMessagesByContentType:
+SELECT * FROM Message
+WHERE conversation_id IS :conversation_id AND content_type IS "ASSET";
