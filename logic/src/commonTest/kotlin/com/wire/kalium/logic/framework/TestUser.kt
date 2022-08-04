@@ -51,7 +51,8 @@ object TestUser {
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE,
-        userType = UserType.EXTERNAL
+        userType = UserType.EXTERNAL,
+        botService = null,
     )
 
     val ENTITY = UserEntity(
@@ -66,7 +67,8 @@ object TestUser {
         previewAssetId = QualifiedIDEntity("value1", ENTITY_ID.domain),
         completeAssetId = QualifiedIDEntity("value2", ENTITY_ID.domain),
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = UserTypeEntity.EXTERNAL
+        userType = UserTypeEntity.EXTERNAL,
+        botService = null,
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

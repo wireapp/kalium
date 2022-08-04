@@ -172,7 +172,8 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            timeParser
         )
 
     private val messageRepository: MessageRepository

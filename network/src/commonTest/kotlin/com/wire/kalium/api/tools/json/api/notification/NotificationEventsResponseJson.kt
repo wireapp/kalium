@@ -4,8 +4,23 @@ import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.api.tools.json.api.conversation.ConversationResponseJson
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.QualifiedID
+import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.AppLock
+import com.wire.kalium.network.api.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.ClassifiedDomains
+import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.MLS
+import com.wire.kalium.network.api.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.SelfDeletingMessages
+import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.user.NewClientEventData
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
 
 object NotificationEventsResponseJson {
     private val newClientSerializer = { eventData: EventContentDTO.User.NewClientDTO ->
@@ -27,14 +42,13 @@ object NotificationEventsResponseJson {
         """.trimMargin()
     }
 
-
     private val clientAdd = ValidJsonProvider(
         EventContentDTO.User.NewClientDTO(
             NewClientEventData(
-                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", "temporary",
-                "desktop", "OS X 10.15 10.15"
+                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", "temporary", "desktop", "OS X 10.15 10.15"
             )
-        ), newClientSerializer
+        ),
+        newClientSerializer
     )
 
     private val mlsWelcomeSerializer = { eventData: EventContentDTO.Conversation.MLSWelcomeDTO ->
@@ -61,7 +75,8 @@ object NotificationEventsResponseJson {
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "AQABAAAAibLvHZAyYCHDxb+y8axOIdEAILa77VeJo1Yd8AfJKE009zwUxXuu7mAamu",
             "71ff8872e468a970"
-        ), mlsWelcomeSerializer
+        ),
+        mlsWelcomeSerializer
     )
 
     private val newMlsMessageSerializer = { eventData: EventContentDTO.Conversation.NewMLSMessageDTO ->
@@ -85,10 +100,14 @@ object NotificationEventsResponseJson {
     private val newMlsMessage = ValidJsonProvider(
         EventContentDTO.Conversation.NewMLSMessageDTO(
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
-            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf","staging.zinfra.io"),
+            QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "2022-04-12T13:57:02.414Z",
-            "AiDyKXJ/yTKaq4fIO2SXXkQIBVhU0uOiDHIfVP3Yb6HoWAAAAAAAAAABAQAAAAAo6sj3pAQr7tXmljXYG4+sRsnR2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4wCTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLitX5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4="
-        ), newMlsMessageSerializer
+            "AiDyKXJ/yTKaq4fIO2SXXkQIBVhU0uOiDHIfVP3Yb6HoWAAAAAAAAAABAQAAAAAo6sj3pAQr7tXmljXYG4+sRsn" +
+            "R2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4w" +
+            "CTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLit" +
+            "X5luW7smQPNcmPwwbrK0MDIq3PVhYwI4Cfi1eO1Ii94zM5IfVApyR4="
+        ),
+        newMlsMessageSerializer
     )
 
     private val newConversationSerializer = { eventData: EventContentDTO.Conversation.NewConversationDTO ->
@@ -116,7 +135,66 @@ object NotificationEventsResponseJson {
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "2022-04-12T13:57:02.414Z",
             ConversationResponseJson.validGroup.serializableData
-        ), newConversationSerializer
+        ),
+        newConversationSerializer
+    )
+
+    @OptIn(InternalSerializationApi::class)
+    private val newFeatureConfigSerializer = { featureConfigUpdated: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO ->
+        """
+        |{
+        |  "data" : ${Json.encodeToString(featureConfigUpdated.data)},
+        |  "time" : "2022-04-12T13:57:02.414Z",
+        |  "name" : "${featureConfigUpdated.data::class.serializer().descriptor.serialName}",
+        |  "type" : "feature-config.update"
+        |}
+        """.trimMargin()
+    }
+
+    private val newFileSharingFeatureConfigUpdate = ValidJsonProvider(
+        EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
+            FeatureConfigData.FileSharing(FeatureFlagStatusDTO.ENABLED)
+        ),
+        newFeatureConfigSerializer
+    )
+
+    private val newMlsFeatureConfigUpdate = ValidJsonProvider(
+        EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
+            MLS(
+                MLSConfigDTO(emptyList(), ConvProtocol.MLS, listOf(1), 1),
+                FeatureFlagStatusDTO.ENABLED,
+            )
+        ),
+        newFeatureConfigSerializer
+    )
+
+    private val newClassifiedDomainsFeatureConfigUpdate = ValidJsonProvider(
+        EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
+            ClassifiedDomains(
+                ClassifiedDomainsConfigDTO(emptyList()),
+                FeatureFlagStatusDTO.ENABLED,
+            )
+        ),
+        newFeatureConfigSerializer
+    )
+
+    private val newSelfDeletingMessagesFeatureConfigUpdate = ValidJsonProvider(
+        EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
+            SelfDeletingMessages(
+                SelfDeletingMessagesConfigDTO(60),
+                FeatureFlagStatusDTO.ENABLED,
+            )
+        ),
+        newFeatureConfigSerializer
+    )
+
+    private val newAppLockFeatureConfigUpdate = ValidJsonProvider(
+        EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
+            AppLock(
+                AppLockConfigDTO(true, 60), FeatureFlagStatusDTO.ENABLED
+            )
+        ),
+        newFeatureConfigSerializer
     )
 
     val notificationsWithUnknownEventAtFirstPosition = """
@@ -153,6 +231,49 @@ object NotificationEventsResponseJson {
             {
               "payload": [
                 ${newMlsMessage.rawJson}
+              ],
+              "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
+            },
+            {
+              "payload": [
+                {
+                  "data" : {
+                    "status": "enabled"
+                  },
+                  "time" : "2022-04-12T13:57:02.414Z",
+                  "name" : "anUnknownFeatureConfig",
+                  "type": "feature-config.update"
+                }
+              ],
+              "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
+            },
+            {
+              "payload": [
+                ${newFileSharingFeatureConfigUpdate.rawJson}
+              ],
+              "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
+            },
+            {
+              "payload": [
+                ${newMlsFeatureConfigUpdate.rawJson}
+              ],
+              "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
+            },
+            {
+              "payload": [
+                ${newClassifiedDomainsFeatureConfigUpdate.rawJson}
+              ],
+              "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
+            },
+            {
+              "payload": [
+                ${newSelfDeletingMessagesFeatureConfigUpdate.rawJson}
+              ],
+              "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
+            },
+            {
+              "payload": [
+                ${newAppLockFeatureConfigUpdate.rawJson}
               ],
               "id": "855fc5f1-bc01-11ec-8001-22000ac2309b"
             },
