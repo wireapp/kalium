@@ -76,7 +76,7 @@ sealed class MessageEntity(
     }
 
     enum class ContentType {
-        TEXT, ASSET, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET, UNKNOWN
+        TEXT, ASSET, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET, UNKNOWN, FAILED_DECRYPTION
     }
 
     enum class MemberChangeType {
@@ -91,6 +91,7 @@ sealed class MessageEntity(
 sealed class MessageEntityContent {
 
     sealed class Regular : MessageEntityContent()
+
     sealed class System : MessageEntityContent()
 
     data class Text(val messageBody: String) : Regular()
@@ -120,6 +121,8 @@ sealed class MessageEntityContent {
         val typeName: String? = null,
         val encodedData: ByteArray? = null
     ) : Regular()
+
+    data class FailedDecryption(val encodedData: ByteArray? = null) : Regular()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,

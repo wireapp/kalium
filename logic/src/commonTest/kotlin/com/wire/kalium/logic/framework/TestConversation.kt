@@ -33,6 +33,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        lastReadDate = null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -45,6 +46,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        lastReadDate = null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -58,6 +60,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        lastReadDate = null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -83,6 +86,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        lastReadDate = null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -136,6 +140,7 @@ object TestConversation {
         ConversationEntity.ProtocolInfo.Proteus,
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
@@ -150,7 +155,8 @@ object TestConversation {
         null,
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        lastReadDate = "2022-03-30T15:36:00.000Z"
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -163,6 +169,7 @@ object TestConversation {
         null,
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        lastReadDate = "2022-03-30T15:36:00.000Z"
     )
 }
