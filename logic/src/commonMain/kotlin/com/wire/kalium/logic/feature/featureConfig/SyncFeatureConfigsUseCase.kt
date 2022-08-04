@@ -12,7 +12,6 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
@@ -35,7 +34,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap {
-            // TODO: handle other feature flags
+            // TODO handle other feature flags
             checkFileSharingStatus(it.fileSharingModel)
             checkMLSStatus(it.mlsModel)
             Either.Right(Unit)
