@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 
+/**
+ * Gathers and processes IncrementalSync events.
+ */
 interface IncrementalSyncWorker {
     /**
      * Upon collection, will start collecting and processing events,
