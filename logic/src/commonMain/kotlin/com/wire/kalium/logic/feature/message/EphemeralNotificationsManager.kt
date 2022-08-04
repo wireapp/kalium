@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * This singleton allow us to queue ephemeral notifications from different user flows.
@@ -12,7 +13,8 @@ import kotlinx.coroutines.flow.consumeAsFlow
  */
 object EphemeralNotificationsManager {
 
-    private val notifications = Channel<LocalNotificationConversation>(capacity = Channel.CONFLATED)
+    private val notifications =
+        Channel<LocalNotificationConversation>(capacity = Channel.CONFLATED) { emptyFlow<LocalNotificationConversation>() }
 
     fun observeEphemeralNotifications(): Flow<LocalNotificationConversation> {
         return notifications.consumeAsFlow()
