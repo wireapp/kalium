@@ -589,8 +589,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
-            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
-            
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
         )
 
         val member1 = Member(user1.id, Member.Role.Admin)
