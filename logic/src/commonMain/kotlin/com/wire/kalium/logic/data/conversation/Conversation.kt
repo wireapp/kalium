@@ -107,6 +107,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             teamId = otherUser?.teamId,
             protocol = protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
+            lastReadDate = null,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
             lastReadDate = "1970-01-01T00:00:00.000Z",

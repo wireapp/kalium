@@ -304,10 +304,7 @@ class ConversationDataSource(
 
     private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
         return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
-            val test =  conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
-            println("un read message count for ${conversation.id} is :$test")
-
-            test
+            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
             0
         }
