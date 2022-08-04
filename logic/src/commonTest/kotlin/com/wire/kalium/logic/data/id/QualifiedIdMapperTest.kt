@@ -61,7 +61,67 @@ class QualifiedIdMapperTest {
     }
 
     @Test
-    fun givenAValidStringThatStartsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedID() {
+    fun givenAStringWithoutDomainThatEndsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() {
+        // Given
+        val fallbackDomain = "wire.com"
+        val conversationId = "conversationId@"
+
+        given(userRepository)
+            .invocation { getSelfUserId() }
+            .thenReturn(QualifiedID(conversationId, fallbackDomain))
+
+        // When
+        val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+
+        // Then
+        assertEquals(
+            QualifiedID(value = "conversationId", domain = fallbackDomain),
+            result
+        )
+    }
+
+    @Test
+    fun givenAValidStringThatStartsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() {
+        // Given
+        val fallbackDomain = "wire.com"
+        val conversationId = "@conversationId"
+
+        given(userRepository)
+            .invocation { getSelfUserId() }
+            .thenReturn(QualifiedID(conversationId, fallbackDomain))
+
+        // When
+        val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+
+        // Then
+        assertEquals(
+            QualifiedID(value = "conversationId", domain = fallbackDomain),
+            result
+        )
+    }
+
+    @Test
+    fun givenAValidStringThatStartsAndEndsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() {
+        // Given
+        val fallbackDomain = "wire.com"
+        val conversationId = "@conversationId@"
+
+        given(userRepository)
+            .invocation { getSelfUserId() }
+            .thenReturn(QualifiedID(conversationId, fallbackDomain))
+
+        // When
+        val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+
+        // Then
+        assertEquals(
+            QualifiedID(value = "conversationId", domain = fallbackDomain),
+            result
+        )
+    }
+
+    @Test
+    fun givenAValidStringThatStartsWithAtSignAndContainsAnotherAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedID() {
         // Given
         val conversationId = "@conversationId@dom"
 
@@ -70,7 +130,7 @@ class QualifiedIdMapperTest {
 
         // Then
         assertEquals(
-            QualifiedID(value = "@conversationId", domain = "dom"),
+            QualifiedID(value = "conversationId", domain = "dom"),
             result
         )
     }
@@ -79,6 +139,21 @@ class QualifiedIdMapperTest {
     fun givenAValidStringThatContainsAtSignInTheMiddle_whenMappingToQualifiedId_thenReturnsACorrectQualifiedID() {
         // Given
         val conversationId = "convers@ationId@dom"
+
+        // When
+        val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+
+        // Then
+        assertEquals(
+            QualifiedID(value = "convers@ationId", domain = "dom"),
+            result
+        )
+    }
+
+    @Test
+    fun givenAValidStringThatStartsWithAtSignContainsAtSignInTheMiddle_whenMappingToQualifiedId_thenReturnsACorrectQualifiedID() {
+        // Given
+        val conversationId = "@convers@ationId@dom"
 
         // When
         val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
