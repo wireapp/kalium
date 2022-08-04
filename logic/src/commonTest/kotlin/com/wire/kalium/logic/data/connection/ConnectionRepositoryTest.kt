@@ -354,7 +354,8 @@ class ConnectionRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userType = UserTypeEntity.EXTERNAL
+            userType = UserTypeEntity.EXTERNAL,
+            botService = null
         )
 
         val stubSelfUser = SelfUser(
