@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
@@ -37,25 +38,25 @@ class GetFeatureConfigsStatusUseCaseTest {
         val fileSharingModel = FeatureConfigModel(
             AppLockModel(
                 AppLockConfigModel(true, 0),
-                "enabled"
+                Status.ENABLED
             ),
             ClassifiedDomainsModel(
                 ClassifiedDomainsConfigModel(listOf()),
-                "enabled"
+                Status.ENABLED
             ),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
             SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(0),
-                "enabled"
+                Status.ENABLED
             ),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled")
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED)
         )
 
         val (arrangement, getFileSharingStatusUseCase) = Arrangement()

@@ -70,15 +70,25 @@ sealed class Event(open val id: String) {
             val message: String,
             val timestampIso: String = Clock.System.now().toString()
         ) : Conversation(id, conversationId)
+
+        data class DeletedConversation(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val timestampIso: String,
+        ) : Conversation(id, conversationId)
     }
 
     sealed class FeatureConfig(
         id: String,
     ) : Event(id) {
-        data class FeatureConfigUpdated(
+        data class FileSharingUpdated(
             override val id: String,
-            val name: String,
-            val status: String,
+            val status: String
+        ) : FeatureConfig(id)
+
+        data class UnknownFeatureUpdated(
+            override val id: String
         ) : FeatureConfig(id)
     }
 

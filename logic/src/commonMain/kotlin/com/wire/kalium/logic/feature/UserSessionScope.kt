@@ -28,8 +28,12 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -54,6 +58,7 @@ import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
@@ -156,6 +161,9 @@ abstract class UserSessionScopeCommon(
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider
+        get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
+
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
@@ -167,8 +175,10 @@ abstract class UserSessionScopeCommon(
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
             keyPackageRepository,
-            mlsClientProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userDatabaseProvider.conversationDAO
+            mlsClientProvider,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            userDatabaseProvider.conversationDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
@@ -179,7 +189,8 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            timeParser
         )
 
     private val messageRepository: MessageRepository
@@ -193,6 +204,7 @@ abstract class UserSessionScopeCommon(
         get() = UserDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
+            userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
         )
@@ -235,6 +247,7 @@ abstract class UserSessionScopeCommon(
     private val callRepository: CallRepository by lazy {
         CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
+            qualifiedIdMapper = qualifiedIdMapper,
             callDAO = userDatabaseProvider.callDAO,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
@@ -376,6 +389,10 @@ abstract class UserSessionScopeCommon(
             lazy { client.refillKeyPackages }
         )
 
+    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
+
+    val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper, globalPreferences)
+
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
@@ -383,7 +400,9 @@ abstract class UserSessionScopeCommon(
             userRepository = userRepository,
             clientRepository = clientRepository,
             conversationRepository = conversationRepository,
-            messageSender = messageSender
+            messageSender = messageSender,
+            federatedIdMapper = federatedIdMapper,
+            qualifiedIdMapper = qualifiedIdMapper
         )
     }
 
@@ -402,6 +421,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             persistMessage,
             messageRepository,
+            assetRepository,
             conversationRepository,
             mlsConversationRepository,
             userRepository,
@@ -449,6 +469,7 @@ abstract class UserSessionScopeCommon(
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
+            keyPackageLimitsProvider,
             mlsClientProvider,
             notificationTokenRepository
         )
@@ -486,7 +507,8 @@ abstract class UserSessionScopeCommon(
             syncManager,
             assetRepository,
             teamRepository,
-            connectionRepository
+            connectionRepository,
+            qualifiedIdMapper
         )
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(

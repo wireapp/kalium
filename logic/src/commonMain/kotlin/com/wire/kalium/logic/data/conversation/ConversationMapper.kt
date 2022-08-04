@@ -29,7 +29,12 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
-    fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
+    fun toConversationDetailsOneToOne(
+        conversation: Conversation,
+        otherUser: OtherUser,
+        selfUser: SelfUser,
+        unreadMessageCount: Long
+    ): ConversationDetails.OneOne
 }
 
 internal class ConversationMapperImpl(
@@ -50,6 +55,7 @@ internal class ConversationMapperImpl(
         protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
         mutedStatus = conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+        lastReadDate = null,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
@@ -68,6 +74,7 @@ internal class ConversationMapperImpl(
         teamId = daoModel.teamId?.let { TeamId(it) },
         protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
         mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
+        lastReadDate = daoModel.lastReadDate,
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate,
         access = daoModel.access.map { it.toDAO() },
@@ -101,8 +108,12 @@ internal class ConversationMapperImpl(
             Conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
         }
 
-    override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
-        CreateConversationRequest(
+    override fun toApiModel(
+        name: String?,
+        members: List<UserId>,
+        teamId: String?,
+        options: ConversationOptions
+    ) = CreateConversationRequest(
             qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
         } else emptyList(),
@@ -120,7 +131,8 @@ internal class ConversationMapperImpl(
     override fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
-        selfUser: SelfUser
+        selfUser: SelfUser,
+        unreadMessageCount: Long,
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
@@ -128,7 +140,8 @@ internal class ConversationMapperImpl(
             connectionState = otherUser.connectionStatus,
             // TODO(user-metadata) get actual legal hold status
             legalHoldStatus = LegalHoldStatus.DISABLED,
-            userType = otherUser.userType
+            userType = otherUser.userType,
+            unreadMessagesCount = unreadMessageCount,
         )
     }
 

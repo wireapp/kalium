@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.publicuser.search
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.id.parseIntoQualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.functional.fold
@@ -20,7 +20,8 @@ interface SearchUsersUseCase {
 
 internal class SearchUsersUseCaseImpl(
     private val searchUserRepository: SearchUserRepository,
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) : SearchUsersUseCase {
 
     override suspend operator fun invoke(
@@ -28,7 +29,7 @@ internal class SearchUsersUseCaseImpl(
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
     ): Result {
-        val qualifiedID = searchQuery.parseIntoQualifiedID()
+        val qualifiedID = qualifiedIdMapper.fromStringToQualifiedID(searchQuery)
 
         return searchUserRepository.searchUserDirectory(
             searchQuery = qualifiedID.value,

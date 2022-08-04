@@ -6,20 +6,88 @@ import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationUsers
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.featureConfigs.ConfigsStatusDTO
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
 import com.wire.kalium.network.api.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.decodeStructure
+import kotlinx.serialization.encoding.encodeStructure
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonTransformingSerializer
+import kotlinx.serialization.json.jsonObject
 
 @Serializable
 data class EventResponse(
+    @Serializable
     @SerialName("id") val id: String,
     @SerialName("payload") val payload: List<EventContentDTO>?,
     @SerialName("transient") val transient: Boolean = false
 )
+
+/**
+ * Handwritten serializer of the FeatureConfigUpdatedDTO because we want to extend it with the
+ * `JsonCorrectingSerializer`, which is not possible using the plugin generated serializer.
+ */
+object FeatureConfigUpdatedDTOSerializer : KSerializer<EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO> {
+
+    override val descriptor: SerialDescriptor =
+        buildClassSerialDescriptor("feature-config.update") {
+            element<FeatureConfigData>("data")
+        }
+
+    override fun deserialize(decoder: Decoder): EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO {
+        var data: FeatureConfigData = FeatureConfigData.Unknown(FeatureFlagStatusDTO.ENABLED)
+        decoder.decodeStructure(descriptor) {
+            while (true) {
+                when (val index = decodeElementIndex(descriptor)) {
+                    0 -> data = decodeSerializableElement(descriptor, 0, FeatureConfigData.serializer())
+                    CompositeDecoder.DECODE_DONE -> break
+                    else -> error("Unexpected index: $index")
+                }
+            }
+        }
+        return EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(data)
+    }
+
+    override fun serialize(encoder: Encoder, value: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO) {
+        encoder.encodeStructure(descriptor) {
+            encodeSerializableElement(descriptor, 0, FeatureConfigData.serializer(), value.data)
+        }
+    }
+}
+
+/**
+ * Transforms the feature config event JSON by moving the `name` field inside the data object so that
+ * we can parse the data object using a polymorphic sealed class.
+ */
+object JsonCorrectingSerializer :
+    JsonTransformingSerializer<EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO>(FeatureConfigUpdatedDTOSerializer) {
+    override fun transformDeserialize(element: JsonElement): JsonElement {
+        return JsonObject(
+            element.jsonObject.toMutableMap().apply {
+                this["data"] = JsonObject(
+                    get("data")?.jsonObject?.toMutableMap().apply {
+                        element.jsonObject["name"]?.let {
+                            this?.set("name", it)
+                        }
+                    } ?: emptyMap()
+                )
+            }
+        )
+    }
+}
 
 @Serializable
 sealed class EventContentDTO {
@@ -91,22 +159,23 @@ sealed class EventContentDTO {
             val time: String,
             @SerialName("data") val message: String,
         ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.delete")
+        data class DeletedConversationDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            val time: String
+        ) : Conversation()
     }
 
     @Serializable
     sealed class FeatureConfig : EventContentDTO() {
-        @Serializable
+        @Serializable(with = JsonCorrectingSerializer::class)
         @SerialName("feature-config.update")
         data class FeatureConfigUpdatedDTO(
-            @SerialName("name") val name: FeatureConfigNameDTO,
-            @SerialName("data") val data: ConfigsStatusDTO,
+            @SerialName("data") val data: FeatureConfigData,
         ) : FeatureConfig()
-
-        @Serializable
-        enum class FeatureConfigNameDTO {
-            @SerialName("fileSharing")
-            FILE_SHARING
-        }
     }
 
     @Serializable
