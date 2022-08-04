@@ -69,7 +69,8 @@ class UserDAOTest : BaseDatabaseTest() {
             UserAssetIdEntity("asset1", "domain"),
             UserAssetIdEntity("asset1", "domain"),
             UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.INTERNAL
+            UserTypeEntity.INTERNAL,
+            botService = null,
         )
         db.userDAO.updateSelfUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -91,7 +92,8 @@ class UserDAOTest : BaseDatabaseTest() {
             UserAssetIdEntity("asset1", "domain"),
             UserAssetIdEntity("asset2", "domain"),
             UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.INTERNAL
+            UserTypeEntity.INTERNAL,
+            botService = null
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
@@ -116,7 +118,8 @@ class UserDAOTest : BaseDatabaseTest() {
             null,
             null,
             UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.INTERNAL
+            UserTypeEntity.INTERNAL,
+            botService = null
         )
 
         val result = db.userDAO.getUserByQualifiedID(user1.id)
@@ -194,7 +197,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     null,
                     null,
                     UserAvailabilityStatusEntity.NONE,
-                    UserTypeEntity.INTERNAL
+                    UserTypeEntity.INTERNAL,
+                    botService = null
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -208,7 +212,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     null,
                     null,
                     UserAvailabilityStatusEntity.NONE,
-                    UserTypeEntity.INTERNAL
+                    UserTypeEntity.INTERNAL,
+                    botService = null
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
@@ -423,7 +428,6 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(newNameA, updated1.first()?.name)
         assertNotNull(inserted2)
     }
-
 
     @Test
     fun givenAExistingUsers_whenUpsertingTeamMembers_ThenResultsOneUpdatedAnotherInserted() = runTest {
