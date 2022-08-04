@@ -4,7 +4,6 @@ interface ValidateEmailUseCase {
     operator fun invoke(email: String): Boolean
 }
 
-
 class ValidateEmailUseCaseImpl : ValidateEmailUseCase {
     override operator fun invoke(email: String): Boolean = when {
         isEmailTooShort(email) -> false
@@ -13,7 +12,7 @@ class ValidateEmailUseCaseImpl : ValidateEmailUseCase {
     }
 
     private fun emailCharactersValid(email: String) =
-        email.matches(EMAIL_REGEX)
+        email.lowercase().matches(EMAIL_REGEX)
 
     private fun isEmailTooShort(email: String) = email.length < EMAIL_MIN_LENGTH
 
