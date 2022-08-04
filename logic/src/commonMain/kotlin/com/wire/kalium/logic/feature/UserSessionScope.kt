@@ -69,8 +69,7 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
-import com.wire.kalium.logic.feature.message.GetEphemeralNotificationsUseCase
-import com.wire.kalium.logic.feature.message.GetEphemeralNotificationsUseCaseImpl
+import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -356,8 +355,6 @@ abstract class UserSessionScopeCommon(
 
     private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
 
-    private val getEphemeralNotifications by lazy { GetEphemeralNotificationsUseCaseImpl() }
-
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
@@ -370,7 +367,7 @@ abstract class UserSessionScopeCommon(
             callManager,
             messageTextEditHandler,
             userConfigRepository,
-            getEphemeralNotifications
+            EphemeralNotificationsManager
         )
     }
 

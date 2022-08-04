@@ -5,14 +5,11 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.id.toConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
-import com.wire.kalium.logic.data.notification.LocalNotificationMessage
-import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -28,10 +25,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flatMapMerge
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 
 interface GetNotificationsUseCase {
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
@@ -57,6 +52,7 @@ class GetNotificationsUseCaseImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val timeParser: TimeParser,
+    private val ephemeralNotificationsManager: EphemeralNotificationsManager,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
@@ -65,6 +61,9 @@ class GetNotificationsUseCaseImpl(
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
         return observeRegularNotifications()
             .combine(observeConnectionRequests()) { messages, connections -> messages.plus(connections) }
+            .combine(ephemeralNotificationsManager.observeEphemeralNotifications()) { messages, ephemeralNotifications ->
+                messages.plus(ephemeralNotifications)
+            }
             .distinctUntilChanged()
     }
 
@@ -140,18 +139,6 @@ class GetNotificationsUseCaseImpl(
                             }
                     }
             }
-    }
-
-    private fun observeDeletedConversations(): Flow<List<LocalNotificationConversation>> {
-        return flow {
-            LocalNotificationConversation(
-                "".toConversationId(), "some convo", listOf(
-                    LocalNotificationMessage.ConversationDeleted(
-                        LocalNotificationMessageAuthor("", ""), Clock.System.now().toEpochMilliseconds().toString()
-                    )
-                ), false
-            )
-        }
     }
 
     private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {

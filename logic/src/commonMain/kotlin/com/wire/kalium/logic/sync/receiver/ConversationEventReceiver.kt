@@ -34,7 +34,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.message.GetEphemeralNotificationsUseCaseImpl
+import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -53,7 +53,7 @@ interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 @Suppress("LongParameterList", "TooManyFunctions")
-class ConversationEventReceiverImpl(
+internal class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val persistMessage: PersistMessageUseCase,
     private val messageRepository: MessageRepository,
@@ -64,7 +64,7 @@ class ConversationEventReceiverImpl(
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
     private val userConfigRepository: UserConfigRepository,
-    private val getEphemeralNotifications: GetEphemeralNotificationsUseCaseImpl,
+    private val ephemeralNotificationsManager: EphemeralNotificationsManager,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
 ) : ConversationEventReceiver {
@@ -328,7 +328,7 @@ class ConversationEventReceiverImpl(
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
             }.onSuccess {
                 // todo: build correct notification
-                getEphemeralNotifications.scheduleNotification(
+                ephemeralNotificationsManager.scheduleNotification(
                     LocalNotificationConversation(
                         ConversationId("id", "wire.com"), "somename", listOf(
                             LocalNotificationMessage.ConversationDeleted(
