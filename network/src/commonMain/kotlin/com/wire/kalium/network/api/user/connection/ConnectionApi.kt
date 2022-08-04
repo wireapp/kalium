@@ -40,7 +40,7 @@ class ConnectionApiImpl internal constructor(private val authenticatedNetworkCli
         }
 
     private companion object {
-        const val PATH_CONNECTIONS = "/list-connections"
-        const val PATH_CONNECTIONS_ENDPOINTS = "/connections"
+        const val PATH_CONNECTIONS = "list-connections"
+        const val PATH_CONNECTIONS_ENDPOINTS = "connections"
     }
 }

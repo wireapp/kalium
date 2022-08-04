@@ -16,32 +16,32 @@ class TeamsApiImpl internal constructor(private val authenticatedNetworkClient: 
 
     override suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.delete("/$PATH_TEAMS/$teamId/$PATH_CONVERSATIONS/$conversationId")
+            httpClient.delete("$PATH_TEAMS/$teamId/$PATH_CONVERSATIONS/$conversationId")
         }
 
     override suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO> =
         wrapKaliumResponse {
-            httpClient.get("/$PATH_TEAMS/$teamId")
+            httpClient.get("$PATH_TEAMS/$teamId")
         }
 
     override suspend fun getTeams(size: Int?, option: TeamsApi.GetTeamsOption?): NetworkResponse<TeamsApi.TeamsResponse> =
         wrapKaliumResponse {
             when (option) {
-                is TeamsApi.GetTeamsOption.StartFrom -> httpClient.get("/$PATH_TEAMS") {
+                is TeamsApi.GetTeamsOption.StartFrom -> httpClient.get("$PATH_TEAMS") {
                     size?.let { parameter(QUERY_KEY_SIZE, it) }
                     parameter(QUERY_KEY_START, option.teamId)
                 }
-                is TeamsApi.GetTeamsOption.LimitTo -> httpClient.get("/$PATH_TEAMS") {
+                is TeamsApi.GetTeamsOption.LimitTo -> httpClient.get("$PATH_TEAMS") {
                     size?.let { parameter(QUERY_KEY_SIZE, it) }
                     parameter(QUERY_KEY_IDS, option.teamIds.joinToString(","))
                 }
-                null -> httpClient.get("/$PATH_TEAMS")
+                null -> httpClient.get("$PATH_TEAMS")
             }
         }
 
     override suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamsApi.TeamMemberList> =
         wrapKaliumResponse {
-            httpClient.get("/$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
+            httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
             }
         }
