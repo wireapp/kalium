@@ -120,4 +120,19 @@ class QualifiedIdMapperTest {
         )
     }
 
+    @Test
+    fun givenAStringWithOnlyAtSign_whenMappingToQualifiedId_thenReturnsAnEmptyQualifiedID() {
+        // Given
+        val conversationId = "@"
+
+        // When
+        val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+
+        // Then
+        assertEquals(
+            QualifiedID(value = "", domain = ""),
+            result
+        )
+    }
+
 }

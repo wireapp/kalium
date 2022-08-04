@@ -13,7 +13,7 @@ class QualifiedIdMapperImpl(
         val components = id.split(VALUE_DOMAIN_SEPARATOR).filter { it.isNotBlank() }
         val count = id.count { it == VALUE_DOMAIN_SEPARATOR }
         return when {
-            id.isEmpty() -> {
+            id.isEmpty() || components.isEmpty() -> {
                 QualifiedID(value = "", domain = "")
             }
             count > 1 -> {
