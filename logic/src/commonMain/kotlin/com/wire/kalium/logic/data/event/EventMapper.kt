@@ -133,6 +133,7 @@ class EventMapper(
             id,
             (featureConfigUpdatedDTO.data as FeatureConfigData.FileSharing).status.name
         )
+
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id)
     }
 
@@ -146,13 +147,4 @@ class EventMapper(
         timestampIso = deletedConversationDTO.time
     )
 
-    private fun conversationDeleted(
-        id: String,
-        deletedConversationDTO: EventContentDTO.Conversation.DeletedConversationDTO
-    ) = Event.Conversation.DeletedConversation(
-        id = id,
-        conversationId = idMapper.fromApiModel(deletedConversationDTO.qualifiedConversation),
-        senderUserId = idMapper.fromApiModel(deletedConversationDTO.qualifiedFrom),
-        timestampIso = deletedConversationDTO.time
-    )
 }
