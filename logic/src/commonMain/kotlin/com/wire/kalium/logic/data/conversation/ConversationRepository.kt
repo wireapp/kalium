@@ -271,6 +271,7 @@ class ConversationDataSource(
                     )
                 )
             )
+
             Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
         }
 
