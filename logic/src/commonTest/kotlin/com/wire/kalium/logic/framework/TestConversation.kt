@@ -33,7 +33,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
-        lastReadDate = null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -46,7 +46,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
-        lastReadDate = null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -60,7 +60,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
-        lastReadDate = null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -73,6 +73,7 @@ object TestConversation {
         protocolInfo,
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
@@ -86,7 +87,7 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
-        lastReadDate = null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
