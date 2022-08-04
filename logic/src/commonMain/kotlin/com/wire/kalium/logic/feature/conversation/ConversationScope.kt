@@ -10,6 +10,8 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.keyingmaterial.UpdateKeyingMaterialsUseCase
+import com.wire.kalium.logic.feature.conversation.keyingmaterial.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")
@@ -72,4 +74,8 @@ class ConversationScope(
 
     val updateConversationMemberRole: UpdateConversationMemberRoleUseCase
         get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
+
+    val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
+        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
+
 }

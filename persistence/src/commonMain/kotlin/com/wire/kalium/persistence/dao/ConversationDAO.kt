@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Duration
 
 data class ConversationEntity(
     val id: QualifiedIDEntity,
@@ -13,7 +14,8 @@ data class ConversationEntity(
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>
+    val accessRole: List<AccessRole>,
+    val keyingMaterialLastUpdate: Long
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -89,4 +91,6 @@ interface ConversationDAO {
     )
 
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
+    suspend fun updateKeyingMaterial(groupId: String, lastUpdate: Duration)
+    suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
 }

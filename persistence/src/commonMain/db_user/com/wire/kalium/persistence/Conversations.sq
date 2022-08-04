@@ -16,7 +16,8 @@ CREATE TABLE Conversation (
     last_modified_date TEXT NOT NULL,
     last_notified_message_date TEXT,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
-    access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL
+    access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
+    keying_material_last_update INTEGER DEFAULT 0 NOT NULL
 );
 
 deleteAllConversations:
@@ -26,8 +27,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date, access_list, access_role_list)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date, access_list, access_role_list, keying_material_last_update)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -40,7 +41,8 @@ muted_time = excluded.muted_time,
 access_list = excluded.access_list,
 access_role_list = excluded.access_role_list,
 last_modified_date = last_modified_date,
-last_notified_message_date = last_notified_message_date;
+last_notified_message_date = last_notified_message_date,
+keying_material_last_update  = excluded.keying_material_last_update;
 
 updateConversation:
 UPDATE Conversation
@@ -85,6 +87,11 @@ UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
-
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
+
+updateKeyingMaterialDate:
+UPDATE Conversation SET keying_material_last_update= ? WHERE mls_group_id = ?;
+
+selectByKeyingMaterialUpdate:
+SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND keying_material_last_update - ? <0 AND mls_group_id IS NOT NULL;

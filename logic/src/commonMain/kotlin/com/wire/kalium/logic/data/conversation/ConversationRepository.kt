@@ -537,7 +537,6 @@ class ConversationDataSource(
             )
         }
     }
-
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
     }

@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
 import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
 
@@ -26,6 +28,7 @@ private class ConversationMapper {
                     mls_group_state,
                     mls_epoch.toULong()
                 )
+
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
             mutedStatus = muted_status,
@@ -33,7 +36,8 @@ private class ConversationMapper {
             lastNotificationDate = last_notified_message_date,
             lastModifiedDate = last_modified_date,
             access = access_list,
-            accessRole = access_role_list
+            accessRole = access_role_list,
+            keyingMaterialLastUpdate = keying_material_last_update
         )
     }
 }
@@ -45,6 +49,7 @@ class MemberMapper {
 }
 
 private const val MLS_DEFAULT_EPOCH = 0L
+private const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
 
 class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
@@ -92,7 +97,8 @@ class ConversationDAOImpl(
                 lastModifiedDate,
                 lastNotificationDate,
                 access,
-                accessRole
+                accessRole,
+                MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE
             )
         }
     }
@@ -253,4 +259,15 @@ class ConversationDAOImpl(
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
+
+    override suspend fun updateKeyingMaterial(groupId: String, lastUpdate: Duration) {
+        conversationQueries.updateKeyingMaterialDate(lastUpdate.toLong(DurationUnit.DAYS), groupId)
+    }
+
+    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> =
+        conversationQueries.selectByKeyingMaterialUpdate(
+            ConversationEntity.GroupState.ESTABLISHED,
+            ConversationEntity.Protocol.MLS,
+            threshold.toLong(DurationUnit.DAYS)
+        ).executeAsList()
 }
