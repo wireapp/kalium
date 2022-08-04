@@ -35,6 +35,7 @@ private class ConversationMapper {
             mutedTime = muted_time,
             lastNotificationDate = last_notified_message_date,
             lastModifiedDate = last_modified_date,
+            lastReadDate = conversation.last_read_date,
             access = access_list,
             accessRole = access_role_list,
             keyingMaterialLastUpdate = keying_material_last_update
@@ -98,6 +99,7 @@ class ConversationDAOImpl(
                 lastNotificationDate,
                 access,
                 accessRole,
+                lastReadDate,
                 MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE
             )
         }
@@ -227,6 +229,12 @@ class ConversationDAOImpl(
         }
     }
 
+    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String) {
+        getConversationByGroupID(groupId).firstOrNull()?.let {
+            deleteMembersByQualifiedID(userIDList, it.id)
+        }
+    }
+
     override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID.value)
             .asFlow()
@@ -255,6 +263,16 @@ class ConversationDAOImpl(
         accessRoleList: List<ConversationEntity.AccessRole>
     ) {
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
+    }
+
+    override suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long =
+        conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
+
+    override suspend fun getUnreadConversationCount(): Long =
+        conversationQueries.getUnreadConversationCount().executeAsOne()
+
+    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
+        conversationQueries.updateConversationReadDate(date, conversationID)
     }
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =

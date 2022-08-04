@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
 
+// TODO: Regardless of how we store this in SQLite we can convert it to an Instant at this level and above.
 data class ConversationEntity(
     val id: QualifiedIDEntity,
     val name: String?,
@@ -13,6 +14,9 @@ data class ConversationEntity(
     val mutedTime: Long = 0,
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
+    // Date that indicates when the user has seen the conversation,
+    // nullable lastReadDate means that the conversation is never seen by the user
+    val lastReadDate: String? = null,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
     val keyingMaterialLastUpdate: Long
@@ -55,6 +59,7 @@ interface ConversationDAO {
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: String)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String)
+    suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String)
     suspend fun updateAllConversationsNotificationDate(date: String)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
@@ -69,19 +74,18 @@ interface ConversationDAO {
     suspend fun insertMembers(memberList: List<Member>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
+    suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String)
     suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>>
     suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
         member: Member,
         status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     )
-
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
-
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
 
     suspend fun updateAccess(
@@ -89,7 +93,8 @@ interface ConversationDAO {
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>
     )
-
+    suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
+    suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun updateKeyingMaterial(groupId: String, lastUpdate: Duration)
     suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>

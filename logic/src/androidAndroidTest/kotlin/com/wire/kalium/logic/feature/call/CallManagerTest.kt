@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
@@ -49,10 +50,12 @@ class CallManagerTest {
     @Mock
     private val federatedIdMapper = mock(classOf<FederatedIdMapper>())
 
+    @Mock
+    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
     private val dispatcher = TestKaliumDispatcher
 
     private lateinit var callManagerImpl: CallManagerImpl
-
 
     @BeforeTest
     fun setUp() {
@@ -64,13 +67,14 @@ class CallManagerTest {
             conversationRepository = conversationRepository,
             messageSender = messageSender,
             kaliumDispatchers = dispatcher,
-            federatedIdMapper = federatedIdMapper
+            federatedIdMapper = federatedIdMapper,
+            qualifiedIdMapper = qualifiedIdMapper
         )
     }
 
     @Test
     @Suppress("FunctionNaming") // native function has that name
-    @Ignore //This test never really worked. To be fixed in a next PR
+    @Ignore // This test never really worked. To be fixed in a next PR
     fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled() = runTest(dispatcher.main) {
         val baseHandle = Handle(value = 0)
         val expectedConversationId = "conversationId"

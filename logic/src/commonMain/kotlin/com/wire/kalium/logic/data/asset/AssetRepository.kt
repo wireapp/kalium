@@ -85,6 +85,16 @@ interface AssetRepository {
      * @return [Either] a [CoreFailure] if anything went wrong, or Unit if operation was successful
      */
     suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit>
+
+    /**
+     * Method used to delete asset locally and externally
+     */
+    suspend fun deleteAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Unit>
+
+    /**
+     * Method used to delete asset only locally
+     */
+    suspend fun deleteAssetLocally(assetId: AssetId): Either<CoreFailure, Unit>
 }
 
 internal class AssetDataSource(
@@ -237,4 +247,11 @@ internal class AssetDataSource(
         }
         return Either.Right(Unit)
     }
+
+    override suspend fun deleteAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Unit> =
+        wrapApiRequest { assetApi.deleteAsset(idMapper.toApiModel(assetId), assetToken) }
+            .flatMap { deleteAssetLocally(assetId) }
+
+    override suspend fun deleteAssetLocally(assetId: AssetId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { assetDao.deleteAsset(assetId.value) }
 }

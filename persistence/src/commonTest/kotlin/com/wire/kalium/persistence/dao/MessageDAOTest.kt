@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MessageDAOTest : BaseDatabaseTest() {
@@ -213,7 +214,6 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertContentEquals(allMessages, result.first())
     }
 
-
     @Test
     fun givenMessagesAreInserted_whenGettingMessagesByConversation_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()
@@ -306,6 +306,32 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO.insertMessages(allMessages)
         val result = messageDAO.getMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id, dateInQuestion)
         assertContentEquals(expectedMessages, result.first())
+    }
+
+    @Test
+    fun givenConversations_whenGettingUnreadConversationCount_ThenReturnCorrectCount() = runTest {
+        // given
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+
+        conversationDAO.insertConversation(
+            conversationEntity1.copy(
+                lastModifiedDate = "2000-01-01T12:30:00.000Z",
+                lastReadDate = "2000-01-01T12:00:00.000Z"
+            )
+        )
+
+        conversationDAO.insertConversation(
+            conversationEntity2.copy(
+                lastModifiedDate = "2000-01-01T12:30:00.000Z",
+                lastReadDate = "2000-01-01T13:00:00.000Z"
+            )
+        )
+
+        // when
+        val result = conversationDAO.getUnreadConversationCount()
+
+        // then
+        assertEquals(1L, result)
     }
 
     private suspend fun insertInitialData() {

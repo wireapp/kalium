@@ -2,18 +2,22 @@ package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -22,19 +26,20 @@ class DeleteMessageUseCase(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val assetRepository: AssetRepository,
     private val messageSender: MessageSender,
     private val idMapper: IdMapper
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> =
-        messageRepository.getMessageById(conversationId, messageId).map {
-            when (it.status) {
+        messageRepository.getMessageById(conversationId, messageId).map { message ->
+            when (message.status) {
                 Message.Status.FAILED -> messageRepository.deleteMessage(messageId, conversationId)
                 else -> {
                     val selfUser = userRepository.observeSelfUser().first()
                     val generatedMessageUuid = uuid4().toString()
                     return clientRepository.currentClientId().flatMap { currentClientId ->
-                        val message = Message.Regular(
+                        val regularMessage = Message.Regular(
                             id = generatedMessageUuid,
                             content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
                                 messageId,
@@ -48,16 +53,30 @@ class DeleteMessageUseCase(
                             status = Message.Status.PENDING,
                             editStatus = Message.EditStatus.NotEdited,
                         )
-                        messageSender.sendMessage(message)
-                    }.flatMap {
-                        messageRepository.markMessageAsDeleted(messageId, conversationId)
-                    }.onFailure { failure ->
-                        kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $it")
-                        if (failure is CoreFailure.Unknown) {
-                            failure.rootCause?.printStackTrace()
-                        }
+                        messageSender.sendMessage(regularMessage)
                     }
+                        .onSuccess { deleteMessageAsset(message) }
+                        .flatMap { messageRepository.markMessageAsDeleted(messageId, conversationId) }
+                        .onFailure { failure ->
+                            kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
+                            if (failure is CoreFailure.Unknown) {
+                                failure.rootCause?.printStackTrace()
+                            }
+                        }
                 }
             }
         }
+
+    private suspend fun deleteMessageAsset(message: Message) {
+        (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+
+            assetRepository.deleteAsset(
+                AssetId(assetToRemove.assetId, assetToRemove.assetDomain.orEmpty()),
+                assetToRemove.assetToken
+            )
+                .onFailure {
+                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+                }
+        }
+    }
 }

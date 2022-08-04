@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
@@ -25,10 +26,11 @@ class RefillKeyPackageUseCaseTest {
 
     @Test
     fun givenKeyPackageCountIs50PercentBelowLimit_ThenRequestToRefillKeyPackageIsPerformed() = runTest {
-        val keyPackageCount = (KEY_PACKAGE_LIMIT * KEY_PACKAGE_THRESHOLD - 1).toInt()
+        val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD - 1).toInt()
 
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
+            .withDefaultKeyPackageLimits()
             .withKeyPackageCount(keyPackageCount)
             .withUploadKeyPackagesSuccessful()
             .arrange()
@@ -36,7 +38,7 @@ class RefillKeyPackageUseCaseTest {
         val actual = refillKeyPackagesUseCase()
 
         verify(arrangement.keyPackageRepository).coroutine {
-            uploadNewKeyPackages(TestClient.CLIENT_ID, KEY_PACKAGE_LIMIT - keyPackageCount)
+            uploadNewKeyPackages(TestClient.CLIENT_ID, Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount)
         }.wasInvoked(once)
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
@@ -44,10 +46,11 @@ class RefillKeyPackageUseCaseTest {
 
     @Test
     fun givenKeyPackageCount50PercentAboveLimit_ThenNoRequestToRefillKeyPackagesIsPerformed() = runTest {
-        val keyPackageCount = (KEY_PACKAGE_LIMIT * KEY_PACKAGE_THRESHOLD).toInt()
+        val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD).toInt()
 
         val (_, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
+            .withDefaultKeyPackageLimits()
             .withKeyPackageCount(keyPackageCount)
             .arrange()
 
@@ -62,6 +65,7 @@ class RefillKeyPackageUseCaseTest {
 
         val (_, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
+            .withDefaultKeyPackageLimits()
             .withGetAvailableKeyPackagesFailing(networkFailure)
             .arrange()
 
@@ -76,16 +80,31 @@ class RefillKeyPackageUseCaseTest {
         val keyPackageRepository = mock(classOf<KeyPackageRepository>())
 
         @Mock
+        val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+
+        @Mock
         val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
-            keyPackageRepository, clientRepository
+            keyPackageRepository,
+            keyPackageLimitsProvider,
+            clientRepository
         )
 
         fun withExistingSelfClientId() = apply {
             given(clientRepository).suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .then { Either.Right(TestClient.CLIENT_ID) }
+        }
+
+        fun withDefaultKeyPackageLimits() = apply {
+            given(keyPackageLimitsProvider).getter(keyPackageLimitsProvider::keyPackageUploadLimit)
+                .whenInvoked()
+                .thenReturn(KEY_PACKAGE_LIMIT)
+
+            given(keyPackageLimitsProvider).getter(keyPackageLimitsProvider::keyPackageUploadThreshold)
+                .whenInvoked()
+                .thenReturn(KEY_PACKAGE_THRESHOLD)
         }
 
         fun withKeyPackageCount(count: Int) = apply {
@@ -107,6 +126,11 @@ class RefillKeyPackageUseCaseTest {
         }
 
         fun arrange() = this to refillKeyPackageUseCase
+
+        companion object {
+            const val KEY_PACKAGE_LIMIT = 100
+            const val KEY_PACKAGE_THRESHOLD = 0.5F
+        }
 
     }
 

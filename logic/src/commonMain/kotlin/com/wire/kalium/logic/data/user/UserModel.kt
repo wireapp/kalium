@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
 
 typealias UserId = QualifiedID
@@ -90,16 +89,14 @@ data class OtherUser(
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
     val userType: UserType,
-    override val availabilityStatus: UserAvailabilityStatus
+    override val availabilityStatus: UserAvailabilityStatus,
+    val botService: BotService?
 ) : User()
+
+data class BotService(
+    val id: String,
+    val provider: String
+)
 
 typealias UserAssetId = AssetId
 typealias AssetId = QualifiedID
-
-fun String.toUserId(): UserId {
-    if (contains(VALUE_DOMAIN_SEPARATOR)) {
-        split(VALUE_DOMAIN_SEPARATOR).also {
-            return UserId(value = it.first(), domain = it.last())
-        }
-    } else return UserId(value = this, domain = "")
-}

@@ -10,6 +10,7 @@ import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
@@ -17,6 +18,7 @@ import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
@@ -90,6 +92,9 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 asset_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter(),
             ),
+            MessageFailedToDecryptContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
+            ),
             MessageMemberChangeContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
                 member_change_listAdapter = QualifiedIDListAdapter(),
@@ -115,7 +120,8 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
                 complete_asset_idAdapter = QualifiedIDAdapter(),
-                user_typeAdapter = EnumColumnAdapter()
+                user_typeAdapter = EnumColumnAdapter(),
+                bot_serviceAdapter = BotServiceAdapter()
             )
         )
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)

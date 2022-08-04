@@ -7,7 +7,8 @@ import com.wire.kalium.logic.data.sync.InMemorySyncRepository
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.sync.event.EventProcessor
+import com.wire.kalium.logic.sync.incremental.EventGatherer
+import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.ConfigurationApi
 import io.mockative.Mock

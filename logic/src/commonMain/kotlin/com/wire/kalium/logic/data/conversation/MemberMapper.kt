@@ -2,15 +2,18 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.logic.data.user.UserId as LogicUserId
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.Member as PersistedMember
 
 interface MemberMapper {
     fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Member
     fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo
     fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient>
+    fun fromMapOfClientsToRecipients(qualifiedMap: Map<LogicUserId, List<Client>>): List<Recipient>
     fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
     fun fromDaoModel(entity: PersistedMember): Member
     fun toDaoModel(member: Member): PersistedMember
@@ -52,6 +55,13 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
             Recipient(id, clients)
         }
 
+    override fun fromMapOfClientsToRecipients(qualifiedMap: Map<LogicUserId, List<Client>>): List<Recipient> =
+        qualifiedMap.entries.map { entry ->
+            val id = entry.key
+            val clients = entry.value.map(idMapper::fromClient)
+            Recipient(id, clients)
+        }
+
     override fun fromDaoModel(entity: PersistedMember): Member = with(entity) {
         Member(idMapper.fromDaoModel(user), roleMapper.fromDAO(role))
     }
@@ -64,7 +74,6 @@ interface ConversationRoleMapper {
     fun toDAO(role: Member.Role): PersistedMember.Role
     fun fromApiModelToDaoModel(roleDTO: String): PersistedMember.Role
 }
-
 
 internal class ConversationRoleMapperImpl : ConversationRoleMapper {
     override fun toApi(role: Member.Role): String = when (role) {
