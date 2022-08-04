@@ -45,8 +45,8 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
 
     override fun fromFeatureConfigsDTO(data: FeatureConfigData.MLS): MLSModel =
         MLSModel(
-            fromFeatureConfigsDTO(data.status),
-            data.config.protocolToggleUsers.map { PlainId(it) }
+            data.config.protocolToggleUsers.map { PlainId(it) },
+            fromFeatureConfigsDTO(data.status)
         )
 
     override fun fromFeatureConfigsDTO(data: FeatureConfigData.AppLock): AppLockModel =

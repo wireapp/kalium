@@ -56,6 +56,6 @@ data class SelfDeletingMessagesConfigModel(
 )
 
 data class MLSModel(
-    val status: Status,
-    val allowedUsers: List<PlainId>
+    val allowedUsers: List<PlainId>,
+    val status: Status
 )
