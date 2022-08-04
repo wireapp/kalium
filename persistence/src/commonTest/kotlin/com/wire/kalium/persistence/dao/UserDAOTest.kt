@@ -429,7 +429,6 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNotNull(inserted2)
     }
 
-
     @Test
     fun givenAExistingUsers_whenUpsertingTeamMembers_ThenResultsOneUpdatedAnotherInserted() = runTest {
         // given
