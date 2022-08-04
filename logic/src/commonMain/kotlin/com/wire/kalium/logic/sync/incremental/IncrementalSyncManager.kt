@@ -15,6 +15,8 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -61,9 +63,23 @@ internal class IncrementalSyncManager(
                 if (status is SlowSyncStatus.Complete) {
                     // START SYNC
                     kaliumLogger.i("Starting QuickSync, as SlowSync is completed")
-                    incrementalSyncWorker.performIncrementalSync()
+                    doIncrementalSync()
                 }
+                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
             }
         }
+    }
+
+    private suspend fun doIncrementalSync() {
+        incrementalSyncWorker
+            .incrementalSyncFlow()
+            .cancellable()
+            .collect {
+                val newState = when (it) {
+                    EventSource.PENDING -> IncrementalSyncStatus.FetchingPendingEvents
+                    EventSource.LIVE -> IncrementalSyncStatus.Live
+                }
+                incrementalSyncRepository.updateIncrementalSyncState(newState)
+            }
     }
 }

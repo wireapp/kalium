@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync.incremental
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.framework.TestEvent
@@ -13,9 +14,11 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,12 +31,12 @@ class IncrementalSyncWorkerTest {
         // Given
         val event = TestEvent.memberJoin()
         val (arrangement, worker) = Arrangement()
+            .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
             .withEventGathererReturning(flowOf(event))
             .arrange()
 
         // When
-        worker.performIncrementalSync()
-        advanceUntilIdle()
+        worker.incrementalSyncFlow().collect()
 
         // Then
         verify(arrangement.eventProcessor)
@@ -43,18 +46,53 @@ class IncrementalSyncWorkerTest {
     }
 
     @Test
+    fun givenGathererEmitsEventDuringLiveSource_whenPerformingIncrementalSync_thenWorkerShouldEmitLiveSource() =
+        runTest(TestKaliumDispatcher.default) {
+            // Given
+            val event = TestEvent.memberJoin()
+            val (arrangement, worker) = Arrangement()
+                .withEventGathererReturning(flowOf(event))
+                .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
+                .arrange()
+
+            // When
+            worker.incrementalSyncFlow().test {
+                // Then
+                assertEquals(EventSource.LIVE, awaitItem())
+                awaitComplete()
+            }
+        }
+    @Test
+    fun givenGathererEmitsEventDuringPendingSource_whenPerformingIncrementalSync_thenWorkerShouldEmitPendingSource() =
+        runTest(TestKaliumDispatcher.default) {
+            // Given
+            val event = TestEvent.memberJoin()
+            val (arrangement, worker) = Arrangement()
+                .withEventGathererReturning(flowOf(event))
+                .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
+                .arrange()
+
+            // When
+            worker.incrementalSyncFlow().test {
+                // Then
+                assertEquals(EventSource.PENDING, awaitItem())
+                awaitComplete()
+            }
+        }
+
+    @Test
     fun givenGathererThrows_whenPerformingIncrementalSync_thenTheFailureIsPropagated() = runTest(TestKaliumDispatcher.default) {
         // Given
         val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
         val exception = KaliumSyncException("Oopsie", coreFailureCause)
         val (_, worker) = Arrangement()
+            .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
             .withEventGathererReturning(flow { throw exception })
             .arrange()
 
         // When
         val resultException = assertFails {
-            worker.performIncrementalSync()
-            advanceUntilIdle()
+            worker.incrementalSyncFlow().collect()
         }
 
         assertEquals(exception, resultException)
@@ -73,6 +111,13 @@ class IncrementalSyncWorkerTest {
                 .suspendFunction(eventGatherer::gatherEvents)
                 .whenInvoked()
                 .thenReturn(eventFlow)
+        }
+
+        fun withEventGathererSourceReturning(sourceFlow: StateFlow<EventSource>) = apply {
+            given(eventGatherer)
+                .getter(eventGatherer::currentSource)
+                .whenInvoked()
+                .thenReturn(sourceFlow)
         }
 
         fun withEventGathererThrowing(throwable: Throwable) = apply {

@@ -136,8 +136,45 @@ class EventGathererTest {
     }
 
     @Test
-    fun givenWebSocketOpens_whenGathering_thenSyncStatusIsUpdatedToLive() = runTest {
-        // TODO: Propagate to the worker instead of updating the sync status directly
+    fun givenWebSocketOpens_whenGathering_thenSyncSourceIsUpdatedToLive() = runTest {
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
+
+        val (_, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(emptyFlow())
+            .withKeepAliveConnectionPolicy()
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            // Open Websocket should trigger fetching pending events
+            liveEventsChannel.send(WebSocketEvent.Open())
+            advanceUntilIdle()
+
+            eventGatherer.currentSource.test {
+                assertEquals(EventSource.LIVE, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenNoEvents_whenGathering_thenSyncSourceDefaultsToPending() = runTest {
+        val (_, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(emptyFlow())
+            .withKeepAliveConnectionPolicy()
+            .withLiveEventsReturning(Either.Right(emptyFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            eventGatherer.currentSource.test {
+                assertEquals(EventSource.PENDING, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

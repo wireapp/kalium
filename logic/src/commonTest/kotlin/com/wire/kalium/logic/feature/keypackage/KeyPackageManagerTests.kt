@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncOutcome
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
@@ -32,7 +31,7 @@ class KeyPackageManagerTests {
                 .withLastKeyPackageCountCheck(Clock.System.now())
                 .arrange()
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Complete(IncrementalSyncOutcome.LIVE))
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
         }
 
@@ -45,7 +44,7 @@ class KeyPackageManagerTests {
                 .withUpdateLastKeyPackageCountCheckSuccessful()
                 .arrange()
 
-            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Complete(IncrementalSyncOutcome.LIVE))
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
             verify(arrangement.refillKeyPackagesUseCase)
