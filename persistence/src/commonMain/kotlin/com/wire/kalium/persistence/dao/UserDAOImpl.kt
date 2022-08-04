@@ -23,6 +23,7 @@ class UserMapper {
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
             userType = user.user_type,
+            botService = user.bot_service
         )
     }
 }
@@ -46,7 +47,8 @@ class UserDAOImpl(
             user.connectionStatus,
             user.previewAssetId,
             user.completeAssetId,
-            user.userType
+            user.userType,
+            user.botService
         )
     }
 
@@ -62,6 +64,7 @@ class UserDAOImpl(
                     user.team,
                     user.previewAssetId,
                     user.completeAssetId,
+                    user.botService,
                     user.id,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
@@ -77,7 +80,8 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userType
+                        user.userType,
+                        user.botService
                     )
                 }
             }
@@ -97,6 +101,7 @@ class UserDAOImpl(
                     user.previewAssetId,
                     user.completeAssetId,
                     user.userType,
+                    user.botService,
                     user.id,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
@@ -112,7 +117,8 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userType
+                        user.userType,
+                        user.botService
                     )
                 }
             }
@@ -136,7 +142,8 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userType
+                        user.userType,
+                        user.botService
                     )
                 }
             }
