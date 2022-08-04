@@ -491,7 +491,6 @@ class ConnectionRepositoryTest {
             return this
         }
 
-
         fun arrange() = this to connectionRepository
     }
 }
