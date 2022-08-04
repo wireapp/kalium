@@ -15,6 +15,16 @@ interface UserConfigStorage {
     /**
      * save flag from the user settings to enable and disable the logging
      */
+    fun enableMLS(enabled: Boolean)
+
+    /**
+     * get the saved flag to know if the logging enabled or not
+     */
+    fun isMLSEnabled(): Boolean
+
+    /**
+     * save flag from the user settings to enable and disable the logging
+     */
     fun enableLogging(enabled: Boolean)
 
     /**
@@ -49,6 +59,12 @@ data class IsFileSharingEnabledEntity(
 class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : UserConfigStorage {
 
     private val isFileSharingEnabledFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    override fun enableMLS(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
+    }
+
+    override fun isMLSEnabled(): Boolean =
+        kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
     override fun enableLogging(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_LOGGING, enabled)
@@ -78,5 +94,6 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
     private companion object {
         const val ENABLE_LOGGING = "enable_logging"
         const val FILE_SHARING = "file_sharing"
+        const val ENABLE_MLS = "enable_mls"
     }
 }

@@ -4,6 +4,7 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
@@ -16,7 +17,8 @@ import io.ktor.utils.io.core.toByteArray
 class EventMapper(
     private val idMapper: IdMapper,
     private val memberMapper: MemberMapper,
-    private val connectionMapper: ConnectionMapper
+    private val connectionMapper: ConnectionMapper,
+    private val featureConfigMapper: FeatureConfigMapper,
 ) {
     @Suppress("ComplexMethod")
     fun fromDTO(eventResponse: EventResponse): List<Event> {
@@ -131,7 +133,11 @@ class EventMapper(
     ) = when (featureConfigUpdatedDTO.data) {
         is FeatureConfigData.FileSharing -> Event.FeatureConfig.FileSharingUpdated(
             id,
-            (featureConfigUpdatedDTO.data as FeatureConfigData.FileSharing).status.name
+            featureConfigMapper.fromFeatureConfigsDTO(featureConfigUpdatedDTO.data as FeatureConfigData.FileSharing)
+        )
+        is FeatureConfigData.MLS -> Event.FeatureConfig.MLSUpdated(
+            id,
+            featureConfigMapper.fromFeatureConfigsDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLS)
         )
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id)
     }
