@@ -209,7 +209,7 @@ internal class AssetDataSource(
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
                 // Decrypt and persist decoded asset onto a persistent asset path
-                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath(assetId.value)
+                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath("${assetId.value}.${assetName.fileExtension()}")
                 val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
                 // Public assets are stored already decrypted on the backend, hence no decryption is needed
