@@ -96,22 +96,17 @@ internal class EventGathererImpl(
     private suspend fun FlowCollector<Event>.handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen()
         is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
-        is WebSocketEvent.Close -> throwOnWebSocketClosed(webSocketEvent)
+        is WebSocketEvent.Close -> handleWebSocketClosure(webSocketEvent)
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private fun throwOnWebSocketClosed(webSocketEvent: WebSocketEvent.Close<Event>): Nothing =
-        throw when (val cause = webSocketEvent.cause) {
+    private fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<Event>) =
+        when (val cause = webSocketEvent.cause) {
+            null -> logger.i("Websocket closed normally")
             is IOException ->
-                KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
-
-            is Throwable ->
-                KaliumSyncException("Unknown Websocket error", CoreFailure.Unknown(cause))
-
-            else -> KaliumSyncException(
-                "Websocket event collecting stopped",
-                NetworkFailure.NoNetworkConnection(null)
-            )
+                throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
+            else ->
+                throw KaliumSyncException("Unknown Websocket error", CoreFailure.Unknown(cause))
         }
 
     private suspend fun FlowCollector<Event>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Event>) {
