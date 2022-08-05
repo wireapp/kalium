@@ -206,7 +206,8 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.metadataDAO,
             userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            sessionRepository
         )
 
     private val teamRepository: TeamRepository
@@ -508,7 +509,9 @@ abstract class UserSessionScopeCommon(
             assetRepository,
             teamRepository,
             connectionRepository,
-            qualifiedIdMapper
+            qualifiedIdMapper,
+            sessionRepository,
+            userId,
         )
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
