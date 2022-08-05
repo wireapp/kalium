@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.sync.ConnectionPolicy.KEEP_ALIVE
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -16,6 +17,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
@@ -71,25 +73,39 @@ internal class IncrementalSyncManager(
 
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
-    init { startMonitoringForSync() }
+    init {
+        startMonitoringForSync()
+    }
 
     private fun startMonitoringForSync() {
         syncScope.launch(coroutineExceptionHandler) {
-            // TODO: Trigger re-sync when policy changes from DISCONNECT to KEEP_ALIVE
             slowSyncRepository.slowSyncStatus.collectLatest { status ->
                 if (status is SlowSyncStatus.Complete) {
-                    // START SYNC
-                    kaliumLogger.i("Starting QuickSync, as SlowSync is completed")
-                    doIncrementalSync()
+                    // START SYNC. The ConnectionPolicy doesn't matter the first time
+                    kaliumLogger.i("Starting IncrementalSync, as SlowSync is completed")
+                    doIncrementalSyncWhilePolicyAllows()
+                    incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+                    kaliumLogger.i("IncrementalSync finished normally. Starting to observe ConnectionPolicy upgrade")
+                    observeConnectionPolicyUpgrade()
                 }
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
             }
         }
     }
 
-    private suspend fun doIncrementalSync() {
+    private suspend fun observeConnectionPolicyUpgrade() {
+        incrementalSyncRepository.connectionPolicyState
+            .filter { it == KEEP_ALIVE }
+            .cancellable()
+            .collect {
+                kaliumLogger.i("Re-starting IncrementalSync, as ConnectionPolicy was upgraded to KEEP_ALIVE")
+                doIncrementalSyncWhilePolicyAllows()
+            }
+    }
+
+    private suspend fun doIncrementalSyncWhilePolicyAllows() {
         incrementalSyncWorker
-            .incrementalSyncFlow()
+            .processEventsWhilePolicyAllowsFlow()
             .cancellable()
             .collect {
                 val newState = when (it) {

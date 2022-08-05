@@ -36,7 +36,7 @@ class IncrementalSyncWorkerTest {
             .arrange()
 
         // When
-        worker.incrementalSyncFlow().collect()
+        worker.processEventsWhilePolicyAllowsFlow().collect()
 
         // Then
         verify(arrangement.eventProcessor)
@@ -56,7 +56,7 @@ class IncrementalSyncWorkerTest {
                 .arrange()
 
             // When
-            worker.incrementalSyncFlow().test {
+            worker.processEventsWhilePolicyAllowsFlow().test {
                 // Then
                 assertEquals(EventSource.LIVE, awaitItem())
                 awaitComplete()
@@ -73,7 +73,7 @@ class IncrementalSyncWorkerTest {
                 .arrange()
 
             // When
-            worker.incrementalSyncFlow().test {
+            worker.processEventsWhilePolicyAllowsFlow().test {
                 // Then
                 assertEquals(EventSource.PENDING, awaitItem())
                 awaitComplete()
@@ -92,7 +92,7 @@ class IncrementalSyncWorkerTest {
 
         // When
         val resultException = assertFails {
-            worker.incrementalSyncFlow().collect()
+            worker.processEventsWhilePolicyAllowsFlow().collect()
         }
 
         assertEquals(exception, resultException)
