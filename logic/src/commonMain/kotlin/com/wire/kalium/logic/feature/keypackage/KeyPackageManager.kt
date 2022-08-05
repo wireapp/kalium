@@ -46,7 +46,7 @@ internal class KeyPackageManagerImpl(
         refillKeyPackageJob = refillKeyPackagesScope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Complete) {
+                if (syncState is IncrementalSyncStatus.Live) {
                     refillKeyPackagesIfNeeded()
                 }
             }

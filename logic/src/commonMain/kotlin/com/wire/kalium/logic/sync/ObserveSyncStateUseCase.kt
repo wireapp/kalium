@@ -19,7 +19,7 @@ class ObserveSyncStateUseCase internal constructor(
                 SlowSyncStatus.Pending -> SyncState.Waiting
                 SlowSyncStatus.Complete -> {
                     when (incrementalStatus) {
-                        is IncrementalSyncStatus.Complete -> SyncState.Live
+                        IncrementalSyncStatus.Live -> SyncState.Live
                         is IncrementalSyncStatus.Failed -> SyncState.Failed(incrementalStatus.failure)
                         IncrementalSyncStatus.FetchingPendingEvents -> SyncState.GatheringPendingEvents
                         IncrementalSyncStatus.Pending -> SyncState.GatheringPendingEvents

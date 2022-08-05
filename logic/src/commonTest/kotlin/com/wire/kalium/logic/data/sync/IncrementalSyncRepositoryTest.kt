@@ -29,7 +29,7 @@ class IncrementalSyncRepositoryTest {
     @Test
     fun givenStateIsUpdated_whenGettingTheCurrentSyncState_thenTheResultIsTheUpdatedState() = runTest {
         // Given
-        val updatedState = IncrementalSyncStatus.Complete(IncrementalSyncOutcome.LIVE)
+        val updatedState = IncrementalSyncStatus.Live
         incrementalSyncRepository.updateIncrementalSyncState(updatedState)
 
         // When

@@ -29,7 +29,7 @@ internal class EventProcessorImpl(
 ) : EventProcessor {
 
     override suspend fun processEvent(event: Event) {
-        kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "SYNC: Processing event ${event.id}")
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Processing event ${event.id}")
         when (event) {
             is Event.Conversation -> conversationEventReceiver.onEvent(event)
             is Event.User -> userEventReceiver.onEvent(event)

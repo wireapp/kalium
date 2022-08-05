@@ -29,7 +29,7 @@ internal class SyncManagerImpl(
 ) : SyncManager {
 
     override suspend fun waitUntilLive() {
-        incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Complete }
+        incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
     }
 
     override suspend fun isSlowSyncOngoing(): Boolean = slowSyncRepository.slowSyncStatus.value is SlowSyncStatus.Ongoing
