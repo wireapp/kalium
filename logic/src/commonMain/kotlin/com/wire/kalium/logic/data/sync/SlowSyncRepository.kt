@@ -15,6 +15,7 @@ internal interface SlowSyncRepository {
 }
 
 internal class InMemorySlowSyncRepository : SlowSyncRepository {
+    private val logger = kaliumLogger.withFeatureId(SYNC)
     private val _lastFullSyncInstant = MutableStateFlow<Instant?>(null)
     override val lastFullSyncInstant get() = _lastFullSyncInstant.asStateFlow()
 
@@ -22,12 +23,12 @@ internal class InMemorySlowSyncRepository : SlowSyncRepository {
     override val slowSyncStatus: StateFlow<SlowSyncStatus> get() = _slowSyncStatus.asStateFlow()
 
     override fun setLastSlowSyncCompletionInstant(instant: Instant?) {
-        kaliumLogger.withFeatureId(SYNC).i("Updating last slow sync instant: $instant")
+        logger.i("Updating last slow sync instant: $instant")
         _lastFullSyncInstant.value = instant
     }
 
     override fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus) {
-        kaliumLogger.withFeatureId(SYNC).i("Updating SLOW sync status: $slowSyncStatus")
+        logger.i("Updating SlowSync status: $slowSyncStatus")
         _slowSyncStatus.value = slowSyncStatus
     }
 }

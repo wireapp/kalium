@@ -42,6 +42,8 @@ internal class SlowSyncWorkerImpl(
     private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
 ) : SlowSyncWorker {
 
+    private val logger = kaliumLogger.withFeatureId(SYNC)
+
     override suspend fun performSlowSyncSteps(): Flow<SlowSyncStep> = flow {
 
         suspend fun Either<CoreFailure, Unit>.continueWithStep(
@@ -49,7 +51,7 @@ internal class SlowSyncWorkerImpl(
             step: suspend () -> Either<CoreFailure, Unit>
         ) = flatMap { performStep(slowSyncStep, step) }
 
-        kaliumLogger.withFeatureId(SYNC).d("Sync: Starting SlowSync")
+        logger.d("Starting SlowSync")
         // TODO: to move the feature configs call outside the sync
         syncFeatureConfigs()
         emit(SlowSyncStep.SELF_USER)

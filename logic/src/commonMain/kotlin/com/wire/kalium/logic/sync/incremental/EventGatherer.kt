@@ -115,27 +115,27 @@ internal class EventGathererImpl(
         }
 
     private suspend fun FlowCollector<Event>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Event>) {
-        logger.i("SYNC: Websocket Received binary payload")
+        logger.i("Websocket Received binary payload")
         val event = webSocketEvent.payload
         if (offlineEventBuffer.contains(event)) {
             if (offlineEventBuffer.clearBufferIfLastEventEquals(event)) {
                 // Really live
-                logger.d("SYNC: Removed most recent event from offlineEventBuffer: '${event.id}'")
+                logger.d("Removed most recent event from offlineEventBuffer: '${event.id}'")
             } else {
                 // Really live
-                logger.d("SYNC: Removing event from offlineEventBuffer: ${event.id}")
+                logger.d("Removing event from offlineEventBuffer: ${event.id}")
                 offlineEventBuffer.remove(event)
             }
             logger
-                .d("SYNC: Skipping emit of event from WebSocket because already emitted as offline event ${event.id}")
+                .d("Skipping emit of event from WebSocket because already emitted as offline event ${event.id}")
         } else {
-            logger.d("SYNC: Event never seen before ${event.id} - We are live")
+            logger.d("Event never seen before ${event.id} - We are live")
             emit(event)
         }
     }
 
     private suspend fun FlowCollector<Event>.onWebSocketOpen() {
-        logger.i("SYNC: Websocket Open")
+        logger.i("Websocket Open")
         eventRepository
             .pendingEvents()
             .mapNotNull { offlineEventOrFailure ->
@@ -145,11 +145,11 @@ internal class EventGathererImpl(
                 }
             }
             .collect {
-                logger.i("SYNC: Collecting offline event: ${it.id}")
+                logger.i("Collecting offline event: ${it.id}")
                 offlineEventBuffer.add(it)
                 emit(it)
             }
-        logger.i("SYNC: Offline events collection finished. Collecting Live events.")
+        logger.i("Offline events collection finished. Collecting Live events.")
         _currentSource.value = EventSource.LIVE
     }
 }

@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.sync.full
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
@@ -35,6 +36,7 @@ internal class SlowSyncManager(
 ) {
 
     private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
+    private val logger = kaliumLogger.withFeatureId(SYNC)
 
     init {
         scope.launch {
@@ -49,14 +51,15 @@ internal class SlowSyncManager(
     private suspend fun handleCriteriaResolution(it: SyncCriteriaResolution) {
         if (it is SyncCriteriaResolution.Ready) {
             // START SYNC
-            kaliumLogger.i("Sync starting as all criteria are met")
+            logger.i("Starting SlowSync as all criteria are met")
             slowSyncWorker.performSlowSyncSteps().cancellable().collect { step ->
+                logger.i("Performing SlowSyncStep $step")
                 slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(step))
             }
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         } else {
             // STOP SYNC
-            kaliumLogger.i("Sync Stopped as criteria are not met: $it")
+            logger.i("SlowSync Stopped as criteria are not met: $it")
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
         }
     }
