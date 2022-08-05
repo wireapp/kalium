@@ -39,7 +39,7 @@ internal class SlowSyncManager(
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    private val scope = CoroutineScope(SupervisorJob() +  kaliumDispatcher.default.limitedParallelism(1))
+    private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
     private val coroutineExceptionHandler = SyncExceptionHandler({
