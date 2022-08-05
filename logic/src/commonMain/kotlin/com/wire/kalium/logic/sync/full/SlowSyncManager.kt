@@ -12,6 +12,7 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
@@ -38,7 +39,7 @@ internal class SlowSyncManager(
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
+    private val scope = CoroutineScope(SupervisorJob() +  kaliumDispatcher.default.limitedParallelism(1))
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
     private val coroutineExceptionHandler = SyncExceptionHandler({
