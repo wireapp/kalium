@@ -36,8 +36,7 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
         deletedConversationEvent: Event.Conversation.DeletedConversation,
         conversation: Conversation,
         author: User?
-    )
-            : LocalNotificationConversation {
+    ): LocalNotificationConversation {
         val notificationMessage = LocalNotificationMessage.ConversationDeleted(
             author = LocalNotificationMessageAuthor(author?.name ?: "", null),
             time = deletedConversationEvent.timestampIso
