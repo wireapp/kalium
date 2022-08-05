@@ -380,12 +380,14 @@ class ConversationDataSource(
         when (it) {
             ConversationMemberChangeDTO.Unchanged -> Either.Right(Unit)
             // TODO: the server response with an event can we use event processor to handle it
-            is ConversationMemberChangeDTO.Changed -> userIdList.map { userId ->
+            is ConversationMemberChangeDTO.Added -> userIdList.map { userId ->
                 // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
                 Member(userId, Member.Role.Member)
             }.let { membersList ->
                 persistMembers(membersList, conversationID)
             }
+            // TODO do you have any suggestions how handle it?
+            is ConversationMemberChangeDTO.Removed -> Either.Right(Unit)
         }
     }
 
@@ -399,13 +401,16 @@ class ConversationDataSource(
                         Either.Left(it)
                     }, {
                         when (it) {
+                            // TODO I think on unchanged we should also remove member from local storage
+                            // probably there was some synchronisation issue that this user was already removed
                             ConversationMemberChangeDTO.Unchanged -> Either.Right(Unit)
-                            is ConversationMemberChangeDTO.Changed -> wrapStorageRequest {
+                            is ConversationMemberChangeDTO.Added -> wrapStorageRequest {
                                 conversationDAO.deleteMemberByQualifiedID(
                                     idMapper.toDaoModel(userID),
                                     idMapper.toDaoModel(conversationId)
                                 )
                             }
+                            is ConversationMemberChangeDTO.Removed -> Either.Right(Unit)
                         }
                     }
                     )

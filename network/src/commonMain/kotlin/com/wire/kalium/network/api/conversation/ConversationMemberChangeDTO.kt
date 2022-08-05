@@ -19,7 +19,21 @@ sealed class ConversationMemberChangeDTO {
     object Unchanged: ConversationMemberChangeDTO()
 
     @Serializable
-    data class Changed(
+    @SerialName("conversation.member-join")
+    data class Added(
+        @SerialName("type")
+        val eventType: String,
+        @SerialName("qualified_conversation")
+        val qualifiedConversationId: ConversationId,
+        @SerialName("qualified_from")
+        val fromUser: UserId,
+        @SerialName("time")
+        val time: String
+    ): ConversationMemberChangeDTO()
+
+    @Serializable
+    @SerialName("conversation.member-leave")
+    data class Removed(
         @SerialName("type")
         val eventType: String,
         @SerialName("qualified_conversation")

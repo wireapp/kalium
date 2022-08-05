@@ -77,7 +77,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
             setBody(request)
         }.let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberChangeDTO.Changed> { response }
+                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberChangeDTO.Added> { response }
                 // TODO should we show user some message that there was no change?
                 HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberChangeDTO.Unchanged, response)
                 else -> wrapKaliumResponse { response }
@@ -98,7 +98,7 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
             "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
         ).let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberChangeDTO.Changed> { response }
+                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberChangeDTO.Removed> { response }
                 // TODO should we show user some message that there was no change?
                 HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberChangeDTO.Unchanged, response)
                 else -> wrapKaliumResponse { response }

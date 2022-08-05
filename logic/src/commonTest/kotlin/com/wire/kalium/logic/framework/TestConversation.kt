@@ -124,7 +124,7 @@ object TestConversation {
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
-        ConversationMemberChangeDTO.Changed(
+        ConversationMemberChangeDTO.Added(
             "conversation.member-join",
             qualifiedConversationId = NETWORK_ID,
             fromUser = NETWORK_USER_ID1,
@@ -132,7 +132,7 @@ object TestConversation {
         )
 
     val REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE =
-        ConversationMemberChangeDTO.Changed(
+        ConversationMemberChangeDTO.Removed(
             "conversation.member-leave",
             qualifiedConversationId = NETWORK_ID,
             fromUser = NETWORK_USER_ID1,
