@@ -24,8 +24,8 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.conversation.AddParticipantRequest
-import com.wire.kalium.network.api.conversation.AddParticipantResponse
+import com.wire.kalium.network.api.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.conversation.ConversationMemberChangeDTO
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
@@ -372,15 +372,15 @@ class ConversationDataSource(
         val users = userIdList.map {
             idMapper.toApiModel(it)
         }
-        val addParticipantRequest = AddParticipantRequest(users, DEFAULT_MEMBER_ROLE)
-        conversationApi.addParticipant(
+        val addParticipantRequest = AddConversationMembersRequest(users, DEFAULT_MEMBER_ROLE)
+        conversationApi.addMember(
             addParticipantRequest, idMapper.toApiModel(conversationID)
         )
     }.flatMap {
         when (it) {
-            is AddParticipantResponse.ConversationUnchanged -> Either.Right(Unit)
+            ConversationMemberChangeDTO.Unchanged -> Either.Right(Unit)
             // TODO: the server response with an event can we use event processor to handle it
-            is AddParticipantResponse.UserAdded -> userIdList.map { userId ->
+            is ConversationMemberChangeDTO.Changed -> userIdList.map { userId ->
                 // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
                 Member(userId, Member.Role.Member)
             }.let { membersList ->
@@ -394,15 +394,18 @@ class ConversationDataSource(
             when (conversation.protocol) {
                 is Conversation.ProtocolInfo.Proteus ->
                     wrapApiRequest {
-                        conversationApi.removeConversationMember(idMapper.toApiModel(userID), idMapper.toApiModel(conversationId))
+                        conversationApi.removeMember(idMapper.toApiModel(userID), idMapper.toApiModel(conversationId))
                     }.fold({
                         Either.Left(it)
                     }, {
-                        wrapStorageRequest {
-                            conversationDAO.deleteMemberByQualifiedID(
-                                idMapper.toDaoModel(userID),
-                                idMapper.toDaoModel(conversationId)
-                            )
+                        when (it) {
+                            ConversationMemberChangeDTO.Unchanged -> Either.Right(Unit)
+                            is ConversationMemberChangeDTO.Changed -> wrapStorageRequest {
+                                conversationDAO.deleteMemberByQualifiedID(
+                                    idMapper.toDaoModel(userID),
+                                    idMapper.toDaoModel(conversationId)
+                                )
+                            }
                         }
                     }
                     )

@@ -6,20 +6,20 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AddParticipantRequest (
+data class AddConversationMembersRequest (
     @SerialName("qualified_users")
     val users: List<UserId>,
     @SerialName("conversation_role")
     val conversationRole: String?
 )
 
-
-sealed class AddParticipantResponse {
+@Serializable
+sealed class ConversationMemberChangeDTO {
     // TODO: the server response with an event aka, UserAdded model is inaccurate
-    object ConversationUnchanged: AddParticipantResponse()
+    object Unchanged: ConversationMemberChangeDTO()
 
     @Serializable
-    data class UserAdded(
+    data class Changed(
         @SerialName("type")
         val eventType: String,
         @SerialName("qualified_conversation")
@@ -28,5 +28,6 @@ sealed class AddParticipantResponse {
         val fromUser: UserId,
         @SerialName("time")
         val time: String
-    ): AddParticipantResponse()
+    ): ConversationMemberChangeDTO()
+
 }

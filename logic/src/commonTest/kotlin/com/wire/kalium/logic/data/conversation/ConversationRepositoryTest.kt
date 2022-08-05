@@ -14,7 +14,7 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.conversation.AddParticipantResponse
+import com.wire.kalium.network.api.conversation.ConversationMemberChangeDTO
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
@@ -615,7 +615,7 @@ class ConversationRepositoryTest {
     fun givenAConversationAndAPISucceeds_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
         val conversationId = TestConversation.ID
         given(conversationApi)
-            .suspendFunction(conversationApi::addParticipant)
+            .suspendFunction(conversationApi::addMember)
             .whenInvokedWith(any(), any())
             .thenReturn(
                 NetworkResponse.Success(
@@ -646,11 +646,11 @@ class ConversationRepositoryTest {
     fun givenAConversationAndAPIFailed_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
         val conversationId = TestConversation.ID
         given(conversationApi)
-            .suspendFunction(conversationApi::addParticipant)
+            .suspendFunction(conversationApi::addMember)
             .whenInvokedWith(any(), any())
             .thenReturn(
                 NetworkResponse.Success(
-                    AddParticipantResponse.ConversationUnchanged,
+                    ConversationMemberChangeDTO.Unchanged,
                     mapOf(),
                     HttpStatusCode.NoContent.value
                 )
@@ -890,11 +890,11 @@ class ConversationRepositoryTest {
 
         fun withDeleteMemberAPISucceed() = apply {
             given(conversationApi)
-                .suspendFunction(conversationApi::removeConversationMember)
+                .suspendFunction(conversationApi::removeMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(
                     NetworkResponse.Success(
-                        TestConversation.CONVERSATION_RESPONSE,
+                        TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )
@@ -903,9 +903,13 @@ class ConversationRepositoryTest {
 
         fun withDeleteMemberAPIFailed() = apply {
             given(conversationApi)
-                .suspendFunction(conversationApi::removeConversationMember)
+                .suspendFunction(conversationApi::removeMember)
                 .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    )
+                )
 
         }
 
