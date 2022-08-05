@@ -55,7 +55,7 @@ class LoginApiTest : ApiTest {
                 accessToken = value,
                 tokenType = tokenType,
                 refreshToken = refreshToken
-            )
+            ) to userDTO
         }
         val loginApi: LoginApi = LoginApiImpl(networkClient)
 

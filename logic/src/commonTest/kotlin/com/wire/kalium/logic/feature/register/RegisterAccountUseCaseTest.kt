@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
@@ -42,18 +43,19 @@ class RegisterAccountUseCaseTest {
     @Test
     fun givenRepositoryCallIsSuccessful_whenRegisteringPersonalAccount_thenSuccessIsPropagated() = runTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
-        val user = TEST_SELF_USER
+        val ssoId = TEST_SSO_ID
         val validAuthSession = TEST_VALID_AUTH_SESSION
-        val expected = Pair(user, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
+        val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
         given(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
-        }.then { Either.Right(Pair(user, validAuthSession)) }
+        }.then { Either.Right(Pair(ssoId, validAuthSession)) }
 
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
-        assertEquals(expected, actual.value)
+        assertEquals(expected.first, actual.ssoId)
+        assertEquals(expected.second, actual.userSession)
 
         verify(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
@@ -63,20 +65,21 @@ class RegisterAccountUseCaseTest {
     @Test
     fun givenRepositoryCallIsSuccessful_whenRegisteringTeamAccount_thenSuccessIsPropagated() = runTest {
         val param = TEST_TEAM_ACCOUNT_PARAM
-        val user = TEST_SELF_USER
+        val ssoId = TEST_SSO_ID
         val validAuthSession = TEST_VALID_AUTH_SESSION
-        val expected = Pair(user, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
+        val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
         given(registerAccountRepository).coroutine {
             registerTeamWithEmail(
                 param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
             )
-        }.then { Either.Right(Pair(user, validAuthSession)) }
+        }.then { Either.Right(Pair(ssoId, validAuthSession)) }
 
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
-        assertEquals(expected, actual.value)
+        assertEquals(expected.first, actual.ssoId)
+        assertEquals(expected.second, actual.userSession)
 
         verify(registerAccountRepository).coroutine {
             registerTeamWithEmail(
@@ -89,20 +92,21 @@ class RegisterAccountUseCaseTest {
     fun givenRepositoryCallIsSuccessful_shouldStoreSessionIsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() =
         runTest {
             val param = TEST_PRIVATE_ACCOUNT_PARAM
-            val user = TEST_SELF_USER
+            val ssoId = TEST_SSO_ID
             val validAuthSession = TEST_VALID_AUTH_SESSION
-            val expected = Pair(user, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
+            val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
             given(registerAccountRepository).coroutine {
                 registerPersonalAccountWithEmail(
                     param.email, param.emailActivationCode, param.name, param.password
                 )
-            }.then { Either.Right(Pair(user, validAuthSession)) }
+            }.then { Either.Right(Pair(ssoId, validAuthSession)) }
 
             val actual = registerAccountUseCase(param)
 
             assertIs<RegisterResult.Success>(actual)
-            assertEquals(expected, actual.value)
+            assertEquals(expected.first, actual.ssoId)
+            assertEquals(expected.second, actual.userSession)
 
             verify(registerAccountRepository).coroutine {
                 registerPersonalAccountWithEmail(
@@ -155,7 +159,6 @@ class RegisterAccountUseCaseTest {
     fun givenRepositoryCallFailWithDomainBlockedForRegistration_whenRegisteringPersonalAccount_thenErrorIsPropagated() =
         testSpecificError(TestNetworkException.domainBlockedForRegistration, RegisterResult.Failure.EmailDomainBlocked)
 
-
     private fun testSpecificError(kaliumException: KaliumException, error: RegisterResult.Failure) = runTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val expected = NetworkFailure.ServerMiscommunication(kaliumException)
@@ -173,7 +176,6 @@ class RegisterAccountUseCaseTest {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.wasInvoked(exactly = once)
     }
-
 
     private companion object {
         const val TEST_EMAIL = """user@domain.com"""
@@ -207,5 +209,6 @@ class RegisterAccountUseCaseTest {
         )
         val TEST_VALID_AUTH_SESSION =
             AuthSession.Session.Valid(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type")
+        val TEST_SSO_ID = SsoId(null, null, null)
     }
 }
