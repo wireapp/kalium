@@ -38,8 +38,9 @@ import kotlin.time.Duration.Companion.seconds
  * too long, SlowSync will be invalidated and [SlowSyncManager] should
  * perform a fresh SlowSync.
  *
- * This Manager **will** be responsible for retries in case of network
- * failures or connectivity changes in general.
+ * This Manager retries automatically in case of failures,
+ * but still doesn't actively monitor connectivity changes in general,
+ * like when a mobile phone changes from Wi-Fi to Mobile Data, etc.
  *
  * @see Event
  * @see SlowSyncManager
