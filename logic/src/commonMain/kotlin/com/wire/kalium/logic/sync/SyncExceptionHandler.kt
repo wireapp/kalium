@@ -8,9 +8,9 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
-class SyncExceptionHandler(
-    val onCancellation: () -> Unit,
-    val onFailure: (exception: CoreFailure) -> Unit
+internal class SyncExceptionHandler(
+    private val onCancellation: () -> Unit,
+    private val onFailure: (exception: CoreFailure) -> Unit
 ) : AbstractCoroutineContextElement(CoroutineExceptionHandler), CoroutineExceptionHandler {
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
