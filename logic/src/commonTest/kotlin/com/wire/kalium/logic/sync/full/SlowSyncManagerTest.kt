@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.sync.SyncCriteriaProvider
 import com.wire.kalium.logic.sync.SyncCriteriaResolution
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.flowThatFailsOnFirstTime
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
@@ -13,6 +14,7 @@ import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -34,7 +37,7 @@ class SlowSyncManagerTest {
     fun givenCriteriaAreMet_whenManagerIsCreated_thenShouldStartSlowSync() = runTest(TestKaliumDispatcher.default) {
         var isCollected = false
         val stepFlow = flow<SlowSyncStep> { isCollected = true }
-        val (_, _) = Arrangement()
+        val (arrangement, _) = Arrangement()
             .withSatisfiedCriteria()
             .withSlowSyncWorkerReturning(stepFlow)
             .arrange()
@@ -42,6 +45,37 @@ class SlowSyncManagerTest {
         advanceUntilIdle()
 
         assertTrue(isCollected)
+        verify(arrangement.slowSyncWorker)
+            .suspendFunction(arrangement.slowSyncWorker::performSlowSyncSteps)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCriteriaAreMet_whenWorkerThrowsNonCancellation_thenShouldRetry() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withSatisfiedCriteria()
+            .withSlowSyncWorkerReturning(flowThatFailsOnFirstTime())
+            .arrange()
+
+        advanceUntilIdle()
+
+        verify(arrangement.slowSyncWorker)
+            .suspendFunction(arrangement.slowSyncWorker::performSlowSyncSteps)
+            .wasInvoked(exactly = twice)
+    }
+
+    @Test
+    fun givenCriteriaAreMet_whenWorkerThrowsCancellation_thenShouldNotRetry() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withSatisfiedCriteria()
+            .withSlowSyncWorkerReturning(flowThatFailsOnFirstTime(CancellationException("Cancelled")))
+            .arrange()
+
+        advanceUntilIdle()
+
+        verify(arrangement.slowSyncWorker)
+            .suspendFunction(arrangement.slowSyncWorker::performSlowSyncSteps)
+            .wasInvoked(exactly = once)
     }
 
     @Test
