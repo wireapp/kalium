@@ -65,7 +65,8 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                    userType = UserType.INTERNAL
+                    userType = UserType.INTERNAL,
+                    botService = null,
                 ),
                 OtherUser(
                     id = QualifiedID("someAllContactsValue1", "someAllContactsDomain1"),
@@ -79,7 +80,8 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                    userType = UserType.INTERNAL
+                    userType = UserType.INTERNAL,
+                    botService = null,
                 )
             )
         }
