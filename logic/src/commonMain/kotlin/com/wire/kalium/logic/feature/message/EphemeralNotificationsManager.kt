@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.emptyFlow
 /**
  * This singleton allow us to queue ephemeral notifications from different user flows.
  * Ideally we should have logic that allows to mark messages as notified, but this will act for cases when we need to notify the user on
- * information we don't have available persisted.
+ * information we have not persisted or that is not available anymore.
  */
 object EphemeralNotificationsManager {
 

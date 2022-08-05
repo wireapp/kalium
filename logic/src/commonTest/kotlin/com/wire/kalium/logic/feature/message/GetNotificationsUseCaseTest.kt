@@ -408,7 +408,8 @@ class GetNotificationsUseCaseTest {
             messageRepository = messageRepository,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
-            timeParser = timeParser
+            timeParser = timeParser,
+            ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 
         init {

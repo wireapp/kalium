@@ -39,7 +39,6 @@ import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
-import com.wire.kalium.persistence.dao.Member as MemberEntity
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq

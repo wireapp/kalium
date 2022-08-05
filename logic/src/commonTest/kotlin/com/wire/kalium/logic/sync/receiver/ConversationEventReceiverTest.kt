@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
@@ -313,7 +314,8 @@ class ConversationEventReceiverTest {
             lazyOf(callManager),
             MessageTextEditHandler(messageRepository),
             protoContentMapper = protoContentMapper,
-            userConfigRepository = userConfigRepository
+            userConfigRepository = userConfigRepository,
+            ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
