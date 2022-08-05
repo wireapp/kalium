@@ -127,7 +127,8 @@ class SearchKnownUserUseCaseTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = UserType.EXTERNAL
+            userType = UserType.EXTERNAL,
+            botService = null,
         )
 
         val (_, searchKnownUsersUseCase) = Arrangement()
@@ -276,7 +277,8 @@ class SearchKnownUserUseCaseTest {
                                 previewPicture = null,
                                 completePicture = null,
                                 availabilityStatus = UserAvailabilityStatus.NONE,
-                                userType = UserType.EXTERNAL
+                                userType = UserType.EXTERNAL,
+                                botService = null,
                             )
                         )
                     )
@@ -306,7 +308,8 @@ class SearchKnownUserUseCaseTest {
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.NONE,
-                    userType = UserType.FEDERATED
+                    userType = UserType.FEDERATED,
+                    botService = null,
                 )
             )
 

@@ -58,7 +58,7 @@ class MessageApiImpl internal constructor(
             if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
             else NetworkResponse.Error(kException = SendMessageError.MissingDeviceError(errorBody = it.body()))
         }) {
-            httpClient.post("$PATH_CONVERSATIONS/$conversationId$PATH_OTR_MESSAGE") {
+            httpClient.post("$PATH_CONVERSATIONS/$conversationId/$PATH_OTR_MESSAGE") {
                 if (queryParameter != null) {
                     parameter(queryParameter, queryParameterValue)
                 }
@@ -100,7 +100,7 @@ class MessageApiImpl internal constructor(
             )
         )
     }) {
-        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}$PATH_PROTEUS_MESSAGE") {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTEUS_MESSAGE") {
             setBody(envelopeProtoMapper.encodeToProtobuf(parameters))
             contentType(ContentType.Application.XProtoBuf)
         }
@@ -111,9 +111,9 @@ class MessageApiImpl internal constructor(
             412,
             "Proteus clients have changed"
         )
-        const val PATH_OTR_MESSAGE = "/otr/messages"
-        const val PATH_PROTEUS_MESSAGE = "/proteus/messages"
-        const val PATH_CONVERSATIONS = "/conversations"
+        const val PATH_OTR_MESSAGE = "otr/messages"
+        const val PATH_PROTEUS_MESSAGE = "proteus/messages"
+        const val PATH_CONVERSATIONS = "conversations"
         const val QUERY_IGNORE_MISSING = "ignore_missing"
         const val QUERY_REPORT_MISSING = "report_missing"
     }
