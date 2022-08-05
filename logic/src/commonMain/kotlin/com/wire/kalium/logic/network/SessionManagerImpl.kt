@@ -31,7 +31,7 @@ class SessionManagerImpl(
             TODO("IMPORTANT! Not yet implemented")
         }, {
             // TODO: make the function return null when the update fails and delete the type casting
-            sessionMapper.toSessionDTO(it as AuthSession.Session.Valid)
+            sessionMapper.toSessionDTO(it?.session as AuthSession.Session.Valid)
         })
 
     override suspend fun onSessionExpired() {
