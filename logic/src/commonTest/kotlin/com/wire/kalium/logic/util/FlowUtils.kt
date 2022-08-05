@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.test_util
+package com.wire.kalium.logic.util
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

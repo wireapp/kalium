@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.sync.SyncCriteriaProvider
 import com.wire.kalium.logic.sync.SyncCriteriaResolution
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.test_util.flowThatFailsOnFirstTime
+import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
