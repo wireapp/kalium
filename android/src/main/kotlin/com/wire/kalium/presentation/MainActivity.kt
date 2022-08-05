@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
         }
 
         coreLogic.globalScope {
-            addAuthenticatedAccount(result.userSession)
+            addAuthenticatedAccount(result.userSession, result.ssoId)
         }
 
         return result.userSession
