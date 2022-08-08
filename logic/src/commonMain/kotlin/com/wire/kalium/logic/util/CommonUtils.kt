@@ -31,6 +31,7 @@ fun Int?.isGreaterThan(other: Int?): Boolean {
         returns(true) implies (this@isGreaterThan != null)
         returns(true) implies (other != null)
     }
-
     return this is Int && other is Int && this > other
 }
+
+const val EPOCH_FIRST_DAY : String = "1970-01-01T00:00:00.000Z"

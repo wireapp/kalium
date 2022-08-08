@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 
 data class Conversation(
     val id: ConversationId,
@@ -109,7 +110,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
-            lastReadDate = "1970-01-01T00:00:00.000Z",
+            lastReadDate = EPOCH_FIRST_DAY,
             access = access,
             accessRole = accessRole
         )
