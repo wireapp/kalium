@@ -34,4 +34,4 @@ fun Int?.isGreaterThan(other: Int?): Boolean {
     return this is Int && other is Int && this > other
 }
 
-const val EPOCH_FIRST_DAY : String = "1970-01-01T00:00:00.000Z"
+const val EPOCH_FIRST_DAY: String = "1970-01-01T00:00:00.000Z"
