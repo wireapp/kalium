@@ -13,12 +13,12 @@ import kotlinx.serialization.Serializable
 interface UserConfigStorage {
 
     /**
-     * save flag from the user settings to enable and disable the logging
+     * save flag from the user settings to enable and disable MLS
      */
     fun enableMLS(enabled: Boolean)
 
     /**
-     * get the saved flag to know if the logging enabled or not
+     * get the saved flag to know if MLS enabled or not
      */
     fun isMLSEnabled(): Boolean
 
