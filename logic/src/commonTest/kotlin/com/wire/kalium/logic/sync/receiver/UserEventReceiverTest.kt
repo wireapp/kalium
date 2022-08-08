@@ -4,6 +4,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -22,7 +24,7 @@ class UserEventReceiverTest {
 
     @Test
     fun givenRemoveClientEvent_whenTheClientIdIsEqualCurrentClient_SoftLogoutInvoked() = runTest {
-        val event = TestEvent.clientRemove(CLIENT_ID1)
+        val event = TestEvent.clientRemove(EVENT_ID, CLIENT_ID1)
         val (arrangement, eventReceiver) = Arrangement()
             .withCurrentClientIdIs(CLIENT_ID1)
             .withLogoutUseCaseSucceed()
@@ -38,7 +40,7 @@ class UserEventReceiverTest {
 
     @Test
     fun givenRemoveClientEvent_whenTheClientIdIsNotEqualCurrentClient_SoftLogoutNotInvoked() = runTest {
-        val event = TestEvent.clientRemove(CLIENT_ID1)
+        val event = TestEvent.clientRemove(EVENT_ID, CLIENT_ID1)
         val (arrangement, eventReceiver) = Arrangement()
             .withCurrentClientIdIs(CLIENT_ID2)
             .withLogoutUseCaseSucceed()
@@ -54,7 +56,7 @@ class UserEventReceiverTest {
 
     @Test
     fun givenDeleteAccountEvent_SoftLogoutInvoked() = runTest {
-        val event = TestEvent.userDelete("")
+        val event = TestEvent.userDelete(userId = UserId("", ""))
         val (arrangement, eventReceiver) = Arrangement()
             .withLogoutUseCaseSucceed()
             .arrange()
@@ -77,15 +79,18 @@ class UserEventReceiverTest {
         @Mock
         val logoutUseCase = mock(classOf<LogoutUseCase>())
 
+        @Mock
+        val sessionRepository: SessionRepository = mock(classOf<SessionRepository>())
+
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            connectionRepository, logoutUseCase, clientRepository
+            connectionRepository, logoutUseCase, clientRepository, sessionRepository
         )
 
-        fun withCurrentClientIdIs(clientId: String) = apply {
+        fun withCurrentClientIdIs(clientId: ClientId) = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
-                .thenReturn(Either.Right(ClientId(clientId)))
+                .thenReturn(Either.Right(clientId))
 
         }
 
@@ -98,7 +103,8 @@ class UserEventReceiverTest {
     }
 
     companion object {
-        const val CLIENT_ID1 = "clientId1"
-        const val CLIENT_ID2 = "clientId2"
+        const val EVENT_ID = "1234"
+        val CLIENT_ID1 = ClientId("clientId1")
+        val CLIENT_ID2 = ClientId("clientId2")
     }
 }
