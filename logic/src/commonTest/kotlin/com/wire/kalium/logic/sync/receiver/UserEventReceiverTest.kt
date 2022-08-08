@@ -1,14 +1,17 @@
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -18,6 +21,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlin.random.Random
 import kotlin.test.Test
 
 class UserEventReceiverTest {
@@ -56,9 +60,10 @@ class UserEventReceiverTest {
 
     @Test
     fun givenDeleteAccountEvent_SoftLogoutInvoked() = runTest {
-        val event = TestEvent.userDelete(userId = UserId("", ""))
+        val event = TestEvent.userDelete(userId = USER_ID)
         val (arrangement, eventReceiver) = Arrangement()
             .withLogoutUseCaseSucceed()
+            .withCurrentSessionReturns(USER_ID)
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -96,15 +101,37 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
+        }
 
+        fun withCurrentSessionReturns(userId: UserId) = apply {
+            given(sessionRepository).function(sessionRepository::currentSession).whenInvoked().thenReturn(
+                Either.Right(
+                    validAuthSessionWith(userId)
+                )
+            )
         }
 
         fun arrange() = this to userEventReceiver
     }
 
     companion object {
+        private val randomString get() = Random.nextBytes(64).decodeToString()
+        private val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
+
         const val EVENT_ID = "1234"
+        val USER_ID = UserId("alice", "wonderland")
         val CLIENT_ID1 = ClientId("clientId1")
         val CLIENT_ID2 = ClientId("clientId2")
+
+        fun validAuthSessionWith(userId: UserId): AuthSession =
+            AuthSession(
+                AuthSession.Session.Valid(
+                    userId,
+                    randomString,
+                    randomString,
+                    randomString
+                ),
+                TEST_SERVER_CONFIG.links
+            )
     }
 }
