@@ -36,7 +36,9 @@ class ValidateEmailUseCaseTest {
                 "id-with-dash@domain.com",
                 "a@domain.com",
                 "example-abc@abc-domain.com",
-                "example@s.solutions"
+                "example@s.solutions",
+                "exaMple@S.solutions.COM",
+                "A@DOMAIN.DE"
             )
 
         val INVALID_EMAILS = listOf(

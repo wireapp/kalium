@@ -50,7 +50,6 @@ class KaliumPreferencesSettings(
 
     override fun getString(key: String): String? = encryptedSettings[key]
 
-    //TODO(IMPORTANT): Make sure we use @SerialName before release
     override fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
         // TODO(refactor): try catch for Serialization exceptions
         encryptedSettings[key] = JsonSerializer().encodeToString(kSerializer, value)
