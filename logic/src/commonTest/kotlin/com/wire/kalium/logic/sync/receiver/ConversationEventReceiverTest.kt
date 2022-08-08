@@ -28,9 +28,10 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
+import com.wire.kalium.logic.feature.message.EphemeralNotifications
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -50,8 +51,10 @@ import io.mockative.matchers.Matcher
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
@@ -259,6 +262,9 @@ class ConversationEventReceiverTest {
     fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventReceiver) = Arrangement()
+            .withEphemeralNotificationEnqueue()
+            .withGetConversation(event.conversationId)
+            .withGetUserAuthor(event.senderUserId)
             .withDeletingConversationSucceeding()
             .arrange()
 
@@ -303,6 +309,9 @@ class ConversationEventReceiverTest {
         @Mock
         private val callManager = mock(classOf<CallManager>())
 
+        @Mock
+        private val ephemeralNotifications = mock(classOf<EphemeralNotifications>())
+
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             proteusClient,
             persistMessage,
@@ -315,7 +324,7 @@ class ConversationEventReceiverTest {
             MessageTextEditHandler(messageRepository),
             protoContentMapper = protoContentMapper,
             userConfigRepository = userConfigRepository,
-            ephemeralNotificationsManager = EphemeralNotificationsManager
+            ephemeralNotificationsManager = ephemeralNotifications
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
@@ -407,6 +416,27 @@ class ConversationEventReceiverTest {
                 .suspendFunction(conversationRepository::deleteConversation)
                 .whenInvokedWith((eq(conversationId)))
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withGetConversation(conversationId: ConversationId = TestConversation.ID) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(Either.Right(TestConversationDetails.CONVERSATION_ONE_ONE)))
+        }
+
+        fun withGetUserAuthor(userId: UserId = TestUser.USER_ID) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::observeUser)
+                .whenInvokedWith(eq(userId))
+                .thenReturn(flowOf(TestUser.OTHER))
+        }
+
+        fun withEphemeralNotificationEnqueue() = apply {
+            given(ephemeralNotifications)
+                .suspendFunction(ephemeralNotifications::scheduleNotification)
+                .whenInvokedWith(any())
+                .thenDoNothing()
         }
 
         fun arrange() = this to conversationEventReceiver

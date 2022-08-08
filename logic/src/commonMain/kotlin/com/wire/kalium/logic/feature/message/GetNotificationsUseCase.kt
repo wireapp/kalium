@@ -52,7 +52,7 @@ class GetNotificationsUseCaseImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val timeParser: TimeParser,
-    private val ephemeralNotificationsManager: EphemeralNotificationsManager,
+    private val ephemeralNotificationsManager: EphemeralNotifications,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
