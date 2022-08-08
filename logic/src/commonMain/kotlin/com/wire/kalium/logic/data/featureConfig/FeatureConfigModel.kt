@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.featureConfig
 
+import com.wire.kalium.logic.data.id.PlainId
+
 data class FeatureConfigModel(
     val appLockModel: AppLockModel,
     val classifiedDomainsModel: ClassifiedDomainsModel,
@@ -12,7 +14,8 @@ data class FeatureConfigModel(
     val selfDeletingMessagesModel: SelfDeletingMessagesModel,
     val sndFactorPasswordChallengeModel: ConfigsStatusModel,
     val ssoModel: ConfigsStatusModel,
-    val validateSAMLEmailsModel: ConfigsStatusModel
+    val validateSAMLEmailsModel: ConfigsStatusModel,
+    val mlsModel: MLSModel
 )
 
 enum class Status {
@@ -50,4 +53,9 @@ data class SelfDeletingMessagesModel(
 
 data class SelfDeletingMessagesConfigModel(
     val enforcedTimeoutSeconds: Int
+)
+
+data class MLSModel(
+    val allowedUsers: List<PlainId>,
+    val status: Status
 )

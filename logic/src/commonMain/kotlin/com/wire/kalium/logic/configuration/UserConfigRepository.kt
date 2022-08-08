@@ -14,6 +14,8 @@ interface UserConfigRepository {
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
+    fun isMLSEnabled(): Either<StorageFailure, Boolean>
+    fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
 }
 
 class UserConfigDataSource(
@@ -44,5 +46,11 @@ class UserConfigDataSource(
                     )
                 }
             }
+
+    override fun isMLSEnabled(): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { userConfigStorage.isMLSEnabled() }
+
+    override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
 
 }
