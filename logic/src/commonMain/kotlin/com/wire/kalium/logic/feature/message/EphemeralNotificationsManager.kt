@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.emptyFlow
  * Ideally we should have logic that allows to mark messages as notified, but this will act for cases when we need to notify the user on
  * information we have not persisted or that is not available anymore.
  */
-object EphemeralNotificationsManager: EphemeralNotifications {
+object EphemeralNotificationsManager : EphemeralNotifications {
 
     private val notifications =
         Channel<LocalNotificationConversation>(capacity = Channel.CONFLATED) { emptyFlow<LocalNotificationConversation>() }

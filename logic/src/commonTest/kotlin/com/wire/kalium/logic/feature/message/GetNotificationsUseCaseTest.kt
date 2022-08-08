@@ -512,7 +512,6 @@ class GetNotificationsUseCaseTest {
                 .thenReturn(flowOf())
         }
 
-
         fun arrange() = this to getNotificationsUseCase
     }
 
