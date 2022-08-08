@@ -7,14 +7,18 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncCriteriaProvider
 import com.wire.kalium.logic.sync.SyncCriteriaResolution
+import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Starts and stops SlowSync based on a set of criteria,
@@ -35,11 +39,23 @@ internal class SlowSyncManager(
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
+    private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    init {
+    private val coroutineExceptionHandler = SyncExceptionHandler({
+        slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+    }, {
+        slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(it))
         scope.launch {
+            delay(RETRY_DELAY)
+            startMonitoring()
+        }
+    })
+
+    init { startMonitoring() }
+
+    private fun startMonitoring() {
+        scope.launch(coroutineExceptionHandler) {
             syncCriteriaProvider
                 .syncCriteriaFlow()
                 .distinctUntilChanged()
@@ -64,4 +80,7 @@ internal class SlowSyncManager(
         }
     }
 
+    private companion object {
+        val RETRY_DELAY = 10.seconds
+    }
 }

@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
@@ -14,15 +15,15 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import okio.IOException
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -87,11 +88,8 @@ class IncrementalSyncManagerTest {
 
     @Test
     fun givenSlowSyncIsCompleted_whenWorkerThrows_thenShouldUpdateRepositoryWithFailedState() = runTest(TestKaliumDispatcher.default) {
-        val exception = IOException("Oops")
-        val sourceFlow = flow<EventSource> { throw exception }
-
         val (arrangement, _) = Arrangement()
-            .withWorkerReturning(sourceFlow)
+            .withWorkerReturning(flowThatFailsOnFirstTime())
             .arrange()
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
 
@@ -99,6 +97,34 @@ class IncrementalSyncManagerTest {
         verify(arrangement.incrementalSyncRepository)
             .function(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
             .with(matching { it is IncrementalSyncStatus.Failed })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSlowSyncIsCompleted_whenWorkerThrowsNonCancellation_thenShouldRetry() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withWorkerReturning(flowThatFailsOnFirstTime())
+            .arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+        advanceUntilIdle()
+
+        verify(arrangement.incrementalSyncWorker)
+            .suspendFunction(arrangement.incrementalSyncWorker::incrementalSyncFlow)
+            .wasInvoked(exactly = twice)
+    }
+
+    @Test
+    fun givenSlowSyncIsCompleted_whenWorkerThrowsCancellation_thenShouldNotRetry() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withWorkerReturning(flowThatFailsOnFirstTime(CancellationException("Cancelled")))
+            .arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+        advanceUntilIdle()
+
+        verify(arrangement.incrementalSyncWorker)
+            .suspendFunction(arrangement.incrementalSyncWorker::incrementalSyncFlow)
             .wasInvoked(exactly = once)
     }
 

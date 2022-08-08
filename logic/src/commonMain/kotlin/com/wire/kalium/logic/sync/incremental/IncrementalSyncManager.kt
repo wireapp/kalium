@@ -1,26 +1,23 @@
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.full.SlowSyncManager
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Starts and Stops Incremental Sync once SlowSync is performed.
@@ -41,8 +38,9 @@ import kotlinx.coroutines.launch
  * too long, SlowSync will be invalidated and [SlowSyncManager] should
  * perform a fresh SlowSync.
  *
- * This Manager **will** be responsible for retries in case of network
- * failures or connectivity changes in general.
+ * This Manager retries automatically in case of failures,
+ * but still doesn't actively monitor connectivity changes in general,
+ * like when a mobile phone changes from Wi-Fi to Mobile Data, etc.
  *
  * @see Event
  * @see SlowSyncManager
@@ -61,29 +59,21 @@ internal class IncrementalSyncManager(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val eventProcessingDispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
-    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        when (throwable) {
-            is CancellationException -> {
-                kaliumLogger.withFeatureId(SYNC).i("Sync job was cancelled")
-                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
-            }
-
-            is KaliumSyncException -> {
-                kaliumLogger.withFeatureId(SYNC).i("SyncException during events processing", throwable)
-                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(throwable.coreFailureCause))
-            }
-
-            else -> {
-                kaliumLogger.withFeatureId(SYNC).i("Sync job failed due to unknown reason", throwable)
-                incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(CoreFailure.Unknown(throwable)))
-            }
-            // TODO: Trigger retry depending on failure
+    private val coroutineExceptionHandler = SyncExceptionHandler({
+        incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+    }, {
+        incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(it))
+        syncScope.launch {
+            delay(RETRY_DELAY)
+            startMonitoringForSync()
         }
-    }
+    })
 
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
-    init {
+    init { startMonitoringForSync() }
+
+    private fun startMonitoringForSync() {
         syncScope.launch(coroutineExceptionHandler) {
             // TODO: Trigger re-sync when policy changes from DISCONNECT to KEEP_ALIVE
             slowSyncRepository.slowSyncStatus.collectLatest { status ->
@@ -108,5 +98,9 @@ internal class IncrementalSyncManager(
                 }
                 incrementalSyncRepository.updateIncrementalSyncState(newState)
             }
+    }
+
+    private companion object {
+        val RETRY_DELAY = 10.seconds
     }
 }

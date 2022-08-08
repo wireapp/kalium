@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.sync
 
+import com.wire.kalium.logic.CoreFailure
+
 sealed interface SlowSyncStatus {
 
     object Pending : SlowSyncStatus
@@ -7,6 +9,8 @@ sealed interface SlowSyncStatus {
     object Complete : SlowSyncStatus
 
     data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
+
+    data class Failed(val failure: CoreFailure) : SlowSyncStatus
 }
 
 enum class SlowSyncStep {

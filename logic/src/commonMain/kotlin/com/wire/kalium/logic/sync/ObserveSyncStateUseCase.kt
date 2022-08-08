@@ -15,6 +15,7 @@ class ObserveSyncStateUseCase internal constructor(
     operator fun invoke(): Flow<SyncState> = slowSyncRepository.slowSyncStatus
         .combine(incrementalSyncRepository.incrementalSyncState) { slowStatus, incrementalStatus ->
             when (slowStatus) {
+                is SlowSyncStatus.Failed -> SyncState.Failed(slowStatus.failure)
                 is SlowSyncStatus.Ongoing -> SyncState.SlowSync
                 SlowSyncStatus.Pending -> SyncState.Waiting
                 SlowSyncStatus.Complete -> {
