@@ -2,14 +2,16 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 
 interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
 class FeatureConfigEventReceiverImpl(
     private val userConfigRepository: UserConfigRepository,
+    private val userRepository: UserRepository,
     private val kaliumConfigs: KaliumConfigs
 ) : FeatureConfigEventReceiver {
 
@@ -23,17 +25,22 @@ class FeatureConfigEventReceiverImpl(
                 if (kaliumConfigs.fileRestrictionEnabled) {
                     userConfigRepository.setFileSharingStatus(false, null)
                 } else {
-                    when (event.status) {
-                        FeatureFlagStatusDTO.ENABLED.name -> userConfigRepository.setFileSharingStatus(
+                    when (event.model.status) {
+                        Status.ENABLED -> userConfigRepository.setFileSharingStatus(
                             status = true,
                             isStatusChanged = true
                         )
-                        FeatureFlagStatusDTO.DISABLED.name -> userConfigRepository.setFileSharingStatus(
+                        Status.DISABLED -> userConfigRepository.setFileSharingStatus(
                             status = false,
                             isStatusChanged = true
                         )
                     }
                 }
+            }
+            is Event.FeatureConfig.MLSUpdated -> {
+                val mlsEnabled = event.model.status == Status.ENABLED
+                val selfUserIsWhitelisted = event.model.allowedUsers.contains(userRepository.getSelfUserId().toPlainID())
+                userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
             }
             is Event.FeatureConfig.UnknownFeatureUpdated -> kaliumLogger.w("Ignoring unknown feature config update")
         }
