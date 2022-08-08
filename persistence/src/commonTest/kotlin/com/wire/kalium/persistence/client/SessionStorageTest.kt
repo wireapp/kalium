@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.model.AuthSessionEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.utils.stubs.newServerConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -19,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SessionDAOTest {
+class SessionStorageTest {
 
     private val settings: Settings = MockSettings()
 
@@ -44,7 +45,8 @@ class SessionDAOTest {
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG.links
+                TEST_SERVER_CONFIG.links,
+                TEST_SSO_ID_ENTITY
             )
         val sessionsMap = mapOf(authSessionEntity.userId to authSessionEntity)
         sessionStorage.addOrReplaceSession(authSessionEntity)
@@ -59,7 +61,8 @@ class SessionDAOTest {
             "JWT",
             Random.nextBytes(32).decodeToString(),
             Random.nextBytes(32).decodeToString(),
-            TEST_SERVER_CONFIG.links
+            TEST_SERVER_CONFIG.links,
+            TEST_SSO_ID_ENTITY
         )
         val sessionToDelete =
             AuthSessionEntity.Valid(
@@ -67,7 +70,8 @@ class SessionDAOTest {
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG.links
+                TEST_SERVER_CONFIG.links,
+                TEST_SSO_ID_ENTITY
             )
 
         val sessionsMapExpectedValue =
@@ -98,7 +102,8 @@ class SessionDAOTest {
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG.links
+                TEST_SERVER_CONFIG.links,
+                TEST_SSO_ID_ENTITY
             )
 
         val session2 =
@@ -107,7 +112,8 @@ class SessionDAOTest {
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG.links
+                TEST_SERVER_CONFIG.links,
+                TEST_SSO_ID_ENTITY
             )
 
         sessionStorage.addOrReplaceSession(session1)
@@ -123,6 +129,7 @@ class SessionDAOTest {
 
     private companion object {
         val TEST_SERVER_CONFIG: ServerConfigEntity = newServerConfig(1)
+        val TEST_SSO_ID_ENTITY = SsoIdEntity(null, null, null)
     }
 
 }
