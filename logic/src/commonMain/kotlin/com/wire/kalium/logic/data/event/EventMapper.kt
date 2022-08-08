@@ -133,11 +133,11 @@ class EventMapper(
     ) = when (featureConfigUpdatedDTO.data) {
         is FeatureConfigData.FileSharing -> Event.FeatureConfig.FileSharingUpdated(
             id,
-            featureConfigMapper.fromFeatureConfigsDTO(featureConfigUpdatedDTO.data as FeatureConfigData.FileSharing)
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.FileSharing)
         )
         is FeatureConfigData.MLS -> Event.FeatureConfig.MLSUpdated(
             id,
-            featureConfigMapper.fromFeatureConfigsDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLS)
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLS)
         )
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id)
     }

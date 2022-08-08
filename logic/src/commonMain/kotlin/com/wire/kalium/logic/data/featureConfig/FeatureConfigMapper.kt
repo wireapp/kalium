@@ -6,69 +6,69 @@ import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 
 interface FeatureConfigMapper {
-    fun fromFeatureConfigsDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
-    fun fromFeatureConfigsDTO(status: FeatureFlagStatusDTO): Status
-    fun fromFeatureConfigsDTO(data: FeatureConfigData.MLS): MLSModel
-    fun fromFeatureConfigsDTO(data: FeatureConfigData.AppLock): AppLockModel
-    fun fromFeatureConfigsDTO(data: FeatureConfigData.ClassifiedDomains): ClassifiedDomainsModel
-    fun fromFeatureConfigsDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel
-    fun fromFeatureConfigsDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel
+    fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
+    fun fromDTO(status: FeatureFlagStatusDTO): Status
+    fun fromDTO(data: FeatureConfigData.MLS): MLSModel
+    fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel
+    fun fromDTO(data: FeatureConfigData.ClassifiedDomains): ClassifiedDomainsModel
+    fun fromDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel
+    fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel
 }
 
 class FeatureConfigMapperImpl : FeatureConfigMapper {
-    override fun fromFeatureConfigsDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel =
+    override fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel =
         with(featureConfigResponse) {
             FeatureConfigModel(
-                appLockModel = fromFeatureConfigsDTO(featureConfigResponse.appLock),
-                classifiedDomainsModel = fromFeatureConfigsDTO(featureConfigResponse.classifiedDomains),
-                conferenceCallingModel = ConfigsStatusModel(fromFeatureConfigsDTO(conferenceCalling.status)),
-                conversationGuestLinksModel = ConfigsStatusModel(fromFeatureConfigsDTO(conversationGuestLinks.status)),
-                digitalSignaturesModel = ConfigsStatusModel(fromFeatureConfigsDTO(digitalSignatures.status)),
-                fileSharingModel = fromFeatureConfigsDTO(fileSharing),
-                legalHoldModel = ConfigsStatusModel(fromFeatureConfigsDTO(legalHold.status)),
-                searchVisibilityModel = ConfigsStatusModel(fromFeatureConfigsDTO(searchVisibility.status)),
-                selfDeletingMessagesModel = fromFeatureConfigsDTO(featureConfigResponse.selfDeletingMessages),
+                appLockModel = fromDTO(featureConfigResponse.appLock),
+                classifiedDomainsModel = fromDTO(featureConfigResponse.classifiedDomains),
+                conferenceCallingModel = ConfigsStatusModel(fromDTO(conferenceCalling.status)),
+                conversationGuestLinksModel = ConfigsStatusModel(fromDTO(conversationGuestLinks.status)),
+                digitalSignaturesModel = ConfigsStatusModel(fromDTO(digitalSignatures.status)),
+                fileSharingModel = fromDTO(fileSharing),
+                legalHoldModel = ConfigsStatusModel(fromDTO(legalHold.status)),
+                searchVisibilityModel = ConfigsStatusModel(fromDTO(searchVisibility.status)),
+                selfDeletingMessagesModel = fromDTO(featureConfigResponse.selfDeletingMessages),
                 sndFactorPasswordChallengeModel = ConfigsStatusModel(
-                    fromFeatureConfigsDTO(sndFactorPasswordChallenge.status)
+                    fromDTO(sndFactorPasswordChallenge.status)
                 ),
-                ssoModel = ConfigsStatusModel(fromFeatureConfigsDTO(sso.status)),
-                validateSAMLEmailsModel = ConfigsStatusModel(fromFeatureConfigsDTO(validateSAMLEmails.status)),
-                mlsModel = fromFeatureConfigsDTO(mls)
+                ssoModel = ConfigsStatusModel(fromDTO(sso.status)),
+                validateSAMLEmailsModel = ConfigsStatusModel(fromDTO(validateSAMLEmails.status)),
+                mlsModel = fromDTO(mls)
             )
         }
 
-    override fun fromFeatureConfigsDTO(status: FeatureFlagStatusDTO): Status =
+    override fun fromDTO(status: FeatureFlagStatusDTO): Status =
         when (status) {
             FeatureFlagStatusDTO.ENABLED -> Status.ENABLED
             FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
         }
 
-    override fun fromFeatureConfigsDTO(data: FeatureConfigData.MLS): MLSModel =
+    override fun fromDTO(data: FeatureConfigData.MLS): MLSModel =
         MLSModel(
             data.config.protocolToggleUsers.map { PlainId(it) },
-            fromFeatureConfigsDTO(data.status)
+            fromDTO(data.status)
         )
 
-    override fun fromFeatureConfigsDTO(data: FeatureConfigData.AppLock): AppLockModel =
+    override fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel =
         AppLockModel(
             AppLockConfigModel(data.config.enforceAppLock, data.config.inactivityTimeoutSecs),
-            fromFeatureConfigsDTO(data.status)
+            fromDTO(data.status)
         )
 
-    override fun fromFeatureConfigsDTO(data: FeatureConfigData.ClassifiedDomains): ClassifiedDomainsModel =
+    override fun fromDTO(data: FeatureConfigData.ClassifiedDomains): ClassifiedDomainsModel =
         ClassifiedDomainsModel(
             ClassifiedDomainsConfigModel(data.config.domains),
-            fromFeatureConfigsDTO(data.status)
+            fromDTO(data.status)
         )
 
-    override fun fromFeatureConfigsDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel =
+    override fun fromDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel =
         SelfDeletingMessagesModel(
             SelfDeletingMessagesConfigModel(data.config.enforcedTimeoutSeconds),
-            fromFeatureConfigsDTO(data.status)
+            fromDTO(data.status)
         )
 
-    override fun fromFeatureConfigsDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel =
+    override fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel =
         ConfigsStatusModel(
-            fromFeatureConfigsDTO(data.status)
+            fromDTO(data.status)
         )
 }
