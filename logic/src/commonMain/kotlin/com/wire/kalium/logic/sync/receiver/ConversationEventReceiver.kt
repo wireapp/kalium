@@ -26,13 +26,13 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
-import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.message.EphemeralNotifications
+import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
+import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -65,10 +65,9 @@ internal class ConversationEventReceiverImpl(
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
     private val userConfigRepository: UserConfigRepository,
-    private val ephemeralNotificationsManager: EphemeralNotifications,
+    private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
-    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper(),
 ) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
@@ -331,9 +330,8 @@ internal class ConversationEventReceiverImpl(
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
             }.onSuccess {
                 val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
-                val deletedConversationNotification =
-                    localNotificationMessageMapper.fromDeletedConversationToLocalNotification(event, conversation.conversation, senderUser)
-                ephemeralNotificationsManager.scheduleNotification(deletedConversationNotification)
+                val dataNotification = EphemeralConversationNotification(event, conversation.conversation, senderUser)
+                ephemeralNotificationsManager.scheduleNotification(dataNotification)
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
             }
     }

@@ -9,8 +9,8 @@ import com.wire.kalium.logic.data.user.User
 interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
     fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotificationConversation
-    fun fromDeletedConversationToLocalNotification(
-        deletedConversationEvent: Event.Conversation.DeletedConversation,
+    fun fromConversationEventToLocalNotification(
+        conversationEvent: Event.Conversation,
         conversation: Conversation,
         author: User?
     ): LocalNotificationConversation
@@ -32,22 +32,28 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
         )
     }
 
-    override fun fromDeletedConversationToLocalNotification(
-        deletedConversationEvent: Event.Conversation.DeletedConversation,
+    override fun fromConversationEventToLocalNotification(
+        conversationEvent: Event.Conversation,
         conversation: Conversation,
         author: User?
     ): LocalNotificationConversation {
-        val notificationMessage = LocalNotificationMessage.ConversationDeleted(
-            author = LocalNotificationMessageAuthor(author?.name ?: "", null),
-            time = deletedConversationEvent.timestampIso
-        )
+        return when (conversationEvent) {
+            is Event.Conversation.DeletedConversation -> {
+                val notificationMessage = LocalNotificationMessage.ConversationDeleted(
+                    author = LocalNotificationMessageAuthor(author?.name ?: "", null),
+                    time = conversationEvent.timestampIso
+                )
+                LocalNotificationConversation(
+                    id = conversation.id,
+                    conversationName = conversation.name ?: "",
+                    messages = listOf(notificationMessage),
+                    isOneToOneConversation = false
+                )
+            }
 
-        return LocalNotificationConversation(
-            id = conversation.id,
-            conversationName = conversation.name ?: "",
-            messages = listOf(notificationMessage),
-            isOneToOneConversation = false
-        )
+            else -> throw IllegalArgumentException("This event is not supported yet as a onetime notification")
+        }
+
     }
 
 }

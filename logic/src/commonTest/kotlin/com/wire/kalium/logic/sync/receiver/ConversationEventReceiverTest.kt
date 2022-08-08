@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.feature.message.EphemeralNotifications
+import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
@@ -310,7 +310,7 @@ class ConversationEventReceiverTest {
         private val callManager = mock(classOf<CallManager>())
 
         @Mock
-        private val ephemeralNotifications = mock(classOf<EphemeralNotifications>())
+        private val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             proteusClient,

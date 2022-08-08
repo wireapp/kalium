@@ -416,7 +416,7 @@ class GetNotificationsUseCaseTest {
         val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
-        private val ephemeralNotifications = mock(classOf<EphemeralNotifications>())
+        private val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
 
         val timeParser = TimeParserImpl()
 
