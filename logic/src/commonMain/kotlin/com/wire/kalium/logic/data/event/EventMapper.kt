@@ -10,7 +10,6 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.notification.EventContentDTO
 import com.wire.kalium.network.api.notification.EventResponse
-import com.wire.kalium.network.api.notification.user.RemoveClientEventData
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 
@@ -33,8 +32,8 @@ class EventMapper(
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
                 is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
-                is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO.client)
-                is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO.id)
+                is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO)
+                is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO)
                 is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
                 is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id) // TODO: update it after logic code is merged
@@ -87,12 +86,12 @@ class EventMapper(
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
-    private fun userDelete(id: String, userId: String): Event.User.UserDelete {
-        return Event.User.UserDelete(id)
+    private fun userDelete(id: String, eventUserDelete: EventContentDTO.User.UserDeleteDTO): Event.User.UserDelete {
+        return Event.User.UserDelete(id, idMapper.fromApiModel(eventUserDelete.userId))
     }
 
-    private fun clientRemove(id: String, client: RemoveClientEventData): Event.User.ClientRemove {
-        return Event.User.ClientRemove(client.clientId)
+    private fun clientRemove(id: String, eventClientRemove: EventContentDTO.User.ClientRemoveDTO): Event.User.ClientRemove {
+        return Event.User.ClientRemove(id, ClientId(eventClientRemove.client.clientId))
     }
 
     private fun newConversation(
@@ -139,6 +138,7 @@ class EventMapper(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLS)
         )
+
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id)
     }
 
