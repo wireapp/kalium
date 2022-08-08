@@ -88,22 +88,22 @@ import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
-import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
-import com.wire.kalium.logic.sync.incremental.EventGatherer
-import com.wire.kalium.logic.sync.incremental.EventGathererImpl
-import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
-import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncCriteriaProvider
 import com.wire.kalium.logic.sync.SyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
-import com.wire.kalium.logic.sync.receiver.UserEventReceiver
-import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.incremental.EventGatherer
+import com.wire.kalium.logic.sync.incremental.EventGathererImpl
 import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.sync.incremental.EventProcessorImpl
+import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
+import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.UserEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -374,7 +374,8 @@ abstract class UserSessionScopeCommon(
         get() = UserEventReceiverImpl(
             connectionRepository,
             logout,
-            clientRepository
+            clientRepository,
+            sessionRepository
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver

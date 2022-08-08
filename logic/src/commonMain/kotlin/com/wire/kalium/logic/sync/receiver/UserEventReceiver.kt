@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -14,7 +15,8 @@ interface UserEventReceiver : EventReceiver<Event.User>
 class UserEventReceiverImpl(
     private val connectionRepository: ConnectionRepository,
     private val logoutUseCase: LogoutUseCase,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val sessionRepository: SessionRepository
 ) : UserEventReceiver {
 
     override suspend fun onEvent(event: Event.User) {
@@ -31,13 +33,20 @@ class UserEventReceiverImpl(
 
     private suspend fun handleClientRemove(event: Event.User.ClientRemove) {
         clientRepository.currentClientId().map { currentClientId ->
-            if (currentClientId.value == event.id)
+            if (currentClientId == event.clientId)
                 logoutUseCase(LogoutReason.REMOVED_CLIENT)
         }
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
-        logoutUseCase(LogoutReason.DELETED_ACCOUNT)
+        sessionRepository.currentSession().map { currentSession ->
+            if (currentSession.session.userId == event.userId) {
+                logoutUseCase(LogoutReason.DELETED_ACCOUNT)
+            } else {
+                /* TODO: handle a connection delete their account:
+                    update connection, conversations[member left, 1:1 show as the connection is deleted and... */
+            }
+        }
     }
 
     private companion object {
