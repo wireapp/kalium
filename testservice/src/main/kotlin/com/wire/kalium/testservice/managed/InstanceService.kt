@@ -110,14 +110,16 @@ class InstanceService : Managed {
         var clientId: String? = null
 
         // register client device
-        coreLogic.sessionScope(userId) {
-            if (client.needsToRegisterClient()) {
-                val result = client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))
-                when (result) {
-                    is RegisterClientResult.Failure -> throw WebApplicationException("Instance ${instanceId}: Client registration failed")
-                    is RegisterClientResult.Success -> {
-                        clientId = result.client.id.value
-                        log.info("Instance ${instanceId}: Login successful")
+        runBlocking {
+            coreLogic.sessionScope(userId) {
+                if (client.needsToRegisterClient()) {
+                    val result = client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))
+                    when (result) {
+                        is RegisterClientResult.Failure -> throw WebApplicationException("Instance ${instanceId}: Client registration failed")
+                        is RegisterClientResult.Success -> {
+                            clientId = result.client.id.value
+                            log.info("Instance ${instanceId}: Login with new device ${clientId} successful")
+                        }
                     }
                 }
             }
@@ -139,7 +141,7 @@ class InstanceService : Managed {
 
     fun deleteInstance(id: String): Unit {
         val instance = instances.get(id)
-        log.info("Instance $id: Delete device and logout")
+        log.info("Instance $id: Delete device ${instance?.clientId} and logout")
         instance?.coreLogic?.globalScope {
             val result = session.currentSession()
             if (result is CurrentSessionResult.Success) {
@@ -147,7 +149,7 @@ class InstanceService : Managed {
                     instance.clientId?.let {
                         runBlocking { client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId))) }
                     }
-                    log.info("Instance $id: Device deleted")
+                    log.info("Instance $id: Device ${instance.clientId} deleted")
                     runBlocking { logout() }
                 }
             }
