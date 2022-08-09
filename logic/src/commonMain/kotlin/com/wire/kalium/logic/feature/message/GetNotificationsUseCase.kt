@@ -52,6 +52,7 @@ class GetNotificationsUseCaseImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val timeParser: TimeParser,
+    private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
@@ -60,6 +61,9 @@ class GetNotificationsUseCaseImpl(
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
         return observeRegularNotifications()
             .combine(observeConnectionRequests()) { messages, connections -> messages.plus(connections) }
+            .combine(ephemeralNotificationsManager.observeEphemeralNotifications()) { messages, ephemeralNotifications ->
+                messages.plus(ephemeralNotifications)
+            }
             .distinctUntilChanged()
     }
 
@@ -218,10 +222,12 @@ class GetNotificationsUseCaseImpl(
 
                         containsSelfUserName or containsSelfHandle
                     }
+
                     is MessageContent.MissedCall -> true
                     else -> false
                 }
             }
+
             allNotificationsAllowed(conversationMutedStatus, selfUser) -> true
             else -> false
         }

@@ -71,6 +71,7 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
+import com.wire.kalium.logic.feature.message.EphemeralNotificationsManager
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -375,7 +376,8 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callManager,
             messageTextEditHandler,
-            userConfigRepository
+            userConfigRepository,
+            EphemeralNotificationsManager
         )
     }
 
