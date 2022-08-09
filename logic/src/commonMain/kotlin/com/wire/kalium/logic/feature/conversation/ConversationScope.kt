@@ -69,4 +69,7 @@ class ConversationScope(
 
     val updateConversationMemberRole: UpdateConversationMemberRoleUseCase
         get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
+
+    val removeMemberFromConversation: RemoveMemberFromConversationUseCase
+        get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository)
 }

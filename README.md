@@ -6,6 +6,7 @@
 
 ### Dependencies
 
+- JDK 11 (ex: openjdk-11-jdk on Ubuntu)
 - [libsodium](https://github.com/jedisct1/libsodium)
 - [cryptobox-c](https://github.com/wireapp/cryptobox-c)
 - [cryptobox4j](https://github.com/wireapp/cryptobox4j)
@@ -59,17 +60,19 @@ The path is the same as the one you have passed to the VM options, adjusted for 
 
 #### Running the CLI
 
-With the native libs in the classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
+Note: Currently the CLI only works on the development or staging environments (see CL-61).
+
+Run the following with the native libs in the classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
+
+```
+./gradlew :cli:assemble
+java -jar cli/build/libs/cli.jar login
+```
+
+or if you want the jar file deleted after your run:
 
 ```
 ./gradlew :cli:run --args="login"
-```
-
-or
-
-```
-./gradlew assemble
-java -jar cli/build/libs/cli.jar login
 ```
 
 #### Detekt rules

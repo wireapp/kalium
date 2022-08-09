@@ -126,6 +126,7 @@ class MessageScope(
             messageRepository,
             userRepository,
             conversationRepository,
-            timeParser
+            timeParser,
+            EphemeralNotificationsManager
         )
 }
