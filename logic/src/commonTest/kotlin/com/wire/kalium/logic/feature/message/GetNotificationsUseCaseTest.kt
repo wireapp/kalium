@@ -535,6 +535,7 @@ class GetNotificationsUseCaseTest {
             null,
             ProtocolInfo.Proteus,
             mutedStatus,
+            null,
             TIME_EARLIER,
             TIME_EARLIER,
             lastReadDate = "2000-01-01T12:00:00.000Z",
