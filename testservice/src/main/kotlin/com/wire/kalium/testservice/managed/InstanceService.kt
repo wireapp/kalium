@@ -139,7 +139,7 @@ class InstanceService : Managed {
         return instance
     }
 
-    fun deleteInstance(id: String): Unit {
+    fun deleteInstance(id: String) {
         val instance = instances.get(id)
         log.info("Instance $id: Delete device ${instance?.clientId} and logout")
         instance?.coreLogic?.globalScope {

@@ -1,7 +1,19 @@
 package com.wire.kalium.testservice.api.v1
 
+import com.wire.kalium.logic.data.client.DeleteClientParam
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.testservice.managed.InstanceService
+import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.Instance
+import com.wire.kalium.testservice.models.SendTextRequest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.single
+import kotlinx.coroutines.runBlocking
+import org.slf4j.LoggerFactory
+import javax.validation.Valid
 import javax.ws.rs.POST
 import javax.ws.rs.Path
 import javax.ws.rs.PathParam
@@ -13,19 +25,25 @@ import javax.ws.rs.core.MediaType
 @Produces(MediaType.APPLICATION_JSON)
 class ConversationResources(private val instanceService: InstanceService) {
 
+    private val log = LoggerFactory.getLogger(ConversationResources::class.java.name)
+
     // archive a conversation
+    /*
     @POST
     @Path("/instance/{id}/archive")
     fun archive(@PathParam("id") id: String): Instance {
         throw WebApplicationException("Not yet implemented")
     }
+    */
 
     // clear a conversation
+    /*
     @POST
     @Path("/instance/{id}/clear")
     fun clear(@PathParam("id") id: String): Instance {
         throw WebApplicationException("Not yet implemented")
     }
+    */
 
     // POST /api/v1/instance/{instanceId}/delete
     // Delete a message locally.
@@ -33,8 +51,31 @@ class ConversationResources(private val instanceService: InstanceService) {
     // POST /api/v1/instance/{instanceId}/deleteEverywhere
     // Delete a message for everyone.
 
-    // POST /api/v1/instance/{instanceId}/getMessages
     // Get all messages.
+    @POST
+    @Path("/instance/{id}/getMessages")
+    fun getMessages(@PathParam("id") id: String, @Valid getMessagesRequest: GetMessagesRequest): List<Message> {
+        val instance = instanceService.getInstance(id)
+        if (instance != null) {
+            instance.coreLogic?.globalScope {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.authSession.tokens.userId) {
+                        val recentMessages = runBlocking {
+                            with(getMessagesRequest) {
+                                log.info("Instance $id: Get recent messages...")
+                                messages.getRecentMessages(ConversationId(conversationId, conversationDomain)).first()
+                            }
+                        }
+                        return recentMessages
+                    }
+                }
+            }
+        } else {
+            throw WebApplicationException("Instance $id: Instance not found or already destroyed")
+        }
+        throw WebApplicationException("Instance $id: Could not get recent messages")
+    }
 
     // POST /api/v1/instance/{instanceId}/mute
     // Mute a conversation.
@@ -75,10 +116,25 @@ class ConversationResources(private val instanceService: InstanceService) {
     // Send a text message to a conversation.
     @POST
     @Path("/instance/{id}/sendText")
-    fun sendText(@PathParam("id") id: String): Instance {
+    fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest) {
         val instance = instanceService.getInstance(id)
-
-        throw WebApplicationException("Not yet implemented")
+        instance?.coreLogic?.globalScope {
+            val result = session.currentSession()
+            if (result is CurrentSessionResult.Success) {
+                instance.coreLogic.sessionScope(result.authSession.tokens.userId) {
+                    sendTextRequest.text?.let {
+                        log.info("Instance ${id}: Send text message '${sendTextRequest.text}'")
+                        runBlocking {
+                            with(sendTextRequest) {
+                                messages.sendTextMessage(
+                                    ConversationId(conversationId, conversationDomain), sendTextRequest.text
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // POST /api/v1/instance/{instanceId}/sendTyping
