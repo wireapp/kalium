@@ -52,6 +52,7 @@ class InstanceService : Managed {
     suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance? {
 
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
+        log.info("Instance ${instanceId}: Creating ${instancePath}")
         val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
 
         val serverConfig = if (instanceRequest.customBackend != null) {
@@ -128,12 +129,14 @@ class InstanceService : Managed {
 
     fun deleteInstance(id: String): Unit {
         val instance = instances.get(id)
-        // Delete device
+        log.info("Instance $id: Delete device and logout")
         instance?.coreLogic?.sessionScope(instance.userId) {
             runBlocking {  client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId))) }
+            log.info("Instance $id: Device deleted")
+            logout
+            log.info("Instance $id: Logged out")
         }
-        // TODO: logout
-        // delete instances files
+        log.info("Instance $id: Delete locate files in ${instance?.instancePath}")
         instance?.instancePath?.let {
             try {
                 val files = Files.walk(Path.of(instance.instancePath))
