@@ -52,7 +52,11 @@ class FeatureConfigRepositoryTest {
             ),
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
-            ConfigsStatusModel(Status.ENABLED)
+            ConfigsStatusModel(Status.ENABLED),
+            MLSModel(
+                emptyList(),
+                Status.ENABLED
+            )
         )
 
         val expectedSuccess = Either.Right(featureConfigModel)
@@ -120,7 +124,12 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.SecondFactorPasswordChallenge(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.SSO(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
-            FeatureConfigData.MLS(MLSConfigDTO(emptyList(), ConvProtocol.MLS, emptyList(), 1), FeatureFlagStatusDTO.ENABLED)
+            FeatureConfigData.MLS(MLSConfigDTO(
+                emptyList(),
+                ConvProtocol.MLS,
+                emptyList(),
+                1
+            ), FeatureFlagStatusDTO.ENABLED)
         )
 
         @Mock

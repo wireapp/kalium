@@ -52,10 +52,9 @@ internal class SlowSyncWorkerImpl(
         ) = flatMap { performStep(slowSyncStep, step) }
 
         logger.d("Starting SlowSync")
-        // TODO: to move the feature configs call outside the sync
-        syncFeatureConfigs()
         emit(SlowSyncStep.SELF_USER)
         syncSelfUser()
+            .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
             .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
             .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
             .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)

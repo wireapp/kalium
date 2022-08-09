@@ -203,6 +203,7 @@ sealed class EventContentDTO {
         @SerialName("user.delete")
         data class UserDeleteDTO(
             @SerialName("id") val id: String,
+            @SerialName("qualified_id") val userId: UserId
         ) : User()
     }
 

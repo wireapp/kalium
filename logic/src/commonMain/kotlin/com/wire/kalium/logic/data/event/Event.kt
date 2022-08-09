@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
+import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
@@ -84,7 +86,12 @@ sealed class Event(open val id: String) {
     ) : Event(id) {
         data class FileSharingUpdated(
             override val id: String,
-            val status: String
+            val model: ConfigsStatusModel
+        ) : FeatureConfig(id)
+
+        data class MLSUpdated(
+            override val id: String,
+            val model: MLSModel
         ) : FeatureConfig(id)
 
         data class UnknownFeatureUpdated(
@@ -101,8 +108,8 @@ sealed class Event(open val id: String) {
             val connection: Connection
         ) : User(id)
 
-        data class ClientRemove(override val id: String) : User(id)
-        data class UserDelete(override val id: String) : User(id)
+        data class ClientRemove(override val id: String, val clientId: ClientId) : User(id)
+        data class UserDelete(override val id: String, val userId: UserId) : User(id)
     }
 
     data class Unknown(override val id: String) : Event(id)
