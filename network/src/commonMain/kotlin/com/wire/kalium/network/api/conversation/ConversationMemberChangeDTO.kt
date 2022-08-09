@@ -13,7 +13,6 @@ data class AddConversationMembersRequest(
     val conversationRole: String?
 )
 
-
 @Serializable
 sealed class ConversationMemberAddedDTO {
     // TODO: the server response with an event aka, UserAdded model is inaccurate

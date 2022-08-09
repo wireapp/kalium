@@ -39,7 +39,6 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
             }
         }
 
-
     override suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse> =
         wrapKaliumResponse {
             httpClient.get(
