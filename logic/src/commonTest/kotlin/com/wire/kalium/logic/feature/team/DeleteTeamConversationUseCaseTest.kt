@@ -44,7 +44,6 @@ class DeleteTeamConversationUseCaseTest {
             .whenInvokedWith(any(), any())
             .thenReturn(Either.Right(Unit))
 
-
         val result = deleteTeamConversation(TestConversation.ID)
 
         assertEquals(Result.Success::class, result::class)
@@ -67,8 +66,7 @@ class DeleteTeamConversationUseCaseTest {
             .suspendFunction(teamRepository::deleteConversation)
             .whenInvokedWith(any(), any())
             .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
-
-
+        
         val result = deleteTeamConversation(TestConversation.ID)
 
         assertEquals(Result.Failure::class, result::class)
