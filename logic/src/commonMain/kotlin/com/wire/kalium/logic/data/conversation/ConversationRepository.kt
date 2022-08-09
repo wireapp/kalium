@@ -289,7 +289,11 @@ class ConversationDataSource(
             conversationId
         )
 
-        return messageDAO.getMessageById(messageId, conversationId).firstOrNull()?.let { messageMapper.fromEntityToMessage(it) }
+        return messageId?.let {
+            messageDAO.getMessageById(messageId, conversationId).firstOrNull()?.let {
+                messageMapper.fromEntityToMessage(it)
+            }
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
