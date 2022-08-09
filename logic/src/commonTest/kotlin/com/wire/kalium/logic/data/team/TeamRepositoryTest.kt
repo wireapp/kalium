@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -11,7 +12,6 @@ import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
@@ -25,6 +25,7 @@ import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -59,9 +60,6 @@ class TeamRepositoryTest {
     @Mock
     private val teamsApi = mock(classOf<TeamsApi>())
 
-    @Mock
-    private val conversationDAO = mock(classOf<ConversationDAO>())
-
     private lateinit var teamRepository: TeamRepository
 
     @BeforeTest
@@ -72,7 +70,6 @@ class TeamRepositoryTest {
             teamsApi = teamsApi,
             userDAO = userDAO,
             userMapper = userMapper,
-            conversationDAO = conversationDAO,
         )
     }
 
@@ -232,5 +229,37 @@ class TeamRepositoryTest {
             assertEquals(null, awaitItem())
             awaitComplete()
         }
+    }
+
+    @Test
+    fun givenAConversationId_whenDeletingATeamConversation_thenShouldCallToApiLayerSucceed() = runTest {
+        given(teamsApi)
+            .suspendFunction(teamsApi::deleteConversation)
+            .whenInvokedWith(any(), any())
+            .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
+
+        val result = teamRepository.deleteConversation(TestConversation.ID, "aTeamId")
+
+        result.shouldSucceed()
+        verify(teamsApi)
+            .suspendFunction(teamsApi::deleteConversation)
+            .with(eq("valueConvo"), eq("aTeamId"))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConversationId_whenDeletingATeamConversationAndErrorFromApi_thenShouldFail() = runTest {
+        given(teamsApi)
+            .suspendFunction(teamsApi::deleteConversation)
+            .whenInvokedWith(any(), any())
+            .thenReturn(NetworkResponse.Error(KaliumException.GenericError(RuntimeException("Some error happened"))))
+
+        val result = teamRepository.deleteConversation(TestConversation.ID, "aTeamId")
+
+        result.shouldFail()
+        verify(teamsApi)
+            .suspendFunction(teamsApi::deleteConversation)
+            .with(eq("valueConvo"), eq("aTeamId"))
+            .wasInvoked(once)
     }
 }

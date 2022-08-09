@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -12,7 +11,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.teams.TeamsApi
-import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
@@ -24,15 +22,14 @@ interface TeamRepository {
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit>
 }
+
 @Suppress("LongParameterList")
 internal class TeamDataSource(
     private val userDAO: UserDAO,
     private val teamDAO: TeamDAO,
     private val teamsApi: TeamsApi,
-    private val conversationDAO: ConversationDAO,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
@@ -85,11 +82,6 @@ internal class TeamDataSource(
     override suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit> {
         return wrapApiRequest {
             teamsApi.deleteConversation(conversationId.value, teamId)
-        }.flatMap {
-            wrapStorageRequest {
-                // todo: check if this is necessary, or on received event will be handled
-                conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
-            }
         }
     }
 }

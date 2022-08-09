@@ -201,7 +201,6 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.teamDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
-            userDatabaseProvider.conversationDAO
         )
 
     private val connectionRepository: ConnectionRepository

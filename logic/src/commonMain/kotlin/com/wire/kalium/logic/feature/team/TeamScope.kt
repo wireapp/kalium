@@ -18,4 +18,10 @@ class TeamScope internal constructor(
             userRepository = userRepository,
             teamRepository = teamRepository,
         )
+
+    val deleteTeamConversationUseCase: DeleteTeamConversationUseCase
+        get() = DeleteTeamConversationUseCaseImpl(
+            getSelfTeam = getSelfTeamUseCase,
+            teamRepository = teamRepository,
+        )
 }
