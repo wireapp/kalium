@@ -14,7 +14,7 @@ class TeamScope internal constructor(
         )
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
-        get() = GetSelfTeamUseCase(
+        get() = GetSelfTeamUseCaseImpl(
             userRepository = userRepository,
             teamRepository = teamRepository,
         )

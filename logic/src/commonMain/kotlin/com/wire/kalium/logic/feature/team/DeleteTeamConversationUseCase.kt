@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 
 fun interface DeleteTeamConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Result
@@ -16,7 +17,7 @@ internal class DeleteTeamConversationUseCaseImpl(
 ) : DeleteTeamConversationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Result {
-        val teamId = getSelfTeam().first()?.id
+        val teamId = getSelfTeam().firstOrNull()?.id
         return teamRepository.deleteConversation(conversationId, teamId.orEmpty())
             .fold({
                 Result.Failure(it)
