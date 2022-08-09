@@ -37,7 +37,7 @@ interface MLSConversationRepository {
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
-    suspend fun getGroupsByKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
+    suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
     suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit>
 }
 
@@ -103,7 +103,7 @@ class MLSConversationDataSource(
         }
     }
 
-    override suspend fun getGroupsByKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>> =
+    override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>> =
         wrapStorageRequest {
             conversationDAO.getConversationsByKeyingMaterialUpdate(threshold)
         }

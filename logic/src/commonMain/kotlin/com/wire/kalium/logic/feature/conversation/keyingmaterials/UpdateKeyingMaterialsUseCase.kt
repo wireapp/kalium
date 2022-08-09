@@ -24,7 +24,7 @@ class UpdateKeyingMaterialsUseCaseImpl(
     val mlsConversationRepository: MLSConversationRepository
 ) : UpdateKeyingMaterialsUseCase {
     override suspend fun invoke(): UpdateKeyingMaterialsResult =
-        mlsConversationRepository.getGroupsByKeyingMaterialUpdate(KEYING_MATERIAL_UPDATE_THRESHOLD).map { groups ->
+        mlsConversationRepository.getMLSGroupsRequiringKeyingMaterialUpdate(KEYING_MATERIAL_UPDATE_THRESHOLD).map { groups ->
             groups.onEach { groupId ->
                 mlsConversationRepository.updateKeyingMaterial(groupId)
             }

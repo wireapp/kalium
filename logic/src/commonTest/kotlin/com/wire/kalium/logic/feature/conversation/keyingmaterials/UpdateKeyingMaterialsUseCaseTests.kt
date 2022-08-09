@@ -81,7 +81,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         )
 
         fun withOutdatedGroupsReturns(either: Either<CoreFailure, List<String>>) = apply {
-            given(mlsConversationRepository).suspendFunction(mlsConversationRepository::getGroupsByKeyingMaterialUpdate)
+            given(mlsConversationRepository).suspendFunction(mlsConversationRepository::getMLSGroupsRequiringKeyingMaterialUpdate)
                 .whenInvokedWith(anything())
                 .thenReturn(either)
         }
