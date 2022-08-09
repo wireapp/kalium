@@ -18,6 +18,6 @@ actual class ClientConfig {
     }
 
     actual fun clientType(): ClientType {
-        return ClientType.Temporary
+        return ClientType.Permanent
     }
 }

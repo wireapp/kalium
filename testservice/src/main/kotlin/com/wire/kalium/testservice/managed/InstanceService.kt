@@ -8,6 +8,7 @@ import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
+import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.feature.session.GetAllSessionsResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.testservice.models.Instance
@@ -38,6 +39,10 @@ class InstanceService : Managed {
 
     override fun stop() {
         log.info("Instance service stopping...")
+        instances.forEach { instance ->
+            log.info("Instance ${instance.key}: stopping")
+            deleteInstance(instance.key)
+        }
         log.info("Instance service stopped.")
     }
 
@@ -102,24 +107,29 @@ class InstanceService : Managed {
             loginResult.tokens.userId
         }
 
+        var clientId: String? = null
+
         // register client device
         coreLogic.sessionScope(userId) {
             if (client.needsToRegisterClient()) {
-                when (client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))) {
+                val result = client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))
+                when (result) {
                     is RegisterClientResult.Failure -> throw WebApplicationException("Instance ${instanceId}: Client registration failed")
-                    is RegisterClientResult.Success -> log.info("Instance ${instanceId}: Login successful")
+                    is RegisterClientResult.Success -> {
+                        clientId = result.client.id.value
+                        log.info("Instance ${instanceId}: Login successful")
+                    }
                 }
             }
         }
 
         val instance = Instance(
             instanceRequest.backend,
-            "",
+            clientId,
             instanceId,
             instanceRequest.name,
             coreLogic,
             instancePath,
-            userId,
             instanceRequest.password
         )
         instances.put(instanceId, instance)
@@ -130,12 +140,19 @@ class InstanceService : Managed {
     fun deleteInstance(id: String): Unit {
         val instance = instances.get(id)
         log.info("Instance $id: Delete device and logout")
-        instance?.coreLogic?.sessionScope(instance.userId) {
-            runBlocking {  client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId))) }
-            log.info("Instance $id: Device deleted")
-            logout
-            log.info("Instance $id: Logged out")
+        instance?.coreLogic?.globalScope {
+            val result = session.currentSession()
+            if (result is CurrentSessionResult.Success) {
+                instance.coreLogic.sessionScope(result.authSession.tokens.userId) {
+                    instance.clientId?.let {
+                        runBlocking { client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId))) }
+                    }
+                    log.info("Instance $id: Device deleted")
+                    runBlocking { logout() }
+                }
+            }
         }
+        log.info("Instance $id: Logged out")
         log.info("Instance $id: Delete locate files in ${instance?.instancePath}")
         instance?.instancePath?.let {
             try {

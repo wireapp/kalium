@@ -5,11 +5,10 @@ import com.wire.kalium.logic.data.id.QualifiedID
 
 data class Instance(
     val backend: String,
-    val clientId: String,
+    val clientId: String?,
     val instanceId: String,
     val name: String?,
     val coreLogic: CoreLogic?,
     val instancePath: String?,
-    val userId: QualifiedID,
     val password: String
 )
