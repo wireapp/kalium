@@ -17,8 +17,7 @@ data class ConversationEntity(
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>,
-    val keyingMaterialLastUpdate: Long
+    val accessRole: List<AccessRole>
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -34,7 +33,12 @@ data class ConversationEntity(
 
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
-        data class MLS(val groupId: String, val groupState: GroupState, val epoch: ULong) : ProtocolInfo()
+        data class MLS(
+            val groupId: String,
+            val groupState: GroupState,
+            val epoch: ULong,
+            val keyingMaterialLastUpdate: ULong
+        ) : ProtocolInfo()
     }
 }
 

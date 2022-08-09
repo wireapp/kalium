@@ -41,11 +41,13 @@ class ProtocolInfoMapperTest {
         val CONVERSATION_MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
             "GROUP_ID",
             Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
-            5UL)
+            5UL,
+            0UL
+        )
         val CONVERSATION_PROTEUS_PROTOCOL_INFO = Conversation.ProtocolInfo.Proteus
 
         val CONV_ENTITY_MLS_PROTOCOL_INFO =
-            ConversationEntity.ProtocolInfo.MLS("GROUP_ID", groupState = ConversationEntity.GroupState.ESTABLISHED, 5UL)
+            ConversationEntity.ProtocolInfo.MLS("GROUP_ID", groupState = ConversationEntity.GroupState.ESTABLISHED, 5UL, 0UL)
         val CONV_ENTITY_PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
 
     }

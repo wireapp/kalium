@@ -65,6 +65,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.conversation.ConversationScope
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -328,6 +330,11 @@ abstract class UserSessionScopeCommon(
             syncRepository,
             lazy { keyPackageRepository },
             lazy { client.refillKeyPackages }
+        )
+    internal val keyingMaterialsManager: KeyingMaterialsManager =
+        KeyingMaterialsManagerImpl(
+            syncRepository,
+            lazy { conversations.updateMLSGroupsKeyingMaterials }
         )
 
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)

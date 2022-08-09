@@ -17,6 +17,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 interface ConversationMapper {
@@ -115,19 +116,19 @@ internal class ConversationMapperImpl(
         teamId: String?,
         options: ConversationOptions
     ) = CreateConversationRequest(
-            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+        qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
         } else emptyList(),
-            name = name,
-            access = options.access?.toList()?.map { toApiModel(it) },
-            accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
-            convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
-            messageTimer = null,
-            receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
-            conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
-            protocol = toApiModel(options.protocol),
-            creatorClient = options.creatorClientId
-        )
+        name = name,
+        access = options.access?.toList()?.map { toApiModel(it) },
+        accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
+        convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
+        messageTimer = null,
+        receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+        conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
+        protocol = toApiModel(options.protocol),
+        creatorClient = options.creatorClientId
+    )
 
     override fun toConversationDetailsOneToOne(
         conversation: Conversation,
@@ -168,7 +169,13 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING_JOIN, epoch ?: 0UL)
+            ConvProtocol.MLS -> ProtocolInfo.MLS(
+                groupId ?: "",
+                mlsGroupState ?: GroupState.PENDING_JOIN,
+                epoch ?: 0UL,
+                keyingMaterialLastUpdate = Clock.System.now().toEpochMilliseconds().toULong()
+            )
+
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }

@@ -26,7 +26,8 @@ private class ConversationMapper {
                 ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
                     mls_group_id ?: "",
                     mls_group_state,
-                    mls_epoch.toULong()
+                    mls_epoch.toULong(),
+                    keying_material_last_update.toULong()
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
@@ -37,8 +38,7 @@ private class ConversationMapper {
             lastModifiedDate = last_modified_date,
             lastReadDate = conversation.last_read_date,
             access = access_list,
-            accessRole = access_role_list,
-            keyingMaterialLastUpdate = keying_material_last_update
+            accessRole = access_role_list
         )
     }
 }

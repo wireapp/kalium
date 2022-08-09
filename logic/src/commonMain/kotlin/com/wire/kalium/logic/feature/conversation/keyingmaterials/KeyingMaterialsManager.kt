@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.conversation.keyingmaterial
+package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.logic.data.sync.SyncRepository
 import com.wire.kalium.logic.data.sync.SyncState
@@ -14,6 +14,11 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
 
 // The duration in hours after which we should re-check key package count.
+/**
+ * TODO: ATM we don't need that, but later we can optimise the manager by running it only every 24hours
+ *   If we impl the 24hours check, then we need to check if all the update call succeed,
+ *    other than that we should not consider the update as succeeded.
+ */
 internal val KEYING_MATERIAL_CHECK_DURATION = 24.hours
 
 /**

@@ -151,7 +151,8 @@ class JoinExistingMLSConversationsUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     "group1",
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
-                    epoch = 1UL
+                    epoch = 1UL,
+                    keyingMaterialLastUpdate = 0UL
                 )
             ).copy(id = ConversationId("id1", "domain"))
 
@@ -159,7 +160,8 @@ class JoinExistingMLSConversationsUseCaseTest {
                 Conversation.ProtocolInfo.MLS(
                     "group1",
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
-                    epoch = 1UL
+                    epoch = 1UL,
+                    keyingMaterialLastUpdate = 0UL
                 )
             ).copy(id = ConversationId("id2", "domain"))
         }

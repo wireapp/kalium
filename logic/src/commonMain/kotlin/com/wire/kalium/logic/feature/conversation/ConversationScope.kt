@@ -10,8 +10,8 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.keyingmaterial.UpdateKeyingMaterialsUseCase
-import com.wire.kalium.logic.feature.conversation.keyingmaterial.UpdateKeyingMaterialsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")
