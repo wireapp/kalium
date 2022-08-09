@@ -314,8 +314,8 @@ class ConversationDataSource(
     // on if the timestamp is bigger inside the domain model or on a Instant object
     private fun hasNewMessages(conversation: Conversation) =
         with(conversation) {
-            if (lastModifiedDate != null && lastReadDate != null) {
-                timeParser.isTimeBefore(lastModifiedDate, lastReadDate)
+            if (lastModifiedDate != null) {
+                timeParser.isTimeBefore(lastReadDate, lastModifiedDate)
             } else {
                 false
             }
