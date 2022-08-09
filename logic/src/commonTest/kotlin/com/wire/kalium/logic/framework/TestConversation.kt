@@ -9,9 +9,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.conversation.ConversationMemberAddedDTO
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.model.ConversationAccessDTO
@@ -125,8 +126,16 @@ object TestConversation {
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
-        AddParticipantResponse.UserAdded(
-            "",
+        ConversationMemberAddedDTO.Changed(
+            "conversation.member-join",
+            qualifiedConversationId = NETWORK_ID,
+            fromUser = NETWORK_USER_ID1,
+            time = "2022-03-30T15:36:00.000Z"
+        )
+
+    val REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE =
+        ConversationMemberRemovedDTO.Changed(
+            "conversation.member-leave",
             qualifiedConversationId = NETWORK_ID,
             fromUser = NETWORK_USER_ID1,
             time = "2022-03-30T15:36:00.000Z"
