@@ -54,8 +54,9 @@ internal class ConversationMapperImpl(
         type = apiModel.getConversationType(selfUserTeamId),
         teamId = apiModel.teamId,
         protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
-        mutedStatus = conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
+        mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+        removedBy = null,
         lastReadDate = EPOCH_FIRST_DAY,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
@@ -74,7 +75,8 @@ internal class ConversationMapperImpl(
         type = daoModel.type.fromDaoModelToType(),
         teamId = daoModel.teamId?.let { TeamId(it) },
         protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
-        mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
+        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(daoModel.mutedStatus),
+        removedBy = daoModel.removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
         lastReadDate = daoModel.lastReadDate,
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate,
@@ -115,19 +117,19 @@ internal class ConversationMapperImpl(
         teamId: String?,
         options: ConversationOptions
     ) = CreateConversationRequest(
-            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+        qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
         } else emptyList(),
-            name = name,
-            access = options.access?.toList()?.map { toApiModel(it) },
-            accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
-            convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
-            messageTimer = null,
-            receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
-            conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
-            protocol = toApiModel(options.protocol),
-            creatorClient = options.creatorClientId
-        )
+        name = name,
+        access = options.access?.toList()?.map { toApiModel(it) },
+        accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
+        convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
+        messageTimer = null,
+        receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+        conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
+        protocol = toApiModel(options.protocol),
+        creatorClient = options.creatorClientId
+    )
 
     override fun toConversationDetailsOneToOne(
         conversation: Conversation,

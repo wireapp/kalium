@@ -53,12 +53,12 @@ class ConversationMapperTest {
             .then { transformedConversationId }
 
         given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromDaoModel)
+            .function(conversationStatusMapper::fromMutedStatusDaoModel)
             .whenInvokedWith(any())
             .then { MutedConversationStatus.AllAllowed }
 
         given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromApiToDaoModel)
+            .function(conversationStatusMapper::fromMutedStatusApiToDaoModel)
             .whenInvokedWith(any())
             .then { ConversationEntity.MutedStatus.ALL_ALLOWED }
 
@@ -79,12 +79,12 @@ class ConversationMapperTest {
             .then { transformedConversationId }
 
         given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromDaoModel)
+            .function(conversationStatusMapper::fromMutedStatusDaoModel)
             .whenInvokedWith(any())
             .then { MutedConversationStatus.AllAllowed }
 
         given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromApiToDaoModel)
+            .function(conversationStatusMapper::fromMutedStatusApiToDaoModel)
             .whenInvokedWith(any())
             .then { ConversationEntity.MutedStatus.ALL_ALLOWED }
 
@@ -114,12 +114,12 @@ class ConversationMapperTest {
             .then { QualifiedIDEntity("transformed", "tDomain") }
 
         given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromDaoModel)
+            .function(conversationStatusMapper::fromMutedStatusDaoModel)
             .whenInvokedWith(any())
             .then { MutedConversationStatus.AllAllowed }
 
         given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromApiToDaoModel)
+            .function(conversationStatusMapper::fromMutedStatusApiToDaoModel)
             .whenInvokedWith(any())
             .then { ConversationEntity.MutedStatus.ALL_ALLOWED }
 
@@ -138,12 +138,12 @@ class ConversationMapperTest {
             .then { QualifiedIDEntity("transformed", "tDomain") }
 
         given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromDaoModel)
+            .function(conversationStatusMapper::fromMutedStatusDaoModel)
             .whenInvokedWith(any())
             .then { MutedConversationStatus.AllAllowed }
 
         given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromApiToDaoModel)
+            .function(conversationStatusMapper::fromMutedStatusApiToDaoModel)
             .whenInvokedWith(any())
             .then { ConversationEntity.MutedStatus.ALL_ALLOWED }
 
