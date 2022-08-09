@@ -173,7 +173,7 @@ internal class ConversationMapperImpl(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
-                keyingMaterialLastUpdate = Clock.System.now().toEpochMilliseconds().toULong()
+                keyingMaterialLastUpdate = Clock.System.now()
             )
 
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus

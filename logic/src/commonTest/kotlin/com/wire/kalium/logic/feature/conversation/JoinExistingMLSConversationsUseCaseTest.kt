@@ -23,6 +23,7 @@ import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -152,7 +153,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                     "group1",
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
-                    keyingMaterialLastUpdate = 0UL
+                    keyingMaterialLastUpdate = Clock.System.now()
                 )
             ).copy(id = ConversationId("id1", "domain"))
 
@@ -161,7 +162,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                     "group1",
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
-                    keyingMaterialLastUpdate = 0UL
+                    keyingMaterialLastUpdate = Clock.System.now()
                 )
             ).copy(id = ConversationId("id2", "domain"))
         }

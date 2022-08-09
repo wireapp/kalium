@@ -25,8 +25,7 @@ import com.wire.kalium.persistence.dao.Member
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
+import kotlinx.datetime.Instant
 
 interface MLSConversationRepository {
 
@@ -37,7 +36,7 @@ interface MLSConversationRepository {
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
-    suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
+    suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Instant): Either<CoreFailure, List<String>>
     suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit>
 }
 
@@ -103,7 +102,7 @@ class MLSConversationDataSource(
         }
     }
 
-    override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>> =
+    override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Instant): Either<CoreFailure, List<String>> =
         wrapStorageRequest {
             conversationDAO.getConversationsByKeyingMaterialUpdate(threshold)
         }
@@ -121,7 +120,7 @@ class MLSConversationDataSource(
                     } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {
-                        conversationDAO.updateKeyingMaterial(groupID, Clock.System.now().toEpochMilliseconds().days)
+                        conversationDAO.updateKeyingMaterial(groupID, Clock.System.now())
                     }
                 }.flatMap {
                     Either.Right(Unit)

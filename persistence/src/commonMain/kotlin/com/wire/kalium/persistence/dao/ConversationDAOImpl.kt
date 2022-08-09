@@ -10,8 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlin.time.Duration
-import kotlin.time.DurationUnit
+import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
 
@@ -27,7 +26,7 @@ private class ConversationMapper {
                     mls_group_id ?: "",
                     mls_group_state,
                     mls_epoch.toULong(),
-                    keying_material_last_update.toULong()
+                    Instant.fromEpochMilliseconds(keying_material_last_update)
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
@@ -100,7 +99,8 @@ class ConversationDAOImpl(
                 access,
                 accessRole,
                 lastReadDate,
-                MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate.epochSeconds
+                else MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE,
             )
         }
     }
@@ -278,14 +278,14 @@ class ConversationDAOImpl(
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
 
-    override suspend fun updateKeyingMaterial(groupId: String, lastUpdate: Duration) {
-        conversationQueries.updateKeyingMaterialDate(lastUpdate.toLong(DurationUnit.DAYS), groupId)
+    override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
+        conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)
     }
 
-    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> =
+    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Instant): List<String> =
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
             ConversationEntity.Protocol.MLS,
-            threshold.toLong(DurationUnit.DAYS)
+            threshold.epochSeconds
         ).executeAsList()
 }

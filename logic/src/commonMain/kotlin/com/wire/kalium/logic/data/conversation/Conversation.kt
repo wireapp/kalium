@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
+import kotlinx.datetime.Instant
 
 data class Conversation(
     val id: ConversationId,
@@ -69,7 +70,7 @@ data class Conversation(
             val groupId: String,
             val groupState: GroupState,
             val epoch: ULong,
-            val keyingMaterialLastUpdate: ULong
+            val keyingMaterialLastUpdate: Instant
         ) : ProtocolInfo() {
             enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
         }
