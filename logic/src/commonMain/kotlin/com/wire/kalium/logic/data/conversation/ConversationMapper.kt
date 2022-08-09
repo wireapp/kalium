@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -55,7 +56,7 @@ internal class ConversationMapperImpl(
         protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
         mutedStatus = conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
-        lastReadDate = null,
+        lastReadDate = EPOCH_FIRST_DAY,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
