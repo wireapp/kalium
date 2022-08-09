@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 
 data class Conversation(
     val id: ConversationId,
@@ -18,6 +19,7 @@ data class Conversation(
     val mutedStatus: MutedConversationStatus,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
+    val lastReadDate: String,
     val access: List<Access>,
     val accessRole: List<AccessRole>
 ) {
@@ -36,9 +38,30 @@ data class Conversation(
         (it.contains(AccessRole.SERVICE))
     }
 
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
-    enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL }
-    enum class Access { PRIVATE, INVITE, LINK, CODE }
+    enum class Type {
+        SELF,
+        ONE_ON_ONE,
+        GROUP,
+        CONNECTION_PENDING;
+    }
+
+    enum class AccessRole {
+        TEAM_MEMBER,
+        NON_TEAM_MEMBER,
+        GUEST,
+        SERVICE,
+        EXTERNAL;
+    }
+
+    enum class Access {
+        PRIVATE,
+        INVITE,
+        LINK,
+        CODE;
+    }
+
+    val supportsUnreadMessageCount
+        get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
@@ -58,12 +81,14 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
+        val unreadMessagesCount: Long,
     ) : ConversationDetails(conversation)
 
     data class Group(
         override val conversation: Conversation,
         val legalHoldStatus: LegalHoldStatus,
-        val hasOngoingCall: Boolean = false
+        val hasOngoingCall: Boolean = false,
+        val unreadMessagesCount: Long,
     ) : ConversationDetails(conversation)
 
     data class Connection(
@@ -81,10 +106,11 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             name = otherUser?.name,
             type = Conversation.Type.CONNECTION_PENDING,
             teamId = otherUser?.teamId,
-            protocolInfo,
+            protocol = protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
+            lastReadDate = EPOCH_FIRST_DAY,
             access = access,
             accessRole = accessRole
         )

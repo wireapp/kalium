@@ -3,11 +3,14 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -26,7 +29,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -37,7 +40,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-// TODO(testing): missing unit test
 @Suppress("TooManyFunctions")
 interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
@@ -45,7 +47,7 @@ interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
-    suspend fun getSelfUserId(): QualifiedID
+    fun getSelfUserId(): QualifiedID
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
@@ -55,49 +57,51 @@ interface UserRepository {
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
+    suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
     suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
+    suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
+    suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-class UserDataSource(
+internal class UserDataSource(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
+    private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
-    private val assetRepository: AssetRepository,
+    private val sessionRepository: SessionRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
-    override suspend fun getSelfUserId(): QualifiedID {
+    override fun getSelfUserId(): QualifiedID {
         return idMapper.fromDaoModel(getSelfUserIDEntity())
     }
 
-    private suspend fun getSelfUserIDEntity(): QualifiedIDEntity {
-        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY).firstOrNull()
+    private fun getSelfUserIDEntity(): QualifiedIDEntity {
+        val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY)
         return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
             ?: run { throw IllegalStateException() }
     }
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .map { userMapper.fromApiSelfModelToDaoModel(it).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
-        .flatMap { userEntity ->
-            assetRepository.downloadUsersPictureAssets(getQualifiedUserAssetId(userEntity))
-            userDAO.insertUser(userEntity)
-            metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY)
-            Either.Right(Unit)
+        .flatMap { userDTO ->
+            // update self user SsoId
+            sessionRepository.updateSsoId(idMapper.fromApiModel(userDTO.id), idMapper.toSsoId(userDTO.ssoID))
+                .map { userMapper.fromApiSelfModelToDaoModel(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+                .flatMap { userEntity ->
+                    wrapStorageRequest { userDAO.insertUser(userEntity) }
+                        .flatMap {
+                            wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
+                        }
+                }
         }
-
-    private fun getQualifiedUserAssetId(userEntity: UserEntity): List<UserAssetId?> {
-        return mutableListOf<UserAssetId?>().also {
-            it.add(userEntity.previewAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
-            it.add(userEntity.completeAssetId?.let { asset -> idMapper.fromDaoModel(asset) })
-        }
-    }
 
     override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.getAllUsers().first().map { userEntry ->
@@ -160,7 +164,7 @@ class UserDataSource(
 
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         // TODO: handle storage error
-        return metadataDAO.valueByKey(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
+        return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
@@ -233,7 +237,14 @@ class UserDataSource(
         }
 
     override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
-        userDAO.updateUserAvailabilityStatus(getSelfUserIDEntity(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+        userDAO.updateUserAvailabilityStatus(
+            getSelfUserIDEntity(),
+            availabilityStatusMapper.fromModelAvailabilityStatusToDao(status)
+        )
+    }
+
+    override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
+        userDAO.updateUserAvailabilityStatus(idMapper.toDaoModel(userId), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
 
     override suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
@@ -242,6 +253,23 @@ class UserDataSource(
                 .map { publicUserMapper.fromDaoModelToPublicUser(it) }
         }
     }
+
+    override suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>> {
+        return wrapStorageRequest {
+            val selfUserId = getSelfUserIDEntity()
+
+            userDAO.getAllUsersByTeam(teamId.value)
+                .filter { it.id != selfUserId }
+                .map(publicUserMapper::fromDaoModelToPublicUser)
+        }
+    }
+
+    override suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>> =
+        getUsersFromTeam(teamId)
+            .map { users ->
+                users.associate { user -> user.id to clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(user.id)) }
+            }
+            .map(memberMapper::fromMapOfClientsToRecipients)
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

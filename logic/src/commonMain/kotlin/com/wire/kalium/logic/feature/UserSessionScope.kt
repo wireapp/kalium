@@ -28,8 +28,12 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -52,7 +56,9 @@ import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -76,29 +82,31 @@ import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.TeamScope
-import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
-import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.sync.ConversationEventReceiver
-import com.wire.kalium.logic.sync.ConversationEventReceiverImpl
-import com.wire.kalium.logic.sync.EventGatherer
-import com.wire.kalium.logic.sync.EventGathererImpl
-import com.wire.kalium.logic.sync.FeatureConfigEventReceiver
-import com.wire.kalium.logic.sync.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncCriteriaProvider
 import com.wire.kalium.logic.sync.SyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
-import com.wire.kalium.logic.sync.UserEventReceiver
-import com.wire.kalium.logic.sync.UserEventReceiverImpl
-import com.wire.kalium.logic.sync.event.EventProcessor
-import com.wire.kalium.logic.sync.event.EventProcessorImpl
-import com.wire.kalium.logic.sync.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.incremental.EventGatherer
+import com.wire.kalium.logic.sync.incremental.EventGathererImpl
+import com.wire.kalium.logic.sync.incremental.EventProcessor
+import com.wire.kalium.logic.sync.incremental.EventProcessorImpl
+import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
+import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.UserEventReceiver
+import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -126,7 +134,7 @@ abstract class UserSessionScopeCommon(
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    // we made this lazy so it will have a single instance for the storage
+    // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
@@ -137,6 +145,9 @@ abstract class UserSessionScopeCommon(
         get() = EventInfoStorageImpl(userPreferencesSettings)
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
+
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider
+        get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
 
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
@@ -149,8 +160,10 @@ abstract class UserSessionScopeCommon(
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
             keyPackageRepository,
-            mlsClientProvider, authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userDatabaseProvider.conversationDAO
+            mlsClientProvider,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            userDatabaseProvider.conversationDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
@@ -161,7 +174,8 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            timeParser
         )
 
     private val messageRepository: MessageRepository
@@ -175,9 +189,10 @@ abstract class UserSessionScopeCommon(
         get() = UserDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
+            userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            assetRepository
+            sessionRepository
         )
 
     private val teamRepository: TeamRepository
@@ -200,6 +215,8 @@ abstract class UserSessionScopeCommon(
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
         userDatabaseProvider.conversationDAO,
+        userDatabaseProvider.userDAO,
+        userDatabaseProvider.metadataDAO
     )
 
     private val publicUserRepository: SearchUserRepository
@@ -216,6 +233,7 @@ abstract class UserSessionScopeCommon(
     private val callRepository: CallRepository by lazy {
         CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
+            qualifiedIdMapper = qualifiedIdMapper,
             callDAO = userDatabaseProvider.callDAO,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
@@ -312,6 +330,10 @@ abstract class UserSessionScopeCommon(
             lazy { client.refillKeyPackages }
         )
 
+    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
+
+    val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper, globalPreferences)
+
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
@@ -319,7 +341,9 @@ abstract class UserSessionScopeCommon(
             userRepository = userRepository,
             clientRepository = clientRepository,
             conversationRepository = conversationRepository,
-            messageSender = messageSender
+            messageSender = messageSender,
+            federatedIdMapper = federatedIdMapper,
+            qualifiedIdMapper = qualifiedIdMapper
         )
     }
 
@@ -338,6 +362,7 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet.proteusClient,
             persistMessage,
             messageRepository,
+            assetRepository,
             conversationRepository,
             mlsConversationRepository,
             userRepository,
@@ -350,10 +375,13 @@ abstract class UserSessionScopeCommon(
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
             connectionRepository,
+            logout,
+            clientRepository,
+            sessionRepository
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = FeatureConfigEventReceiverImpl(userConfigRepository, kaliumConfigs)
+        get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs)
 
     private val preKeyRemoteRepository: PreKeyRemoteRepository
         get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
@@ -383,6 +411,7 @@ abstract class UserSessionScopeCommon(
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
+            keyPackageLimitsProvider,
             mlsClientProvider,
             notificationTokenRepository
         )
@@ -420,10 +449,13 @@ abstract class UserSessionScopeCommon(
             syncManager,
             assetRepository,
             teamRepository,
-            connectionRepository
+            connectionRepository,
+            qualifiedIdMapper,
+            sessionRepository,
+            userId,
         )
     val logout: LogoutUseCase
-        get() = LogoutUseCase(
+        get() = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
             userId,
@@ -436,16 +468,18 @@ abstract class UserSessionScopeCommon(
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
+    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(userConfigRepository)
 
     internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
             userConfigRepository,
             featureConfigRepository,
+            userRepository,
             isFileSharingEnabled,
             kaliumConfigs
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, syncManager)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
 
     val calls: CallsScope
         get() = CallsScope(
@@ -455,7 +489,6 @@ abstract class UserSessionScopeCommon(
             userRepository,
             flowManagerService,
             mediaManagerService,
-            syncManager
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)

@@ -5,8 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MetadataQueries
 import kotlinx.coroutines.flow.Flow
 
-// TODO(refactor): suggestion implement with preference
-class MetadataDAOImpl(private val metadataQueries: MetadataQueries): MetadataDAO {
+class MetadataDAOImpl(private val metadataQueries: MetadataQueries) : MetadataDAO {
 
     override suspend fun insertValue(value: String, key: String) {
         metadataQueries.insertValue(key, value)
@@ -16,7 +15,11 @@ class MetadataDAOImpl(private val metadataQueries: MetadataQueries): MetadataDAO
         metadataQueries.deleteValue(key)
     }
 
-    override suspend fun valueByKey(key: String): Flow<String?> {
+    override suspend fun valueByKeyFlow(key: String): Flow<String?> {
         return metadataQueries.selectValueByKey(key).asFlow().mapToOneOrNull()
     }
+
+    override fun valueByKey(key: String): String =
+        metadataQueries.selectValueByKey(key).executeAsOne()
+
 }

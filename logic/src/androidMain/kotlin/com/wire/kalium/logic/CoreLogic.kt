@@ -3,10 +3,9 @@ package com.wire.kalium.logic
 import android.content.Context
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
-import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
-import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
+import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -50,7 +49,12 @@ actual class CoreLogic(
     }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
-        KaliumPreferencesSettings(EncryptedSettingsHolder(appContext, SettingOptions.AppSettings).encryptedSettings)
+        KaliumPreferencesSettings(
+            EncryptedSettingsHolder(
+                appContext,
+                SettingOptions.AppSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData)
+            ).encryptedSettings
+        )
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
@@ -79,7 +83,10 @@ actual class CoreLogic(
             val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, this, userId)
             val userIDEntity = idMapper.toDaoModel(userId)
             val encryptedSettingsHolder =
-                EncryptedSettingsHolder(appContext, SettingOptions.UserSettings(userIDEntity))
+                EncryptedSettingsHolder(
+                    appContext,
+                    SettingOptions.UserSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData, userIDEntity)
+                )
             val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
             val userDatabaseProvider =
                 UserDatabaseProvider(
@@ -113,8 +120,7 @@ actual class CoreLogic(
     }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
-        appContext = appContext,
-        federatedIdMapper = FederatedIdMapperImpl(globalPreferences.value)
+        appContext = appContext
     )
 
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(

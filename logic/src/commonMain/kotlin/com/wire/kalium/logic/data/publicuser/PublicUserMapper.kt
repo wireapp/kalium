@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.OtherUser
@@ -14,6 +15,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserProfileDTO
+import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
@@ -56,7 +58,8 @@ class PublicUserMapperImpl(
         previewPicture = userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
         completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
-        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType)
+        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+        botService = userEntity.botService?.let { BotService(it.id, it.provider) }
     )
 
     override fun fromUserDetailResponseWithUsertype(
@@ -74,7 +77,8 @@ class PublicUserMapperImpl(
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()
             ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
         availabilityStatus = UserAvailabilityStatus.NONE,
-        userType = userType
+        userType = userType,
+        botService = userDetailResponse.service?.let { BotService(it.id, it.provider) }
     )
 
     override fun fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
@@ -95,7 +99,8 @@ class PublicUserMapperImpl(
             ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = userTypeEntity
+        userType = userTypeEntity,
+        botService = userDetailResponse.service?.let { BotEntity(it.id, it.provider) },
     )
 
 }

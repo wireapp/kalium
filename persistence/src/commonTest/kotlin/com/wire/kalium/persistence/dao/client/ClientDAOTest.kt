@@ -26,7 +26,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenNoClientsAreInserted_whenFetchingClientsByUserId_thenTheResultIsEmpty() = runTest {
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
         assertTrue(result.isEmpty())
     }
 
@@ -36,7 +36,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
 
         assertEquals(1, result.size)
         assertEquals(insertedClient, result.first())
@@ -49,7 +49,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user)
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
 
         assertEquals(2, result.size)
         assertEquals(insertedClient, result[0])
@@ -69,7 +69,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(unrelatedUser)
         clientDAO.insertClient(unrelatedInsertedClient)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
 
         assertEquals(2, result.size)
         assertEquals(insertedClient, result.first())
@@ -83,7 +83,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.deleteClient(insertedClient.userId, insertedClient.id)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
         assertTrue(result.isEmpty())
     }
 
@@ -96,7 +96,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.deleteClientsOfUserByQualifiedID(insertedClient.userId)
 
-        val result = clientDAO.getClientsOfUserByQualifiedID(userId).first()
+        val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
         assertTrue(result.isEmpty())
     }
 

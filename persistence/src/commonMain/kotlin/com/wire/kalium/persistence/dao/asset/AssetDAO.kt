@@ -17,4 +17,5 @@ interface AssetDAO {
     suspend fun insertAssets(assetsEntity: List<AssetEntity>)
     suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?>
     suspend fun updateAsset(assetEntity: AssetEntity)
+    suspend fun deleteAsset(key: String)
 }

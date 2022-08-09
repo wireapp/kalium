@@ -247,7 +247,7 @@ class SearchUserRepositoryTest {
             .then { _, _ -> PUBLIC_USER }
 
         given(metadataDAO)
-            .suspendFunction(metadataDAO::valueByKey)
+            .suspendFunction(metadataDAO::valueByKeyFlow)
             .whenInvokedWith(any())
             .then { flowOf(JSON_QUALIFIED_ID) }
 
@@ -287,7 +287,7 @@ class SearchUserRepositoryTest {
                 .then { _, _ -> PUBLIC_USER }
 
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
@@ -330,7 +330,7 @@ class SearchUserRepositoryTest {
                 .then { NetworkResponse.Success(emptyList(), mapOf(), 200) }
 
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
@@ -363,7 +363,7 @@ class SearchUserRepositoryTest {
                 .then { _, _ -> listOf() }
 
             given(userDAO)
-                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionState)
+                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionStates)
                 .whenInvokedWith(anything(), anything())
                 .then { _, _ -> listOf() }
 
@@ -372,13 +372,14 @@ class SearchUserRepositoryTest {
                 searchQuery = "someQuery",
                 searchUsersOptions = SearchUsersOptions(
                     conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
-                        ConversationId("someValue", "someDomain")
-                    )
+                        ConversationId("someValue", "someDomain"),
+                    ),
+                    selfUserIncluded = true
                 )
             )
 
             verify(userDAO)
-                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionState)
+                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionStates)
                 .with(anything(), anything())
                 .wasNotInvoked()
 
@@ -392,7 +393,7 @@ class SearchUserRepositoryTest {
     fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByHandle_ThenSearchForUsersNotInTheConversation() = runTest {
         // given
         given(userDAO)
-            .suspendFunction(userDAO::getUserByHandleAndConnectionState)
+            .suspendFunction(userDAO::getUserByHandleAndConnectionStates)
             .whenInvokedWith(anything(), anything())
             .then { _, _ -> listOf() }
 
@@ -407,13 +408,14 @@ class SearchUserRepositoryTest {
             searchUsersOptions = SearchUsersOptions(
                 conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
                     ConversationId("someValue", "someDomain")
-                )
+                ),
+                selfUserIncluded = true
             )
         )
 
         // then
         verify(userDAO)
-            .suspendFunction(userDAO::getUserByHandleAndConnectionState)
+            .suspendFunction(userDAO::getUserByHandleAndConnectionStates)
             .with(anything(), anything())
             .wasNotInvoked()
 
@@ -454,7 +456,8 @@ class SearchUserRepositoryTest {
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
             userType = UserType.FEDERATED,
-            connectionStatus = ConnectionState.NOT_CONNECTED
+            connectionStatus = ConnectionState.NOT_CONNECTED,
+            botService = null,
         )
 
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
@@ -496,7 +499,8 @@ class SearchUserRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userType = UserTypeEntity.EXTERNAL
+            userType = UserTypeEntity.EXTERNAL,
+            botService = null
         )
 
         val SELF_USER = SelfUser(

@@ -140,10 +140,10 @@ internal class ConnectionDataSource(
 
     /**
      * Check if we can transition to the correct connection status
-     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] or [ConnectionState.ACCEPTED]
+     * [ConnectionState.CANCELLED] [ConnectionState.IGNORED] [ConnectionState.BLOCKED] or [ConnectionState.ACCEPTED]
      */
     private fun isValidConnectionState(connectionState: ConnectionState): Boolean = when (connectionState) {
-        IGNORED, CANCELLED, ACCEPTED -> true
+        BLOCKED, IGNORED, CANCELLED, ACCEPTED -> true
         else -> false
     }
 
@@ -236,7 +236,7 @@ internal class ConnectionDataSource(
     // UserRepository, what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
     private suspend fun getSelfUser(): SelfUser {
-        return metadataDAO.valueByKey(UserDataSource.SELF_USER_ID_KEY)
+        return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
             .filterNotNull()
             .flatMapMerge { encodedValue ->
                 val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)

@@ -10,16 +10,21 @@ import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
+import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -34,32 +39,36 @@ class GetFeatureConfigsStatusUseCaseTest {
     @Test
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
         // Given
-        val fileSharingModel = FeatureConfigModel(
+        val featureConfigModel = FeatureConfigModel(
             AppLockModel(
                 AppLockConfigModel(true, 0),
-                "enabled"
+                Status.ENABLED
             ),
             ClassifiedDomainsModel(
                 ClassifiedDomainsConfigModel(listOf()),
-                "enabled"
+                Status.ENABLED
             ),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
             SelfDeletingMessagesModel(
                 SelfDeletingMessagesConfigModel(0),
-                "enabled"
+                Status.ENABLED
             ),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled"),
-            ConfigsStatusModel("enabled")
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            ConfigsStatusModel(Status.ENABLED),
+            MLSModel(
+                emptyList(),
+                Status.ENABLED
+            )
         )
 
         val (arrangement, getFileSharingStatusUseCase) = Arrangement()
-            .withSuccessfulResponse(fileSharingModel)
+            .withSuccessfulResponse(featureConfigModel)
             .arrange()
 
         // When
@@ -67,6 +76,16 @@ class GetFeatureConfigsStatusUseCaseTest {
 
         verify(arrangement.featureConfigRepository)
             .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setFileSharingStatus)
+            .with(eq(true), eq(false))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setMLSEnabled)
+            .with(eq(false))
             .wasInvoked(exactly = once)
     }
 
@@ -112,6 +131,9 @@ class GetFeatureConfigsStatusUseCaseTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
+
         var kaliumConfigs: KaliumConfigs = KaliumConfigs()
 
         @Mock
@@ -119,8 +141,11 @@ class GetFeatureConfigsStatusUseCaseTest {
 
         val syncFeatureConfigsUseCase =
             SyncFeatureConfigsUseCaseImpl(
-                userConfigRepository, featureConfigRepository,
-                isFileSharingEnabledUseCase, kaliumConfigs
+                userConfigRepository,
+                featureConfigRepository,
+                userRepository,
+                isFileSharingEnabledUseCase,
+                kaliumConfigs
             )
 
         fun withSuccessfulResponse(expectedFileSharingModel: FeatureConfigModel): Arrangement {
@@ -133,7 +158,14 @@ class GetFeatureConfigsStatusUseCaseTest {
                 .function(userConfigRepository::setFileSharingStatus)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
-
+            given(userConfigRepository)
+                .function(userConfigRepository::setMLSEnabled)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+            given(userRepository)
+                .function(userRepository::getSelfUserId)
+                .whenInvoked()
+                .thenReturn(TestUser.SELF.id)
             given(featureConfigRepository)
                 .suspendFunction(featureConfigRepository::getFeatureConfigs).whenInvoked()
                 .thenReturn(Either.Right(expectedFileSharingModel))

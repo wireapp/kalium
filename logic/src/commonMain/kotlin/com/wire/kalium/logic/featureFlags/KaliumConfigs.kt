@@ -17,6 +17,7 @@ data class KaliumConfigs(
     val enableBlacklist: Boolean = false,
     val fileRestrictionEnabled: Boolean = false,
     val shouldEncryptData: Boolean = true,
+    val lowerKeyPackageLimits: Boolean = false,
     val customUrlScheme: String = "",
     val fileRestrictionList: String = "",
     val httpProxyPort: String = "",
@@ -36,4 +37,3 @@ data class KaliumConfigs(
     val passwordMaxAttempts: Int = 0,
     val appLockTimeout: Int = 0
 )
-

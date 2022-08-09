@@ -1,9 +1,11 @@
 package com.wire.kalium.logic.framework
 
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserId
 
 object TestEvent {
 
@@ -14,6 +16,9 @@ object TestEvent {
         members,
         "2022-03-30T15:36:00.000Z"
     )
+
+    fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(eventId, clientId)
+    fun userDelete(eventId: String = "eventId", userId: UserId) = Event.User.UserDelete(eventId, userId)
 
     fun newConnection(eventId: String = "eventId") = Event.User.NewConnection(
         eventId,
@@ -26,5 +31,12 @@ object TestEvent {
             status = ConnectionState.PENDING,
             toId = "told?"
         )
+    )
+
+    fun deletedConversation(eventId: String = "eventId") = Event.Conversation.DeletedConversation(
+        eventId,
+        TestConversation.ID,
+        TestUser.USER_ID,
+        "2022-03-30T15:36:00.000Z"
     )
 }
