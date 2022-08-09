@@ -10,7 +10,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
 import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
 
@@ -26,7 +28,7 @@ private class ConversationMapper {
                     mls_group_id ?: "",
                     mls_group_state,
                     mls_epoch.toULong(),
-                    Instant.fromEpochMilliseconds(keying_material_last_update)
+                    Instant.fromEpochSeconds(keying_material_last_update)
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
@@ -282,10 +284,10 @@ class ConversationDAOImpl(
         conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)
     }
 
-    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Instant): List<String> =
+    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> =
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
             ConversationEntity.Protocol.MLS,
-            threshold.epochSeconds
+            Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
 }

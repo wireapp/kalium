@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
+import kotlin.time.Duration
 
 // TODO: Regardless of how we store this in SQLite we can convert it to an Instant at this level and above.
 data class ConversationEntity(
@@ -102,5 +103,5 @@ interface ConversationDAO {
     suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
-    suspend fun getConversationsByKeyingMaterialUpdate(threshold: Instant): List<String>
+    suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
 }
