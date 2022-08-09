@@ -20,6 +20,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import okio.IOException
 
+@Suppress("MaxLineLength")
 class ConversationApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ConversationApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
@@ -36,16 +37,6 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
             httpClient.post("$PATH_CONVERSATIONS/$PATH_CONVERSATIONS_LIST/$PATH_V2") {
                 setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))
             }
-        }
-
-    /**
-     * returns 200 Member removed and 204 No change
-     */
-    override suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.delete(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
-            )
         }
 
     override suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse> =
@@ -77,16 +68,36 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     /**
      * returns 200 conversation created or 204 conversation unchanged
      */
-    override suspend fun addParticipant(
-        addParticipantRequest: AddParticipantRequest,
+    override suspend fun addMember(
+        request: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<AddParticipantResponse> = try {
+    ): NetworkResponse<ConversationMemberAddedDTO> = try {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
-            setBody(addParticipantRequest)
+            setBody(request)
         }.let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<AddParticipantResponse.UserAdded> { response }
-                HttpStatusCode.NoContent -> wrapKaliumResponse<AddParticipantResponse.ConversationUnchanged> { response }
+                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberAddedDTO.Changed> { response }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberAddedDTO.Unchanged, response)
+                else -> wrapKaliumResponse { response }
+            }
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
+    /**
+     * returns 200 Member removed and 204 No change
+     */
+    override suspend fun removeMember(
+        userId: UserId,
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationMemberRemovedDTO> = try {
+        httpClient.delete(
+            "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
+        ).let { response ->
+            when (response.status) {
+                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberRemovedDTO.Changed> { response }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberRemovedDTO.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
         }

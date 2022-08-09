@@ -7,10 +7,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.anything
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -29,14 +27,11 @@ class ObserveConversationDetailsUseCaseTest {
     @Mock
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
-    @Mock
-    private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
-
     private lateinit var observeConversationsUseCase: ObserveConversationDetailsUseCase
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationDetailsUseCase(conversationRepository, syncManager)
+        observeConversationsUseCase = ObserveConversationDetailsUseCase(conversationRepository)
     }
 
     @Test
@@ -57,27 +52,11 @@ class ObserveConversationDetailsUseCaseTest {
     }
 
     @Test
-    fun givenAConversationID_whenObservingConversationUseCase_thenSyncManagerShouldBeCalled() = runTest {
-        val conversationId = TestConversation.ID
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .then { flowOf() }
-
-        observeConversationsUseCase(conversationId)
-
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
     fun givenTheConversationIsUpdated_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() = runTest {
         val conversation = TestConversation.GROUP()
         val conversationDetailsValues = listOf(
-            Either.Right(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED)),
-            Either.Right(ConversationDetails.Group(conversation.copy(name = "New Name"), LegalHoldStatus.DISABLED))
+            Either.Right(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED, unreadMessagesCount = 0)),
+            Either.Right(ConversationDetails.Group(conversation.copy(name = "New Name"), LegalHoldStatus.DISABLED, unreadMessagesCount = 0))
         )
 
         given(conversationRepository)

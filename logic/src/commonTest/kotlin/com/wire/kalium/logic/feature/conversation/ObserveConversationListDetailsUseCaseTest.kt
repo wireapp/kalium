@@ -16,11 +16,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -46,14 +44,11 @@ class ObserveConversationListDetailsUseCaseTest {
     @Mock
     private val callRepository: CallRepository = mock(CallRepository::class)
 
-    @Mock
-    private val syncManager: SyncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
-
     private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCaseImpl
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, syncManager, callRepository)
+        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository)
     }
 
     @Test
@@ -74,6 +69,11 @@ class ObserveConversationListDetailsUseCaseTest {
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
 
         observeConversationsUseCase().collect()
 
@@ -102,11 +102,12 @@ class ObserveConversationListDetailsUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
-        observeConversationsUseCase().collect()
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
 
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .wasInvoked(exactly = once)
+        observeConversationsUseCase().collect()
 
     }
 
@@ -129,6 +130,11 @@ class ObserveConversationListDetailsUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(flowOf())
 
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
+
         observeConversationsUseCase().collect()
 
         conversations.forEach { conversation ->
@@ -145,13 +151,16 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
-        val groupConversationUpdates = listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED))
+        val groupConversationUpdates =
+            listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED, unreadMessagesCount = 0))
+
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER,
             ConnectionState.ACCEPTED,
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
+            unreadMessagesCount = 0
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
@@ -159,6 +168,7 @@ class ObserveConversationListDetailsUseCaseTest {
             ConnectionState.PENDING,
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
+            unreadMessagesCount = 0
         )
 
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
@@ -183,15 +193,20 @@ class ObserveConversationListDetailsUseCaseTest {
             .whenInvokedWith(eq(oneOnOneConversation.id))
             .thenReturn(oneOnOneDetailsChannel.consumeAsFlow().map { Either.Right(it) })
 
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
+
         observeConversationsUseCase().test {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
 
-            val detailList: List<ConversationDetails> = awaitItem()
-            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, detailList)
+            val conversationList: ConversationListDetails = awaitItem()
+            assertContentEquals(groupConversationUpdates + firstOneOnOneDetails, conversationList.conversationList)
 
             oneOnOneDetailsChannel.send(secondOneOnOneDetails)
-            val updatedDetailList: List<ConversationDetails> = awaitItem()
-            assertContentEquals(groupConversationUpdates + secondOneOnOneDetails, updatedDetailList)
+            val updatedConversationList: ConversationListDetails = awaitItem()
+            assertContentEquals(groupConversationUpdates + secondOneOnOneDetails, updatedConversationList.conversationList)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -201,13 +216,12 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         val groupConversation = TestConversation.GROUP()
-        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED, unreadMessagesCount = 0)
 
         val selfConversation = TestConversation.SELF
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
 
         val firstConversationsList = listOf(groupConversation)
-        val secondConversationsList = firstConversationsList + selfConversation
         val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
         conversationListUpdates.send(firstConversationsList)
 
@@ -231,8 +245,13 @@ class ObserveConversationListDetailsUseCaseTest {
             .whenInvokedWith(eq(selfConversation.id))
             .thenReturn(flowOf(Either.Right(selfConversationDetails)))
 
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
+
         observeConversationsUseCase().test {
-            assertContentEquals(listOf(groupConversationDetails), awaitItem())
+            assertContentEquals(listOf(groupConversationDetails), awaitItem().conversationList)
 
             conversationListUpdates.close()
             awaitComplete()
@@ -243,7 +262,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
         val groupConversation = TestConversation.GROUP()
-        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED, unreadMessagesCount = 0)
 
         val ongoingCall = Call(
             conversationId = groupConversation.id,
@@ -277,15 +296,20 @@ class ObserveConversationListDetailsUseCaseTest {
             .whenInvokedWith(eq(groupConversation.id))
             .thenReturn(flowOf(groupConversationDetails).map { Either.Right(it) })
 
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
+
         observeConversationsUseCase().test {
-            assertEquals(true, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
+            assertEquals(true, (awaitItem().conversationList[0] as ConversationDetails.Group).hasOngoingCall)
         }
     }
 
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
         val groupConversation = TestConversation.GROUP()
-        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED)
+        val groupConversationDetails = ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED, unreadMessagesCount = 0)
 
         val firstConversationsList = listOf(groupConversation)
 
@@ -307,8 +331,13 @@ class ObserveConversationListDetailsUseCaseTest {
             .whenInvokedWith(eq(groupConversation.id))
             .thenReturn(flowOf(groupConversationDetails).map { Either.Right(it) })
 
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
+
         observeConversationsUseCase().test {
-            assertEquals(false, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
+            assertEquals(false, (awaitItem().conversationList[0] as ConversationDetails.Group).hasOngoingCall)
         }
     }
 
@@ -330,6 +359,11 @@ class ObserveConversationListDetailsUseCaseTest {
             .thenReturn(flowOf(listOf(successConversation, failureConversation)))
 
         given(conversationRepository)
+            .suspendFunction(conversationRepository::getUnreadConversationCount)
+            .whenInvoked()
+            .thenReturn(Either.Right(0L))
+
+        given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .then {
@@ -338,8 +372,9 @@ class ObserveConversationListDetailsUseCaseTest {
             }
 
         observeConversationsUseCase().test {
-            assertEquals(awaitItem(), listOf(successConversationDetails))
+            assertEquals(awaitItem().conversationList, listOf(successConversationDetails))
             awaitComplete()
         }
     }
+
 }

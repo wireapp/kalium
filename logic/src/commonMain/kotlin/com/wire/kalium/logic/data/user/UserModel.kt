@@ -3,8 +3,9 @@ package com.wire.kalium.logic.data.user
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 typealias UserId = QualifiedID
 
@@ -63,6 +64,13 @@ enum class ConnectionState {
     ACCEPTED
 }
 
+@Serializable
+data class SsoId(
+    @SerialName("scim_external_id") val scimExternalId: String?,
+    @SerialName("subject") val subject: String?,
+    @SerialName("tenant") val tenant: String?
+)
+
 data class SelfUser(
     override val id: UserId,
     override val name: String?,
@@ -90,16 +98,14 @@ data class OtherUser(
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
     val userType: UserType,
-    override val availabilityStatus: UserAvailabilityStatus
+    override val availabilityStatus: UserAvailabilityStatus,
+    val botService: BotService?
 ) : User()
+
+data class BotService(
+    val id: String,
+    val provider: String
+)
 
 typealias UserAssetId = AssetId
 typealias AssetId = QualifiedID
-
-fun String.toUserId(): UserId {
-    if (contains(VALUE_DOMAIN_SEPARATOR)) {
-        split(VALUE_DOMAIN_SEPARATOR).also {
-            return UserId(value = it.first(), domain = it.last())
-        }
-    } else return UserId(value = this, domain = "")
-}

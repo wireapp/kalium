@@ -424,7 +424,7 @@ class GetNotificationsUseCaseTest {
 
         fun withSelfUserId(id: QualifiedID = MY_ID): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
+                .function(userRepository::getSelfUserId)
                 .whenInvoked()
                 .then { id }
 
@@ -499,6 +499,7 @@ class GetNotificationsUseCaseTest {
             mutedStatus,
             TIME_EARLIER,
             TIME_EARLIER,
+            lastReadDate = "2000-01-01T12:00:00.000Z",
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )

@@ -21,16 +21,19 @@ interface ConversationApi {
 
     suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
 
-    suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit>
-
     suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 
     suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 
-    suspend fun addParticipant(
-        addParticipantRequest: AddParticipantRequest,
+    suspend fun addMember(
+        addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<AddParticipantResponse>
+    ): NetworkResponse<ConversationMemberAddedDTO>
+
+    suspend fun removeMember(
+        userId: UserId,
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationMemberRemovedDTO>
 
     suspend fun updateConversationMemberState(
         memberUpdateRequest: MemberUpdateDTO,
