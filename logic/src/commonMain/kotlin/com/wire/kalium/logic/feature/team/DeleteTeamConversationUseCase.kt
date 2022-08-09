@@ -4,10 +4,17 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.functional.fold
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 
 fun interface DeleteTeamConversationUseCase {
+
+    /**
+     * This use case will allow a group conversation creator (only available for team accounts)
+     * delete a conversation for everyone in the group
+     *
+     * @param conversationId the group conversation to be deleted
+     * @return [Result] indicating operation success or failure
+     */
     suspend operator fun invoke(conversationId: ConversationId): Result
 }
 
