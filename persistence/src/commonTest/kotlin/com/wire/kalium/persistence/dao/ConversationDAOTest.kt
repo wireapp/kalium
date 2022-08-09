@@ -356,7 +356,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
                     val conversationAfterInsert = awaitItem()
 
                     assertTrue(conversationAfterInsert != null)
-                    assertTrue(conversationAfterInsert.lastReadDate == null)
 
                     conversationDAO.updateConversationReadDate(conversationEntity1.id, expectedConversationSeenDate)
 
@@ -558,6 +557,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.Proteus,
             lastNotificationDate = null,
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
+            lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
@@ -570,6 +570,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED, 0UL),
             lastNotificationDate = null,
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
+            lastReadDate = "2000-01-01T12:00:00.000Z",
             mutedStatus = ConversationEntity.MutedStatus.ALL_MUTED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
@@ -584,6 +585,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // This conversation was modified after the last time the user was notified about it
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
+            lastReadDate = "2000-01-01T12:00:00.000Z",
             // and it's status is set to be only notified if there is a mention for the user
             mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),

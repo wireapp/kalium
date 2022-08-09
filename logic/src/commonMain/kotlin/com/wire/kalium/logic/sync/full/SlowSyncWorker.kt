@@ -21,10 +21,9 @@ class SlowSyncWorker(
         kaliumLogger.withFeatureId(SYNC).d("Sync: Starting SlowSync")
 
         val result = try {
-            // TODO: to move the feature configs call outside the sync
             // TODO(optimization): Handle cancellation
-            userSessionScope.syncFeatureConfigsUseCase()
             userSessionScope.users.syncSelfUser()
+                .flatMap { userSessionScope.syncFeatureConfigsUseCase() }
                 .flatMap { userSessionScope.conversations.syncConversations() }
                 .flatMap { userSessionScope.connection.syncConnections() }
                 .flatMap { userSessionScope.team.syncSelfTeamUseCase() }

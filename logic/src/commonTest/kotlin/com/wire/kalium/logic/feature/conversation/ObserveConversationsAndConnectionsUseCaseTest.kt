@@ -111,6 +111,6 @@ class ObserveConversationsAndConnectionsUseCaseTest {
         // when
         val result = observeConversationsAndConnectionsUseCase().first()
         // then
-        assertEquals(result, sorted)
+        assertEquals(result.conversationList, sorted)
     }
 }

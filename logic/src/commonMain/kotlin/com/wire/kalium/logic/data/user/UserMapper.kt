@@ -107,19 +107,21 @@ internal class UserMapperImpl(
         )
     }
 
-    override fun fromDaoModelToSelfUser(userEntity: UserEntity) = SelfUser(
-        idMapper.fromDaoModel(userEntity.id),
-        userEntity.name,
-        userEntity.handle,
-        userEntity.email,
-        userEntity.phone,
-        userEntity.accentId,
-        userEntity.team?.let { TeamId(it) },
-        connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
-        userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
-        availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus)
-    )
+    override fun fromDaoModelToSelfUser(userEntity: UserEntity) = with(userEntity) {
+        SelfUser(
+            idMapper.fromDaoModel(id),
+            name,
+            handle,
+            email,
+            phone,
+            accentId,
+            team?.let { TeamId(it) },
+            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewAssetId?.let { idMapper.fromDaoModel(it) },
+            completeAssetId?.let { idMapper.fromDaoModel(it) },
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+        )
+    }
 
     override fun fromModelToUpdateApiModel(
         user: SelfUser,
