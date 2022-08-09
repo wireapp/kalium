@@ -564,14 +564,14 @@ class ConversationDataSource(
         mutedStatusTimestamp: Long
     ): Either<CoreFailure, Unit> = wrapApiRequest {
         conversationApi.updateConversationMemberState(
-            memberUpdateRequest = conversationStatusMapper.toApiModel(mutedStatus, mutedStatusTimestamp),
+            memberUpdateRequest = conversationStatusMapper.toMutedStatusApiModel(mutedStatus, mutedStatusTimestamp),
             conversationId = idMapper.toApiModel(conversationId)
         )
     }.flatMap {
         wrapStorageRequest {
             conversationDAO.updateConversationMutedStatus(
                 conversationId = idMapper.toDaoModel(conversationId),
-                mutedStatus = conversationStatusMapper.toDaoModel(mutedStatus),
+                mutedStatus = conversationStatusMapper.toMutedStatusDaoModel(mutedStatus),
                 mutedStatusTimestamp = mutedStatusTimestamp
             )
         }

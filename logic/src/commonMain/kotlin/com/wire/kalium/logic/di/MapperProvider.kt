@@ -75,7 +75,7 @@ internal object MapperProvider {
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
     fun conversationMapper(): ConversationMapper =
-        ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(), ProtocolInfoMapperImpl())
+        ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(idMapper()), ProtocolInfoMapperImpl())
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
@@ -88,7 +88,7 @@ internal object MapperProvider {
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
     fun clientMapper(clientConfig: ClientConfig): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper(), clientConfig)
-    fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl()
+    fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl(idMapper())
     fun protoContentMapper(): ProtoContentMapper = ProtoContentMapperImpl()
     fun callMapper(): CallMapper = CallMapper()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
