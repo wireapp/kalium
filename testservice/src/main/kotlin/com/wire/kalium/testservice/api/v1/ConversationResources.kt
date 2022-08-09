@@ -76,6 +76,8 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendText")
     fun sendText(@PathParam("id") id: String): Instance {
+        val instance = instanceService.getInstance(id)
+
         throw WebApplicationException("Not yet implemented")
     }
 

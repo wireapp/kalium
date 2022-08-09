@@ -54,7 +54,17 @@ class InstanceService : Managed {
         val instance = Instance(instanceRequest.backend, "", instanceId, instanceRequest.name, coreLogic, instancePath)
         instances.put(instanceId, instance)
 
-        val serverConfig: ServerConfig.Links by lazy {
+        val serverConfig = if (instanceRequest.customBackend != null) {
+            ServerConfig.Links(
+                api = instanceRequest.customBackend.rest,
+                webSocket = instanceRequest.customBackend.ws,
+                title = instanceRequest.customBackend.name,
+                accounts = ServerConfig.STAGING.accounts,
+                blackList = ServerConfig.STAGING.blackList,
+                teams = ServerConfig.STAGING.teams,
+                website = ServerConfig.STAGING.website
+            )
+        } else {
             if (instanceRequest.backend == "staging") {
                 ServerConfig.STAGING
             } else {
