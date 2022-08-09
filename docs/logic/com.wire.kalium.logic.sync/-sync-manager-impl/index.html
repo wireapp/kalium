@@ -31,30 +31,13 @@ if(savedDarkMode === true){
             <h1 class="cover"><span>Sync</span><wbr><span>Manager</span><wbr><span><span>Impl</span></span></h1>
             <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
               <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="index.html">SyncManagerImpl</a><span class="token punctuation">(</span>userSessionWorkScheduler<span class="token operator">: </span><a href="../-user-session-work-scheduler/index.html">UserSessionWorkScheduler</a><span class="token punctuation">, </span>syncRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-sync-repository/index.html">SyncRepository</a><span class="token punctuation">, </span>eventProcessor<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync.incremental/-event-processor/index.html">EventProcessor</a><span class="token punctuation">, </span>eventGatherer<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync.incremental/-event-gatherer/index.html">EventGatherer</a><span class="token punctuation">, </span>syncCriteriaProvider<span class="token operator">: </span><a href="../-sync-criteria-provider/index.html">SyncCriteriaProvider</a><span class="token punctuation">, </span>kaliumDispatcher<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.util/KaliumDispatcher///PointingToDeclaration/">KaliumDispatcher</span><span class="token punctuation">)</span> : <a href="../-sync-manager/index.html">SyncManager</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>            </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="index.html">SyncManagerImpl</a><span class="token punctuation">(</span>slowSyncRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span>incrementalSyncRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a><span class="token punctuation">)</span> : <a href="../-sync-manager/index.html">SyncManager</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>            </div>
           </div>
           <div class="tabbedcontent">
             <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Properties">Properties</button></div>
             <div class="tabs-section-body">
               <h2 class="">Functions</h2>
-              <div class="table" data-togglable="Functions"><a data-name="-1029364585%2FFunctions%2F867774983" anchor-label="gatherAndProcessEvents" id="-1029364585%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="gather-and-process-events.html"><span>gather</span><wbr><span>And</span><wbr><span>Process</span><wbr><span><span>Events</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1029364585%2FFunctions%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="gather-and-process-events.html"><span class="token function">gatherAndProcessEvents</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="994884722%2FFunctions%2F867774983" anchor-label="isSlowSyncCompleted" id="994884722%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+              <div class="table" data-togglable="Functions"><a data-name="994884722%2FFunctions%2F867774983" anchor-label="isSlowSyncCompleted" id="994884722%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
                     <div class=""><span class="inline-flex">
@@ -88,57 +71,6 @@ if(savedDarkMode === true){
                     </div>
                   </div>
                 </div>
-<a data-name="1533188847%2FFunctions%2F867774983" anchor-label="onSlowSyncComplete" id="1533188847%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="on-slow-sync-complete.html"><span>on</span><wbr><span>Slow</span><wbr><span>Sync</span><wbr><span><span>Complete</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1533188847%2FFunctions%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="on-slow-sync-complete.html"><span class="token function">onSlowSyncComplete</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="1237466854%2FFunctions%2F867774983" anchor-label="onSlowSyncFailure" id="1237466854%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="on-slow-sync-failure.html"><span>on</span><wbr><span>Slow</span><wbr><span>Sync</span><wbr><span><span>Failure</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1237466854%2FFunctions%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="on-slow-sync-failure.html"><span class="token function">onSlowSyncFailure</span></a><span class="token punctuation">(</span>cause<span class="token operator">: </span><a href="../../com.wire.kalium.logic/-core-failure/index.html">CoreFailure</a><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-sync-state/index.html">SyncState</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="-669205487%2FFunctions%2F867774983" anchor-label="startSyncIfNotYetStarted" id="-669205487%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="start-sync-if-not-yet-started.html"><span>start</span><wbr><span>Sync</span><wbr><span>If</span><wbr><span>Not</span><wbr><span>Yet</span><wbr><span><span>Started</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-669205487%2FFunctions%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="start-sync-if-not-yet-started.html"><span class="token function">startSyncIfNotYetStarted</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 <a data-name="1436016610%2FFunctions%2F867774983" anchor-label="waitUntilLive" id="1436016610%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
@@ -158,189 +90,36 @@ if(savedDarkMode === true){
                 </div>
               </div>
               <h2 class="">Properties</h2>
-              <div class="table" data-togglable="Properties"><a data-name="2097044260%2FProperties%2F867774983" anchor-label="coroutineExceptionHandler" id="2097044260%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+              <div class="table" data-togglable="Properties"><a data-name="439172312%2FProperties%2F867774983" anchor-label="incrementalSyncRepository" id="439172312%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
                     <div class=""><span class="inline-flex">
-                        <div><a href="coroutine-exception-handler.html">coroutineExceptionHandler</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2097044260%2FProperties%2F867774983"></span>
+                        <div><a href="incremental-sync-repository.html">incrementalSyncRepository</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="439172312%2FProperties%2F867774983"></span>
                           <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                         </span></span></div>
                     <div>
                       <div class="title">
                         <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
                           <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="2097044260%2FProperties%2F867774983" anchor-label="coroutineExceptionHandler" id="2097044260%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="coroutine-exception-handler.html">coroutineExceptionHandler</a><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineExceptionHandler///PointingToDeclaration/">CoroutineExceptionHandler</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="439172312%2FProperties%2F867774983" anchor-label="incrementalSyncRepository" id="439172312%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="incremental-sync-repository.html">incrementalSyncRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-<a data-name="-1392652459%2FProperties%2F867774983" anchor-label="eventGatherer" id="-1392652459%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+<a data-name="342819869%2FProperties%2F867774983" anchor-label="slowSyncRepository" id="342819869%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
                     <div class=""><span class="inline-flex">
-                        <div><a href="event-gatherer.html">eventGatherer</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1392652459%2FProperties%2F867774983"></span>
+                        <div><a href="slow-sync-repository.html">slowSyncRepository</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="342819869%2FProperties%2F867774983"></span>
                           <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                         </span></span></div>
                     <div>
                       <div class="title">
                         <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
                           <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1392652459%2FProperties%2F867774983" anchor-label="eventGatherer" id="-1392652459%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="event-gatherer.html">eventGatherer</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync.incremental/-event-gatherer/index.html">EventGatherer</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="-1603356317%2FProperties%2F867774983" anchor-label="eventProcessingDispatcher" id="-1603356317%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="event-processing-dispatcher.html">eventProcessingDispatcher</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1603356317%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1603356317%2FProperties%2F867774983" anchor-label="eventProcessingDispatcher" id="-1603356317%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="event-processing-dispatcher.html">eventProcessingDispatcher</a><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineDispatcher///PointingToDeclaration/">CoroutineDispatcher</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="brief "><a data-name="-1603356317%2FProperties%2F867774983" anchor-label="eventProcessingDispatcher" id="-1603356317%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><p class="paragraph">A dispatcher with limited parallelism of 1. This means using this dispatcher only a single coroutine will be processed at a time.</p></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="1727873259%2FProperties%2F867774983" anchor-label="eventProcessor" id="1727873259%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="event-processor.html">eventProcessor</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1727873259%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="1727873259%2FProperties%2F867774983" anchor-label="eventProcessor" id="1727873259%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="event-processor.html">eventProcessor</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync.incremental/-event-processor/index.html">EventProcessor</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="-1335011410%2FProperties%2F867774983" anchor-label="quickSyncJob" id="-1335011410%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="quick-sync-job.html">quickSyncJob</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1335011410%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1335011410%2FProperties%2F867774983" anchor-label="quickSyncJob" id="-1335011410%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">var </span><a href="quick-sync-job.html">quickSyncJob</a><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/Job///PointingToDeclaration/">Job</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="-2131365513%2FProperties%2F867774983" anchor-label="quickSyncScope" id="-2131365513%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="quick-sync-scope.html">quickSyncScope</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2131365513%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-2131365513%2FProperties%2F867774983" anchor-label="quickSyncScope" id="-2131365513%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="quick-sync-scope.html">quickSyncScope</a><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineScope///PointingToDeclaration/">CoroutineScope</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="brief "><a data-name="-2131365513%2FProperties%2F867774983" anchor-label="quickSyncScope" id="-2131365513%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><p class="paragraph">The scope in which the processing of events run. All coroutines will have limited parallelism, as this scope uses <a href="event-processing-dispatcher.html">eventProcessingDispatcher</a>. All coroutines will have <a href="sync-supervisor-job.html">syncSupervisorJob</a> as their parent.</p></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="935486392%2FProperties%2F867774983" anchor-label="syncCriteriaProvider" id="935486392%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="sync-criteria-provider.html">syncCriteriaProvider</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="935486392%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="935486392%2FProperties%2F867774983" anchor-label="syncCriteriaProvider" id="935486392%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="sync-criteria-provider.html">syncCriteriaProvider</a><span class="token operator">: </span><a href="../-sync-criteria-provider/index.html">SyncCriteriaProvider</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="176371806%2FProperties%2F867774983" anchor-label="syncRepository" id="176371806%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="sync-repository.html">syncRepository</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="176371806%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="176371806%2FProperties%2F867774983" anchor-label="syncRepository" id="176371806%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="sync-repository.html">syncRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-sync-repository/index.html">SyncRepository</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="-1635556258%2FProperties%2F867774983" anchor-label="syncScope" id="-1635556258%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="sync-scope.html">syncScope</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1635556258%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1635556258%2FProperties%2F867774983" anchor-label="syncScope" id="-1635556258%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="sync-scope.html">syncScope</a><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CoroutineScope///PointingToDeclaration/">CoroutineScope</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="-114739811%2FProperties%2F867774983" anchor-label="syncSupervisorJob" id="-114739811%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="sync-supervisor-job.html">syncSupervisorJob</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-114739811%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-114739811%2FProperties%2F867774983" anchor-label="syncSupervisorJob" id="-114739811%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="sync-supervisor-job.html">syncSupervisorJob</a><span class="token operator">: </span><span data-unresolved-link="kotlinx.coroutines/CompletableJob///PointingToDeclaration/">CompletableJob</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="brief "><a data-name="-114739811%2FProperties%2F867774983" anchor-label="syncSupervisorJob" id="-114739811%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><p class="paragraph">A <span data-unresolved-link="kotlinx.coroutines//SupervisorJob/#kotlinx.coroutines.Job?/PointingToDeclaration/">SupervisorJob</span> that will serve as parent to Sync work being done. This way, <a href="quick-sync-job.html">quickSyncJob</a> can fail or be cancelled and another can be put in its place.</p></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="-1684474812%2FProperties%2F867774983" anchor-label="userSessionWorkScheduler" id="-1684474812%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="user-session-work-scheduler.html">userSessionWorkScheduler</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1684474812%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1684474812%2FProperties%2F867774983" anchor-label="userSessionWorkScheduler" id="-1684474812%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="user-session-work-scheduler.html">userSessionWorkScheduler</a><span class="token operator">: </span><a href="../-user-session-work-scheduler/index.html">UserSessionWorkScheduler</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="342819869%2FProperties%2F867774983" anchor-label="slowSyncRepository" id="342819869%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="slow-sync-repository.html">slowSyncRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
                       </div>
                     </div>
                   </div>
