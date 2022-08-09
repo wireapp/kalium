@@ -90,6 +90,7 @@ class ConversationDAOImpl(
                 else ConversationEntity.Protocol.PROTEUS,
                 mutedStatus,
                 mutedTime,
+                removedBy,
                 lastModifiedDate,
                 lastNotificationDate,
                 access,
