@@ -5,6 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
+import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -271,4 +272,8 @@ class ConversationDAOImpl(
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
+
+    override suspend fun getLastUnreadMessage(conversationID: QualifiedIDEntity): Message =
+        conversationQueries.getLastUnreadMessage.executeAsOne()
+
 }

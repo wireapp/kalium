@@ -293,7 +293,7 @@ class ConversationDataSource(
                                     conversation = conversation,
                                     otherUser = otherUser,
                                     selfUser = selfUser,
-                                    unreadMessageCount = getUnreadMessageCount(conversation)
+                                    unreadMessageCount = getUnreadMessageCount(conversation),
                                 )
                             }
                         }
