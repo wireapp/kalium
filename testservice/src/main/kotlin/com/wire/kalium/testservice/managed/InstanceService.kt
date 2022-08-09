@@ -2,6 +2,8 @@ package com.wire.kalium.testservice.managed
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.client.DeleteClientParam
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
@@ -11,6 +13,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
 import io.dropwizard.lifecycle.Managed
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
@@ -51,9 +54,6 @@ class InstanceService : Managed {
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
         val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
 
-        val instance = Instance(instanceRequest.backend, "", instanceId, instanceRequest.name, coreLogic, instancePath)
-        instances.put(instanceId, instance)
-
         val serverConfig = if (instanceRequest.customBackend != null) {
             ServerConfig.Links(
                 api = instanceRequest.customBackend.rest,
@@ -76,7 +76,7 @@ class InstanceService : Managed {
         val loginResult = coreLogic.authenticationScope(serverConfig) {
             login(instanceRequest.email, instanceRequest.password, true).let {
                 if (it !is AuthenticationResult.Success) {
-                    throw WebApplicationException("Login failed, check your credentials")
+                    throw WebApplicationException("Instance ${instanceId}: Login failed, check your credentials")
                 } else {
                     it.userSession
                 }
@@ -88,14 +88,14 @@ class InstanceService : Managed {
             val sessions = when (val result = this.session.allSessions()) {
                 is GetAllSessionsResult.Success -> result.sessions
                 is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
-                is GetAllSessionsResult.Failure.Generic -> throw WebApplicationException("Failed retrieve existing sessions: ${result.genericFailure}")
+                is GetAllSessionsResult.Failure.Generic -> throw WebApplicationException("Instance ${instanceId}: Failed retrieve existing sessions: ${result.genericFailure}")
             }
             if (sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
                 this.session.updateCurrentSession(loginResult.tokens.userId)
             } else {
                 val addAccountResult = addAuthenticatedAccount(loginResult, true)
                 if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
-                    throw WebApplicationException("Failed to save session")
+                    throw WebApplicationException("Instance ${instanceId}: Failed to save session")
                 }
             }
             loginResult.tokens.userId
@@ -105,17 +105,33 @@ class InstanceService : Managed {
         coreLogic.sessionScope(userId) {
             if (client.needsToRegisterClient()) {
                 when (client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))) {
-                    is RegisterClientResult.Failure -> throw WebApplicationException("Client registration failed")
-                    is RegisterClientResult.Success -> log.info("Login successful")
+                    is RegisterClientResult.Failure -> throw WebApplicationException("Instance ${instanceId}: Client registration failed")
+                    is RegisterClientResult.Success -> log.info("Instance ${instanceId}: Login successful")
                 }
             }
         }
+
+        val instance = Instance(
+            instanceRequest.backend,
+            "",
+            instanceId,
+            instanceRequest.name,
+            coreLogic,
+            instancePath,
+            userId,
+            instanceRequest.password
+        )
+        instances.put(instanceId, instance)
 
         return instance
     }
 
     fun deleteInstance(id: String): Unit {
         val instance = instances.get(id)
+        // Delete device
+        instance?.coreLogic?.sessionScope(instance.userId) {
+            runBlocking {  client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId))) }
+        }
         // TODO: logout
         // delete instances files
         instance?.instancePath?.let {
