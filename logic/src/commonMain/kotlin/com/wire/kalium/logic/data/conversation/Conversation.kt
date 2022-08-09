@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
@@ -82,6 +83,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
         val unreadMessagesCount: Long,
+        val lastUnreadMessage: Message?
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -89,6 +91,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val legalHoldStatus: LegalHoldStatus,
         val hasOngoingCall: Boolean = false,
         val unreadMessagesCount: Long,
+        val lastUnreadMessage: Message?
     ) : ConversationDetails(conversation)
 
     data class Connection(

@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
@@ -34,7 +35,8 @@ interface ConversationMapper {
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
-        unreadMessageCount: Long
+        unreadMessageCount: Long,
+        lastUnreadMessage: Message
     ): ConversationDetails.OneOne
 }
 
@@ -115,25 +117,26 @@ internal class ConversationMapperImpl(
         teamId: String?,
         options: ConversationOptions
     ) = CreateConversationRequest(
-            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+        qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
         } else emptyList(),
-            name = name,
-            access = options.access?.toList()?.map { toApiModel(it) },
-            accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
-            convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
-            messageTimer = null,
-            receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
-            conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
-            protocol = toApiModel(options.protocol),
-            creatorClient = options.creatorClientId
-        )
+        name = name,
+        access = options.access?.toList()?.map { toApiModel(it) },
+        accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
+        convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
+        messageTimer = null,
+        receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+        conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
+        protocol = toApiModel(options.protocol),
+        creatorClient = options.creatorClientId
+    )
 
     override fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        lastUnreadMessage: Message
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
@@ -143,6 +146,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = LegalHoldStatus.DISABLED,
             userType = otherUser.userType,
             unreadMessagesCount = unreadMessageCount,
+            lastUnreadMessage = lastUnreadMessage
         )
     }
 

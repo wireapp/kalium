@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
 
 // TODO: Regardless of how we store this in SQLite we can convert it to an Instant at this level and above.
@@ -94,5 +95,5 @@ interface ConversationDAO {
     suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
     suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
-    suspend fun getLastUnreadMessage(conversationID: QualifiedIDEntity) : Message
+    suspend fun getLastUnreadMessage(conversationID: QualifiedIDEntity) : MessageEntity
 }

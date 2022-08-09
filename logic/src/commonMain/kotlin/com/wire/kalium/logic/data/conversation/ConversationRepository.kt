@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -114,6 +115,7 @@ class ConversationDataSource(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper()
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -266,7 +268,14 @@ class ConversationDataSource(
                     ConversationDetails.Group(
                         conversation = conversation,
                         legalHoldStatus = LegalHoldStatus.DISABLED,
-                        unreadMessagesCount = getUnreadMessageCount(conversation)
+                        unreadMessagesCount = getUnreadMessageCount(conversation),
+                        lastUnreadMessage = messageMapper.fromEntityToMessage(
+                            conversationDAO.getLastUnreadMessage(
+                                idMapper.toDaoModel(
+                                    conversation.id
+                                )
+                            )
+                        )
                     )
                 )
             )
@@ -294,6 +303,13 @@ class ConversationDataSource(
                                     otherUser = otherUser,
                                     selfUser = selfUser,
                                     unreadMessageCount = getUnreadMessageCount(conversation),
+                                    lastUnreadMessage = messageMapper.fromEntityToMessage(
+                                        conversationDAO.getLastUnreadMessage(
+                                            idMapper.toDaoModel(
+                                                conversation.id
+                                            )
+                                        )
+                                    )
                                 )
                             }
                         }
