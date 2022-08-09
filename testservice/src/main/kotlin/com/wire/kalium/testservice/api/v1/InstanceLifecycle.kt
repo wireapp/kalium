@@ -61,7 +61,11 @@ class InstanceLifecycle(private val instanceService: InstanceService) {
                 instanceService.createInstance(instanceId, instanceRequest)
             }
         } catch (e: Exception) {
-            throw WebApplicationException("Could not create instance")
+            if (e !is WebApplicationException) {
+                throw WebApplicationException("Could not create instance: " + e.message)
+            } else {
+                throw e
+            }
         }
 
         ar.resume(createdInstance)
