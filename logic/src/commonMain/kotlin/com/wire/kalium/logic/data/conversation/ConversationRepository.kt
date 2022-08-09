@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -37,10 +38,12 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -108,6 +111,7 @@ class ConversationDataSource(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
+    private val messageDAO: MessageDAO,
     private val clientApi: ClientApi,
     private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -269,18 +273,24 @@ class ConversationDataSource(
                         conversation = conversation,
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         unreadMessagesCount = getUnreadMessageCount(conversation),
-                        lastUnreadMessage = messageMapper.fromEntityToMessage(
-                            conversationDAO.getLastUnreadMessage(
-                                idMapper.toDaoModel(
-                                    conversation.id
-                                )
-                            )
-                        )
+                        lastUnreadMessage = getLastUnreadMessage(conversation),
                     )
                 )
             )
             Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
         }
+
+    private suspend fun getLastUnreadMessage(conversation: Conversation): Message? {
+        val conversationId = idMapper.toDaoModel(
+            conversation.id
+        )
+
+        val messageId = conversationDAO.getLastUnreadMessage(
+            conversationId
+        )
+
+        return messageDAO.getMessageById(messageId, conversationId).firstOrNull()?.let { messageMapper.fromEntityToMessage(it) }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
@@ -303,13 +313,7 @@ class ConversationDataSource(
                                     otherUser = otherUser,
                                     selfUser = selfUser,
                                     unreadMessageCount = getUnreadMessageCount(conversation),
-                                    lastUnreadMessage = messageMapper.fromEntityToMessage(
-                                        conversationDAO.getLastUnreadMessage(
-                                            idMapper.toDaoModel(
-                                                conversation.id
-                                            )
-                                        )
-                                    )
+                                    lastUnreadMessage = getLastUnreadMessage(conversation)
                                 )
                             }
                         }

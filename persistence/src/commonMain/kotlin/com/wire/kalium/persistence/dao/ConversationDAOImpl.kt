@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageMapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -57,6 +58,7 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
+    private val messageMapper = MessageMapper()
 
     // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
     override suspend fun getSelfConversationId() =
@@ -274,7 +276,7 @@ class ConversationDAOImpl(
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
 
-    override suspend fun getLastUnreadMessage(conversationID: QualifiedIDEntity): MessageEntity =
-        conversationQueries.getLastUnreadMessage.executeAsOne()
+    override suspend fun getLastUnreadMessage(conversationID: QualifiedIDEntity): String =
+        conversationQueries.getLastUnreadMessage(conversationID).executeAsOne()
 
 }

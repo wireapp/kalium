@@ -287,7 +287,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         RESTRICTED_ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageRestrictedAssetContent, mapper::toModel)
     }.map { mapper.toModel(this, it) }
 
-    private fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
+    fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
         TEXT -> this.queryOneOrDefault(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, mapper::toModel)
         MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, mapper::toModel)
