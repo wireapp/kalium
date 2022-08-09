@@ -24,7 +24,7 @@ interface TeamRepository {
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit>
 }
-
+@Suppress("LongParameterList")
 internal class TeamDataSource(
     private val userDAO: UserDAO,
     private val teamDAO: TeamDAO,
