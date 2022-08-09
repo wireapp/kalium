@@ -10,10 +10,13 @@ class UnMuteCallUseCase(
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId) {
-        callManager.value.muteCall(false)
         callRepository.updateIsMutedById(
             conversationId = conversationId.toString(),
             isMuted = false
         )
+        // We should call AVS muting method only for established call, otherwise incoming call could mute/un-mute the current call
+        callRepository.getCallMetadataProfile()[conversationId.toString()]?.establishedTime?.let {
+            callManager.value.muteCall(false)
+        }
     }
 }

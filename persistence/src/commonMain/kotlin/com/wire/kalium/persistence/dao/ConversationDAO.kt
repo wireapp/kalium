@@ -14,8 +14,7 @@ data class ConversationEntity(
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
     // Date that indicates when the user has seen the conversation,
-    // nullable lastReadDate means that the conversation is never seen by the user
-    val lastReadDate: String? = null,
+    val lastReadDate: String,
     val access: List<Access>,
     val accessRole: List<AccessRole>
 ) {

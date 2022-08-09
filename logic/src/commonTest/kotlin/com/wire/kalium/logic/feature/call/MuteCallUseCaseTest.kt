@@ -1,6 +1,9 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.call.CallMetadata
+import com.wire.kalium.logic.data.call.CallMetadataProfile
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import io.mockative.Mock
@@ -28,34 +31,82 @@ class MuteCallUseCaseTest {
     @BeforeTest
     fun setup() {
         muteCall = MuteCallUseCase(lazy { callManager }, callRepository)
-    }
 
-    @Test
-    fun `givenACallManagerWhenUseCaseIsInvokedThenMuteCall`() = runTest {
-        val isMuted = true
         given(callManager)
             .suspendFunction(callManager::muteCall)
             .whenInvokedWith(eq(isMuted))
             .thenDoNothing()
+
         given(callRepository)
             .function(callRepository::updateIsMutedById)
             .whenInvokedWith(eq(conversationId.toString()), eq(isMuted))
             .thenDoNothing()
+    }
+
+    @Test
+    fun `givenAEstablishedCallWhenMuteUseCaseCalledThenUpdateMuteStateAndMuteCall`() = runTest {
+        val updateCallMetadata = callMetadata.copy(establishedTime = "time")
+        given(callRepository)
+            .function(callRepository::getCallMetadataProfile)
+            .whenInvoked()
+            .thenReturn(
+                CallMetadataProfile(mapOf(conversationId.toString() to updateCallMetadata))
+            )
 
         muteCall(conversationId)
-
-        verify(callManager)
-            .suspendFunction(callManager::muteCall)
-            .with(eq(isMuted))
-            .wasInvoked(once)
 
         verify(callRepository)
             .function(callRepository::updateIsMutedById)
             .with(eq(conversationId.toString()), eq(isMuted))
             .wasInvoked(once)
+
+        verify(callRepository)
+            .function(callRepository::getCallMetadataProfile)
+            .wasInvoked(once)
+
+        verify(callManager)
+            .suspendFunction(callManager::muteCall)
+            .with(eq(isMuted))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun `givenNonEstablishedCallWhenMuteUseCaseCalledThenUpdateMuteStateOnly`() = runTest {
+        given(callRepository)
+            .function(callRepository::getCallMetadataProfile)
+            .whenInvoked()
+            .thenReturn(
+                CallMetadataProfile(mapOf(conversationId.toString() to callMetadata))
+            )
+
+        muteCall(conversationId)
+
+        verify(callRepository)
+            .function(callRepository::updateIsMutedById)
+            .with(eq(conversationId.toString()), eq(isMuted))
+            .wasInvoked(once)
+
+        verify(callRepository)
+            .function(callRepository::getCallMetadataProfile)
+            .wasInvoked(once)
+
+        verify(callManager)
+            .suspendFunction(callManager::muteCall)
+            .with(eq(isMuted))
+            .wasNotInvoked()
     }
 
     companion object {
+        const val isMuted = true
         private val conversationId = ConversationId("value", "domain")
+        val callMetadata = CallMetadata(
+            isMuted = false,
+            isCameraOn = false,
+            conversationName = null,
+            conversationType = Conversation.Type.GROUP,
+            callerName = null,
+            callerTeamName = null,
+            establishedTime = null
+        )
     }
 }
