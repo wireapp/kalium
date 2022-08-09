@@ -72,14 +72,13 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     override suspend fun addMember(
         request: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberChangeDTO> = try {
+    ): NetworkResponse<ConversationMemberAddedDTO> = try {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
             setBody(request)
         }.let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberChangeDTO.Added> { response }
-                // TODO should we show user some message that there was no change?
-                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberChangeDTO.Unchanged, response)
+                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberAddedDTO.Changed> { response }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberAddedDTO.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
         }
@@ -93,14 +92,13 @@ class ConversationApiImpl internal constructor(private val authenticatedNetworkC
     override suspend fun removeMember(
         userId: UserId,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberChangeDTO> = try {
+    ): NetworkResponse<ConversationMemberRemovedDTO> = try {
         httpClient.delete(
             "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
         ).let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberChangeDTO.Removed> { response }
-                // TODO should we show user some message that there was no change?
-                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberChangeDTO.Unchanged, response)
+                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberRemovedDTO.Changed> { response }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberRemovedDTO.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
         }

@@ -14,7 +14,6 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.conversation.ConversationMemberChangeDTO
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
@@ -649,10 +648,8 @@ class ConversationRepositoryTest {
             .suspendFunction(conversationApi::addMember)
             .whenInvokedWith(any(), any())
             .thenReturn(
-                NetworkResponse.Success(
-                    ConversationMemberChangeDTO.Unchanged,
-                    mapOf(),
-                    HttpStatusCode.NoContent.value
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
             )
 

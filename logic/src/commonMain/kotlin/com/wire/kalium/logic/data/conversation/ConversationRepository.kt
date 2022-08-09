@@ -25,7 +25,6 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.AddConversationMembersRequest
-import com.wire.kalium.network.api.conversation.ConversationMemberChangeDTO
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
@@ -377,17 +376,11 @@ class ConversationDataSource(
             addParticipantRequest, idMapper.toApiModel(conversationID)
         )
     }.flatMap {
-        when (it) {
-            ConversationMemberChangeDTO.Unchanged -> Either.Right(Unit)
-            // TODO: the server response with an event can we use event processor to handle it
-            is ConversationMemberChangeDTO.Added -> userIdList.map { userId ->
-                // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
-                Member(userId, Member.Role.Member)
-            }.let { membersList ->
-                persistMembers(membersList, conversationID)
-            }
-            // TODO do you have any suggestions how handle it?
-            is ConversationMemberChangeDTO.Removed -> Either.Right(Unit)
+        userIdList.map { userId ->
+            // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
+            Member(userId, Member.Role.Member)
+        }.let { membersList ->
+            persistMembers(membersList, conversationID)
         }
     }
 
@@ -400,17 +393,11 @@ class ConversationDataSource(
                     }.fold({
                         Either.Left(it)
                     }, {
-                        when (it) {
-                            // TODO I think on unchanged we should also remove member from local storage
-                            // probably there was some synchronisation issue that this user was already removed
-                            ConversationMemberChangeDTO.Unchanged -> Either.Right(Unit)
-                            is ConversationMemberChangeDTO.Added -> wrapStorageRequest {
-                                conversationDAO.deleteMemberByQualifiedID(
-                                    idMapper.toDaoModel(userID),
-                                    idMapper.toDaoModel(conversationId)
-                                )
-                            }
-                            is ConversationMemberChangeDTO.Removed -> Either.Right(Unit)
+                        wrapStorageRequest {
+                            conversationDAO.deleteMemberByQualifiedID(
+                                idMapper.toDaoModel(userID),
+                                idMapper.toDaoModel(conversationId)
+                            )
                         }
                     }
                     )
