@@ -15,6 +15,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
@@ -152,7 +153,9 @@ class ConversationRepositoryTest {
             .with(
                 matching { conversations ->
                     conversations.any { entity ->
-                        entity.id.value == CONVERSATION_RESPONSE.id.value && entity.protocolInfo == protocolInfo
+                        entity.id.value == CONVERSATION_RESPONSE.id.value && entity.protocolInfo == protocolInfo.copy(
+                            keyingMaterialLastUpdate = (entity.protocolInfo as ConversationEntity.ProtocolInfo.MLS).keyingMaterialLastUpdate
+                        )
                     }
                 }
             )
@@ -427,7 +430,7 @@ class ConversationRepositoryTest {
     @Ignore
     @Test
     fun givenMLSProtocolIsUsed_whenCallingCreateGroupConversation_thenMLSGroupIsEstablished() = runTest {
-        val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = ConvProtocol.MLS)
+        val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
 
         given(conversationApi)
             .suspendFunction(conversationApi::createNewConversation)
