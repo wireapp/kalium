@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.testservice.managed.InstanceService
+import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.SendTextRequest
@@ -45,11 +46,49 @@ class ConversationResources(private val instanceService: InstanceService) {
     }
     */
 
-    // POST /api/v1/instance/{instanceId}/delete
     // Delete a message locally.
+    @POST
+    @Path("/instance/{id}/delete")
+    fun delete(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest) {
+        val instance = instanceService.getInstance(id)
+        instance?.coreLogic?.globalScope {
+            val result = session.currentSession()
+            if (result is CurrentSessionResult.Success) {
+                instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    log.info("Instance ${id}: Delete message")
+                    runBlocking {
+                        with(deleteMessageRequest) {
+                            messages.deleteMessage(
+                                ConversationId(conversationId, conversationDomain), messageId, false
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-    // POST /api/v1/instance/{instanceId}/deleteEverywhere
     // Delete a message for everyone.
+    @POST
+    @Path("/instance/{id}/deleteEverywhere")
+    fun deleteEverywhere(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest) {
+        val instance = instanceService.getInstance(id)
+        instance?.coreLogic?.globalScope {
+            val result = session.currentSession()
+            if (result is CurrentSessionResult.Success) {
+                instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    log.info("Instance ${id}: Delete message everywhere")
+                    runBlocking {
+                        with(deleteMessageRequest) {
+                            messages.deleteMessage(
+                                ConversationId(conversationId, conversationDomain), messageId, true
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // Get all messages.
     @POST

@@ -78,18 +78,20 @@ class InstanceService : Managed {
             }
         }
 
-        // login
+        log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.backend}")
         val loginResult = coreLogic.authenticationScope(serverConfig) {
-            login(instanceRequest.email, instanceRequest.password, true).let {
-                if (it !is AuthenticationResult.Success) {
-                    throw WebApplicationException("Instance ${instanceId}: Login failed, check your credentials")
-                } else {
-                    it.userSession
+            runBlocking {
+                login(instanceRequest.email, instanceRequest.password, true).let {
+                    if (it !is AuthenticationResult.Success) {
+                        throw WebApplicationException("Instance ${instanceId}: Login failed, check your credentials")
+                    } else {
+                        it.userSession
+                    }
                 }
             }
         }
 
-        // save session
+        log.info("Instance $instanceId: Save Session")
         val userId = coreLogic.globalScope {
             val sessions = when (val result = this.session.allSessions()) {
                 is GetAllSessionsResult.Success -> result.sessions
@@ -109,7 +111,7 @@ class InstanceService : Managed {
 
         var clientId: String? = null
 
-        // register client device
+        log.info("Instance $instanceId: Register client device")
         runBlocking {
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
