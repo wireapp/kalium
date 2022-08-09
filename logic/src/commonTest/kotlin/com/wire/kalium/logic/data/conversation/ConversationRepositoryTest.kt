@@ -654,7 +654,7 @@ class ConversationRepositoryTest {
             )
 
         conversationRepository.addMembers(listOf(TestConversation.USER_1), conversationId)
-            .shouldSucceed()
+            .shouldFail()
 
         verify(conversationDAO)
             .suspendFunction(conversationDAO::insertMembers, fun2<List<MemberEntity>, QualifiedIDEntity>())
