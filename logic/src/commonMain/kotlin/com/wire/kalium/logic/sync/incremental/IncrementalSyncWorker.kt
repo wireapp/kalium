@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
@@ -14,8 +15,13 @@ interface IncrementalSyncWorker {
     /**
      * Upon collection, will start collecting and processing events,
      * emitting the source of current events.
+     *
+     * Flow will finish only if the [ConnectionPolicy]
+     * is [ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS].
+     * Otherwise, it will keep collecting and processing events
+     * indeterminately until a failure or cancellation.
      */
-    suspend fun incrementalSyncFlow(): Flow<EventSource>
+    suspend fun processEventsWhilePolicyAllowsFlow(): Flow<EventSource>
 }
 
 internal class IncrementalSyncWorkerImpl(
@@ -23,7 +29,7 @@ internal class IncrementalSyncWorkerImpl(
     private val eventProcessor: EventProcessor
 ) : IncrementalSyncWorker {
 
-    override suspend fun incrementalSyncFlow() = channelFlow {
+    override suspend fun processEventsWhilePolicyAllowsFlow() = channelFlow {
         val sourceJob = launch {
             eventGatherer.currentSource.collect { send(it) }
         }
