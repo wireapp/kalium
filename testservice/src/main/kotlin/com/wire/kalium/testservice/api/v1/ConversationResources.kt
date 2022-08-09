@@ -60,7 +60,7 @@ class ConversationResources(private val instanceService: InstanceService) {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.authSession.tokens.userId) {
+                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
                         val recentMessages = runBlocking {
                             with(getMessagesRequest) {
                                 log.info("Instance $id: Get recent messages...")
@@ -121,7 +121,7 @@ class ConversationResources(private val instanceService: InstanceService) {
         instance?.coreLogic?.globalScope {
             val result = session.currentSession()
             if (result is CurrentSessionResult.Success) {
-                instance.coreLogic.sessionScope(result.authSession.tokens.userId) {
+                instance.coreLogic.sessionScope(result.authSession.session.userId) {
                     sendTextRequest.text?.let {
                         log.info("Instance ${id}: Send text message '${sendTextRequest.text}'")
                         runBlocking {

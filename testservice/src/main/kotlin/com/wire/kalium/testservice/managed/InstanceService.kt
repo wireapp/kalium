@@ -96,15 +96,15 @@ class InstanceService : Managed {
                 is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
                 is GetAllSessionsResult.Failure.Generic -> throw WebApplicationException("Instance ${instanceId}: Failed retrieve existing sessions: ${result.genericFailure}")
             }
-            if (sessions.map { it.tokens.userId }.contains(loginResult.tokens.userId)) {
-                this.session.updateCurrentSession(loginResult.tokens.userId)
+            if (sessions.map { it.session.userId }.contains(loginResult.session.userId)) {
+                this.session.updateCurrentSession(loginResult.session.userId)
             } else {
-                val addAccountResult = addAuthenticatedAccount(loginResult, true)
+                val addAccountResult = addAuthenticatedAccount(loginResult, null, true)
                 if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                     throw WebApplicationException("Instance ${instanceId}: Failed to save session")
                 }
             }
-            loginResult.tokens.userId
+            loginResult.session.userId
         }
 
         var clientId: String? = null
@@ -145,7 +145,7 @@ class InstanceService : Managed {
         instance?.coreLogic?.globalScope {
             val result = session.currentSession()
             if (result is CurrentSessionResult.Success) {
-                instance.coreLogic.sessionScope(result.authSession.tokens.userId) {
+                instance.coreLogic.sessionScope(result.authSession.session.userId) {
                     instance.clientId?.let {
                         runBlocking { client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId))) }
                     }
