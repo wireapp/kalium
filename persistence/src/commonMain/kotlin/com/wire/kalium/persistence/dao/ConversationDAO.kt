@@ -13,6 +13,7 @@ data class ConversationEntity(
     val protocolInfo: ProtocolInfo,
     val mutedStatus: MutedStatus = MutedStatus.ALL_ALLOWED,
     val mutedTime: Long = 0,
+    val removedBy: UserIDEntity? = null,
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
     // Date that indicates when the user has seen the conversation,

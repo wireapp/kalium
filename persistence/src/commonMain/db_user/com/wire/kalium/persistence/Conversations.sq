@@ -13,6 +13,7 @@ CREATE TABLE Conversation (
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
+    removed_by TEXT AS QualifiedIDEntity,
     last_modified_date TEXT NOT NULL,
     last_notified_message_date TEXT,
     last_read_date TEXT DEFAULT "1970-01-01T00:00:00.000Z" NOT NULL,
@@ -28,7 +29,7 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date, keying_material_last_update)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, removed_by, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date, keying_material_last_update)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
@@ -39,6 +40,7 @@ mls_epoch = excluded.mls_epoch,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
+removed_by = excluded.removed_by,
 access_list = excluded.access_list,
 access_role_list = excluded.access_role_list,
 last_modified_date = last_modified_date,
@@ -71,6 +73,11 @@ UPDATE Conversation
 SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
 
+updateConversationRemovedBy:
+UPDATE Conversation
+SET removed_by = :removed_by
+WHERE qualified_id = :qualified_id;
+
 selectAllConversations:
 SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC;
 
@@ -86,6 +93,9 @@ SELECT * FROM Conversation WHERE mls_group_state = ? AND protocol = ?;
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
+getRemovedBy:
+SELECT removed_by FROM Conversation WHERE qualified_id = ?;
+
 selectConversationsWithUnnotifiedMessages:
 SELECT * FROM Conversation WHERE muted_status != 'ALL_MUTED' AND (last_notified_message_date ISNULL OR DateTime(last_modified_date) > DateTime(last_notified_message_date));
 
@@ -99,6 +109,7 @@ SELECT COUNT() FROM Message AS message WHERE  message.conversation_id IS :conver
 
 getUnreadConversationCount:
 SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date);
+
 
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
