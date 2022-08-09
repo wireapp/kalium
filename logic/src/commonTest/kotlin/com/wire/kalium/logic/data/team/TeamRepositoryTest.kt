@@ -11,6 +11,7 @@ import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
@@ -58,12 +59,20 @@ class TeamRepositoryTest {
     @Mock
     private val teamsApi = mock(classOf<TeamsApi>())
 
+    @Mock
+    private val conversationDAO = mock(classOf<ConversationDAO>())
+
     private lateinit var teamRepository: TeamRepository
 
     @BeforeTest
     fun setUp() {
         teamRepository = TeamDataSource(
-            teamDAO = teamDAO, teamMapper = teamMapper, teamsApi = teamsApi, userDAO = userDAO, userMapper = userMapper
+            teamDAO = teamDAO,
+            teamMapper = teamMapper,
+            teamsApi = teamsApi,
+            userDAO = userDAO,
+            userMapper = userMapper,
+            conversationDAO = conversationDAO,
         )
     }
 
