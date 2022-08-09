@@ -39,8 +39,6 @@ class UserScope internal constructor(
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository)
-    val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(userRepository)
-    val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
     val searchUsers: SearchUsersUseCase get() = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
     val searchKnownUsers: SearchKnownUsersUseCase
