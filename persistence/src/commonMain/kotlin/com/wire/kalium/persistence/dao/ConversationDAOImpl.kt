@@ -276,7 +276,7 @@ class ConversationDAOImpl(
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
 
-    override suspend fun getLastUnreadMessage(conversationID: QualifiedIDEntity): String =
+    override suspend fun getLastUnreadMessageId(conversationID: QualifiedIDEntity): String =
         conversationQueries.getLastUnreadMessage(conversationID).executeAsOne()
 
 }

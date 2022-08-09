@@ -285,7 +285,7 @@ class ConversationDataSource(
             conversation.id
         )
 
-        val messageId = conversationDAO.getLastUnreadMessage(
+        val messageId = conversationDAO.getLastUnreadMessageId(
             conversationId
         )
 
