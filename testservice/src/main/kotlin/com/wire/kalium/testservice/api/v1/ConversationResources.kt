@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
+import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
@@ -50,21 +51,13 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/delete")
     fun delete(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest) {
-        val instance = instanceService.getInstance(id)
-        instance?.coreLogic?.globalScope {
-            val result = session.currentSession()
-            if (result is CurrentSessionResult.Success) {
-                instance.coreLogic.sessionScope(result.authSession.session.userId) {
-                    log.info("Instance ${id}: Delete message")
-                    runBlocking {
-                        with(deleteMessageRequest) {
-                            messages.deleteMessage(
-                                ConversationId(conversationId, conversationDomain), messageId, false
-                            )
-                        }
-                    }
-                }
-            }
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(deleteMessageRequest) {
+            ConversationRepository.deleteConversation(
+                instance,
+                ConversationId(conversationId, conversationDomain),
+                messageId,
+                false)
         }
     }
 
@@ -72,21 +65,13 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/deleteEverywhere")
     fun deleteEverywhere(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest) {
-        val instance = instanceService.getInstance(id)
-        instance?.coreLogic?.globalScope {
-            val result = session.currentSession()
-            if (result is CurrentSessionResult.Success) {
-                instance.coreLogic.sessionScope(result.authSession.session.userId) {
-                    log.info("Instance ${id}: Delete message everywhere")
-                    runBlocking {
-                        with(deleteMessageRequest) {
-                            messages.deleteMessage(
-                                ConversationId(conversationId, conversationDomain), messageId, true
-                            )
-                        }
-                    }
-                }
-            }
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(deleteMessageRequest) {
+            ConversationRepository.deleteConversation(
+                instance,
+                ConversationId(conversationId, conversationDomain),
+                messageId,
+                true)
         }
     }
 
@@ -94,24 +79,20 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/getMessages")
     fun getMessages(@PathParam("id") id: String, @Valid getMessagesRequest: GetMessagesRequest): List<Message> {
-        val instance = instanceService.getInstance(id)
-        if (instance != null) {
-            instance.coreLogic?.globalScope {
-                val result = session.currentSession()
-                if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
-                        val recentMessages = runBlocking {
-                            with(getMessagesRequest) {
-                                log.info("Instance $id: Get recent messages...")
-                                messages.getRecentMessages(ConversationId(conversationId, conversationDomain)).first()
-                            }
+        val instance = instanceService.getInstanceOrThrow(id)
+        instance.coreLogic?.globalScope {
+            val result = session.currentSession()
+            if (result is CurrentSessionResult.Success) {
+                instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    val recentMessages = runBlocking {
+                        with(getMessagesRequest) {
+                            log.info("Instance $id: Get recent messages...")
+                            messages.getRecentMessages(ConversationId(conversationId, conversationDomain)).first()
                         }
-                        return recentMessages
                     }
+                    return recentMessages
                 }
             }
-        } else {
-            throw WebApplicationException("Instance $id: Instance not found or already destroyed")
         }
         throw WebApplicationException("Instance $id: Could not get recent messages")
     }
@@ -156,23 +137,13 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendText")
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest) {
-        val instance = instanceService.getInstance(id)
-        instance?.coreLogic?.globalScope {
-            val result = session.currentSession()
-            if (result is CurrentSessionResult.Success) {
-                instance.coreLogic.sessionScope(result.authSession.session.userId) {
-                    sendTextRequest.text?.let {
-                        log.info("Instance ${id}: Send text message '${sendTextRequest.text}'")
-                        runBlocking {
-                            with(sendTextRequest) {
-                                messages.sendTextMessage(
-                                    ConversationId(conversationId, conversationDomain), sendTextRequest.text
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(sendTextRequest) {
+            ConversationRepository.sendTextMessage(
+                instance,
+                ConversationId(conversationId, conversationDomain),
+                text
+            )
         }
     }
 

@@ -9,7 +9,6 @@ import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
-import com.wire.kalium.logic.feature.session.GetAllSessionsResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
@@ -52,6 +51,10 @@ class InstanceService : Managed {
 
     fun getInstance(id: String): Instance? {
         return instances.get(id)
+    }
+
+    fun getInstanceOrThrow(id: String): Instance {
+        return instances.get(id) ?: throw WebApplicationException("Instance $id: Instance not found or already destroyed")
     }
 
     suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance? {
@@ -134,9 +137,9 @@ class InstanceService : Managed {
     }
 
     fun deleteInstance(id: String) {
-        val instance = instances.get(id)
-        log.info("Instance $id: Delete device ${instance?.clientId} and logout")
-        instance?.coreLogic?.globalScope {
+        val instance = getInstanceOrThrow(id)
+        log.info("Instance $id: Delete device ${instance.clientId} and logout")
+        instance.coreLogic?.globalScope {
             val result = session.currentSession()
             if (result is CurrentSessionResult.Success) {
                 instance.coreLogic.sessionScope(result.authSession.session.userId) {
@@ -149,8 +152,8 @@ class InstanceService : Managed {
             }
         }
         log.info("Instance $id: Logged out")
-        log.info("Instance $id: Delete locate files in ${instance?.instancePath}")
-        instance?.instancePath?.let {
+        log.info("Instance $id: Delete locate files in ${instance.instancePath}")
+        instance.instancePath?.let {
             try {
                 val files = Files.walk(Path.of(instance.instancePath))
 
