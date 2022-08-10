@@ -38,6 +38,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
@@ -59,6 +60,7 @@ class ConversationEventReceiverImpl(
     private val userRepository: UserRepository,
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
+    private val lastReadContentHandler: LastReadContentHandler,
     private val userConfigRepository: UserConfigRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
@@ -99,6 +101,7 @@ class ConversationEventReceiverImpl(
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
                     is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
+                    is MessageContent.LastRead ->  Message.Visibility.HIDDEN
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -376,6 +379,7 @@ class ConversationEventReceiverImpl(
                 }
 
                 is MessageContent.TextEdited -> editTextHandler.handle(message, content)
+                is MessageContent.LastRead -> lastReadContentHandler.handle(message,content)
                 is MessageContent.Unknown -> {
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Unknown Message received: $message")
                     persistMessage(message)

@@ -45,6 +45,13 @@ sealed class MessageContent {
         data class Removed(override val members: List<UserId>) : MemberChange(members)
     }
 
+    data class LastRead(
+        val messageId: String,
+        val conversationId: QualifiedConversationId,
+        // millis since the epoch
+        val timeStamp: Long
+    ) : Regular()
+
     object MissedCall : System()
 
     data class Availability(val status: UserAvailabilityStatus) : Signaling()

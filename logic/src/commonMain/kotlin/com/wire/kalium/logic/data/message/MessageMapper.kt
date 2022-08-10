@@ -171,6 +171,7 @@ class MessageMapperImpl(
         is MessageContent.TextEdited -> MessageEntityContent.Unknown()
         is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
         is MessageContent.Empty -> MessageEntityContent.Unknown()
+        is MessageContent.LastRead ->MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {

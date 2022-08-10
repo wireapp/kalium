@@ -31,6 +31,8 @@ interface TimeParser {
      * @return true of time1 is before time2 or false otherwise
      */
     fun isTimeBefore(time1: String, time2: String): Boolean
+
+    fun fromEpochTimeStampToDate(timeStamp: Long): String
 }
 
 class TimeParserImpl : TimeParser {
@@ -49,6 +51,10 @@ class TimeParserImpl : TimeParser {
 
     override fun isTimeBefore(time1: String, time2: String): Boolean {
         return time1.toInstant() < time2.toInstant()
+    }
+
+    override fun fromEpochTimeStampToDate(timeStamp: Long): String {
+        return Instant.fromEpochMilliseconds(timeStamp).toString()
     }
 
 }

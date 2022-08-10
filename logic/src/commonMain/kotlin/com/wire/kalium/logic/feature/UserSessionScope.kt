@@ -106,6 +106,7 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -358,6 +359,8 @@ abstract class UserSessionScopeCommon(
 
     private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
 
+    private val lastReadContentHandler = LastReadContentHandler(userRepository,conversationRepository, timeParser)
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
@@ -369,6 +372,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callManager,
             messageTextEditHandler,
+            lastReadContentHandler,
             userConfigRepository
         )
     }

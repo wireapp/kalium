@@ -68,7 +68,7 @@ class ConversationScope(
         get() = JoinExistingMLSConversationsUseCase(conversationRepository)
 
     val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
-        get() = UpdateConversationReadDateUseCase(conversationRepository)
+        get() = UpdateConversationReadDateUseCase(conversationRepository, userRepository)
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() =

@@ -51,6 +51,7 @@ class ProtoContentMapperImpl(
             )
             is MessageContent.Availability ->
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
+//             is MessageContent.LastRead -> GenericMessage.Content.LastRead(readableContent.)
 
             else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
@@ -124,7 +125,11 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
                 if (hiddenMessage != null) {
-                    MessageContent.DeleteForMe(hiddenMessage.messageId, hiddenMessage.conversationId, hiddenMessage.qualifiedConversationId)
+                    MessageContent.DeleteForMe(
+                        hiddenMessage.messageId,
+                        hiddenMessage.conversationId,
+                        hiddenMessage.qualifiedConversationId
+                    )
                 } else {
                     kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
                     MessageContent.Ignored
@@ -132,7 +137,14 @@ class ProtoContentMapperImpl(
             }
 
             is GenericMessage.Content.Knock -> MessageContent.Ignored
-            is GenericMessage.Content.LastRead -> MessageContent.Ignored
+            is GenericMessage.Content.LastRead -> {
+                MessageContent.Ignored
+//                 MessageContent.LastRead(
+//                     messageId = genericMessage.messageId,
+//                     conversationId = protoContent.value.conversationId,
+//                     timeStamp = protoContent.value.lastReadTimestamp
+//                 )
+            }
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> MessageContent.Ignored
             else -> {
