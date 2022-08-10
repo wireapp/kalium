@@ -69,7 +69,7 @@ class DeleteTeamConversationUseCaseTest {
 
         val result = deleteTeamConversation(TestConversation.ID)
 
-        assertEquals(Result.Failure::class, result::class)
+        assertEquals(Result.Failure.GenericFailure::class, result::class)
         verify(getSelfTeamUseCase)
             .suspendFunction(getSelfTeamUseCase::invoke)
             .wasInvoked(once)
@@ -77,6 +77,29 @@ class DeleteTeamConversationUseCaseTest {
             .suspendFunction(teamRepository::deleteConversation)
             .with(eq(TestConversation.ID), eq(TestTeam.TEAM.id))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConversationId_whenInvokingADeleteConversationAndAnNoTeam_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
+        given(getSelfTeamUseCase)
+            .suspendFunction(getSelfTeamUseCase::invoke)
+            .whenInvoked()
+            .thenReturn(flowOf(null))
+        given(teamRepository)
+            .suspendFunction(teamRepository::deleteConversation)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+
+        val result = deleteTeamConversation(TestConversation.ID)
+
+        assertEquals(Result.Failure.NoTeamFailure::class, result::class)
+        verify(getSelfTeamUseCase)
+            .suspendFunction(getSelfTeamUseCase::invoke)
+            .wasInvoked(once)
+        verify(teamRepository)
+            .suspendFunction(teamRepository::deleteConversation)
+            .with(eq(TestConversation.ID), eq(TestTeam.TEAM.id))
+            .wasNotInvoked()
     }
 
 }
