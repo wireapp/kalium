@@ -94,7 +94,10 @@ class InstanceService : Managed {
 
         log.info("Instance $instanceId: Save Session")
         coreLogic.globalScope {
-            addAuthenticatedAccount(loginResult, ssoId, true)
+            val addAccountResult = addAuthenticatedAccount(loginResult, ssoId, true)
+            if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
+                throw WebApplicationException("Instance ${instanceId}: Failed to save session")
+            }
             loginResult.session.userId
         }
 

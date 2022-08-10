@@ -62,6 +62,7 @@ class InstanceLifecycle(private val instanceService: InstanceService) {
             }
         } catch (e: Exception) {
             if (e !is WebApplicationException) {
+                e.printStackTrace()
                 throw WebApplicationException("Could not create instance: " + e.message)
             } else {
                 throw e
