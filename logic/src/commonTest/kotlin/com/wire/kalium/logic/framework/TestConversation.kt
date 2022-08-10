@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.QualifiedID
@@ -33,6 +34,7 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
+        PlainId("someValue"),
         null,
         null,
         lastReadDate = "2022-03-30T15:36:00.000Z",
@@ -47,6 +49,7 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
+        PlainId("someValue"),
         null,
         null,
         lastReadDate = "2022-03-30T15:36:00.000Z",
@@ -62,6 +65,7 @@ object TestConversation {
         protocolInfo,
         MutedConversationStatus.AllAllowed,
         null,
+        PlainId("someValue"),
         null,
         null,
         lastReadDate = "2022-03-30T15:36:00.000Z",
@@ -75,6 +79,7 @@ object TestConversation {
         ConversationEntity.Type.GROUP,
         "teamId",
         protocolInfo,
+        creatorId = "someValue",
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
         lastReadDate = "2022-03-30T15:36:00.000Z",
@@ -90,6 +95,7 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
+        PlainId("someValue"),
         null,
         null,
         lastReadDate = "2022-03-30T15:36:00.000Z",
@@ -152,6 +158,7 @@ object TestConversation {
         ConversationEntity.Type.SELF,
         "teamId",
         ConversationEntity.ProtocolInfo.Proteus,
+        creatorId = "someValue",
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
         lastReadDate = "2022-03-30T15:36:00.000Z",
@@ -167,6 +174,7 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
+        PlainId("someValue"),
         null,
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
@@ -182,6 +190,7 @@ object TestConversation {
         ProtocolInfo.MLS("group_id", ProtocolInfo.MLS.GroupState.PENDING_JOIN, 0UL),
         MutedConversationStatus.AllAllowed,
         null,
+        PlainId("someValue"),
         null,
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
