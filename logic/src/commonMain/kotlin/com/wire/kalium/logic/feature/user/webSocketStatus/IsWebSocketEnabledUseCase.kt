@@ -1,18 +1,18 @@
-package com.wire.kalium.logic.feature.user.loggingStatus
+package com.wire.kalium.logic.feature.user.webSocketStatus
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 
-interface IsLoggingEnabledUseCase {
+interface IsWebSocketEnabledUseCase {
     operator fun invoke(): Boolean
 }
 
-class IsLoggingEnabledUseCaseImpl(
+class IsWebSocketEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
-) : IsLoggingEnabledUseCase {
+) : IsWebSocketEnabledUseCase {
 
     override operator fun invoke(): Boolean =
-        userConfigRepository.isLoggingEnabled().fold({
+        userConfigRepository.isWebSocketEnabled().fold({
             false
         }, {
             it

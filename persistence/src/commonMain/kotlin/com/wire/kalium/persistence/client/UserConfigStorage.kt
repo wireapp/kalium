@@ -33,6 +33,16 @@ interface UserConfigStorage {
     fun isLoggingEnables(): Boolean
 
     /**
+     * save flag from the user settings to enable and disable the webSocket
+     */
+    fun persistWebSocketStatus(enabled: Boolean)
+
+    /**
+     * get the saved flag to know if the webSocket enabled or not
+     */
+    fun isWebSocketEnabled(): Boolean
+
+    /**
      * save flag from the file sharing api, and if the status changes
      */
     fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?)
@@ -73,6 +83,14 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
     override fun isLoggingEnables(): Boolean =
         kaliumPreferences.getBoolean(ENABLE_LOGGING, true)
 
+    override fun persistWebSocketStatus(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_WEB_SOCKET, enabled)
+    }
+
+    override fun isWebSocketEnabled(): Boolean =
+        kaliumPreferences.getBoolean(ENABLE_WEB_SOCKET, false)
+
+
     override fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?) {
         kaliumPreferences.putSerializable(
             FILE_SHARING,
@@ -95,5 +113,6 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
         const val ENABLE_LOGGING = "enable_logging"
         const val FILE_SHARING = "file_sharing"
         const val ENABLE_MLS = "enable_mls"
+        const val ENABLE_WEB_SOCKET = "enable_web_socket"
     }
 }

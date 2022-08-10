@@ -922,7 +922,6 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.PushTokenUseCaseTest.kt:62</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.session.RegisterTokenUseCase.kt:47</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.GetUserInfoUseCaseTest.kt:234</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase.kt:10</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.SearchKnownUserUseCaseTest.kt:328</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.SetUserHandleUseCase.kt:14</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.feature.user.SetUserHandleUseCaseTest.kt:169</ID>
