@@ -14,8 +14,8 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 class UpdateConversationReadDateUseCase(
-    private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository,
+    private val conversationRepository: ConversationRepository
+//     private val userRepository: UserRepository,
 //     private val messageSender: MessageSender
 ) {
 

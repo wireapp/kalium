@@ -65,7 +65,7 @@ internal class ConversationEventReceiverImpl(
     private val userRepository: UserRepository,
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
-    private val lastReadContentHandler: LastReadContentHandler,
+//     private val lastReadContentHandler: LastReadContentHandler,
     private val userConfigRepository: UserConfigRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -390,7 +390,7 @@ internal class ConversationEventReceiverImpl(
                 }
 
                 is MessageContent.TextEdited -> editTextHandler.handle(message, content)
-                is MessageContent.LastRead -> lastReadContentHandler.handle(message,content)
+                is MessageContent.LastRead -> {}
                 is MessageContent.Unknown -> {
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Unknown Message received: $message")
                     persistMessage(message)

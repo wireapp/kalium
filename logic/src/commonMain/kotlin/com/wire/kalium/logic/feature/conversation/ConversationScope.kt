@@ -64,7 +64,7 @@ class ConversationScope(
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
 
     val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
-        get() = UpdateConversationReadDateUseCase(conversationRepository, userRepository)
+        get() = UpdateConversationReadDateUseCase(conversationRepository)
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCase(conversationRepository)

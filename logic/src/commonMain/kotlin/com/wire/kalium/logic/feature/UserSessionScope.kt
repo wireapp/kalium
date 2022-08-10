@@ -429,7 +429,10 @@ abstract class UserSessionScopeCommon(
 
     private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
 
-    private val lastReadContentHandler = LastReadContentHandler(userRepository,conversationRepository, timeParser)
+//     private val lastReadContentHandler = LastReadContentHandler(
+//         userRepository, conversationRepository,
+//         timeParser
+//     )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
@@ -442,7 +445,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callManager,
             messageTextEditHandler,
-            lastReadContentHandler,
+//             lastReadContentHandler,
             userConfigRepository,
             EphemeralNotificationsManager
         )
