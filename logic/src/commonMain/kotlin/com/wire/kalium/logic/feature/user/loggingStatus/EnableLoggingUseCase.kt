@@ -11,6 +11,5 @@ interface EnableLoggingUseCase {
 class EnableLoggingUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : EnableLoggingUseCase {
-
     override operator fun invoke(enabled: Boolean) = userConfigRepository.persistEnableLogging(enabled)
 }

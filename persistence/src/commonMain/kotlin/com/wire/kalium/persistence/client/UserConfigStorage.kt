@@ -90,7 +90,6 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
     override fun isWebSocketEnabled(): Boolean =
         kaliumPreferences.getBoolean(ENABLE_WEB_SOCKET, false)
 
-
     override fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?) {
         kaliumPreferences.putSerializable(
             FILE_SHARING,
