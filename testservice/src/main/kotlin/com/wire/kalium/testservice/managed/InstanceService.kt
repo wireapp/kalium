@@ -79,33 +79,22 @@ class InstanceService : Managed {
         }
 
         log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.backend}")
-        val loginResult = coreLogic.authenticationScope(serverConfig) {
+        val (loginResult, ssoId) = coreLogic.authenticationScope(serverConfig) {
             runBlocking {
                 login(instanceRequest.email, instanceRequest.password, true).let {
                     if (it !is AuthenticationResult.Success) {
-                        throw WebApplicationException("Instance ${instanceId}: Login failed, check your credentials")
+                        throw WebApplicationException("Login failed, check your credentials")
                     } else {
-                        it.userSession
+                        log.info(it.userSession.toString())
+                        it.userSession to it.ssoId
                     }
                 }
             }
         }
 
         log.info("Instance $instanceId: Save Session")
-        val userId = coreLogic.globalScope {
-            val sessions = when (val result = this.session.allSessions()) {
-                is GetAllSessionsResult.Success -> result.sessions
-                is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
-                is GetAllSessionsResult.Failure.Generic -> throw WebApplicationException("Instance ${instanceId}: Failed retrieve existing sessions: ${result.genericFailure}")
-            }
-            if (sessions.map { it.session.userId }.contains(loginResult.session.userId)) {
-                this.session.updateCurrentSession(loginResult.session.userId)
-            } else {
-                val addAccountResult = addAuthenticatedAccount(loginResult, null, true)
-                if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
-                    throw WebApplicationException("Instance ${instanceId}: Failed to save session")
-                }
-            }
+        coreLogic.globalScope {
+            addAuthenticatedAccount(loginResult, ssoId, true)
             loginResult.session.userId
         }
 
@@ -113,7 +102,7 @@ class InstanceService : Managed {
 
         log.info("Instance $instanceId: Register client device")
         runBlocking {
-            coreLogic.sessionScope(userId) {
+            coreLogic.sessionScope(loginResult.session.userId) {
                 if (client.needsToRegisterClient()) {
                     val result = client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))
                     when (result) {
