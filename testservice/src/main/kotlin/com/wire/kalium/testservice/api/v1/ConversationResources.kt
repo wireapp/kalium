@@ -6,6 +6,7 @@ import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
+import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendTextRequest
 import org.slf4j.LoggerFactory
 import javax.validation.Valid
@@ -97,6 +98,20 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     // POST /api/v1/instance/{instanceId}/sendFile
     // Send a file to a conversation.
+    @POST
+    @Path("/instance/{id}/sendFile")
+    fun sendText(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest) {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(sendFileRequest) {
+            ConversationRepository.sendFile(
+                instance,
+                ConversationId(conversationId, conversationDomain),
+                data,
+                fileName,
+                type
+            )
+        }
+    }
 
     // POST /api/v1/instance/{instanceId}/sendImage
     // Send an image to a conversation.
@@ -122,6 +137,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest) {
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendTextRequest) {
+            ConversationRepository.getMessages(instance, ConversationId(conversationId, conversationDomain))
             ConversationRepository.sendTextMessage(
                 instance,
                 ConversationId(conversationId, conversationDomain),

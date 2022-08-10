@@ -42,4 +42,7 @@ dependencies {
     add("implementation", project(":network"))
     add("implementation", project(":cryptography"))
     add("implementation", project(":logic"))
+
+    // Okio
+    implementation(Dependencies.Okio.core)
 }

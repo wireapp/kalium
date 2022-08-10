@@ -7,7 +7,12 @@ import com.wire.kalium.testservice.models.Instance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import java.io.File
+import java.io.FileOutputStream
+import java.nio.file.Files
+import java.util.Base64
 import javax.ws.rs.WebApplicationException
+import okio.Path.Companion.toOkioPath
 
 class ConversationRepository {
 
@@ -58,6 +63,24 @@ class ConversationRepository {
                 }
             }
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
+        }
+
+        fun sendFile(instance: Instance, conversationId: ConversationId, data: String, fileName: String, type: String) {
+            val temp: File = Files.createTempFile("asset", ".data").toFile()
+            val byteArray = Base64.getDecoder().decode(data)
+            FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
+
+            instance.coreLogic?.globalScope {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                        log.info("Instance ${instance.instanceId}: Send file")
+                        runBlocking {
+                            messages.sendAssetMessage(conversationId, temp.toOkioPath(), byteArray.size.toLong(), fileName, type, null, null)
+                        }
+                    }
+                }
+            }
         }
     }
 }
