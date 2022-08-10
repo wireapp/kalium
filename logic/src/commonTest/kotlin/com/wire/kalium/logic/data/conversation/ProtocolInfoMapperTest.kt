@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -42,12 +43,17 @@ class ProtocolInfoMapperTest {
             "GROUP_ID",
             Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
             5UL,
-            0UL
+            Instant.parse("2021-03-30T15:36:00.000Z")
         )
         val CONVERSATION_PROTEUS_PROTOCOL_INFO = Conversation.ProtocolInfo.Proteus
 
         val CONV_ENTITY_MLS_PROTOCOL_INFO =
-            ConversationEntity.ProtocolInfo.MLS("GROUP_ID", groupState = ConversationEntity.GroupState.ESTABLISHED, 5UL, 0UL)
+            ConversationEntity.ProtocolInfo.MLS(
+                "GROUP_ID",
+                groupState = ConversationEntity.GroupState.ESTABLISHED,
+                5UL,
+                Instant.parse("2021-03-30T15:36:00.000Z")
+            )
         val CONV_ENTITY_PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
 
     }

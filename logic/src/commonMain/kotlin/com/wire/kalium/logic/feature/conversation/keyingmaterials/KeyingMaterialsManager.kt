@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
-import com.wire.kalium.logic.data.sync.SyncRepository
-import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -29,7 +29,7 @@ internal val KEYING_MATERIAL_CHECK_DURATION = 24.hours
 internal interface KeyingMaterialsManager
 
 internal class KeyingMaterialsManagerImpl(
-    private val syncRepository: SyncRepository,
+    private val incrementalSyncRepository: IncrementalSyncRepository,
     private val updateKeyingMaterialsUseCase: Lazy<UpdateKeyingMaterialsUseCase>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KeyingMaterialsManager {
@@ -46,9 +46,9 @@ internal class KeyingMaterialsManagerImpl(
 
     init {
         updateKeyingMaterialsJob = updateKeyingMaterialsScope.launch {
-            syncRepository.syncState.collect { syncState ->
+            incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState == SyncState.Live) {
+                if (syncState is IncrementalSyncStatus.Live) {
                     updateKeyingMaterialsUseCase.value().let { result ->
                         when (result) {
                             is UpdateKeyingMaterialsResult.Failure ->

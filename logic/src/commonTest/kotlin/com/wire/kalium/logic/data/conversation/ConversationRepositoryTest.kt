@@ -54,6 +54,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -129,7 +130,12 @@ class ConversationRepositoryTest {
             "time",
             CONVERSATION_RESPONSE.copy(groupId = groupId, protocol = ConvProtocol.MLS)
         )
-        val protocolInfo = ConversationEntity.ProtocolInfo.MLS(groupId, ConversationEntity.GroupState.ESTABLISHED, 0UL, 0UL)
+        val protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+            groupId,
+            ConversationEntity.GroupState.ESTABLISHED,
+            0UL,
+            Instant.parse("2021-03-30T15:36:00.000Z")
+        )
 
         given(userRepository)
             .suspendFunction(userRepository::observeSelfUser)
@@ -1149,7 +1155,7 @@ class ConversationRepositoryTest {
                 MLS_GROUP_ID,
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
-                0UL
+                Instant.parse("2021-03-30T15:36:00.000Z")
             )
 
         const val GROUP_NAME = "Group Name"

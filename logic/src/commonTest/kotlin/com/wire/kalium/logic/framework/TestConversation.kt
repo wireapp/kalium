@@ -19,6 +19,7 @@ import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import kotlinx.datetime.Instant
 
 object TestConversation {
     val ID = ConversationId("valueConvo", "domainConvo")
@@ -179,7 +180,12 @@ object TestConversation {
         "MLS Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.MLS("group_id", ProtocolInfo.MLS.GroupState.PENDING_JOIN, 0UL, 0UL),
+        ProtocolInfo.MLS(
+            "group_id",
+            ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+            0UL,
+            Instant.parse("2021-03-30T15:36:00.000Z")
+        ),
         MutedConversationStatus.AllAllowed,
         null,
         null,

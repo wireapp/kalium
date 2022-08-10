@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
-import com.wire.kalium.logic.data.sync.InMemorySyncRepository
-import com.wire.kalium.logic.data.sync.SyncRepository
-import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.classOf
@@ -25,7 +25,7 @@ class KeyingMaterialsManagerTests {
                 .withUpdateKeyingMaterialsSuccessful()
                 .arrange()
 
-            arrangement.syncRepository.updateSyncState { SyncState.Live }
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
             verify(arrangement.updateKeyingMaterialsUseCase)
@@ -35,7 +35,7 @@ class KeyingMaterialsManagerTests {
 
     private class Arrangement {
 
-        val syncRepository: SyncRepository = InMemorySyncRepository()
+        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
         val updateKeyingMaterialsUseCase = mock(classOf<UpdateKeyingMaterialsUseCase>())
@@ -48,7 +48,7 @@ class KeyingMaterialsManagerTests {
         }
 
         fun arrange() = this to KeyingMaterialsManagerImpl(
-            syncRepository,
+            incrementalSyncRepository,
             lazy { updateKeyingMaterialsUseCase },
             TestKaliumDispatcher
         )

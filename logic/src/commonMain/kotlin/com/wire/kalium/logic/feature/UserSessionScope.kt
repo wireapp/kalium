@@ -69,10 +69,10 @@ import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
-import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -396,7 +396,7 @@ abstract class UserSessionScopeCommon(
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
-            syncRepository,
+            incrementalSyncRepository,
             lazy { conversations.updateMLSGroupsKeyingMaterials }
         )
 

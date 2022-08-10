@@ -28,7 +28,7 @@ private class ConversationMapper {
                     mls_group_id ?: "",
                     mls_group_state,
                     mls_epoch.toULong(),
-                    Instant.fromEpochSeconds(keying_material_last_update)
+                    Instant.fromEpochSeconds(mls_last_keying_material_update)
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
