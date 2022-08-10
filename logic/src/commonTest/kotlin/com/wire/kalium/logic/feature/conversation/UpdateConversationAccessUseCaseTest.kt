@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -254,6 +255,7 @@ class UpdateConversationAccessUseCaseTest {
             ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,
             null,
+            PlainId("someValue"),
             null,
             null,
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
