@@ -8,12 +8,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 
+fun interface GetSelfTeamUseCase {
+    suspend operator fun invoke(): Flow<Team?>
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetSelfTeamUseCase internal constructor(
+class GetSelfTeamUseCaseImpl internal constructor(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
-) {
-    suspend operator fun invoke(): Flow<Team?> {
+) : GetSelfTeamUseCase {
+    override suspend operator fun invoke(): Flow<Team?> {
         return userRepository.observeSelfUser()
             .flatMapLatest {
                 if (it.teamId != null) teamRepository.getTeam(it.teamId)
