@@ -23,13 +23,12 @@ interface TeamRepository {
     suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit>
 }
 
-@Suppress("LongParameterList")
 internal class TeamDataSource(
     private val userDAO: UserDAO,
     private val teamDAO: TeamDAO,
     private val teamsApi: TeamsApi,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
+    private val teamMapper: TeamMapper = MapperProvider.teamMapper()
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {

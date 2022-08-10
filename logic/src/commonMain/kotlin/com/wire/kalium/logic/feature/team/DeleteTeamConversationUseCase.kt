@@ -20,21 +20,27 @@ fun interface DeleteTeamConversationUseCase {
 
 internal class DeleteTeamConversationUseCaseImpl(
     val getSelfTeam: GetSelfTeamUseCase,
-    val teamRepository: TeamRepository,
+    val teamRepository: TeamRepository
 ) : DeleteTeamConversationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Result {
         val teamId = getSelfTeam().firstOrNull()?.id
-        return teamRepository.deleteConversation(conversationId, teamId.orEmpty())
-            .fold({
-                Result.Failure(it)
-            }, {
-                Result.Success
-            })
+        return teamId?.let {
+            teamRepository.deleteConversation(conversationId, teamId)
+                .fold({
+                    Result.Failure.GenericFailure(it)
+                }, {
+                    Result.Success
+                })
+        } ?: Result.Failure.NoTeamFailure
     }
 }
 
 sealed class Result {
     object Success : Result()
-    class Failure(val coreFailure: CoreFailure) : Result()
+    sealed class Failure : Result() {
+        class GenericFailure(val coreFailure: CoreFailure) : Failure()
+        object NoTeamFailure : Result()
+    }
+
 }

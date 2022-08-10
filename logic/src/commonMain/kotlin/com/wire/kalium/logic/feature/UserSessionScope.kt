@@ -217,7 +217,7 @@ abstract class UserSessionScopeCommon(
         get() = TeamDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.teamDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
         )
 
     private val connectionRepository: ConnectionRepository
