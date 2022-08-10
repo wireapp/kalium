@@ -111,7 +111,7 @@ class DeleteTeamConversationUseCaseTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
-        
+
         fun arrange() = this to deleteTeamConversation
     }
 
