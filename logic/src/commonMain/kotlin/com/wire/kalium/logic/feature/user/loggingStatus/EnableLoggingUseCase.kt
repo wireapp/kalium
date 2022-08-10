@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.user
+package com.wire.kalium.logic.feature.user.loggingStatus
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
