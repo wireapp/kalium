@@ -1,6 +1,8 @@
 package com.wire.kalium.persistence.dao
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
+import kotlin.time.Duration
 
 // TODO: Regardless of how we store this in SQLite we can convert it to an Instant at this level and above.
 data class ConversationEntity(
@@ -11,6 +13,7 @@ data class ConversationEntity(
     val protocolInfo: ProtocolInfo,
     val mutedStatus: MutedStatus = MutedStatus.ALL_ALLOWED,
     val mutedTime: Long = 0,
+    val removedBy: UserIDEntity? = null,
     val lastNotificationDate: String?,
     val lastModifiedDate: String,
     // Date that indicates when the user has seen the conversation,
@@ -32,7 +35,12 @@ data class ConversationEntity(
 
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
-        data class MLS(val groupId: String, val groupState: GroupState, val epoch: ULong) : ProtocolInfo()
+        data class MLS(
+            val groupId: String,
+            val groupState: GroupState,
+            val epoch: ULong,
+            val keyingMaterialLastUpdate: Instant
+        ) : ProtocolInfo()
     }
 }
 
@@ -83,6 +91,7 @@ interface ConversationDAO {
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
+
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
 
     suspend fun updateAccess(
@@ -90,8 +99,11 @@ interface ConversationDAO {
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>
     )
+
     suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
     suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun getLastUnreadMessageId(conversationID: QualifiedIDEntity) : String?
+    suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
+    suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
 }

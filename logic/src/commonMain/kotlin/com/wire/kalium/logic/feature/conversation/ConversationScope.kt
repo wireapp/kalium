@@ -10,6 +10,8 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
+import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")
@@ -43,9 +45,6 @@ class ConversationScope(
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
 
-    val syncConversations: SyncConversationsUseCase
-        get() = SyncConversationsUseCase(conversationRepository)
-
     val createGroupConversation: CreateGroupConversationUseCase
         get() = CreateGroupConversationUseCase(conversationRepository, syncManager, clientRepository)
 
@@ -64,19 +63,19 @@ class ConversationScope(
     val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
 
-    val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(conversationRepository)
-
     val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
         get() = UpdateConversationReadDateUseCase(conversationRepository, userRepository)
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
-        get() =
-        UpdateConversationAccessRoleUseCase(conversationRepository)
+        get() = UpdateConversationAccessRoleUseCase(conversationRepository)
 
     val updateConversationMemberRole: UpdateConversationMemberRoleUseCase
         get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
 
     val removeMemberFromConversation: RemoveMemberFromConversationUseCase
         get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository)
+
+    val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
+        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
+
 }

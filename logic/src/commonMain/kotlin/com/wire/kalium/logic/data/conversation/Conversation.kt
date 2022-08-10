@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
+import kotlinx.datetime.Instant
 
 data class Conversation(
     val id: ConversationId,
@@ -18,6 +19,7 @@ data class Conversation(
     val teamId: TeamId?,
     val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
+    val removedBy: UserId?,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
     val lastReadDate: String,
@@ -66,7 +68,12 @@ data class Conversation(
 
     sealed class ProtocolInfo {
         object Proteus : ProtocolInfo()
-        data class MLS(val groupId: String, val groupState: GroupState, val epoch: ULong) : ProtocolInfo() {
+        data class MLS(
+            val groupId: String,
+            val groupState: GroupState,
+            val epoch: ULong,
+            val keyingMaterialLastUpdate: Instant
+        ) : ProtocolInfo() {
             enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
         }
     }
@@ -111,6 +118,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             teamId = otherUser?.teamId,
             protocol = protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
+            removedBy = null,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
             lastReadDate = EPOCH_FIRST_DAY,

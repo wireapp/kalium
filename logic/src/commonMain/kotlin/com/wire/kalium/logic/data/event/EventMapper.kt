@@ -151,4 +151,5 @@ class EventMapper(
         senderUserId = idMapper.fromApiModel(deletedConversationDTO.qualifiedFrom),
         timestampIso = deletedConversationDTO.time
     )
+
 }

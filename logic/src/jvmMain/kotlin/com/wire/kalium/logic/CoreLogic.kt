@@ -71,7 +71,7 @@ actual class CoreLogic(
             val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
             runBlocking { proteusClient.open() }
 
-            val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(this, userId)
+            val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(userId)
             val encryptedSettingsHolder = EncryptedSettingsHolder(
                 SettingOptions.UserSettings(
                     shouldEncryptData = kaliumConfigs.shouldEncryptData,

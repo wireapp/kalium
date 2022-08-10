@@ -31,11 +31,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
+import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
@@ -43,6 +46,8 @@ import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
@@ -50,7 +55,7 @@ interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 @Suppress("LongParameterList", "TooManyFunctions")
-class ConversationEventReceiverImpl(
+internal class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val persistMessage: PersistMessageUseCase,
     private val messageRepository: MessageRepository,
@@ -62,8 +67,9 @@ class ConversationEventReceiverImpl(
     private val editTextHandler: MessageTextEditHandler,
     private val lastReadContentHandler: LastReadContentHandler,
     private val userConfigRepository: UserConfigRepository,
+    private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper()
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
 ) : ConversationEventReceiver {
 
     override suspend fun onEvent(event: Event.Conversation) {
@@ -320,13 +326,18 @@ class ConversationEventReceiverImpl(
                 )
             }
 
-    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation) =
-        conversationRepository.deleteConversation(event.conversationId)
+    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation): Either<CoreFailure, Unit> {
+        val conversation = conversationRepository.observeConversationDetailsById(event.conversationId).onlyRight().first()
+        return conversationRepository.deleteConversation(event.conversationId)
             .onFailure { coreFailure ->
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
             }.onSuccess {
+                val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
+                val dataNotification = EphemeralConversationNotification(event, conversation.conversation, senderUser)
+                ephemeralNotificationsManager.scheduleNotification(dataNotification)
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
             }
+    }
 
     private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
         when (signaling) {
