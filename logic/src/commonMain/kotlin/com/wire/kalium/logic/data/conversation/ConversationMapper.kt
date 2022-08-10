@@ -18,6 +18,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 interface ConversationMapper {
@@ -173,7 +174,13 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING_JOIN, epoch ?: 0UL)
+            ConvProtocol.MLS -> ProtocolInfo.MLS(
+                groupId ?: "",
+                mlsGroupState ?: GroupState.PENDING_JOIN,
+                epoch ?: 0UL,
+                keyingMaterialLastUpdate = Clock.System.now()
+            )
+
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }
