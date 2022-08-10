@@ -11,10 +11,9 @@ import com.wire.kalium.logic.util.TimeParser
 
 
 class LastReadContentHandler(
-    private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
-    private val timeParser: TimeParser,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val userRepository: UserRepository,
+    private val timeParser: TimeParser
 ) {
 
     suspend fun handle(
@@ -28,9 +27,10 @@ class LastReadContentHandler(
             // the conversation on the other device and we can update the read date locally
             // to synchronize the state across the clients.
             conversationRepository.updateConversationReadDate(
-                idMapper.fromProtoModel(messageContent.conversationId),
+                qualifiedID = ConversationId(messageContent.conversationId, message.conversationId.domain),
                 date = timeParser.fromEpochTimeStampToDate(messageContent.timeStamp)
             )
         }
     }
+
 }

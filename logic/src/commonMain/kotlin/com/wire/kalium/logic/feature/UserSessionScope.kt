@@ -427,13 +427,6 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getMediaManager()
     }
 
-    private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
-
-//     private val lastReadContentHandler = LastReadContentHandler(
-//         userRepository, conversationRepository,
-//         timeParser
-//     )
-
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
@@ -444,8 +437,8 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userRepository,
             callManager,
-            messageTextEditHandler,
-//             lastReadContentHandler,
+            MessageTextEditHandler(messageRepository),
+            LastReadContentHandler(conversationRepository, userRepository, timeParser),
             userConfigRepository,
             EphemeralNotificationsManager
         )

@@ -138,12 +138,11 @@ class ProtoContentMapperImpl(
 
             is GenericMessage.Content.Knock -> MessageContent.Ignored
             is GenericMessage.Content.LastRead -> {
-                MessageContent.Ignored
-//                 MessageContent.LastRead(
-//                     messageId = genericMessage.messageId,
-//                     conversationId = protoContent.value.conversationId,
-//                     timeStamp = protoContent.value.lastReadTimestamp
-//                 )
+                MessageContent.LastRead(
+                    messageId = genericMessage.messageId,
+                    conversationId = protoContent.value.conversationId,
+                    timeStamp = protoContent.value.lastReadTimestamp
+                )
             }
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> MessageContent.Ignored
