@@ -99,6 +99,7 @@ interface ConversationRepository {
 
     suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun updateRemovedBy(conversationId: ConversationId, removedBy: UserId?): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -603,6 +604,13 @@ class ConversationDataSource(
     override suspend fun deleteConversation(conversationId: ConversationId) = wrapStorageRequest {
         conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
+
+    override suspend fun updateRemovedBy(conversationId: ConversationId, removedBy: UserId?): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateRemovedBy(
+                idMapper.toDaoModel(conversationId),
+                removedBy?.let { idMapper.toDaoModel(it) })
+        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

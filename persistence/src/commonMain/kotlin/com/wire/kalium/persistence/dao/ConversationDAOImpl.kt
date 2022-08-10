@@ -272,4 +272,8 @@ class ConversationDAOImpl(
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
+
+    override suspend fun updateRemovedBy(conversationId: QualifiedIDEntity, removedBy: UserIDEntity?) {
+        conversationQueries.updateConversationRemovedBy(removedBy, conversationId)
+    }
 }

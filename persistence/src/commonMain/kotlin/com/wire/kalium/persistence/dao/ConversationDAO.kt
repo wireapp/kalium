@@ -85,7 +85,6 @@ interface ConversationDAO {
         mutedStatusTimestamp: Long
     )
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
-
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
@@ -94,4 +93,5 @@ interface ConversationDAO {
     suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
     suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
+    suspend fun updateRemovedBy(conversationId: QualifiedIDEntity, removedBy: UserIDEntity?)
 }
