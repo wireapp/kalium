@@ -361,7 +361,17 @@ internal class ConversationEventReceiverImpl(
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {
-                is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
+                is MessageContent.Text, is MessageContent.FailedDecryption -> {
+                    val isMessageComingFromOtherClient = message.senderUserId == userRepository.getSelfUserId()
+
+                    if (isMessageComingFromOtherClient) {
+                        conversationRepository.updateConversationReadDate(
+                            qualifiedID = message.conversationId,
+                            date = message.date
+                        )
+                    }
+                    persistMessage(message)
+                }
                 is MessageContent.Asset -> handleAssetMessage(message)
                 is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
                 is MessageContent.DeleteForMe -> {

@@ -9,13 +9,16 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.TimeParser
 
-
+// This class handles the messages that arrive when some client has read the conversation.
 class LastReadContentHandler(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val timeParser: TimeParser
 ) {
 
+    // TODO: for now we are just handeling the case when the self user has read the conversation
+    // on another device, in the future we could handle the case when other user have read our message
+    // here too
     suspend fun handle(
         message: Message,
         messageContent: MessageContent.LastRead
