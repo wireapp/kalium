@@ -19,7 +19,7 @@ CREATE TABLE Conversation (
     last_read_date TEXT DEFAULT "1970-01-01T00:00:00.000Z" NOT NULL,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
-    keying_material_last_update INTEGER DEFAULT 0 NOT NULL
+    mls_last_keying_material_update INTEGER DEFAULT 0 NOT NULL
 );
 
 deleteAllConversations:
@@ -29,8 +29,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, removed_by, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date, keying_material_last_update)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, removed_by, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -46,7 +46,7 @@ access_role_list = excluded.access_role_list,
 last_modified_date = last_modified_date,
 last_notified_message_date = last_notified_message_date,
 last_read_date = last_read_date,
-keying_material_last_update  = excluded.keying_material_last_update;
+mls_last_keying_material_update  = excluded.mls_last_keying_material_update;
 
 updateConversation:
 UPDATE Conversation
@@ -115,7 +115,7 @@ updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 
 updateKeyingMaterialDate:
-UPDATE Conversation SET keying_material_last_update= ? WHERE mls_group_id = ?;
+UPDATE Conversation SET mls_last_keying_material_update= ? WHERE mls_group_id = ?;
 
 selectByKeyingMaterialUpdate:
-SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND keying_material_last_update - ? <0 AND mls_group_id IS NOT NULL;
+SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND mls_last_keying_material_update - ? <0 AND mls_group_id IS NOT NULL;
