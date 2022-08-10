@@ -78,4 +78,7 @@ class ConversationScope(
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
 
+    val leaveGroupConversationUseCase: LeaveGroupConversationUseCaseImpl
+        get() = LeaveGroupConversationUseCaseImpl(conversationRepository)
+
 }

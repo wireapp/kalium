@@ -20,7 +20,7 @@ fun interface LeaveGroupConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, removedBy: UserId?): LeaveGroupResult
 }
 
-internal class LeaveGroupConversationUseCaseImpl(
+class LeaveGroupConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
 ) : LeaveGroupConversationUseCase {
 
