@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -19,6 +20,7 @@ interface TeamRepository {
     suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
+    suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit>
 }
 
 internal class TeamDataSource(
@@ -75,4 +77,10 @@ internal class TeamDataSource(
                     teamMapper.fromDaoModelToTeam(it)
                 }
             }
+
+    override suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            teamsApi.deleteConversation(conversationId.value, teamId)
+        }
+    }
 }

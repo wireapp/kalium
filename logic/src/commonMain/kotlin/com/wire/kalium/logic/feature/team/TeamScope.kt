@@ -8,8 +8,14 @@ class TeamScope internal constructor(
     private val teamRepository: TeamRepository,
 ) {
     val getSelfTeamUseCase: GetSelfTeamUseCase
-        get() = GetSelfTeamUseCase(
+        get() = GetSelfTeamUseCaseImpl(
             userRepository = userRepository,
+            teamRepository = teamRepository,
+        )
+
+    val deleteTeamConversationUseCase: DeleteTeamConversationUseCase
+        get() = DeleteTeamConversationUseCaseImpl(
+            getSelfTeam = getSelfTeamUseCase,
             teamRepository = teamRepository,
         )
 }

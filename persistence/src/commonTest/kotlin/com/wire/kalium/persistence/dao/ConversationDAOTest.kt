@@ -11,12 +11,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.days
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationDAOTest : BaseDatabaseTest() {
@@ -543,6 +545,50 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenMLSConversation_whenUpdatingKeyingMaterialLastUpdate_thenItsUpdated() = runTest {
+        // given
+        val conversation = conversationEntity2
+        val conversationProtocolInfo = conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS
+        val newUpdate = Instant.parse("2023-03-30T15:36:00.000Z")
+        val expected =
+            conversationProtocolInfo.copy(keyingMaterialLastUpdate = newUpdate)
+        conversationDAO.insertConversation(conversationEntity2)
+        // when
+        conversationDAO.updateKeyingMaterial(conversationProtocolInfo.groupId, newUpdate)
+        // then
+        assertEquals(expected, conversationDAO.getConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
+    }
+
+    @Test
+    fun givenListMLSConversationsWithUpdateTime_whenPartOfThemNeedUpdate_thenGetConversationsByKeyingMaterialUpdateReturnsCorrectGroups() =
+        runTest {
+            // given
+            // established updated group
+            val updatedConversation = conversationEntity2
+            val updatedDate = Instant.parse("2023-03-30T15:36:00.000Z")
+            val updatedGroupId = (updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+            conversationDAO.insertConversation(updatedConversation)
+            conversationDAO.updateKeyingMaterial(updatedGroupId, updatedDate)
+
+            // pending outdated group
+            val outDatedConversation1 = conversationEntity3
+            val outdatedDate1 = Instant.parse("2019-03-30T15:36:00.000Z")
+            val outdatedGroupId1 = (outDatedConversation1.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+            conversationDAO.insertConversation(outDatedConversation1)
+            conversationDAO.updateKeyingMaterial(outdatedGroupId1, outdatedDate1)
+
+            // established outdated group
+            val outDatedConversation2 = conversationEntity4
+            val outdatedDate2 = Instant.parse("2019-03-30T15:36:00.000Z")
+            val outdatedGroupId2 = (outDatedConversation2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+            conversationDAO.insertConversation(outDatedConversation2)
+            conversationDAO.updateKeyingMaterial(outdatedGroupId2, outdatedDate2)
+
+            // then
+            assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
+        }
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
@@ -567,7 +613,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation2",
             ConversationEntity.Type.ONE_ON_ONE,
             null,
-            ConversationEntity.ProtocolInfo.MLS("group2", ConversationEntity.GroupState.ESTABLISHED, 0UL),
+            ConversationEntity.ProtocolInfo.MLS(
+                "group2",
+                ConversationEntity.GroupState.ESTABLISHED,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z")
+            ),
             lastNotificationDate = null,
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
@@ -581,7 +632,33 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation3",
             ConversationEntity.Type.GROUP,
             null,
-            ConversationEntity.ProtocolInfo.MLS("group3", ConversationEntity.GroupState.PENDING_JOIN, 0UL),
+            ConversationEntity.ProtocolInfo.MLS(
+                "group3",
+                ConversationEntity.GroupState.PENDING_JOIN,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z")
+            ),
+            // This conversation was modified after the last time the user was notified about it
+            lastNotificationDate = "2021-03-30T15:30:00.000Z",
+            lastModifiedDate = "2021-03-30T15:36:00.000Z",
+            lastReadDate = "2000-01-01T12:00:00.000Z",
+            // and it's status is set to be only notified if there is a mention for the user
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+        )
+
+        val conversationEntity4 = ConversationEntity(
+            QualifiedIDEntity("4", "wire.com"),
+            "conversation4",
+            ConversationEntity.Type.GROUP,
+            null,
+            ConversationEntity.ProtocolInfo.MLS(
+                "group4",
+                ConversationEntity.GroupState.ESTABLISHED,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z")
+            ),
             // This conversation was modified after the last time the user was notified about it
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",

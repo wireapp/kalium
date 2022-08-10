@@ -2,7 +2,7 @@
 
 package com.wire.kalium.logger
 
-object ObfuscateUtil {
+internal object ObfuscateUtil {
     private val ipV4 by lazy { """.*\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}.*""".toRegex() }
     private val ipV4Exact by lazy { """\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}""".toRegex() }
 
