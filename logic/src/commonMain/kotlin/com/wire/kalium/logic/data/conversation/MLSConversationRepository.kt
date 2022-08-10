@@ -24,6 +24,8 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Clock
+import kotlin.time.Duration
 
 interface MLSConversationRepository {
 
@@ -34,6 +36,8 @@ interface MLSConversationRepository {
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
+    suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
+    suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit>
 }
 
 class MLSConversationDataSource(
@@ -97,6 +101,32 @@ class MLSConversationDataSource(
             }
         }
     }
+
+    override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>> =
+        wrapStorageRequest {
+            conversationDAO.getConversationsByKeyingMaterialUpdate(threshold)
+        }
+
+    override suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            mlsClient.updateKeyingMaterial(groupID).let { (handshake, welcome) ->
+                wrapApiRequest {
+                    mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                }.flatMap {
+                    welcome?.let {
+                        wrapApiRequest {
+                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
+                        }
+                    } ?: Either.Right(Unit)
+                }.flatMap {
+                    wrapStorageRequest {
+                        conversationDAO.updateKeyingMaterial(groupID, Clock.System.now())
+                    }
+                }.flatMap {
+                    Either.Right(Unit)
+                }
+            }
+        }
 
     override suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         // TODO: check for federated and non-federated members
