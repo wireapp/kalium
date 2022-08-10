@@ -9,16 +9,8 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
-import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -78,29 +70,8 @@ internal actual class GlobalWorkSchedulerImpl(
 
 internal actual class UserSessionWorkSchedulerImpl(
     private val appContext: Context,
-    private val coreLogic: CoreLogic,
-    override val userId: UserId,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    override val userId: UserId
 ) : UserSessionWorkScheduler {
-
-    private var slowSyncJob: Job? = null
-    private val scope = CoroutineScope(kaliumDispatcher.default.limitedParallelism(1))
-    override fun enqueueSlowSyncIfNeeded() {
-        kaliumLogger.withFeatureId(SYNC).v("SlowSync: Enqueueing if needed")
-        scope.launch {
-            val isRunning = slowSyncJob?.isActive ?: false
-
-            kaliumLogger.withFeatureId(SYNC).v("SlowSync: Job is running = $isRunning")
-            if (!isRunning) {
-                slowSyncJob = launch(Dispatchers.Main) {
-                    SlowSyncWorker(coreLogic.getSessionScope(userId)).doWork()
-                }
-                kaliumLogger.withFeatureId(SYNC).d("SlowSync Started")
-            } else {
-                kaliumLogger.withFeatureId(SYNC).d("SlowSync not scheduled as it's already running")
-            }
-        }
-    }
 
     override fun scheduleSendingOfPendingMessages() {
         val inputData = WrapperWorkerFactory.workData(PendingMessagesSenderWorker::class, userId)
@@ -124,6 +95,5 @@ internal actual class UserSessionWorkSchedulerImpl(
 
     private companion object {
         const val WORK_NAME_PREFIX_PER_USER = "scheduled-message-"
-        const val WORK_NAME_SLOW_SYNC = "slow-sync"
     }
 }

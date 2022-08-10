@@ -1,23 +1,25 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.conversation.AddParticipantResponse
 import com.wire.kalium.network.api.conversation.ConvProtocol
+import com.wire.kalium.network.api.conversation.ConversationMemberAddedDTO
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import kotlinx.datetime.Instant
 
 object TestConversation {
     val ID = ConversationId("valueConvo", "domainConvo")
@@ -33,6 +35,8 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -45,6 +49,8 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -58,6 +64,8 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -70,6 +78,7 @@ object TestConversation {
         protocolInfo,
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
@@ -83,6 +92,8 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        null,
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )
@@ -120,8 +131,16 @@ object TestConversation {
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
-        AddParticipantResponse.UserAdded(
-            "",
+        ConversationMemberAddedDTO.Changed(
+            "conversation.member-join",
+            qualifiedConversationId = NETWORK_ID,
+            fromUser = NETWORK_USER_ID1,
+            time = "2022-03-30T15:36:00.000Z"
+        )
+
+    val REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE =
+        ConversationMemberRemovedDTO.Changed(
+            "conversation.member-leave",
             qualifiedConversationId = NETWORK_ID,
             fromUser = NETWORK_USER_ID1,
             time = "2022-03-30T15:36:00.000Z"
@@ -136,6 +155,7 @@ object TestConversation {
         ConversationEntity.ProtocolInfo.Proteus,
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
@@ -149,8 +169,10 @@ object TestConversation {
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        lastReadDate = "2022-03-30T15:36:00.000Z"
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -158,11 +180,18 @@ object TestConversation {
         "MLS Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.MLS("group_id", ProtocolInfo.MLS.GroupState.PENDING_JOIN, 0UL),
+        ProtocolInfo.MLS(
+            "group_id",
+            ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+            0UL,
+            Instant.parse("2021-03-30T15:36:00.000Z")
+        ),
         MutedConversationStatus.AllAllowed,
         null,
         null,
+        null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        lastReadDate = "2022-03-30T15:36:00.000Z"
     )
 }

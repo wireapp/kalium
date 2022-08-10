@@ -21,7 +21,7 @@ data class QualifiedID(
 )
 
 @Serializable
-data class UserSsoId(
+data class UserSsoIdDTO(
     @SerialName("scim_external_id")
     val scimExternalId: String?,
     @SerialName("subject")

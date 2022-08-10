@@ -12,6 +12,7 @@ import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
@@ -19,6 +20,7 @@ import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
@@ -101,6 +103,7 @@ actual class UserDatabaseProvider(
                 mls_group_stateAdapter = EnumColumnAdapter(),
                 protocolAdapter = EnumColumnAdapter(),
                 muted_statusAdapter = EnumColumnAdapter(),
+                removed_byAdapter = QualifiedIDAdapter(),
                 access_listAdapter = ConversationAccessListAdapter(),
                 access_role_listAdapter = ConversationAccessRoleListAdapter()
             ),
@@ -121,6 +124,9 @@ actual class UserDatabaseProvider(
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter()
+            ),
+            MessageFailedToDecryptContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
             ),
             MessageMemberChangeContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
@@ -147,7 +153,8 @@ actual class UserDatabaseProvider(
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
                 complete_asset_idAdapter = QualifiedIDAdapter(),
-                user_typeAdapter = EnumColumnAdapter()
+                user_typeAdapter = EnumColumnAdapter(),
+                bot_serviceAdapter = BotServiceAdapter()
             )
         )
     }

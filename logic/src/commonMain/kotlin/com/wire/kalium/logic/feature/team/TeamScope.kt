@@ -7,15 +7,15 @@ class TeamScope internal constructor(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
 ) {
-    internal val syncSelfTeamUseCase: SyncSelfTeamUseCase
-        get() = SyncSelfTeamUseCaseImpl(
+    val getSelfTeamUseCase: GetSelfTeamUseCase
+        get() = GetSelfTeamUseCaseImpl(
             userRepository = userRepository,
-            teamRepository = teamRepository
+            teamRepository = teamRepository,
         )
 
-    val getSelfTeamUseCase: GetSelfTeamUseCase
-        get() = GetSelfTeamUseCase(
-            userRepository = userRepository,
+    val deleteTeamConversationUseCase: DeleteTeamConversationUseCase
+        get() = DeleteTeamConversationUseCaseImpl(
+            getSelfTeam = getSelfTeamUseCase,
             teamRepository = teamRepository,
         )
 }

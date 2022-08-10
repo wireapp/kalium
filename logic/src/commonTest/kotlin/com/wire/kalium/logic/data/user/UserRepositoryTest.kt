@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
@@ -94,18 +94,20 @@ class UserRepositoryTest {
         val clientDAO = configure(mock(classOf<ClientDAO>())) { stubsUnitByDefault = true }
         @Mock
         val selfApi = mock(classOf<SelfApi>())
-        @Mock
-        val clientApi = mock(classOf<ClientApi>())
+
         @Mock
         val userDetailsApi = mock(classOf<UserDetailsApi>())
 
+        @Mock
+        val sessionRepository = mock(SessionRepository::class)
+
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository)
         }
 
         init {
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(TestUser.JSON_QUALIFIED_ID) }
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)

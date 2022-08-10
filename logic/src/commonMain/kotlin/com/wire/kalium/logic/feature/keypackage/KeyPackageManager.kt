@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.sync.SyncRepository
-import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -26,7 +26,7 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
 internal interface KeyPackageManager
 
 internal class KeyPackageManagerImpl(
-    private val syncRepository: SyncRepository,
+    private val incrementalSyncRepository: IncrementalSyncRepository,
     private val keyPackageRepository: Lazy<KeyPackageRepository>,
     private val refillKeyPackagesUseCase: Lazy<RefillKeyPackagesUseCase>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
@@ -44,9 +44,9 @@ internal class KeyPackageManagerImpl(
 
     init {
         refillKeyPackageJob = refillKeyPackagesScope.launch {
-            syncRepository.syncState.collect { syncState ->
+            incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState == SyncState.Live) {
+                if (syncState is IncrementalSyncStatus.Live) {
                     refillKeyPackagesIfNeeded()
                 }
             }

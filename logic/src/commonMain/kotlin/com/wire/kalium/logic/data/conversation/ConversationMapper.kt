@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -16,6 +17,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 interface ConversationMapper {
@@ -29,7 +31,12 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
-    fun toConversationDetailsOneToOne(conversation: Conversation, otherUser: OtherUser, selfUser: SelfUser): ConversationDetails.OneOne
+    fun toConversationDetailsOneToOne(
+        conversation: Conversation,
+        otherUser: OtherUser,
+        selfUser: SelfUser,
+        unreadMessageCount: Long
+    ): ConversationDetails.OneOne
 }
 
 internal class ConversationMapperImpl(
@@ -48,8 +55,10 @@ internal class ConversationMapperImpl(
         type = apiModel.getConversationType(selfUserTeamId),
         teamId = apiModel.teamId,
         protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
-        mutedStatus = conversationStatusMapper.fromApiToDaoModel(apiModel.members.self.otrMutedStatus),
+        mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
+        removedBy = null,
+        lastReadDate = EPOCH_FIRST_DAY,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
@@ -67,7 +76,9 @@ internal class ConversationMapperImpl(
         type = daoModel.type.fromDaoModelToType(),
         teamId = daoModel.teamId?.let { TeamId(it) },
         protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
-        mutedStatus = conversationStatusMapper.fromDaoModel(daoModel.mutedStatus),
+        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(daoModel.mutedStatus),
+        removedBy = daoModel.removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
+        lastReadDate = daoModel.lastReadDate,
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate,
         access = daoModel.access.map { it.toDAO() },
@@ -101,26 +112,31 @@ internal class ConversationMapperImpl(
             Conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
         }
 
-    override fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions) =
-        CreateConversationRequest(
-            qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
+    override fun toApiModel(
+        name: String?,
+        members: List<UserId>,
+        teamId: String?,
+        options: ConversationOptions
+    ) = CreateConversationRequest(
+        qualifiedUsers = if (options.protocol == ConversationOptions.Protocol.PROTEUS) members.map {
             idMapper.toApiModel(it)
         } else emptyList(),
-            name = name,
-            access = options.access?.toList()?.map { toApiModel(it) },
-            accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
-            convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
-            messageTimer = null,
-            receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
-            conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
-            protocol = toApiModel(options.protocol),
-            creatorClient = options.creatorClientId
-        )
+        name = name,
+        access = options.access?.toList()?.map { toApiModel(it) },
+        accessRole = options.accessRole?.toList()?.map { toApiModel(it) },
+        convTeamInfo = teamId?.let { ConvTeamInfo(false, it) },
+        messageTimer = null,
+        receiptMode = if (options.readReceiptsEnabled) ReceiptMode.ENABLED else ReceiptMode.DISABLED,
+        conversationRole = ConversationDataSource.DEFAULT_MEMBER_ROLE,
+        protocol = toApiModel(options.protocol),
+        creatorClient = options.creatorClientId
+    )
 
     override fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
-        selfUser: SelfUser
+        selfUser: SelfUser,
+        unreadMessageCount: Long,
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
@@ -128,7 +144,8 @@ internal class ConversationMapperImpl(
             connectionState = otherUser.connectionStatus,
             // TODO(user-metadata) get actual legal hold status
             legalHoldStatus = LegalHoldStatus.DISABLED,
-            userType = otherUser.userType
+            userType = otherUser.userType,
+            unreadMessagesCount = unreadMessageCount,
         )
     }
 
@@ -154,7 +171,13 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING_JOIN, epoch ?: 0UL)
+            ConvProtocol.MLS -> ProtocolInfo.MLS(
+                groupId ?: "",
+                mlsGroupState ?: GroupState.PENDING_JOIN,
+                epoch ?: 0UL,
+                keyingMaterialLastUpdate = Clock.System.now()
+            )
+
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }

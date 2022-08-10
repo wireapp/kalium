@@ -92,7 +92,8 @@ class SearchUserDirectoryUseCaseTest {
                         previewPicture = null,
                         completePicture = null,
                         availabilityStatus = UserAvailabilityStatus.NONE,
-                        userType =  UserType.EXTERNAL
+                        userType =  UserType.EXTERNAL,
+                        botService = null,
                     )
                 }
             }

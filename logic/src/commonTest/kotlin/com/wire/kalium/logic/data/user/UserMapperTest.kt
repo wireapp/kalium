@@ -60,6 +60,7 @@ class UserMapperTest {
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.INTERNAL,
+            botService = null,
         )
         val (_, userMapper) = Arrangement().arrange()
 

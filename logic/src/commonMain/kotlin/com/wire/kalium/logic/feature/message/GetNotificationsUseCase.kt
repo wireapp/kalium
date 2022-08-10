@@ -52,6 +52,7 @@ class GetNotificationsUseCaseImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val timeParser: TimeParser,
+    private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
@@ -60,6 +61,9 @@ class GetNotificationsUseCaseImpl(
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
         return observeRegularNotifications()
             .combine(observeConnectionRequests()) { messages, connections -> messages.plus(connections) }
+            .combine(ephemeralNotificationsManager.observeEphemeralNotifications()) { messages, ephemeralNotifications ->
+                messages.plus(ephemeralNotifications)
+            }
             .distinctUntilChanged()
     }
 
@@ -218,10 +222,12 @@ class GetNotificationsUseCaseImpl(
 
                         containsSelfUserName or containsSelfHandle
                     }
+
                     is MessageContent.MissedCall -> true
                     else -> false
                 }
             }
+
             allNotificationsAllowed(conversationMutedStatus, selfUser) -> true
             else -> false
         }
@@ -239,10 +245,10 @@ class GetNotificationsUseCaseImpl(
         conversationMutedStatus == MutedConversationStatus.OnlyMentionsAllowed ||
                 selfUser.availabilityStatus == UserAvailabilityStatus.BUSY
 
+    @Suppress("ComplexMethod")
     private fun isMessageContentSupportedInNotifications(message: Message): Boolean = when (message.content) {
         is MessageContent.Unknown -> false
         is MessageContent.MemberChange -> false
-        MessageContent.MissedCall -> true
         is MessageContent.Text -> true
         is MessageContent.Calling -> false
         is MessageContent.Asset -> true
@@ -250,9 +256,11 @@ class GetNotificationsUseCaseImpl(
         is MessageContent.TextEdited -> false
         is MessageContent.RestrictedAsset -> true
         is MessageContent.DeleteForMe -> false
-        MessageContent.Empty -> false
-        MessageContent.Ignored -> false
         is MessageContent.Availability -> false
+        is MessageContent.FailedDecryption -> false
+        is MessageContent.MissedCall -> true
+        is MessageContent.Empty -> false
+        is MessageContent.Ignored -> false
     }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =

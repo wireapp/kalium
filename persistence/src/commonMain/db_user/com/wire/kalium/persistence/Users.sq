@@ -1,3 +1,4 @@
+import com.wire.kalium.persistence.dao.BotEntity;
 import com.wire.kalium.persistence.dao.ConnectionEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity;
@@ -16,7 +17,8 @@ CREATE TABLE User (
     preview_asset_id TEXT AS QualifiedIDEntity,
     complete_asset_id TEXT AS QualifiedIDEntity,
     user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE',
-    user_type TEXT AS UserTypeEntity NOT NULL DEFAULT 'INTERNAL'
+    user_type TEXT AS UserTypeEntity NOT NULL DEFAULT 'INTERNAL',
+    bot_service TEXT AS BotEntity
 );
 
 deleteAllUsers:
@@ -26,8 +28,8 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 handle = excluded.handle,
@@ -38,16 +40,17 @@ team = excluded.team,
 connection_status = excluded.connection_status,
 preview_asset_id = excluded.preview_asset_id,
 complete_asset_id = excluded.complete_asset_id,
-user_type = excluded.user_type;
+user_type = excluded.user_type,
+bot_service = excluded.bot_service;
 
 updateUser:
 UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, user_type = ?
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, user_type = ?, bot_service = ?
 WHERE qualified_id = ?;
 
 updateTeamMemberUser:
 UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?
 WHERE qualified_id = ?;
 
 updateTeamMemberType:
@@ -85,12 +88,12 @@ SELECT * FROM User
 WHERE (name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%'))
-AND connection_status = :connectionStatus;
+AND connection_status IN :connectionStatuses;
 
 selectByHandleAndConnectionState:
 SELECT * FROM User
 WHERE handle LIKE ('%' || :searchQuery || '%')
-AND connection_status = :connectionStatus;
+AND connection_status IN :connectionStatuses;
 
 selectUsersByTeam:
 SELECT * FROM User WHERE team = ?;

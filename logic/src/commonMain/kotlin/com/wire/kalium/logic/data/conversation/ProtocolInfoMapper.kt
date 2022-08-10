@@ -14,7 +14,8 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
             is ConversationEntity.ProtocolInfo.MLS -> Conversation.ProtocolInfo.MLS(
                 protocolInfo.groupId,
                 Conversation.ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name),
-                protocolInfo.epoch
+                protocolInfo.epoch,
+                protocolInfo.keyingMaterialLastUpdate
             )
         }
 
@@ -24,7 +25,8 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
             is Conversation.ProtocolInfo.MLS -> ConversationEntity.ProtocolInfo.MLS(
                 protocolInfo.groupId,
                 ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
-                protocolInfo.epoch
+                protocolInfo.epoch,
+                protocolInfo.keyingMaterialLastUpdate
             )
         }
 }

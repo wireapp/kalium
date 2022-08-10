@@ -23,6 +23,7 @@ class UserMapper {
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
             userType = user.user_type,
+            botService = user.bot_service
         )
     }
 }
@@ -46,7 +47,8 @@ class UserDAOImpl(
             user.connectionStatus,
             user.previewAssetId,
             user.completeAssetId,
-            user.userType
+            user.userType,
+            user.botService
         )
     }
 
@@ -62,6 +64,7 @@ class UserDAOImpl(
                     user.team,
                     user.previewAssetId,
                     user.completeAssetId,
+                    user.botService,
                     user.id,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
@@ -77,7 +80,8 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userType
+                        user.userType,
+                        user.botService
                     )
                 }
             }
@@ -97,6 +101,7 @@ class UserDAOImpl(
                     user.previewAssetId,
                     user.completeAssetId,
                     user.userType,
+                    user.botService,
                     user.id,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
@@ -112,7 +117,8 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userType
+                        user.userType,
+                        user.botService
                     )
                 }
             }
@@ -136,7 +142,8 @@ class UserDAOImpl(
                         user.connectionStatus,
                         user.previewAssetId,
                         user.completeAssetId,
-                        user.userType
+                        user.userType,
+                        user.botService
                     )
                 }
             }
@@ -173,17 +180,17 @@ class UserDAOImpl(
             .map { mapper.toModel(it) }
     }
 
-    override suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
+    override suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
-        connectionState: ConnectionEntity.State
-    ) = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionState)
+        connectionStates: List<ConnectionEntity.State>
+    ) = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionStates)
         .executeAsList()
         .map(mapper::toModel)
 
-    override suspend fun getUserByHandleAndConnectionState(
+    override suspend fun getUserByHandleAndConnectionStates(
         handle: String,
-        connectionState: ConnectionEntity.State
-    ) = userQueries.selectByHandleAndConnectionState(handle, connectionState)
+        connectionStates: List<ConnectionEntity.State>
+    ) = userQueries.selectByHandleAndConnectionState(handle, connectionStates)
         .executeAsList()
         .map(mapper::toModel)
 

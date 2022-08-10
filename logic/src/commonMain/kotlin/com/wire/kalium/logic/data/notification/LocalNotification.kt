@@ -30,6 +30,11 @@ sealed class LocalNotificationMessage(open val author: LocalNotificationMessageA
         override val time: String,
         val authorId: QualifiedID
     ) : LocalNotificationMessage(author, time)
+
+    data class ConversationDeleted(
+        override val author: LocalNotificationMessageAuthor,
+        override val time: String
+    ) : LocalNotificationMessage(author, time)
 }
 
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: String?)

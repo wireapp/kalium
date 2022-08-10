@@ -87,9 +87,14 @@ interface AssetRepository {
     suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit>
 
     /**
-     * Method used to delete asset locally (TODO) and externally
+     * Method used to delete asset locally and externally
      */
     suspend fun deleteAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Unit>
+
+    /**
+     * Method used to delete asset only locally
+     */
+    suspend fun deleteAssetLocally(assetId: AssetId): Either<CoreFailure, Unit>
 }
 
 internal class AssetDataSource(
@@ -204,7 +209,7 @@ internal class AssetDataSource(
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
                 // Decrypt and persist decoded asset onto a persistent asset path
-                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath(assetId.value)
+                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath("${assetId.value}.${assetName.fileExtension()}")
                 val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
                 // Public assets are stored already decrypted on the backend, hence no decryption is needed
@@ -243,9 +248,10 @@ internal class AssetDataSource(
         return Either.Right(Unit)
     }
 
-    override suspend fun deleteAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Unit> {
-        return wrapApiRequest {
-            assetApi.deleteAsset(idMapper.toApiModel(assetId), assetToken)
-        }
-    }
+    override suspend fun deleteAsset(assetId: AssetId, assetToken: String?): Either<CoreFailure, Unit> =
+        wrapApiRequest { assetApi.deleteAsset(idMapper.toApiModel(assetId), assetToken) }
+            .flatMap { deleteAssetLocally(assetId) }
+
+    override suspend fun deleteAssetLocally(assetId: AssetId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { assetDao.deleteAsset(assetId.value) }
 }

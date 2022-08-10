@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -50,12 +51,12 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(cleanEmail) }
                 .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(cleanEmail, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
-                Either.Right(TEST_VALID_AUTH_SESSION)
+                Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID)
             }
 
             val loginUserCaseResult = loginUseCase("   $cleanEmail  ", TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION, TEST_SSO_ID))
 
             verify(validateEmailUseCase).invocation { invoke(cleanEmail) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).invocation { invoke(cleanEmail) }.wasNotInvoked()
@@ -73,12 +74,12 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(cleanHandle) }
                 .then { ValidateUserHandleResult.Valid(cleanHandle) }
             given(loginRepository).coroutine { loginWithHandle(cleanHandle, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
-                Either.Right(TEST_VALID_AUTH_SESSION)
+                Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID)
             }
 
             val loginUserCaseResult = loginUseCase("   $cleanHandle  ", TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION, TEST_SSO_ID))
 
             verify(validateEmailUseCase).invocation { invoke(cleanHandle) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).invocation { invoke(cleanHandle) }.wasInvoked(exactly = once)
@@ -96,12 +97,12 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
                 .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
-                Either.Right(TEST_VALID_AUTH_SESSION)
+                Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID)
             }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION, TEST_SSO_ID))
 
             verify(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).function(validateUserHandleUseCase::invoke).with(any()).wasNotInvoked()
@@ -119,14 +120,14 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDLE) }
                 .then { ValidateUserHandleResult.Valid(TEST_HANDLE) }
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
-                Either.Right(TEST_VALID_AUTH_SESSION)
+                Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID)
             }
 
             // when
             val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
             // then
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION, TEST_SSO_ID))
 
             verify(validateEmailUseCase)
                 .invocation { invoke(TEST_HANDLE) }
@@ -149,11 +150,11 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
                 .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
-                .then { Either.Right(TEST_VALID_AUTH_SESSION) }
+                .then { Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID) }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_SESSION, TEST_SSO_ID))
         }
 
     @Test
@@ -241,5 +242,7 @@ class LoginUseCaseTest {
                 TEST_VALID_AUTH_SESSION,
                 TEST_SERVER_CONFIG.links
             )
+
+        val TEST_SSO_ID = SsoId("scim_external", "subject", null)
     }
 }
