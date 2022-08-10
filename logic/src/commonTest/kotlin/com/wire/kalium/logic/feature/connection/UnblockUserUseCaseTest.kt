@@ -28,7 +28,7 @@ class UnblockUserUseCaseTest {
 
         val result = blockUser(TestUser.USER_ID)
 
-        assertTrue(result is Either.Left)
+        assertTrue(result is UnblockUserResult.Failure)
     }
 
     @Test
@@ -39,7 +39,7 @@ class UnblockUserUseCaseTest {
 
         val result = blockUser(TestUser.USER_ID)
 
-        assertTrue(result is Either.Right)
+        assertTrue(result is UnblockUserResult.Success)
     }
 
     private class Arrangement {
