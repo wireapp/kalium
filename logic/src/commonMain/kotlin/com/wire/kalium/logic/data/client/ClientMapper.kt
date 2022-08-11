@@ -2,12 +2,15 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
+import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.user.client.ClientResponse
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
+import com.wire.kalium.network.api.user.client.OtherUserClientsItem
 import com.wire.kalium.network.api.user.client.RegisterClientRequest
 
 class ClientMapper(
@@ -66,6 +69,14 @@ class ClientMapper(
         DeviceType.Desktop -> DeviceTypeDTO.Desktop
         DeviceType.LegalHold -> DeviceTypeDTO.LegalHold
         DeviceType.Unknown -> DeviceTypeDTO.Unknown
+    }
+
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<OtherUserClientsItem>): List<OtherUserClients> {
+        val list = arrayListOf<OtherUserClients>()
+        for (item in otherUsersClients) {
+            list.add(OtherUserClients(DeviceType.valueOf(item.deviceType.name), item.id))
+        }
+        return list
     }
 
     private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {

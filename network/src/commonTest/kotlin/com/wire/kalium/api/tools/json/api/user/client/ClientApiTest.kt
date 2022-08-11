@@ -122,7 +122,7 @@ class ClientApiTest : ApiTest {
 
 
     @Test
-    fun givenValidRequest_WhenCallingTheFileSharingApi_SuccessResponseExpected() = runTest {
+    fun givenValidRequest_WhenCallingTheOtherUsersClientsApi_SuccessResponseExpected() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
         val apiPath = "${PATH_USERS}/${userId.domain}/${userId.value}${PATH_CLIENTS}"
@@ -146,7 +146,7 @@ class ClientApiTest : ApiTest {
     }
 
     @Test
-    fun givenInValidRequestWithInsufficientPermission_WhenCallingTheFileSharingApi_ErrorResponseExpected() = runTest {
+    fun givenInValidRequest_WhenCallingTheOtherUsersClientsApi_ErrorResponseExpected() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
         val apiPath = "${PATH_USERS}/${userId.domain}/${userId.value}${PATH_CLIENTS}"
