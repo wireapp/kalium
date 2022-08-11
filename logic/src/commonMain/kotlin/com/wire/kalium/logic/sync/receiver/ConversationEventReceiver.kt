@@ -53,7 +53,7 @@ interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
 internal class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val persistMessage: PersistMessageUseCase,
