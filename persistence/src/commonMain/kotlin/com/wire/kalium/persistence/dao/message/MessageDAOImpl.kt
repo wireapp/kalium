@@ -192,6 +192,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     conversation_id = message.conversationId,
                     caller_id = message.senderUserId
                 )
+
+                is MessageEntityContent.Knock -> {} // No need to insert a Knock-specific message
             }
         }
     }
