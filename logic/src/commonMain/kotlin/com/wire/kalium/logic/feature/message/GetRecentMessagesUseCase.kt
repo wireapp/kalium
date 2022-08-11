@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.first
 
 class GetRecentMessagesUseCase internal constructor(
     private val messageRepository: MessageRepository,
-    private val slowSyncRepository: SlowSyncRepository) {
+    private val slowSyncRepository: SlowSyncRepository
+) {
 
     suspend operator fun invoke(
         conversationId: ConversationId,
