@@ -49,6 +49,20 @@ class ConversationRepository {
             }
         }
 
+        fun sendPing(instance: Instance, conversationId: ConversationId) {
+            instance.coreLogic?.globalScope {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                        log.info("Instance ${instance.instanceId}: Send ping")
+                        runBlocking {
+                            messages.sendKnock(conversationId, false)
+                        }
+                    }
+                }
+            }
+        }
+
         fun getMessages(instance: Instance, conversationId: ConversationId): List<Message> {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()

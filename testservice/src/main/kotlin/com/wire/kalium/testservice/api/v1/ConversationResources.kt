@@ -7,6 +7,7 @@ import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.SendFileRequest
+import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendTextRequest
 import org.slf4j.LoggerFactory
 import javax.validation.Valid
@@ -119,8 +120,18 @@ class ConversationResources(private val instanceService: InstanceService) {
     // POST /api/v1/instance/{instanceId}/sendLocation
     // Send an location to a conversation.
 
-    // POST /api/v1/instance/{instanceId}/sendPing
     // Send an ping to a conversation.
+    @POST
+    @Path("/instance/{id}/sendPing")
+    fun sendPing(@PathParam("id") id: String, @Valid sendPingRequest: SendPingRequest) {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(sendPingRequest) {
+            ConversationRepository.sendPing(
+                instance,
+                ConversationId(conversationId, conversationDomain)
+            )
+        }
+    }
 
     // POST /api/v1/instance/{instanceId}/sendButtonAction
     // Send a button action to a poll.
