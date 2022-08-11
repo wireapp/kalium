@@ -18,7 +18,7 @@ buildscript {
 
     dependencies {
         // keeping this here to allow AS to automatically update
-        classpath("com.android.tools.build:gradle:7.0.4")
+        classpath("com.android.tools.build:gradle:7.2.0")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("app.cash.sqldelight:gradle-plugin:$sqlDelightVersion")
         classpath("com.wire:carthage-gradle-plugin:$carthageVersion")
@@ -36,13 +36,13 @@ repositories {
 }
 
 plugins {
-    id("org.jetbrains.dokka") version "1.7.0"
+    id("org.jetbrains.dokka") version "1.7.10"
     id("org.jetbrains.kotlinx.kover") version "0.5.1"
     id("scripts.testing")
 }
 
 dependencies {
-    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.7.0")
+    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.7.10")
 }
 
 tasks.withType<Test> {
