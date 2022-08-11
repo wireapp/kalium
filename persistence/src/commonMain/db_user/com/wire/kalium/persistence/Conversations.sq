@@ -10,6 +10,7 @@ CREATE TABLE Conversation (
     mls_group_id TEXT,
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
     mls_epoch INTEGER DEFAULT 0 NOT NULL,
+    mls_proposal_timer TEXT,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
@@ -112,7 +113,6 @@ SELECT COUNT() FROM Message AS message WHERE  message.conversation_id IS :conver
 getUnreadConversationCount:
 SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date);
 
-
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 
@@ -121,3 +121,13 @@ UPDATE Conversation SET mls_last_keying_material_update= ? WHERE mls_group_id = 
 
 selectByKeyingMaterialUpdate:
 SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND mls_last_keying_material_update - ? <0 AND mls_group_id IS NOT NULL;
+
+updateProposalTimer:
+UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;
+
+clearProposalTimer:
+UPDATE Conversation SET mls_proposal_timer = NULL WHERE mls_group_id = ?;
+
+selectProposalTimers:
+SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
+

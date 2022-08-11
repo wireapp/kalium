@@ -589,6 +589,60 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
         }
 
+    @Test
+    fun givenConversation_whenUpdatingProposalTimer_thenItIsUpdated() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+
+        // when
+        conversationDAO.setProposalTimer(proposalTimer2)
+
+        // then
+         assertEquals(listOf(proposalTimer2), conversationDAO.getProposalTimers().first())
+    }
+
+    @Test
+    fun givenConversationWithExistingProposalTimer_whenUpdatingProposalTimer_thenItIsNotUpdated() = runTest {
+        // given
+        val initialFiringDate = Instant.DISTANT_FUTURE
+        val updatedFiringDate = Instant.DISTANT_PAST
+        val groupID = (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.setProposalTimer(ProposalTimerEntity(groupID, initialFiringDate))
+
+        // when
+        conversationDAO.setProposalTimer(ProposalTimerEntity(groupID, updatedFiringDate))
+
+        // then
+        assertEquals(initialFiringDate, conversationDAO.getProposalTimers().first()[0].firingDate)
+    }
+
+    @Test
+    fun givenConversationWithExistingProposalTimer_whenClearingProposalTimer_thenItIsUpdated() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.setProposalTimer(proposalTimer2)
+
+        // when
+        conversationDAO.clearProposalTimer(proposalTimer2.groupID)
+
+        // then
+        assertEquals(emptyList(), conversationDAO.getProposalTimers().first())
+    }
+
+    @Test
+    fun givenConversationsWithExistingProposalTimer_whenGettingProposalTimers_thenAllTimersAreReturned() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
+        conversationDAO.setProposalTimer(proposalTimer2)
+        conversationDAO.setProposalTimer(proposalTimer3)
+
+        // then
+        assertEquals(listOf(proposalTimer2, proposalTimer3), conversationDAO.getProposalTimers().first())
+    }
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
@@ -675,5 +729,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val member1 = Member(user1.id, Member.Role.Admin)
         val member2 = Member(user2.id, Member.Role.Member)
+
+        val proposalTimer2 = ProposalTimerEntity((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, Instant.DISTANT_FUTURE)
+        val proposalTimer3 = ProposalTimerEntity((conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, Instant.DISTANT_FUTURE)
     }
 }
