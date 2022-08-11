@@ -41,3 +41,11 @@ data class SimpleClientResponse(
     @SerialName("class") val deviceClass: DeviceTypeDTO = DeviceTypeDTO.Unknown
 )
 
+
+@Serializable
+data class OtherUserClientsItem(
+    @SerialName("class")
+    val classX: DeviceTypeDTO,
+    @SerialName("id")
+    val id: String
+)
