@@ -12,6 +12,7 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")
@@ -22,7 +23,8 @@ class ConversationScope(
     private val callRepository: CallRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val messageSender : MessageSender
 ) {
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository)
@@ -64,7 +66,12 @@ class ConversationScope(
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
 
     val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
-        get() = UpdateConversationReadDateUseCase(conversationRepository)
+        get() = UpdateConversationReadDateUseCase(
+            conversationRepository,
+            userRepository,
+            messageSender,
+            clientRepository
+        )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCase(conversationRepository)
