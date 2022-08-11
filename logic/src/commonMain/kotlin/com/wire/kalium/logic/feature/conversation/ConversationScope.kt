@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
@@ -22,7 +24,8 @@ class ConversationScope(
     private val callRepository: CallRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val selfUserId: UserId
 ) {
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository)
@@ -79,6 +82,6 @@ class ConversationScope(
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
 
     val leaveGroupConversationUseCase: LeaveGroupConversationUseCaseImpl
-        get() = LeaveGroupConversationUseCaseImpl(conversationRepository)
+        get() = LeaveGroupConversationUseCaseImpl(conversationRepository, selfUserId)
 
 }

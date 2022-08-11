@@ -401,9 +401,7 @@ class ConversationDataSource(
                                 idMapper.toDaoModel(conversationId)
                             )
                         }
-                    }
-                    )
-
+                    })
                 is Conversation.ProtocolInfo.MLS ->
                     mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userID))
             }
