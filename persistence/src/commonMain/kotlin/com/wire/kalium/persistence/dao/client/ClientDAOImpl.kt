@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao.client
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
+import app.cash.sqldelight.runtime.coroutines.asFlow
+import app.cash.sqldelight.runtime.coroutines.mapToList
 import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
