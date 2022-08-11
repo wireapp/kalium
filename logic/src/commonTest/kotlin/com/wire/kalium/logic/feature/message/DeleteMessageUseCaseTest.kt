@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
@@ -23,6 +24,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.anything
+import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.matching
@@ -190,6 +192,9 @@ class DeleteMessageUseCaseTest {
         val clientRepository: ClientRepository = mock(ClientRepository::class)
 
         @Mock
+        private val slowSyncRepository = mock(SlowSyncRepository::class)
+
+        @Mock
         val messageSender: MessageSender = mock(MessageSender::class)
 
         @Mock
@@ -202,6 +207,7 @@ class DeleteMessageUseCaseTest {
             userRepository,
             clientRepository,
             assetRepository,
+            slowSyncRepository,
             messageSender,
             idMapper
         )
