@@ -19,8 +19,8 @@ import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCase
 import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCase
 import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCaseImpl
-import com.wire.kalium.logic.feature.user.webSocketStatus.EnableWebSocketUseCase
-import com.wire.kalium.logic.feature.user.webSocketStatus.EnableWebSocketUseCaseImpl
+import com.wire.kalium.logic.feature.user.webSocketStatus.PersistWebSocketStatusUseCase
+import com.wire.kalium.logic.feature.user.webSocketStatus.PersistWebSocketStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.IsWebSocketEnabledUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.IsWebSocketEnabledUseCaseImpl
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
@@ -79,6 +79,6 @@ class GlobalKaliumScope(
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
-    val enableWebSocket: EnableWebSocketUseCase get() = EnableWebSocketUseCaseImpl(userConfigRepository)
+    val persistWebSocket: PersistWebSocketStatusUseCase get() = PersistWebSocketStatusUseCaseImpl(userConfigRepository)
     val isWebSocketEnabled: IsWebSocketEnabledUseCase get() = IsWebSocketEnabledUseCaseImpl(userConfigRepository)
 }

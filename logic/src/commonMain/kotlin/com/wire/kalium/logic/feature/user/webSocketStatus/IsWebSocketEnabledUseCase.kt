@@ -7,7 +7,7 @@ interface IsWebSocketEnabledUseCase {
     operator fun invoke(): Boolean
 }
 
-class IsWebSocketEnabledUseCaseImpl(
+internal class IsWebSocketEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsWebSocketEnabledUseCase {
 

@@ -38,6 +38,15 @@ class UserConfigStorageTest {
     }
 
     @Test
+    fun givenPersistWebSocketStatus_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
+        userConfigStorage.persistWebSocketStatus(true)
+        assertEquals(true, userConfigStorage.isWebSocketEnabled())
+
+        userConfigStorage.persistWebSocketStatus(false)
+        assertEquals(false, userConfigStorage.isWebSocketEnabled())
+    }
+
+    @Test
     fun givenAFileSharingStatusValue_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
         userConfigStorage.persistFileSharingStatus(true, null)
         assertEquals(IsFileSharingEnabledEntity(true, null), userConfigStorage.isFileSharingEnabled())
