@@ -13,6 +13,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
@@ -32,6 +33,8 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -47,6 +50,7 @@ class DeleteMessageUseCaseTest {
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientIdIs(SELF_CLIENT_ID)
+            .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageByStatus(Message.Status.SENT)
             .arrange()
@@ -77,6 +81,7 @@ class DeleteMessageUseCaseTest {
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientIdIs(SELF_CLIENT_ID)
+            .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
             .withMessageByStatus(Message.Status.FAILED)
@@ -108,6 +113,7 @@ class DeleteMessageUseCaseTest {
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientIdIs(SELF_CLIENT_ID)
+            .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageByStatus(Message.Status.SENT)
             .arrange()
@@ -146,6 +152,7 @@ class DeleteMessageUseCaseTest {
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientIdIs(SELF_CLIENT_ID)
+            .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
             .withAssetMessage()
@@ -202,6 +209,8 @@ class DeleteMessageUseCaseTest {
 
         val idMapper: IdMapper = IdMapperImpl()
 
+        val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
+
         fun arrange() = this to DeleteMessageUseCase(
             messageRepository,
             userRepository,
@@ -231,6 +240,13 @@ class DeleteMessageUseCaseTest {
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .then { Either.Right(clientId) }
+        }
+
+        fun withCompletedSlowSync() = apply {
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(completeStateFlow)
         }
 
         fun withMessageRepositoryMarkMessageAsDeletedSucceed() = apply {
