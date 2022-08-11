@@ -282,7 +282,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     private fun SQLDelightMessage.toMessageEntityFlow() = when (this.content_type) {
         TEXT -> this.queryOneOrDefaultFlow(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageAssetContent, mapper::toModel)
-        KNOCK -> this.queryOneOrDefaultFlow(queries::selectKnockContent, mapper::toModel)
+        KNOCK -> flowOf(MessageEntityContent.Knock(false))
         MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, mapper::toModel)
         MISSED_CALL -> this.queryOneOrDefaultFlow(queries::selectMessageMissedCallContent, mapper::toModel)
         UNKNOWN -> this.queryOneOrDefaultFlow(queries::selectMessageUnknownContent, mapper::toModel)
@@ -293,7 +293,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     private fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
         TEXT -> this.queryOneOrDefault(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, mapper::toModel)
-        KNOCK -> this.queryOneOrDefault(queries::selectKnockContent, mapper::toModel)
+        KNOCK -> MessageEntityContent.Knock(false)
         MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, mapper::toModel)
         MISSED_CALL -> this.queryOneOrDefault(queries::selectMessageMissedCallContent, mapper::toModel)
         UNKNOWN -> this.queryOneOrDefault(queries::selectMessageUnknownContent, mapper::toModel)
