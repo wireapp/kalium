@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.teams.TeamsApi
@@ -9,6 +10,7 @@ import com.wire.kalium.network.api.TeamId as TeamIdDTO
 
 @Suppress("LongParameterList")
 object TestTeam {
+    val TEAM: Team = Team("Some-Team", "Some-name")
     val TEAM_ID = TeamId("Some-Team")
 
     fun dto(

@@ -1206,6 +1206,7 @@ class ConversationRepositoryTest {
             type = ConversationEntity.Type.ONE_ON_ONE,
             teamId = null,
             protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+            creatorId = "userTesValue",
             lastReadDate = "2022-03-30T15:36:00.000Z",
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
             lastNotificationDate = null,

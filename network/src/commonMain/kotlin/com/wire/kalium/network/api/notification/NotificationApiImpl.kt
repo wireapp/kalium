@@ -71,6 +71,13 @@ class NotificationApiImpl internal constructor(
     }
 
     override suspend fun listenToLiveEvents(clientId: String): Flow<WebSocketEvent<EventResponse>> = flow {
+        // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
+        //       WebSocket requests are not intercept-able, and they throw
+        //       exceptions when the backend returns 401 instead of triggering a token refresh.
+        //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
+        //       before attempting to open the websocket
+        lastNotification(clientId)
+
         authenticatedWebSocketClient
             .createDisposableHttpClient()
             .webSocket({
