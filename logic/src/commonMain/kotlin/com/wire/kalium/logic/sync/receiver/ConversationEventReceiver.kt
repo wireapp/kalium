@@ -402,6 +402,10 @@ internal class ConversationEventReceiverImpl(
                 is MessageContent.RestrictedAsset -> {
                     logger.w("RestrictedAsset message received, but not yet handled")
                 }
+
+                is MessageContent.Knock -> {
+                    persistMessage(message)
+                }
             }
 
             is Message.System -> when (message.content) {
