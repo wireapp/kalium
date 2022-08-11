@@ -5,7 +5,7 @@ import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 buildscript {
     val kotlinVersion = "1.7.10"
     val dokkaVersion = "1.7.10"
-    val sqlDelightVersion = "2.0.0-alpha01"
+    val sqlDelightVersion = "2.0.0-alpha03"
     val protobufCodegenVersion = "0.8.19"
     val carthageVersion = "0.0.1"
     val detektVersion = "1.19.0"
