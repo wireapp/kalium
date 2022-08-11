@@ -76,7 +76,7 @@ sealed class MessageEntity(
     }
 
     enum class ContentType {
-        TEXT, ASSET, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET, UNKNOWN, FAILED_DECRYPTION
+        TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET, UNKNOWN, FAILED_DECRYPTION
     }
 
     enum class MemberChangeType {
@@ -116,6 +116,8 @@ sealed class MessageEntityContent {
         val assetDurationMs: Long? = null,
         val assetNormalizedLoudness: ByteArray? = null,
     ) : Regular()
+
+    data class Knock(val hotKnock: Boolean) : Regular()
 
     data class Unknown(
         val typeName: String? = null,
