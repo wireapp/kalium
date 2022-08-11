@@ -25,7 +25,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.anything
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.matching

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
+@Suppress("LongParameterList")
 class DeleteMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
