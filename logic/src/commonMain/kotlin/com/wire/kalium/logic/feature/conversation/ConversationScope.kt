@@ -24,8 +24,7 @@ class ConversationScope(
     private val callRepository: CallRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val clientRepository: ClientRepository,
-    private val selfUserId: UserId
+    private val clientRepository: ClientRepository
 ) {
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository)
@@ -80,8 +79,5 @@ class ConversationScope(
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
-
-    val leaveGroupConversationUseCase: LeaveGroupConversationUseCaseImpl
-        get() = LeaveGroupConversationUseCaseImpl(conversationRepository, selfUserId)
 
 }
