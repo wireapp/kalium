@@ -22,7 +22,7 @@ class SendKnockUseCase(
     private val messageSender: MessageSender
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> {
         val selfUser = userRepository.observeSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()
@@ -30,7 +30,7 @@ class SendKnockUseCase(
         return clientRepository.currentClientId().flatMap { currentClientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Knock(true),
+                content = MessageContent.Knock(hotKnock),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
