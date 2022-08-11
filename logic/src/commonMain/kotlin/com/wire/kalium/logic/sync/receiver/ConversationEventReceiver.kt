@@ -33,6 +33,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
+import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -43,11 +44,17 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Duration.Companion.seconds
 
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
@@ -66,6 +73,7 @@ internal class ConversationEventReceiverImpl(
     private val editTextHandler: MessageTextEditHandler,
     private val userConfigRepository: UserConfigRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
+    private val pendingProposalScheduler: PendingProposalScheduler,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
 ) : ConversationEventReceiver {
@@ -335,6 +343,13 @@ internal class ConversationEventReceiverImpl(
                 ephemeralNotificationsManager.scheduleNotification(dataNotification)
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
             }
+    }
+
+    private suspend fun handlePendingProposal(event: Event.Conversation.NewMLSMessage, commitDelay: Long ) {
+        pendingProposalScheduler.scheduleCommit(
+            "event.conversationId",
+            event.timestampIso.toInstant().plus(commitDelay.seconds)
+        )
     }
 
     private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {

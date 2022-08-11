@@ -23,9 +23,11 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
 import io.ktor.util.decodeBase64Bytes
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlinx.coroutines.flow.map
 
 interface MLSConversationRepository {
 
@@ -38,6 +40,9 @@ interface MLSConversationRepository {
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
     suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit>
+    suspend fun commitPendingProposals(groupID: String): Either<CoreFailure, Unit>
+    suspend fun setProposalTimer(timer: ProposalTimer)
+    suspend fun observeProposalTimers(): Flow<List<ProposalTimer>>
 }
 
 class MLSConversationDataSource(
@@ -47,6 +52,7 @@ class MLSConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> =
@@ -127,6 +133,35 @@ class MLSConversationDataSource(
                 }
             }
         }
+
+    override suspend fun commitPendingProposals(groupID: String): Either<CoreFailure, Unit> =
+        mlsClientProvider.getMLSClient()
+            .flatMap { mlsClient ->
+                // TODO change to commitPendingProposals() when available
+                val (handshake, welcome) = mlsClient.updateKeyingMaterial(groupID)
+
+                wrapApiRequest {
+                    mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                }.flatMap {
+                    welcome?.let {
+                        wrapApiRequest {
+                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
+                        }
+                    } ?: Either.Right(Unit)
+                }.flatMap {
+                    wrapStorageRequest {
+                        conversationDAO.clearProposalTimer(groupID)
+                    }
+                }
+            }
+
+    override suspend fun setProposalTimer(timer: ProposalTimer) {
+        conversationDAO.setProposalTimer(conversationMapper.toDAOProposalTimer(timer))
+    }
+
+    override suspend fun observeProposalTimers(): Flow<List<ProposalTimer>> {
+        return conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }
+    }
 
     override suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         // TODO: check for federated and non-federated members
