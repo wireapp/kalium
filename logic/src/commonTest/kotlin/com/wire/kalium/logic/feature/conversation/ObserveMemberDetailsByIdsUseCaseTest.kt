@@ -1,20 +1,14 @@
 package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.SyncManager
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.anything
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
@@ -24,46 +18,19 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class, ConfigurationApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveMemberDetailsByIdsUseCaseTest {
 
     @Mock
     private val userRepository = mock(UserRepository::class)
 
-    @Mock
-    private val syncManager = configure(mock(SyncManager::class)) {
-        stubsUnitByDefault = true
-    }
-
-    private lateinit var observeMemberDetailsByIds: ObserveMemberDetailsByIdsUseCase
+    private lateinit var observeMemberDetailsByIds: ObserveUserListByIdUseCase
 
     @BeforeTest
     fun setup() {
-        observeMemberDetailsByIds = ObserveMemberDetailsByIdsUseCase(
-            userRepository,
-            syncManager,
+        observeMemberDetailsByIds = ObserveUserListByIdUseCase(
+            userRepository
         )
-    }
-
-    @Test
-    fun givenAUserIdList_whenObservingMembers_thenTheSyncManagerIsCalled() = runTest {
-        val userIds = listOf(TestUser.SELF.id)
-
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(flowOf(TestUser.SELF))
-
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
-        observeMemberDetailsByIds(userIds)
-
-        verify(syncManager)
-            .function(syncManager::startSyncIfIdle)
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -74,18 +41,13 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstSelfUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(anything())
             .thenReturn(selfUserUpdates.asFlow())
 
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
         observeMemberDetailsByIds(userIds).test {
-            assertContentEquals(listOf(MemberDetails.Self(firstSelfUser)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Self(secondSelfUser)), awaitItem())
+            assertContentEquals(listOf(firstSelfUser), awaitItem())
+            assertContentEquals(listOf(secondSelfUser), awaitItem())
             awaitComplete()
         }
     }
@@ -98,18 +60,18 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(firstOtherUser.id)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(eq(TestUser.SELF.id))
             .thenReturn(flowOf(TestUser.SELF))
 
         given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(anything())
             .thenReturn(otherUserUpdates.asFlow())
 
         observeMemberDetailsByIds(userIds).test {
-            assertContentEquals(listOf(MemberDetails.Other(firstOtherUser)), awaitItem())
-            assertContentEquals(listOf(MemberDetails.Other(secondOtherUser)), awaitItem())
+            assertContentEquals(listOf(firstOtherUser), awaitItem())
+            assertContentEquals(listOf(secondOtherUser), awaitItem())
             awaitComplete()
         }
     }
@@ -121,24 +83,19 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val userIds = listOf(knownUser.id, notKnownUserId)
 
         given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn((flowOf(TestUser.SELF)))
-
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(knownUser.id))
-            .thenReturn(flowOf(knownUser))
+            .then { flowOf(knownUser) }
 
         given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(eq(notKnownUserId))
-            .thenReturn(flowOf(null))
+            .then { flowOf(null) }
 
         observeMemberDetailsByIds(userIds).test {
             val list = awaitItem()
             assertEquals(list.size, 1) // second one is just not returned, we don't have its data and don't want to block the flow
-            assertContentEquals(listOf(MemberDetails.Other(knownUser)), list)
+            assertContentEquals(listOf(knownUser), list)
             awaitComplete()
         }
     }

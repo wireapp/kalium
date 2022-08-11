@@ -5,12 +5,16 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
-import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.team.Team
+import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -20,23 +24,34 @@ import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.call.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.call.CallDAO
+import com.wire.kalium.persistence.dao.call.CallEntity
 import io.ktor.util.reflect.instanceOf
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
+import io.mockative.Times
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.configure
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
+@OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
 class CallRepositoryTest {
 
     @Mock
@@ -52,13 +67,15 @@ class CallRepositoryTest {
     private val teamRepository = mock(classOf<TeamRepository>())
 
     @Mock
-    private val messageRepository = mock(classOf<MessageRepository>())
+    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
-    private lateinit var mapOfCallProfiles: Map<String, Call>
-    private lateinit var startedCall: Call
-    private lateinit var answeredCall: Call
-    private lateinit var incomingCall: Call
-    private lateinit var establishedCall: Call
+    @Mock
+    private val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+    @Mock
+    private val callDAO = configure(mock(classOf<CallDAO>())) {
+        stubsUnitByDefault = true
+    }
 
     private lateinit var callRepository: CallRepository
 
@@ -66,23 +83,29 @@ class CallRepositoryTest {
     fun setUp() {
         callRepository = CallDataSource(
             callApi = callApi,
+            callDAO = callDAO,
+            qualifiedIdMapper = qualifiedIdMapper,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
             timeParser = TimeParserImpl(),
-            messageRepository = messageRepository
+            persistMessage = persistMessage
         )
-        startedCall = provideCall(sharedConversationId, CallStatus.STARTED)
-        answeredCall = provideCall(conversationIdAnsweredCall, CallStatus.ANSWERED)
-        incomingCall = provideCall(conversationIdIncomingCall, CallStatus.INCOMING)
-        establishedCall = provideCall(conversationIdEstablishedCall, CallStatus.ESTABLISHED)
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("convId@domainId"))
+            .thenReturn(QualifiedID("convId", "domainId"))
 
-        mapOfCallProfiles = mapOf(
-            startedCall.conversationId.toString() to startedCall,
-            incomingCall.conversationId.toString() to incomingCall,
-            establishedCall.conversationId.toString() to establishedCall,
-            answeredCall.conversationId.toString() to answeredCall
-        )
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("random@domain"))
+            .thenReturn(QualifiedID("random", "domain"))
+
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("callerId@domain"))
+            .thenReturn(QualifiedID("callerId", "domain"))
+
+        given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(eq("callerId"))
+            .thenReturn(QualifiedID("callerId", ""))
     }
 
     @Test
@@ -101,6 +124,11 @@ class CallRepositoryTest {
 
     @Test
     fun givenEmptyListOfCalls_whenGetAllCallsIsCalled_thenReturnAnEmptyListOfCalls() = runTest {
+        given(callDAO)
+            .suspendFunction(callDAO::observeCalls)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
+
         val calls = callRepository.callsFlow()
 
         calls.test {
@@ -110,372 +138,1105 @@ class CallRepositoryTest {
 
     @Test
     fun givenAListOfCallProfiles_whenGetAllCallsIsCalled_thenReturnAListOfCalls() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        given(callDAO)
+            .suspendFunction(callDAO::observeCalls)
+            .whenInvoked()
+            .thenReturn(
+                flowOf(
+                    listOf(
+                        createCallEntity().copy(
+                            status = CallEntity.Status.ESTABLISHED,
+                            conversationType = ConversationEntity.Type.ONE_ON_ONE,
+                            callerId = "callerId@domain"
+                        )
+                    )
+                )
+            )
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false,
+                        conversationName = "ONE_ON_ONE Name",
+                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        callerName = "otherUsername",
+                        callerTeamName = "team_1"
+                    )
+                )
+            )
+        )
 
         val calls = callRepository.callsFlow()
 
+        val expectedCall = provideCall(
+            id = conversationId,
+            status = CallStatus.ESTABLISHED
+        )
+
         calls.test {
             val list = awaitItem()
-            assertEquals(mapOfCallProfiles.size, list.size)
+            assertEquals(1, list.size)
+            assertEquals(expectedCall, list[0])
             assertTrue(list[0].instanceOf(Call::class))
         }
     }
 
     @Test
-    fun givenACallData_whenCreateCallCalled_thenAddThatCallToTheFlow() = runTest {
+    fun whenStartingAGroupCall_withNoExistingCall_ThenSaveCallToDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.STARTED
+        )
+
         given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
+            .thenReturn(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group(
+                            groupConversation,
+                            LegalHoldStatus.ENABLED,
+                            false,
+                            unreadMessagesCount = 0
+                        )
+                    )
+                )
+            )
+
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+
+        given(userRepository).function(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.USER_ID)
-        given(teamRepository).suspendFunction(teamRepository::getTeam)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
-        callRepository.updateCallProfileFlow(CallProfile(mapOf(startedCall.conversationId.toString() to startedCall)))
 
-        callRepository.createCall(conversationIdAnsweredCall, CallStatus.ANSWERED, "caller_id", false, false)
-
-        val calls = callRepository.callsFlow()
-
-        calls.test {
-            val list = awaitItem()
-            assertEquals(2, list.size)
-            assertEquals(list[0], startedCall)
-            assertEquals(list[1], answeredCall)
-
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
-                .with(any())
-                .wasInvoked(exactly = once)
-
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .with(any())
-                .wasInvoked(exactly = once)
-
-            verify(teamRepository)
-                .suspendFunction(teamRepository::getTeam)
-                .with(any())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenACallDataWithSameConversationIdAsAnotherOneInTheFlow_whenCreateCallCalled_thenReplaceTheCurrent() = runTest {
-        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
-        given(userRepository).suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(TestUser.OTHER))
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
 
-        val incomingCall2 = provideCall(sharedConversationId, CallStatus.INCOMING)
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(null)
 
-        callRepository.createCall(sharedConversationId, CallStatus.INCOMING, "caller_id", false, false)
+        given(callDAO)
+            .suspendFunction(callDAO::insertCall)
+            .whenInvokedWith(any())
 
-        val calls = callRepository.callsFlow()
-        calls.test {
-            val list = awaitItem()
-            assertEquals(mapOfCallProfiles.size, list.size)
-            assertEquals(incomingCall2, list[0])
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
-                .with(any())
-                .wasInvoked(exactly = once)
-
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .with(any())
-                .wasInvoked(exactly = once)
-
-            verify(teamRepository)
-                .suspendFunction(teamRepository::getTeam)
-                .with(any())
-                .wasInvoked(exactly = once)
-        }
+        // then
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenDoNotUpdateTheFlow() = runTest {
+    fun whenStartingAGroupCall_withExistingClosedCall_ThenSaveCallToDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.STARTED
+        )
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false
+                    )
+                )
+            )
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group(
+                            groupConversation,
+                            LegalHoldStatus.ENABLED,
+                            unreadMessagesCount = 0
+                        )
+                    )
+                )
+            )
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(CallEntity.Status.CLOSED)
+
+        given(callDAO)
+            .suspendFunction(callDAO::insertCall)
+            .whenInvokedWith(any())
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        // then
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        assertEquals(
+            true,
+            callRepository.getCallMetadataProfile().data[conversationId.toString()]?.isMuted
+        )
+    }
+
+    @Test
+    fun whenIncomingGroupCall_withNonExistingCall_ThenSaveCallToDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.INCOMING
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group(
+                            groupConversation,
+                            LegalHoldStatus.ENABLED,
+                            unreadMessagesCount = 0
+                        )
+                    )
+                )
+            )
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(null)
+
+        given(callDAO)
+            .suspendFunction(callDAO::insertCall)
+            .whenInvokedWith(any())
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.INCOMING,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        // then
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        assertTrue(
+            callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())
+        )
+    }
+
+    @Test
+    fun whenIncomingGroupCall_withExistingCallMetadata_ThenDontSaveCallToDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.INCOMING
+        )
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false
+                    )
+                )
+            )
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group(
+                            groupConversation,
+                            LegalHoldStatus.ENABLED,
+                            unreadMessagesCount = 0
+                        )
+                    )
+                )
+            )
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(CallEntity.Status.ESTABLISHED)
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.INCOMING,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        // then
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = Times(0))
+
+        assertTrue(
+            callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())
+        )
+    }
+
+    @Test
+    fun whenIncomingGroupCall_withNonExistingCallMetadata_ThenUpdateCallInDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.INCOMING
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group(
+                            groupConversation,
+                            LegalHoldStatus.ENABLED,
+                            unreadMessagesCount = 0
+                        )
+                    )
+                )
+            )
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(CallEntity.Status.ESTABLISHED)
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.INCOMING,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        // then
+        verify(callDAO).suspendFunction(callDAO::updateLastCallStatusByConversationId)
+            .with(
+                eq(CallEntity.Status.STILL_ONGOING),
+                eq(callEntity.conversationId)
+            )
+            .wasInvoked(exactly = once)
+
+        assertTrue(
+            callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())
+        )
+    }
+
+    @Test
+    fun whenStartingAOneOnOneCall_withNoExistingCall_ThenSaveCallToDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.STARTED,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(null)
+
+        given(callDAO)
+            .suspendFunction(callDAO::insertCall)
+            .whenInvokedWith(any())
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        // then
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenStartingAOneOnOneCall_withExistingClosedCall_ThenSaveCallToDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.STARTED,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false
+                    )
+                )
+            )
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(persistMessage).suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(CallEntity.Status.CLOSED)
+
+        given(callDAO)
+            .suspendFunction(callDAO::insertCall)
+            .whenInvokedWith(any())
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.STARTED,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        // then
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasNotInvoked()
+
+        assertEquals(
+            true,
+            callRepository.getCallMetadataProfile().data[conversationId.toString()]?.isMuted
+        )
+    }
+
+    @Test
+    fun whenIncomingOneOnOneCall_withNonExistingCall_ThenSaveCallToDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.INCOMING,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(null)
+
+        given(callDAO)
+            .suspendFunction(callDAO::insertCall)
+            .whenInvokedWith(any())
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.INCOMING,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = Times(0))
+
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        assertTrue(
+            callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())
+        )
+    }
+
+    @Test
+    fun whenIncomingOneOnOneCall_withExistingCallMetadata_ThenDontSaveCallToDatabase() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.INCOMING,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false
+                    )
+                )
+            )
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(persistMessage).suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(CallEntity.Status.ESTABLISHED)
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.INCOMING,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        // then
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = Times(0))
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasNotInvoked()
+
+        assertTrue(
+            callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())
+        )
+    }
+
+    @Test
+    fun whenIncomingOneOnOneCall_withNonExistingCallMetadata_ThenUpdateCallMetadata() = runTest {
+        // given
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.INCOMING,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Either.Right(oneOnOneConversationDetails)))
+
+        given(userRepository).suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(TestUser.OTHER))
+
+        given(userRepository).function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.USER_ID)
+
+        given(teamRepository).suspendFunction(teamRepository::getTeam)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(Team("team1", "team_1")))
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallStatusByConversationId)
+            .whenInvokedWith(eq(callEntity.conversationId))
+            .thenReturn(CallEntity.Status.ESTABLISHED)
+
+        given(callDAO)
+            .suspendFunction(callDAO::getCallerIdByConversationId)
+            .whenInvokedWith(any())
+            .thenReturn("callerId@domain")
+
+        given(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+
+        // when
+        callRepository.createCall(
+            conversationId = conversationId,
+            status = CallStatus.INCOMING,
+            callerId = callerId.value,
+            isMuted = true,
+            isCameraOn = false
+        )
+
+        // then
+        verify(callDAO).suspendFunction(callDAO::updateLastCallStatusByConversationId)
+            .with(eq(CallEntity.Status.CLOSED), eq(callEntity.conversationId))
+            .wasInvoked(exactly = once)
+
+        verify(callDAO).suspendFunction(callDAO::insertCall)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(persistMessage)
+            .suspendFunction(persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        assertTrue(
+            callRepository.getCallMetadataProfile().data.containsKey(conversationId.toString())
+        )
+    }
+
+    @Test
+    fun givenAConversationIdThatExistsInTheFlow_whenUpdateCallStatus_thenUpdateCallStatusIsCalledCorrectly() = runTest {
+        // given
+        val callEntity = createCallEntity()
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false
+                    )
+                )
+            )
+        )
+
+        // when
+        callRepository.updateCallStatusById(conversationId.toString(), CallStatus.ESTABLISHED)
+
+        // then
+        verify(callDAO)
+            .suspendFunction(callDAO::updateLastCallStatusByConversationId)
+            .with(
+                eq(CallEntity.Status.ESTABLISHED),
+                eq(callEntity.conversationId)
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateTheStatus() = runTest {
         callRepository.updateCallStatusById(randomConversationIdString, CallStatus.INCOMING)
 
-        val calls = callRepository.callsFlow()
-        calls.test {
-            val list = awaitItem()
-            assertEquals(0, list.size)
-        }
+        verify(callDAO)
+            .suspendFunction(callDAO::updateLastCallStatusByConversationId)
+            .with(any(), any())
+            .wasInvoked(exactly = Times(1))
     }
-
-    @Test
-    fun givenAConversationIdThatExistsInTheFlow_whenUpdateCallStatusIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
-
-        callRepository.updateCallStatusById(startedCall.conversationId.toString(), CallStatus.ESTABLISHED)
-
-        val calls = callRepository.callsFlow()
-        calls.test {
-            val list = awaitItem()
-            assertEquals(mapOfCallProfiles.size, list.size)
-            assertEquals(list[0].status, CallStatus.ESTABLISHED)
-        }
-    }
-
 
     @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
         callRepository.updateIsMutedById(randomConversationIdString, false)
 
-        val calls = callRepository.callsFlow()
-        assertEquals(0, calls.first().size)
+        assertFalse {
+            callRepository.getCallMetadataProfile().data.containsKey(randomConversationIdString)
+        }
     }
 
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
-        val expectedValue = true
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
+        // given
+        val expectedValue = false
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = true
+                    )
+                )
+            )
+        )
 
-        callRepository.updateIsMutedById(startedCall.conversationId.toString(), expectedValue)
+        // when
+        callRepository.updateIsMutedById(conversationId.toString(), expectedValue)
 
-        val calls = callRepository.callsFlow()
-        assertEquals(mapOfCallProfiles.size, calls.first().size)
-        assertEquals(calls.first()[0].isMuted, expectedValue)
+        // then
+        assertEquals(
+            expectedValue,
+            callRepository.getCallMetadataProfile().data[conversationId.toString()]?.isMuted
+        )
     }
 
     @Test
-    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsCameraOnIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsCameraOnByIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
         callRepository.updateIsCameraOnById(randomConversationIdString, false)
 
-        val calls = callRepository.callsFlow()
-        assertEquals(0, calls.first().size)
+        assertFalse {
+            callRepository.getCallMetadataProfile().data.containsKey(randomConversationIdString)
+        }
     }
 
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateIsCameraOnByIdIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
-        val expectedValue = true
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
-
-        callRepository.updateIsCameraOnById(startedCall.conversationId.toString(), expectedValue)
-
-        val calls = callRepository.callsFlow()
-        assertEquals(mapOfCallProfiles.size, calls.first().size)
-        assertEquals(calls.first()[0].isCameraOn, expectedValue)
-    }
-
-    @Test
-    fun givenNoIncomingCallsInTheFlow_whenGetIncomingCallsIsCalled_thenReturnAnEmptyListInTheFlow() = runTest {
-        val calls = callRepository.incomingCallsFlow()
-
-        assertEquals(0, calls.first().size)
-    }
-
-    @Test
-    fun givenSomeIncomingCallsInTheFlow_whenGetIncomingCallsIsCalled_thenReturnTheListOfIncomingCallsInTheFlow() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
-
-        val calls = callRepository.incomingCallsFlow()
-
-        assertEquals(1, calls.first().size)
-        assertEquals(calls.first()[0], incomingCall)
-    }
-
-    @Test
-    fun givenNoOngoingCallsInTheFlow_whenGetOngoingCallIsCalled_thenReturnAnEmptyListInTheFlow() = runTest {
-        val calls = callRepository.incomingCallsFlow()
-
-        assertEquals(0, calls.first().size)
-    }
-
-    @Test
-    fun givenSomeEstablishedCallsInTheFlow_whenGetEstablishedCallIsCalled_thenReturnTheListOfOngoingCallsInTheFlow() = runTest {
-        callRepository.updateCallProfileFlow(CallProfile(mapOfCallProfiles))
-
-        val calls = callRepository.establishedCallsFlow()
-
-        assertEquals(2, calls.first().size)
-        assertEquals(calls.first()[0], establishedCall)
-        assertEquals(calls.first()[1], answeredCall)
-    }
-
-    @Test
-    fun givenNewCallParticipants_whenUpdatingParticipants_thenCallProfileIsUpdated() = runTest {
-        callRepository.updateCallProfileFlow(
-            CallProfile(
-                mapOf(establishedCall.conversationId.toString() to establishedCall)
+        // given
+        val expectedValue = false
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isCameraOn = true
+                    )
+                )
             )
         )
 
-        val expectedParticipants = listOf(
+        // when
+        callRepository.updateIsCameraOnById(conversationId.toString(), expectedValue)
+
+        // then
+        assertEquals(
+            expectedValue,
+            callRepository.getCallMetadataProfile().data[conversationId.toString()]?.isCameraOn
+        )
+    }
+
+    @Test
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateCallParticipantsIsCalled_thenDoNotUpdateTheFlow() = runTest {
+        callRepository.updateCallParticipants(randomConversationIdString, emptyList())
+
+        assertFalse {
+            callRepository.getCallMetadataProfile().data.containsKey(randomConversationIdString)
+        }
+    }
+
+    @Test
+    fun givenAConversationIdThatExistsInTheFlow_whenUpdateCallParticipantsIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
+        // given
+        val participantsList = listOf(
             Participant(
-                id = QualifiedID(
-                    value = "value1",
-                    domain = "domain1"
-                ),
-                clientId = "clientid",
-                isMuted = true
+                id = QualifiedID("participantId", "participantDomain"),
+                clientId = "abcd",
+                name = "name",
+                isMuted = true,
+                isSpeaking = false,
+                avatarAssetId = null
+            )
+        )
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        participants = emptyList(),
+                        maxParticipants = 0
+                    )
+                )
             )
         )
 
-        val calls = callRepository.callsFlow()
+        // when
+        callRepository.updateCallParticipants(conversationId.toString(), participantsList)
 
-        callRepository.updateCallParticipants(
-            conversationId = establishedCall.conversationId.toString(),
-            participants = expectedParticipants
+        // then
+        val metadata = callRepository.getCallMetadataProfile().data[conversationId.toString()]
+        assertEquals(
+            participantsList,
+            metadata?.participants
         )
-
-        assertEquals(expectedParticipants, calls.first()[0].participants)
     }
 
     @Test
-    fun givenActiveSpeakers_whenUpdatingActiveSpeakers_thenCallProfileIsUpdated() = runTest {
-        callRepository.updateCallProfileFlow(
-            CallProfile(
-                mapOf(establishedCall.conversationId.toString() to establishedCall)
+    fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenDoNotUpdateTheFlow() = runTest {
+        callRepository.updateParticipantsActiveSpeaker(randomConversationIdString, CallActiveSpeakers(emptyList()))
+
+        assertFalse {
+            callRepository.getCallMetadataProfile().data.containsKey(randomConversationIdString)
+        }
+    }
+
+    @Test
+    fun givenAConversationIdThatExistsInTheFlow_whenUpdateParticipantActiveSpeakerIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
+        // given
+        val participant = Participant(
+            id = QualifiedID("participantId", "participantDomain"),
+            clientId = "abcd",
+            name = "name",
+            isMuted = true,
+            isSpeaking = false,
+            avatarAssetId = null
+        )
+        val participantsList = listOf(participant)
+        val expectedParticipantsList = listOf(participant.copy(isSpeaking = true))
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        participants = emptyList(),
+                        maxParticipants = 0
+                    )
+                )
             )
         )
-
-        val calls = callRepository.callsFlow()
-
-        val participants = listOf(
-            Participant(
-                id = QualifiedID(
-                    value = "value1",
-                    domain = "domain1"
-                ),
-                clientId = "clientid",
-                isMuted = false,
-                isSpeaking = false
-            )
-        )
-
-        callRepository.updateCallParticipants(
-            conversationId = establishedCall.conversationId.toString(),
-            participants = participants
-        )
-
-        val expectedActiveSpeakers = CallActiveSpeakers(
+        val activeSpeakers = CallActiveSpeakers(
             activeSpeakers = listOf(
                 CallActiveSpeaker(
-                    userId = "value1@domain1",
-                    clientId = "clientid",
+                    userId = "participantId@participantDomain",
+                    clientId = "abcd",
                     audioLevel = 1,
                     audioLevelNow = 1
                 )
             )
         )
 
-        callRepository.updateParticipantsActiveSpeaker(
-            conversationId = establishedCall.conversationId.toString(),
-            activeSpeakers = expectedActiveSpeakers
+        callRepository.updateCallParticipants(conversationId.toString(), participantsList)
+
+        // when
+        callRepository.updateParticipantsActiveSpeaker(conversationId.toString(), activeSpeakers)
+
+        // then
+        val metadata = callRepository.getCallMetadataProfile().data[conversationId.toString()]
+        assertEquals(
+            expectedParticipantsList,
+            metadata?.participants
         )
 
-        assertEquals(true, calls.first()[0].participants.first().isSpeaking)
+        assertEquals(
+            true,
+            metadata?.participants?.get(0)?.isSpeaking
+        )
     }
 
     @Test
-    fun givenIncomingCall_whenUpdateStatusToEstablished_thenCallEstablishedTimeUpdated() = runTest {
-        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
-        given(userRepository).suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(TestUser.OTHER))
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+    fun givenAnIncomingCall_whenRequestingIncomingCalls_thenReturnTheIncomingCall() = runTest {
+        // given
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false,
+                        conversationName = "ONE_ON_ONE Name",
+                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        callerName = "otherUsername",
+                        callerTeamName = "team_1"
+                    )
+                )
+            )
+        )
+
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.INCOMING,
+            callerId = "callerId@domain",
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        val expectedCall = provideCall(
+            id = conversationId,
+            status = CallStatus.INCOMING
+        )
+
+        given(callDAO)
+            .suspendFunction(callDAO::observeIncomingCalls)
             .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-        given(teamRepository).suspendFunction(teamRepository::getTeam)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
-        given(messageRepository).suspendFunction(messageRepository::persistMessage)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
-        callRepository.createCall(conversationIdIncomingCall, CallStatus.INCOMING, "caller_id", false, false)
+            .thenReturn(flowOf(listOf(callEntity)))
 
-        val calls = callRepository.callsFlow()
+        // when
+        val incomingCalls = callRepository.incomingCallsFlow()
 
-        callRepository.updateCallStatusById(conversationIdIncomingCall.toString(), CallStatus.ESTABLISHED)
-
-        calls.test {
+        // then
+        incomingCalls.test {
             val list = awaitItem()
             assertEquals(1, list.size)
-            assertTrue(list[0].establishedTime != null)
+            assertEquals(
+                expectedCall,
+                list[0]
+            )
         }
-
-        verify(messageRepository)
-            .suspendFunction(messageRepository::persistMessage)
-            .with(any())
-            .wasNotInvoked()
     }
 
     @Test
-    fun givenCallWithoutEstablishedTime_whenUpdateStatusToClose_thenMissedCallAddedToDB() = runTest {
-        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
-        given(userRepository).suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(TestUser.OTHER))
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+    fun givenAnOngoingCall_whenRequestingOngoingCalls_thenReturnTheOngoingCall() = runTest {
+        // given
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false,
+                        conversationName = "ONE_ON_ONE Name",
+                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        callerName = "otherUsername",
+                        callerTeamName = "team_1"
+                    )
+                )
+            )
+        )
+
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.STILL_ONGOING,
+            callerId = "callerId@domain",
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        val expectedCall = provideCall(
+            id = conversationId,
+            status = CallStatus.STILL_ONGOING
+        )
+
+        given(callDAO)
+            .suspendFunction(callDAO::observeOngoingCalls)
             .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-        given(teamRepository).suspendFunction(teamRepository::getTeam)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
-        given(messageRepository).suspendFunction(messageRepository::persistMessage)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
-        callRepository.createCall(conversationIdIncomingCall, CallStatus.INCOMING, "caller_id", false, false)
+            .thenReturn(flowOf(listOf(callEntity)))
 
-        callRepository.updateCallStatusById(conversationIdIncomingCall.toString(), CallStatus.CLOSED)
+        // when
+        val ongoingCalls = callRepository.ongoingCallsFlow()
 
-        verify(messageRepository)
-            .suspendFunction(messageRepository::persistMessage)
-            .with(any())
-            .wasInvoked(exactly = once)
+        // then
+        ongoingCalls.test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals(
+                expectedCall,
+                list[0]
+            )
+        }
     }
+
     @Test
-    fun givenCallWithEstablishedTime_whenUpdateStatusToClose_thenMissedCallNotAddedToDB() = runTest {
-        given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(ConversationDetails.Group(TestConversation.ONE_ON_ONE, LegalHoldStatus.ENABLED)))
-        given(userRepository).suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(TestUser.OTHER))
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
+    fun givenAnEstablishedCall_whenRequestingEstablishedCalls_thenReturnTheEstablishedCall() = runTest {
+        // given
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false,
+                        conversationName = "ONE_ON_ONE Name",
+                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        callerName = "otherUsername",
+                        callerTeamName = "team_1"
+                    )
+                )
+            )
+        )
+
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.ESTABLISHED,
+            callerId = "callerId@domain",
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        val expectedCall = provideCall(
+            id = conversationId,
+            status = CallStatus.ESTABLISHED
+        )
+
+        given(callDAO)
+            .suspendFunction(callDAO::observeEstablishedCalls)
             .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-        given(teamRepository).suspendFunction(teamRepository::getTeam)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
-        given(messageRepository).suspendFunction(messageRepository::persistMessage)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
-        callRepository.createCall(conversationIdIncomingCall, CallStatus.INCOMING, "caller_id", false, false)
-        callRepository.updateCallStatusById(conversationIdIncomingCall.toString(), CallStatus.ESTABLISHED)
+            .thenReturn(flowOf(listOf(callEntity)))
 
-        callRepository.updateCallStatusById(conversationIdIncomingCall.toString(), CallStatus.CLOSED)
+        // when
+        val establishedCalls = callRepository.establishedCallsFlow()
 
-        verify(messageRepository)
-            .suspendFunction(messageRepository::persistMessage)
-            .with(any())
-            .wasNotInvoked()
+        // then
+        establishedCalls.test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals(
+                expectedCall,
+                list[0]
+            )
+        }
+    }
+
+    @Suppress("LongMethod")
+    @Test
+    fun givenSomeCalls_whenRequestingCalls_thenReturnTheCalls() = runTest {
+        // given
+        val metadata = createCallMetadata().copy(
+            isMuted = false,
+            conversationName = "ONE_ON_ONE Name",
+            conversationType = Conversation.Type.ONE_ON_ONE,
+            callerName = "otherUsername",
+            callerTeamName = "team_1"
+        )
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to metadata,
+                    randomConversationId.toString() to metadata.copy(
+                        conversationName = "CLOSED CALL"
+                    )
+                )
+            )
+        )
+
+        val missedCall = createCallEntity().copy(
+            status = CallEntity.Status.MISSED,
+            callerId = "callerId@domain",
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        val closedCall = createCallEntity().copy(
+            conversationId = QualifiedIDEntity(
+                value = randomConversationId.value,
+                domain = randomConversationId.domain
+            ),
+            status = CallEntity.Status.CLOSED,
+            callerId = "callerId@domain",
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        val expectedMissedCall = provideCall(
+            id = conversationId,
+            status = CallStatus.MISSED
+        )
+
+        val expectedClosedCall = provideCall(
+            id = randomConversationId,
+            status = CallStatus.CLOSED
+        ).copy(
+            conversationName = "CLOSED CALL"
+        )
+
+        given(callDAO)
+            .suspendFunction(callDAO::observeCalls)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf(missedCall, closedCall)))
+
+        // when
+        val establishedCalls = callRepository.callsFlow()
+
+        // then
+        establishedCalls.test {
+            val list = awaitItem()
+            assertEquals(2, list.size)
+            assertEquals(
+                expectedMissedCall,
+                list[0]
+            )
+            assertEquals(
+                expectedClosedCall,
+                list[1]
+            )
+        }
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
-        callerId = "caller_id@domain",
+        callerId = "callerId@domain",
         participants = listOf(),
         isMuted = false,
         isCameraOn = false,
@@ -486,12 +1247,43 @@ class CallRepositoryTest {
         callerTeamName = "team_1"
     )
 
+    private fun createCallEntity() = CallEntity(
+        conversationId = QualifiedIDEntity(
+            value = conversationId.value,
+            domain = conversationId.domain
+        ),
+        id = "abcd-1234",
+        status = CallEntity.Status.STARTED,
+        callerId = callerId.toString(),
+        conversationType = ConversationEntity.Type.GROUP
+    )
+
+    private fun createCallMetadata() = CallMetadata(
+        isMuted = true,
+        isCameraOn = false,
+        conversationName = null,
+        conversationType = Conversation.Type.GROUP,
+        callerName = null,
+        callerTeamName = null
+    )
+
     private companion object {
         const val CALL_CONFIG_API_RESPONSE = "{'call':'success','config':'dummy_config'}"
         private const val randomConversationIdString = "random@domain"
-        private val sharedConversationId = ConversationId("value", "domain")
-        private val conversationIdAnsweredCall = ConversationId("value2", "domain2")
-        private val conversationIdIncomingCall = ConversationId("value3", "domain3")
-        private val conversationIdEstablishedCall = ConversationId("value4", "domain4")
+        private val randomConversationId = ConversationId("value", "domain")
+
+        private val conversationId = ConversationId(value = "convId", domain = "domainId")
+        private val groupConversation = TestConversation.GROUP().copy(id = conversationId)
+        private val oneOnOneConversation = TestConversation.one_on_one(conversationId)
+        private val callerId = UserId(value = "callerId", domain = "domain")
+
+        private val oneOnOneConversationDetails = ConversationDetails.OneOne(
+            conversation = oneOnOneConversation,
+            otherUser = TestUser.OTHER,
+            connectionState = ConnectionState.ACCEPTED,
+            legalHoldStatus = LegalHoldStatus.ENABLED,
+            userType = UserType.INTERNAL,
+            unreadMessagesCount = 0
+        )
     }
 }

@@ -4,6 +4,7 @@ import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import co.touchlab.kermit.StaticConfig
 import co.touchlab.kermit.platformLogWriter
+import com.wire.kalium.logger.ObfuscateUtil.obfuscateLogMessage
 import co.touchlab.kermit.Logger as KermitLogger
 
 /**
@@ -48,12 +49,12 @@ enum class KaliumLogLevel {
  * in the android case we use it to write the logs on file
  *
  */
-class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
+class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = arrayOf()) {
 
-    private val kermitLogger: KermitLogger
+    private var kermitLogger: KermitLogger
 
     init {
-        kermitLogger = if (logWriter == null) {
+        kermitLogger = if (logWriters.isEmpty()) {
             KermitLogger(
                 config = StaticConfig(
                     minSeverity = config.severityLevel, listOf(platformLogWriter())
@@ -63,7 +64,7 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
         } else {
             KermitLogger(
                 config = StaticConfig(
-                    minSeverity = config.severityLevel, listOf(logWriter, platformLogWriter())
+                    minSeverity = config.severityLevel, logWriters.asList()
                 ),
                 tag = config.tag
             )
@@ -73,34 +74,41 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
     val severity = config.severity
 
     @Suppress("unused")
+    fun withFeatureId(featureId: ApplicationFlow): KaliumLogger {
+        val currentLogger = this
+        currentLogger.kermitLogger = kermitLogger.withTag("featureId:${featureId.name.lowercase()}")
+        return currentLogger
+    }
+
+    @Suppress("unused")
     fun v(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.v(message, throwable)
-        } ?: kermitLogger.v(message)
+            kermitLogger.v(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.v(obfuscateLogMessage(message))
 
     @Suppress("unused")
     fun d(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.d(message, throwable)
-        } ?: kermitLogger.d(message)
+            kermitLogger.d(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.d(obfuscateLogMessage(message))
 
     @Suppress("unused")
     fun i(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.i(message, throwable)
-        } ?: kermitLogger.i(message)
+            kermitLogger.i(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.i(obfuscateLogMessage(message))
 
     @Suppress("unused")
     fun w(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.w(message, throwable)
-        } ?: kermitLogger.w(message)
+            kermitLogger.w(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.w(obfuscateLogMessage(message))
 
     @Suppress("unused")
     fun e(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.e(message, throwable)
-        } ?: kermitLogger.e(message)
+            kermitLogger.e(obfuscateLogMessage(message), throwable)
+        } ?: kermitLogger.e(obfuscateLogMessage(message))
 
     class Config(
         val severity: KaliumLogLevel,
@@ -127,5 +135,9 @@ class KaliumLogger(config: Config, logWriter: LogWriter? = null) {
         fun disabled(): KaliumLogger = KaliumLogger(
             config = Config.DISABLED
         )
+
+        enum class ApplicationFlow {
+            SYNC, EVENT_RECEIVER, CONVERSATIONS, CONNECTIONS, MESSAGES, SEARCH, SESSION, REGISTER, CLIENTS, CALLING, ASSETS
+        }
     }
 }

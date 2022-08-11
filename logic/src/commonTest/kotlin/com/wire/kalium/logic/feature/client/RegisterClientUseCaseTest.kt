@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.framework.TestClient
@@ -48,6 +49,9 @@ class RegisterClientUseCaseTest {
     @Mock
     private val mlsClientProvider = mock(classOf<MLSClientProvider>())
 
+    @Mock
+    private val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+
     private lateinit var registerClient: RegisterClientUseCase
 
     @BeforeTest
@@ -56,8 +60,19 @@ class RegisterClientUseCaseTest {
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
+            keyPackageLimitsProvider,
             mlsClientProvider
         )
+
+        given(keyPackageLimitsProvider)
+            .getter(keyPackageLimitsProvider::keyPackageUploadLimit)
+            .whenInvoked()
+            .thenReturn(KEY_PACKAGE_LIMIT)
+
+        given(keyPackageLimitsProvider)
+            .getter(keyPackageLimitsProvider::keyPackageUploadThreshold)
+            .whenInvoked()
+            .thenReturn(KEY_PACKAGE_THRESHOLD)
 
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::generateNewPreKeys)
@@ -177,7 +192,7 @@ class RegisterClientUseCaseTest {
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         verify(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -191,7 +206,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -208,7 +223,7 @@ class RegisterClientUseCaseTest {
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         verify(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -222,7 +237,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -244,7 +259,7 @@ class RegisterClientUseCaseTest {
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         verify(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -258,7 +273,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(registeredClient) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -278,14 +293,14 @@ class RegisterClientUseCaseTest {
             .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         verify(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .with(eq(registeredClient.id))
             .wasInvoked(once)
     }
@@ -298,7 +313,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(CLIENT) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -319,7 +334,7 @@ class RegisterClientUseCaseTest {
 
         val persistFailure = TEST_FAILURE
         given(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Left(persistFailure) }
 
@@ -338,7 +353,7 @@ class RegisterClientUseCaseTest {
             .then { Either.Right(CLIENT) }
 
         given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
+            .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(eq(CLIENT.id))
             .then { Either.Right(MLS_CLIENT) }
 
@@ -358,7 +373,7 @@ class RegisterClientUseCaseTest {
             .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .function(clientRepository::persistClientId)
+            .suspendFunction(clientRepository::persistClientId)
             .whenInvokedWith(anything())
             .then { Either.Right(Unit) }
 
@@ -382,7 +397,6 @@ class RegisterClientUseCaseTest {
         assertEquals(failure, result.genericFailure)
     }
 
-
     @Test
     fun givenProteusClient_whenNewLastPreKeyThrowException_thenReturnProteusFailure() = runTest {
         val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
@@ -398,8 +412,9 @@ class RegisterClientUseCaseTest {
         assertEquals(failure, result.genericFailure)
     }
 
-
     private companion object {
+        const val KEY_PACKAGE_LIMIT = 100
+        const val KEY_PACKAGE_THRESHOLD = 0.5F
         const val TEST_PASSWORD = "password"
         val TEST_CAPABILITIES: List<ClientCapability> = listOf(
             ClientCapability.LegalHoldImplicitConsent

@@ -31,14 +31,26 @@ data class UserEntity(
     // for now availabilityStatus is stored only locally and ignored for API models,
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
+    val userType: UserTypeEntity,
+    val botService: BotEntity?
+)
 
-    val userTypEntity : UserTypeEntity,
+data class BotEntity(
+    val id: String,
+    val provider: String
 )
 
 enum class UserTypeEntity {
-    INTERNAL,
 
-    // TODO(user-metadata): for now External will not be implemented
+    /**Team member with owner permissions */
+    OWNER,
+
+    /**Team member with admin permissions */
+    ADMIN,
+
+    /**Team member */
+    INTERNAL, // TODO Kubaz change to STANDARD
+
     /**Team member with limited permissions */
     EXTERNAL,
 
@@ -55,7 +67,16 @@ enum class UserTypeEntity {
      * A temporary user that joined using the guest web interface,
      * from outside the backend network
      */
-    GUEST;
+    GUEST,
+
+    /** Service bot */
+    SERVICE,
+
+    /**
+     * A user on the same backend,
+     * when current user doesn't belongs to any team
+     */
+    NONE;
 }
 
 internal typealias UserAssetIdEntity = QualifiedIDEntity
@@ -70,18 +91,23 @@ interface UserDAO {
     /**
      * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
      * [ConnectionEntity.State.NOT_CONNECTED]
-     *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */
     suspend fun upsertUsers(users: List<UserEntity>)
 
     /**
-     * This will update [UserEntity.team] and [UserEntity.connectionStatus] to [ConnectionState.ACCEPTED]
+     * This will update [UserEntity.team], [UserEntity.userType], [UserEntity.connectionStatus] to [ConnectionEntity.State.ACCEPTED]
      * or insert a new record with default values for other columns.
-     *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case when trying to insert a member, we could already have the record, so we need to pass only the data needed.
+     */
+    suspend fun upsertTeamMembersTypes(users: List<UserEntity>)
+
+    /**
+     * This will update all columns, except [UserEntity.userType] or insert a new record with default values
+     * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
+     * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */
     suspend fun upsertTeamMembers(users: List<UserEntity>)
 
@@ -100,19 +126,22 @@ interface UserDAO {
     suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
     suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
-    suspend fun getUserByNameOrHandleOrEmailAndConnectionState(
+    suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
-        connectionState: ConnectionEntity.State
+        connectionStates: List<ConnectionEntity.State>
     ): List<UserEntity>
 
-    suspend fun getUserByHandleAndConnectionState(
+    suspend fun getUserByHandleAndConnectionStates(
         handle: String,
-        connectionState: ConnectionEntity.State
+        connectionStates: List<ConnectionEntity.State>
     ): List<UserEntity>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
-    suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity) : List<UserEntity>
+    suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity): List<UserEntity>
     suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
+    suspend fun getUsersNotInConversationByNameOrHandleOrEmail(conversationId: QualifiedIDEntity, searchQuery: String): List<UserEntity>
+    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): List<UserEntity>
+    suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
 }

@@ -1,12 +1,6 @@
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryTest
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.QualifiedID
@@ -17,10 +11,10 @@ import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
@@ -91,26 +85,29 @@ class UserRepositoryTest {
 
     // TODO other UserRepository tests
 
-
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
         @Mock
         val metadataDAO = configure(mock(classOf<MetadataDAO>())) { stubsUnitByDefault = true }
         @Mock
+        val clientDAO = configure(mock(classOf<ClientDAO>())) { stubsUnitByDefault = true }
+        @Mock
         val selfApi = mock(classOf<SelfApi>())
+
         @Mock
         val userDetailsApi = mock(classOf<UserDetailsApi>())
+
         @Mock
-        val assetRepository = mock(classOf<AssetRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, selfApi, userDetailsApi, assetRepository)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository)
         }
 
         init {
             given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(TestUser.JSON_QUALIFIED_ID) }
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)

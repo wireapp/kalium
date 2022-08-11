@@ -43,7 +43,7 @@ class RegisterAccountApp : CliktCommand() {
                         return@runBlocking
                     }
                     is RegisterResult.Success -> {
-                        echo(result.value)
+                        echo(result)
                         return@runBlocking
                     }
                 }

@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.fold
+import okio.Path
 
 interface GetAvatarAssetUseCase {
     /**
@@ -18,15 +19,15 @@ interface GetAvatarAssetUseCase {
 
 internal class GetAvatarAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetAvatarAssetUseCase {
     override suspend fun invoke(assetKey: UserAssetId): PublicAssetResult =
+        // TODO(important!!): do local lookup for the profile pic before downloading a new one
         assetDataSource.downloadPublicAsset(assetKey).fold({
             PublicAssetResult.Failure(it)
         }) {
             PublicAssetResult.Success(it)
         }
-
 }
 
 sealed class PublicAssetResult {
-    class Success(val asset: ByteArray) : PublicAssetResult()
+    class Success(val assetPath: Path) : PublicAssetResult()
     class Failure(val coreFailure: CoreFailure) : PublicAssetResult()
 }

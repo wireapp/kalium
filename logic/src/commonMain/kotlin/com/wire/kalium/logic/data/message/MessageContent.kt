@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 
@@ -17,7 +18,12 @@ sealed class MessageContent {
     data class Asset(val value: AssetContent) : Regular()
     data class DeleteMessage(val messageId: String) : Regular()
     data class TextEdited(val editMessageId: String, val newContent: String) : Regular()
-    data class RestrictedAsset(val mimeType: String) : Regular()
+    data class RestrictedAsset(
+        val mimeType: String,
+        val sizeInBytes: Long,
+        val name: String
+    ) : Regular()
+
     data class DeleteForMe(
         val messageId: String,
         val conversationId: String,
@@ -39,8 +45,12 @@ sealed class MessageContent {
         data class Removed(override val members: List<UserId>) : MemberChange(members)
     }
 
-    object MissedCall: System()
+    object MissedCall : System()
+
+    data class Availability(val status: UserAvailabilityStatus) : Signaling()
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
+
+    data class FailedDecryption(val encodedData: ByteArray? = null) : Regular()
 }

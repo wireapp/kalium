@@ -19,7 +19,7 @@ CREATE TABLE Message (
       last_edit_timestamp TEXT ,
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
 
-      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id),
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
       PRIMARY KEY (id, conversation_id)
 );
@@ -39,6 +39,8 @@ CREATE TABLE MessageRestrictedAssetContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       asset_mime_type TEXT NOT NULL,
+      asset_size INTEGER NOT NULL,
+      asset_name TEXT NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -87,6 +89,16 @@ CREATE TABLE MessageUnknownContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       unknown_type_name TEXT,
+      unknown_encoded_data BLOB,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageFailedToDecryptContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
       unknown_encoded_data BLOB,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -151,8 +163,8 @@ message_id = excluded.message_id,
 text_body = excluded.text_body;
 
 insertMessageRestrictedAssetContent:
-INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type)
-VALUES(?, ?, ?)
+INSERT INTO MessageRestrictedAssetContent(message_id, conversation_id, asset_mime_type,asset_size,asset_name)
+VALUES(?, ?, ?,?,?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
 asset_mime_type = excluded.asset_mime_type;
@@ -191,6 +203,13 @@ VALUES(?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
 unknown_type_name = excluded.unknown_type_name,
+unknown_encoded_data = excluded.unknown_encoded_data;
+
+insertFailedDecryptionMessageContent:
+INSERT INTO MessageFailedToDecryptContent(message_id, conversation_id, unknown_encoded_data)
+VALUES(?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+message_id = excluded.message_id,
 unknown_encoded_data = excluded.unknown_encoded_data;
 
 insertMissedCallMessage:
@@ -258,6 +277,9 @@ SELECT * FROM MessageMemberChangeContent WHERE message_id = ? AND conversation_i
 
 selectMessageUnknownContent:
 SELECT * FROM MessageUnknownContent WHERE message_id = ? AND conversation_id = ?;
+
+selectFailedDecryptionMessageContent:
+SELECT * FROM MessageFailedToDecryptContent WHERE message_id = ? AND conversation_id = ?;
 
 selectMessageMissedCallContent:
 SELECT * FROM MessageMissedCallContent WHERE message_id = ? AND conversation_id = ?;

@@ -12,14 +12,20 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
+import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.Member
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Clock
+import kotlin.time.Duration
 
 interface MLSConversationRepository {
 
@@ -28,6 +34,10 @@ interface MLSConversationRepository {
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
     suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
+    suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
+    suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit>
 }
 
 class MLSConversationDataSource(
@@ -35,7 +45,8 @@ class MLSConversationDataSource(
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
     private val conversationDAO: ConversationDAO,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val clientApi: ClientApi,
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> =
@@ -80,8 +91,45 @@ class MLSConversationDataSource(
             establishMLSGroup(groupID, members)
         }
 
+    override suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit> {
+        kaliumLogger.d("Requesting to re-join MLS group $groupID with epoch $epoch")
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapApiRequest {
+                mlsMessageApi.sendMessage(MLSMessageApi.Message(mlsClient.joinConversation(groupID, epoch)))
+            }.onSuccess {
+                conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, groupID)
+            }
+        }
+    }
+
+    override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>> =
+        wrapStorageRequest {
+            conversationDAO.getConversationsByKeyingMaterialUpdate(threshold)
+        }
+
+    override suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            mlsClient.updateKeyingMaterial(groupID).let { (handshake, welcome) ->
+                wrapApiRequest {
+                    mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                }.flatMap {
+                    welcome?.let {
+                        wrapApiRequest {
+                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
+                        }
+                    } ?: Either.Right(Unit)
+                }.flatMap {
+                    wrapStorageRequest {
+                        conversationDAO.updateKeyingMaterial(groupID, Clock.System.now())
+                    }
+                }.flatMap {
+                    Either.Right(Unit)
+                }
+            }
+        }
+
     override suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        //TODO: check for federated and non-federated members
+        // TODO: check for federated and non-federated members
         keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
             mlsClientProvider.getMLSClient().flatMap { client ->
                 val clientKeyPackageList = keyPackages
@@ -101,9 +149,38 @@ class MLSConversationDataSource(
                     }.flatMap {
                         wrapStorageRequest {
                             val list = userIdList.map {
-                                com.wire.kalium.persistence.dao.Member(idMapper.toDaoModel(it), TODO())
+                                Member(idMapper.toDaoModel(it), Member.Role.Member)
                             }
                             conversationDAO.insertMembers(list, groupID)
+                        }
+                    }.flatMap {
+                        Either.Right(Unit)
+                    }
+                } ?: run {
+                    Either.Right(Unit)
+                }
+            }
+        }
+
+    override suspend fun removeMembersFromMLSGroup(
+        groupID: String,
+        userIdList: List<UserId>
+    ): Either<CoreFailure, Unit> =
+        wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
+            val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
+                userClients.value.map { userClient ->
+                    CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
+                }
+            }
+            mlsClientProvider.getMLSClient().flatMap { client ->
+                client.removeMember(groupID, usersCryptoQualifiedClientIDs)?.let { handshake ->
+                    wrapApiRequest {
+                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
+                    }.flatMap {
+                        wrapStorageRequest {
+                            conversationDAO.deleteMembersByQualifiedID(userIdList.map {
+                                idMapper.toDaoModel(it)
+                            }, groupID)
                         }
                     }.flatMap {
                         Either.Right(Unit)

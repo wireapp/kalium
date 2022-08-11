@@ -10,6 +10,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.message.MLSMessageApi
+import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -29,232 +30,265 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
-// TODO: enable the tests once the issue with creating MLS conversations is solved
-@Ignore
 @OptIn(ExperimentalCoroutinesApi::class)
 class MLSConversationRepositoryTest {
-
-    @Mock
-    private val keyPackageRepository = mock(classOf<KeyPackageRepository>())
-
-    @Mock
-    private val mlsClientProvider = mock(classOf<MLSClientProvider>())
-
-    @Mock
-    private val conversationDAO = mock(classOf<ConversationDAO>())
-
-    @Mock
-    private val mlsMessageApi = mock(classOf<MLSMessageApi>())
-
-    private lateinit var mlsConversationRepository: MLSConversationRepository
-
-    @BeforeTest
-    fun setup() {
-        mlsConversationRepository = MLSConversationDataSource(
-            keyPackageRepository,
-            mlsClientProvider,
-            mlsMessageApi,
-            conversationDAO
-        )
-    }
-
     @Test
     fun givenConversation_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndWelcomeMessageIsSent() = runTest {
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByGroupID)
-            .whenInvokedWith(anything())
-            .then { flowOf(TestConversation.ENTITY) }
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetConversationByGroupIdSuccessful()
+            .withGetAllMembersSuccessful()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withCreateMLSConversationSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .arrange()
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getAllMembers)
-            .whenInvokedWith(anything())
-            .then { flowOf(MEMBERS) }
-
-        given(keyPackageRepository)
-            .suspendFunction(keyPackageRepository::claimKeyPackages)
-            .whenInvokedWith(anything())
-            .then { Either.Right(listOf(KEY_PACKAGE)) }
-
-        given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT) }
-
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::createConversation)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Pair(HANDSHAKE, WELCOME))
-
-        given(mlsMessageApi)
-            .suspendFunction(mlsMessageApi::sendWelcomeMessage)
-            .whenInvokedWith(anything())
-            .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
-
-        given(mlsMessageApi)
-            .suspendFunction(mlsMessageApi::sendMessage)
-            .whenInvokedWith(anything())
-            .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
-
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::updateConversationGroupState)
-            .whenInvokedWith(anything(), anything())
-            .thenDoNothing()
-
-        val result = mlsConversationRepository.establishMLSGroup(GROUP_ID)
-
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID)
         result.shouldSucceed()
 
-        verify(MLS_CLIENT)
-            .function(MLS_CLIENT::createConversation)
-            .with(eq(GROUP_ID), anything())
+        verify(Arrangement.MLS_CLIENT)
+            .function(Arrangement.MLS_CLIENT::createConversation)
+            .with(eq(Arrangement.GROUP_ID), anything())
             .wasInvoked(once)
 
-        verify(mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(WELCOME)) }
+        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
             .wasInvoked(once)
 
-        verify(mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(HANDSHAKE)) }
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.HANDSHAKE)) }
             .wasInvoked(once)
     }
 
     @Test
     fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
-        given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT) }
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withProcessWelcomeMessageSuccessful()
+            .withGetConversationByGroupIdSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .arrange()
 
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::processWelcomeMessage)
-            .whenInvokedWith(anything())
-            .thenReturn(GROUP_ID)
+        mlsConversationRepository.establishMLSGroupFromWelcome(Arrangement.WELCOME_EVENT).shouldSucceed()
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByGroupID)
-            .whenInvokedWith(anything())
-            .then { flowOf(TestConversation.ENTITY) }
-
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::updateConversationGroupState)
-            .whenInvokedWith(anything(), anything())
-            .thenDoNothing()
-
-        mlsConversationRepository.establishMLSGroupFromWelcome(WELCOME_EVENT).shouldSucceed()
-
-        verify(MLS_CLIENT)
-            .function(MLS_CLIENT::processWelcomeMessage)
+        verify(Arrangement.MLS_CLIENT)
+            .function(Arrangement.MLS_CLIENT::processWelcomeMessage)
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
 
-        verify(conversationDAO)
-            .suspendFunction(conversationDAO::updateConversationGroupState)
-            .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(GROUP_ID))
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
+            .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(Arrangement.GROUP_ID))
             .wasInvoked(once)
     }
 
     @Test
     fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedButConversationIsNotInserted() = runTest {
-        given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT) }
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withProcessWelcomeMessageSuccessful()
+            .withGetConversationByGroupIdFailing()
+            .arrange()
 
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::processWelcomeMessage)
-            .whenInvokedWith(anything())
-            .thenReturn(GROUP_ID)
+        mlsConversationRepository.establishMLSGroupFromWelcome(Arrangement.WELCOME_EVENT).shouldSucceed()
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getConversationByGroupID)
-            .whenInvokedWith(anything())
-            .then { flowOf(null) }
-
-        mlsConversationRepository.establishMLSGroupFromWelcome(WELCOME_EVENT).shouldSucceed()
-
-        verify(MLS_CLIENT)
-            .function(MLS_CLIENT::processWelcomeMessage)
+        verify(Arrangement.MLS_CLIENT)
+            .function(Arrangement.MLS_CLIENT::processWelcomeMessage)
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
 
     @Test
-    fun givenAnMLSConversationAndAPISucceeds_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
-        given(keyPackageRepository)
-            .suspendFunction(keyPackageRepository::claimKeyPackages)
-            .whenInvokedWith(anything())
-            .then { Either.Right(listOf(KEY_PACKAGE)) }
+    fun givenConversation_whenCallingAddMemberToMLSGroup_thenCommitAndWelcomeMessagesAreSent() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withInsertMemberSuccessful()
+            .arrange()
 
-        given(mlsClientProvider)
-            .function(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT) }
-
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::addMember)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Pair(HANDSHAKE, WELCOME))
-
-        given(mlsMessageApi)
-            .suspendFunction(mlsMessageApi::sendWelcomeMessage)
-            .whenInvokedWith(anything())
-            .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
-
-        given(mlsMessageApi)
-            .suspendFunction(mlsMessageApi::sendMessage)
-            .whenInvokedWith(anything())
-            .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
-
-
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, String>())
-            .whenInvokedWith(anything(), anything())
-            .thenDoNothing()
-
-
-        val result = mlsConversationRepository.addMemberToMLSGroup(GROUP_ID, listOf(TestConversation.USER_ID1))
-
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
         result.shouldSucceed()
 
-        verify(MLS_CLIENT)
-            .function(MLS_CLIENT::addMember)
-            .with(eq(GROUP_ID), anything())
+        verify(Arrangement.MLS_CLIENT)
+            .function(Arrangement.MLS_CLIENT::addMember)
+            .with(eq(Arrangement.GROUP_ID), anything())
             .wasInvoked(once)
 
-        verify(mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(WELCOME)) }
+        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
             .wasInvoked(once)
 
-        verify(mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(HANDSHAKE)) }
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.HANDSHAKE)) }
             .wasInvoked(once)
 
-        verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, String>())
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::insertMembers, fun2<List<Member>, String>())
             .with(anything(), anything())
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenConversation_whenCallingRequestToJoinGroup_ThenGroupStateIsUpdated() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withJoinConversationSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .arrange()
 
-    private companion object {
-        val GROUP_ID = "groupId"
-        val MEMBERS = listOf(Member(TestUser.ENTITY_ID, TODO()))
-        val KEY_PACKAGE = KeyPackageDTO(
-            "client1",
-            "wire.com",
-            "keyPackage",
-            "keyPackageRef",
-            "user1"
+        val result = mlsConversationRepository.requestToJoinGroup(Arrangement.GROUP_ID, Arrangement.EPOCH)
+        result.shouldSucceed()
+
+        verify(Arrangement.MLS_CLIENT)
+            .function(Arrangement.MLS_CLIENT::joinConversation)
+            .with(eq(Arrangement.GROUP_ID), eq(Arrangement.EPOCH))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
+            .with(eq(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE), eq(Arrangement.GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    class Arrangement {
+        @Mock
+        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+
+        @Mock
+        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+
+        @Mock
+        val conversationDAO = mock(classOf<ConversationDAO>())
+        @Mock
+        val clientApi = mock(ClientApi::class)
+        @Mock
+        val mlsMessageApi = mock(classOf<MLSMessageApi>())
+
+        fun withGetConversationByGroupIdSuccessful() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationByGroupID)
+                .whenInvokedWith(anything())
+                .then { flowOf(TestConversation.ENTITY) }
+        }
+
+        fun withGetConversationByGroupIdFailing() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationByGroupID)
+                .whenInvokedWith(anything())
+                .then { flowOf(null) }
+        }
+
+        fun withGetAllMembersSuccessful() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getAllMembers)
+                .whenInvokedWith(anything())
+                .then { flowOf(MEMBERS) }
+        }
+
+        fun withInsertMemberSuccessful() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::insertMembers, fun2<List<Member>, String>())
+                .whenInvokedWith(anything(), anything())
+                .thenDoNothing()
+        }
+
+        fun withClaimKeyPackagesSuccessful() = apply {
+            given(keyPackageRepository)
+                .suspendFunction(keyPackageRepository::claimKeyPackages)
+                .whenInvokedWith(anything())
+                .then { Either.Right(listOf(KEY_PACKAGE)) }
+        }
+
+        fun withGetMLSClientSuccessful() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getMLSClient)
+                .whenInvokedWith(anything())
+                .then { Either.Right(MLS_CLIENT) }
+        }
+
+        fun withCreateMLSConversationSuccessful() = apply {
+            given(MLS_CLIENT)
+                .function(MLS_CLIENT::createConversation)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Pair(HANDSHAKE, WELCOME))
+        }
+
+        fun withAddMLSMemberSuccessful() = apply {
+            given(MLS_CLIENT)
+                .function(MLS_CLIENT::addMember)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Pair(HANDSHAKE, WELCOME))
+        }
+
+        fun withJoinConversationSuccessful() = apply {
+            given(MLS_CLIENT)
+                .function(MLS_CLIENT::joinConversation)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(HANDSHAKE)
+        }
+
+        fun withProcessWelcomeMessageSuccessful() = apply {
+            given(MLS_CLIENT)
+                .function(MLS_CLIENT::processWelcomeMessage)
+                .whenInvokedWith(anything())
+                .thenReturn(GROUP_ID)
+        }
+
+        fun withSendWelcomeMessageSuccessful() = apply {
+            given(mlsMessageApi)
+                .suspendFunction(mlsMessageApi::sendWelcomeMessage)
+                .whenInvokedWith(anything())
+                .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
+        }
+
+        fun withSendMLSMessageSuccessful() = apply {
+            given(mlsMessageApi)
+                .suspendFunction(mlsMessageApi::sendMessage)
+                .whenInvokedWith(anything())
+                .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
+        }
+
+fun withUpdateConversationGroupStateSuccessful() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateConversationGroupState)
+            .whenInvokedWith(anything(), anything())
+            .thenDoNothing()
+
+            }
+
+    fun arrange() = this to MLSConversationDataSource(
+            keyPackageRepository,
+            mlsClientProvider,
+            mlsMessageApi,
+            conversationDAO,
+        clientApi
         )
-        val MLS_CLIENT = mock(classOf<MLSClient>())
-        val WELCOME = "welcome".encodeToByteArray()
-        val HANDSHAKE = "handshake".encodeToByteArray()
-        val WELCOME_EVENT = Event.Conversation.MLSWelcome(
-            "eventId",
-            TestConversation.ID,
-            TestUser.USER_ID,
-            WELCOME.encodeBase64(),
-            timestampIso = "2022-03-30T15:36:00.000Z"
-        )
+
+        internal companion object {
+            const val EPOCH = 5UL
+            const val GROUP_ID = "groupId"
+            val MEMBERS = listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))
+            val KEY_PACKAGE = KeyPackageDTO(
+                "client1",
+                "wire.com",
+                "keyPackage",
+                "keyPackageRef",
+                "user1"
+            )
+            val MLS_CLIENT = mock(classOf<MLSClient>())
+            val WELCOME = "welcome".encodeToByteArray()
+            val HANDSHAKE = "handshake".encodeToByteArray()
+            val WELCOME_EVENT = Event.Conversation.MLSWelcome(
+                "eventId",
+                TestConversation.ID,
+                TestUser.USER_ID,
+                WELCOME.encodeBase64(),
+                timestampIso = "2022-03-30T15:36:00.000Z"
+            )
+        }
     }
 }

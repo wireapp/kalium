@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -49,7 +48,7 @@ class GetIncomingCallsUseCaseTest {
     fun givenNotEmptyCallList_whenInvokingGetIncomingCallsUseCase_thenNonEmptyNotificationList() = runTest {
         val (_, getIncomingCalls) = Arrangement()
             .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
-            .withConversationDetails { id -> Either.Right(flowOf(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))) }
+            .withConversationDetails { id -> flowOf(Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))) }
             .withIncomingCalls(
                 listOf<Call>(incomingCall(0), incomingCall(1))
             )
@@ -66,7 +65,7 @@ class GetIncomingCallsUseCaseTest {
     fun givenUserWithAwayStatus_whenIncomingCallComes_thenNoCallsPropagated() = runTest {
         val (_, getIncomingCalls) = Arrangement()
             .withSelfUserStatus(UserAvailabilityStatus.AWAY)
-            .withConversationDetails { id -> Either.Right(flowOf(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))) }
+            .withConversationDetails { id -> flowOf(Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))) }
             .withIncomingCalls(
                 listOf<Call>(incomingCall(0), incomingCall(1))
             )
@@ -83,7 +82,7 @@ class GetIncomingCallsUseCaseTest {
     fun givenUserWithBusyStatus_whenIncomingCallComes_thenCallsPropagated() = runTest {
         val (_, getIncomingCalls) = Arrangement()
             .withSelfUserStatus(UserAvailabilityStatus.BUSY)
-            .withConversationDetails { id -> Either.Right(flowOf(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))) }
+            .withConversationDetails { id -> flowOf(Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))) }
             .withIncomingCalls(
                 listOf<Call>(incomingCall(0), incomingCall(1))
             )
@@ -103,9 +102,9 @@ class GetIncomingCallsUseCaseTest {
             .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
             .withConversationDetails { id ->
                 if (id == TestConversation.id(0))
-                    Either.Right(flowOf(conversationWithMuteStatus(id, MutedConversationStatus.AllMuted)))
+                    flowOf(Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllMuted)))
                 else
-                    Either.Right(flowOf(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed)))
+                    flowOf(Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed)))
             }
             .withIncomingCalls(
                 listOf<Call>(incomingCall(0), incomingCall(1))
@@ -124,7 +123,7 @@ class GetIncomingCallsUseCaseTest {
         val (_, getIncomingCalls) = Arrangement()
             .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
             .withConversationDetails { id ->
-                Either.Right(flowOf(conversationWithMuteStatus(id, MutedConversationStatus.OnlyMentionsAllowed)))
+                flowOf(Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.OnlyMentionsAllowed)))
             }
             .withIncomingCalls(
                 listOf<Call>(incomingCall(0), incomingCall(1))
@@ -145,9 +144,9 @@ class GetIncomingCallsUseCaseTest {
             .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
             .withConversationDetails { id ->
                 if (id == TestConversation.id(0))
-                    Either.Left(StorageFailure.DataNotFound)
+                    flowOf(Either.Left(StorageFailure.DataNotFound))
                 else
-                    Either.Right(flowOf(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed)))
+                    flowOf(Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed)))
             }
             .withIncomingCalls(
                 listOf<Call>(incomingCall(0), incomingCall(1))
@@ -174,22 +173,16 @@ class GetIncomingCallsUseCaseTest {
         @Mock
         val callRepository: CallRepository = mock(classOf<CallRepository>())
 
-
         val getIncomingCallsUseCase: GetIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(
-            syncManager = syncManager,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
             callRepository = callRepository
         )
 
-        init {
-            given(syncManager).suspendFunction(syncManager::waitUntilSlowSyncCompletion).whenInvoked().thenReturn(Unit)
-            given(syncManager).invocation { startSyncIfIdle() }.thenReturn(Unit)
-        }
-
-        fun withIncomingCalls(calls: List<Call>): Arrangement {
+        suspend fun withIncomingCalls(calls: List<Call>): Arrangement {
             given(callRepository)
-                .invocation { incomingCallsFlow() }
+                .suspendFunction(callRepository::incomingCallsFlow)
+                .whenInvoked()
                 .then { MutableStateFlow(calls) }
 
             return this
@@ -204,9 +197,9 @@ class GetIncomingCallsUseCaseTest {
             return this
         }
 
-        fun withConversationDetails(detailsGetter: (ConversationId) -> Either<StorageFailure, Flow<Conversation>>): Arrangement {
+        fun withConversationDetails(detailsGetter: (ConversationId) -> Flow<Either<StorageFailure, Conversation>>): Arrangement {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationDetails)
+                .suspendFunction(conversationRepository::observeById)
                 .whenInvokedWith(any())
                 .then { id -> detailsGetter(id) }
             return this
@@ -223,7 +216,6 @@ class GetIncomingCallsUseCaseTest {
             TestConversation.one_on_one(id).copy(mutedStatus = status)
 
         private fun incomingCall(conversationIdSuffix: Int = 0) =
-            TestCall.onOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
+            TestCall.oneOnOneIncomingCall(TestConversation.id(conversationIdSuffix))
     }
-
 }

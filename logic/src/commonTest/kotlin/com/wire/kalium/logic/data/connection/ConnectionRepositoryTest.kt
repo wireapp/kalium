@@ -354,7 +354,8 @@ class ConnectionRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userTypEntity = UserTypeEntity.EXTERNAL
+            userType = UserTypeEntity.EXTERNAL,
+            botService = null
         )
 
         val stubSelfUser = SelfUser(
@@ -461,7 +462,7 @@ class ConnectionRepositoryTest {
                 .whenInvokedWith(any(), any(), any())
 
             given(metaDAO)
-                .suspendFunction(metaDAO::valueByKey)
+                .suspendFunction(metaDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(stubJsonQualifiedId) }
 
@@ -489,7 +490,6 @@ class ConnectionRepositoryTest {
 
             return this
         }
-
 
         fun arrange() = this to connectionRepository
     }

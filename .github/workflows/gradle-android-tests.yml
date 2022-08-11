@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
 jobs:
   gradle-run-tests:
     runs-on: macos-latest
@@ -55,10 +59,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
-          script: |
-            ./gradlew cryptography:connectedAndroidTest
-            ./gradlew persistence:connectedAndroidTest
-            ./gradlew logic:connectedAndroidTest
+          script: ./gradlew connectedAndroidOnlyAffectedTest
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25

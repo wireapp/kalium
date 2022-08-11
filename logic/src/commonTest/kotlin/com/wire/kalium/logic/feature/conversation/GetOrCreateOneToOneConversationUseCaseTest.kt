@@ -2,18 +2,12 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.LegalHoldStatus
-import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.anything
@@ -25,7 +19,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertIs
-
 
 class GetOrCreateOneToOneConversationUseCaseTest {
 
@@ -43,19 +36,19 @@ class GetOrCreateOneToOneConversationUseCaseTest {
 
     @Test
     fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenDoNotCreateAConversationButReturnExisting() = runTest {
-        //given
+        // given
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getOneToOneConversationDetailsByUserId)
+            .suspendFunction(conversationRepository::getOneToOneConversationWithOtherUser)
             .whenInvokedWith(anything())
-            .thenReturn(Either.Right(CONVERSATION_DETAILS))
+            .thenReturn(Either.Right(CONVERSATION))
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::createGroupConversation)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(Either.Right(CONVERSATION))
-        //when
+        // when
         val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
-        //then
+        // then
         assertIs<CreateConversationResult.Success>(result)
 
         verify(conversationRepository)
@@ -64,25 +57,25 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             .wasNotInvoked()
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::getOneToOneConversationDetailsByUserId)
+            .suspendFunction(conversationRepository::getOneToOneConversationWithOtherUser)
             .with(anything())
             .wasInvoked()
     }
 
     @Test
     fun givenConversationExist_whenCallingTheUseCase_ThenCreateAConversationAndReturn() = runTest {
-        //given
+        // given
         given(conversationRepository)
-            .coroutine { getOneToOneConversationDetailsByUserId(USER_ID) }
+            .coroutine { getOneToOneConversationWithOtherUser(USER_ID) }
             .then { Either.Left(StorageFailure.DataNotFound) }
 
         given(conversationRepository)
             .suspendFunction(conversationRepository::createGroupConversation)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(Either.Right(CONVERSATION))
-        //when
+        // when
         val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
-        //then
+        // then
         assertIs<CreateConversationResult.Success>(result)
 
         verify(conversationRepository)
@@ -102,30 +95,12 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,
             null,
-            null
-        )
-        val OTHER_USER = OtherUser(
-            id =
-            USER_ID,
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            team = null,
-            previewPicture = null,
-            completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = UserType.EXTERNAL,
-            connectionStatus = ConnectionState.NOT_CONNECTED
-        )
-        val CONVERSATION_DETAILS = ConversationDetails.OneOne(
-            CONVERSATION,
-            OTHER_USER,
-            ConnectionState.ACCEPTED,
-            LegalHoldStatus.ENABLED,
-            UserType.INTERNAL
+            PlainId("someValue"),
+            null,
+            null,
+            lastReadDate = "2022-03-30T15:36:00.000Z",
+            access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
+            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )
     }
-
 }

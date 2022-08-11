@@ -2,6 +2,9 @@ package com.wire.kalium.network.api.conversation
 
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
+import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface ConversationApi {
@@ -18,19 +21,33 @@ interface ConversationApi {
 
     suspend fun fetchConversationDetails(conversationId: ConversationId): NetworkResponse<ConversationResponse>
 
-    suspend fun removeConversationMember(userId: UserId, conversationId: ConversationId): NetworkResponse<Unit>
-
     suspend fun createNewConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 
     suspend fun createOne2OneConversation(createConversationRequest: CreateConversationRequest): NetworkResponse<ConversationResponse>
 
-    suspend fun addParticipant(
-        addParticipantRequest: AddParticipantRequest,
+    suspend fun addMember(
+        addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<AddParticipantResponse>
+    ): NetworkResponse<ConversationMemberAddedDTO>
+
+    suspend fun removeMember(
+        userId: UserId,
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationMemberRemovedDTO>
 
     suspend fun updateConversationMemberState(
         memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId
+    ): NetworkResponse<Unit>
+
+    suspend fun updateAccessRole(
+        conversationId: ConversationId,
+        conversationAccessInfoDTO: ConversationAccessInfoDTO
+    ): NetworkResponse<UpdateConversationAccessResponse>
+
+    suspend fun updateConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId,
+        conversationMemberRoleDTO: ConversationMemberRoleDTO
     ): NetworkResponse<Unit>
 }

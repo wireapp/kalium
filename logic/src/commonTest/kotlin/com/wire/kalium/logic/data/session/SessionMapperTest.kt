@@ -4,6 +4,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.util.stubs.newServerConfig
@@ -13,6 +14,7 @@ import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.AuthSessionEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.persistence.model.SsoIdEntity
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -40,17 +42,23 @@ class SessionMapperTest {
         sessionMapper = SessionMapperImpl(serverConfigMapper, idMapper)
     }
 
-
     @Test
     fun givenAnAuthSession_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
 
-        given(idMapper).invocation { toApiModel(authSession.tokens.userId) }
-            .then { QualifiedID(authSession.tokens.userId.value, authSession.tokens.userId.domain) }
+        given(idMapper).invocation { toApiModel(authSession.session.userId) }
+            .then { QualifiedID(authSession.session.userId.value, authSession.session.userId.domain) }
         val acuteValue: SessionDTO =
-            with(authSession.tokens) { SessionDTO(UserIdDTO(userId.value, userId.domain), tokenType, accessToken, refreshToken) }
+            with(authSession.session as AuthSession.Session.Valid) {
+                SessionDTO(
+                    UserIdDTO(userId.value, userId.domain),
+                    tokenType,
+                    accessToken,
+                    refreshToken
+                )
+            }
 
-        val expectedValue: SessionDTO = sessionMapper.toSessionDTO(authSession)
+        val expectedValue: SessionDTO = sessionMapper.toSessionDTO(authSession.session as AuthSession.Session.Valid)
         assertEquals(expectedValue, acuteValue)
     }
 
@@ -61,28 +69,31 @@ class SessionMapperTest {
             ServerConfigEntity.Links(api, accounts, webSocket, blackList, teams, website, title)
         }
 
-        given(idMapper).invocation { toDaoModel(authSession.tokens.userId) }
-            .then { PersistenceQualifiedId(authSession.tokens.userId.value, authSession.tokens.userId.domain) }
+        given(idMapper).invocation { toDaoModel(authSession.session.userId) }
+            .then { PersistenceQualifiedId(authSession.session.userId.value, authSession.session.userId.domain) }
         given(serverConfigMapper).invocation { toEntity(authSession.serverLinks) }.then { serverConfigEntity }
 
-        val expected: AuthSessionEntity = with(authSession.tokens) {
-            AuthSessionEntity(
+        given(idMapper).invocation { idMapper.toSsoIdEntity(TEST_SSO_ID) }.then { TEST_SSO_ID_ENTITY }
+
+        val expected: AuthSessionEntity = with(authSession.session as AuthSession.Session.Valid) {
+            AuthSessionEntity.Valid(
                 userId = UserIDEntity(userId.value, userId.domain),
                 tokenType = tokenType,
                 accessToken = accessToken,
                 refreshToken = refreshToken,
-                serverLinks = serverConfigEntity
+                serverLinks = serverConfigEntity,
+                ssoId = TEST_SSO_ID_ENTITY
             )
         }
 
-        val actual: AuthSessionEntity = sessionMapper.toPersistenceSession(authSession)
+        val actual: AuthSessionEntity = sessionMapper.toPersistenceSession(authSession, TEST_SSO_ID)
         assertEquals(expected, actual)
         verify(serverConfigMapper).invocation { toEntity(authSession.serverLinks) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAPersistenceSession_whenMappingFromPersistenceSession_thenValuesAreMappedCorrectly() {
-        val authSessionEntity: AuthSessionEntity = randomPersistenceSession()
+        val authSessionEntity: AuthSessionEntity.Valid = randomPersistenceSession()
         val serverLinks = with(authSessionEntity.serverLinks) {
             ServerConfig.Links(api, accounts, webSocket, blackList, teams, website, title)
         }
@@ -93,7 +104,7 @@ class SessionMapperTest {
 
         val acuteValue: AuthSession = with(authSessionEntity) {
             AuthSession(
-                AuthSession.Tokens(
+                AuthSession.Session.Valid(
                     userId = UserId(userId.value, userId.domain),
                     tokenType = tokenType,
                     accessToken = accessToken,
@@ -108,19 +119,26 @@ class SessionMapperTest {
         verify(idMapper).invocation { fromDaoModel(authSessionEntity.userId) }.wasInvoked(exactly = once)
     }
 
-
     private companion object {
         val randomString get() = Random.nextBytes(64).decodeToString()
         val userId = UserId("user_id", "user.domain.io")
-
         fun randomAuthSession(): AuthSession =
-            AuthSession(AuthSession.Tokens(userId, randomString, randomString, randomString), TEST_CONFIG.links)
+            AuthSession(AuthSession.Session.Valid(userId, randomString, randomString, randomString), TEST_CONFIG.links)
 
-        fun randomPersistenceSession(): AuthSessionEntity =
-            AuthSessionEntity(UserIDEntity(userId.value, userId.domain), randomString, randomString, randomString, TEST_ENTITY.links)
+        fun randomPersistenceSession(): AuthSessionEntity.Valid =
+            AuthSessionEntity.Valid(
+                UserIDEntity(userId.value, userId.domain),
+                randomString,
+                randomString,
+                randomString,
+                TEST_ENTITY.links,
+                TEST_SSO_ID_ENTITY
+            )
 
         val TEST_CONFIG: ServerConfig = newServerConfig(1)
 
         val TEST_ENTITY: ServerConfigEntity = newServerConfigEntity(1)
+        val TEST_SSO_ID = SsoId("scim_external", "subject", null)
+        val TEST_SSO_ID_ENTITY = SsoIdEntity("scim_external", "subject", null)
     }
 }

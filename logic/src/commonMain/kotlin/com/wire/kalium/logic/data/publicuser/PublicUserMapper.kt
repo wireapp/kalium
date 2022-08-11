@@ -1,10 +1,12 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
@@ -13,6 +15,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.network.api.user.details.UserProfileDTO
+import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
@@ -26,7 +29,7 @@ interface PublicUserMapper {
         userType: UserType
     ): OtherUser
 
-    //TODO:I think we are making too complicated parsers,
+    // TODO:I think we are making too complicated parsers,
     // maybe a good solution will be fetching self user when we are saving other users to db?
     fun fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
         userDetailResponse: UserProfileDTO,
@@ -50,12 +53,13 @@ class PublicUserMapperImpl(
         email = userEntity.email,
         phone = userEntity.phone,
         accentId = userEntity.accentId,
-        team = userEntity.team,
+        teamId = userEntity.team?.let { TeamId(it) },
         connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
         previewPicture = userEntity.previewAssetId?.let { idMapper.fromDaoModel(it) },
         completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
-        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userTypEntity)
+        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+        botService = userEntity.botService?.let { BotService(it.id, it.provider) }
     )
 
     override fun fromUserDetailResponseWithUsertype(
@@ -66,14 +70,15 @@ class PublicUserMapperImpl(
         name = userDetailResponse.name,
         handle = userDetailResponse.handle,
         accentId = userDetailResponse.accentId,
-        team = userDetailResponse.teamId,
+        teamId = userDetailResponse.teamId?.let { TeamId(it) },
         connectionStatus = ConnectionState.NOT_CONNECTED,
         previewPicture = userDetailResponse.assets.getPreviewAssetOrNull()
             ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
         completePicture = userDetailResponse.assets.getCompleteAssetOrNull()
             ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
         availabilityStatus = UserAvailabilityStatus.NONE,
-        userType = userType
+        userType = userType,
+        botService = userDetailResponse.service?.let { BotService(it.id, it.provider) }
     )
 
     override fun fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
@@ -94,7 +99,8 @@ class PublicUserMapperImpl(
             ?.let { idMapper.toQualifiedAssetIdEntity(it.key, userDetailResponse.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userTypEntity = userTypeEntity
+        userType = userTypeEntity,
+        botService = userDetailResponse.service?.let { BotEntity(it.id, it.provider) },
     )
 
 }

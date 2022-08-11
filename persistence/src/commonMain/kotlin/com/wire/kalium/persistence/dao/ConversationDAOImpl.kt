@@ -10,28 +10,37 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlin.time.Duration
 import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
-    fun toModel(conversation: SQLDelightConversation): ConversationEntity {
-        return ConversationEntity(
-            conversation.qualified_id,
-            conversation.name,
-            conversation.type,
-            conversation.team_id,
-            protocolInfo = when (conversation.protocol) {
+    fun toModel(conversation: SQLDelightConversation): ConversationEntity = with(conversation) {
+        ConversationEntity(
+            qualified_id,
+            name,
+            type,
+            team_id,
+            protocolInfo = when (protocol) {
                 ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
-                    conversation.mls_group_id ?: "",
-                    conversation.mls_group_state
+                    mls_group_id ?: "",
+                    mls_group_state,
+                    mls_epoch.toULong(),
+                    Instant.fromEpochSeconds(mls_last_keying_material_update)
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
-            mutedStatus = conversation.muted_status,
-            mutedTime = conversation.muted_time,
-            lastNotificationDate = conversation.last_notified_message_date,
-            lastModifiedDate = conversation.last_modified_date
+            mutedStatus = muted_status,
+            mutedTime = muted_time,
+            creatorId = creator_id,
+            lastNotificationDate = last_notified_message_date,
+            lastModifiedDate = last_modified_date,
+            lastReadDate = conversation.last_read_date,
+            access = access_list,
+            accessRole = access_role_list
         )
     }
 }
@@ -42,6 +51,9 @@ class MemberMapper {
     }
 }
 
+private const val MLS_DEFAULT_EPOCH = 0L
+private const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
+
 class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
     private val userQueries: UsersQueries,
@@ -51,7 +63,9 @@ class ConversationDAOImpl(
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
 
-    override suspend fun getSelfConversationId() = getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
+    // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
+    override suspend fun getSelfConversationId() =
+        getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         nonSuspendingInsertConversation(conversationEntity)
@@ -67,19 +81,33 @@ class ConversationDAOImpl(
     }
 
     private fun nonSuspendingInsertConversation(conversationEntity: ConversationEntity) {
-        conversationQueries.insertConversation(
-            conversationEntity.id,
-            conversationEntity.name,
-            conversationEntity.type,
-            conversationEntity.teamId,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupId else null,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) conversationEntity.protocolInfo.groupState else ConversationEntity.GroupState.ESTABLISHED,
-            if (conversationEntity.protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS else ConversationEntity.Protocol.PROTEUS,
-            conversationEntity.mutedStatus,
-            conversationEntity.mutedTime,
-            conversationEntity.lastModifiedDate,
-            conversationEntity.lastNotificationDate
-        )
+        with(conversationEntity) {
+            conversationQueries.insertConversation(
+                id,
+                name,
+                type,
+                teamId,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId
+                else null,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupState
+                else ConversationEntity.GroupState.ESTABLISHED,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.epoch.toLong()
+                else MLS_DEFAULT_EPOCH,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS
+                else ConversationEntity.Protocol.PROTEUS,
+                mutedStatus,
+                mutedTime,
+                removedBy,
+                creatorId,
+                lastModifiedDate,
+                lastNotificationDate,
+                access,
+                accessRole,
+                lastReadDate,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate.epochSeconds
+                else MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE,
+            )
+        }
     }
 
     override suspend fun updateConversation(conversationEntity: ConversationEntity) {
@@ -148,6 +176,11 @@ class ConversationDAOImpl(
     override suspend fun getConversationIdByGroupID(groupID: String) =
         conversationQueries.getConversationIdByGroupId(groupID).executeAsOne()
 
+    override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity> =
+        conversationQueries.selectByGroupState(groupState, ConversationEntity.Protocol.MLS)
+            .executeAsList()
+            .map(conversationMapper::toModel)
+
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) {
         conversationQueries.deleteConversation(qualifiedID)
     }
@@ -201,8 +234,14 @@ class ConversationDAOImpl(
         }
     }
 
+    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String) {
+        getConversationByGroupID(groupId).firstOrNull()?.let {
+            deleteMembersByQualifiedID(userIDList, it.id)
+        }
+    }
+
     override suspend fun getAllMembers(qualifiedID: QualifiedIDEntity): Flow<List<Member>> {
-        return memberQueries.selectAllMembersByConversation(qualifiedID)
+        return memberQueries.selectAllMembersByConversation(qualifiedID.value)
             .asFlow()
             .mapToList()
             .map { it.map(memberMapper::toModel) }
@@ -222,4 +261,36 @@ class ConversationDAOImpl(
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
     }
+
+    override suspend fun updateAccess(
+        conversationID: QualifiedIDEntity,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>
+    ) {
+        conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
+    }
+
+    override suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long =
+        conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
+
+    override suspend fun getUnreadConversationCount(): Long =
+        conversationQueries.getUnreadConversationCount().executeAsOne()
+
+    override suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String) {
+        conversationQueries.updateConversationReadDate(date, conversationID)
+    }
+
+    override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
+        memberQueries.updateMemberRole(role, userId, conversationId)
+
+    override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
+        conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)
+    }
+
+    override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> =
+        conversationQueries.selectByKeyingMaterialUpdate(
+            ConversationEntity.GroupState.ESTABLISHED,
+            ConversationEntity.Protocol.MLS,
+            Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
+        ).executeAsList()
 }

@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.publicuser
 
-import com.wire.kalium.logic.data.publicuser.model.OtherUser
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.flow.Flow

@@ -6,6 +6,7 @@
 
 ### Dependencies
 
+- JDK 11 (ex: openjdk-11-jdk on Ubuntu)
 - [libsodium](https://github.com/jedisct1/libsodium)
 - [cryptobox-c](https://github.com/wireapp/cryptobox-c)
 - [cryptobox4j](https://github.com/wireapp/cryptobox4j)
@@ -13,10 +14,16 @@
 
 #### Building on macOS 12
 
-Run `make`, then pass the libraries in `native/libs` and the location of `libsodium` to the VM options like so:
+Run
 
 ```
--Djava.library.path=/usr/local/lib/:/Users/tmpz/Code/Wire/kalium/native/libs
+make
+```
+
+then pass the location of the libraries in `native/libs` to the VM options like so:
+
+```
+-Djava.library.path=/Users/tmpz/Code/Wire/kalium/native/libs
 ```
 
 Note that the path needs to be adjusted for your machine.
@@ -53,15 +60,38 @@ The path is the same as the one you have passed to the VM options, adjusted for 
 
 #### Running the CLI
 
-With the native libs in the classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
+Note: Currently the CLI only works on the development or staging environments (see CL-61).
+
+Run the following with the native libs in the classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
+
+```
+./gradlew :cli:assemble
+java -jar cli/build/libs/cli.jar login
+```
+
+or if you want the jar file deleted after your run:
 
 ```
 ./gradlew :cli:run --args="login"
 ```
 
+#### Detekt rules
+
+We use and try to maintain our codestyle uniformed, so apart from having our checks in place in our
+CI. You can have live feedback using the IDE, here is how:
+
+1. IntelliJ -> Settings -> Plugins -> Marketplace -> Search and install "Detekt"
+2. Settings -> Tools -> Detekt -> set: (replace $PROJECT_ROOT accordingly to your machine)
+
+    - Configuration Files: $PROJECT_ROOT/detekt/detekt.yml
+    - Baseline File: $PROJECT_ROOT/detekt/baseline.yml (optional)
+    - Plugin Jars: $PROJECT_ROOT/detekt-rules/build/libs/detekt-rules.jar (this will add our custom
+      rules to provide live feedback)
+
 or
 
+You can run locally in your terminal:
+
 ```
-./gradlew assemble
-java -jar cli/build/libs/cli.jar login
+./gradlew clean detekt
 ```

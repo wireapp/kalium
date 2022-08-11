@@ -1,14 +1,17 @@
 JAVA_HOME := $(shell /usr/libexec/java_home)
 CRYPTOBOX_C_VERSION := "v1.1.3"
+CRYPTOBOX4J_VERSION := "1.1.1"
 LIBSODIUM_VERSION := "1.0.18-RELEASE"
 LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.dylib
 LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.dylib
+LIBSODIUM_ARTIFACT_FILE := libsodium.dylib
 
 all: install-rust prepare-native cryptobox-c libsodium cryptobox4j copy-all-libs
 
 .PHONY: install-rust
 install-rust:
-	brew install rust
+	@curl https://sh.rustup.rs -sSf | sh -s -- -y
+	@source "${HOME}/.cargo/env"
 
 .PHONY: clean-native
 clean-native:
@@ -35,7 +38,9 @@ cryptobox4j-clone:
 	@echo "Cloning and building cryptobox4j"
 	cd native && \
 	rm -rf cryptobox4j  && \
-	git clone https://github.com/wireapp/cryptobox4j.git
+	git clone https://github.com/wireapp/cryptobox4j.git && \
+	cd cryptobox4j && \
+	git checkout ${CRYPTOBOX4J_VERSION}
 
 libsodium:
 	@echo "Getting libsodium"
@@ -45,7 +50,7 @@ libsodium:
 	cd libsodium && \
 	git checkout ${LIBSODIUM_VERSION} && \
 	./configure && \
-	make && make install
+	make
 
 cryptobox4j: cryptobox4j-clone cryptobox4j-compile
 
@@ -70,4 +75,5 @@ cryptobox4j-compile: cryptobox4j-clone
 copy-all-libs:
 	cd native && \
 	cp cryptobox4j/build/lib/${LIBCRYPTOBOX_JNI_ARTIFACT_FILE} libs/ && \
-	cp cryptobox-c/target/release/${LIBCRYPTOBOX_ARTIFACT_FILE} libs/
+	cp cryptobox-c/target/release/${LIBCRYPTOBOX_ARTIFACT_FILE} libs/ && \
+	cp libsodium/src/libsodium/.libs/${LIBSODIUM_ARTIFACT_FILE} libs/

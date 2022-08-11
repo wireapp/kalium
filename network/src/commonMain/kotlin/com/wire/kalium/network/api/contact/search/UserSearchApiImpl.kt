@@ -12,11 +12,12 @@ class UserSearchApiImpl internal constructor(private val authenticatedNetworkCli
 
     override suspend fun search(userSearchRequest: UserSearchRequest): NetworkResponse<UserSearchResponse> =
         wrapKaliumResponse {
-            httpClient.get("/$PATH_CONTACT_SEARCH") {
+            httpClient.get(PATH_CONTACT_SEARCH) {
                 with(userSearchRequest) {
                     parameter(QUERY_KEY_SEARCH_QUERY, searchQuery)
-
-                    parameter(QUERY_KEY_DOMAIN, domain)
+                    if(domain.isNotBlank()) {
+                        parameter(QUERY_KEY_DOMAIN, domain)
+                    }
                     maxResultSize?.let { parameter(QUERY_KEY_SIZE, it) }
                 }
             }
@@ -24,7 +25,6 @@ class UserSearchApiImpl internal constructor(private val authenticatedNetworkCli
 
     private companion object {
         const val PATH_CONTACT_SEARCH = "search/contacts"
-
         const val QUERY_KEY_SEARCH_QUERY = "q"
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_DOMAIN = "domain"

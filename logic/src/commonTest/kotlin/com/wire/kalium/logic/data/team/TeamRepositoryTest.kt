@@ -2,7 +2,9 @@ package com.wire.kalium.logic.data.team
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -23,6 +25,7 @@ import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -62,7 +65,11 @@ class TeamRepositoryTest {
     @BeforeTest
     fun setUp() {
         teamRepository = TeamDataSource(
-            teamDAO = teamDAO, teamMapper = teamMapper, teamsApi = teamsApi, userDAO = userDAO, userMapper = userMapper
+            teamDAO = teamDAO,
+            teamMapper = teamMapper,
+            teamsApi = teamsApi,
+            userDAO = userDAO,
+            userMapper = userMapper,
         )
     }
 
@@ -83,9 +90,7 @@ class TeamRepositoryTest {
             .whenInvokedWith(oneOf("teamId"))
             .then { NetworkResponse.Success(value = teamDto, headers = mapOf(), httpCode = 200) }
 
-        val teamEntity = TeamEntity(
-            id = "teamId", name = "teamName"
-        )
+        val teamEntity = TeamEntity(id = "teamId", name = "teamName")
 
         given(teamMapper)
             .function(teamMapper::fromDtoToEntity)
@@ -99,7 +104,7 @@ class TeamRepositoryTest {
 
         teamMapper.fromDaoModelToTeam(teamEntity)
 
-        val result = teamRepository.fetchTeamById(teamId = "teamId")
+        val result = teamRepository.fetchTeamById(teamId = TeamId("teamId"))
 
         // Verifies that teamDAO insertTeam was called with the correct mapped values
         verify(teamDAO)
@@ -107,10 +112,9 @@ class TeamRepositoryTest {
             .with(oneOf(teamEntity))
             .wasInvoked(exactly = once)
 
-
         // Verifies that when fetching team by id, it succeeded
-        result.shouldSucceed{ returnTeam ->
-            assertEquals(team,returnTeam)
+        result.shouldSucceed { returnTeam ->
+            assertEquals(team, returnTeam)
         }
     }
 
@@ -121,7 +125,7 @@ class TeamRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
-        val result = teamRepository.fetchTeamById(teamId = "teamId")
+        val result = teamRepository.fetchTeamById(teamId = TeamId("teamId"))
 
         result.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
@@ -141,11 +145,6 @@ class TeamRepositoryTest {
             )
         )
 
-        given(teamsApi)
-            .suspendFunction(teamsApi::getTeamMembers)
-            .whenInvokedWith(oneOf("teamId"), oneOf(null))
-            .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
-
         val mappedTeamMember = UserEntity(
             id = QualifiedIDEntity(
                 value = "teamMember1",
@@ -160,19 +159,24 @@ class TeamRepositoryTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userTypEntity = UserTypeEntity.EXTERNAL
+            userType = UserTypeEntity.EXTERNAL,
+            botService = null
         )
 
-        given(userMapper)
-            .function(userMapper::fromTeamMemberToDaoModel)
-            .whenInvokedWith(oneOf("teamId"), oneOf(teamMember), oneOf("userDomain"))
-            .thenReturn(mappedTeamMember)
+        given(teamsApi)
+            .suspendFunction(teamsApi::getTeamMembers)
+            .whenInvokedWith(oneOf("teamId"), oneOf(null))
+            .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
 
-        val result = teamRepository.fetchMembersByTeamId(teamId = "teamId", userDomain = "userDomain")
+        given(userMapper)
+            .invocation { userMapper.fromTeamMemberToDaoModel(teamId = TeamId("teamId"), teamMember, "userDomain", null) }
+            .then { mappedTeamMember }
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
 
         // Verifies that userDAO insertUsers was called with the correct mapped values
         verify(userDAO)
-            .suspendFunction(userDAO::upsertTeamMembers)
+            .suspendFunction(userDAO::upsertTeamMembersTypes)
             .with(oneOf(listOf(mappedTeamMember)))
             .wasInvoked(exactly = once)
 
@@ -187,7 +191,7 @@ class TeamRepositoryTest {
             .whenInvokedWith(any(), anything())
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
-        val result = teamRepository.fetchMembersByTeamId(teamId = "teamId", userDomain = "userDomain")
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
 
         result.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
@@ -208,7 +212,7 @@ class TeamRepositoryTest {
             .whenInvokedWith(oneOf(teamEntity))
             .then { team }
 
-        teamRepository.getTeam(teamId = "teamId").test {
+        teamRepository.getTeam(teamId = TeamId("teamId")).test {
             assertEquals(team, awaitItem())
             awaitComplete()
         }
@@ -221,9 +225,41 @@ class TeamRepositoryTest {
             .whenInvokedWith(oneOf("teamId"))
             .then { flowOf(null) }
 
-        teamRepository.getTeam(teamId = "teamId").test {
+        teamRepository.getTeam(teamId = TeamId("teamId")).test {
             assertEquals(null, awaitItem())
             awaitComplete()
         }
+    }
+
+    @Test
+    fun givenAConversationId_whenDeletingATeamConversation_thenShouldCallToApiLayerSucceed() = runTest {
+        given(teamsApi)
+            .suspendFunction(teamsApi::deleteConversation)
+            .whenInvokedWith(any(), any())
+            .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
+
+        val result = teamRepository.deleteConversation(TestConversation.ID, "aTeamId")
+
+        result.shouldSucceed()
+        verify(teamsApi)
+            .suspendFunction(teamsApi::deleteConversation)
+            .with(eq("valueConvo"), eq("aTeamId"))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConversationId_whenDeletingATeamConversationAndErrorFromApi_thenShouldFail() = runTest {
+        given(teamsApi)
+            .suspendFunction(teamsApi::deleteConversation)
+            .whenInvokedWith(any(), any())
+            .thenReturn(NetworkResponse.Error(KaliumException.GenericError(RuntimeException("Some error happened"))))
+
+        val result = teamRepository.deleteConversation(TestConversation.ID, "aTeamId")
+
+        result.shouldFail()
+        verify(teamsApi)
+            .suspendFunction(teamsApi::deleteConversation)
+            .with(eq("valueConvo"), eq("aTeamId"))
+            .wasInvoked(once)
     }
 }

@@ -13,7 +13,7 @@ class GetOrCreateOneToOneConversationUseCase(
 
     suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
         // TODO: filter out self user from the list (just in case of client bug that leads to self user to be included part of the list)
-        return conversationRepository.getOneToOneConversationDetailsByUserId(otherUserId)
+        return conversationRepository.getOneToOneConversationWithOtherUser(otherUserId)
             .fold({ conversationFailure ->
                 if (conversationFailure is StorageFailure.DataNotFound) {
                     conversationRepository.createGroupConversation(usersList = listOf(otherUserId))
@@ -24,8 +24,8 @@ class GetOrCreateOneToOneConversationUseCase(
                 } else {
                     CreateConversationResult.Failure(conversationFailure)
                 }
-            }, { conversationDetails ->
-                CreateConversationResult.Success(conversationDetails.conversation)
+            }, { conversation ->
+                CreateConversationResult.Success(conversation)
             })
     }
 

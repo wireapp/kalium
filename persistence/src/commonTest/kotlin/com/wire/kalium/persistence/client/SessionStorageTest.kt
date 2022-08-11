@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.model.AuthSessionEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.utils.stubs.newServerConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -19,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SessionDAOTest {
+class SessionStorageTest {
 
     private val settings: Settings = MockSettings()
 
@@ -39,46 +40,49 @@ class SessionDAOTest {
     @Test
     fun givenASession_WhenCallingAddSession_ThenTheSessionCanBeStoredLocally() = runTest {
         val authSessionEntity =
-            AuthSessionEntity(
+            AuthSessionEntity.Valid(
                 QualifiedIDEntity("user_id_1", "user_domain_1"),
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG.links
+                TEST_SERVER_CONFIG.links,
+                TEST_SSO_ID_ENTITY
             )
         val sessionsMap = mapOf(authSessionEntity.userId to authSessionEntity)
-        sessionStorage.addSession(authSessionEntity)
+        sessionStorage.addOrReplaceSession(authSessionEntity)
 
         assertEquals(sessionsMap, sessionStorage.allSessions())
     }
 
     @Test
     fun givenAnExistingSession_WhenCallingDeleteSession_ThenItWillBeRemoved() = runTest {
-        val session1 = AuthSessionEntity(
+        val session1 = AuthSessionEntity.Valid(
             QualifiedIDEntity("user_id_1", "user_domain_1"),
             "JWT",
             Random.nextBytes(32).decodeToString(),
             Random.nextBytes(32).decodeToString(),
-            TEST_SERVER_CONFIG.links
+            TEST_SERVER_CONFIG.links,
+            TEST_SSO_ID_ENTITY
         )
         val sessionToDelete =
-            AuthSessionEntity(
+            AuthSessionEntity.Valid(
                 QualifiedIDEntity("user_id_2", "user_domain_2"),
                 "JWT",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG.links
+                TEST_SERVER_CONFIG.links,
+                TEST_SSO_ID_ENTITY
             )
 
         val sessionsMapExpectedValue =
-                mapOf(
-                    session1.userId to session1,
-                    sessionToDelete.userId to sessionToDelete
+            mapOf(
+                session1.userId to session1,
+                sessionToDelete.userId to sessionToDelete
             )
         val afterDeleteExpectedValue = mapOf(session1.userId to session1)
 
-        sessionStorage.addSession(session1)
-        sessionStorage.addSession(sessionToDelete)
+        sessionStorage.addOrReplaceSession(session1)
+        sessionStorage.addOrReplaceSession(sessionToDelete)
 
         assertEquals(sessionsMapExpectedValue, sessionStorage.allSessions())
         // delete session
@@ -93,25 +97,27 @@ class SessionDAOTest {
             assertNull(awaitItem())
         }
         val session1 =
-            AuthSessionEntity(
+            AuthSessionEntity.Valid(
                 QualifiedIDEntity("user_id_1", "user_domain_1"),
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG.links
+                TEST_SERVER_CONFIG.links,
+                TEST_SSO_ID_ENTITY
             )
 
         val session2 =
-            AuthSessionEntity(
+            AuthSessionEntity.Valid(
                 QualifiedIDEntity("user_id_2", "user_domain_2"),
                 "Bearer",
                 Random.nextBytes(32).decodeToString(),
                 Random.nextBytes(32).decodeToString(),
-                TEST_SERVER_CONFIG.links
+                TEST_SERVER_CONFIG.links,
+                TEST_SSO_ID_ENTITY
             )
 
-        sessionStorage.addSession(session1)
-        sessionStorage.addSession(session2)
+        sessionStorage.addOrReplaceSession(session1)
+        sessionStorage.addOrReplaceSession(session2)
 
         sessionStorage.setCurrentSession(QualifiedIDEntity("user_id_1", "user_domain_1"))
 
@@ -123,6 +129,7 @@ class SessionDAOTest {
 
     private companion object {
         val TEST_SERVER_CONFIG: ServerConfigEntity = newServerConfig(1)
+        val TEST_SSO_ID_ENTITY = SsoIdEntity(null, null, null)
     }
 
 }

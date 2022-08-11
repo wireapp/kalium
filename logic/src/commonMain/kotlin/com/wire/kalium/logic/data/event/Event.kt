@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
+import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
@@ -15,6 +17,13 @@ sealed class Event(open val id: String) {
         id: String,
         open val conversationId: ConversationId
     ) : Event(id) {
+        data class AccessUpdate(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val data: ConversationResponse,
+            val qualifiedFrom: UserId,
+        ) : Conversation(id, conversationId)
+
         data class NewMessage(
             override val id: String,
             override val conversationId: ConversationId,
@@ -50,7 +59,7 @@ sealed class Event(open val id: String) {
 
         data class MemberLeave(
             override val id: String,
-             override val conversationId: ConversationId,
+            override val conversationId: ConversationId,
             val removedBy: UserId,
             val removedList: List<UserId>,
             val timestampIso: String
@@ -64,7 +73,30 @@ sealed class Event(open val id: String) {
             val timestampIso: String = Clock.System.now().toString()
         ) : Conversation(id, conversationId)
 
+        data class DeletedConversation(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val senderUserId: UserId,
+            val timestampIso: String,
+        ) : Conversation(id, conversationId)
+    }
 
+    sealed class FeatureConfig(
+        id: String,
+    ) : Event(id) {
+        data class FileSharingUpdated(
+            override val id: String,
+            val model: ConfigsStatusModel
+        ) : FeatureConfig(id)
+
+        data class MLSUpdated(
+            override val id: String,
+            val model: MLSModel
+        ) : FeatureConfig(id)
+
+        data class UnknownFeatureUpdated(
+            override val id: String
+        ) : FeatureConfig(id)
     }
 
     sealed class User(
@@ -75,7 +107,10 @@ sealed class Event(open val id: String) {
             override val id: String,
             val connection: Connection
         ) : User(id)
+
+        data class ClientRemove(override val id: String, val clientId: ClientId) : User(id)
+        data class UserDelete(override val id: String, val userId: UserId) : User(id)
     }
 
-    data class Unknown(override val id: String): Event(id)
+    data class Unknown(override val id: String) : Event(id)
 }

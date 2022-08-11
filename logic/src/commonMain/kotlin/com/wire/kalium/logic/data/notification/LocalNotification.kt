@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.notification
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 
 /**
  * Kalium local data classes that contains all the necessary data for displaying Message Notifications,
@@ -17,9 +18,23 @@ sealed class LocalNotificationMessage(open val author: LocalNotificationMessageA
     data class Text(override val author: LocalNotificationMessageAuthor, override val time: String, val text: String) :
         LocalNotificationMessage(author, time)
 
-    //shared file, picture, reaction
-    data class Comment(override val author: LocalNotificationMessageAuthor, override val time: String, val type: LocalNotificationCommentType) :
-        LocalNotificationMessage(author, time)
+    // shared file, picture, reaction
+    data class Comment(
+        override val author: LocalNotificationMessageAuthor,
+        override val time: String,
+        val type: LocalNotificationCommentType
+    ) : LocalNotificationMessage(author, time)
+
+    data class ConnectionRequest(
+        override val author: LocalNotificationMessageAuthor,
+        override val time: String,
+        val authorId: QualifiedID
+    ) : LocalNotificationMessage(author, time)
+
+    data class ConversationDeleted(
+        override val author: LocalNotificationMessageAuthor,
+        override val time: String
+    ) : LocalNotificationMessage(author, time)
 }
 
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: String?)

@@ -4,12 +4,14 @@ import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
@@ -17,9 +19,12 @@ import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
+import com.wire.kalium.persistence.dao.ConversationAccessListAdapter
+import com.wire.kalium.persistence.dao.ConversationAccessRoleListAdapter
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MemberRoleAdapter
@@ -33,6 +38,8 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
+import com.wire.kalium.persistence.dao.call.CallDAO
+import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -61,6 +68,11 @@ actual class UserDatabaseProvider(private val storePath: File) {
 
         database = UserDatabase(
             driver,
+            Call.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter(),
+                statusAdapter = EnumColumnAdapter(),
+                conversation_typeAdapter = EnumColumnAdapter()
+            ),
             Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
             Connection.Adapter(
                 qualified_conversationAdapter = QualifiedIDAdapter(),
@@ -72,7 +84,10 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 typeAdapter = EnumColumnAdapter(),
                 mls_group_stateAdapter = EnumColumnAdapter(),
                 protocolAdapter = EnumColumnAdapter(),
-                muted_statusAdapter = EnumColumnAdapter()
+                muted_statusAdapter = EnumColumnAdapter(),
+                removed_byAdapter = QualifiedIDAdapter(),
+                access_listAdapter = ConversationAccessListAdapter(),
+                access_role_listAdapter = ConversationAccessRoleListAdapter()
             ),
             Member.Adapter(
                 userAdapter = QualifiedIDAdapter(),
@@ -91,6 +106,9 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter()
+            ),
+            MessageFailedToDecryptContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter()
             ),
             MessageMemberChangeContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter(),
@@ -117,7 +135,8 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
                 complete_asset_idAdapter = QualifiedIDAdapter(),
-                user_typeAdapter = EnumColumnAdapter()
+                user_typeAdapter = EnumColumnAdapter(),
+                bot_serviceAdapter = BotServiceAdapter()
             )
         )
     }
@@ -137,6 +156,9 @@ actual class UserDatabaseProvider(private val storePath: File) {
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
 
+    actual val callDAO: CallDAO
+        get() = CallDAOImpl(database.callsQueries)
+
     actual val messageDAO: MessageDAO
         get() = MessageDAOImpl(database.messagesQueries)
 
@@ -151,7 +173,6 @@ actual class UserDatabaseProvider(private val storePath: File) {
     }
 
     private companion object {
-        // FIXME: user id/domain as the db name
         const val DATABASE_NAME = "main.db"
     }
 }

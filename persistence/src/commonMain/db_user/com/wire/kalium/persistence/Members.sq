@@ -18,7 +18,12 @@ deleteMember:
 DELETE FROM Member WHERE conversation = ? AND user = ?;
 
 selectAllMembersByConversation:
-SELECT * FROM Member WHERE conversation = ?;
+SELECT * FROM Member WHERE conversation LIKE ('%' || :searchQuery || '%');
 
 selectAllConversationsByMember:
 SELECT * FROM Member WHERE user = ?;
+
+updateMemberRole:
+UPDATE Member
+SET role = ?
+WHERE user = ? AND conversation = ?;

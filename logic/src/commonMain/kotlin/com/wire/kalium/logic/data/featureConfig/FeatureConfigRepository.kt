@@ -19,6 +19,6 @@ class FeatureConfigDataSource(
     override suspend fun getFeatureConfigs(): Either<NetworkFailure, FeatureConfigModel> = wrapApiRequest {
         featureConfigApi.featureConfigs()
     }.map { featureConfigResponse ->
-        featureConfigMapper.fromFeatureConfigsDTO(featureConfigResponse)
+        featureConfigMapper.fromDTO(featureConfigResponse)
     }
 }

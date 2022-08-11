@@ -2,7 +2,8 @@ CREATE TABLE Asset (
     key TEXT NOT NULL,
     domain TEXT NOT NULL,
     mime_type TEXT,
-    raw_data BLOB NOT NULL,
+    data_path TEXT NOT NULL,
+    data_size INTEGER NOT NULL,
     downloaded_date INTEGER,
     PRIMARY KEY (key)
 );
@@ -14,12 +15,12 @@ deleteAsset:
 DELETE FROM Asset WHERE key = ?;
 
 insertAsset:
-INSERT OR IGNORE INTO Asset(key, domain, mime_type, raw_data, downloaded_date)
-VALUES(?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO Asset(key, domain, mime_type, data_path, data_size, downloaded_date)
+VALUES(?, ?, ?, ?, ?, ?);
 
 updateAsset:
 UPDATE Asset
-SET downloaded_date = ?, raw_data = ?,  mime_type = ?
+SET downloaded_date = ?, data_path = ?,  data_size = ?, mime_type = ?
 WHERE key = ?;
 
 selectByKey:

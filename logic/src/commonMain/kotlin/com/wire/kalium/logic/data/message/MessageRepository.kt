@@ -23,12 +23,21 @@ import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 interface MessageRepository {
+    /**
+     * this fun should never be used directly, use PersistMessageUseCase() instead
+     * @see PersistMessageUseCase
+     */
+    @DelicateKaliumApi(
+        message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",
+        replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
+    )
     suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
@@ -84,9 +93,10 @@ interface MessageRepository {
         oldMessageId: String,
         newMessageId: String
     ): Either<CoreFailure, Unit>
+
 }
 
-//TODO: suppress TooManyFunctions for now, something we need to fix in the future
+// TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
 class MessageDataSource(
     private val messageApi: MessageApi,
@@ -191,7 +201,7 @@ class MessageDataSource(
         }
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
-                //TODO(messaging): Handle other MessageOptions, native push, transient and priorities
+                // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap, true, MessagePriority.HIGH, false, envelope.dataBlob?.data,
@@ -201,8 +211,7 @@ class MessageDataSource(
             )
         }.fold({ networkFailure ->
             val failure = when {
-                networkFailure is NetworkFailure.ServerMiscommunication
-                        && networkFailure.rootCause is ProteusClientsChangedError -> {
+                (networkFailure is NetworkFailure.ServerMiscommunication && networkFailure.rootCause is ProteusClientsChangedError) -> {
                     sendMessageFailureMapper.fromDTO(networkFailure.rootCause as ProteusClientsChangedError)
                 }
 
@@ -255,4 +264,3 @@ class MessageDataSource(
         }
     }
 }
-
