@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao
 
-import app.cash.sqldelight.runtime.coroutines.asFlow
-import app.cash.sqldelight.runtime.coroutines.mapToList
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
 import com.wire.kalium.persistence.ConnectionsQueries
 import com.wire.kalium.persistence.ConversationsQueries

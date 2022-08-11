@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao.asset
 
-import app.cash.sqldelight.runtime.coroutines.asFlow
-import app.cash.sqldelight.runtime.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.AssetsQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

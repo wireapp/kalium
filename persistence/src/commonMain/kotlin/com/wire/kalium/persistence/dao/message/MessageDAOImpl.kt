@@ -1,9 +1,9 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.Query
-import app.cash.sqldelight.runtime.coroutines.asFlow
-import app.cash.sqldelight.runtime.coroutines.mapToList
-import app.cash.sqldelight.runtime.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity

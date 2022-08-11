@@ -1,9 +1,9 @@
 package com.wire.kalium.persistence.dao.call
 
-import app.cash.sqldelight.runtime.coroutines.asFlow
-import app.cash.sqldelight.runtime.coroutines.mapToList
-import app.cash.sqldelight.runtime.coroutines.mapToOne
-import app.cash.sqldelight.runtime.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOne
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.CallsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
