@@ -116,7 +116,6 @@ $dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper///PointingTo
 $dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper/OtrUserIdMapper/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-user-id-mapper/-otr-user-id-mapper.html
 $dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper/fromOtrUserId/#com.wire.kalium.protobuf.otr.UserId/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-user-id-mapper/from-otr-user-id.html
 $dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper/toOtrUserId/#kotlin.String/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-user-id-mapper/to-otr-user-id.html
-$dokka.location:com.wire.kalium.network//handleUnauthorizedResponse/okhttp3.Response#/PointingToDeclaration/network/com.wire.kalium.network/[jvm]handle-unauthorized-response.html
 module:calling
 com.wire.kalium.calling
 com.wire.kalium.calling.callbacks
