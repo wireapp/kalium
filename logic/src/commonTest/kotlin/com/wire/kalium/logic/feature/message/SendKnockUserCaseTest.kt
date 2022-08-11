@@ -4,6 +4,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -17,6 +19,8 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -44,7 +48,7 @@ class SendKnockUserCaseTest {
     private class Arrangement {
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        private val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
         private val userRepository = mock(classOf<UserRepository>())
@@ -53,9 +57,14 @@ class SendKnockUserCaseTest {
         private val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+
+        @Mock
+        private val messageSender = mock(classOf<MessageSender>())
 
         val someClientId = ClientId("some-client-id")
+
+        val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
         private fun fakeSelfUser() = SelfUser(
             UserId("some_id", "some_domain"),
@@ -84,6 +93,10 @@ class SendKnockUserCaseTest {
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(completeStateFlow)
             given(messageSender)
                 .suspendFunction(messageSender::sendPendingMessage)
                 .whenInvokedWith(any(), any())
@@ -95,6 +108,7 @@ class SendKnockUserCaseTest {
             persistMessage,
             userRepository,
             clientRepository,
+            slowSyncRepository,
             messageSender
         )
     }
