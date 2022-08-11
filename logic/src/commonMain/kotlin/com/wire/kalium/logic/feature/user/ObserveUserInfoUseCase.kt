@@ -9,13 +9,16 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMapRightWithEither
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.foldEither
 import com.wire.kalium.logic.functional.mapLeft
+import com.wire.kalium.logic.functional.mapRight
+import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.wrapStorageRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 /**
  * Use case that allows observing the user details of a user locally,
@@ -38,11 +41,11 @@ internal class ObserveUserInfoUseCaseImpl(
 
     override suspend fun invoke(userId: UserId): Flow<GetUserInfoResult> {
         return observeOtherUser(userId)
-            .foldEither({ GetUserInfoResult.Failure }) { otherUser ->
-                getOtherUserTeam(otherUser).fold(
-                    { GetUserInfoResult.Failure },
-                    { team -> GetUserInfoResult.Success(otherUser, team) })
+            .flatMapRightWithEither { otherUser ->
+                observeOtherUserTeam(otherUser)
+                    .mapRight { team -> GetUserInfoResult.Success(otherUser, team) }
             }
+            .mapToRightOr(GetUserInfoResult.Failure)
     }
 
     private suspend fun observeOtherUser(userId: UserId): Flow<Either<CoreFailure, OtherUser>> {
@@ -66,17 +69,17 @@ internal class ObserveUserInfoUseCaseImpl(
      * Users are allowed to fetch team details only if they are members of the same team
      * @see [UserType]
      */
-    private suspend fun getOtherUserTeam(otherUser: OtherUser): Either<CoreFailure, Team?> {
+    private suspend fun observeOtherUserTeam(otherUser: OtherUser): Flow<Either<CoreFailure, Team?>> {
         return if (otherUser.teamId != null && otherUser.userType == UserType.INTERNAL) {
-            val localTeam = teamRepository.getTeam(otherUser.teamId).firstOrNull()
-
-            if (localTeam == null) {
-                teamRepository.fetchTeamById(otherUser.teamId)
-            } else {
-                Either.Right(localTeam)
+            teamRepository.getTeam(otherUser.teamId).map { localTeam ->
+                if (localTeam == null) {
+                    teamRepository.fetchTeamById(otherUser.teamId)
+                } else {
+                    Either.Right(localTeam)
+                }
             }
         } else {
-            Either.Right(null)
+            flowOf(Either.Right(null))
         }
     }
 
