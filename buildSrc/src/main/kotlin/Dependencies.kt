@@ -15,7 +15,7 @@ object Versions {
     const val cryptoboxAndroid = "1.1.3"
     const val javaxCrypto = "1.1.0-alpha03"
     const val kover = "0.4.4"
-    const val ktor = "2.0.3"
+    const val ktor = "2.1.0"
     const val okio = "3.0.0"
     const val okHttp = "4.10.0"
     const val mockative = "1.1.4"
