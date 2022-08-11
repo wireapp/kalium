@@ -9,37 +9,41 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.flatMap
-import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 class UpdateConversationReadDateUseCase(
-    private val conversationRepository: ConversationRepository
-//     private val userRepository: UserRepository,
-//     private val messageSender: MessageSender
+    private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
+    private val messageSender: MessageSender,
+    private val clientRepository: ClientRepository
 ) {
 
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
         conversationRepository.updateConversationReadDate(conversationId, time.toString())
+        sendLastReadMessage(conversationId, time)
+    }
 
-//         val selfUser = userRepository.observeSelfUser().first()
-//         val generatedMessageUuid = uuid4().toString()
-//         clientRepository.currentClientId().flatMap { currentClientId ->
-//             val regularMessage = Message.Regular(
-//                 id = generatedMessageUuid,
-//                 content = MessageContent.LastRead(
-//                     messageId,
-//                     conversationId = conversationId.value,
-//                     qualifiedConversationId = idMapper.toProtoModel(conversationId)
-//                 ),
-//                 conversationId = conversationId,
-//                 date = Clock.System.now().toString(),
-//                 senderUserId = selfUser.id,
-//                 senderClientId = currentClientId,
-//                 status = Message.Status.PENDING,
-//                 editStatus = Message.EditStatus.NotEdited,
-//             )
-//             messageSender.sendMessage(regularMessage)
+    private suspend fun sendLastReadMessage(conversationId: QualifiedID, time: Instant) {
+        val generatedMessageUuid = uuid4().toString()
+
+        clientRepository.currentClientId().flatMap { currentClientId ->
+            val regularMessage = Message.Regular(
+                id = generatedMessageUuid,
+                content = MessageContent.LastRead(
+                    messageId = generatedMessageUuid,
+                    conversationId = conversationId.value,
+                    timeStamp = time.toEpochMilliseconds()
+                ),
+                conversationId = conversationId,
+                date = Clock.System.now().toString(),
+                senderUserId = userRepository.getSelfUserId(),
+                senderClientId = currentClientId,
+                status = Message.Status.PENDING,
+                editStatus = Message.EditStatus.NotEdited,
+            )
+            messageSender.sendMessage(regularMessage)
         }
+    }
 
 }
