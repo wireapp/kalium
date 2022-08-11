@@ -10,6 +10,7 @@ import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.MessageDelete
+import com.wire.kalium.protobuf.messages.LastRead
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.Text
@@ -51,7 +52,12 @@ class ProtoContentMapperImpl(
             )
             is MessageContent.Availability ->
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
-//             is MessageContent.LastRead -> GenericMessage.Content.LastRead(readableContent.)
+            is MessageContent.LastRead -> GenericMessage.Content.LastRead(
+                LastRead(
+                    conversationId = readableContent.conversationId,
+                    lastReadTimestamp = readableContent.timeStamp,
+                )
+            )
 
             else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
