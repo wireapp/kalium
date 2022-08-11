@@ -1,5 +1,7 @@
 package com.wire.kalium.testservice.managed
 
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
@@ -62,6 +64,7 @@ class InstanceService : Managed {
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
         log.info("Instance ${instanceId}: Creating ${instancePath}")
         val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
+        CoreLogger.setLoggingLevel(KaliumLogLevel.INFO)
 
         val serverConfig = if (instanceRequest.customBackend != null) {
             ServerConfig.Links(

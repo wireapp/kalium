@@ -1,8 +1,11 @@
 package com.wire.kalium.testservice.managed
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.feature.asset.SendAssetMessageResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.testservice.models.Instance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -41,7 +44,10 @@ class ConversationRepository {
                         text?.let {
                             log.info("Instance ${instance.instanceId}: Send text message '${text}'")
                             runBlocking {
-                                messages.sendTextMessage(conversationId, text)
+                                val sendResult = messages.sendTextMessage(conversationId, text)
+                                if (sendResult.isLeft()) {
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${sendResult.value}")
+                                }
                             }
                         }
                     }
@@ -90,7 +96,17 @@ class ConversationRepository {
                     instance.coreLogic.sessionScope(result.authSession.session.userId) {
                         log.info("Instance ${instance.instanceId}: Send file")
                         runBlocking {
-                            messages.sendAssetMessage(conversationId, temp.toOkioPath(), byteArray.size.toLong(), fileName, type, null, null)
+                            val sendResult = messages.sendAssetMessage(
+                                conversationId,
+                                temp.toOkioPath(),
+                                byteArray.size.toLong(),
+                                fileName, type,
+                                null,
+                                null
+                            )
+                            if (sendResult is SendAssetMessageResult.Failure) {
+                                throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${sendResult.coreFailure}")
+                            }
                         }
                     }
                 }
