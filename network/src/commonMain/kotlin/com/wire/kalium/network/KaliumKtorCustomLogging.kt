@@ -34,6 +34,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
 
 /**
  * A client's logging plugin.
@@ -122,7 +126,7 @@ public class KaliumKtorCustomLogging private constructor(
         kaliumLogger.v("BODY Content-Type: $contentType")
         kaliumLogger.v("BODY START")
         val message = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "[response body omitted]"
-        kaliumLogger.v(message)
+        obfuscateMessage(message)
         kaliumLogger.v("BODY END")
     }
 
@@ -160,7 +164,7 @@ public class KaliumKtorCustomLogging private constructor(
         GlobalScope.launch(Dispatchers.Unconfined) {
             val text = channel.tryReadText(charset) ?: "[request body omitted]"
             kaliumLogger.v("BODY START")
-            kaliumLogger.v(text)
+            obfuscateMessage(text)
             kaliumLogger.v("BODY END")
         }
 
@@ -238,6 +242,27 @@ public class KaliumKtorCustomLogging private constructor(
             ResponseObserver.install(ResponseObserver(observer), scope)
         }
     }
+}
+
+private fun obfuscateMessage(text: String) {
+    try {
+        val obj = Json.decodeFromString(text) as JsonElement
+        obj.jsonObject.entries.map {
+            when (it.key) {
+                "password" -> {
+                    kaliumLogger.v("${it.key} : ****")
+                }
+            }
+            if (it.key == "password") {
+                kaliumLogger.v(it.key + "****")
+            } else {
+                kaliumLogger.v("${it.key} : ${it.value.toString()}")
+            }
+        }
+
+    } catch (e: Exception) {
+    }
+
 }
 
 /**
