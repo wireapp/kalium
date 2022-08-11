@@ -9,6 +9,7 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
@@ -41,6 +42,7 @@ class ProtoContentMapperImpl(
             is MessageContent.Text -> GenericMessage.Content.Text(Text(content = readableContent.value))
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
+            is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
                 MessageHide(
@@ -131,7 +133,7 @@ class ProtoContentMapperImpl(
                 }
             }
 
-            is GenericMessage.Content.Knock -> MessageContent.Ignored
+            is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> MessageContent.Ignored
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> MessageContent.Ignored
