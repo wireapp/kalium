@@ -30,6 +30,7 @@ private class ConversationMapper {
                     mls_epoch.toULong(),
                     Instant.fromEpochSeconds(mls_last_keying_material_update)
                 )
+
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
             },
             mutedStatus = muted_status,
@@ -96,7 +97,6 @@ class ConversationDAOImpl(
                 else ConversationEntity.Protocol.PROTEUS,
                 mutedStatus,
                 mutedTime,
-                removedBy,
                 creatorId,
                 lastModifiedDate,
                 lastNotificationDate,
@@ -282,10 +282,6 @@ class ConversationDAOImpl(
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
 
-    override suspend fun updateRemovedBy(conversationId: QualifiedIDEntity, removedBy: UserIDEntity?) {
-        conversationQueries.updateConversationRemovedBy(removedBy, conversationId)
-    }
-
     override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
         conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)
     }
@@ -296,4 +292,8 @@ class ConversationDAOImpl(
             ConversationEntity.Protocol.MLS,
             Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
+
+    override suspend fun whoDeletedMeInConversation(conversationID: QualifiedIDEntity, selfUserIdString: String): UserIDEntity =
+        conversationQueries.whoDeletedMeInConversation(conversationID, selfUserIdString).executeAsOne().member_change_list.first()
+
 }

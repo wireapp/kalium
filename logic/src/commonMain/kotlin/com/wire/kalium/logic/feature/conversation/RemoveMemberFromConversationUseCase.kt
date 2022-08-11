@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
 interface RemoveMemberFromConversationUseCase {
 
@@ -31,12 +32,9 @@ class RemoveMemberFromConversationUseCaseImpl(
         return conversationRepository.deleteMember(userId, conversationId).fold({
             RemoveMemberFromConversationUseCase.Result.Failure(it)
         }, {
-            // Update the removedBy field in the remaining read-only conversation object
-            conversationRepository.updateRemovedBy(conversationId, userId).fold({
-                RemoveMemberFromConversationUseCase.Result.Failure(it)
-            }, {
-                RemoveMemberFromConversationUseCase.Result.Success
-            })
+            val whoRemovedMe = conversationRepository.whoDeletedMe(conversationId)
+            kaliumLogger.d("*** This user ID removed me -> $whoRemovedMe")
+            RemoveMemberFromConversationUseCase.Result.Success
         })
     }
 }
