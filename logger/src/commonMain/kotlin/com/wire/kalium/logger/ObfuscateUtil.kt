@@ -19,61 +19,61 @@ internal object ObfuscateUtil {
     private val clientIdExact by lazy { """[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}""".toRegex() }
 
     fun obfuscateLogMessage(message: String): String {
-        if (uuid.containsMatchIn(message)) {
-            return message.replace(uuidExact) { matchResult ->
-                matchResult.value.split("-")[0]
-            }
-        }
-
-        if (clientId.containsMatchIn(message)) {
-            return message.replace(clientIdExact) { matchResult ->
-                matchResult.value.take(4)
-            }
-        }
-
-        if (password.containsMatchIn(message)) {
-            return message.replace(passwordExact, "password:******")
-        }
-
-        // ipV4
-        if (ipV4.containsMatchIn(message)) {
-            var originalString: List<String>
-            return message.replace(ipV4Exact) { matchResult ->
-                originalString = matchResult.value.split(".")
-                originalString[2].toCharArray().forEachIndexed { index, _ ->
-                    originalString[2].toCharArray()[index] = 'x'
-                }
-                originalString[3].toCharArray().forEachIndexed { index, _ ->
-                    originalString[3].toCharArray()[index] = 'x'
-                }
-                originalString.toString()
-            }
-        }
-
-        // IP V6
-        if (ipV6.containsMatchIn(message)) {
-            var originalString: List<String>
-            return message.replace(ipV6Exact) { matchResult ->
-                originalString = matchResult.value.split(":")
-                originalString[3].toCharArray().forEachIndexed { index, _ ->
-                    originalString[3].toCharArray()[index] = 'x'
-                }
-                originalString[4].toCharArray().forEachIndexed { index, _ ->
-                    originalString[4].toCharArray()[index] = 'x'
-                }
-                originalString[5].toCharArray().forEachIndexed { index, _ ->
-                    originalString[5].toCharArray()[index] = 'x'
-                }
-
-                originalString[6].toCharArray().forEachIndexed { index, _ ->
-                    originalString[6].toCharArray()[index] = 'x'
-                }
-                originalString[7].toCharArray().forEachIndexed { index, _ ->
-                    originalString[7].toCharArray()[index] = 'x'
-                }
-                originalString.toString()
-            }
-        }
+//         if (uuid.containsMatchIn(message)) {
+//             return message.replace(uuidExact) { matchResult ->
+//                 matchResult.value.split("-")[0]
+//             }
+//         }
+//
+//         if (clientId.containsMatchIn(message)) {
+//             return message.replace(clientIdExact) { matchResult ->
+//                 matchResult.value.take(4)
+//             }
+//         }
+//
+//         if (password.containsMatchIn(message)) {
+//             return message.replace(passwordExact, "password:******")
+//         }
+//
+//         // ipV4
+//         if (ipV4.containsMatchIn(message)) {
+//             var originalString: List<String>
+//             return message.replace(ipV4Exact) { matchResult ->
+//                 originalString = matchResult.value.split(".")
+//                 originalString[2].toCharArray().forEachIndexed { index, _ ->
+//                     originalString[2].toCharArray()[index] = 'x'
+//                 }
+//                 originalString[3].toCharArray().forEachIndexed { index, _ ->
+//                     originalString[3].toCharArray()[index] = 'x'
+//                 }
+//                 originalString.toString()
+//             }
+//         }
+//
+//         // IP V6
+//         if (ipV6.containsMatchIn(message)) {
+//             var originalString: List<String>
+//             return message.replace(ipV6Exact) { matchResult ->
+//                 originalString = matchResult.value.split(":")
+//                 originalString[3].toCharArray().forEachIndexed { index, _ ->
+//                     originalString[3].toCharArray()[index] = 'x'
+//                 }
+//                 originalString[4].toCharArray().forEachIndexed { index, _ ->
+//                     originalString[4].toCharArray()[index] = 'x'
+//                 }
+//                 originalString[5].toCharArray().forEachIndexed { index, _ ->
+//                     originalString[5].toCharArray()[index] = 'x'
+//                 }
+//
+//                 originalString[6].toCharArray().forEachIndexed { index, _ ->
+//                     originalString[6].toCharArray()[index] = 'x'
+//                 }
+//                 originalString[7].toCharArray().forEachIndexed { index, _ ->
+//                     originalString[7].toCharArray()[index] = 'x'
+//                 }
+//                 originalString.toString()
+//             }
+//         }
 
         return message
     }
