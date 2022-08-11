@@ -113,6 +113,14 @@ class MessageScope(
             idMapper
         )
 
+    val sendKnock: SendKnockUseCase
+        get() = SendKnockUseCase(
+            persistMessage,
+            userRepository,
+            clientRepository,
+            messageSender
+        )
+
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
 
     val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase

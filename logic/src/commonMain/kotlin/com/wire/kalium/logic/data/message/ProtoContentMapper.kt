@@ -131,7 +131,7 @@ class ProtoContentMapperImpl(
                 }
             }
 
-            is GenericMessage.Content.Knock -> MessageContent.Ignored
+            is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> MessageContent.Ignored
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> MessageContent.Ignored
