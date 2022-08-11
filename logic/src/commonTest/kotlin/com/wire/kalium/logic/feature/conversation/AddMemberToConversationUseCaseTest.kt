@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -15,6 +15,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -102,7 +103,12 @@ class AddMemberToConversationUseCaseTest {
         companion object {
             const val mlsGroupId = "mlsGroupId"
             val proteusProtocolInfo = ProtocolInfo.Proteus
-            val mlsProtocolInfo = ProtocolInfo.MLS(mlsGroupId, groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED, 0UL)
+            val mlsProtocolInfo = ProtocolInfo.MLS(
+                mlsGroupId,
+                groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z")
+            )
 
         }
     }

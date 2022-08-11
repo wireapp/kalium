@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -94,6 +95,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,
             null,
+            PlainId("someValue"),
             null,
             null,
             lastReadDate = "2022-03-30T15:36:00.000Z",

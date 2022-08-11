@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -17,6 +18,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 interface ConversationMapper {
@@ -57,6 +59,7 @@ internal class ConversationMapperImpl(
         mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
         removedBy = null,
+        creatorId = apiModel.creator,
         lastReadDate = EPOCH_FIRST_DAY,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
@@ -77,6 +80,7 @@ internal class ConversationMapperImpl(
         protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
         mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(daoModel.mutedStatus),
         removedBy = daoModel.removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
+        creatorId = PlainId(daoModel.creatorId),
         lastReadDate = daoModel.lastReadDate,
         lastNotificationDate = daoModel.lastNotificationDate,
         lastModifiedDate = daoModel.lastModifiedDate,
@@ -170,7 +174,13 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(groupId ?: "", mlsGroupState ?: GroupState.PENDING_JOIN, epoch ?: 0UL)
+            ConvProtocol.MLS -> ProtocolInfo.MLS(
+                groupId ?: "",
+                mlsGroupState ?: GroupState.PENDING_JOIN,
+                epoch ?: 0UL,
+                keyingMaterialLastUpdate = Clock.System.now()
+            )
+
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }

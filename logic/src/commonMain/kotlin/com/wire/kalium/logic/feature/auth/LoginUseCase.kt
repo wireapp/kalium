@@ -23,6 +23,11 @@ sealed class AuthenticationResult {
 }
 
 interface LoginUseCase {
+    /**
+     * Login with user credentials and return the session
+     * Be noticed that session won't be stored locally, to store it
+     * @see AddAuthenticatedUserUseCase
+     */
     suspend operator fun invoke(
         userIdentifier: String,
         password: String,
