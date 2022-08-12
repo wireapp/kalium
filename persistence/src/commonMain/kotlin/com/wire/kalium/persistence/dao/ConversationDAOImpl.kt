@@ -284,16 +284,6 @@ class ConversationDAOImpl(
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
 
-    override suspend fun getMessageIdsByContentType(
-        conversationId: QualifiedIDEntity,
-        contentType: MessageEntity.ContentType
-    ): List<QualifiedIDEntity> =
-        conversationQueries.getConversationMessagesByContentType(conversationId, contentType)
-            .executeAsList()
-            .map {
-                QualifiedIDEntity(it.id, conversationId.domain)
-            }
-
     override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
         conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)
     }
