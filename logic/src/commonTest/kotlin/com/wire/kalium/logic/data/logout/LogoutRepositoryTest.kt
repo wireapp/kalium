@@ -45,6 +45,27 @@ class LogoutRepositoryTest {
         }
     }
 
+    @Test
+    fun givenFailureHappensOnLogoutReasonCollection_whenCollectingAgain_thenShouldEmitNewValues() = runTest {
+        val (_, logoutRepository) = Arrangement().arrange()
+
+        logoutRepository.onLogout(LogoutReason.DELETED_ACCOUNT)
+        try {
+            logoutRepository.observeLogout().collect { throw StackOverflowError() }
+        } catch (ignored: Throwable) {
+            // Ignored, really
+        }
+
+        logoutRepository.onLogout(LogoutReason.SELF_LOGOUT)
+        logoutRepository.observeLogout().test {
+            assertEquals(LogoutReason.SELF_LOGOUT, awaitItem())
+
+            logoutRepository.onLogout(LogoutReason.SESSION_EXPIRED)
+            assertEquals(LogoutReason.SESSION_EXPIRED, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private class Arrangement {
 
         @Mock
