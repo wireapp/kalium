@@ -99,7 +99,8 @@ interface ConversationRepository {
 
     suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId>
+    suspend fun isUserMember(conversationId: ConversationId, userId: UserId): Either<CoreFailure, Boolean>
+    suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -605,14 +606,21 @@ class ConversationDataSource(
         conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
 
-    override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId> = wrapStorageRequest {
-        val selfUserId = userRepository.observeSelfUser().first()
-        idMapper.fromDaoModel(
-            conversationDAO.whoDeletedMeInConversation(
-                idMapper.toDaoModel(conversationId),
-                idMapper.toStringDaoModel(selfUserId.id)
-            )
+    override suspend fun isUserMember(conversationId: ConversationId, userId: UserId): Either<CoreFailure, Boolean> = wrapStorageRequest {
+        conversationDAO.isUserMember(
+            idMapper.toDaoModel(conversationId),
+            idMapper.toDaoModel(userId)
         )
+    }
+
+    override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {
+        val selfUserId = userRepository.observeSelfUser().first()
+
+        conversationDAO.whoDeletedMeInConversation(
+            idMapper.toDaoModel(conversationId),
+            idMapper.toStringDaoModel(selfUserId.id)
+        )?.let { idMapper.fromDaoModel(it) }
+
     }
 
     companion object {

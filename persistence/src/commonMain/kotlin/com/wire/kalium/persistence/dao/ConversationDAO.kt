@@ -103,5 +103,6 @@ interface ConversationDAO {
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
     suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
-    suspend fun whoDeletedMeInConversation(conversationID: QualifiedIDEntity, selfUserIdString: String): UserIDEntity
+    suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean
+    suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
 }

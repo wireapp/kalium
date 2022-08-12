@@ -27,6 +27,3 @@ updateMemberRole:
 UPDATE Member
 SET role = ?
 WHERE user = ? AND conversation = ?;
-
-isUserMember:
-SELECT user FROM Member WHERE conversation = ? AND user = ?;

@@ -32,8 +32,6 @@ class RemoveMemberFromConversationUseCaseImpl(
         return conversationRepository.deleteMember(userId, conversationId).fold({
             RemoveMemberFromConversationUseCase.Result.Failure(it)
         }, {
-            val whoRemovedMe = conversationRepository.whoDeletedMe(conversationId)
-            kaliumLogger.d("*** This user ID removed me -> $whoRemovedMe")
             RemoveMemberFromConversationUseCase.Result.Success
         })
     }

@@ -293,7 +293,10 @@ class ConversationDAOImpl(
             Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
 
-    override suspend fun whoDeletedMeInConversation(conversationID: QualifiedIDEntity, selfUserIdString: String): UserIDEntity =
-        conversationQueries.whoDeletedMeInConversation(conversationID, selfUserIdString).executeAsOne().member_change_list.first()
+    override suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean =
+        conversationQueries.isUserMember(conversationId, userId).executeAsOneOrNull() != null
+
+    override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
+        conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
 
 }

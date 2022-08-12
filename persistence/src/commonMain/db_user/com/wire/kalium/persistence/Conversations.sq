@@ -111,5 +111,8 @@ UPDATE Conversation SET mls_last_keying_material_update= ? WHERE mls_group_id = 
 selectByKeyingMaterialUpdate:
 SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND mls_last_keying_material_update - ? <0 AND mls_group_id IS NOT NULL;
 
+isUserMember:
+SELECT user FROM Member WHERE conversation = ? AND user = ?;
+
 whoDeletedMeInConversation:
-SELECT * FROM MessageMemberChangeContent WHERE message_id = (SELECT id FROM Message WHERE conversation_id = ? AND content_type = "`MEMBER_CHANGE`" LIMIT 1) AND member_change_type = "`REMOVED`" AND member_change_list LIKE :self_user_id;
+SELECT sender_user_id FROM Message WHERE id = (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = ? AND member_change_type = "REMOVED" AND member_change_list LIKE :self_user_id LIMIT 1);
