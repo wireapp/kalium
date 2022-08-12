@@ -1,16 +1,5 @@
 $dokka.format:html-v1
 $dokka.linkExtension:html
-$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt///PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/index.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt/AESDecrypt/#com.wire.kalium.cryptography.utils.AES256Key/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/-a-e-s-decrypt.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt/decryptData/#com.wire.kalium.cryptography.utils.EncryptedData/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/decrypt-data.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt/decryptFile/#okio.Source#okio.Sink/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/decrypt-file.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESDecrypt/secretKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-decrypt/secret-key.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt///PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/index.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/AESEncrypt/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/-a-e-s-encrypt.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/encryptData/#com.wire.kalium.cryptography.utils.PlainData#com.wire.kalium.cryptography.utils.AES256Key/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/encrypt-data.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/encryptFile/#okio.Source#com.wire.kalium.cryptography.utils.AES256Key#okio.Sink/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/encrypt-file.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/generateRandomAES256Key/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/generate-random-a-e-s256-key.html
-$dokka.location:com.wire.kalium.cryptography.utils/AESEncrypt/sizeWithPaddingAndIV/#kotlin.Long/PointingToDeclaration/cryptography/com.wire.kalium.cryptography.utils/[jvm]-a-e-s-encrypt/size-with-padding-and-i-v.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/index.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion/toByteArray/#kotlin.collections.List[kotlin.UByte]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/to-byte-array.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion/toUByteList/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]-companion/to-u-byte-list.html
@@ -18,29 +7,16 @@ $dokka.location:com.wire.kalium.cryptography/MLSClientImpl.Companion/toUByteList
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/addMember/#kotlin.String#kotlin.collections.List[kotlin.Pair[com.wire.kalium.cryptography.CryptoQualifiedClientId,kotlin.ByteArray]]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]add-member.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/clearLocalFiles/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]clear-local-files.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/conversationExists/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]conversation-exists.html
-$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/coreCrypto/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]core-crypto.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/createConversation/#kotlin.String#kotlin.collections.List[kotlin.Pair[com.wire.kalium.cryptography.CryptoQualifiedClientId,kotlin.ByteArray]]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]create-conversation.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/decryptMessage/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]decrypt-message.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/encryptMessage/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]encrypt-message.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/generateKeyPackages/#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]generate-key-packages.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/getPublicKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]get-public-key.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/joinConversation/#kotlin.String#kotlin.ULong/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]join-conversation.html
-$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/keyRotationDuration/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]key-rotation-duration.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/processWelcomeMessage/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]process-welcome-message.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/removeMember/#kotlin.String#kotlin.collections.List[com.wire.kalium.cryptography.CryptoQualifiedClientId]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]remove-member.html
-$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/rootDir/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]root-dir.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/updateKeyingMaterial/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]update-keying-material.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion///PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]-companion/index.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toData/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[ios-x64]-companion/to-data.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toData/#platform.Foundation.NSData/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[ios-x64]-companion/to-data.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toException/#platform.Foundation.NSError/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[ios-x64]-companion/to-exception.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toPreKey/#com.wire.bots.cryptobox.PreKey/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]-companion/to-pre-key.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toPreKey/#com.wire.cryptobox.PreKey/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[android]-companion/to-pre-key.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toPreKey/#com.wire.kalium.cryptography.PreKeyCrypto/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]-companion/to-pre-key.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toPreKey/#com.wire.kalium.cryptography.externals.IdentityKey#com.wire.kalium.cryptography.externals.PreKey/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[js]-companion/to-pre-key.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toPreKey/#kotlin.Int#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[ios-x64]-companion/to-pre-key.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl.Companion/toSessionId/#com.wire.kalium.cryptography.CryptoSessionId/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[ios-x64]-companion/to-session-id.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/box/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]box.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/clearLocalFiles/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]clear-local-files.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/createSession/#com.wire.kalium.cryptography.PreKeyCrypto#com.wire.kalium.cryptography.CryptoSessionId/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]create-session.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/decrypt/#kotlin.ByteArray#com.wire.kalium.cryptography.CryptoSessionId/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]decrypt.html
@@ -52,14 +28,10 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/getLocalFingerpri
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newLastPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-last-pre-key.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-pre-keys.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/open/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]open.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/path/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]path.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/wrapException/#kotlin.Function0[TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]wrap-exception.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/copy/#okio.Path#okio.Path/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]copy.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/createDirectories/#okio.Path/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]create-directories.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/createDirectory/#okio.Path#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]create-directory.html
-$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/dataStoragePaths/#/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]data-storage-paths.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/delete/#okio.Path#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]delete.html
-$dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/dispatcher/#/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]dispatcher.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/exists/#okio.Path/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]exists.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/providePersistentAssetPath/#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]provide-persistent-asset-path.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/readByteArray/#okio.Path/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]read-byte-array.html
@@ -81,37 +53,20 @@ $dokka.location:com.wire.kalium.logic.feature.call/FlowManagerServiceImpl/setVid
 $dokka.location:com.wire.kalium.logic.feature.call/MediaManagerServiceImpl/observeSpeaker/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-media-manager-service-impl/[jvm]observe-speaker.html
 $dokka.location:com.wire.kalium.logic.feature.call/MediaManagerServiceImpl/turnLoudSpeakerOff/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-media-manager-service-impl/[jvm]turn-loud-speaker-off.html
 $dokka.location:com.wire.kalium.logic.feature.call/MediaManagerServiceImpl/turnLoudSpeakerOn/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/-media-manager-service-impl/[jvm]turn-loud-speaker-on.html
-$dokka.location:com.wire.kalium.logic.feature/UserSessionScope/clientConfig/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope/[jvm]client-config.html
-$dokka.location:com.wire.kalium.logic.sync/GlobalWorkSchedulerImpl/schedulePeriodicApiVersionUpdate/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-global-work-scheduler-impl/[jvm]schedule-periodic-api-version-update.html
-$dokka.location:com.wire.kalium.logic.sync/UserSessionWorkSchedulerImpl/scheduleSendingOfPendingMessages/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-user-session-work-scheduler-impl/[jvm]schedule-sending-of-pending-messages.html
-$dokka.location:com.wire.kalium.logic.sync/UserSessionWorkSchedulerImpl/userId/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-user-session-work-scheduler-impl/[jvm]user-id.html
 $dokka.location:com.wire.kalium.logic.util/PlatformView/view/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-platform-view/[jvm]view.html
-$dokka.location:com.wire.kalium.logic.util/SecureRandom/random/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-secure-random/[jvm]random.html
-$dokka.location:com.wire.kalium.logic/CoreLogic/getSessionRepo/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-repo.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
-$dokka.location:com.wire.kalium.logic/CoreLogic/globalCallManager/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]global-call-manager.html
-$dokka.location:com.wire.kalium.logic/CoreLogic/globalDatabase/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]global-database.html
-$dokka.location:com.wire.kalium.logic/CoreLogic/globalPreferences/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]global-preferences.html
-$dokka.location:com.wire.kalium.logic/CoreLogic/globalWorkScheduler/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]global-work-scheduler.html
-$dokka.location:com.wire.kalium.logic/CoreLogic/userSessionScopeProvider/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]user-session-scope-provider.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/index.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl/EnvelopeProtoMapperImpl/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/-envelope-proto-mapper-impl.html
 $dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl/encodeToProtobuf/#com.wire.kalium.network.api.message.MessageApi.Parameters.QualifiedDefaultParameters/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/encode-to-protobuf.html
-$dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl/otrClientEntryMapper/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/otr-client-entry-mapper.html
-$dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl/otrClientIdMapper/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/otr-client-id-mapper.html
-$dokka.location:com.wire.kalium.network.api.message/EnvelopeProtoMapperImpl/otrUserIdMapper/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-envelope-proto-mapper-impl/otr-user-id-mapper.html
 $dokka.location:com.wire.kalium.network.api.message/OtrClientEntryMapper///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-entry-mapper/index.html
 $dokka.location:com.wire.kalium.network.api.message/OtrClientEntryMapper/OtrClientEntryMapper/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-entry-mapper/-otr-client-entry-mapper.html
-$dokka.location:com.wire.kalium.network.api.message/OtrClientEntryMapper/clientIdMapper/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-entry-mapper/client-id-mapper.html
 $dokka.location:com.wire.kalium.network.api.message/OtrClientEntryMapper/toOtrClientEntry/#kotlin.collections.Map.Entry[kotlin.String,kotlin.ByteArray]/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-entry-mapper/to-otr-client-entry.html
 $dokka.location:com.wire.kalium.network.api.message/OtrClientIdMapper.Companion///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-id-mapper/-companion/index.html
-$dokka.location:com.wire.kalium.network.api.message/OtrClientIdMapper.Companion/CLIENT_ID_RADIX/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-id-mapper/-companion/-c-l-i-e-n-t_-i-d_-r-a-d-i-x.html
 $dokka.location:com.wire.kalium.network.api.message/OtrClientIdMapper///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-id-mapper/index.html
 $dokka.location:com.wire.kalium.network.api.message/OtrClientIdMapper/OtrClientIdMapper/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-id-mapper/-otr-client-id-mapper.html
 $dokka.location:com.wire.kalium.network.api.message/OtrClientIdMapper/fromOtrClientId/#com.wire.kalium.protobuf.otr.ClientId/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-id-mapper/from-otr-client-id.html
 $dokka.location:com.wire.kalium.network.api.message/OtrClientIdMapper/toOtrClientId/#kotlin.String/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-client-id-mapper/to-otr-client-id.html
 $dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper.Companion///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-user-id-mapper/-companion/index.html
-$dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper.Companion/USER_UID_BYTE_COUNT/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-user-id-mapper/-companion/-u-s-e-r_-u-i-d_-b-y-t-e_-c-o-u-n-t.html
 $dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper///PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-user-id-mapper/index.html
 $dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper/OtrUserIdMapper/#/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-user-id-mapper/-otr-user-id-mapper.html
 $dokka.location:com.wire.kalium.network.api.message/OtrUserIdMapper/fromOtrUserId/#com.wire.kalium.protobuf.otr.UserId/PointingToDeclaration/network/com.wire.kalium.network.api.message/[jvm]-otr-user-id-mapper/from-otr-user-id.html
@@ -173,7 +128,6 @@ com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
 com.wire.kalium.logic.feature.conversation.keyingmaterials
-com.wire.kalium.logic.feature.featureConfig
 com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.notificationToken
@@ -188,7 +142,6 @@ com.wire.kalium.logic.featureFlags
 com.wire.kalium.logic.functional
 com.wire.kalium.logic.network
 com.wire.kalium.logic.sync
-com.wire.kalium.logic.sync.full
 com.wire.kalium.logic.sync.incremental
 com.wire.kalium.logic.sync.periodic
 com.wire.kalium.logic.sync.receiver
