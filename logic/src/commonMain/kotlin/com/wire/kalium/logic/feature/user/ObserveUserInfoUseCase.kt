@@ -63,8 +63,7 @@ internal class ObserveUserInfoUseCaseImpl(
                     } else {
                         ObserveOtherUserResult(getKnownUserError = storageFailure)
                     }
-                })
-                { ObserveOtherUserResult(success = it) }
+                }) { ObserveOtherUserResult(success = it) }
             }
             .filter {
                 // false here means there was StorageFailure.DataNotFound during userRepository.getKnownUser,
