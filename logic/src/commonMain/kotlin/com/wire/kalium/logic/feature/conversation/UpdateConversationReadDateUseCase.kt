@@ -21,10 +21,10 @@ class UpdateConversationReadDateUseCase(
 
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
         conversationRepository.updateConversationReadDate(conversationId, time.toString())
-        sendLastReadMessage(conversationId, time)
+        sendLastReadMessageToOtherClients(conversationRepository.getSelfConversationId(), time)
     }
 
-    private suspend fun sendLastReadMessage(conversationId: QualifiedID, time: Instant) {
+    private suspend fun sendLastReadMessageToOtherClients(conversationId: QualifiedID, time: Instant) {
         val generatedMessageUuid = uuid4().toString()
 
         clientRepository.currentClientId().flatMap { currentClientId ->
