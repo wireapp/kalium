@@ -17,7 +17,7 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
-class SendTextMessageUseCase internal constructor(
+class SendKnockUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
@@ -25,7 +25,7 @@ class SendTextMessageUseCase internal constructor(
     private val messageSender: MessageSender
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> {
+    suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -37,7 +37,7 @@ class SendTextMessageUseCase internal constructor(
         return clientRepository.currentClientId().flatMap { currentClientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Text(text),
+                content = MessageContent.Knock(hotKnock),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
@@ -57,5 +57,4 @@ class SendTextMessageUseCase internal constructor(
             }
         }
     }
-
 }

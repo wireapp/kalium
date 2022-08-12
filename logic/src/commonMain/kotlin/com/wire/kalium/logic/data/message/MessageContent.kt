@@ -30,6 +30,8 @@ sealed class MessageContent {
         val qualifiedConversationId: QualifiedConversationId?
     ) : Regular()
 
+    data class Knock(val hotKnock: Boolean) : Regular()
+
     data class Unknown( // messages that aren't yet handled properly but stored in db in case
         val typeName: String? = null,
         val encodedData: ByteArray? = null,
