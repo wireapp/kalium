@@ -11,7 +11,6 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMapRightWithEither
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.wrapStorageRequest
@@ -51,18 +50,29 @@ internal class ObserveUserInfoUseCaseImpl(
     private suspend fun observeOtherUser(userId: UserId): Flow<Either<CoreFailure, OtherUser>> {
         return userRepository.getKnownUser(userId)
             .wrapStorageRequest()
-            .mapLeft { storageFailure ->
-                if (storageFailure is StorageFailure.DataNotFound) {
-                    userRepository.fetchUsersByIds(setOf(userId))
-                        .fold({ it }) { storageFailure }
-                } else {
-                    storageFailure
-                }
+            .map { either ->
+                // If UserRepository.getKnownUser returns StorageFailure.DataNotFound means there is no such user in DB
+                // so we need to fetch that user. After fetching and saving it into DB UserRepository.getKnownUser will emit a new value.
+                // To handle such a case and do not loos any other CoreFailure from UserRepository.getKnownUser,
+                // or from userRepository.fetchUsersByIds, we need to combine all of it into 1 data class and use later
+                // for outputting a valid result.
+                either.fold({ storageFailure ->
+                    if (storageFailure is StorageFailure.DataNotFound) {
+                        userRepository.fetchUsersByIds(setOf(userId))
+                            .fold({ ObserveOtherUserResult(fetchUserError = it) }) { ObserveOtherUserResult() }
+                    } else {
+                        ObserveOtherUserResult(getKnownUserError = storageFailure)
+                    }
+                })
+                { ObserveOtherUserResult(success = it) }
             }
-            .filter { either ->
-                // We don't want to pass DataNotFound Error forward, cause in that case we'll fetch data from API
-                either.fold({ it !is StorageFailure.DataNotFound }) { true }
+            .filter {
+                // false here means there was StorageFailure.DataNotFound during userRepository.getKnownUser,
+                // userRepository.fetchUsersByIds was called and returned Either.Right(Unit),
+                // which means user was saved into DB and userRepository.getKnownUser will emit it soon.
+                it.isValid()
             }
+            .map { it.toEither() }
     }
 
     /**
@@ -82,5 +92,20 @@ internal class ObserveUserInfoUseCaseImpl(
             flowOf(Either.Right(null))
         }
     }
+}
 
+data class ObserveOtherUserResult(
+    val getKnownUserError: CoreFailure? = null,
+    val fetchUserError: CoreFailure? = null,
+    val success: OtherUser? = null
+) {
+    fun isValid() = getKnownUserError != null || fetchUserError != null || success != null
+
+    fun toEither(): Either<CoreFailure, OtherUser> =
+        when {
+            success != null -> Either.Right(success)
+            getKnownUserError != null -> Either.Left(getKnownUserError)
+            fetchUserError != null -> Either.Left(fetchUserError)
+            else -> throw IllegalStateException("ObserveOtherUserResult.toEither: one of the fields should not be null.")
+        }
 }
