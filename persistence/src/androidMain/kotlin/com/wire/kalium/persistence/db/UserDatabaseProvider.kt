@@ -20,6 +20,7 @@ import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ContentTypeAdapter
@@ -102,6 +103,7 @@ actual class UserDatabaseProvider(
                 mls_group_stateAdapter = EnumColumnAdapter(),
                 protocolAdapter = EnumColumnAdapter(),
                 muted_statusAdapter = EnumColumnAdapter(),
+                removed_byAdapter = QualifiedIDAdapter(),
                 access_listAdapter = ConversationAccessListAdapter(),
                 access_role_listAdapter = ConversationAccessRoleListAdapter()
             ),
@@ -151,7 +153,8 @@ actual class UserDatabaseProvider(
                 user_availability_statusAdapter = EnumColumnAdapter(),
                 preview_asset_idAdapter = QualifiedIDAdapter(),
                 complete_asset_idAdapter = QualifiedIDAdapter(),
-                user_typeAdapter = EnumColumnAdapter()
+                user_typeAdapter = EnumColumnAdapter(),
+                bot_serviceAdapter = BotServiceAdapter()
             )
         )
     }

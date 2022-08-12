@@ -4,12 +4,16 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
-    data class Success(val userSession: AuthSession) : AuthenticationResult()
+    data class Success(
+        val userSession: AuthSession,
+        val ssoId: SsoId?
+    ) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
         object InvalidCredentials : Failure()
@@ -19,8 +23,15 @@ sealed class AuthenticationResult {
 }
 
 interface LoginUseCase {
+    /**
+     * Login with user credentials and return the session
+     * Be noticed that session won't be stored locally, to store it
+     * @see AddAuthenticatedUserUseCase
+     */
     suspend operator fun invoke(
-        userIdentifier: String, password: String, shouldPersistClient: Boolean
+        userIdentifier: String,
+        password: String,
+        shouldPersistClient: Boolean
     ): AuthenticationResult
 }
 
@@ -31,7 +42,9 @@ internal class LoginUseCaseImpl(
     private val serverLinks: ServerConfig.Links
 ) : LoginUseCase {
     override suspend operator fun invoke(
-        userIdentifier: String, password: String, shouldPersistClient: Boolean
+        userIdentifier: String,
+        password: String,
+        shouldPersistClient: Boolean
     ): AuthenticationResult {
         // remove White Spaces around userIdentifier
         val cleanUserIdentifier = userIdentifier.trim()
@@ -52,7 +65,7 @@ internal class LoginUseCaseImpl(
                 is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
             }
         }, {
-            AuthenticationResult.Success(AuthSession(it, serverLinks))
+            AuthenticationResult.Success(AuthSession(it.first, serverLinks), it.second)
         })
     }
 

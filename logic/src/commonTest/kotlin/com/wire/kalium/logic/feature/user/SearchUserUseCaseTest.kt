@@ -225,7 +225,8 @@ class SearchUserUseCaseTest {
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.NONE,
-                    userType = UserType.FEDERATED
+                    userType = UserType.FEDERATED,
+                    botService = null,
                 )
             }
         )

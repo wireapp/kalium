@@ -45,6 +45,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(Dependencies.Logging.kermit)
+                implementation(Dependencies.Kotlinx.dateTime)
             }
         }
         val androidTest by getting {

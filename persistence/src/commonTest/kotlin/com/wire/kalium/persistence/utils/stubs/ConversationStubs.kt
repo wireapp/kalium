@@ -4,25 +4,33 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 fun newConversationEntity(id: String = "test") = ConversationEntity(
-    QualifiedIDEntity(id, "wire.com"),
-    "conversation1",
-    ConversationEntity.Type.ONE_ON_ONE,
-    "teamID",
-    ConversationEntity.ProtocolInfo.Proteus,
+    id = QualifiedIDEntity(id, "wire.com"),
+    name = "conversation1",
+    type = ConversationEntity.Type.ONE_ON_ONE,
+    teamId = "teamID",
+    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+    creatorId = "someValue",
     lastNotificationDate = null,
     lastModifiedDate = "2022-03-30T15:36:00.000Z",
+    lastReadDate = "2000-01-01T12:00:00.000Z",
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
 )
 
-fun newConversationEntity(id: QualifiedIDEntity) = ConversationEntity(
-    id,
-    "conversation1",
-    ConversationEntity.Type.ONE_ON_ONE,
-    "teamID",
-    ConversationEntity.ProtocolInfo.Proteus,
+fun newConversationEntity(
+    id: QualifiedIDEntity,
+    lastReadDate: String = "",
+    lastModified: String = "2022-03-30T15:36:00.000Z"
+) = ConversationEntity(
+    id = id,
+    name = "conversation1",
+    type = ConversationEntity.Type.ONE_ON_ONE,
+    teamId = "teamID",
+    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+    creatorId = "someValue",
     lastNotificationDate = null,
-    lastModifiedDate = "2022-03-30T15:36:00.000Z",
+    lastReadDate = lastReadDate,
+    lastModifiedDate = lastModified,
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
 )

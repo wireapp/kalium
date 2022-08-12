@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
@@ -36,14 +37,14 @@ class AddAuthenticatedUserUseCaseTest {
         val session = TEST_SESSION
         given(sessionRepository).invocation { doesSessionExist(session.session.userId) }.then { Either.Right(false) }
 
-        given(sessionRepository).invocation { storeSession(session) }.then { Either.Right(Unit) }
+        given(sessionRepository).invocation { storeSession(session, TEST_SSO_ID) }.then { Either.Right(Unit) }
         given(sessionRepository).invocation { updateCurrentSession(session.session.userId) }.then { Either.Right(Unit) }
 
-        val actual = addAuthenticatedUserUseCase(session, false)
+        val actual = addAuthenticatedUserUseCase(session, TEST_SSO_ID, false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
-        verify(sessionRepository).invocation { storeSession(session) }.wasInvoked(exactly = once)
+        verify(sessionRepository).invocation { storeSession(session, TEST_SSO_ID) }.wasInvoked(exactly = once)
         verify(sessionRepository).invocation { updateCurrentSession(session.session.userId) }.wasInvoked(exactly = once)
     }
 
@@ -53,11 +54,11 @@ class AddAuthenticatedUserUseCaseTest {
         given(sessionRepository).invocation { doesSessionExist(session.session.userId) }.then { Either.Right(true) }
         given(sessionRepository).invocation { userSession(session.session.userId) }.then { Either.Left(StorageFailure.DataNotFound) }
 
-        val actual = addAuthenticatedUserUseCase(session, false)
+        val actual = addAuthenticatedUserUseCase(session, TEST_SSO_ID, false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
-        verify(sessionRepository).function(sessionRepository::storeSession).with(any()).wasNotInvoked()
+        verify(sessionRepository).function(sessionRepository::storeSession).with(any(), any()).wasNotInvoked()
         verify(sessionRepository).function(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
     }
 
@@ -68,14 +69,14 @@ class AddAuthenticatedUserUseCaseTest {
         val newSession = TEST_SESSION
         given(sessionRepository).invocation { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
         given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
-        given(sessionRepository).invocation { storeSession(newSession) }.then { Either.Right(Unit) }
+        given(sessionRepository).invocation { storeSession(newSession, TEST_SSO_ID) }.then { Either.Right(Unit) }
         given(sessionRepository).invocation { updateCurrentSession(newSession.session.userId) }.then { Either.Right(Unit) }
 
-        val actual = addAuthenticatedUserUseCase(newSession, true)
+        val actual = addAuthenticatedUserUseCase(newSession, TEST_SSO_ID, true)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
-        verify(sessionRepository).invocation { storeSession(newSession) }.wasInvoked(exactly = once)
+        verify(sessionRepository).invocation { storeSession(newSession, TEST_SSO_ID) }.wasInvoked(exactly = once)
         verify(sessionRepository).invocation { updateCurrentSession(newSession.session.userId) }.wasInvoked(exactly = once)
     }
 
@@ -89,11 +90,11 @@ class AddAuthenticatedUserUseCaseTest {
         given(sessionRepository).invocation { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
         given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
 
-        val actual = addAuthenticatedUserUseCase(newSession, true)
+        val actual = addAuthenticatedUserUseCase(newSession, TEST_SSO_ID, true)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
-        verify(sessionRepository).function(sessionRepository::storeSession).with(any()).wasNotInvoked()
+        verify(sessionRepository).function(sessionRepository::storeSession).with(any(), any()).wasNotInvoked()
         verify(sessionRepository).function(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
     }
 
@@ -110,5 +111,10 @@ class AddAuthenticatedUserUseCaseTest {
                 ),
                 TEST_SERVER_CONFIG.links
             )
+        val TEST_SSO_ID = SsoId(
+            "scim",
+            null,
+            null
+        )
     }
 }
