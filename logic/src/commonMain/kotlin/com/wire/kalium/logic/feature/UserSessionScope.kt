@@ -438,7 +438,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             callManager,
             MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userRepository, timeParser),
+            LastReadContentHandler(conversationRepository, userRepository),
             userConfigRepository,
             EphemeralNotificationsManager
         )

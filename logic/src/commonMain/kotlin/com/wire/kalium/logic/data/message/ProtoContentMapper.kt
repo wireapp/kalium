@@ -57,7 +57,7 @@ class ProtoContentMapperImpl(
             is MessageContent.LastRead -> GenericMessage.Content.LastRead(
                 LastRead(
                     conversationId = readableContent.conversationId,
-                    lastReadTimestamp = readableContent.time,
+                    lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
                 )
             )
 
