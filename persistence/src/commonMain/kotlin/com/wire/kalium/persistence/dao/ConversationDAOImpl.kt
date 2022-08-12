@@ -6,6 +6,7 @@ import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -282,6 +283,17 @@ class ConversationDAOImpl(
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
+
+    override suspend fun getMessagesByContentType(
+        conversationId: QualifiedIDEntity,
+        asset: MessageEntity.ContentType
+    ): List<MessageEntity> {
+        return listOf()
+    }
+
+    override suspend fun deleteAllMessages(toDaoModel: QualifiedIDEntity) {
+
+    }
 
     override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
         conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)

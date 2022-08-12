@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -22,7 +23,8 @@ class ConversationScope(
     private val callRepository: CallRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val assetRepository: AssetRepository
 ) {
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository)
@@ -77,5 +79,8 @@ class ConversationScope(
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
+
+    val clearConversationContent : ClearConversationContentUseCase
+    get() = ClearConversationContentUseCase(conversationRepository, assetRepository)
 
 }

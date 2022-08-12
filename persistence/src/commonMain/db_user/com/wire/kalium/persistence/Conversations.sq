@@ -119,7 +119,7 @@ deleteAllMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
-getMessagesByContentType:
+getAssetsMessagesByConversationId:
 SELECT * FROM Message
 WHERE conversation_id IS :conversation_id AND content_type IS "ASSET";
 

@@ -122,7 +122,7 @@ class ConversationDataSource(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
-    private val messageMapper: MessageMapper
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper()
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -616,7 +616,7 @@ class ConversationDataSource(
 
     override suspend fun getConversationAssetMessages(
         conversationId: ConversationId,
-    ): Either<CoreFailure, List<Message>> =
+    ): Either<StorageFailure, List<Message>> =
         wrapStorageRequest {
             conversationDAO.getMessagesByContentType(
                 idMapper.toDaoModel(conversationId),
@@ -624,7 +624,7 @@ class ConversationDataSource(
             ).map(messageMapper::fromEntityToMessage)
         }
 
-    override suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun deleteAllMessages(conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.deleteAllMessages(idMapper.toDaoModel(conversationId))
         }

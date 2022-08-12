@@ -494,7 +494,8 @@ abstract class UserSessionScopeCommon(
             callRepository,
             syncManager,
             mlsConversationRepository,
-            clientRepository
+            clientRepository,
+            assetRepository
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -536,6 +537,7 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider,
             client.deregisterNativePushToken
         )
+
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
