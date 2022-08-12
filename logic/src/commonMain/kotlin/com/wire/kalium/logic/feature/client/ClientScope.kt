@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -21,8 +22,8 @@ class ClientScope(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val mlsClientProvider: MLSClientProvider,
-    private val notificationTokenRepository: NotificationTokenRepository
-
+    private val notificationTokenRepository: NotificationTokenRepository,
+    private val clientRemoteRepository: ClientRemoteRepository
 ) {
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
@@ -44,4 +45,5 @@ class ClientScope(
         keyPackageLimitsProvider,
         clientRepository
     )
+    val otherUsersClients: GetOtherUserClientsUseCase get() = GetOtherUserClientsUseCaseImpl(clientRemoteRepository)
 }
