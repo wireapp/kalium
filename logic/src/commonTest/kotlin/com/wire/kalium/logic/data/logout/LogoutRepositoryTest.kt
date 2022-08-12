@@ -5,7 +5,6 @@ import com.wire.kalium.network.api.user.logout.LogoutApi
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
