@@ -14,6 +14,6 @@ data class ConversationPagingResponse(
 @Serializable
 data class ConversationResponseDTO(
     @SerialName("found") val conversationsFound: List<ConversationResponse>,
-    @SerialName("not_found") val conversationsNotFound: List<ConversationResponse>,
-    @SerialName("failed") val conversationsFailed: List<ConversationResponse>,
+    @SerialName("not_found") val conversationsNotFound: List<ConversationId>,
+    @SerialName("failed") val conversationsFailed: List<ConversationId>,
 )
