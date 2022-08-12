@@ -589,6 +589,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
         }
 
+    @Test
+    fun givenConversationWithMessages_whenDeletingAll_ThenTheConversationHasNoMessages() =
+        runTest {
+
+
+        }
+
+    @Test
+    fun givenAConversationHasAssets_whenGettingConversationAssets_ThenReturnThoseAssets() =
+        runTest {
+
+        }
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
