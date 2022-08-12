@@ -103,10 +103,17 @@ interface ConversationRepository {
 
     suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+
+    /**
+     * Gets all of the conversation messages that are assets
+     */
     suspend fun getConversationAssetMessages(
         conversationId: ConversationId,
     ): Either<CoreFailure, List<Message>>
 
+    /**
+     * Deletes all conversation messages
+     */
     suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 

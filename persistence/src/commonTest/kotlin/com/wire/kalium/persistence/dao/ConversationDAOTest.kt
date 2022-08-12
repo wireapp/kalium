@@ -615,7 +615,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageDAO.insertMessages(messages)
 
             // when
-            conversationDAO.deleteAllMessages(conversation.id)
+            messageDAO.deleteAllConversationMessages(conversation.id)
 
             // then
             val result = messageDAO.getMessagesByConversationAndVisibility(
