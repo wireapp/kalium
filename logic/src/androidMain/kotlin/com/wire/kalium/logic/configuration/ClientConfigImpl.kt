@@ -7,9 +7,9 @@ import com.wire.kalium.logic.data.client.DeviceType
 import android.provider.Settings
 import com.wire.kalium.logic.data.client.ClientType
 
-actual class ClientConfig(private val context: Context) {
+actual class ClientConfigImpl(private val context: Context) : ClientConfig {
 
-    actual fun deviceType(): DeviceType {
+    override fun deviceType(): DeviceType {
         if ((context.resources.configuration.screenLayout
                     and Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE
         )
@@ -17,11 +17,11 @@ actual class ClientConfig(private val context: Context) {
         return DeviceType.Phone
     }
 
-    actual fun deviceModelName(): String = "${Build.MANUFACTURER} ${Build.MODEL}"
+    override fun deviceModelName(): String = "${Build.MANUFACTURER} ${Build.MODEL}"
 
-    actual fun deviceName(): String = Settings.Secure.getString(context.contentResolver, bluetoothName) ?: run { deviceModelName() }
+    override fun deviceName(): String = Settings.Secure.getString(context.contentResolver, bluetoothName) ?: run { deviceModelName() }
 
-    actual fun clientType(): ClientType = ClientType.Permanent
+    override fun clientType(): ClientType = ClientType.Permanent
 
     private companion object {
         private const val bluetoothName = "bluetooth_name"

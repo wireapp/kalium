@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -28,5 +29,5 @@ actual class UserSessionScope(
     dataStoragePaths,
     kaliumConfigs
 ) {
-    override val clientConfig: ClientConfig get() = ClientConfig()
+    override val clientConfig: ClientConfig get() = ClientConfigImpl()
 }

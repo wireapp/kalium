@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -375,9 +376,9 @@ class ClientRepositoryTest {
         val clientApi: ClientApi = mock(classOf<ClientApi>())
 
         @Mock
-        val clientConfig: ClientConfig = mock(classOf<ClientConfig>())
+        val clientConfigImpl: ClientConfig = mock(classOf<ClientConfig>())
 
-        var clientRepository = ClientRemoteDataSource(clientApi, clientConfig)
+        var clientRepository = ClientRemoteDataSource(clientApi, clientConfigImpl)
 
         fun withSuccessfulResponse(expectedResponse: List<OtherUserClientsItem>): Arrangement {
             given(clientApi)

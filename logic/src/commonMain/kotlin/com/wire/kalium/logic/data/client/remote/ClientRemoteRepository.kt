@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.client.remote
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.DeleteClientParam
