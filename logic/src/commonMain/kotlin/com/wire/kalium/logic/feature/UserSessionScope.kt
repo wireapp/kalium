@@ -194,6 +194,7 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            userDatabaseProvider.messageDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             timeParser
         )

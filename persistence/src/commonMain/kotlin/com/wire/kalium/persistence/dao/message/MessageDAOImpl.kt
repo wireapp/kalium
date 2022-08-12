@@ -271,7 +271,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         queries.getConversationMessagesByContentType(conversationId, contentType).executeAsList().map { it.toMessageEntity() }
 
     override suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity) {
-        queries.deleteAllConversationMessages(conversationId).executeAsOne()
+        queries.deleteAllConversationMessages(conversationId)
     }
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {

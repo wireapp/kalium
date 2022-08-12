@@ -107,7 +107,7 @@ interface ConversationRepository {
     /**
      * Gets all of the conversation messages that are assets
      */
-    suspend fun getConversationAssetMessages(
+    suspend fun getAssetMessages(
         conversationId: ConversationId,
     ): Either<CoreFailure, List<Message>>
 
@@ -623,7 +623,7 @@ class ConversationDataSource(
         conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
 
-    override suspend fun getConversationAssetMessages(
+    override suspend fun getAssetMessages(
         conversationId: ConversationId,
     ): Either<StorageFailure, List<Message>> =
         wrapStorageRequest {

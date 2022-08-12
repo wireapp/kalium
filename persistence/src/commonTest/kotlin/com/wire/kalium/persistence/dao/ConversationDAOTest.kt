@@ -17,6 +17,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -667,9 +668,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
             messageDAO.insertMessages(messages)
             // when
-            val result = conversationDAO.getMessageIdsByContentType(conversation.id, MessageEntity.ContentType.ASSET)
+            val result = messageDAO.getConversationMessagesByContentType(conversation.id, MessageEntity.ContentType.ASSET)
 
-
+            // then
+            assertTrue(result.size == 10)
+            result.forEach {
+                assertIs<MessageEntityContent.Asset>(it)
+            }
         }
 
     private companion object {

@@ -12,8 +12,8 @@ class ClearConversationContentUseCase(
     private val assetRepository: AssetRepository
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId) {
-        conversationRepository.getConversationAssetMessages(conversationId).fold({ Result.Failure }, { conversationAssetMessages ->
+    suspend operator fun invoke(conversationId: ConversationId) =
+        conversationRepository.getAssetMessages(conversationId).fold({ Result.Failure }, { conversationAssetMessages ->
             conversationAssetMessages.forEach { assetMessage ->
                 val assetRemoteData = (assetMessage.content as MessageContent.Asset).value.remoteData
 
@@ -29,7 +29,6 @@ class ClearConversationContentUseCase(
 
             conversationRepository.deleteAllMessages(conversationId).fold({ Result.Failure }, { Result.Success })
         })
-    }
 
     sealed class Result {
         object Success : Result()
