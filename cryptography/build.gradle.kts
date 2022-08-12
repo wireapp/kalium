@@ -2,6 +2,7 @@ plugins {
     Plugins.androidLibrary(this)
     Plugins.multiplatform(this)
     Plugins.serialization(this)
+    println("KOTLIN VERSION = ${Versions.kotlin}")
     Plugins.carthage(this)
 }
 
