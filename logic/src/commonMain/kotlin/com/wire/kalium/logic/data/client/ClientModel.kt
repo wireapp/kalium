@@ -3,15 +3,12 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.location.Location
-import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import kotlinx.serialization.SerialName
 
 data class RegisterClientParam(
     val password: String?,
     val preKeys: List<PreKeyCrypto>,
     val lastKey: PreKeyCrypto,
     val deviceType: DeviceType?,
-    //val type: ClientType,
     val label: String?,
     val capabilities: List<ClientCapability>?,
     val model: String?
@@ -57,7 +54,6 @@ enum class DeviceType {
 enum class ClientCapability {
     LegalHoldImplicitConsent;
 }
-
 
 data class OtherUserClients(
     val deviceType: DeviceType,

@@ -104,7 +104,6 @@ class ClientApiTest : ApiTest {
         assertTrue(actual.isSuccessful())
     }
 
-
     @Test
     fun whenUnregisteringToken_theRequestIsConfiguredCorrectly() = runTest {
         val pid = "token_id"
@@ -120,12 +119,11 @@ class ClientApiTest : ApiTest {
         assertTrue(actual.isSuccessful())
     }
 
-
     @Test
     fun givenValidRequest_WhenCallingTheOtherUsersClientsApi_SuccessResponseExpected() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
-        val apiPath = "${PATH_USERS}/${userId.domain}/${userId.value}${PATH_CLIENTS}"
+        val apiPath = "$PATH_USERS/${userId.domain}/${userId.value}$PATH_CLIENTS"
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = OtherUsersClientsJson.otherUsersClientsResponse.rawJson,
             statusCode = HttpStatusCode.OK,
@@ -149,7 +147,7 @@ class ClientApiTest : ApiTest {
     fun givenInValidRequest_WhenCallingTheOtherUsersClientsApi_ErrorResponseExpected() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
-        val apiPath = "${PATH_USERS}/${userId.domain}/${userId.value}${PATH_CLIENTS}"
+        val apiPath = "$PATH_USERS/${userId.domain}/${userId.value}$PATH_CLIENTS"
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = OtherUsersClientsJson.domainOrUserNotFoundErrorResponse.rawJson,
             statusCode = HttpStatusCode.Forbidden,

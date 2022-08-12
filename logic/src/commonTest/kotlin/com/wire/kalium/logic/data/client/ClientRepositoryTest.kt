@@ -227,7 +227,6 @@ class ClientRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     // selfListOfClients
     @Test
     fun whenSelfListOfClientsIsReturnSuccess_thenTheSuccessIsPropagated() = runTest {
@@ -269,7 +268,6 @@ class ClientRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun whenSelfListOfClientsIsFail_thenTheErrorIsPropagated() = runTest {
         val expected: Either.Left<NetworkFailure> = Either.Left(TEST_FAILURE)
@@ -280,7 +278,6 @@ class ClientRepositoryTest {
         actual.shouldFail { expected.value }
         verify(clientRemoteRepository).coroutine { clientRepository.selfListOfClients() }.wasInvoked(exactly = once)
     }
-
 
     @Test
     fun givenValidParams_whenPushToken_thenShouldSucceed() = runTest {
@@ -332,7 +329,6 @@ class ClientRepositoryTest {
         }
     }
 
-
     @Test
     fun whenOtherUsersClientsSuccess_thenTheSuccessIsReturned() = runTest {
         // Given
@@ -373,7 +369,6 @@ class ClientRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     private class Arrangement {
 
         @Mock
@@ -381,7 +376,6 @@ class ClientRepositoryTest {
 
         @Mock
         val clientConfig: ClientConfig = mock(classOf<ClientConfig>())
-
 
         var clientRepository = ClientRemoteDataSource(clientApi, clientConfig)
 
@@ -425,7 +419,5 @@ class ClientRepositoryTest {
             senderId = "7239",
             client = "cliId", token = "7239", transport = "GCM"
         )
-
     }
 }
-

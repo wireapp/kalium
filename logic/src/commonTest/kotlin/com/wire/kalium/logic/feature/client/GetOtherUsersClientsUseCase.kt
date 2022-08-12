@@ -62,7 +62,6 @@ class GetOtherUsersClientsUseCase {
         assertTrue(result is GetOtherUserClientsResult.Failure.UserNotFound)
     }
 
-
     private class Arrangement {
 
         @Mock

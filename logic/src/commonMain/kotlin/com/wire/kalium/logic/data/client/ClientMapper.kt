@@ -2,10 +2,8 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.user.client.ClientResponse
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
@@ -38,7 +36,8 @@ class ClientMapper(
         deviceType = response.deviceType?.let { fromDeviceTypeDTO(it) } ?: run { null },
         label = response.label,
         cookie = response.cookie,
-        capabilities = response.capabilities?.let { capabilities -> Capabilities(capabilities.capabilities.map { fromClientCapabilityDTO(it) }) }
+        capabilities = response.capabilities?.let {
+                capabilities -> Capabilities(capabilities.capabilities.map { fromClientCapabilityDTO(it) }) }
             ?: run { null },
         model = response.model
     )

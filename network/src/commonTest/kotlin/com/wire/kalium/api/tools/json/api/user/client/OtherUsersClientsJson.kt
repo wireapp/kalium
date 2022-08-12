@@ -26,7 +26,6 @@ object OtherUsersClientsJson {
         """.trimMargin()
     }
 
-
     val otherUsersClientsResponse = ValidJsonProvider(
         listOf(
             OtherUserClientsItem(DeviceTypeDTO.Desktop, "79652f67ac5713e1"),
@@ -35,7 +34,6 @@ object OtherUsersClientsJson {
         ),
         otherUsersClientsResponseSerializer
     )
-
 
     private val invalidJsonProvider = { serializable: ErrorResponse ->
         """
@@ -46,7 +44,6 @@ object OtherUsersClientsJson {
         |}
         """.trimMargin()
     }
-
 
     val domainOrUserNotFoundErrorResponse = ValidJsonProvider(
         ErrorResponse(404, "user not found", "no_user"),

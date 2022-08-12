@@ -15,7 +15,7 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.RegisterTokenUseCase
 import com.wire.kalium.logic.feature.session.RegisterTokenUseCaseImpl
-
+@Suppress("LongParameterList")
 class ClientScope(
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,

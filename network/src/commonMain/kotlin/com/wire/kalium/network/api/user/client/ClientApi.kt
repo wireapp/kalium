@@ -35,7 +35,6 @@ interface ClientApi {
 
 }
 
-
 class ClientApiImpl internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : ClientApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
