@@ -93,6 +93,7 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(Dependencies.Coroutines.test)
                 implementation(Dependencies.Test.okio)
+                implementation(Dependencies.Kotlinx.dateTime)
             }
         }
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
