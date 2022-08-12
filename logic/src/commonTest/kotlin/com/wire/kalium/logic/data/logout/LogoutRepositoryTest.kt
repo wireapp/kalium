@@ -5,6 +5,7 @@ import com.wire.kalium.network.api.user.logout.LogoutApi
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,6 +42,27 @@ class LogoutRepositoryTest {
 
             // Then
             expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenFailureHappensOnLogoutReasonCollection_whenCollectingAgain_thenShouldEmitNewValues() = runTest {
+        val (_, logoutRepository) = Arrangement().arrange()
+
+        logoutRepository.onLogout(LogoutReason.DELETED_ACCOUNT)
+        try {
+            logoutRepository.observeLogout().collect { throw StackOverflowError() }
+        } catch (ignored: Throwable) {
+            // Ignored, really
+        }
+
+        logoutRepository.onLogout(LogoutReason.SELF_LOGOUT)
+        logoutRepository.observeLogout().test {
+            assertEquals(LogoutReason.SELF_LOGOUT, awaitItem())
+
+            logoutRepository.onLogout(LogoutReason.SESSION_EXPIRED)
+            assertEquals(LogoutReason.SESSION_EXPIRED, awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
