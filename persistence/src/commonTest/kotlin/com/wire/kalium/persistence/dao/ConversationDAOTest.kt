@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -592,8 +593,38 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenConversationWithMessages_whenDeletingAll_ThenTheConversationHasNoMessages() =
         runTest {
+            // given
+            val conversation = conversationEntity1
+            conversationDAO.insertConversation(conversation)
 
 
+            userDAO.insertUser(user1)
+
+            val messages = buildList {
+                repeat(10) {
+                    add(
+                        newMessageEntity(
+                            id = it.toString(),
+                            senderUserId = user1.id,
+                        )
+                    )
+                }
+            }
+
+            messageDAO.insertMessages(messages)
+
+            // when
+            conversationDAO.deleteAllMessages(conversation.id)
+
+            // then
+            val result = messageDAO.getMessagesByConversationAndVisibility(
+                conversation.id,
+                100,
+                0,
+                listOf(MessageEntity.Visibility.VISIBLE)
+            ).first()
+
+            assertTrue(result.isEmpty())
         }
 
     @Test

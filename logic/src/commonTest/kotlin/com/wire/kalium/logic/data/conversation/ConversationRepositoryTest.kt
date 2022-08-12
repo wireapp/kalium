@@ -1150,6 +1150,16 @@ class ConversationRepositoryTest {
         assertIs<Either.Left<StorageFailure>>(result)
     }
 
+    @Test
+    fun givenAConversationDaoHasAssetsMessages_whenGettingAssetMessages_thenShouldReturnThoseMessages() = runTest{
+
+    }
+
+    @Test
+    fun givenDeletingConversationMessages_whenSuccessFullyDeletingMessages_thenShouldSucceed() = runTest{
+
+    }
+
     companion object {
         private const val MLS_GROUP_ID = "mlsGroupId"
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
