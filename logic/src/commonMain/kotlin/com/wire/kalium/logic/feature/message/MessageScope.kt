@@ -16,6 +16,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
@@ -27,7 +28,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 
 @Suppress("LongParameterList")
-class MessageScope(
+class MessageScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val userId: QualifiedID,
     internal val messageRepository: MessageRepository,
@@ -39,6 +40,7 @@ class MessageScope(
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
     private val syncManager: SyncManager,
+    private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
     private val kaliumFileSystem: KaliumFileSystem
@@ -83,6 +85,7 @@ class MessageScope(
             persistMessage,
             userRepository,
             clientRepository,
+            slowSyncRepository,
             messageSender
         )
 
@@ -101,7 +104,11 @@ class MessageScope(
             messageRepository
         )
 
-    val getRecentMessages: GetRecentMessagesUseCase get() = GetRecentMessagesUseCase(messageRepository)
+    val getRecentMessages: GetRecentMessagesUseCase
+        get() = GetRecentMessagesUseCase(
+            messageRepository,
+            slowSyncRepository
+        )
 
     val deleteMessage: DeleteMessageUseCase
         get() = DeleteMessageUseCase(
@@ -109,6 +116,7 @@ class MessageScope(
             userRepository,
             clientRepository,
             assetRepository,
+            slowSyncRepository,
             messageSender,
             idMapper
         )
@@ -118,6 +126,7 @@ class MessageScope(
             persistMessage,
             userRepository,
             clientRepository,
+            slowSyncRepository,
             messageSender
         )
 
