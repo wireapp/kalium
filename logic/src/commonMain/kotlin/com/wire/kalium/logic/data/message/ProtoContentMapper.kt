@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
@@ -15,6 +16,7 @@ import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.Text
 import pbandk.ByteArr
+import kotlinx.datetime.Instant
 
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
@@ -55,7 +57,7 @@ class ProtoContentMapperImpl(
             is MessageContent.LastRead -> GenericMessage.Content.LastRead(
                 LastRead(
                     conversationId = readableContent.conversationId,
-                    lastReadTimestamp = readableContent.timeStamp,
+                    lastReadTimestamp = readableContent.time,
                 )
             )
 
@@ -147,7 +149,7 @@ class ProtoContentMapperImpl(
                 MessageContent.LastRead(
                     messageId = genericMessage.messageId,
                     conversationId = protoContent.value.conversationId,
-                    timeStamp = protoContent.value.lastReadTimestamp
+                    time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
                 )
             }
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)

@@ -2,18 +2,15 @@ package com.wire.kalium.logic.sync.receiver.message
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.TimeParser
 
 // This class handles the messages that arrive when some client has read the conversation.
 class LastReadContentHandler(
     private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository,
-    private val timeParser: TimeParser
+    private val userRepository: UserRepository
 ) {
 
     // TODO: for now we are just handeling the case when the self user has read the conversation
@@ -31,7 +28,7 @@ class LastReadContentHandler(
             // to synchronize the state across the clients.
             conversationRepository.updateConversationReadDate(
                 qualifiedID = ConversationId(messageContent.conversationId, message.conversationId.domain),
-                date = timeParser.fromEpochTimeStampToDate(messageContent.timeStamp)
+                date = messageContent.time.toString()
             )
         }
     }

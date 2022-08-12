@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import kotlinx.datetime.Instant
 
 sealed class MessageContent {
 
@@ -48,8 +49,7 @@ sealed class MessageContent {
     data class LastRead(
         val messageId: String,
         val conversationId: String,
-        // millis since the epoch
-        val timeStamp: Long
+        val time: Instant
     ) : Regular()
 
     object MissedCall : System()

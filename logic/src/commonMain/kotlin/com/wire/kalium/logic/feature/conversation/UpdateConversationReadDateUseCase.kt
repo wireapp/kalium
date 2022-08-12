@@ -33,7 +33,7 @@ class UpdateConversationReadDateUseCase(
                 content = MessageContent.LastRead(
                     messageId = generatedMessageUuid,
                     conversationId = conversationId.value,
-                    timeStamp = time.toEpochMilliseconds()
+                    time = time
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
