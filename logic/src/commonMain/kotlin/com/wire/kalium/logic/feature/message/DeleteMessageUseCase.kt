@@ -11,6 +11,8 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
@@ -22,17 +24,23 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
-class DeleteMessageUseCase(
+@Suppress("LongParameterList")
+class DeleteMessageUseCase internal constructor(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     private val assetRepository: AssetRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val idMapper: IdMapper
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> =
-        messageRepository.getMessageById(conversationId, messageId).map { message ->
+    suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
+        slowSyncRepository.slowSyncStatus.first {
+            it is SlowSyncStatus.Complete
+        }
+
+        return messageRepository.getMessageById(conversationId, messageId).map { message ->
             when (message.status) {
                 Message.Status.FAILED -> messageRepository.deleteMessage(messageId, conversationId)
                 else -> {
@@ -66,6 +74,7 @@ class DeleteMessageUseCase(
                 }
             }
         }
+    }
 
     private suspend fun deleteMessageAsset(message: Message) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
