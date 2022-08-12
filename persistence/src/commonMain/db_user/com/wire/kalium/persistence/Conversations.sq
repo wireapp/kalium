@@ -115,14 +115,6 @@ SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.las
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 
-deleteAllMessages:
-DELETE FROM Message
-WHERE conversation_id IS :conversation_id;
-
-getAssetsMessagesByConversationId:
-SELECT * FROM Message
-WHERE conversation_id IS :conversation_id AND content_type IS "ASSET";
-
 updateKeyingMaterialDate:
 UPDATE Conversation SET mls_last_keying_material_update= ? WHERE mls_group_id = ?;
 

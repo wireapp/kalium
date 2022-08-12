@@ -264,6 +264,16 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         queries.updateMessageTextContent(newTextContent.messageBody, messageId, conversationId)
     }
 
+    override suspend fun getConversationMessagesByContentType(
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType
+    ): List<MessageEntity> =
+        queries.getConversationMessagesByContentType(conversationId, contentType).executeAsList().map { it.toMessageEntity() }
+
+    override suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity) {
+        queries.deleteAllConversationMessages(conversationId).executeAsOne()
+    }
+
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
         is MessageEntityContent.Asset -> ASSET

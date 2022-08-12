@@ -38,6 +38,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -115,6 +116,7 @@ class ConversationDataSource(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
+    private val messageDAO: MessageDAO,
     private val clientApi: ClientApi,
     private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -618,7 +620,7 @@ class ConversationDataSource(
         conversationId: ConversationId,
     ): Either<StorageFailure, List<Message>> =
         wrapStorageRequest {
-            conversationDAO.getMessagesByContentType(
+            messageDAO.getConversationMessagesByContentType(
                 idMapper.toDaoModel(conversationId),
                 MessageEntity.ContentType.ASSET
             ).map(messageMapper::fromEntityToMessage)
@@ -626,7 +628,7 @@ class ConversationDataSource(
 
     override suspend fun deleteAllMessages(conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.deleteAllMessages(idMapper.toDaoModel(conversationId))
+            messageDAO.deleteAllConversationMessages(idMapper.toDaoModel(conversationId))
         }
 
     companion object {

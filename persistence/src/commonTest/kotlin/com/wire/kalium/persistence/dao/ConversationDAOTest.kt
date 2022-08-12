@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -595,16 +596,16 @@ class ConversationDAOTest : BaseDatabaseTest() {
         runTest {
             // given
             val conversation = conversationEntity1
+
             conversationDAO.insertConversation(conversation)
-
-
-            userDAO.insertUser(user1)
+            userDAO.insertUser(user1.copy())
 
             val messages = buildList {
                 repeat(10) {
                     add(
                         newMessageEntity(
                             id = it.toString(),
+                            conversationId = conversation.id,
                             senderUserId = user1.id,
                         )
                     )
@@ -630,6 +631,44 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenAConversationHasAssets_whenGettingConversationAssets_ThenReturnThoseAssets() =
         runTest {
+            // given
+            val conversation = conversationEntity1
+
+            conversationDAO.insertConversation(conversation)
+            userDAO.insertUser(user1.copy())
+
+            val messages = buildList {
+                repeat(10) {
+                    add(
+                        newMessageEntity(
+                            id = it.toString(),
+                            content = MessageEntityContent.Asset(
+                                assetSizeInBytes = 0,
+                                assetName = null,
+                                assetMimeType = "",
+                                assetDownloadStatus = null,
+                                assetOtrKey = byteArrayOf(),
+                                assetSha256Key = byteArrayOf(),
+                                assetId = "",
+                                assetToken = null,
+                                assetDomain = null,
+                                assetEncryptionAlgorithm = null,
+                                assetWidth = null,
+                                assetHeight = null,
+                                assetDurationMs = null,
+                                assetNormalizedLoudness = null
+                            ),
+                            conversationId = conversation.id,
+                            senderUserId = user1.id,
+                        )
+                    )
+                }
+            }
+
+            messageDAO.insertMessages(messages)
+            // when
+            val result = conversationDAO.getMessageIdsByContentType(conversation.id, MessageEntity.ContentType.ASSET)
+
 
         }
 
