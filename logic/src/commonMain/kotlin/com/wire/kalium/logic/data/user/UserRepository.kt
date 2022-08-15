@@ -114,7 +114,7 @@ internal class UserDataSource(
 
     override suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit> {
         val selfUserDomain = getSelfUserIDEntity().domain
-        val results: List<Either<CoreFailure, Unit>> = ids.groupBy { it.domain }
+        ids.groupBy { it.domain }
             .map {
                 val usersOnSameDomain = it.key == selfUserDomain
                 if (usersOnSameDomain) {
@@ -133,7 +133,7 @@ internal class UserDataSource(
                 }
             }
 
-        return results.firstOrNull { it is Either.Left } ?: Either.Right(Unit)
+        return Either.Right(Unit)
     }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) =
