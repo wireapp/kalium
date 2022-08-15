@@ -65,6 +65,7 @@ class CallMapperImpl : CallMapper {
         }
     }
 
+    @Suppress("MagicNumber")
     override fun fromIntToCallingVideoState(videStateInt: Int): VideoStateCalling {
         return when (videStateInt) {
             0 -> VideoStateCalling.STOPPED
@@ -76,16 +77,13 @@ class CallMapperImpl : CallMapper {
         }
     }
 
-    override fun toVideoStateCalling(videoState: VideoState): VideoStateCalling {
-        return when (videoState) {
-            VideoState.STOPPED -> VideoStateCalling.STOPPED
-            VideoState.STARTED -> VideoStateCalling.STARTED
-            VideoState.BAD_CONNECTION -> VideoStateCalling.BAD_CONNECTION
-            VideoState.PAUSED -> VideoStateCalling.PAUSED
-            VideoState.SCREENSHARE -> VideoStateCalling.SCREENSHARE
-            VideoState.SCREENSHARE -> VideoStateCalling.SCREENSHARE
-            VideoState.UNKNOWN -> VideoStateCalling.UNKNOWN
-        }
+    override fun toVideoStateCalling(videoState: VideoState) = when (videoState) {
+        VideoState.STOPPED -> VideoStateCalling.STOPPED
+        VideoState.STARTED -> VideoStateCalling.STARTED
+        VideoState.BAD_CONNECTION -> VideoStateCalling.BAD_CONNECTION
+        VideoState.PAUSED -> VideoStateCalling.PAUSED
+        VideoState.SCREENSHARE -> VideoStateCalling.SCREENSHARE
+        VideoState.UNKNOWN -> VideoStateCalling.UNKNOWN
     }
 
     override fun toCallEntity(

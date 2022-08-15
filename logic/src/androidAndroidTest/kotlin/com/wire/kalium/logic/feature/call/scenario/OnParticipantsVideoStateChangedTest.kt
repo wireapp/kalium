@@ -49,7 +49,6 @@ class OnParticipantsVideoStateChangedTest {
         given(callMapper).invocation { fromIntToCallingVideoState(videoStateInt) }
             .then { VideoStateCalling.STARTED }
 
-
         given(videoStateChecker).invocation { isCameraOn(VideoStateCalling.STARTED) }
             .then { isCameraOn }
 

@@ -8,11 +8,11 @@ import kotlin.test.assertEquals
 
 class ParticipantMapper {
 
-    private val participantMapper = ParticipantMapperImpl()
+    private val participantMapperImpl = ParticipantMapperImpl()
 
     @Test
     fun whenMappingToParticipant_withCallMember_thenReturnParticipant() = runTest {
-        val participantMap = participantMapper.fromCallMemberToParticipant(
+        val participantMap = participantMapperImpl.fromCallMemberToParticipant(
             member = DUMMY_CALL_MEMBER
         )
 
@@ -31,7 +31,7 @@ class ParticipantMapper {
 
     @Test
     fun whenMappingToCallClient_withCallMember_thenReturnCallMember() = runTest {
-        val callClientMap = participantMapper.fromCallMemberToCallClient(
+        val callClientMap = participantMapperImpl.fromCallMemberToCallClient(
             member = DUMMY_CALL_MEMBER
         )
 
