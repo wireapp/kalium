@@ -601,6 +601,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.Type.ONE_ON_ONE,
             teamId,
             ConversationEntity.ProtocolInfo.Proteus,
+            creatorId = "someValue",
             lastNotificationDate = null,
             lastModifiedDate = "2022-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
@@ -619,6 +620,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z")
             ),
+            creatorId = "someValue",
             lastNotificationDate = null,
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
             lastReadDate = "2000-01-01T12:00:00.000Z",
@@ -638,6 +640,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z")
             ),
+            creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",
@@ -659,6 +662,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z")
             ),
+            creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
             lastNotificationDate = "2021-03-30T15:30:00.000Z",
             lastModifiedDate = "2021-03-30T15:36:00.000Z",

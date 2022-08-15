@@ -1,6 +1,5 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.logger.ObfuscateUtil.obfuscateLogMessage
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
@@ -161,7 +160,7 @@ public class KaliumKtorCustomLogging private constructor(
         GlobalScope.launch(Dispatchers.Unconfined) {
             val text = channel.tryReadText(charset) ?: "[request body omitted]"
             kaliumLogger.v("BODY START")
-            kaliumLogger.v(obfuscateLogMessage(text))
+            kaliumLogger.v(text)
             kaliumLogger.v("BODY END")
         }
 

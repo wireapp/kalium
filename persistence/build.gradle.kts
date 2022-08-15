@@ -9,18 +9,18 @@ group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-native-utils:1.7.10")
 }
 
 sqldelight {
     database("UserDatabase") {
-        dialect = Dependencies.SqlDelight.dialect
+        dialect(Dependencies.SqlDelight.dialect)
         packageName = "com.wire.kalium.persistence"
         sourceFolders = listOf("db_user")
     }
 
     database("GlobalDatabase") {
-        dialect = Dependencies.SqlDelight.dialect
+        dialect(Dependencies.SqlDelight.dialect)
         packageName = "com.wire.kalium.persistence"
         sourceFolders = listOf("db_global")
     }

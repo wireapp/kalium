@@ -114,6 +114,7 @@ internal class IncrementalSyncManager(
                 }
                 incrementalSyncRepository.updateIncrementalSyncState(newState)
             }
+        kaliumLogger.i("IncrementalSync stopped.")
     }
 
     private companion object {

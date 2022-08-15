@@ -514,6 +514,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             assetRepository,
             syncManager,
+            slowSyncRepository,
             messageSendingScheduler,
             timeParser,
             kaliumFileSystem
