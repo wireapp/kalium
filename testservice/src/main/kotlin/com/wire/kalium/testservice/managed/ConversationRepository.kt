@@ -1,6 +1,7 @@
 package com.wire.kalium.testservice.managed
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.asset.SendAssetMessageResult
@@ -105,7 +106,11 @@ class ConversationRepository {
                                 null
                             )
                             if (sendResult is SendAssetMessageResult.Failure) {
-                                throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${sendResult.coreFailure}")
+                                if (sendResult.coreFailure is StorageFailure.Generic) {
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${(sendResult.coreFailure as StorageFailure.Generic).rootCause.message}")
+                                } else {
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                                }
                             }
                         }
                     }

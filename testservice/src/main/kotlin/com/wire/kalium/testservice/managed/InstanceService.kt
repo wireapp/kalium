@@ -153,6 +153,8 @@ class InstanceService : Managed {
                     runBlocking { logout() }
                 }
             }
+            log.info("Instance $id: Delete sessions in preference file")
+            // TODO: Something like session.allSessions.deleteInvalidSession()
         }
         log.info("Instance $id: Logged out")
         log.info("Instance $id: Delete locate files in ${instance.instancePath}")
