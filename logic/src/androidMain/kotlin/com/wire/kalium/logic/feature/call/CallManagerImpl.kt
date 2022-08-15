@@ -6,15 +6,16 @@ import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
-import com.wire.kalium.calling.callbacks.VideoReceiveStateHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.CallMapper
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
+import com.wire.kalium.logic.data.call.VideoStateChecker
+import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
 import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
 import com.wire.kalium.logic.feature.call.scenario.OnNetworkQualityChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
+import com.wire.kalium.logic.feature.call.scenario.OnParticipantsVideoStateChanged
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -65,7 +67,8 @@ actual class CallManagerImpl(
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val callMapper: CallMapper = MapperProvider.callMapper(),
     private val federatedIdMapper: FederatedIdMapper,
-    private val qualifiedIdMapper: QualifiedIdMapper
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val videoStateChecker: VideoStateChecker
 ) : CallManager {
 
     private val job = SupervisorJob() // TODO(calling): clear job method
@@ -131,10 +134,8 @@ actual class CallManagerImpl(
             ConstantBitRateStateChangeHandler { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             }.keepingStrongReference(),
-            videoReceiveStateHandler =
-            VideoReceiveStateHandler { conversationId: String, userId: String, clientId: String, state: Int, arg: Pointer? ->
-                callingLogger.i("$TAG -> videoReceiveStateHandler")
-            }.keepingStrongReference(),
+            videoReceiveStateHandler = OnParticipantsVideoStateChanged(callRepository, qualifiedIdMapper, callMapper, videoStateChecker)
+                .keepingStrongReference(),
             arg = null
         )
         callingLogger.d("$TAG - wcall_create() called")
@@ -289,7 +290,7 @@ actual class CallManagerImpl(
                     calling = calling,
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
-                    participantMapper = callMapper.participantMapper,
+                    participantMapper = ParticipantMapperImpl(),
                     userRepository = userRepository,
                     conversationRepository = conversationRepository,
                     callingScope = scope

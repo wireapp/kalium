@@ -7,11 +7,11 @@ import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
-import com.wire.kalium.logic.data.call.CallMapper
 import com.wire.kalium.logic.data.call.CallMember
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -29,7 +29,7 @@ class OnParticipantListChanged(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val participantMapper: CallMapper.ParticipantMapper,
+    private val participantMapper: ParticipantMapper,
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val callingScope: CoroutineScope
@@ -64,14 +64,16 @@ class OnParticipantListChanged(
                 conversationId = conversationIdWithDomain.toString(),
                 participants = participants
             )
+            calling.wcall_request_video_streams(
+                inst = handle,
+                conversationId = remoteConversationIdString,
+                mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
+                json = CallClientList(clients = clients).toJsonString()
+            )
+            callingLogger.i(
+                "[onParticipantsChanged] - Total Participants: ${participants.size} | ConversationId: $remoteConversationIdString"
+            )
         }
-        calling.wcall_request_video_streams(
-            inst = handle,
-            conversationId = remoteConversationIdString,
-            mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
-            json = CallClientList(clients = clients).toJsonString()
-        )
-        callingLogger.i("[onParticipantsChanged] - Total Participants: ${participants.size} | ConversationId: $remoteConversationIdString")
     }
 
     private fun mapQualifiedMemberId(memberList: List<Member>, member: CallMember) =

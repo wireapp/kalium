@@ -12,6 +12,8 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.VideoStateChecker
+import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -400,6 +402,8 @@ abstract class UserSessionScopeCommon(
             lazy { conversations.updateMLSGroupsKeyingMaterials }
         )
 
+    private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
+
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
 
     val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper, globalPreferences)
@@ -413,7 +417,8 @@ abstract class UserSessionScopeCommon(
             conversationRepository = conversationRepository,
             messageSender = messageSender,
             federatedIdMapper = federatedIdMapper,
-            qualifiedIdMapper = qualifiedIdMapper
+            qualifiedIdMapper = qualifiedIdMapper,
+            videoStateChecker = videoStateChecker
         )
     }
 

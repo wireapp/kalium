@@ -1,11 +1,14 @@
-package com.wire.kalium.logic.data.call
+package com.wire.kalium.logic.data.call.mapper
 
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.call.CallMetadata
+import com.wire.kalium.logic.data.call.CallType
+import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
@@ -13,16 +16,40 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 
-class CallMapper {
+interface CallMapper {
+    fun toCallTypeCalling(callType: CallType): CallTypeCalling
+    fun toConversationTypeCalling(conversationType: ConversationType): ConversationTypeCalling
+    fun fromIntToConversationType(conversationType: Int): ConversationType
+    fun fromIntToCallingVideoState(videStateInt: Int): VideoStateCalling
+    fun toVideoStateCalling(videoState: VideoState): VideoStateCalling
+    fun toCallEntity(
+        conversationId: ConversationId,
+        id: String,
+        status: CallStatus,
+        conversationType: Conversation.Type,
+        callerId: UserId
+    ): CallEntity
 
-    fun toCallTypeCalling(callType: CallType): CallTypeCalling {
+    fun toCall(
+        callEntity: CallEntity,
+        metadata: CallMetadata?
+    ): Call
+
+    fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type
+    fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status
+    fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity
+}
+
+class CallMapperImpl : CallMapper {
+
+    override fun toCallTypeCalling(callType: CallType): CallTypeCalling {
         return when (callType) {
             CallType.AUDIO -> CallTypeCalling.AUDIO
             CallType.VIDEO -> CallTypeCalling.VIDEO
         }
     }
 
-    fun toConversationTypeCalling(conversationType: ConversationType): ConversationTypeCalling {
+    override fun toConversationTypeCalling(conversationType: ConversationType): ConversationTypeCalling {
         return when (conversationType) {
             ConversationType.OneOnOne -> ConversationTypeCalling.OneOnOne
             ConversationType.Conference -> ConversationTypeCalling.Conference
@@ -30,7 +57,7 @@ class CallMapper {
         }
     }
 
-    fun fromIntToConversationType(conversationType: Int): ConversationType {
+    override fun fromIntToConversationType(conversationType: Int): ConversationType {
         return when (conversationType) {
             0 -> ConversationType.OneOnOne
             2 -> ConversationType.Conference
@@ -38,17 +65,30 @@ class CallMapper {
         }
     }
 
-    fun toVideoStateCalling(videoState: VideoState): VideoStateCalling {
+    override fun fromIntToCallingVideoState(videStateInt: Int): VideoStateCalling {
+        return when (videStateInt) {
+            0 -> VideoStateCalling.STOPPED
+            1 -> VideoStateCalling.STARTED
+            2 -> VideoStateCalling.BAD_CONNECTION
+            3 -> VideoStateCalling.PAUSED
+            4 -> VideoStateCalling.SCREENSHARE
+            else -> VideoStateCalling.UNKNOWN
+        }
+    }
+
+    override fun toVideoStateCalling(videoState: VideoState): VideoStateCalling {
         return when (videoState) {
             VideoState.STOPPED -> VideoStateCalling.STOPPED
             VideoState.STARTED -> VideoStateCalling.STARTED
             VideoState.BAD_CONNECTION -> VideoStateCalling.BAD_CONNECTION
             VideoState.PAUSED -> VideoStateCalling.PAUSED
             VideoState.SCREENSHARE -> VideoStateCalling.SCREENSHARE
+            VideoState.SCREENSHARE -> VideoStateCalling.SCREENSHARE
+            VideoState.UNKNOWN -> VideoStateCalling.UNKNOWN
         }
     }
 
-    fun toCallEntity(
+    override fun toCallEntity(
         conversationId: ConversationId,
         id: String,
         status: CallStatus,
@@ -65,7 +105,7 @@ class CallMapper {
         conversationType = toConversationEntityType(conversationType = conversationType)
     )
 
-    fun toCall(
+    override fun toCall(
         callEntity: CallEntity,
         metadata: CallMetadata?
     ): Call = Call(
@@ -91,12 +131,12 @@ class CallMapper {
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
-    fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
+    override fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
         ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
         else -> Conversation.Type.ONE_ON_ONE
     }
 
-    fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status = when (callStatus) {
+    override fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status = when (callStatus) {
         CallStatus.STARTED -> CallEntity.Status.STARTED
         CallStatus.INCOMING -> CallEntity.Status.INCOMING
         CallStatus.MISSED -> CallEntity.Status.MISSED
@@ -116,59 +156,8 @@ class CallMapper {
         CallEntity.Status.CLOSED -> CallStatus.CLOSED
     }
 
-    fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity = QualifiedIDEntity(
+    override fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity = QualifiedIDEntity(
         value = conversationId.value,
         domain = conversationId.domain
     )
-
-    val participantMapper = ParticipantMapper()
-    val activeSpeakerMapper = ActiveSpeakerMapper()
-
-    inner class ParticipantMapper {
-
-        fun fromCallMemberToParticipant(member: CallMember): Participant = with(member) {
-            Participant(
-                id = QualifiedID(
-                    value = userId.removeDomain(),
-                    domain = userId.getDomain()
-                ),
-                clientId = clientId,
-                isMuted = isMuted == 1
-            )
-        }
-
-        fun fromCallMemberToCallClient(member: CallMember): CallClient = with(member) {
-            CallClient(
-                userId = QualifiedID(
-                    value = userId.removeDomain(),
-                    domain = userId.getDomain()
-                ).toString(),
-                clientId = clientId
-            )
-        }
-    }
-
-    inner class ActiveSpeakerMapper {
-        fun mapParticipantsActiveSpeaker(
-            participants: List<Participant>,
-            activeSpeakers: CallActiveSpeakers
-        ): List<Participant> = participants.map { participant ->
-            val isSpeaking = activeSpeakers.activeSpeakers.find {
-                it.userId == participant.id.toString() && it.clientId == participant.clientId
-            }?.let {
-                it.audioLevel > 0 && it.audioLevelNow > 0
-            } ?: run { false }
-            participant.copy(
-                isSpeaking = isSpeaking
-            )
-        }
-    }
-
-    private companion object {
-        private const val DOMAIN_SEPARATOR = "@"
-
-        private fun String.removeDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).first() else this
-
-        private fun String.getDomain() = if (contains(DOMAIN_SEPARATOR)) split(DOMAIN_SEPARATOR).last() else ""
-    }
 }

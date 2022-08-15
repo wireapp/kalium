@@ -933,6 +933,7 @@ class CallRepositoryTest {
                 name = "name",
                 isMuted = true,
                 isSpeaking = false,
+                isCameraOn = false,
                 avatarAssetId = null
             )
         )
@@ -976,6 +977,7 @@ class CallRepositoryTest {
             name = "name",
             isMuted = true,
             isSpeaking = false,
+            isCameraOn = false,
             avatarAssetId = null
         )
         val participantsList = listOf(participant)

@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.call
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -12,6 +14,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.Call
@@ -44,6 +47,7 @@ interface CallRepository {
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
+    fun updateParticipantCameraStateById(conversationIdString: String, userIdString: UserId, clientIdString: String, isCameraOn: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
@@ -61,7 +65,8 @@ internal class CallDataSource(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
     private val timeParser: TimeParser,
-    private val callMapper: CallMapper = MapperProvider.callMapper()
+    private val callMapper: CallMapper = MapperProvider.callMapper(),
+    private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper()
 ) : CallRepository {
 
     private val _callMetadataProfile = MutableStateFlow(CallMetadataProfile(data = emptyMap()))
@@ -242,6 +247,34 @@ internal class CallDataSource(
         }
     }
 
+    override fun updateParticipantCameraStateById(
+        conversationIdString: String,
+        userIdString: UserId,
+        clientIdString: String,
+        isCameraOn: Boolean
+    ) {
+        val callMetadataProfile = _callMetadataProfile.value
+
+        callMetadataProfile.data[conversationIdString]?.let { callMetaData ->
+
+            val updatedParticipants = callMetaData.participants.map {
+                if (it.id == userIdString && it.clientId == clientIdString) {
+                    it.copy(isCameraOn = isCameraOn)
+                } else it
+            }
+
+            val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
+                this[conversationIdString] = callMetaData.copy(
+                    participants = updatedParticipants
+                )
+            }
+
+            _callMetadataProfile.value = callMetadataProfile.copy(
+                data = updatedCallMetaData
+            )
+        }
+    }
+
     override fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
         callMetadataProfile.data[conversationId]?.let { call ->
@@ -282,7 +315,7 @@ internal class CallDataSource(
         callMetadataProfile.data[conversationIdWithDomain.toString()]?.let { call ->
             callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.activeSpeakers.size}")
 
-            val updatedParticipants = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
+            val updatedParticipants = activeSpeakerMapper.mapParticipantsActiveSpeaker(
                 participants = call.participants, activeSpeakers = activeSpeakers
             )
 
