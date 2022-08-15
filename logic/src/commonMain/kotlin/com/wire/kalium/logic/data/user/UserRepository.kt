@@ -18,6 +18,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
@@ -26,6 +27,8 @@ import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.ChangeHandleRequest
 import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isFederationError
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -111,40 +114,53 @@ internal class UserDataSource(
         return fetchUsersByIds(ids.toSet())
     }
 
-    override suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit> =
-        wrapApiRequest {
+    override suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
             userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
-        }.flatMap {
-            wrapStorageRequest {
-                val selfUser = getSelfUser()
-                val selfUserTeamId = selfUser?.teamId?.value
-                val teamMembers = it.filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
-                val otherUsers = it.filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
-                userDAO.upsertTeamMembers(
-                    teamMembers.map { userProfileDTO ->
-                        userMapper.fromApiModelWithUserTypeEntityToDaoModel(
-                            userProfileDTO = userProfileDTO,
-                            null
-                        )
-                    }
-                )
-
-                userDAO.upsertUsers(
-                    otherUsers.map { userProfileDTO ->
-                        userMapper.fromApiModelWithUserTypeEntityToDaoModel(
-                            userProfileDTO = userProfileDTO,
-                            userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
-                                otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = selfUser?.teamId?.value,
-                                otherUserTeamId = userProfileDTO.teamId,
-                                selfUserDomain = selfUser?.id?.domain,
-                                isService = userProfileDTO.service != null
-                            )
-                        )
-                    }
-                )
+        }.fold({
+            if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.ServerError &&
+                it.kaliumException.isFederationError()
+            ) {
+                kaliumLogger.w("Ignoring federated users with unavailable data")
+                Either.Right(Unit)
+            } else {
+                Either.Left(it)
             }
+        }, { listUserProfileDTO ->
+            persistUser(listUserProfileDTO)
         })
+    }
+
+    private suspend fun persistUser(listUserProfileDTO: List<UserProfileDTO>) =
+        wrapStorageRequest {
+            val selfUser = getSelfUser()
+            val selfUserTeamId = selfUser?.teamId?.value
+            val teamMembers = listUserProfileDTO.filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+            val otherUsers = listUserProfileDTO.filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUser) }
+            userDAO.upsertTeamMembers(
+                teamMembers.map { userProfileDTO ->
+                    userMapper.fromApiModelWithUserTypeEntityToDaoModel(
+                        userProfileDTO = userProfileDTO,
+                        null
+                    )
+                }
+            )
+
+            userDAO.upsertUsers(
+                otherUsers.map { userProfileDTO ->
+                    userMapper.fromApiModelWithUserTypeEntityToDaoModel(
+                        userProfileDTO = userProfileDTO,
+                        userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
+                            otherUserDomain = userProfileDTO.id.domain,
+                            selfUserTeamId = selfUser?.teamId?.value,
+                            otherUserTeamId = userProfileDTO.teamId,
+                            selfUserDomain = selfUser?.id?.domain,
+                            isService = userProfileDTO.service != null
+                        )
+                    )
+                }
+            )
+        }
 
     private fun isTeamMember(
         selfUserTeamId: String?,
