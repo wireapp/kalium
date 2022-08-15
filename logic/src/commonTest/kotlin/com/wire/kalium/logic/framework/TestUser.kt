@@ -53,6 +53,7 @@ object TestUser {
         availabilityStatus = UserAvailabilityStatus.NONE,
         userType = UserType.EXTERNAL,
         botService = null,
+        deleted = false
     )
 
     val ENTITY = UserEntity(
@@ -69,6 +70,7 @@ object TestUser {
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = UserTypeEntity.EXTERNAL,
         botService = null,
+        deleted = false
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

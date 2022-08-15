@@ -71,6 +71,8 @@ class UserRepositoryTest {
             TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1"))
         )
         val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withSuccessfulGetUsersInfo()
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
             .withSuccessfulGetMultipleUsersApiRequest(listOf(TestUser.USER_PROFILE_DTO))
             .arrange()
@@ -88,10 +90,13 @@ class UserRepositoryTest {
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
+
         @Mock
         val metadataDAO = configure(mock(classOf<MetadataDAO>())) { stubsUnitByDefault = true }
+
         @Mock
         val clientDAO = configure(mock(classOf<ClientDAO>())) { stubsUnitByDefault = true }
+
         @Mock
         val selfApi = mock(classOf<SelfApi>())
 
@@ -115,11 +120,34 @@ class UserRepositoryTest {
                 .then { flowOf(TestUser.ENTITY) }
         }
 
+        fun withSuccessfulGetUsersInfo(): Arrangement {
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getUserInfo)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Success(TestUser.USER_PROFILE_DTO, mapOf(), 200))
+            return this
+        }
+
         fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserEntity>): Arrangement {
             given(userDAO)
                 .suspendFunction(userDAO::getUsersByQualifiedIDList)
                 .whenInvokedWith(any())
                 .thenReturn(knownUserEntities)
+            return this
+        }
+
+        fun withGetSelfUserId(): Arrangement {
+            given(metadataDAO)
+                .function(metadataDAO::valueByKey)
+                .whenInvokedWith(any())
+                .thenReturn(
+                    """
+                    {
+                        "value" : "someValue",
+                        "domain" : "someDomain"
+                    }
+                """.trimIndent()
+                )
             return this
         }
 
