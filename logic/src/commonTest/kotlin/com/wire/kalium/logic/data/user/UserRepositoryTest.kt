@@ -4,10 +4,8 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.user.details.ListUserRequest
 import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.network.api.user.details.UserProfileDTO
-import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.SelfApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -80,8 +78,8 @@ class UserRepositoryTest {
         userRepository.fetchUsersIfUnknownByIds(requestedUserIds).shouldSucceed()
 
         verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(eq(ListUserRequest.qualifiedIds(listOf(QualifiedID(value = missingUserId.value, domain = missingUserId.domain)))))
+            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+            .with(eq(QualifiedID("id2", "domain2")))
             .wasInvoked(exactly = once)
     }
 
