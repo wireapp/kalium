@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.DeleteClientResult
@@ -32,7 +31,6 @@ import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
-import com.wire.kalium.logic.feature.session.GetAllSessionsResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.Dispatchers
@@ -118,6 +116,7 @@ class DeleteClientCommand : CliktCommand(name = "delete-client") {
             is DeleteClientResult.Failure.Generic -> throw PrintMessage("Delete client failed: ${deleteClientResult.genericFailure}")
             DeleteClientResult.Failure.InvalidCredentials -> throw PrintMessage("Invalid credentials")
             DeleteClientResult.Success -> echo("Client successfully deleted")
+            DeleteClientResult.Failure.PasswordAuthRequired -> echo("Password missing")
         }
     }
 }
@@ -183,19 +182,7 @@ class LoginCommand : CliktCommand(name = "login") {
         }
 
         val userId = coreLogic.globalScope {
-            val sessions = when (val result = this.session.allSessions()) {
-                is GetAllSessionsResult.Success -> result.sessions
-                is GetAllSessionsResult.Failure.NoSessionFound -> emptyList()
-                is GetAllSessionsResult.Failure.Generic -> throw PrintMessage("Failed retrieve existing sessions: ${result.genericFailure}")
-            }
-            if (sessions.map { it.session.userId }.contains(loginResult.session.userId)) {
-                this.session.updateCurrentSession(loginResult.session.userId)
-            } else {
-                val addAccountResult = addAuthenticatedAccount(loginResult, ssoId, true)
-                if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
-                    throw PrintMessage("Failed to save session")
-                }
-            }
+            addAuthenticatedAccount(loginResult, ssoId, true)
             loginResult.session.userId
         }
 
@@ -223,6 +210,7 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
                         is MessageContent.Text -> echo("> ${content.value}")
                         is MessageContent.Unknown -> { /* do nothing */
                         }
+                        else -> echo("Message received with non-text content: ${message.content}")
                     }
                 }
             }

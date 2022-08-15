@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -536,6 +537,7 @@ class GetNotificationsUseCaseTest {
             ProtocolInfo.Proteus,
             mutedStatus,
             null,
+            PlainId("someValue"),
             TIME_EARLIER,
             TIME_EARLIER,
             lastReadDate = "2000-01-01T12:00:00.000Z",
