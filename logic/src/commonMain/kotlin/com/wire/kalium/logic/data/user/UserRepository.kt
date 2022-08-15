@@ -16,7 +16,9 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
@@ -122,7 +124,10 @@ internal class UserDataSource(
                 } else {
                     it.value.forEach { userId ->
                         wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }
-                            .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
+                            .fold(
+                                { kaliumLogger.w("Ignoring external users details") },
+                                { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
+                            )
                     }
                     Either.Right(Unit)
                 }
