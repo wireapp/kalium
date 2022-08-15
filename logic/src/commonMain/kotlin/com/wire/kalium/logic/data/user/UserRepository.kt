@@ -16,6 +16,7 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -143,7 +144,7 @@ internal class UserDataSource(
                     }
                 )
             }
-        }
+        })
 
     private fun isTeamMember(
         selfUserTeamId: String?,
