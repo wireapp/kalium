@@ -15,6 +15,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
@@ -97,21 +98,19 @@ class MessageSenderImpl(
     }
 
     override suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> = attemptToSend(message)
-        .flatMap { messageRemoteTime ->
-            messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
-                .map { messageRemoteTime }
-        }
-        .flatMap { messageRemoteTime ->
+        .onSuccess { messageRemoteTime ->
             messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
-                .map { messageRemoteTime }
-        }
-        .flatMap { messageRemoteTime ->
-            // this should make sure that pending messages are ordered correctly after one of them is sent
-            messageRepository.updatePendingMessagesAddMillisToDate(
-                message.conversationId,
-                timeParser.calculateMillisDifference(message.date, messageRemoteTime)
-            )
-        }
+                .flatMap {
+                    messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
+                }
+                .flatMap {
+                    // this should make sure that pending messages are ordered correctly after one of them is sent
+                    messageRepository.updatePendingMessagesAddMillisToDate(
+                        message.conversationId,
+                        timeParser.calculateMillisDifference(message.date, messageRemoteTime)
+                    )
+                }
+        }.map { }
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
@@ -121,6 +120,7 @@ class MessageSenderImpl(
                 is ConversationEntity.ProtocolInfo.MLS -> {
                     attemptToSendWithMLS(protocolInfo.groupId, message)
                 }
+
                 is ConversationEntity.ProtocolInfo.Proteus -> {
                     // TODO(messaging): make this thread safe (per user)
                     attemptToSendWithProteus(message)
@@ -143,7 +143,7 @@ class MessageSenderImpl(
         mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
             // TODO(mls): handle mls-stale-message
             messageRepository.sendMLSMessage(message.conversationId, mlsMessage).map {
-                message.date //TODO(mls): return actual server time from the response
+                message.date // TODO(mls): return actual server time from the response
             }
         }
 
@@ -157,6 +157,7 @@ class MessageSenderImpl(
                 is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
                     attemptToSend(message)
                 }
+
                 else -> Either.Left(it)
             }
         }, {
