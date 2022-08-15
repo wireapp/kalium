@@ -1,8 +1,8 @@
 package com.wire.kalium.persistence.dao
 
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
@@ -35,6 +35,7 @@ private class ConversationMapper {
             },
             mutedStatus = muted_status,
             mutedTime = muted_time,
+            creatorId = creator_id,
             lastNotificationDate = last_notified_message_date,
             lastModifiedDate = last_modified_date,
             lastReadDate = conversation.last_read_date,
@@ -97,6 +98,7 @@ class ConversationDAOImpl(
                 mutedStatus,
                 mutedTime,
                 removedBy,
+                creatorId,
                 lastModifiedDate,
                 lastNotificationDate,
                 access,

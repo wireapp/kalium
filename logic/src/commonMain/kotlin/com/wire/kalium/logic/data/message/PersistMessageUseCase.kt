@@ -40,6 +40,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Text -> true
             is MessageContent.Calling -> true
             is MessageContent.Asset -> true
+            is MessageContent.Knock -> true
             is MessageContent.DeleteMessage -> false
             is MessageContent.TextEdited -> false
             is MessageContent.RestrictedAsset -> true
