@@ -15,6 +15,7 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.RegisterTokenUseCase
 import com.wire.kalium.logic.feature.session.RegisterTokenUseCaseImpl
+
 @Suppress("LongParameterList")
 class ClientScope(
     private val clientRepository: ClientRepository,
@@ -40,10 +41,20 @@ class ClientScope(
     val deregisterNativePushToken: DeregisterTokenUseCase get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
         get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientRepository)
-    val refillKeyPackages: RefillKeyPackagesUseCase get() = RefillKeyPackagesUseCaseImpl(
-        keyPackageRepository,
-        keyPackageLimitsProvider,
-        clientRepository
-    )
-    val otherUsersClients: GetOtherUserClientsUseCase get() = GetOtherUserClientsUseCaseImpl(clientRemoteRepository)
+    val refillKeyPackages: RefillKeyPackagesUseCase
+        get() = RefillKeyPackagesUseCaseImpl(
+            keyPackageRepository,
+            keyPackageLimitsProvider,
+            clientRepository
+        )
+    val persistOtherUserClients: PersistOtherUserClientsUseCase
+        get() = PersistOtherUserClientsUseCaseImpl(
+            clientRemoteRepository,
+            clientRepository
+        )
+    val getOtherUserClients: GetOtherUserClientsUseCase
+        get() = GetOtherUserClientsUseCaseImpl(
+            clientRepository
+        )
+
 }

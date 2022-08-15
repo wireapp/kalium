@@ -36,8 +36,7 @@ class ClientMapper(
         deviceType = response.deviceType?.let { fromDeviceTypeDTO(it) } ?: run { null },
         label = response.label,
         cookie = response.cookie,
-        capabilities = response.capabilities?.let {
-                capabilities -> Capabilities(capabilities.capabilities.map { fromClientCapabilityDTO(it) }) }
+        capabilities = response.capabilities?.let { capabilities -> Capabilities(capabilities.capabilities.map { fromClientCapabilityDTO(it) }) }
             ?: run { null },
         model = response.model
     )

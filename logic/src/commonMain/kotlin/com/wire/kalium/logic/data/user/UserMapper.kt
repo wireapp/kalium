@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.client.DeviceType
+import com.wire.kalium.logic.data.client.OtherUserClients
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
@@ -20,6 +22,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
+import com.wire.kalium.persistence.dao.client.Client
 
 interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
@@ -56,6 +59,7 @@ interface UserMapper {
         userDomain: String,
         permissionsCode: Int?,
     ): UserEntity
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients>
 }
 
 internal class UserMapperImpl(
@@ -210,4 +214,13 @@ internal class UserMapperImpl(
             userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode),
             botService = null,
         )
+
+    override  fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients> {
+        val list = arrayListOf<OtherUserClients>()
+        for (item in otherUsersClients) {
+            val deviceType = item.deviceType ?: ""
+            list.add(OtherUserClients(DeviceType.valueOf(deviceType), item.id))
+        }
+        return list
+    }
 }

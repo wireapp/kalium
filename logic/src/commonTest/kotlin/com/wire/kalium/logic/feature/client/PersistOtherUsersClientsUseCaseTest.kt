@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.client.OtherUserClients
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
@@ -19,7 +20,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class GetOtherUsersClientsUseCase {
+class PersistOtherUsersClientsUseCaseTest {
 
     @Test
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
@@ -33,13 +34,12 @@ class GetOtherUsersClientsUseCase {
             .arrange()
 
         // When
-        val result = getOtherUsersClientsUseCase.invoke(userId)
+        getOtherUsersClientsUseCase.invoke(userId)
 
         verify(arrangement.clientRemoteRepository)
             .suspendFunction(arrangement.clientRemoteRepository::otherUserClients).with(any())
             .wasInvoked(exactly = once)
 
-        assertTrue(result is GetOtherUserClientsResult.Success)
     }
 
     @Test
@@ -52,14 +52,13 @@ class GetOtherUsersClientsUseCase {
             .arrange()
 
         // When
-        val result = getOtherUsersClientsUseCase.invoke(userId)
+        getOtherUsersClientsUseCase.invoke(userId)
 
         // Then
         verify(arrangement.clientRemoteRepository)
             .suspendFunction(arrangement.clientRemoteRepository::otherUserClients).with(any())
             .wasInvoked(exactly = once)
 
-        assertTrue(result is GetOtherUserClientsResult.Failure.UserNotFound)
     }
 
     private class Arrangement {
@@ -67,12 +66,19 @@ class GetOtherUsersClientsUseCase {
         @Mock
         val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
 
-        val getOtherUserClientsUseCase = GetOtherUserClientsUseCaseImpl(clientRemoteRepository)
+        @Mock
+        val clientRepository = mock(classOf<ClientRepository>())
+
+        val persistOtherUserClientsUseCase = PersistOtherUserClientsUseCaseImpl(clientRemoteRepository, clientRepository)
 
         fun withSuccessfulResponse(expectedResponse: List<OtherUserClients>): Arrangement {
             given(clientRemoteRepository)
                 .suspendFunction(clientRemoteRepository::otherUserClients).whenInvokedWith(any())
                 .thenReturn(Either.Right(expectedResponse))
+
+            given(clientRepository)
+                .suspendFunction(clientRepository::saveNewClients).whenInvokedWith(any(), any(), any())
+                .thenReturn(Either.Right(Unit))
             return this
         }
 
@@ -83,6 +89,6 @@ class GetOtherUsersClientsUseCase {
             return this
         }
 
-        fun arrange() = this to getOtherUserClientsUseCase
+        fun arrange() = this to persistOtherUserClientsUseCase
     }
 }
