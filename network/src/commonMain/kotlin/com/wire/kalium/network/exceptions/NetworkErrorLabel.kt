@@ -1,7 +1,5 @@
 package com.wire.kalium.network.exceptions
 
-import com.wire.kalium.network.api.ErrorResponse
-
 internal object NetworkErrorLabel {
     const val TOO_MANY_CLIENTS = "too-many-clients"
     const val INVALID_CREDENTIALS = "invalid-credentials"
