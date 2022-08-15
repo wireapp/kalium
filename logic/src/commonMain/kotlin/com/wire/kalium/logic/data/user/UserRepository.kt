@@ -16,9 +16,7 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.details.ListUserRequest
@@ -27,8 +25,6 @@ import com.wire.kalium.network.api.user.details.UserProfileDTO
 import com.wire.kalium.network.api.user.details.qualifiedIds
 import com.wire.kalium.network.api.user.self.ChangeHandleRequest
 import com.wire.kalium.network.api.user.self.SelfApi
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isFederationError
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -115,23 +111,27 @@ internal class UserDataSource(
     }
 
     override suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit> {
-        return wrapApiRequest {
-            userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
-        }.fold({
-            if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.ServerError &&
-                it.kaliumException.isFederationError()
-            ) {
-                kaliumLogger.w("Ignoring federated users with unavailable data")
-                Either.Right(Unit)
-            } else {
-                Either.Left(it)
+        val selfUserDomain = getSelfUserIDEntity().domain
+        val results: List<Either<CoreFailure, Unit>> = ids.groupBy { it.domain }
+            .map {
+                val usersOnSameDomain = it.key == selfUserDomain
+                if (usersOnSameDomain) {
+                    wrapApiRequest {
+                        userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(ids.map(idMapper::toApiModel)))
+                    }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO) }
+                } else {
+                    it.value.forEach { userId ->
+                        wrapApiRequest { userDetailsApi.getUserInfo(idMapper.toApiModel(userId)) }
+                            .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
+                    }
+                    Either.Right(Unit)
+                }
             }
-        }, { listUserProfileDTO ->
-            persistUser(listUserProfileDTO)
-        })
+
+        return results.firstOrNull { it is Either.Left } ?: Either.Right(Unit)
     }
 
-    private suspend fun persistUser(listUserProfileDTO: List<UserProfileDTO>) =
+    private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) =
         wrapStorageRequest {
             val selfUser = getSelfUser()
             val selfUserTeamId = selfUser?.teamId?.value
