@@ -64,12 +64,12 @@ internal fun newServerConfigEntity(id: Int) = ServerConfigEntity(
 internal fun newServerConfigDTO(id: Int) = ServerConfigDTO(
     id = "config-$id",
     links = ServerConfigDTO.Links(
-        api = Url("https://server$id-apiBaseUrl.de"),
-        accounts = Url("https://server$id-accountBaseUrl.de"),
-        webSocket = Url("https://server$id-webSocketBaseUrl.de"),
-        blackList = Url("https://server$id-blackListUrl.de"),
-        teams = Url("https://server$id-teamsUrl.de"),
-        website = Url("https://server$id-websiteUrl.de"),
+        api = Url("https://server$id-apiBaseUrl.de/"),
+        accounts = Url("https://server$id-accountBaseUrl.de/"),
+        webSocket = Url("https://server$id-webSocketBaseUrl.de/"),
+        blackList = Url("https://server$id-blackListUrl.de/"),
+        teams = Url("https://server$id-teamsUrl.de/"),
+        website = Url("https://server$id-websiteUrl.de/"),
         title = "server$id-title"
     ),
     ServerConfigDTO.MetaData(
