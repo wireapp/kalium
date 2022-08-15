@@ -582,8 +582,10 @@ abstract class UserSessionScopeCommon(
 
     fun onInit() {
         launch {
+            // TODO: Add a public start function to the Managers
             incrementalSyncManager
             slowSyncManager
+
             callRepository.updateOpenCallsToClosedStatus()
         }
     }
