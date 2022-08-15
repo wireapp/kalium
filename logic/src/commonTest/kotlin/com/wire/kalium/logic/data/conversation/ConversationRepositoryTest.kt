@@ -1191,7 +1191,7 @@ class ConversationRepositoryTest {
 
         val CONVERSATION_RESPONSE_DTO = ConversationResponseDTO(
             conversationsFound = listOf(CONVERSATION_RESPONSE),
-            conversationsFailed = listOf(CONVERSATION_RESPONSE.copy(id = ConversationIdDTO("failedId", "someDomain"))),
+            conversationsFailed = listOf(ConversationIdDTO("failedId", "someDomain")),
             conversationsNotFound = emptyList()
         )
 
