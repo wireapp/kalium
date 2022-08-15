@@ -132,4 +132,4 @@ internal fun provideBaseHttpClient(
 
 internal fun shouldAddApiVersion(apiVersion: Int): Boolean = apiVersion >= MINIMUM_API_VERSION_TO_ADD
 private const val MINIMUM_API_VERSION_TO_ADD = 1
-internal const val WEBSOCKET_PING_INTERVAL_MILLIS = 30_000L
+internal const val WEBSOCKET_PING_INTERVAL_MILLIS = 20_000L
