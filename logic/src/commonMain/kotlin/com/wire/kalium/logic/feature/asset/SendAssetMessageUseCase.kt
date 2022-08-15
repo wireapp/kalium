@@ -14,6 +14,8 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
@@ -57,6 +59,7 @@ internal class SendAssetMessageUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender
 ) : SendAssetMessageUseCase {
 
@@ -69,6 +72,9 @@ internal class SendAssetMessageUseCaseImpl(
         assetWidth: Int?,
         assetHeight: Int?
     ): SendAssetMessageResult {
+        slowSyncRepository.slowSyncStatus.first {
+            it is SlowSyncStatus.Complete
+        }
 
         // Generate the otr asymmetric key that will be used to encrypt the data
         val otrKey = generateRandomAES256Key()
