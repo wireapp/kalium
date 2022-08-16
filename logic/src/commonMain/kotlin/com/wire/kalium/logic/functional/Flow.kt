@@ -3,6 +3,7 @@ package com.wire.kalium.logic.functional
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
@@ -23,10 +24,7 @@ fun <T1, T2> Flow<T1>.combine(flow: Flow<T2>): Flow<Pair<T1, T2>> = combine(flow
 
 suspend fun <T> Flow<List<T>>.flatten() = flatMapConcat { it.asFlow() }
 
-fun <T> Flow<T>.distinct(): Flow<T> = flow {
+fun <T> Flow<T>.distinct(): Flow<T> {
     val past = mutableSetOf<T>()
-    collect {
-        val isNew = past.add(it)
-        if (isNew) emit(it)
-    }
+    return filter { past.add(it) }
 }

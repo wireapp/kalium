@@ -12,10 +12,12 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -52,20 +54,15 @@ internal class PendingProposalSchedulerImpl(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
-
-    private val refillKeyPackagesScope = CoroutineScope(dispatcher)
-
-    private var refillKeyPackageJob: Job? = null
+    private val refillKeyPackagesScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     init {
-        refillKeyPackageJob = refillKeyPackagesScope.launch {
-            incrementalSyncRepository.incrementalSyncState.collect { syncState ->
+        refillKeyPackagesScope.launch() {
+            incrementalSyncRepository.incrementalSyncState.collectLatest { syncState ->
+                println("collecting syncState: $syncState")
                 ensureActive()
                 if (syncState == IncrementalSyncStatus.Live) {
                     startCommittingPendingProposals()
-                } else {
-                    refillKeyPackageJob?.cancel()
-                    refillKeyPackageJob = null
                 }
             }
         }
@@ -84,11 +81,14 @@ internal class PendingProposalSchedulerImpl(
         mlsConversationRepository.value.observeProposalTimers()
             .flatten()
             .distinct()
+            .cancellable()
             .collect { timer ->
-                launch {
+                ensureActive()
+                launch() {
                     val secondsUntilFiring = timer.timestamp.minus(Clock.System.now())
                     if (secondsUntilFiring.inWholeSeconds > 0) {
-                        kotlinx.coroutines.delay(secondsUntilFiring)
+                        delay(secondsUntilFiring)
+                        ensureActive()
                         send(timer.groupID)
                     } else {
                         send(timer.groupID)
