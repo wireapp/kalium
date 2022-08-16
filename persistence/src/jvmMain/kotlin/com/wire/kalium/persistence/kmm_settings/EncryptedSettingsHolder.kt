@@ -5,6 +5,7 @@ import com.russhwolf.settings.JvmPropertiesSettings
 import com.russhwolf.settings.Settings
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileWriter
 import java.nio.file.Paths
 import java.util.Properties
 
@@ -22,7 +23,7 @@ actual class EncryptedSettingsHolder(
     val properties = createOrLoad(rootPath, file)
 
     // TODO(jvm): JvmPreferencesSettings is not encrypted
-    actual val encryptedSettings: Settings = JvmPropertiesSettings(properties)
+    actual val encryptedSettings: Settings = JvmPropertiesSettings(properties) { onModify(it, file) }
 
     private fun createOrLoad(rootPath: String, file: File): Properties {
         val properties = Properties()
@@ -33,5 +34,9 @@ actual class EncryptedSettingsHolder(
         }
         properties.load(FileInputStream(file))
         return properties
+    }
+
+    private fun onModify(properties: Properties, file: File) {
+        properties.store(FileWriter(file), "Store values to properties file")
     }
 }
