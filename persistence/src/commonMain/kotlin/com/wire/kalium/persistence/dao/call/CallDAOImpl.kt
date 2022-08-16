@@ -101,4 +101,8 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
             .map { call ->
                 call?.conversation_type
             }.firstOrNull()
+
+    override suspend fun updateOpenCallsToClosedStatus() {
+         callsQueries.updateOpenCallsToClosedStatus()
+    }
 }
