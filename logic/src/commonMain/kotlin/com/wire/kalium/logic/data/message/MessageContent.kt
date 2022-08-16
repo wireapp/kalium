@@ -48,6 +48,7 @@ sealed class MessageContent {
 
     data class LastRead(
         val messageId: String,
+        val qualifiedConversationId: QualifiedConversationId?,
         val conversationId: String,
         val time: Instant
     ) : Regular()

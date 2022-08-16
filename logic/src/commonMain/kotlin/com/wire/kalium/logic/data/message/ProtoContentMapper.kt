@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
@@ -57,7 +56,7 @@ class ProtoContentMapperImpl(
             is MessageContent.LastRead -> {
                 GenericMessage.Content.LastRead(
                     LastRead(
-                        qualifiedConversationId = readableContent ,
+                        qualifiedConversationId = readableContent.qualifiedConversationId,
                         conversationId = readableContent.conversationId,
                         lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
                     )
@@ -151,6 +150,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.LastRead -> {
                 MessageContent.LastRead(
                     messageId = genericMessage.messageId,
+                    qualifiedConversationId= protoContent.value.qualifiedConversationId,
                     conversationId = protoContent.value.conversationId,
                     time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
                 )
