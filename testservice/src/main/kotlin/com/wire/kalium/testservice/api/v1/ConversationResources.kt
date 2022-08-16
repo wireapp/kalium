@@ -9,6 +9,8 @@ import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendTextRequest
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
 import org.slf4j.LoggerFactory
 import javax.validation.Valid
 import javax.ws.rs.POST
@@ -17,6 +19,7 @@ import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
+@Api
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
 class ConversationResources(private val instanceService: InstanceService) {
@@ -41,9 +44,9 @@ class ConversationResources(private val instanceService: InstanceService) {
     }
     */
 
-    // Delete a message locally.
     @POST
     @Path("/instance/{id}/delete")
+    @ApiOperation(value = "Delete a message locally")
     fun delete(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest) {
         val instance = instanceService.getInstanceOrThrow(id)
         with(deleteMessageRequest) {
@@ -55,9 +58,9 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // Delete a message for everyone.
     @POST
     @Path("/instance/{id}/deleteEverywhere")
+    @ApiOperation(value = "Delete a message for everyone")
     fun deleteEverywhere(@PathParam("id") id: String, @Valid deleteMessageRequest: DeleteMessageRequest) {
         val instance = instanceService.getInstanceOrThrow(id)
         with(deleteMessageRequest) {
@@ -69,9 +72,9 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // Get all messages.
     @POST
     @Path("/instance/{id}/getMessages")
+    @ApiOperation(value = "Get all messages")
     fun getMessages(@PathParam("id") id: String, @Valid getMessagesRequest: GetMessagesRequest): List<Message> {
         val instance = instanceService.getInstanceOrThrow(id)
         with(getMessagesRequest) {
@@ -97,10 +100,9 @@ class ConversationResources(private val instanceService: InstanceService) {
     // POST /api/v1/instance/{instanceId}/sendEphemeralConfirmationRead
     // Send a read confirmation for an ephemeral message.
 
-    // POST /api/v1/instance/{instanceId}/sendFile
-    // Send a file to a conversation.
     @POST
     @Path("/instance/{id}/sendFile")
+    @ApiOperation(value = "Send a file to a conversation")
     fun sendText(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest) {
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendFileRequest) {
@@ -120,9 +122,9 @@ class ConversationResources(private val instanceService: InstanceService) {
     // POST /api/v1/instance/{instanceId}/sendLocation
     // Send an location to a conversation.
 
-    // Send an ping to a conversation.
     @POST
     @Path("/instance/{id}/sendPing")
+    @ApiOperation(value = "Send a ping to a conversation")
     fun sendPing(@PathParam("id") id: String, @Valid sendPingRequest: SendPingRequest) {
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendPingRequest) {
@@ -142,9 +144,9 @@ class ConversationResources(private val instanceService: InstanceService) {
     // POST /api/v1/instance/{instanceId}/sendReaction
     // Send a reaction to a message.
 
-    // Send a text message to a conversation.
     @POST
     @Path("/instance/{id}/sendText")
+    @ApiOperation(value = "Send a text message to a conversation (can include mentions, reply, buttons and link previews)")
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest) {
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendTextRequest) {
