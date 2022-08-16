@@ -59,6 +59,7 @@ interface UserMapper {
         userDomain: String,
         permissionsCode: Int?,
     ): UserEntity
+
     fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients>
 }
 
@@ -215,7 +216,7 @@ internal class UserMapperImpl(
             botService = null,
         )
 
-    override  fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients> {
+    override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients> {
         val list = arrayListOf<OtherUserClients>()
         for (item in otherUsersClients) {
             val deviceType = item.deviceType ?: ""

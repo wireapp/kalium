@@ -18,7 +18,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class PersistOtherUsersClientsUseCaseTest {
 

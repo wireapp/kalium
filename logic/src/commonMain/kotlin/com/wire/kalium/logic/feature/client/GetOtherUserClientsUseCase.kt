@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.client.OtherUserClients
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
-
 interface GetOtherUserClientsUseCase {
     suspend operator fun invoke(userId: UserId): GetOtherUserClientsResult
 }

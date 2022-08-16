@@ -5,7 +5,6 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.ClientConfig
-import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
