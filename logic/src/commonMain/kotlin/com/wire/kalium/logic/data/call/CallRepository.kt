@@ -53,6 +53,7 @@ interface CallRepository {
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun getLastCallConversationTypeByConversationId(conversationId: ConversationId): Conversation.Type
+    suspend fun updateOpenCallsToClosedStatus()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -347,6 +348,10 @@ internal class CallDataSource(
         )?.let {
             callMapper.toConversationType(conversationType = it)
         } ?: Conversation.Type.ONE_ON_ONE
+
+    override suspend fun updateOpenCallsToClosedStatus() {
+        callDAO.updateOpenCallsToClosedStatus()
+    }
 
     private suspend fun persistMissedCallMessageIfNeeded(
         conversationId: ConversationId
