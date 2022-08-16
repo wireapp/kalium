@@ -60,3 +60,10 @@ WHERE
     AND status = 'CLOSED'
 ORDER BY created_at DESC
 LIMIT 1;
+
+updateOpenCallsToClosedStatus:
+UPDATE Call
+SET status = 'CLOSED'
+WHERE
+    status != 'CLOSED'
+    AND status != 'MISSED';
