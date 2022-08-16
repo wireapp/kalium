@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlin.coroutines.cancellation.CancellationException
 
 interface ConversationRepository {
     suspend fun getSelfConversationId(): ConversationId
@@ -322,15 +323,17 @@ class ConversationDataSource(
             }
         }
 
-    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure) {
-        when (error) {
-            is StorageFailure.DataNotFound ->
-                kaliumLogger.withFeatureId(CONVERSATIONS).e("DataNotFound when fetching conversation members: $error")
+    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure) = when (error) {
+        is StorageFailure.DataNotFound ->
+            kaliumLogger.withFeatureId(CONVERSATIONS).e("DataNotFound when fetching conversation members: $error")
 
-            is StorageFailure.Generic ->
+        is StorageFailure.Generic -> {
+            if (error.rootCause !is CancellationException) {
                 kaliumLogger.withFeatureId(CONVERSATIONS).e("Failure getting other 1:1 user for $conversation", error.rootCause)
+            }
         }
     }
+
 
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
     @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
