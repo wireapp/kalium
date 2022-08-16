@@ -59,11 +59,13 @@ class GetNotificationsUseCaseImpl(
 
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
-        return observeRegularNotifications()
-            .combine(observeConnectionRequests()) { messages, connections -> messages.plus(connections) }
-            .combine(ephemeralNotificationsManager.observeEphemeralNotifications()) { messages, ephemeralNotifications ->
-                messages.plus(ephemeralNotifications)
-            }
+        return combine(
+            observeRegularNotifications(),
+            observeConnectionRequests(),
+            ephemeralNotificationsManager.observeEphemeralNotifications()
+        ) { messages, connections, ephemeralNotifications ->
+            messages.plus(connections).plus(ephemeralNotifications)
+        }
             .distinctUntilChanged()
     }
 
