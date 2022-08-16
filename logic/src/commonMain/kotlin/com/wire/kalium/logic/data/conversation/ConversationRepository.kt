@@ -334,7 +334,6 @@ class ConversationDataSource(
         }
     }
 
-
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
     @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
     override suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>> =
