@@ -29,4 +29,8 @@ actual class UserSessionScope(
     kaliumConfigs
 ) {
     override val clientConfig: ClientConfig get() = ClientConfig()
+
+    init {
+        onInit()
+    }
 }
