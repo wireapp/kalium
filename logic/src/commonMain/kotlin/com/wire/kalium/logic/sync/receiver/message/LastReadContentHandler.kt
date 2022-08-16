@@ -13,16 +13,14 @@ class LastReadContentHandler(
     private val userRepository: UserRepository
 ) {
 
-    // TODO: for now we are just handeling the case when the self user has read the conversation
-    // on another device, in the future we could handle the case when other user have read our message
-    // here too
     suspend fun handle(
         message: Message,
         messageContent: MessageContent.LastRead
     ) {
         val isMessageComingFromOtherClient = message.senderUserId == userRepository.getSelfUserId()
+        val isMessageDestinedForSelfConversation = conversationRepository.getSelfConversationId() == message.conversationId
 
-        if (isMessageComingFromOtherClient) {
+        if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
             // If the message is coming from other client, it means that the user has read
             // the conversation on the other device and we can update the read date locally
             // to synchronize the state across the clients.

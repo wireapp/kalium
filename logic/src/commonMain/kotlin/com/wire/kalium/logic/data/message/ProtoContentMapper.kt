@@ -54,12 +54,15 @@ class ProtoContentMapperImpl(
             )
             is MessageContent.Availability ->
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
-            is MessageContent.LastRead -> GenericMessage.Content.LastRead(
-                LastRead(
-                    conversationId = readableContent.conversationId,
-                    lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
+            is MessageContent.LastRead -> {
+                GenericMessage.Content.LastRead(
+                    LastRead(
+                        qualifiedConversationId = readableContent ,
+                        conversationId = readableContent.conversationId,
+                        lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
+                    )
                 )
-            )
+            }
 
             else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
