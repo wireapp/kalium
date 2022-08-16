@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -614,11 +615,11 @@ class ConversationDataSource(
     }
 
     override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {
-        val selfUserId = userRepository.observeSelfUser().first()
+        val selfUserId = userRepository.observeSelfUser().first().id
 
         conversationDAO.whoDeletedMeInConversation(
             idMapper.toDaoModel(conversationId),
-            idMapper.toStringDaoModel(selfUserId.id)
+            idMapper.toStringDaoModel(selfUserId)
         )?.let { idMapper.fromDaoModel(it) }
 
     }
