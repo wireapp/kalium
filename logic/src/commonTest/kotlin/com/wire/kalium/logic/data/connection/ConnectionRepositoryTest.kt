@@ -356,7 +356,7 @@ class ConnectionRepositoryTest {
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
             userType = UserTypeEntity.EXTERNAL,
             botService = null,
-            false
+            deleted = false
         )
 
         val stubSelfUser = SelfUser(

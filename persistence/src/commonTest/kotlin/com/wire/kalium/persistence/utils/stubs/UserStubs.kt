@@ -21,7 +21,7 @@ fun newUserEntity(id: String = "test") =
         UserAvailabilityStatusEntity.NONE,
         UserTypeEntity.INTERNAL,
         botService = null,
-        false
+        deleted = false
     )
 
 fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
@@ -39,5 +39,5 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         UserAvailabilityStatusEntity.NONE,
         UserTypeEntity.INTERNAL,
         botService = null,
-        false
+        deleted = false
     )

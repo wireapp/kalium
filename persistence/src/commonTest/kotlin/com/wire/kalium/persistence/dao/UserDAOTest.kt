@@ -218,7 +218,7 @@ class UserDAOTest : BaseDatabaseTest() {
                     UserAvailabilityStatusEntity.NONE,
                     UserTypeEntity.INTERNAL,
                     botService = null,
-                    false
+                    deleted = false
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers

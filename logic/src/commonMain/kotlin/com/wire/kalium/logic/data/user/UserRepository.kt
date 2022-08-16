@@ -146,7 +146,7 @@ internal class UserDataSource(
                 teamMembers.map { userProfileDTO ->
                     userMapper.fromApiModelWithUserTypeEntityToDaoModel(
                         userProfileDTO = userProfileDTO,
-                        null
+                        userTypeEntity = null
                     )
                 }
             )
