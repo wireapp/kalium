@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -81,15 +82,17 @@ class MessageSenderImpl(
     private val timeParser: TimeParser
 ) : MessageSender {
 
+    private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
+
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
         return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
             if (message is Message.Regular) sendMessage(message)
             else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
         }.onFailure {
-            kaliumLogger.i("Failed to send message. Failure = $it")
+            logger.i("Failed to send message. Failure = $it")
             if (it is NetworkFailure.NoNetworkConnection) {
-                kaliumLogger.i("Scheduling message for retrying in the future.")
+                logger.i("Scheduling message for retrying in the future.")
                 messageSendingScheduler.scheduleSendingOfPendingMessages()
             } else {
                 messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
@@ -99,18 +102,27 @@ class MessageSenderImpl(
 
     override suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> = attemptToSend(message)
         .onSuccess { messageRemoteTime ->
-            messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
-                .flatMap {
-                    messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
-                }
-                .flatMap {
-                    // this should make sure that pending messages are ordered correctly after one of them is sent
-                    messageRepository.updatePendingMessagesAddMillisToDate(
-                        message.conversationId,
-                        timeParser.calculateMillisDifference(message.date, messageRemoteTime)
-                    )
-                }
+            updateDatesOfMessagesWithServerTime(message, messageRemoteTime)
         }.map { }
+
+    private suspend fun updateDatesOfMessagesWithServerTime(
+        message: Message.Regular,
+        messageRemoteTime: String
+    ) {
+        messageRepository.updateMessageStatus(MessageEntity.Status.SENT, message.conversationId, message.id)
+            .flatMap {
+                messageRepository.updateMessageDate(message.conversationId, message.id, messageRemoteTime)
+            }.flatMap {
+                // this should make sure that pending messages are ordered correctly after one of them is sent
+                messageRepository.updatePendingMessagesAddMillisToDate(
+                    message.conversationId,
+                    timeParser.calculateMillisDifference(message.date, messageRemoteTime)
+                )
+            }.onFailure {
+                val cause = (it as? CoreFailure.Unknown)?.rootCause ?: (it as? StorageFailure.Generic)?.rootCause
+                logger.w("Failure '$it' on updating dates after sending message '${message.id}'", cause)
+            }
+    }
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
