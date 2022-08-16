@@ -11,6 +11,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -34,6 +36,8 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Path
@@ -162,7 +166,12 @@ class SendAssetMessageUseCaseTest {
         @Mock
         private val userRepository = mock(classOf<UserRepository>())
 
+        @Mock
+        private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+
         val someClientId = ClientId("some-client-id")
+
+        val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
         private fun fakeSelfUser() = SelfUser(
             UserId("some_id", "some_domain"),
@@ -199,6 +208,10 @@ class SendAssetMessageUseCaseTest {
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(completeStateFlow)
             given(persistMessage)
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
@@ -211,6 +224,10 @@ class SendAssetMessageUseCaseTest {
         }
 
         fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement {
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(completeStateFlow)
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any(), any())
@@ -223,6 +240,7 @@ class SendAssetMessageUseCaseTest {
             clientRepository,
             assetDataSource,
             userRepository,
+            slowSyncRepository,
             messageSender
         )
     }

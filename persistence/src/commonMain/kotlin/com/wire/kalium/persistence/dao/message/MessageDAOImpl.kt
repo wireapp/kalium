@@ -1,9 +1,9 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.Query
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -14,6 +14,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -191,6 +192,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     conversation_id = message.conversationId,
                     caller_id = message.senderUserId
                 )
+
+                is MessageEntityContent.Knock -> {} // No need to insert a Knock-specific message
             }
         }
     }
@@ -264,6 +267,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
         is MessageEntityContent.Asset -> ASSET
+        is MessageEntityContent.Knock -> KNOCK
         is MessageEntityContent.MemberChange -> MEMBER_CHANGE
         is MessageEntityContent.MissedCall -> MISSED_CALL
         is MessageEntityContent.Unknown -> UNKNOWN
@@ -280,6 +284,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     private fun SQLDelightMessage.toMessageEntityFlow() = when (this.content_type) {
         TEXT -> this.queryOneOrDefaultFlow(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageAssetContent, mapper::toModel)
+        KNOCK -> flowOf(MessageEntityContent.Knock(false))
         MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, mapper::toModel)
         MISSED_CALL -> this.queryOneOrDefaultFlow(queries::selectMessageMissedCallContent, mapper::toModel)
         UNKNOWN -> this.queryOneOrDefaultFlow(queries::selectMessageUnknownContent, mapper::toModel)
@@ -290,6 +295,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     private fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
         TEXT -> this.queryOneOrDefault(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, mapper::toModel)
+        KNOCK -> MessageEntityContent.Knock(false)
         MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, mapper::toModel)
         MISSED_CALL -> this.queryOneOrDefault(queries::selectMessageMissedCallContent, mapper::toModel)
         UNKNOWN -> this.queryOneOrDefault(queries::selectMessageUnknownContent, mapper::toModel)

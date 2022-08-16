@@ -53,7 +53,7 @@ interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
 internal class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val persistMessage: PersistMessageUseCase,
@@ -70,6 +70,8 @@ internal class ConversationEventReceiverImpl(
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
 ) : ConversationEventReceiver {
 
+    private val logger get() = kaliumLogger.withFeatureId(EVENT_RECEIVER)
+
     override suspend fun onEvent(event: Event.Conversation) {
         when (event) {
             is Event.Conversation.NewMessage -> handleNewMessage(event)
@@ -79,6 +81,7 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MemberLeave -> handleMemberLeave(event)
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
             is Event.Conversation.NewMLSMessage -> handleNewMLSMessage(event)
+            is Event.Conversation.AccessUpdate -> {}
         }
     }
 
@@ -103,6 +106,7 @@ internal class ConversationEventReceiverImpl(
                     is MessageContent.Text -> Message.Visibility.VISIBLE
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
+                    is MessageContent.Knock -> Message.Visibility.VISIBLE
                     is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                 }
@@ -354,7 +358,7 @@ internal class ConversationEventReceiverImpl(
     // TODO(qol): split this function so it's easier to maintain
     @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
-        kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "$TAG Message received: $message")
+        logger.i(message = "$TAG Message received: $message")
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {
@@ -375,11 +379,11 @@ internal class ConversationEventReceiverImpl(
                             messageUuid = content.messageId,
                             conversationId = conversationId
                         )
-                    else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
+                    else logger.i(message = "Delete message sender is not verified: $message")
                 }
 
                 is MessageContent.Calling -> {
-                    kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - MessageContent.Calling")
+                    logger.d("$TAG - MessageContent.Calling")
                     callManagerImpl.value.onCallingMessageReceived(
                         message = message,
                         content = content
@@ -388,17 +392,30 @@ internal class ConversationEventReceiverImpl(
 
                 is MessageContent.TextEdited -> editTextHandler.handle(message, content)
                 is MessageContent.Unknown -> {
-                    kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Unknown Message received: $message")
+                    logger.i(message = "Unknown Message received: $message")
                     persistMessage(message)
                 }
 
-                is MessageContent.Empty -> TODO()
+                is MessageContent.Empty -> {
+                    logger.w("Empty Message Content received")
+                }
+                is MessageContent.RestrictedAsset -> {
+                    logger.w("RestrictedAsset message received, but not yet handled")
+                }
+
+                is MessageContent.Knock -> {
+                    persistMessage(message)
+                }
             }
 
             is Message.System -> when (message.content) {
                 is MessageContent.MemberChange -> {
-                    kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "System MemberChange Message received: $message")
+                    logger.i(message = "System MemberChange Message received: $message")
                     persistMessage(message)
+                }
+
+                MessageContent.MissedCall -> {
+                    logger.w("MissedCall message received but not yet handled")
                 }
             }
         }
