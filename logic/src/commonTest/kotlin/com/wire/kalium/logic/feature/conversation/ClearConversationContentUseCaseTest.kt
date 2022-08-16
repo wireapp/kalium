@@ -75,7 +75,24 @@ class ClearConversationContentUseCaseTest {
 
     @Test
     fun givenGettingAssetsMessagesFails_whenInvoking_thenFailureIsCorrectlyPropagated() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withGetAssetMessages(emptyList(), false)
+            .withDeleteAsset(true)
+            .withDeleteAllMessages(ConversationId("someValue", "someDomain"), true)
+            .arrange()
 
+        // when
+        val result = useCase(ConversationId("someValue", "someDomain"))
+
+        // then
+        with(arrangement) {
+            verify(assetRepository)
+                .suspendFunction(assetRepository::deleteAsset)
+                .with(anything(), anything())
+                .wasNotInvoked()
+        }
+
+        assertIs<Result.Failure>(result)
     }
 
     @Test

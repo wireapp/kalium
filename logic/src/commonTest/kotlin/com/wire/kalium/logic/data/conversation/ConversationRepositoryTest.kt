@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -78,6 +79,9 @@ class ConversationRepositoryTest {
     private val conversationDAO = configure(mock(ConversationDAO::class)) { stubsUnitByDefault = true }
 
     @Mock
+    private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
+
+    @Mock
     private val conversationApi = mock(ConversationApi::class)
 
     @Mock
@@ -95,6 +99,7 @@ class ConversationRepositoryTest {
             mlsConversationRepository,
             conversationDAO,
             conversationApi,
+            messageDAO,
             clientApi,
             timeParser
         )
@@ -829,9 +834,6 @@ class ConversationRepositoryTest {
                 .wasInvoked(once)
         }
     }
-
-    @Test
-
 
     private class Arrangement {
         @Mock
