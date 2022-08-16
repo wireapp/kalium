@@ -323,12 +323,14 @@ class ConversationDataSource(
             }
         }
 
-    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure) = when (error) {
+    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Unit = when (error) {
         is StorageFailure.DataNotFound ->
             kaliumLogger.withFeatureId(CONVERSATIONS).e("DataNotFound when fetching conversation members: $error")
 
         is StorageFailure.Generic -> {
             if (error.rootCause !is CancellationException) {
+                // Ignore CancellationException
+            } else {
                 kaliumLogger.withFeatureId(CONVERSATIONS).e("Failure getting other 1:1 user for $conversation", error.rootCause)
             }
         }
