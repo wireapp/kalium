@@ -59,7 +59,6 @@ internal class PendingProposalSchedulerImpl(
     init {
         refillKeyPackagesScope.launch() {
             incrementalSyncRepository.incrementalSyncState.collectLatest { syncState ->
-                println("collecting syncState: $syncState")
                 ensureActive()
                 if (syncState == IncrementalSyncStatus.Live) {
                     startCommittingPendingProposals()
