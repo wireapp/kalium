@@ -35,7 +35,7 @@ class UpdateConversationReadDateUseCase(
                     conversationId = conversationId.value,
                     time = time
                 ),
-                conversationId = conversationId,
+                conversationId = conversationRepository.getSelfConversationId(),
                 date = Clock.System.now().toString(),
                 senderUserId = userRepository.getSelfUserId(),
                 senderClientId = currentClientId,
