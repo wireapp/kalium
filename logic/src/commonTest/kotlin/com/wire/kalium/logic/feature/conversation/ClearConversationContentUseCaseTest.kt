@@ -52,7 +52,25 @@ class ClearConversationContentUseCaseTest {
 
     @Test
     fun givenConversationHasNoAssetsButOnlyTextMessages_whenInvoking_thenNoAssetsAreRemoved() = runTest {
+        // given
+        val (arrangement, useCase) = Arrangement()
+            .withDeleteAsset(true)
+            .withDeleteAllMessages(ConversationId("someValue", "someDomain"), true)
+            .withGetAssetMessages(emptyList())
+            .arrange()
 
+        // when
+        val result = useCase(ConversationId("someValue", "someDomain"))
+
+        // then
+        with(arrangement) {
+            verify(assetRepository)
+                .suspendFunction(assetRepository::deleteAsset)
+                .with(anything(), anything())
+                .wasNotInvoked()
+        }
+
+        assertIs<Result.Success>(result)
     }
 
     @Test
