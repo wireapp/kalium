@@ -6,7 +6,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.logout.LogoutApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 
 interface LogoutRepository {
 
@@ -35,7 +35,7 @@ internal class LogoutDataSource(
 
     private val logoutEventsChannel = Channel<LogoutReason>(capacity = Channel.CONFLATED)
 
-    override suspend fun observeLogout(): Flow<LogoutReason> = logoutEventsChannel.consumeAsFlow()
+    override suspend fun observeLogout(): Flow<LogoutReason> = logoutEventsChannel.receiveAsFlow()
 
     override suspend fun onLogout(reason: LogoutReason) = logoutEventsChannel.send(reason)
 

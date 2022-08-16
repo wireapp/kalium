@@ -32,21 +32,21 @@ class RegisterAccountApp : CliktCommand() {
     override fun run(): Unit = runBlocking {
         NetworkLogger.setLoggingLevel(KaliumLogLevel.DEBUG)
         when (val requestResult = requestCode()) {
-            is RequestActivationCodeResult.Failure.Generic -> {
-                echo(requestResult.failure)
-                return@runBlocking
-            }
             RequestActivationCodeResult.Success -> {
                 when (val result = register()) {
-                    is RegisterResult.Failure.Generic -> {
-                        echo(result.failure)
-                        return@runBlocking
-                    }
                     is RegisterResult.Success -> {
                         echo(result)
                         return@runBlocking
                     }
+                    else -> {
+                        echo(result)
+                        return@runBlocking
+                    }
                 }
+            }
+            else -> {
+                echo(requestResult)
+                return@runBlocking
             }
         }
     }

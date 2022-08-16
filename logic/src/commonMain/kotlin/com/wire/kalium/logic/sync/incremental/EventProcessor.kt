@@ -36,6 +36,7 @@ internal class EventProcessorImpl(
             is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
             is Event.Unknown -> kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Unhandled event id=${event.id}")
         }
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Updating lastProcessedEventId ${event.id}")
         eventRepository.updateLastProcessedEventId(event.id)
     }
 }
