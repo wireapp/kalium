@@ -3,7 +3,7 @@ import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
 import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 
 buildscript {
-    val kotlinVersion = "1.6.10"
+    val kotlinVersion = Versions.kotlin
     val dokkaVersion = "1.6.10"
     val sqlDelightVersion = "2.0.0-alpha01"
     val protobufCodegenVersion = "0.8.18"

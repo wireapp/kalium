@@ -3,7 +3,7 @@ import org.gradle.kotlin.dsl.version
 import org.gradle.plugin.use.PluginDependenciesSpec
 
 object Versions {
-    val kotlin = KotlinVersion.CURRENT.toString()
+    val kotlin = "1.6.10"
     const val activityCompose = "1.3.1"
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
