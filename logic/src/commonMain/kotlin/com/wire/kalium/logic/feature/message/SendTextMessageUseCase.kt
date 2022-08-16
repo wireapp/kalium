@@ -7,6 +7,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -15,14 +17,19 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
-class SendTextMessageUseCase(
+class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> {
+        slowSyncRepository.slowSyncStatus.first {
+            it is SlowSyncStatus.Complete
+        }
+
         val selfUser = userRepository.observeSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()

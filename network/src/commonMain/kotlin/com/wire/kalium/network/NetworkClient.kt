@@ -10,7 +10,7 @@ import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
-import io.ktor.client.plugins.ContentNegotiation
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -89,7 +89,11 @@ internal class AuthenticatedWebSocketClient(
                 mls()
                 xprotobuf()
             }
-            install(WebSockets)
+            install(WebSockets) {
+                // Depending on the Engine (OkHttp for example), we might
+                // need to set this value there too, as this here won't work
+                pingInterval = WEBSOCKET_PING_INTERVAL_MILLIS
+            }
         }
 }
 
@@ -128,3 +132,4 @@ internal fun provideBaseHttpClient(
 
 internal fun shouldAddApiVersion(apiVersion: Int): Boolean = apiVersion >= MINIMUM_API_VERSION_TO_ADD
 private const val MINIMUM_API_VERSION_TO_ADD = 1
+internal const val WEBSOCKET_PING_INTERVAL_MILLIS = 20_000L
