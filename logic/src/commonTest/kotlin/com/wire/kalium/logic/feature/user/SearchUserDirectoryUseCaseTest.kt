@@ -94,6 +94,7 @@ class SearchUserDirectoryUseCaseTest {
                         availabilityStatus = UserAvailabilityStatus.NONE,
                         userType =  UserType.EXTERNAL,
                         botService = null,
+                        deleted = false
                     )
                 }
             }

@@ -160,7 +160,8 @@ class TeamRepositoryTest {
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.EXTERNAL,
-            botService = null
+            botService = null,
+            deleted = false
         )
 
         given(teamsApi)
