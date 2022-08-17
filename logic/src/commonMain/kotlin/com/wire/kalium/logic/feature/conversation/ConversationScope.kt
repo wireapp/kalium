@@ -26,7 +26,8 @@ class ConversationScope(
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val persistMessage: PersistMessageUseCase
 ) {
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository)
@@ -77,7 +78,7 @@ class ConversationScope(
         get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
 
     val removeMemberFromConversation: RemoveMemberFromConversationUseCase
-        get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository, selfUserId)
+        get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)

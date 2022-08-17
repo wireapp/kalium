@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlin.coroutines.cancellation.CancellationException
 
 interface ConversationRepository {
@@ -72,7 +73,7 @@ interface ConversationRepository {
     suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>>
     suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMember(userId: UserId, conversationId: ConversationId, isSelfDeletion: Boolean = false): Either<CoreFailure, Unit>
+    suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
     suspend fun createGroupConversation(
@@ -399,8 +400,7 @@ class ConversationDataSource(
 
     override suspend fun deleteMember(
         userId: UserId,
-        conversationId: ConversationId,
-        isSelfDeletion: Boolean
+        conversationId: ConversationId
     ): Either<CoreFailure, Unit> =
         detailsById(conversationId).flatMap { conversation ->
             when (conversation.protocol) {
@@ -410,23 +410,6 @@ class ConversationDataSource(
                     }.fold({
                         Either.Left(it)
                     }, {
-                        // Backend doesn't trigger a member leave event on clients that delete themselves. Therefore, we need to map
-                        // the member deletion api response manually, and create and persist the member-leave system message on these cases
-                        if (isSelfDeletion) {
-                            val response = (it as ConversationMemberRemovedDTO.Changed)
-                            val message = Message.System(
-                                id = uuid4().toString(), // We generate a random uuid for this new system message
-                                content = MessageContent.MemberChange.Removed(members = listOf(userId)),
-                                conversationId = idMapper.fromApiModel(response.qualifiedConversationId),
-                                date = response.time,
-                                senderUserId = idMapper.fromApiModel(response.fromUser),
-                                status = Message.Status.SENT,
-                                visibility = Message.Visibility.VISIBLE
-                            )
-                            persistMessage.value(message)
-                        }
-
-                        // No matter if the user removed himself or an admin did it, we remove the connection from the Members table
                         wrapStorageRequest {
                             conversationDAO.deleteMemberByQualifiedID(
                                 idMapper.toDaoModel(userId),
