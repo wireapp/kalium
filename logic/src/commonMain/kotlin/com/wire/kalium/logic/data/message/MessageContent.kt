@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import kotlinx.datetime.Instant
 
 sealed class MessageContent {
@@ -31,6 +30,8 @@ sealed class MessageContent {
         val unqualifiedConversationId: String,
         val conversationId: ConversationId?,
     ) : Regular()
+
+    data class Knock(val hotKnock: Boolean) : Regular()
 
     data class Unknown( // messages that aren't yet handled properly but stored in db in case
         val typeName: String? = null,

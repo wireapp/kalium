@@ -2,29 +2,14 @@ package com.wire.kalium.network
 
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
-import okhttp3.Interceptor
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
-actual fun defaultHttpEngine(): HttpClientEngine {
-    return OkHttp.create {
-        addInterceptor(object : Interceptor {
-            override fun intercept(chain: Interceptor.Chain): Response {
-                return chain.request().let { checkedRequest -> chain.proceed(checkedRequest) }.handleUnauthorizedResponse()
-            }
-        })
-    }
+actual fun defaultHttpEngine(): HttpClientEngine = OkHttp.create {
+    // OkHttp doesn't support configuring ping intervals dynamically,
+    // so they must be set when creating the Engine
+    // See https://youtrack.jetbrains.com/issue/KTOR-4752
+    val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).build()
+    preconfigured = client
+    webSocketFactory = KaliumWebSocketFactory(client)
 }
-
-/**
- * Ktor need "WWW-Authenticate" to be set by BE in-order for the tokens refresh to work
- * see issue https://youtrack.jetbrains.com/issue/KTOR-2806
- * BE does not set "WWW-Authenticate"
- *
- * checks for 401 response -> add WWW-Authenticate header
- */
-private fun Response.handleUnauthorizedResponse(): Response =
-    when (this.code == 401) {
-        true -> this.newBuilder().addHeader("WWW-Authenticate", "Bearer").build()
-        false -> this
-    }

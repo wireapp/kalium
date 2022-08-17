@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
@@ -9,13 +11,15 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
-import com.wire.kalium.protobuf.messages.MessageDelete
+import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
+import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.Text
-import pbandk.ByteArr
+import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import kotlinx.datetime.Instant
+import pbandk.ByteArr
 
 interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
@@ -25,7 +29,8 @@ interface ProtoContentMapper {
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
-    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper()
+    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
+    private val idMapper : IdMapper = MapperProvider.idMapper()
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
@@ -41,23 +46,26 @@ class ProtoContentMapperImpl(
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> GenericMessage.Content.Text(Text(content = readableContent.value))
-            is MessageContent.Calling -> GenericMessage.Content.Calling(MessageContent.Calling(content = readableContent.value))
+            is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
+            is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
                 MessageHide(
                     messageId = readableContent.messageId,
-                    conversationId = readableContent.conversationId,
-                    qualifiedConversationId = readableContent.unqualifiedConversationId
+                    qualifiedConversationId = readableContent.conversationId?.let {  idMapper.toProtoModel(it) },
+                    conversationId = readableContent.unqualifiedConversationId
                 )
             )
             is MessageContent.Availability ->
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
             is MessageContent.LastRead -> {
                 GenericMessage.Content.LastRead(
-                        qualifiedConversationId = readableContent.unqualifiedConversationId,
-                        conversationId = readableContent.conversationId,
+                    LastRead(
+                        conversationId = readableContent.unqualifiedConversationId,
+                        qualifiedConversationId = readableContent.conversationId?.let {  idMapper.toProtoModel(it) },
                         lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
+                    )
                 )
             }
 
@@ -134,9 +142,9 @@ class ProtoContentMapperImpl(
                 val hiddenMessage = genericMessage.hidden
                 if (hiddenMessage != null) {
                     MessageContent.DeleteForMe(
-                        hiddenMessage.messageId,
-                        hiddenMessage.conversationId,
-                        hiddenMessage.qualifiedConversationId
+                        messageId = hiddenMessage.messageId,
+                        unqualifiedConversationId = hiddenMessage.conversationId,
+                        conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
                     )
                 } else {
                     kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
@@ -144,12 +152,12 @@ class ProtoContentMapperImpl(
                 }
             }
 
-            is GenericMessage.Content.Knock -> MessageContent.Ignored
+            is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> {
                 MessageContent.LastRead(
                     messageId = genericMessage.messageId,
-                    unqualifiedConversationId= protoContent.value.qualifiedConversationId,
-                    conversationId = protoContent.value.conversationId,
+                    unqualifiedConversationId = protoContent.value.conversationId,
+                    conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
                     time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
                 )
             }
@@ -161,5 +169,11 @@ class ProtoContentMapperImpl(
             }
         }
         return readableContent
+    }
+
+    private fun extractConversationId(qualifiedConversationID: QualifiedConversationId?): ConversationId? {
+        return if (qualifiedConversationID != null)
+            idMapper.fromProtoModel(qualifiedConversationID)
+        else null
     }
 }

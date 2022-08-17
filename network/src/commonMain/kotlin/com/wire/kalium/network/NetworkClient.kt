@@ -89,7 +89,11 @@ internal class AuthenticatedWebSocketClient(
                 mls()
                 xprotobuf()
             }
-            install(WebSockets)
+            install(WebSockets) {
+                // Depending on the Engine (OkHttp for example), we might
+                // need to set this value there too, as this here won't work
+                pingInterval = WEBSOCKET_PING_INTERVAL_MILLIS
+            }
         }
 }
 
@@ -128,3 +132,4 @@ internal fun provideBaseHttpClient(
 
 internal fun shouldAddApiVersion(apiVersion: Int): Boolean = apiVersion >= MINIMUM_API_VERSION_TO_ADD
 private const val MINIMUM_API_VERSION_TO_ADD = 1
+internal const val WEBSOCKET_PING_INTERVAL_MILLIS = 20_000L

@@ -18,8 +18,7 @@ class UpdateConversationReadDateUseCase(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val messageSender: MessageSender,
-    private val clientRepository: ClientRepository,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val clientRepository: ClientRepository
 ) {
 
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
@@ -35,7 +34,7 @@ class UpdateConversationReadDateUseCase(
                 id = generatedMessageUuid,
                 content = MessageContent.LastRead(
                     messageId = generatedMessageUuid,
-                    unqualifiedConversationId = idMapper.toProtoModel(conversationId),
+                    unqualifiedConversationId = conversationId.value,
                     conversationId = conversationId,
                     time = time
                 ),

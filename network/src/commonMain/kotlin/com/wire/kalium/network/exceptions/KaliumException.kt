@@ -1,4 +1,5 @@
 @file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.network.exceptions
 
 import com.wire.kalium.network.api.ErrorResponse
@@ -7,6 +8,7 @@ import com.wire.kalium.network.api.message.SendMessageResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_FAILURE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.HANDLE_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CODE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CREDENTIALS
@@ -128,4 +130,8 @@ fun KaliumException.InvalidRequestError.isOperationDenied(): Boolean {
 
 fun KaliumException.InvalidRequestError.isMlsStaleMessage(): Boolean {
     return errorResponse.label == MLS_STALE_MESSAGE
+}
+
+fun KaliumException.ServerError.isFederationError(): Boolean {
+    return errorResponse.label == FEDERATION_FAILURE
 }

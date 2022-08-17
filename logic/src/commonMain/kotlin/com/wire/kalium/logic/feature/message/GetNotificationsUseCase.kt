@@ -252,6 +252,7 @@ class GetNotificationsUseCaseImpl(
         is MessageContent.Text -> true
         is MessageContent.Calling -> false
         is MessageContent.Asset -> true
+        is MessageContent.Knock -> true
         is MessageContent.DeleteMessage -> false
         is MessageContent.TextEdited -> false
         is MessageContent.RestrictedAsset -> true
