@@ -4,16 +4,13 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageMapper
-import com.wire.kalium.logic.data.message.MessageRepositoryTest
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.Companion.TEST_CONVERSATION_ID
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -101,7 +98,6 @@ class ConversationRepositoryTest {
 
     @Mock
     private val messageMapper: MessageMapper = mock(MessageMapper::class)
-
 
     private lateinit var conversationRepository: ConversationRepository
 
@@ -1177,11 +1173,11 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationDaoHasAssetsMessages_whenGettingAssetMessages_thenShouldReturnThoseMessages() = runTest{
+    fun givenAConversationDaoHasAssetsMessages_whenGettingAssetMessages_thenShouldReturnThoseMessages() = runTest {
         // given
             given(messageDAO)
                 .suspendFunction(messageDAO::getConversationMessagesByContentType)
-                .whenInvokedWith(any(),any())
+                .whenInvokedWith(any(), any())
                 .thenReturn(listOf(TEST_MESSAGE_ENTITY))
 
             given(messageMapper)
@@ -1197,7 +1193,7 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenDeletingConversationMessages_whenSuccessFullyDeletingMessages_thenShouldSucceed() = runTest{
+    fun givenDeletingConversationMessages_whenSuccessFullyDeletingMessages_thenShouldSucceed() = runTest {
         // when
         val result = conversationRepository.deleteAllMessages(TestConversation.ID)
 

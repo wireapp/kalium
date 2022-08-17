@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.dao
 
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
