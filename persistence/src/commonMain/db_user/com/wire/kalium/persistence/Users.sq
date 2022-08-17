@@ -4,6 +4,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity;
 import com.wire.kalium.persistence.dao.UserTypeEntity;
 import kotlin.Int;
+import kotlin.Boolean;
 
 CREATE TABLE User (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -18,7 +19,8 @@ CREATE TABLE User (
     complete_asset_id TEXT AS QualifiedIDEntity,
     user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE',
     user_type TEXT AS UserTypeEntity NOT NULL DEFAULT 'INTERNAL',
-    bot_service TEXT AS BotEntity
+    bot_service TEXT AS BotEntity,
+    deleted INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 deleteAllUsers:
@@ -28,8 +30,8 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 handle = excluded.handle,
@@ -41,7 +43,8 @@ connection_status = excluded.connection_status,
 preview_asset_id = excluded.preview_asset_id,
 complete_asset_id = excluded.complete_asset_id,
 user_type = excluded.user_type,
-bot_service = excluded.bot_service;
+bot_service = excluded.bot_service,
+deleted = excluded.deleted;
 
 updateUser:
 UPDATE User
