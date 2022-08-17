@@ -1119,7 +1119,7 @@ class ConversationRepositoryTest {
         val timeParser: TimeParser = mock(TimeParser::class)
 
         @Mock
-        val persistMessage =  mock(PersistMessageUseCase::class)
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         val conversationRepository =
             ConversationDataSource(

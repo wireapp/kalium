@@ -9,8 +9,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
 import kotlinx.datetime.Clock
 
 interface RemoveMemberFromConversationUseCase {
