@@ -104,7 +104,7 @@ class AssetApiTest : ApiTest {
 
         // When
         val assetApi: AssetApi = AssetApiImpl(networkClient)
-        val response = assetApi.downloadAsset(assetId, ASSET_TOKEN)
+        val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
 
         // Then
         assertTrue(response.isSuccessful())
@@ -130,7 +130,7 @@ class AssetApiTest : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiImpl(networkClient)
         val assetIdFallback = assetId.copy(domain = "")
-        val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN)
+        val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN, tempFileSink)
 
         // Then
         assertTrue(response.isSuccessful())
@@ -179,7 +179,7 @@ class AssetApiTest : ApiTest {
 
         // When
         val assetApi: AssetApi = AssetApiImpl(networkClient)
-        val response = assetApi.downloadAsset(assetId, ASSET_TOKEN)
+        val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
 
         // Then
         assertTrue(response is NetworkResponse.Error)

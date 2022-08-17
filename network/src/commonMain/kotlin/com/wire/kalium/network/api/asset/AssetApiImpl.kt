@@ -13,7 +13,6 @@ import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
-import io.ktor.http.contentLength
 import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
@@ -23,8 +22,10 @@ import io.ktor.utils.io.core.isEmpty
 import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.readRemaining
+import okio.Sink
 import okio.Source
 import okio.buffer
+import okio.use
 
 interface AssetApi {
     /**
@@ -33,7 +34,7 @@ interface AssetApi {
      * @param assetToken the asset token, can be null in case of public assets
      * @return a [NetworkResponse] with a reference to an open Okio [Source] object from which one will be able to stream the data
      */
-    suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<ByteArray>
+    suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit>
 
     /** Uploads an already encrypted asset
      * @param metadata the metadata associated to the asset that wants to be uploaded
@@ -60,22 +61,21 @@ class AssetApiImpl internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, ): NetworkResponse<ByteArray> {
+    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> {
         return try {
             httpClient.prepareGet(buildAssetsPath(assetId)) {
                 assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
             }.execute { httpResponse ->
                 val channel: ByteReadChannel = httpResponse.body()
-                val dataHolder = arrayListOf<ByteArray>()
                 while (!channel.isClosedForRead) {
                     val packet = channel.readRemaining()
                     while (!packet.isEmpty) {
-                        dataHolder.add(packet.readBytes())
+                        tempFileSink.buffer().use {
+                            it.write(packet.readBytes())
+                        }
                     }
                 }
-                println("Received ${dataHolder.size} size from ${httpResponse.contentLength()}")
-                val result = dataHolder.reduce { a: ByteArray, b: ByteArray -> a + b }
-                NetworkResponse.Success(result, httpResponse)
+                NetworkResponse.Success(Unit, httpResponse)
             }
         } catch (exception: Exception) {
             NetworkResponse.Error(KaliumException.GenericError(exception))

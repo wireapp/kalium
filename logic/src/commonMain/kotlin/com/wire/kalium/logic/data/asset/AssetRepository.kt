@@ -25,8 +25,6 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
 import okio.Path
 import okio.Path.Companion.toPath
-import okio.buffer
-import okio.use
 import com.wire.kalium.network.api.AssetId as NetworkAssetId
 
 interface AssetRepository {
@@ -193,19 +191,14 @@ internal class AssetDataSource(
         assetName: String,
         assetToken: String?,
         encryptionKey: AES256Key? = null
-    ): Either<CoreFailure, Path> =
-        wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
+    ): Either<CoreFailure, Path> {
+        val tempFile = kaliumFileSystem.tempFilePath()
+        val tempFileSink = kaliumFileSystem.sink(tempFile)
+        return wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
-                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null } // todo: pass path
-            }.flatMap { assetData ->
-                // Copy byte array to temp file and provide it as source
-                val tempFile = kaliumFileSystem.tempFilePath()
-                val tempFileSink = kaliumFileSystem.sink(tempFile)
-                tempFileSink.buffer().use {
-                    it.write(assetData)
-                }
-
+                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null }, tempFileSink)
+            }.flatMap { _ ->
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
                 // Decrypt and persist decoded asset onto a persistent asset path
@@ -240,6 +233,7 @@ internal class AssetDataSource(
         }, {
             Either.Right(it.dataPath.toPath())
         })
+    }
 
     override suspend fun downloadUsersPictureAssets(assetIdList: List<UserAssetId?>): Either<CoreFailure, Unit> {
         assetIdList.filterNotNull().forEach { userAssetId ->
