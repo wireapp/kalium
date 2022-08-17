@@ -54,7 +54,7 @@ class AssetRepositoryTest {
         // When
         val actual = assetRepository.uploadAndPersistPublicAsset(
             assetDataPath = fullDataPath,
-            mimeType = ImageAsset.JPEG,
+            mimeType = "image/jpg",
             assetDataSize = dummyData.size.toLong()
         )
 
@@ -85,7 +85,7 @@ class AssetRepositoryTest {
         // When
         val actual = assetRepository.uploadAndPersistPrivateAsset(
             assetDataPath = fullDataPath,
-            mimeType = ImageAsset.JPEG,
+            mimeType = "image/jpg",
             otrKey = randomAES256Key
         )
 
@@ -117,7 +117,7 @@ class AssetRepositoryTest {
 
         // When
         val actual = assetRepository.uploadAndPersistPublicAsset(
-            mimeType = ImageAsset.JPEG,
+            mimeType = "image/jpg",
             assetDataPath = fullDataPath,
             assetDataSize = dummyData.size.toLong()
         )
@@ -146,7 +146,7 @@ class AssetRepositoryTest {
 
         // When
         val actual = assetRepository.uploadAndPersistPrivateAsset(
-            mimeType = ImageAsset.JPEG,
+            mimeType = "image/jpg",
             assetDataPath = fullDataPath,
             otrKey = randomAES256Key
         )

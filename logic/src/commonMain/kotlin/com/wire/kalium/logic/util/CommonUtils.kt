@@ -1,8 +1,5 @@
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.data.asset.AssetType
-import com.wire.kalium.logic.data.asset.FileAsset
-import com.wire.kalium.logic.data.asset.ImageAsset
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -18,12 +15,12 @@ fun String.fileExtension(): String {
     return extension
 }
 
-fun String.fileExtensionToAssetType(): AssetType = when (this) {
-    "jpeg" -> ImageAsset.JPEG
-    "jpg" -> ImageAsset.JPG
-    "png" -> ImageAsset.PNG
-    else -> FileAsset("file/$this")
-}
+// fun String.fileExtensionToAssetType(): AssetType = when (this) {
+//     "jpeg" -> ImageAsset.JPEG
+//     "jpg" -> ImageAsset.JPG
+//     "png" -> ImageAsset.PNG
+//     else -> FileAsset("file/$this")
+// }
 
 @OptIn(ExperimentalContracts::class)
 fun Int?.isGreaterThan(other: Int?): Boolean {

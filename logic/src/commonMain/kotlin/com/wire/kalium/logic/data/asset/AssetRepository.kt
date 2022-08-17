@@ -16,8 +16,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.util.fileExtension
-import com.wire.kalium.logic.util.fileExtensionToAssetType
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.asset.AssetApi
@@ -38,7 +36,7 @@ interface AssetRepository {
      * @return [Either] a [CoreFailure] if anything went wrong, or the [UploadedAssetId] of the asset if successful
      */
     suspend fun uploadAndPersistPublicAsset(
-        mimeType: AssetType,
+        mimeType: String,
         assetDataPath: Path,
         assetDataSize: Long
     ): Either<CoreFailure, UploadedAssetId>
@@ -52,7 +50,7 @@ interface AssetRepository {
      * the encrypted asset if successful
      */
     suspend fun uploadAndPersistPrivateAsset(
-        mimeType: AssetType,
+        mimeType: String,
         assetDataPath: Path,
         otrKey: AES256Key
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>
@@ -106,7 +104,7 @@ internal class AssetDataSource(
 ) : AssetRepository {
 
     override suspend fun uploadAndPersistPublicAsset(
-        mimeType: AssetType,
+        mimeType: String,
         assetDataPath: Path,
         assetDataSize: Long
     ): Either<CoreFailure, UploadedAssetId> {
@@ -115,7 +113,7 @@ internal class AssetDataSource(
     }
 
     override suspend fun uploadAndPersistPrivateAsset(
-        mimeType: AssetType,
+        mimeType: String,
         assetDataPath: Path,
         otrKey: AES256Key
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
@@ -209,7 +207,7 @@ internal class AssetDataSource(
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
                 // Decrypt and persist decoded asset onto a persistent asset path
-                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath("${assetId.value}.${assetName.fileExtension()}")
+                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath("${assetId.value}.${"pdf"}")
                 val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
                 // Public assets are stored already decrypted on the backend, hence no decryption is needed
@@ -229,7 +227,7 @@ internal class AssetDataSource(
                     assetDao.insertAsset(
                         assetMapper.fromUserAssetToDaoModel(
                             assetId,
-                            assetName.fileExtension().fileExtensionToAssetType(),
+                            "application/pdf",
                             decodedAssetPath,
                             assetDataSize
                         )
