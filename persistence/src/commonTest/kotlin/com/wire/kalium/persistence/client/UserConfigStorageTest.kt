@@ -27,7 +27,6 @@ class UserConfigStorageTest {
         settings.clear()
     }
 
-
     @Test
     fun givenEnableLogging_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
         userConfigStorage.enableLogging(true)
@@ -35,7 +34,6 @@ class UserConfigStorageTest {
 
         userConfigStorage.enableLogging(false)
         assertEquals(false, userConfigStorage.isLoggingEnables())
-
     }
 
     @Test
