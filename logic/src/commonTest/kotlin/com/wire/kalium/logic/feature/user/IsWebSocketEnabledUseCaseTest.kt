@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.user.webSocketStatus.IsWebSocketEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.webSocketStatus.IsPersistentWebSocketConnectionEnabledUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
@@ -20,14 +20,14 @@ class IsWebSocketEnabledUseCaseTest {
     fun givenATrueValue_thenIsWebSocketEnabled() = runTest {
         val expectedValue = true
 
-        val (arrangement, isWebSocketEnabledUseCase) = Arrangement()
+        val (arrangement, isPersistentWebSocketConnectionEnabledUseCase) = Arrangement()
             .withSuccessfulResponse(expectedValue)
             .arrange()
 
-        val actual = isWebSocketEnabledUseCase()
+        val actual = isPersistentWebSocketConnectionEnabledUseCase()
         assertEquals(expectedValue, actual)
 
-        verify(arrangement.userConfigRepository).invocation { isWebSocketEnabled() }
+        verify(arrangement.userConfigRepository).invocation { isPersistentWebSocketConnectionEnabled() }
             .wasInvoked(exactly = once)
     }
 
@@ -35,15 +35,15 @@ class IsWebSocketEnabledUseCaseTest {
     fun givenStorageFailure_thenDataNotFoundReturned() = runTest {
         // Given
         val dataNotFound = StorageFailure.DataNotFound
-        val (arrangement, isWebSocketEnabledUseCase) = Arrangement()
+        val (arrangement, isPersistentWebSocketConnectionEnabledUseCase) = Arrangement()
             .withIsWebSocketEnabledErrorResponse(dataNotFound)
             .arrange()
 
         // When
-        isWebSocketEnabledUseCase()
+        isPersistentWebSocketConnectionEnabledUseCase()
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isWebSocketEnabled)
+            .function(arrangement.userConfigRepository::isPersistentWebSocketConnectionEnabled)
             .wasInvoked(exactly = once)
     }
 
@@ -51,11 +51,11 @@ class IsWebSocketEnabledUseCaseTest {
         @Mock
         val userConfigRepository: UserConfigRepository = mock(classOf<UserConfigRepository>())
 
-        val isWebSocketEnabledUseCase = IsWebSocketEnabledUseCaseImpl(userConfigRepository)
+        val isPersistentWebSocketConnectionEnabledUseCase = IsPersistentWebSocketConnectionEnabledUseCaseImpl(userConfigRepository)
 
         fun withSuccessfulResponse(expectedValue: Boolean): Arrangement {
             given(userConfigRepository)
-                .function(userConfigRepository::isWebSocketEnabled)
+                .function(userConfigRepository::isPersistentWebSocketConnectionEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Right(expectedValue))
 
@@ -64,12 +64,12 @@ class IsWebSocketEnabledUseCaseTest {
 
         fun withIsWebSocketEnabledErrorResponse(storageFailure: StorageFailure): Arrangement {
             given(userConfigRepository)
-                .function(userConfigRepository::isWebSocketEnabled)
+                .function(userConfigRepository::isPersistentWebSocketConnectionEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Left(storageFailure))
             return this
         }
 
-        fun arrange() = this to isWebSocketEnabledUseCase
+        fun arrange() = this to isPersistentWebSocketConnectionEnabledUseCase
     }
 }

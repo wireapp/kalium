@@ -33,14 +33,14 @@ interface UserConfigStorage {
     fun isLoggingEnables(): Boolean
 
     /**
-     * save flag from the user settings to enable and disable the webSocket
+     * save flag from the user settings to enable and disable the persistent webSocket connection
      */
-    fun persistWebSocketStatus(enabled: Boolean)
+    fun persistPersistentWebSocketConnectionStatus(enabled: Boolean)
 
     /**
-     * get the saved flag to know if the webSocket enabled or not
+     * get the saved flag to know if the persistent webSocket connection enabled or not
      */
-    fun isWebSocketEnabled(): Boolean
+    fun isPersistentWebSocketConnectionEnabled(): Boolean
 
     /**
      * save flag from the file sharing api, and if the status changes
@@ -83,12 +83,12 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
     override fun isLoggingEnables(): Boolean =
         kaliumPreferences.getBoolean(ENABLE_LOGGING, true)
 
-    override fun persistWebSocketStatus(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_WEB_SOCKET, enabled)
+    override fun persistPersistentWebSocketConnectionStatus(enabled: Boolean) {
+        kaliumPreferences.putBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, enabled)
     }
 
-    override fun isWebSocketEnabled(): Boolean =
-        kaliumPreferences.getBoolean(ENABLE_WEB_SOCKET, false)
+    override fun isPersistentWebSocketConnectionEnabled(): Boolean =
+        kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false)
 
     override fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?) {
         kaliumPreferences.putSerializable(
@@ -112,6 +112,6 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
         const val ENABLE_LOGGING = "enable_logging"
         const val FILE_SHARING = "file_sharing"
         const val ENABLE_MLS = "enable_mls"
-        const val ENABLE_WEB_SOCKET = "enable_web_socket"
+        const val PERSISTENT_WEB_SOCKET_CONNECTION = "persistent_web_socket_connectiona"
     }
 }

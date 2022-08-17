@@ -39,11 +39,11 @@ class UserConfigStorageTest {
 
     @Test
     fun givenPersistWebSocketStatus_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
-        userConfigStorage.persistWebSocketStatus(true)
-        assertEquals(true, userConfigStorage.isWebSocketEnabled())
+        userConfigStorage.persistPersistentWebSocketConnectionStatus(true)
+        assertEquals(true, userConfigStorage.isPersistentWebSocketConnectionEnabled())
 
-        userConfigStorage.persistWebSocketStatus(false)
-        assertEquals(false, userConfigStorage.isWebSocketEnabled())
+        userConfigStorage.persistPersistentWebSocketConnectionStatus(false)
+        assertEquals(false, userConfigStorage.isPersistentWebSocketConnectionEnabled())
     }
 
     @Test
