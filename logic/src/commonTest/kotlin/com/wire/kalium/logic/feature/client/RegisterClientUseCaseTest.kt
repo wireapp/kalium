@@ -412,7 +412,6 @@ class RegisterClientUseCaseTest {
         assertEquals(failure, result.genericFailure)
     }
 
-
     @Test
     fun givenRepositoryRegistrationFailsDueBadRequest_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
         val badRequestFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
@@ -434,7 +433,6 @@ class RegisterClientUseCaseTest {
             .function(preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
-
 
     private companion object {
         const val KEY_PACKAGE_LIMIT = 100

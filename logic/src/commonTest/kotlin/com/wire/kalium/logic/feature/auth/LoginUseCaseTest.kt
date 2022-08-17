@@ -225,7 +225,6 @@ class LoginUseCaseTest {
                 .wasNotInvoked()
         }
 
-
     @Test
     fun givenBadRequest_whenLoggingIn_thenReturnInvalidCredentials() =
         runTest {
@@ -296,7 +295,6 @@ class LoginUseCaseTest {
                 TEST_VALID_AUTH_SESSION,
                 TEST_SERVER_CONFIG.links
             )
-
         val TEST_SSO_ID = SsoId("scim_external", "subject", null)
     }
 }
