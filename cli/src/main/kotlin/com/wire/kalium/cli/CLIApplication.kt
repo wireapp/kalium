@@ -160,7 +160,9 @@ class LoginCommand : CliktCommand(name = "login") {
 
     private val email: String by option(help = "Account email").prompt("email", promptSuffix = ": ")
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
-    private val environment: String? by option(help = "Choose backend environment: can be production, staging or an URL to a JSON server configuration")
+    private val environment: String? by option(
+        help = "Choose backend environment: can be production, staging or an URL to a server configuration"
+    )
 
     private suspend fun serverConfig(): ServerConfig.Links {
         return environment?.let { env ->
