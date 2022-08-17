@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
@@ -70,7 +71,8 @@ internal class LoginUseCaseImpl(
     }
 
     private fun handleServerMiscommunication(error: NetworkFailure.ServerMiscommunication): AuthenticationResult.Failure {
-        return if (error.kaliumException is KaliumException.InvalidRequestError && error.kaliumException.isInvalidCredentials()) {
+        return if (error.kaliumException is KaliumException.InvalidRequestError &&
+            (error.kaliumException.isInvalidCredentials() || error.kaliumException.isBadRequest())) {
             AuthenticationResult.Failure.InvalidCredentials
         } else {
             AuthenticationResult.Failure.Generic(error)
