@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -78,6 +79,9 @@ class ConversationRepositoryTest {
     private val conversationDAO = configure(mock(ConversationDAO::class)) { stubsUnitByDefault = true }
 
     @Mock
+    private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
+
+    @Mock
     private val conversationApi = mock(ConversationApi::class)
 
     @Mock
@@ -95,6 +99,7 @@ class ConversationRepositoryTest {
             mlsConversationRepository,
             conversationDAO,
             conversationApi,
+            messageDAO,
             clientApi,
             timeParser
         )
@@ -830,9 +835,6 @@ class ConversationRepositoryTest {
         }
     }
 
-    @Test
-
-
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -852,8 +854,19 @@ class ConversationRepositoryTest {
         @Mock
         val timeParser: TimeParser = mock(TimeParser::class)
 
+        @Mock
+        val messageDAO: MessageDAO = mock(MessageDAO::class)
+
         val conversationRepository =
-            ConversationDataSource(userRepository, mlsConversationRepository, conversationDAO, conversationApi, clientApi, timeParser)
+            ConversationDataSource(
+                userRepository,
+                mlsConversationRepository,
+                conversationDAO,
+                conversationApi,
+                messageDAO,
+                clientApi,
+                timeParser
+            )
 
         fun withApiUpdateAccessRoleReturns(response: NetworkResponse<UpdateConversationAccessResponse>) = apply {
             given(conversationApi)
@@ -919,7 +932,6 @@ class ConversationRepositoryTest {
                         KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                     )
                 )
-
         }
 
         fun withDeleteMemberDaoSucceed() = apply {
