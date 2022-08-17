@@ -30,6 +30,7 @@ import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
+import com.wire.kalium.logic.feature.server.GetServerConfigResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
@@ -159,18 +160,27 @@ class LoginCommand : CliktCommand(name = "login") {
 
     private val email: String by option(help = "Account email").prompt("email", promptSuffix = ": ")
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
-    private val environment: String? by option(help = "Choose backend environment: can be production or staging")
+    private val environment: String? by option(help = "Choose backend environment: can be production, staging or an URL to a JSON server configuration")
 
-    private val serverConfig: ServerConfig.Links by lazy {
-        if (environment == "staging") {
-            ServerConfig.STAGING
-        } else {
-            ServerConfig.DEFAULT
-        }
+    private suspend fun serverConfig(): ServerConfig.Links {
+        return environment?.let { env ->
+            when (env) {
+                "staging" -> ServerConfig.STAGING
+                "production" -> ServerConfig.PRODUCTION
+                else -> {
+                    coreLogic.globalScope {
+                        when (val result = fetchServerConfigFromDeepLink(env)) {
+                            is GetServerConfigResult.Success -> result.serverConfig.links
+                            is GetServerConfigResult.Failure -> throw PrintMessage("failed to fetch server config from: $env")
+                        }
+                    }
+                }
+            }
+        } ?: ServerConfig.DEFAULT
     }
 
     override fun run() = runBlocking {
-        val (loginResult, ssoId) = coreLogic.authenticationScope(serverConfig) {
+        val (loginResult, ssoId) = coreLogic.authenticationScope(serverConfig()) {
             login(email, password, true).let {
                 if (it !is AuthenticationResult.Success) {
                     throw PrintMessage("Login failed, check your credentials")
