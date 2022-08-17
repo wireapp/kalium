@@ -35,8 +35,8 @@ class UpdateConversationReadDateUseCase(
                 id = generatedMessageUuid,
                 content = MessageContent.LastRead(
                     messageId = generatedMessageUuid,
-                    qualifiedConversationId = idMapper.toProtoModel(conversationId),
-                    conversationId = conversationId.value,
+                    unqualifiedConversationId = idMapper.toProtoModel(conversationId),
+                    conversationId = conversationId,
                     time = time
                 ),
                 conversationId = conversationRepository.getSelfConversationId(),

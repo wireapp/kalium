@@ -41,7 +41,7 @@ class ProtoContentMapperImpl(
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> GenericMessage.Content.Text(Text(content = readableContent.value))
-            is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
+            is MessageContent.Calling -> GenericMessage.Content.Calling(MessageContent.Calling(content = readableContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
@@ -55,11 +55,9 @@ class ProtoContentMapperImpl(
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
             is MessageContent.LastRead -> {
                 GenericMessage.Content.LastRead(
-                    LastRead(
-                        qualifiedConversationId = readableContent.qualifiedConversationId,
+                        qualifiedConversationId = readableContent.unqualifiedConversationId,
                         conversationId = readableContent.conversationId,
                         lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
-                    )
                 )
             }
 
@@ -150,7 +148,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.LastRead -> {
                 MessageContent.LastRead(
                     messageId = genericMessage.messageId,
-                    qualifiedConversationId= protoContent.value.qualifiedConversationId,
+                    unqualifiedConversationId= protoContent.value.qualifiedConversationId,
                     conversationId = protoContent.value.conversationId,
                     time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
                 )

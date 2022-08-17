@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
@@ -48,8 +49,9 @@ sealed class MessageContent {
 
     data class LastRead(
         val messageId: String,
-        val qualifiedConversationId: QualifiedConversationId?,
-        val conversationId: String,
+        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
+        val unqualifiedConversationId: String,
+        val conversationId: ConversationId?,
         val time: Instant
     ) : Regular()
 
