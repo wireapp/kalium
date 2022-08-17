@@ -47,7 +47,7 @@ interface CallRepository {
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
-    fun updateParticipantCameraStateById(conversationIdString: String, userIdString: UserId, clientIdString: String, isCameraOn: Boolean)
+    fun updateParticipantCameraStateById(conversationIdString: String, userIdString: String, clientIdString: String, isCameraOn: Boolean)
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
@@ -250,7 +250,7 @@ internal class CallDataSource(
 
     override fun updateParticipantCameraStateById(
         conversationIdString: String,
-        userIdString: UserId,
+        userIdString: String,
         clientIdString: String,
         isCameraOn: Boolean
     ) {
@@ -259,7 +259,7 @@ internal class CallDataSource(
         callMetadataProfile.data[conversationIdString]?.let { callMetaData ->
 
             val updatedParticipants = callMetaData.participants.map {
-                if (it.id == userIdString && it.clientId == clientIdString) {
+                if (it.id.toString() == userIdString && it.clientId == clientIdString) {
                     it.copy(isCameraOn = isCameraOn)
                 } else it
             }
@@ -275,7 +275,6 @@ internal class CallDataSource(
             )
         }
     }
-
     override fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
         callMetadataProfile.data[conversationId]?.let { call ->

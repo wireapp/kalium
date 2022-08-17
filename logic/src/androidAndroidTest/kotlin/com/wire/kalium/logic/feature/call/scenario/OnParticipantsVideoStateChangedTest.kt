@@ -52,7 +52,7 @@ class OnParticipantsVideoStateChangedTest {
         given(videoStateChecker).invocation { isCameraOn(VideoStateCalling.STARTED) }
             .then { isCameraOn }
 
-        given(callRepository).invocation { updateParticipantCameraStateById(conversationIdString, userIdQualified, clientId, isCameraOn) }
+        given(callRepository).invocation { updateParticipantCameraStateById(conversationIdString, userIdString, clientId, isCameraOn) }
             .thenDoNothing()
 
         onParticipantsVideoStateChanged.onVideoReceiveStateChanged(conversationIdString, userIdString, clientId, videoStateInt, null)
@@ -79,7 +79,7 @@ class OnParticipantsVideoStateChangedTest {
 
         verify(callRepository)
             .function(callRepository::updateParticipantCameraStateById)
-            .with(eq(conversationIdString), eq(userIdQualified), eq(clientId), eq(isCameraOn))
+            .with(eq(conversationIdString), eq(userIdString), eq(clientId), eq(isCameraOn))
             .wasInvoked(once)
     }
 

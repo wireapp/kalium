@@ -26,7 +26,7 @@ class OnParticipantsVideoStateChanged(
         val isCameraOn = videoStateChecker.isCameraOn(videoState)
         callRepository.updateParticipantCameraStateById(
             conversationIdWithDomain.toString(),
-            userIdWithDomain,
+            userIdWithDomain.toString(),
             clientId,
             isCameraOn
         )
