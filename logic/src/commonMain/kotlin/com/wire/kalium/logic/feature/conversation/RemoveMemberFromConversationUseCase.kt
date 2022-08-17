@@ -13,10 +13,10 @@ interface RemoveMemberFromConversationUseCase {
      * the DB.
      *
      * @param conversationId of the group conversation to leave.
-     * @param userId of the user that will be removed from the conversation.
+     * @param userIdToRemove of the user that will be removed from the conversation.
      * @return [Result] indicating operation succeeded or if anything failed while removing the user from the conversation.
      */
-    suspend operator fun invoke(conversationId: ConversationId, userId: UserId): Result
+    suspend operator fun invoke(conversationId: ConversationId, userIdToRemove: UserId): Result
     sealed interface Result {
         object Success : Result
         data class Failure(val cause: CoreFailure) : Result
@@ -25,10 +25,13 @@ interface RemoveMemberFromConversationUseCase {
 
 class RemoveMemberFromConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
+    private val selfUserId: UserId
 ) : RemoveMemberFromConversationUseCase {
-    override suspend fun invoke(conversationId: ConversationId, userId: UserId): RemoveMemberFromConversationUseCase.Result {
+    override suspend fun invoke(conversationId: ConversationId, userIdToRemove: UserId): RemoveMemberFromConversationUseCase.Result {
+        val isSelfUserLeaving = userIdToRemove == selfUserId
+
         // Call the endpoint to delete the member from given conversation and remove the members connection from DB
-        return conversationRepository.deleteMember(userId, conversationId).fold({
+        return conversationRepository.deleteMember(userIdToRemove, conversationId, isSelfUserLeaving).fold({
             RemoveMemberFromConversationUseCase.Result.Failure(it)
         }, {
             RemoveMemberFromConversationUseCase.Result.Success

@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
@@ -9,7 +10,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -27,6 +30,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
+import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
@@ -68,7 +72,7 @@ interface ConversationRepository {
     suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>>
     suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMember(userID: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteMember(userId: UserId, conversationId: ConversationId, isSelfDeletion: Boolean = false): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
     suspend fun createGroupConversation(
@@ -118,6 +122,7 @@ class ConversationDataSource(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
+    private val persistMessage: Lazy<PersistMessageUseCase>
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -392,25 +397,48 @@ class ConversationDataSource(
         }
     }
 
-    override suspend fun deleteMember(userID: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun deleteMember(
+        userId: UserId,
+        conversationId: ConversationId,
+        isSelfDeletion: Boolean
+    ): Either<CoreFailure, Unit> =
         detailsById(conversationId).flatMap { conversation ->
             when (conversation.protocol) {
                 is Conversation.ProtocolInfo.Proteus ->
                     wrapApiRequest {
-                        conversationApi.removeMember(idMapper.toApiModel(userID), idMapper.toApiModel(conversationId))
+                        conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
                     }.fold({
                         Either.Left(it)
                     }, {
+                        // Backend doesn't trigger a member leave event on clients that delete themselves. Therefore, we need to map
+                        // the member deletion api response manually, and create and persist the member-leave system message on these cases
+                        if (isSelfDeletion) {
+                            val response = (it as ConversationMemberRemovedDTO.Changed)
+                            val message = Message.System(
+                                id = uuid4().toString(), // We generate a random uuid for this new system message
+                                content = MessageContent.MemberChange.Removed(members = listOf(userId)),
+                                conversationId = idMapper.fromApiModel(response.qualifiedConversationId),
+                                date = response.time,
+                                senderUserId = idMapper.fromApiModel(response.fromUser),
+                                status = Message.Status.SENT,
+                                visibility = Message.Visibility.VISIBLE
+                            )
+                            persistMessage.value(message)
+                        }
+
+                        // No matter if the user removed himself or an admin did it, we remove the connection from the Members table
                         wrapStorageRequest {
                             conversationDAO.deleteMemberByQualifiedID(
-                                idMapper.toDaoModel(userID),
+                                idMapper.toDaoModel(userId),
                                 idMapper.toDaoModel(conversationId)
                             )
                         }
                     })
 
-                is Conversation.ProtocolInfo.MLS ->
-                    mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userID))
+                is Conversation.ProtocolInfo.MLS -> {
+                    // TODO: Should we also map manually the api response and trigger the member-leave system message on MLS?
+                    mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userId))
+                }
             }
         }
 
@@ -625,7 +653,6 @@ class ConversationDataSource(
             idMapper.toDaoModel(conversationId),
             idMapper.toStringDaoModel(selfUserId)
         )?.let { idMapper.fromDaoModel(it) }
-
     }
 
     companion object {

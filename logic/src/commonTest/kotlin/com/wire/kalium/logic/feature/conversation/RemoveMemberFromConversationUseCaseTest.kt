@@ -3,10 +3,12 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
@@ -33,7 +35,7 @@ class RemoveMemberFromConversationUseCaseTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::deleteMember)
-            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
+            .with(eq(TestConversation.USER_1), eq(TestConversation.ID), eq(false))
             .wasInvoked(exactly = once)
     }
 
@@ -48,7 +50,7 @@ class RemoveMemberFromConversationUseCaseTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::deleteMember)
-            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
+            .with(eq(TestConversation.USER_1), eq(TestConversation.ID), anything())
             .wasInvoked(exactly = once)
     }
 
@@ -56,14 +58,17 @@ class RemoveMemberFromConversationUseCaseTest {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
+        var selfUserId = UserId("my-own-user-id", "my-domain")
+
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
-            conversationRepository
+            conversationRepository,
+            selfUserId
         )
 
         fun withRemoveMemberGroupIs(either: Either<CoreFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::deleteMember)
-                .whenInvokedWith(any(), any())
+                .whenInvokedWith(any(), any(), any())
                 .thenReturn(either)
         }
 
