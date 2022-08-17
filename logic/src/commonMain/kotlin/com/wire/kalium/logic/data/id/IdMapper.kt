@@ -3,12 +3,14 @@ package com.wire.kalium.logic.data.id
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.UserSsoIdDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import com.wire.kalium.network.api.UserId as NetworkUserId
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
 internal typealias PersistenceQualifiedId = QualifiedIDEntity
@@ -31,6 +33,8 @@ interface IdMapper {
     fun toQualifiedAssetIdEntity(value: String, domain: String = ""): PersistenceQualifiedId
     fun toSsoId(userSsoIdDTO: UserSsoIdDTO?): SsoId?
     fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
+    fun toNetworkUserId(userId: UserId): NetworkUserId
+
 }
 
 @Suppress("TooManyFunctions")
@@ -82,4 +86,8 @@ internal class IdMapperImpl : IdMapper {
             scimExternalId = ssoId.scimExternalId
         )
     }
+
+    override fun toNetworkUserId(userId: UserId): NetworkUserId =
+        NetworkUserId(userId.value, userId.domain)
+
 }

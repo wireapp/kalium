@@ -8,11 +8,12 @@ import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.client.OtherUserClients
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.MLSPublicKeyTypeDTO
 import com.wire.kalium.network.api.user.client.UpdateClientRequest
@@ -32,7 +33,8 @@ interface ClientRemoteRepository {
 class ClientRemoteDataSource(
     private val clientApi: ClientApi,
     private val clientConfig: ClientConfig,
-    private val clientMapper: ClientMapper = MapperProvider.clientMapper(clientConfig)
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(clientConfig),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ClientRemoteRepository {
 
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> =
@@ -64,7 +66,7 @@ class ClientRemoteDataSource(
     }
 
     override suspend fun fetchOtherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClients>> =
-        wrapApiRequest { clientApi.otherUserClients(userId) }.map { otherUserClientsItems ->
+        wrapApiRequest { clientApi.otherUserClients(idMapper.toNetworkUserId(userId)) }.map { otherUserClientsItems ->
             clientMapper.fromOtherUsersClientsDTO(otherUserClientsItems)
         }
 }
