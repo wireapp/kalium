@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao_kalium_db
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.ServerConfigurationQueries
 import com.wire.kalium.persistence.model.ServerConfigEntity
