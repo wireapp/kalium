@@ -197,7 +197,7 @@ internal class AssetDataSource(
         wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
-                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null })
+                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null } // todo: pass path
             }.flatMap { assetData ->
                 // Copy byte array to temp file and provide it as source
                 val tempFile = kaliumFileSystem.tempFilePath()

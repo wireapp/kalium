@@ -2,20 +2,27 @@ package com.wire.kalium.network.api.asset
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.AssetId
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.call.body
 import io.ktor.client.request.delete
-import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
+import io.ktor.http.contentLength
 import io.ktor.http.contentType
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.close
+import io.ktor.utils.io.core.isEmpty
+import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.readRemaining
 import okio.Source
 import okio.buffer
 
@@ -53,9 +60,25 @@ class AssetApiImpl internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        httpClient.get(buildAssetsPath(assetId)) {
-            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
+    override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, ): NetworkResponse<ByteArray> {
+        return try {
+            httpClient.prepareGet(buildAssetsPath(assetId)) {
+                assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
+            }.execute { httpResponse ->
+                val channel: ByteReadChannel = httpResponse.body()
+                val dataHolder = arrayListOf<ByteArray>()
+                while (!channel.isClosedForRead) {
+                    val packet = channel.readRemaining()
+                    while (!packet.isEmpty) {
+                        dataHolder.add(packet.readBytes())
+                    }
+                }
+                println("Received ${dataHolder.size} size from ${httpResponse.contentLength()}")
+                val result = dataHolder.reduce { a: ByteArray, b: ByteArray -> a + b }
+                NetworkResponse.Success(result, httpResponse)
+            }
+        } catch (exception: Exception) {
+            NetworkResponse.Error(KaliumException.GenericError(exception))
         }
     }
 
