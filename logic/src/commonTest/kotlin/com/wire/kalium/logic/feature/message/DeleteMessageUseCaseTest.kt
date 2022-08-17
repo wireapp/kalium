@@ -161,10 +161,9 @@ class DeleteMessageUseCaseTest {
         // when
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value,
-            arrangement.idMapper.toProtoModel(
-                TEST_CONVERSATION_ID
-            )
+            TEST_MESSAGE_UUID,
+            TEST_CONVERSATION_ID.value,
+            TEST_CONVERSATION_ID
         )
 
         // then
@@ -216,8 +215,7 @@ class DeleteMessageUseCaseTest {
             clientRepository,
             assetRepository,
             slowSyncRepository,
-            messageSender,
-            idMapper
+            messageSender
         )
 
         fun withSendMessageSucceed() = apply {

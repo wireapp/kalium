@@ -35,6 +35,8 @@ import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.Base64
@@ -322,6 +324,8 @@ class ConversationEventReceiverTest {
             userRepository,
             lazyOf(callManager),
             MessageTextEditHandler(messageRepository),
+            LastReadContentHandler(conversationRepository, userRepository),
+            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
             protoContentMapper = protoContentMapper,
             userConfigRepository = userConfigRepository,
             ephemeralNotificationsManager = ephemeralNotifications
