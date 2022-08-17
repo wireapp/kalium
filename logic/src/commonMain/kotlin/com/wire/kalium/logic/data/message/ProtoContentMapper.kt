@@ -48,7 +48,7 @@ class ProtoContentMapperImpl(
                 MessageHide(
                     messageId = readableContent.messageId,
                     conversationId = readableContent.conversationId,
-                    qualifiedConversationId = readableContent.qualifiedConversationId
+                    qualifiedConversationId = readableContent.unqualifiedConversationId
                 )
             )
             is MessageContent.Availability ->

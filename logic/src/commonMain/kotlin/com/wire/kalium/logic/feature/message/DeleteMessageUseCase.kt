@@ -43,8 +43,8 @@ class DeleteMessageUseCase(
                             id = generatedMessageUuid,
                             content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
                                 messageId,
-                                conversationId = conversationId.value,
-                                qualifiedConversationId = idMapper.toProtoModel(conversationId)
+                                conversationId = conversationId,
+                                unqualifiedConversationId = idMapper.toProtoModel(conversationId)
                             ),
                             conversationId = if (deleteForEveryone) conversationId else selfUser.id,
                             date = Clock.System.now().toString(),

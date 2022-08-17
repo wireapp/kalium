@@ -14,7 +14,6 @@ sealed class MessageContent {
     sealed class Signaling : FromProto()
 
     // client message content types
-
     data class Text(val value: String) : Regular()
     data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()
@@ -28,8 +27,9 @@ sealed class MessageContent {
 
     data class DeleteForMe(
         val messageId: String,
-        val conversationId: String,
-        val qualifiedConversationId: QualifiedConversationId?
+        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
+        val unqualifiedConversationId: String,
+        val conversationId: ConversationId?,
     ) : Regular()
 
     data class Unknown( // messages that aren't yet handled properly but stored in db in case

@@ -24,8 +24,10 @@ class LastReadContentHandler(
             // If the message is coming from other client, it means that the user has read
             // the conversation on the other device and we can update the read date locally
             // to synchronize the state across the clients.
+            val conversationId = messageContent.conversationId ?: ConversationId(messageContent.unqualifiedConversationId, userRepository.getSelfUserId().domain)
+
             conversationRepository.updateConversationReadDate(
-                qualifiedID = ConversationId(messageContent.conversationId, message.conversationId.domain),
+                qualifiedID = conversationId,
                 date = messageContent.time.toString()
             )
         }

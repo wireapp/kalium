@@ -41,6 +41,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
@@ -66,6 +67,7 @@ internal class ConversationEventReceiverImpl(
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
     private val lastReadContentHandler: LastReadContentHandler,
+    private val deleteForMeHandler: DeleteForMeHandler,
     private val userConfigRepository: UserConfigRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -378,23 +380,7 @@ internal class ConversationEventReceiverImpl(
                 }
                 is MessageContent.Asset -> handleAssetMessage(message)
                 is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
-                is MessageContent.DeleteForMe -> {
-                    /*The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
-                    *  we need to get the DOMAIN from the self conversationId[here is the message.conversationId]*/
-                    val conversationId = if (content.qualifiedConversationId != null)
-                        idMapper.fromProtoModel(content.qualifiedConversationId)
-                    else ConversationId(
-                        content.conversationId,
-                        message.conversationId.domain
-                    )
-                    if (message.conversationId == conversationRepository.getSelfConversationId())
-                        messageRepository.deleteMessage(
-                            messageUuid = content.messageId,
-                            conversationId = conversationId
-                        )
-                    else kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
-                }
-
+                is MessageContent.DeleteForMe -> deleteForMeHandler.handle(message,content)
                 is MessageContent.Calling -> {
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - MessageContent.Calling")
                     callManagerImpl.value.onCallingMessageReceived(
@@ -402,7 +388,6 @@ internal class ConversationEventReceiverImpl(
                         content = content
                     )
                 }
-
                 is MessageContent.TextEdited -> editTextHandler.handle(message, content)
                 is MessageContent.LastRead -> lastReadContentHandler.handle(message, content)
                 is MessageContent.Unknown -> {
@@ -412,7 +397,6 @@ internal class ConversationEventReceiverImpl(
 
                 is MessageContent.Empty -> TODO()
             }
-
             is Message.System -> when (message.content) {
                 is MessageContent.MemberChange -> {
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "System MemberChange Message received: $message")
