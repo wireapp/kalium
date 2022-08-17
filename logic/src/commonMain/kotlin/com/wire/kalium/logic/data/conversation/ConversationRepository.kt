@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.conversation
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
@@ -10,8 +9,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -30,7 +27,6 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
-import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
@@ -48,7 +44,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kotlin.coroutines.cancellation.CancellationException
 
 interface ConversationRepository {
@@ -203,7 +198,7 @@ class ConversationDataSource(
         }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
-            conversationDAO.insertMembers(
+            conversationDAO.insertMembersWithQualifiedId(
                 memberMapper.fromApiModelToDaoModel(conversationsResponse.members), idMapper.fromApiToDao(conversationsResponse.id)
             )
         }
@@ -375,7 +370,7 @@ class ConversationDataSource(
     override suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet()).flatMap {
             wrapStorageRequest {
-                conversationDAO.insertMembers(
+                conversationDAO.insertMembersWithQualifiedId(
                     members.map(memberMapper::toDaoModel), idMapper.toDaoModel(conversationID)
                 )
             }
@@ -532,7 +527,7 @@ class ConversationDataSource(
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
-            conversationDAO.insertMembers(memberMapper.fromApiModelToDaoModel(conversationResponse.members), conversationId)
+            conversationDAO.insertMembersWithQualifiedId(memberMapper.fromApiModelToDaoModel(conversationResponse.members), conversationId)
         }
     }
 
@@ -552,7 +547,7 @@ class ConversationDataSource(
             //  ---> at the moment the backend doesn't tell us anything about the member role! till then we are setting them as Member
             val membersWithRole = users.map { userId -> Member(userId, Member.Role.Member) }
             val selfMember = Member(selfUserId, Member.Role.Admin)
-            conversationDAO.insertMembers((membersWithRole + selfMember).map(memberMapper::toDaoModel), conversationId)
+            conversationDAO.insertMembersWithQualifiedId((membersWithRole + selfMember).map(memberMapper::toDaoModel), conversationId)
         }
     }
 

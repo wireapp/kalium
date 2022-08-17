@@ -191,7 +191,7 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity) {
+    override suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             for (member: Member in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
@@ -202,7 +202,7 @@ class ConversationDAOImpl(
 
     override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
         getConversationByGroupID(groupId).firstOrNull()?.let {
-            insertMembers(memberList, it.id)
+            insertMembersWithQualifiedId(memberList, it.id)
         }
     }
 

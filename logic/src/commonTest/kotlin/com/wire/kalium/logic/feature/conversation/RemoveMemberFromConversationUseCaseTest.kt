@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -35,7 +36,7 @@ class RemoveMemberFromConversationUseCaseTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::deleteMember)
-            .with(eq(TestConversation.USER_1), eq(TestConversation.ID), eq(false))
+            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
     }
 
@@ -50,25 +51,28 @@ class RemoveMemberFromConversationUseCaseTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::deleteMember)
-            .with(eq(TestConversation.USER_1), eq(TestConversation.ID), anything())
+            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
+        @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         var selfUserId = UserId("my-own-user-id", "my-domain")
 
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
             conversationRepository,
-            selfUserId
+            selfUserId,
+            persistMessage
         )
 
         fun withRemoveMemberGroupIs(either: Either<CoreFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::deleteMember)
-                .whenInvokedWith(any(), any(), any())
+                .whenInvokedWith(any(), any())
                 .thenReturn(either)
         }
 

@@ -137,7 +137,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenAllMembersCanBeRetrieved() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertMembers(listOf(member1, member2), conversationEntity1.id)
+        conversationDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity1.id)
 
         assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
     }
