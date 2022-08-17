@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.map
 interface UserConfigRepository {
     fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit>
     fun isLoggingEnabled(): Either<StorageFailure, Boolean>
-    fun isPersistentWebSocketConnectionEnabled(): Either<StorageFailure, Boolean>
+    fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Either<StorageFailure, Boolean>>
     fun persistPersistentWebSocketConnectionStatus(status: Boolean): Either<StorageFailure, Unit>
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
@@ -29,8 +29,8 @@ class UserConfigDataSource(
 
     override fun isLoggingEnabled(): Either<StorageFailure, Boolean> = wrapStorageRequest { userConfigStorage.isLoggingEnables() }
 
-    override fun isPersistentWebSocketConnectionEnabled(): Either<StorageFailure, Boolean> =
-        wrapStorageRequest { userConfigStorage.isPersistentWebSocketConnectionEnabled() }
+    override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigStorage.isPersistentWebSocketConnectionEnabledFlow().wrapStorageRequest()
 
     override fun persistPersistentWebSocketConnectionStatus(status: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistPersistentWebSocketConnectionStatus(status) }

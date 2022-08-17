@@ -40,7 +40,7 @@ interface UserConfigStorage {
     /**
      * get the saved flag to know if the persistent webSocket connection enabled or not
      */
-    fun isPersistentWebSocketConnectionEnabled(): Boolean
+    fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Boolean>
 
     /**
      * save flag from the file sharing api, and if the status changes
@@ -69,6 +69,9 @@ data class IsFileSharingEnabledEntity(
 class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : UserConfigStorage {
 
     private val isFileSharingEnabledFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val isPersistentWebSocketConnectionEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
     override fun enableMLS(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
     }
@@ -87,8 +90,10 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
         kaliumPreferences.putBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, enabled)
     }
 
-    override fun isPersistentWebSocketConnectionEnabled(): Boolean =
-        kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false)
+    override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Boolean> = isPersistentWebSocketConnectionEnabledFlow
+        .map { kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false) }
+        .onStart { emit(kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false)) }
+        .distinctUntilChanged()
 
     override fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?) {
         kaliumPreferences.putSerializable(

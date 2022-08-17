@@ -4,6 +4,7 @@ import com.russhwolf.settings.MockSettings
 import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -40,10 +41,10 @@ class UserConfigStorageTest {
     @Test
     fun givenPersistWebSocketStatus_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
         userConfigStorage.persistPersistentWebSocketConnectionStatus(true)
-        assertEquals(true, userConfigStorage.isPersistentWebSocketConnectionEnabled())
+        assertEquals(true, userConfigStorage.isPersistentWebSocketConnectionEnabledFlow().first())
 
         userConfigStorage.persistPersistentWebSocketConnectionStatus(false)
-        assertEquals(false, userConfigStorage.isPersistentWebSocketConnectionEnabled())
+        assertEquals(false, userConfigStorage.isPersistentWebSocketConnectionEnabledFlow().first())
     }
 
     @Test
