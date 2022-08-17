@@ -95,6 +95,7 @@ class MessageScope internal constructor(
             clientRepository,
             assetRepository,
             userRepository,
+            slowSyncRepository,
             messageSender
         )
 

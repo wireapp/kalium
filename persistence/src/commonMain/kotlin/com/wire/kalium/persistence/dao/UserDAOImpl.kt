@@ -1,8 +1,8 @@
 package com.wire.kalium.persistence.dao
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -23,7 +23,8 @@ class UserMapper {
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
             userType = user.user_type,
-            botService = user.bot_service
+            botService = user.bot_service,
+            deleted = user.deleted
         )
     }
 }
@@ -48,7 +49,8 @@ class UserDAOImpl(
             user.previewAssetId,
             user.completeAssetId,
             user.userType,
-            user.botService
+            user.botService,
+            user.deleted
         )
     }
 
@@ -81,7 +83,8 @@ class UserDAOImpl(
                         user.previewAssetId,
                         user.completeAssetId,
                         user.userType,
-                        user.botService
+                        user.botService,
+                        user.deleted
                     )
                 }
             }
@@ -118,7 +121,8 @@ class UserDAOImpl(
                         user.previewAssetId,
                         user.completeAssetId,
                         user.userType,
-                        user.botService
+                        user.botService,
+                        user.deleted
                     )
                 }
             }
@@ -143,7 +147,8 @@ class UserDAOImpl(
                         user.previewAssetId,
                         user.completeAssetId,
                         user.userType,
-                        user.botService
+                        user.botService,
+                        user.deleted
                     )
                 }
             }

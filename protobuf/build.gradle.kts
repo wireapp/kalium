@@ -43,9 +43,10 @@ kotlin {
     iosX64()
     js(IR) {
         browser {
+            commonWebpackConfig {
+                cssSupport.enabled = true
+            }
             testTask {
-                // TODO: Enable once Protobuf for JS is stable
-                this.enabled = false
                 useMocha {
                     timeout = "5s"
                 }
