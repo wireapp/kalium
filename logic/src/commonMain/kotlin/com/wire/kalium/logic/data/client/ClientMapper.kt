@@ -72,13 +72,10 @@ class ClientMapper(
         DeviceType.Unknown -> DeviceTypeDTO.Unknown
     }
 
-    fun fromOtherUsersClientsDTO(otherUsersClients: List<OtherUserClientsItem>): List<OtherUserClients> {
-        val list = arrayListOf<OtherUserClients>()
-        for (item in otherUsersClients) {
-            list.add(OtherUserClients(DeviceType.valueOf(item.deviceType.name), item.id))
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<OtherUserClientsItem>): List<OtherUserClients> =
+        otherUsersClients.map {
+            OtherUserClients(DeviceType.valueOf(it.deviceType.name), it.id)
         }
-        return list
-    }
 
     private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {
         DeviceTypeDTO.Phone -> DeviceType.Phone

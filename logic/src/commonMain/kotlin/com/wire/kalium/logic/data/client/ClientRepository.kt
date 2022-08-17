@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -40,7 +41,8 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
-    private val userMapper: UserMapper = MapperProvider.userMapper()
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
@@ -89,9 +91,10 @@ class ClientDataSource(
 
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
     override suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit> = clientRemoteRepository.deregisterToken(token)
+
     override suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClients>> =
         wrapStorageRequest {
-            clientDAO.getClientsOfUserByQualifiedID(QualifiedIDEntity(userId.value, userId.domain))
+            clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(userId))
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }

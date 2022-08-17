@@ -26,7 +26,7 @@ interface ClientRemoteRepository {
     suspend fun fetchSelfUserClients(): Either<NetworkFailure, List<Client>>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(pid: String): Either<NetworkFailure, Unit>
-    suspend fun otherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClients>>
+    suspend fun fetchOtherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClients>>
 }
 
 class ClientRemoteDataSource(
@@ -63,7 +63,7 @@ class ClientRemoteDataSource(
         clientApi.deregisterToken(pid)
     }
 
-    override suspend fun otherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClients>> =
+    override suspend fun fetchOtherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClients>> =
         wrapApiRequest { clientApi.otherUserClients(userId) }.map { otherUserClientsItems ->
             clientMapper.fromOtherUsersClientsDTO(otherUserClientsItems)
         }

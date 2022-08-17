@@ -6,6 +6,9 @@ import com.wire.kalium.logic.data.client.OtherUserClients
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Use case to fetch all the other user clients (devices) information from the local db for specific user
+ */
 interface GetOtherUserClientsUseCase {
     suspend operator fun invoke(userId: UserId): GetOtherUserClientsResult
 }

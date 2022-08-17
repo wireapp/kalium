@@ -36,7 +36,7 @@ class PersistOtherUsersClientsUseCaseTest {
         getOtherUsersClientsUseCase.invoke(userId)
 
         verify(arrangement.clientRemoteRepository)
-            .suspendFunction(arrangement.clientRemoteRepository::otherUserClients).with(any())
+            .suspendFunction(arrangement.clientRemoteRepository::fetchOtherUserClients).with(any())
             .wasInvoked(exactly = once)
 
     }
@@ -55,7 +55,7 @@ class PersistOtherUsersClientsUseCaseTest {
 
         // Then
         verify(arrangement.clientRemoteRepository)
-            .suspendFunction(arrangement.clientRemoteRepository::otherUserClients).with(any())
+            .suspendFunction(arrangement.clientRemoteRepository::fetchOtherUserClients).with(any())
             .wasInvoked(exactly = once)
 
     }
@@ -72,7 +72,7 @@ class PersistOtherUsersClientsUseCaseTest {
 
         fun withSuccessfulResponse(expectedResponse: List<OtherUserClients>): Arrangement {
             given(clientRemoteRepository)
-                .suspendFunction(clientRemoteRepository::otherUserClients).whenInvokedWith(any())
+                .suspendFunction(clientRemoteRepository::fetchOtherUserClients).whenInvokedWith(any())
                 .thenReturn(Either.Right(expectedResponse))
 
             given(clientRepository)
@@ -83,7 +83,7 @@ class PersistOtherUsersClientsUseCaseTest {
 
         fun withGetOtherUserClientsErrorResponse(exception: KaliumException): Arrangement {
             given(clientRemoteRepository)
-                .suspendFunction(clientRemoteRepository::otherUserClients).whenInvokedWith(any())
+                .suspendFunction(clientRemoteRepository::fetchOtherUserClients).whenInvokedWith(any())
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
             return this
         }

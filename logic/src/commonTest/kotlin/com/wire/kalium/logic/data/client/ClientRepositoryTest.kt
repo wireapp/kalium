@@ -341,7 +341,7 @@ class ClientRepositoryTest {
         val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(otherUsersClients).arrange()
 
         // When
-        val result = clientRepository.otherUserClients(userId)
+        val result = clientRepository.fetchOtherUserClients(userId)
 
         // Then
         result.shouldSucceed { expectedSuccess.value }
@@ -359,7 +359,7 @@ class ClientRepositoryTest {
             .withErrorResponse(notFound).arrange()
 
         // When
-        val result = clientRepository.otherUserClients(userId)
+        val result = clientRepository.fetchOtherUserClients(userId)
 
         // Then
         result.shouldFail { Either.Left(notFound).value }

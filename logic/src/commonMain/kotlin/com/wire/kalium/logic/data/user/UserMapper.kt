@@ -220,12 +220,8 @@ internal class UserMapperImpl(
             deleted = false
         )
 
-    override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients> {
-        val list = arrayListOf<OtherUserClients>()
-        for (item in otherUsersClients) {
-            val deviceType = item.deviceType ?: ""
-            list.add(OtherUserClients(DeviceType.valueOf(deviceType), item.id))
+    override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients> =
+        otherUsersClients.map {
+            OtherUserClients(DeviceType.valueOf(it.deviceType ?: ""), it.id)
         }
-        return list
-    }
 }
