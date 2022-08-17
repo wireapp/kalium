@@ -1189,7 +1189,7 @@ class ConversationRepositoryTest {
 
         // then
         assertIs<Either.Right<List<Message>>>(result)
-        assertTrue{ result.value == listOf(TEST_MESSAGE)}
+        assertEquals(result.value, listOf(TEST_MESSAGE))
     }
 
     @Test
