@@ -673,7 +673,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // then
             assertTrue(result.size == 10)
             result.forEach {
-                assertIs<MessageEntityContent.Asset>(it)
+                assertIs<MessageEntityContent.Asset>(it.content)
             }
         }
 
