@@ -46,6 +46,7 @@ actual class CoreLogic(
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
         KaliumPreferencesSettings(
             EncryptedSettingsHolder(
+                rootPath,
                 SettingOptions.AppSettings(
                     shouldEncryptData = kaliumConfigs.shouldEncryptData
                 )
@@ -73,6 +74,7 @@ actual class CoreLogic(
 
             val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(userId)
             val encryptedSettingsHolder = EncryptedSettingsHolder(
+                rootPath,
                 SettingOptions.UserSettings(
                     shouldEncryptData = kaliumConfigs.shouldEncryptData,
                     idMapper.toDaoModel(userId)

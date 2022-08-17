@@ -1,9 +1,9 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.Query
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -192,8 +192,6 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     conversation_id = message.conversationId,
                     caller_id = message.senderUserId
                 )
-
-                is MessageEntityContent.Knock -> {} // No need to insert a Knock-specific message
             }
         }
     }
