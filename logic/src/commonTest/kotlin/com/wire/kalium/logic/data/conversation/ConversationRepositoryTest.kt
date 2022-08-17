@@ -4,9 +4,16 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
+import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.MessageRepositoryTest
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.message.DeleteMessageUseCaseTest.Companion.TEST_CONVERSATION_ID
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -36,6 +43,8 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -90,18 +99,23 @@ class ConversationRepositoryTest {
     @Mock
     private val timeParser: TimeParser = mock(TimeParser::class)
 
+    @Mock
+    private val messageMapper: MessageMapper = mock(MessageMapper::class)
+
+
     private lateinit var conversationRepository: ConversationRepository
 
     @BeforeTest
     fun setup() {
         conversationRepository = ConversationDataSource(
-            userRepository,
-            mlsConversationRepository,
-            conversationDAO,
-            conversationApi,
-            messageDAO,
-            clientApi,
-            timeParser
+            userRepository = userRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            conversationDAO = conversationDAO,
+            conversationApi = conversationApi,
+            messageDAO = messageDAO,
+            clientApi = clientApi,
+            timeParser = timeParser,
+            messageMapper = messageMapper
         )
     }
 
@@ -1164,12 +1178,31 @@ class ConversationRepositoryTest {
 
     @Test
     fun givenAConversationDaoHasAssetsMessages_whenGettingAssetMessages_thenShouldReturnThoseMessages() = runTest{
+        // given
+            given(messageDAO)
+                .suspendFunction(messageDAO::getConversationMessagesByContentType)
+                .whenInvokedWith(any(),any())
+                .thenReturn(listOf(TEST_MESSAGE_ENTITY))
 
+            given(messageMapper)
+                .function(messageMapper::fromEntityToMessage)
+                .whenInvokedWith(any())
+                .thenReturn(TEST_MESSAGE)
+        // when
+        val result = conversationRepository.getAssetMessages(TestConversation.ID)
+
+        // then
+        assertIs<Either.Right<List<Message>>>(result)
+        assertTrue{ result.value == listOf(TEST_MESSAGE)}
     }
 
     @Test
     fun givenDeletingConversationMessages_whenSuccessFullyDeletingMessages_thenShouldSucceed() = runTest{
+        // when
+        val result = conversationRepository.deleteAllMessages(TestConversation.ID)
 
+        // then
+        assertIs<Either.Right<Unit>>(result)
     }
 
     companion object {
@@ -1237,6 +1270,50 @@ class ConversationRepositoryTest {
             lastNotificationDate = null,
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+        )
+
+        private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
+
+        val TEST_MESSAGE_ENTITY =
+            MessageEntity.Regular(
+                id = "uid",
+                content = MessageEntityContent.Asset(
+                    assetSizeInBytes = 0,
+                    assetName = null,
+                    assetMimeType = "",
+                    assetDownloadStatus = null,
+                    assetOtrKey = byteArrayOf(),
+                    assetSha256Key = byteArrayOf(),
+                    assetId = "",
+                    assetToken = null,
+                    assetDomain = null,
+                    assetEncryptionAlgorithm = null,
+                    assetWidth = null,
+                    assetHeight = null,
+                    assetDurationMs = null,
+                    assetNormalizedLoudness = null
+                ),
+                conversationId = TEST_QUALIFIED_ID_ENTITY,
+                date = "date",
+                senderUserId = TEST_QUALIFIED_ID_ENTITY,
+                senderClientId = "sender",
+                status = MessageEntity.Status.SENT,
+                editStatus = MessageEntity.EditStatus.NotEdited
+            )
+        private val TEST_CONVERSATION_ID = ConversationId("value", "domain")
+        private val TEST_CLIENT_ID = ClientId("clientId")
+        private val TEST_USER_ID = UserId("userId", "domain")
+        private val TEST_CONTENT = MessageContent.Text("Ciao!")
+        private const val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
+        val TEST_MESSAGE = Message.Regular(
+        id = "uid",
+        content = TEST_CONTENT,
+        conversationId = TEST_CONVERSATION_ID,
+        date = TEST_DATETIME,
+        senderUserId = TEST_USER_ID,
+        senderClientId = TEST_CLIENT_ID,
+        status = Message.Status.SENT,
+        editStatus = Message.EditStatus.NotEdited
         )
     }
 }
