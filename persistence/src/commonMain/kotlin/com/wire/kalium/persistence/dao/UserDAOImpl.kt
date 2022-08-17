@@ -1,8 +1,8 @@
 package com.wire.kalium.persistence.dao
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

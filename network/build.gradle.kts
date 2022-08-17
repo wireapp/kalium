@@ -48,7 +48,6 @@ kotlin {
                         strictly(Versions.coroutines)
                     }
                 }
-                implementation(Dependencies.Kotlinx.dateTime)
 
                 // ktor
                 api(Dependencies.Ktor.core)
