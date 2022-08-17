@@ -1232,11 +1232,11 @@ class ConversationRepositoryTest {
         }
 
         fun withWhoDeletedMe(deletionAuthor: UserId?) = apply {
-            val deletionAuthor = deletionAuthor?.let { MapperProvider.idMapper().toDaoModel(it) }
+            val author = deletionAuthor?.let { MapperProvider.idMapper().toDaoModel(it) }
             given(conversationDAO)
                 .suspendFunction(conversationDAO::whoDeletedMeInConversation)
                 .whenInvokedWith(any(), any())
-                .thenReturn(deletionAuthor)
+                .thenReturn(author)
         }
 
         fun arrange() = this to conversationRepository

@@ -589,34 +589,34 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
         }
 
-    @Test
-    fun givenListMLSConversationsWithUpdateTime_whenPartOfThemNeedUpdate_thenGetConversationsByKeyingMaterialUpdateReturnsCorrectGroups() =
-        runTest {
-            // given
-            // established updated group
-            val updatedConversation = conversationEntity2
-            val updatedDate = Instant.parse("2023-03-30T15:36:00.000Z")
-            val updatedGroupId = (updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-            conversationDAO.insertConversation(updatedConversation)
-            conversationDAO.updateKeyingMaterial(updatedGroupId, updatedDate)
-
-            // pending outdated group
-            val outDatedConversation1 = conversationEntity3
-            val outdatedDate1 = Instant.parse("2019-03-30T15:36:00.000Z")
-            val outdatedGroupId1 = (outDatedConversation1.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-            conversationDAO.insertConversation(outDatedConversation1)
-            conversationDAO.updateKeyingMaterial(outdatedGroupId1, outdatedDate1)
-
-            // established outdated group
-            val outDatedConversation2 = conversationEntity4
-            val outdatedDate2 = Instant.parse("2019-03-30T15:36:00.000Z")
-            val outdatedGroupId2 = (outDatedConversation2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-            conversationDAO.insertConversation(outDatedConversation2)
-            conversationDAO.updateKeyingMaterial(outdatedGroupId2, outdatedDate2)
-
-            // then
-            assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
-        }
+//     @Test
+//     fun givenSeveralRemoveMemberMessages_whenCallingWhoRemovedMe_itReturnsTheCorrectValue() =
+//         runTest {
+//             // given
+//             // established updated group
+//             val conversation1 = conversationEntity1
+//             val conversationDate = Instant.parse("2023-03-30T15:36:00.000Z")
+//             val updatedGroupId = (updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+//             conversationDAO.insertConversation(updatedConversation)
+//             conversationDAO.updateKeyingMaterial(updatedGroupId, updatedDate)
+//
+//             // pending outdated group
+//             val outDatedConversation1 = conversationEntity3
+//             val outdatedDate1 = Instant.parse("2019-03-30T15:36:00.000Z")
+//             val outdatedGroupId1 = (outDatedConversation1.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+//             conversationDAO.insertConversation(outDatedConversation1)
+//             conversationDAO.updateKeyingMaterial(outdatedGroupId1, outdatedDate1)
+//
+//             // established outdated group
+//             val outDatedConversation2 = conversationEntity4
+//             val outdatedDate2 = Instant.parse("2019-03-30T15:36:00.000Z")
+//             val outdatedGroupId2 = (outDatedConversation2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+//             conversationDAO.insertConversation(outDatedConversation2)
+//             conversationDAO.updateKeyingMaterial(outdatedGroupId2, outdatedDate2)
+//
+//             // then
+//             assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
+//         }
 
     private companion object {
         val user1 = newUserEntity(id = "1")
