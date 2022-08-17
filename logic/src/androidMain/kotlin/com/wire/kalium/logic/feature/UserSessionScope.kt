@@ -36,4 +36,8 @@ actual class UserSessionScope(
 ) {
 
     override val clientConfig: ClientConfig get() = ClientConfigImpl(applicationContext)
+
+    init {
+        onInit()
+    }
 }

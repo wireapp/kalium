@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToOneOrNull
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MetadataQueries
 import kotlinx.coroutines.flow.Flow
 

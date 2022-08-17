@@ -140,7 +140,12 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
+import kotlin.coroutines.CoroutineContext
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -153,7 +158,7 @@ abstract class UserSessionScopeCommon(
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs
-) {
+) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
@@ -329,8 +334,6 @@ abstract class UserSessionScopeCommon(
         get() = SyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
     val syncManager: SyncManager by lazy {
-        incrementalSyncManager
-        slowSyncManager
         SyncManagerImpl(
             slowSyncRepository,
             incrementalSyncRepository
@@ -574,5 +577,21 @@ abstract class UserSessionScopeCommon(
             if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath()))
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
+    }
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+
+    fun onInit() {
+        launch {
+            // TODO: Add a public start function to the Managers
+            incrementalSyncManager
+            slowSyncManager
+
+            callRepository.updateOpenCallsToClosedStatus()
+        }
+    }
+
+    fun onDestroy() {
+        cancel()
     }
 }

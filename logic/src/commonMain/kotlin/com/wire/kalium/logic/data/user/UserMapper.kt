@@ -108,7 +108,8 @@ internal class UserMapperImpl(
             },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userTypeEntity ?: UserTypeEntity.INTERNAL,
-            botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) }
+            botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) },
+            deleted = userProfileDTO.deleted ?: false
         )
     }
 
@@ -166,6 +167,7 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.INTERNAL,
             botService = null,
+            deleted = false
         )
     }
 
@@ -183,6 +185,7 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.INTERNAL,
             botService = null,
+            deleted = userDTO.deleted ?: false
         )
     }
 
@@ -214,6 +217,7 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode),
             botService = null,
+            deleted = false
         )
 
     override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients> {
