@@ -8,6 +8,23 @@ typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
 
+open class CommitBundle(
+    val commit: ByteArray,
+    open val welcome: ByteArray?,
+    val publicGroupState: ByteArray
+)
+
+class AddMemberCommitBundle(
+    commit: ByteArray,
+    override val welcome: ByteArray,
+    publicGroupState: ByteArray
+): CommitBundle(commit, welcome, publicGroupState)
+
+class DecryptedMessageBundle(
+    val message: ByteArray?,
+    val commitDelay: Long?
+)
+
 interface MLSClient {
 
     /**
@@ -33,13 +50,20 @@ interface MLSClient {
     fun generateKeyPackages(amount: Int): List<ByteArray>
 
     /**
+     * Number of valid key packages which haven't been consumed
+     *
+     * @return valid key package count
+     */
+    fun validKeyPackageCount(): ULong
+
+    /**
      * Update your keying material for an existing conversation you're a member of.
      *
      * @param groupId MLS group ID for an existing conversation
      *
      * @return commit message and a welcome message if an add proposal was pending.
      */
-    fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?>
+    fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
 
     /**
      * Request to join an existing conversation
@@ -74,7 +98,9 @@ interface MLSClient {
     fun createConversation(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage>?
+    ): AddMemberCommitBundle?
+
+    fun wipeConversation(groupId: MLSGroupId)
 
     /**
      * Process an incoming welcome message
@@ -83,6 +109,16 @@ interface MLSClient {
      * @return MLS group ID
      */
     fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId
+
+    /**
+     * Signal that last sent commit was accepted by the distribution service
+     */
+    fun commitAccepted(groupId: MLSGroupId)
+
+    /**
+     * Create a commit for any pending proposals
+     */
+    fun commitPendingProposals(groupId: MLSGroupId): CommitBundle
 
     /**
      * Encrypt a message for distribution in a group
@@ -110,7 +146,7 @@ interface MLSClient {
     fun decryptMessage(
         groupId: MLSGroupId,
         message: ApplicationMessage
-    ): PlainMessage?
+    ): DecryptedMessageBundle
 
     /**
      * Add a user/client to an existing MLS group
@@ -123,7 +159,7 @@ interface MLSClient {
     fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage>?
+    ): AddMemberCommitBundle?
 
     /**
      * Remove a user/client from an existing MLS group
@@ -136,7 +172,7 @@ interface MLSClient {
     fun removeMember(
         groupId: MLSGroupId,
         members: List<CryptoQualifiedClientId>
-    ): HandshakeMessage?
+    ): CommitBundle
 }
 
 @JvmInline

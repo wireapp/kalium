@@ -59,7 +59,7 @@ kotlin {
     js(IR) {
         browser {
             commonWebpackConfig {
-                cssSupport.enabled = true
+                cssSupport.enabled = false
             }
             testTask {
                 useMocha {
