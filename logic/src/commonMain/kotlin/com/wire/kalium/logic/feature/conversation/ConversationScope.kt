@@ -34,7 +34,7 @@ class ConversationScope(
     private val clientRepository: ClientRepository,
     private val selfUserId: UserId,
     private val persistMessage: PersistMessageUseCase,
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamRepository,
     private val updateKeyingMaterialsThresholdProvider: UpdateKeyingMaterialsThresholdProvider
 ) {
 
