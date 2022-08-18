@@ -134,7 +134,8 @@ class ConversationRepositoryTest {
             groupId,
             ConversationEntity.GroupState.ESTABLISHED,
             0UL,
-            Instant.parse("2021-03-30T15:36:00.000Z")
+            Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
 
         given(userRepository)
@@ -1155,7 +1156,8 @@ class ConversationRepositoryTest {
                 MLS_GROUP_ID,
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
 
         const val GROUP_NAME = "Group Name"
@@ -1186,7 +1188,8 @@ class ConversationRepositoryTest {
                 ConversationAccessRoleDTO.GUEST,
                 ConversationAccessRoleDTO.TEAM_MEMBER,
                 ConversationAccessRoleDTO.NON_TEAM_MEMBER
-            )
+            ),
+            mlsCipherSuiteTag = null
         )
 
         val CONVERSATION_RESPONSE_DTO = ConversationResponseDTO(

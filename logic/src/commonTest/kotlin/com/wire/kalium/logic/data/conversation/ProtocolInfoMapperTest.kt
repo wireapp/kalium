@@ -43,7 +43,8 @@ class ProtocolInfoMapperTest {
             "GROUP_ID",
             Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
             5UL,
-            Instant.parse("2021-03-30T15:36:00.000Z")
+            Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
         val CONVERSATION_PROTEUS_PROTOCOL_INFO = Conversation.ProtocolInfo.Proteus
 
@@ -52,7 +53,8 @@ class ProtocolInfoMapperTest {
                 "GROUP_ID",
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 5UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
         val CONV_ENTITY_PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
 
