@@ -9,9 +9,9 @@ class UpdateSelfAvailabilityStatusUseCase(
     private val syncManager: SyncManager
 ) {
     suspend operator fun invoke(status: UserAvailabilityStatus) {
-        if (syncManager.isSlowSyncOngoing()) {
-            syncManager.waitUntilLive()
-        }
+        // TODO: Handle possibility of being offline. Storing the broadcast to be sent when Sync is done.
+        //       For now, any "offline failure" can be ignored, as we do not broadcast the availability to other devices or users.
+        syncManager.waitUntilLiveOrFailure()
         userRepository.updateSelfUserAvailabilityStatus(status)
     }
 }
