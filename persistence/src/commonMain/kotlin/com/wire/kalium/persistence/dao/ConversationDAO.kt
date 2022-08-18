@@ -94,7 +94,7 @@ interface ConversationDAO {
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
-    suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
+    suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity)
     suspend fun insertMembers(memberList: List<Member>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
@@ -111,18 +111,17 @@ interface ConversationDAO {
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
-
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
-
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>
     )
-
     suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
     suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
     suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
+    suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean
+    suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
 }

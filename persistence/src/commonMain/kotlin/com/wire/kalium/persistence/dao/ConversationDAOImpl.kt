@@ -99,7 +99,6 @@ class ConversationDAOImpl(
                 else ConversationEntity.Protocol.PROTEUS,
                 mutedStatus,
                 mutedTime,
-                removedBy,
                 creatorId,
                 lastModifiedDate,
                 lastNotificationDate,
@@ -196,7 +195,7 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity) {
+    override suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             for (member: Member in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
@@ -207,7 +206,7 @@ class ConversationDAOImpl(
 
     override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
         getConversationByGroupID(groupId).firstOrNull()?.let {
-            insertMembers(memberList, it.id)
+            insertMembersWithQualifiedId(memberList, it.id)
         }
     }
 
@@ -297,4 +296,11 @@ class ConversationDAOImpl(
             ConversationEntity.Protocol.MLS,
             Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
+
+    override suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean =
+        conversationQueries.isUserMember(conversationId, userId).executeAsOneOrNull() != null
+
+    override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
+        conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
+
 }
