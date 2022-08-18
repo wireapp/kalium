@@ -128,7 +128,11 @@ class ConversationRepositoryTest {
             "id",
             TestConversation.ID,
             "time",
-            CONVERSATION_RESPONSE.copy(groupId = groupId, protocol = ConvProtocol.MLS)
+            CONVERSATION_RESPONSE.copy(
+                groupId = groupId,
+                protocol = ConvProtocol.MLS,
+                mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
+            )
         )
         val protocolInfo = ConversationEntity.ProtocolInfo.MLS(
             groupId,

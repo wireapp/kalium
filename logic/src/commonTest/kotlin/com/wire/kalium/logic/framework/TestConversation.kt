@@ -134,7 +134,7 @@ object TestConversation {
             ConversationAccessRoleDTO.TEAM_MEMBER,
             ConversationAccessRoleDTO.NON_TEAM_MEMBER
         ),
-        mlsCipherSuiteTag = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
+        mlsCipherSuiteTag = null
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
