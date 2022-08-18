@@ -3,14 +3,18 @@ package com.wire.kalium.persistence.dao
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
-import com.wire.kalium.persistence.utils.stubs.newMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -462,7 +466,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // add 9 Message before the lastReadDate
             repeat(9) {
                 add(
-                    newMessageEntity(
+                    newRegularMessageEntity(
                         id = it.toString(),
                         date = "2000-01-01T11:0$it:00.000Z",
                         conversationId = conversationId,
@@ -473,7 +477,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // add 9 Message past the lastReadDate
             repeat(9) {
                 add(
-                    newMessageEntity(
+                    newRegularMessageEntity(
                         id = "${it + 9}",
                         date = "2000-01-01T13:0$it:00.000Z",
                         conversationId = conversationId,
@@ -510,7 +514,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // add 9 Message before the lastReadDate
             repeat(9) {
                 add(
-                    newMessageEntity(
+                    newRegularMessageEntity(
                         id = it.toString(), date = "2000-01-01T11:0$it:00.000Z",
                         conversationId = conversationId,
                         senderUserId = user1.id,
@@ -589,38 +593,53 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
         }
 
-//     @Test
-//     fun givenSeveralRemoveMemberMessages_whenCallingWhoRemovedMe_itReturnsTheCorrectValue() =
-//         runTest {
-//             // given
-//             // established updated group
-//             val conversation1 = conversationEntity1
-//             val conversationDate = Instant.parse("2023-03-30T15:36:00.000Z")
-//             val updatedGroupId = (updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-//             conversationDAO.insertConversation(updatedConversation)
-//             conversationDAO.updateKeyingMaterial(updatedGroupId, updatedDate)
-//
-//             // pending outdated group
-//             val outDatedConversation1 = conversationEntity3
-//             val outdatedDate1 = Instant.parse("2019-03-30T15:36:00.000Z")
-//             val outdatedGroupId1 = (outDatedConversation1.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-//             conversationDAO.insertConversation(outDatedConversation1)
-//             conversationDAO.updateKeyingMaterial(outdatedGroupId1, outdatedDate1)
-//
-//             // established outdated group
-//             val outDatedConversation2 = conversationEntity4
-//             val outdatedDate2 = Instant.parse("2019-03-30T15:36:00.000Z")
-//             val outdatedGroupId2 = (outDatedConversation2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-//             conversationDAO.insertConversation(outDatedConversation2)
-//             conversationDAO.updateKeyingMaterial(outdatedGroupId2, outdatedDate2)
-//
-//             // then
-//             assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
-//         }
+    @Test
+    fun givenSeveralRemoveMemberMessages_whenCallingWhoRemovedMe_itReturnsTheCorrectValue() = runTest {
+        // given
+        val mySelfMember = member2
+        val mySelfId = member2.user
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
+        conversationDAO.insertMember(mySelfMember, conversationEntity1.id)
+        conversationDAO.deleteMemberByQualifiedID(mySelfId, conversationEntity1.id)
+        val message1 = newSystemMessageEntity(
+            senderUserId = member1.user,
+            content = MessageEntityContent.MemberChange(
+                listOf(mySelfId),
+                MessageEntity.MemberChangeType.REMOVED
+            ),
+            date = Clock.System.now().toString(),
+            conversationId = conversationEntity1.id
+        )
+        val message2 = newSystemMessageEntity(
+            senderUserId = member3.user,
+            content = MessageEntityContent.MemberChange(
+                listOf(mySelfId),
+                MessageEntity.MemberChangeType.REMOVED
+            ),
+            date = Clock.System.now().toString(),
+            conversationId = conversationEntity1.id
+        )
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
+        messageDAO.insertMessage(message1)
+        messageDAO.insertMessage(message2)
+
+        // When
+        val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
+            conversationEntity1.id, "${member2.user.value}@${member2.user.domain}"
+        )
+
+        assertEquals(whoDeletedMe?.value, member3.user.value)
+    }
 
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
+        val user3 = newUserEntity(id = "3")
 
         const val teamId = "teamId"
 
@@ -704,5 +723,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val member1 = Member(user1.id, Member.Role.Admin)
         val member2 = Member(user2.id, Member.Role.Member)
+        val member3 = Member(user3.id, Member.Role.Admin)
     }
 }
