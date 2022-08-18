@@ -38,7 +38,7 @@ actual class MLSClientImpl actual constructor(
 
     override fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?> {
         return coreCrypto.updateKeyingMaterial(toUByteList(groupId.decodeBase64Bytes())).let { commitBundle ->
-            Pair(toByteArray(commitBundle.message), commitBundle.welcome?.let { toByteArray(it) })
+            Pair(toByteArray(commitBundle.commit), commitBundle.welcome?.let { toByteArray(it) })
         }
     }
 
@@ -49,9 +49,8 @@ actual class MLSClientImpl actual constructor(
     override fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
         return toByteArray(
             coreCrypto.newExternalAddProposal(
-                toUByteList(groupId.decodeBase64Bytes()),
-                epoch,
-                toUByteList(generateKeyPackages(1).first())
+                conversationId = toUByteList(groupId.decodeBase64Bytes()),
+                epoch = epoch
             )
         )
     }
@@ -78,7 +77,7 @@ actual class MLSClientImpl actual constructor(
             null
         } else {
             val messages = coreCrypto.addClientsToConversation(groupIdAsBytes, invitees)
-            messages?.let { Pair(toByteArray(it.message), toByteArray(it.welcome)) }
+            messages.let { Pair(toByteArray(it.commit), toByteArray(it.welcome)) }
         }
     }
 
@@ -93,31 +92,31 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): PlainMessage? {
-        return coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))?.let { toByteArray(it) }
+        return coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)).message?.let { toByteArray(it) }
     }
 
     override fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage>? {
+    ): Pair<HandshakeMessage, WelcomeMessage> {
         val invitees = members.map {
             Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
         }
 
         val messages = coreCrypto.addClientsToConversation(toUByteList(groupId.decodeBase64Bytes()), invitees)
-        return messages?.let { Pair(toByteArray(it.message), toByteArray(it.welcome)) }
+        return messages.let { Pair(toByteArray(it.commit), toByteArray(it.welcome)) }
     }
 
     override fun removeMember(
         groupId: MLSGroupId,
         members: List<CryptoQualifiedClientId>
-    ): HandshakeMessage? {
+    ): HandshakeMessage {
         val clientIds = members.map {
             toUByteList(it.toString())
         }
 
         val handshake = coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds)
-        return handshake?.let { toByteArray(it) }
+        return toByteArray(handshake.commit)
     }
 
     companion object {
