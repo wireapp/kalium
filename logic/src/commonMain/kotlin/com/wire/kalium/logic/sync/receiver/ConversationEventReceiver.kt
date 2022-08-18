@@ -322,19 +322,26 @@ internal class ConversationEventReceiverImpl(
             .onFailure {
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on MLS message: $it")
                 handleFailedMLSDecryptedMessage(event)
-            }.onSuccess { mlsMessage ->
-                val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
-                val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
-                if (protoContent !is ProtoContent.Readable) {
-                    throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
+            }.onSuccess { bundle ->
+                if (bundle == null) return@onSuccess
+
+                bundle.commitDelay?.let {
+                    handlePendingProposal(event, it)
                 }
-                handleContent(
-                    conversationId = event.conversationId,
-                    timestampIso = event.timestampIso,
-                    senderUserId = event.senderUserId,
-                    senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    content = protoContent
-                )
+
+                bundle.message?.let {
+                    val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(it))
+                    if (protoContent !is ProtoContent.Readable) {
+                        throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
+                    }
+                    handleContent(
+                        conversationId = event.conversationId,
+                        timestampIso = event.timestampIso,
+                        senderUserId = event.senderUserId,
+                        senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                        content = protoContent
+                    )
+                }
             }
 
     private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation): Either<CoreFailure, Unit> {

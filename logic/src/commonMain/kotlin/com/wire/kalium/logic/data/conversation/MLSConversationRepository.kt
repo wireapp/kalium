@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
+import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -35,7 +36,7 @@ interface MLSConversationRepository {
     suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
-    suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
+    suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
@@ -57,7 +58,7 @@ class MLSConversationDataSource(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : MLSConversationRepository {
 
-    override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> =
+    override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
                 conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
@@ -67,7 +68,7 @@ class MLSConversationDataSource(
                         mlsClient.decryptMessage(
                             (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                             messageEvent.content.decodeBase64Bytes()
-                        ).message
+                        )
                     )
                 } else {
                     Either.Right(null)
