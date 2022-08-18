@@ -12,7 +12,7 @@ import com.sun.jna.Pointer
 interface NetworkQualityChangedHandler : Callback {
     fun onNetworkQualityChanged(
         conversationId: String,
-        userId: String,
+        userId: String?,
         clientId: String,
         quality: Int,
         roundTripTimeInMilliseconds: Int,
