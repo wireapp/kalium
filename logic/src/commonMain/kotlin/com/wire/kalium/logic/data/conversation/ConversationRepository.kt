@@ -280,12 +280,12 @@ class ConversationDataSource(
             Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
         }
 
-    private suspend fun getLastUnreadMessage(conversation: Conversation): Message {
+    private suspend fun getLastUnreadMessage(conversation: Conversation): Message? {
         return messageDAO.getLastUnreadMessage(
             idMapper.toDaoModel(
                 conversation.id
             )
-        ).let {
+        )?.let {
             messageMapper.fromEntityToMessage(it)
         }
     }

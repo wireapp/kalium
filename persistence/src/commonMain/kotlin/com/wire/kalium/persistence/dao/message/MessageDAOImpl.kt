@@ -264,7 +264,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun getLastUnreadMessage(
         conversationID: QualifiedIDEntity
-    ): MessageEntity = queries.getLastUnreadMessage(conversationID).executeAsOne().toMessageEntity()
+    ): MessageEntity? = queries.getLastUnreadMessage(conversationID).executeAsOneOrNull()?.toMessageEntity()
 
     override suspend fun getUnreadMessageCount(conversationId: QualifiedIDEntity): Long =
         queries.getUnreadMessageCount(conversationId).executeAsOne()

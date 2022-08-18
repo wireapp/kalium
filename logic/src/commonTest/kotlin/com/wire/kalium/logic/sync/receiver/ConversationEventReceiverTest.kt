@@ -367,7 +367,7 @@ class ConversationEventReceiverTest {
                 .thenReturn(result)
         }
 
-        fun withConversationUpdateConversationReadDate(result: Either<StorageFailure,Unit>) = apply {
+        fun withConversationUpdateConversationReadDate(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationReadDate)
                 .whenInvokedWith(any(), any())

@@ -1089,7 +1089,7 @@ class ConversationRepositoryTest {
             given(messageDAO)
                 .suspendFunction(messageDAO::getLastUnreadMessage)
                 .whenInvokedWith(any())
-                .thenReturn(TEST_MESSAGE_ENTITY)
+                .thenReturn(null)
 
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -1098,6 +1098,7 @@ class ConversationRepositoryTest {
 
                 assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
                 assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
+                assertTrue { conversationDetail.value.lastUnreadMessage == null }
 
                 awaitComplete()
             }
@@ -1159,6 +1160,7 @@ class ConversationRepositoryTest {
 
                 assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
                 assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
+                assertTrue(conversationDetail.value.lastUnreadMessage != null)
 
                 awaitComplete()
             }
@@ -1180,6 +1182,7 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Long>>(result)
             assertEquals(10L, result.value)
         }
+
 
     @Test
     fun givenAConversationDaoFailed_whenUpdatingTheConversationReadDate_thenShouldNotSucceed() = runTest {
