@@ -5,7 +5,9 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
@@ -32,6 +34,8 @@ class ConversationScope(
     private val clientRepository: ClientRepository,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
+    private val selfUserId: UserId,
+    private val persistMessage: PersistMessageUseCase,
 ) {
 
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository)
@@ -99,7 +103,7 @@ class ConversationScope(
         get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
 
     val removeMemberFromConversation: RemoveMemberFromConversationUseCase
-        get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository)
+        get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)

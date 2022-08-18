@@ -32,6 +32,23 @@ data class ConversationEntity(
 
     enum class Protocol { PROTEUS, MLS }
 
+    @Suppress("MagicNumber")
+    enum class CipherSuite(val cipherSuiteTag: Int) {
+        UNKNOWN(0),
+        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
+        MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
+        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3),
+        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
+        MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
+        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
+
+        companion object {
+            fun fromTag(tag: Int?): CipherSuite =
+                if (tag != null) values().first { type -> type.cipherSuiteTag == tag } else UNKNOWN
+        }
+    }
+
     enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
 
     sealed class ProtocolInfo {
@@ -40,7 +57,8 @@ data class ConversationEntity(
             val groupId: String,
             val groupState: GroupState,
             val epoch: ULong,
-            val keyingMaterialLastUpdate: Instant
+            val keyingMaterialLastUpdate: Instant,
+            val cipherSuite: CipherSuite
         ) : ProtocolInfo()
     }
 }
@@ -76,7 +94,7 @@ interface ConversationDAO {
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
-    suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity)
+    suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity)
     suspend fun insertMembers(memberList: List<Member>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
@@ -93,17 +111,16 @@ interface ConversationDAO {
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
-
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
-
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>
     )
-
     suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
     suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
+    suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean
+    suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
 }
