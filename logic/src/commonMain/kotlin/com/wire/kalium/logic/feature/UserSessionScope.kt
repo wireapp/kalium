@@ -500,7 +500,8 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             clientRepository,
             userId,
-            persistMessage
+            persistMessage,
+            teamRepository
         )
     val messages: MessageScope
         get() = MessageScope(
