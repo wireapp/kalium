@@ -25,6 +25,7 @@ class DecryptedMessageBundle(
     val commitDelay: Long?
 )
 
+@Suppress("TooManyFunctions")
 interface MLSClient {
 
     /**
