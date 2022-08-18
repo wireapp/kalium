@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialsThresholdProvider
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 
@@ -19,11 +19,11 @@ interface UpdateKeyingMaterialsUseCase {
 
 class UpdateKeyingMaterialsUseCaseImpl(
     val mlsConversationRepository: MLSConversationRepository,
-    private val updateKeyingMaterialsThresholdProvider: UpdateKeyingMaterialsThresholdProvider
+    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) : UpdateKeyingMaterialsUseCase {
     override suspend fun invoke(): UpdateKeyingMaterialsResult =
         mlsConversationRepository
-            .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialsThresholdProvider.keyingMaterialUpdateThreshold).map { groups ->
+            .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold).map { groups ->
                 groups.onEach { groupId ->
                     mlsConversationRepository.updateKeyingMaterial(groupId)
                 }

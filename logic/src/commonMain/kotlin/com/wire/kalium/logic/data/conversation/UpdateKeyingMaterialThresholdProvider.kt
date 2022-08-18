@@ -5,14 +5,14 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
-interface UpdateKeyingMaterialsThresholdProvider {
+interface UpdateKeyingMaterialThresholdProvider {
 
     val keyingMaterialUpdateThreshold: Duration
 }
 
-class UpdateKeyingMaterialsThresholdProviderImpl(
+class UpdateKeyingMaterialThresholdProviderImpl(
     private val kaliumConfigs: KaliumConfigs
-) : UpdateKeyingMaterialsThresholdProvider {
+) : UpdateKeyingMaterialThresholdProvider {
 
     override val keyingMaterialUpdateThreshold: Duration
         get() = if (kaliumConfigs.lowerKeyingMaterialsUpdateThreshold)
