@@ -19,6 +19,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -595,7 +596,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenSeveralRemoveMemberMessages_whenCallingWhoRemovedMe_itReturnsTheCorrectValue() = runTest {
-        // given
+        // Given
         val mySelfMember = member2
         val mySelfId = member2.user
         conversationDAO.insertConversation(conversationEntity1)
@@ -621,7 +622,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = Clock.System.now().toString(),
             conversationId = conversationEntity1.id
         )
-        conversationDAO.insertConversation(conversationEntity1)
         userDAO.insertUser(user1)
         userDAO.insertUser(user2)
         userDAO.insertUser(user3)
@@ -630,10 +630,87 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // When
         val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
-            conversationEntity1.id, "${member2.user.value}@${member2.user.domain}"
+            conversationEntity1.id, "${mySelfId.value}@${mySelfId.domain}"
         )
 
+        // Then
         assertEquals(whoDeletedMe?.value, member3.user.value)
+    }
+
+    @Test
+    fun givenAGroupThatImStillAMemberOf_whenCallingWhoRemovedMe_itReturnsANullValue() = runTest {
+        // Given
+        val mySelfMember = member2
+        val mySelfId = member2.user
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
+        conversationDAO.insertMember(mySelfMember, conversationEntity1.id)
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
+
+        conversationDAO.deleteMemberByQualifiedID(member3.user, conversationEntity1.id)
+        val removalMessage = newSystemMessageEntity(
+            senderUserId = member1.user,
+            content = MessageEntityContent.MemberChange(
+                listOf(member3.user),
+                MessageEntity.MemberChangeType.REMOVED
+            ),
+            date = Clock.System.now().toString(),
+            conversationId = conversationEntity1.id
+        )
+        messageDAO.insertMessage(removalMessage)
+        // When
+        val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
+            conversationEntity1.id, "${mySelfId.value}@${mySelfId.domain}"
+        )
+
+        // Then
+        assertNull(whoDeletedMe)
+    }
+
+    @Test
+    fun givenAGroupWithSeveralMembers_whenInvokingIsUserMember_itReturnsACorrectValue() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
+        conversationDAO.deleteMemberByQualifiedID(member2.user, conversationEntity1.id)
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
+
+        // When
+        val isMember = conversationDAO.isUserMember(
+            conversationEntity1.id, user3.id
+        )
+
+        assertTrue(isMember)
+    }
+
+    @Test
+    fun givenAGroupWithSeveralMembers_whenRemovingOneAndInvokingIsUserMember_itReturnsAFalseValue() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
+        conversationDAO.deleteMemberByQualifiedID(member2.user, conversationEntity1.id)
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
+        conversationDAO.deleteMemberByQualifiedID(member3.user, conversationEntity1.id)
+
+        // When
+        val isMember = conversationDAO.isUserMember(
+            conversationEntity1.id, user3.id
+        )
+
+        assertFalse(isMember)
     }
 
     private companion object {

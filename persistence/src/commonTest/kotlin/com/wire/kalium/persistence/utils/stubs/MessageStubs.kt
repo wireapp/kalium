@@ -49,4 +49,3 @@ fun newSystemMessageEntity(
     status = status,
     visibility = visibility
 )
-
