@@ -9,8 +9,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 
 /**
  * This singleton allow us to queue ephemeral notifications from different user flows.
@@ -24,10 +22,8 @@ object EphemeralNotificationsManager : EphemeralNotificationsMgr {
     private val notifications =
         Channel<LocalNotificationConversation>(capacity = Channel.CONFLATED) { emptyFlow<LocalNotificationConversation>() }
 
-    override suspend fun observeEphemeralNotifications(): Flow<List<LocalNotificationConversation>> {
+    override suspend fun observeEphemeralNotifications(): Flow<LocalNotificationConversation> {
         return notifications.consumeAsFlow()
-            .map { listOf(it) }
-            .onStart { emit(listOf()) }
     }
 
     override suspend fun scheduleNotification(ephemeralConversationNotification: EphemeralConversationNotification) {
@@ -42,7 +38,7 @@ object EphemeralNotificationsManager : EphemeralNotificationsMgr {
 }
 
 interface EphemeralNotificationsMgr {
-    suspend fun observeEphemeralNotifications(): Flow<List<LocalNotificationConversation>>
+    suspend fun observeEphemeralNotifications(): Flow<LocalNotificationConversation>
     suspend fun scheduleNotification(ephemeralConversationNotification: EphemeralConversationNotification)
 }
 

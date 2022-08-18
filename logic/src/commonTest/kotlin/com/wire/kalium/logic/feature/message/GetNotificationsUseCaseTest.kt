@@ -43,7 +43,6 @@ import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GetNotificationsUseCaseTest {
@@ -51,7 +50,11 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenEmptyConversationList_thenEmptyNotificationList() = runTest {
         val (_, getNotifications) = Arrangement()
-            .withEphemeralNotification()
+            .withEphemeralNotification(
+                LocalNotificationConversation(
+                    conversationId(1), "some convo", listOf(), false
+                )
+            )
             .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
@@ -59,7 +62,16 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            assertTrue(awaitItem().size == 1)
+            val actual1 = awaitItem()
+            val actual2 = awaitItem()
+            val actual3 = awaitItem()
+            val actualToCheck = if (actual2.size > actual1.size) {
+                if (actual2.size > actual3.size) actual2 else actual3
+            } else {
+                if (actual3.size > actual1.size) actual3 else actual1
+            }
+
+            assertEquals(1, actualToCheck.size)
             awaitComplete()
         }
     }
@@ -67,7 +79,11 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithEmptyMessageList_thenEmptyNotificationList() = runTest {
         val (_, getNotifications) = Arrangement()
-            .withEphemeralNotification()
+            .withEphemeralNotification(
+                LocalNotificationConversation(
+                    conversationId(1), "some convo", listOf(), false
+                )
+            )
             .withConnectionList(listOf())
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
@@ -76,7 +92,17 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            assertTrue(awaitItem().size == 1)
+            val actual1 = awaitItem()
+            val actual2 = awaitItem()
+            val actual3 = awaitItem()
+            val actualToCheck = if (actual2.size > actual1.size) {
+                if (actual2.size > actual3.size) actual2 else actual3
+            } else {
+                if (actual3.size > actual1.size) actual3 else actual1
+            }
+
+            assertEquals(1, actualToCheck.size)
+
             awaitComplete()
         }
     }
@@ -98,7 +124,10 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            assertTrue(awaitItem().size == 1)
+            val actualToCheck = awaitItem()
+
+            assertEquals(0, actualToCheck.size)
+
             awaitComplete()
         }
     }
@@ -123,15 +152,17 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            val actual = awaitItem()
+            val actual1 = awaitItem()
+            val actual2 = awaitItem()
+            val actualToCheck = if (actual2.size > actual1.size) actual2 else actual1
 
-            assertEquals(2, actual.size)
+            assertEquals(1, actualToCheck.size)
             assertEquals(
                 listOf(
                     notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message message_id"),
                     notificationMessageComment(authorName = otherUserName(otherUserId()))
                 ),
-                actual[0].messages
+                actualToCheck[0].messages
             )
             awaitComplete()
         }
@@ -158,16 +189,18 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            val actual = awaitItem()
+            val actual1 = awaitItem()
+            val actual2 = awaitItem()
+            val actualToCheck = if (actual2.size > actual1.size) actual2 else actual1
 
-            assertEquals(3, actual.size)
+            assertEquals(2, actualToCheck.size)
             assertEquals(
                 listOf(
                     notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 0"),
                     notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 1"),
                     notificationMessageComment(authorName = otherUserName(otherUserId()))
                 ),
-                actual[0].messages
+                actualToCheck[0].messages
             )
             assertEquals(
                 listOf(
@@ -175,7 +208,7 @@ class GetNotificationsUseCaseTest {
                     notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 1"),
                     notificationMessageComment(authorName = otherUserName(otherUserId()))
                 ),
-                actual[1].messages
+                actualToCheck[1].messages
             )
             awaitComplete()
         }
@@ -203,6 +236,7 @@ class GetNotificationsUseCaseTest {
 
         getNotifications().test {
             awaitItem()
+            awaitItem()
             awaitComplete()
         }
 
@@ -229,9 +263,9 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            val actual = awaitItem()
+            val actualToCheck = awaitItem()
 
-            assertTrue { actual.size == 1 }
+            assertEquals(0, actualToCheck.size)
             verify(arrange.conversationRepository)
                 .suspendFunction(arrange.conversationRepository::updateAllConversationsNotificationDate)
                 .with(any())
@@ -261,11 +295,13 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            val actual = awaitItem()
             val expected = listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = mentionMessageText))
+            val actual1 = awaitItem()
+            val actual2 = awaitItem()
+            val actualToCheck = if (actual2.size > actual1.size) actual2 else actual1
 
-            assertEquals(2, actual.size)
-            assertEquals(expected, actual[0].messages)
+            assertEquals(1, actualToCheck.size)
+            assertEquals(expected, actualToCheck[0].messages)
             verify(arrange.conversationRepository)
                 .suspendFunction(arrange.conversationRepository::updateConversationNotificationDate)
                 .with(any(), any())
@@ -290,7 +326,7 @@ class GetNotificationsUseCaseTest {
                 )
             }
             .withKnownUser()
-            .withEmptyEphemeralNotification()
+            .withEphemeralNotification()
             .arrange()
 
         getNotifications().test {
@@ -302,6 +338,7 @@ class GetNotificationsUseCaseTest {
                 .with(any(), any())
                 .wasInvoked(exactly = once)
 
+            awaitItem()
             awaitComplete()
         }
     }
@@ -326,11 +363,13 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            val actual = awaitItem()
             val expected = listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = mentionMessageText))
+            val actual1 = awaitItem()
+            val actual2 = awaitItem()
+            val actualToCheck = if (actual2.size > actual1.size) actual2 else actual1
 
-            assertEquals(2, actual.size)
-            assertEquals(expected, actual[0].messages)
+            assertEquals(1, actualToCheck.size)
+            assertEquals(expected, actualToCheck[0].messages)
             verify(arrange.conversationRepository)
                 .suspendFunction(arrange.conversationRepository::updateConversationNotificationDate)
                 .with(any(), any())
@@ -344,7 +383,7 @@ class GetNotificationsUseCaseTest {
     fun givenConversationWithMessageListIncludingNotAllowedMessages_thenNotificationListWithoutTheseMessages() = runTest {
         val (_, getNotifications) = Arrangement()
             .withEphemeralNotification()
-            .withConnectionList(listOf())
+            .withConnectionList(null)
             .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
@@ -359,12 +398,12 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            val actual = awaitItem()
+            val actualToCheck = awaitItem()
 
-            assertTrue(actual.size == 2)
+            assertEquals(1, actualToCheck.size)
             assertEquals(
-                actual[0].messages,
-                listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 0"))
+                listOf(notificationMessageText(authorName = otherUserName(otherUserId()), text = "test message 0")),
+                actualToCheck[0].messages
             )
             awaitComplete()
         }
@@ -377,27 +416,19 @@ class GetNotificationsUseCaseTest {
             .withSelfUser(selfUserWithStatus())
             .withSelfUserId(MY_ID)
             .withKnownUser()
-            .withConversationsForNotifications(listOf(entityConversation()))
-            .withMessagesByConversationAfterDate { conversationId ->
-                listOf(
-                    entityTextMessage(conversationId),
-                    entityAssetMessage(conversationId, assetId = "test_asset"),
-                    entityTextMessage(conversationId, otherUserId()),
-                    entityAssetMessage(conversationId, otherUserId(), assetId = "test_asset")
-                )
-            }
+            .withConversationsForNotifications(null)
             .withEphemeralNotification()
             .arrange()
 
         getNotifications().test {
-            val actual = awaitItem()
+            val actualToCheck = awaitItem()
 
-            assertEquals(3, actual.size)
+            assertEquals(1, actualToCheck.size)
             assertEquals(
                 listOf(
                     notificationMessageConnectionRequest(authorName = otherUserName(otherUserId()))
                 ),
-                actual.first { message -> message.messages.any { it is LocalNotificationMessage.ConnectionRequest } }.messages
+                actualToCheck.first { message -> message.messages.any { it is LocalNotificationMessage.ConnectionRequest } }.messages
             )
             awaitComplete()
         }
@@ -459,11 +490,11 @@ class GetNotificationsUseCaseTest {
             return this
         }
 
-        fun withConversationsForNotifications(list: List<Conversation> = listOf(entityConversation())): Arrangement {
+        fun withConversationsForNotifications(list: List<Conversation>?): Arrangement {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getConversationsForNotifications)
                 .whenInvoked()
-                .then { flowOf(list) }
+                .thenReturn(list?.let { flowOf(it) } ?: flowOf())
 
             return this
         }
@@ -486,31 +517,18 @@ class GetNotificationsUseCaseTest {
             return this
         }
 
-        fun withConnectionList(connections: List<ConversationDetails>) = apply {
+        fun withConnectionList(connections: List<ConversationDetails>?) = apply {
             given(connectionRepository)
                 .suspendFunction(connectionRepository::observeConnectionRequestsForNotification)
                 .whenInvoked()
-                .thenReturn(flowOf(connections))
+                .thenReturn(connections?.let { flowOf(it) } ?: flowOf())
         }
 
-        fun withEphemeralNotification(localNotificationConversation: LocalNotificationConversation? = null) = apply {
+        fun withEphemeralNotification(ephemeral: LocalNotificationConversation? = null) = apply {
             given(ephemeralNotifications)
                 .suspendFunction(ephemeralNotifications::observeEphemeralNotifications)
                 .whenInvoked()
-                .thenReturn(
-                    flowOf(
-                        LocalNotificationConversation(
-                            conversationId(1), "some convo", listOf(), false
-                        )
-                    )
-                )
-        }
-
-        fun withEmptyEphemeralNotification() = apply {
-            given(ephemeralNotifications)
-                .suspendFunction(ephemeralNotifications::observeEphemeralNotifications)
-                .whenInvoked()
-                .thenReturn(flowOf())
+                .thenReturn(ephemeral?.let { flowOf(it) } ?: flowOf())
         }
 
         fun arrange() = this to getNotificationsUseCase

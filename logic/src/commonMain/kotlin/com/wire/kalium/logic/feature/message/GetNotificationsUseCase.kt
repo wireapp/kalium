@@ -64,7 +64,7 @@ class GetNotificationsUseCaseImpl(
         return merge(
             observeRegularNotifications(),
             observeConnectionRequests(),
-            ephemeralNotificationsManager.observeEphemeralNotifications()
+            ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
         )
             .distinctUntilChanged()
             .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
