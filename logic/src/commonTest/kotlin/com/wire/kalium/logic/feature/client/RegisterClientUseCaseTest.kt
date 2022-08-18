@@ -412,6 +412,28 @@ class RegisterClientUseCaseTest {
         assertEquals(failure, result.genericFailure)
     }
 
+    @Test
+    fun givenRepositoryRegistrationFailsDueBadRequest_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
+        val badRequestFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerClient)
+            .whenInvokedWith(anything())
+            .then { Either.Left(badRequestFailure) }
+
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+
+        assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
+
+        verify(preKeyRepository)
+            .suspendFunction(preKeyRepository::generateNewPreKeys)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(preKeyRepository)
+            .function(preKeyRepository::generateNewLastKey)
+            .wasInvoked(exactly = once)
+    }
+
     private companion object {
         const val KEY_PACKAGE_LIMIT = 100
         const val KEY_PACKAGE_THRESHOLD = 0.5F

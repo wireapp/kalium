@@ -32,7 +32,8 @@ data class UserEntity(
     // later, when API start supporting it, it should be added into API model too
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeEntity,
-    val botService: BotEntity?
+    val botService: BotEntity?,
+    val deleted: Boolean
 )
 
 data class BotEntity(
