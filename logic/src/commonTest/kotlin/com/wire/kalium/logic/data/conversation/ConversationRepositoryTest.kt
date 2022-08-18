@@ -97,7 +97,6 @@ class ConversationRepositoryTest {
 
     private lateinit var conversationRepository: ConversationRepository
 
-
     @BeforeTest
     fun setup() {
         conversationRepository = ConversationDataSource(
@@ -1176,7 +1175,6 @@ class ConversationRepositoryTest {
         assertIs<Either.Right<Long>>(result)
         assertEquals(10L, result.value)
     }
-
 
     @Test
     fun givenAConversationDaoFailed_whenUpdatingTheConversationReadDate_thenShouldNotSucceed() = runTest {
