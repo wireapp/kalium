@@ -64,7 +64,7 @@ interface MessageSender {
     suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit>
 
     /**
-     * Attemps to send the given Client Discovery [Message] to suitable recipients.
+     * Attempts to send the given Client Discovery [Message] to suitable recipients.
      */
     suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
