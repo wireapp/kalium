@@ -19,7 +19,7 @@ import kotlinx.datetime.Clock
  * Will wait for sync to finish or fail if it is pending,
  * and return one [Result].
  */
-class CreateGroupConversationUseCase(
+class CreateGroupConversationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val syncManager: SyncManager,
     private val clientRepository: ClientRepository
