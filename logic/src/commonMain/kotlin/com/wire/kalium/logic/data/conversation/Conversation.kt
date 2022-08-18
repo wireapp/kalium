@@ -63,19 +63,42 @@ data class Conversation(
         CODE;
     }
 
+    enum class CipherSuite(val cipherSuiteTag: Int) {
+        UNKNOWN(0),
+        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
+        MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
+        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3),
+        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
+        MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
+        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
+
+        companion object {
+            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.cipherSuiteTag == tag }
+        }
+    }
+
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
     sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo()
+        object Proteus : ProtocolInfo() {
+            override fun name() = "Proteus"
+        }
+
         data class MLS(
             val groupId: String,
             val groupState: GroupState,
             val epoch: ULong,
-            val keyingMaterialLastUpdate: Instant
+            val keyingMaterialLastUpdate: Instant,
+            val cipherSuite: CipherSuite
         ) : ProtocolInfo() {
             enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+
+            override fun name() = "MLS"
         }
+
+        abstract fun name(): String
     }
 }
 

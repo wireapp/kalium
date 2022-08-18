@@ -178,7 +178,8 @@ internal class ConversationMapperImpl(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
-                keyingMaterialLastUpdate = Clock.System.now()
+                keyingMaterialLastUpdate = Clock.System.now(),
+                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
