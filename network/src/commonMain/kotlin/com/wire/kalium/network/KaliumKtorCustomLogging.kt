@@ -37,6 +37,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 /**
@@ -126,7 +127,7 @@ public class KaliumKtorCustomLogging private constructor(
         kaliumLogger.v("BODY Content-Type: $contentType")
         kaliumLogger.v("BODY START")
         val message = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "[response body omitted]"
-        obfuscateMessage(message)
+        obfuscateAndLogMessage(message)
         kaliumLogger.v("BODY END")
     }
 
@@ -151,7 +152,11 @@ public class KaliumKtorCustomLogging private constructor(
     }
 
     private fun Logger.logHeader(key: String, value: String) {
-        kaliumLogger.v("-> $key: $value")
+        if (obfuscateJsonKeys.contains(key.lowercase())) {
+            kaliumLogger.v("-> $key: *******")
+        } else {
+            kaliumLogger.v("-> $key: $value")
+        }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -164,7 +169,7 @@ public class KaliumKtorCustomLogging private constructor(
         GlobalScope.launch(Dispatchers.Unconfined) {
             val text = channel.tryReadText(charset) ?: "[request body omitted]"
             kaliumLogger.v("BODY START")
-            obfuscateMessage(text)
+            obfuscateAndLogMessage(text)
             kaliumLogger.v("BODY END")
         }
 
@@ -244,25 +249,46 @@ public class KaliumKtorCustomLogging private constructor(
     }
 }
 
-private fun obfuscateMessage(text: String) {
-    try {
-        val obj = Json.decodeFromString(text) as JsonElement
-        obj.jsonObject.entries.map {
-            when (it.key) {
-                "password" -> {
-                    kaliumLogger.v("${it.key} : ****")
-                }
-                else -> {
-                    kaliumLogger.v("${it.key} : ${it.value.toString()}")
+private fun obfuscateAndLogMessage(text: String): String {
+    return try {
+        val obj = (Json.decodeFromString(text) as JsonElement)
+        if (obj.jsonArray.size > 0) {
+            obj.jsonArray.map {
+                obfuscateJsonElement(it)
+            }
+        } else {
+            obfuscateJsonElement(obj)
+        }
+        obj.toString()
+    } catch (e: Exception) {
+        "error the body content while logging "
+    }
+}
 
-                }
+fun obfuscateJsonElement(obj: JsonElement) {
+    obj.jsonObject.entries.toMutableSet().map {
+        when {
+            obfuscateJsonKeys.contains(it.key.lowercase()) -> {
+                kaliumLogger.v("${it.key} : ******")
+            }
+            obfuscateJsonIdKeys.contains(it.key.lowercase()) -> {
+                kaliumLogger.v("${it.key} : ${it.value.toString().substring(0, 7)}")
+            }
+            obfuscateObjects.contains(it.key.lowercase()) -> {
+                obfuscateJsonElement(it.value)
+            }
+            else -> {
+                kaliumLogger.e("${it.key} : ${it.value}")
             }
         }
-
-    } catch (e: Exception) {
     }
 
 }
+
+private val obfuscateJsonKeys by lazy { listOf("password", "authorization") }
+private val obfuscateJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
+private val obfuscateObjects by lazy { listOf("qualified_id") }
+
 
 /**
  * Configure and install [Logging] in [HttpClient].

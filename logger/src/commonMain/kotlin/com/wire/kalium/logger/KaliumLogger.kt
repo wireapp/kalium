@@ -4,7 +4,6 @@ import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import co.touchlab.kermit.StaticConfig
 import co.touchlab.kermit.platformLogWriter
-import com.wire.kalium.logger.ObfuscateUtil.obfuscateLogMessage
 import co.touchlab.kermit.Logger as KermitLogger
 
 /**
@@ -83,32 +82,32 @@ class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = ar
     @Suppress("unused")
     fun v(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.v(obfuscateLogMessage(message), throwable)
-        } ?: kermitLogger.v(obfuscateLogMessage(message))
+            kermitLogger.v(message, throwable)
+        } ?: kermitLogger.v(message)
 
     @Suppress("unused")
     fun d(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.d(obfuscateLogMessage(message), throwable)
-        } ?: kermitLogger.d(obfuscateLogMessage(message))
+            kermitLogger.d(message, throwable)
+        } ?: kermitLogger.d(message)
 
     @Suppress("unused")
     fun i(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.i(obfuscateLogMessage(message), throwable)
-        } ?: kermitLogger.i(obfuscateLogMessage(message))
+            kermitLogger.i(message, throwable)
+        } ?: kermitLogger.i(message)
 
     @Suppress("unused")
     fun w(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.w(obfuscateLogMessage(message), throwable)
-        } ?: kermitLogger.w(obfuscateLogMessage(message))
+            kermitLogger.w(message, throwable)
+        } ?: kermitLogger.w(message)
 
     @Suppress("unused")
     fun e(message: String, throwable: Throwable? = null) =
         throwable?.let {
-            kermitLogger.e(obfuscateLogMessage(message), throwable)
-        } ?: kermitLogger.e(obfuscateLogMessage(message))
+            kermitLogger.e(message, throwable)
+        } ?: kermitLogger.e(message)
 
     class Config(
         val severity: KaliumLogLevel,
