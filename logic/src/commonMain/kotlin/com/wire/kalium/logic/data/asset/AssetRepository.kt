@@ -230,7 +230,6 @@ internal class AssetDataSource(
                     assetDao.insertAsset(
                         assetMapper.fromUserAssetToDaoModel(
                             assetId,
-                            "application/pdf",
                             decodedAssetPath,
                             assetDataSize
                         )
