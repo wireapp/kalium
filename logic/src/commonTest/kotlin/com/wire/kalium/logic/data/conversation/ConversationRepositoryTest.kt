@@ -10,6 +10,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher.io
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -976,7 +977,6 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::getUnreadMessageCount)
                 .whenInvokedWith(any())
                 .thenReturn(10L)
-
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
                 // then

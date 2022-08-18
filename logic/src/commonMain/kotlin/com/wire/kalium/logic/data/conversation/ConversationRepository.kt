@@ -36,14 +36,12 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -282,19 +280,13 @@ class ConversationDataSource(
             Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
         }
 
-    private suspend fun getLastUnreadMessage(conversation: Conversation): Message? {
-        val conversationId = idMapper.toDaoModel(
-            conversation.id
-        )
-
-        val messageId = conversationDAO.getLastUnreadMessageId(
-            conversationId
-        )
-
-        return messageId?.let {
-            messageDAO.getMessageById(messageId, conversationId).firstOrNull()?.let {
-                messageMapper.fromEntityToMessage(it)
-            }
+    private suspend fun getLastUnreadMessage(conversation: Conversation): Message {
+        return messageDAO.getLastUnreadMessage(
+            idMapper.toDaoModel(
+                conversation.id
+            )
+        ).let {
+            messageMapper.fromEntityToMessage(it)
         }
     }
 
@@ -463,14 +455,14 @@ class ConversationDataSource(
                 conversationDAO.insertConversation(conversationEntity)
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
-                    is Proteus -> persistMembersFromConversationResponse(conversationResponse)
+                    is ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
                     is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(
                         conversationResponse, usersList
                     )
                 }
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
-                    is Proteus -> Either.Right(conversation)
+                    is ProtocolInfo.Proteus -> Either.Right(conversation)
                     is ProtocolInfo.MLS ->
                         mlsConversationRepository
                             .establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)

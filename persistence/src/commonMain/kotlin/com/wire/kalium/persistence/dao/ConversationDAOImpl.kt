@@ -5,9 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
-import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.UsersQueries
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageMapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -289,7 +287,6 @@ class ConversationDAOImpl(
 
     override suspend fun getLastUnreadMessageId(conversationID: QualifiedIDEntity): String? =
         conversationQueries.getLastUnreadMessage(conversationID).executeAsOneOrNull()
-
 
     override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
         conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)

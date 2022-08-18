@@ -113,6 +113,7 @@ class ConversationEventReceiverTest {
             .withSelfUserIdReturning(TestUser.USER_ID)
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
             .withPersistingMessageReturning(Either.Right(Unit))
+            .withConversationUpdateConversationReadDate(Either.Right(Unit))
             .withProtoContentMapperReturning(matching { it.data.contentEquals(emptyArray) }, externalInstructions)
             .withProtoContentMapperReturning(
                 matching { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
@@ -362,6 +363,13 @@ class ConversationEventReceiverTest {
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationModifiedDate)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
+        }
+
+        fun withConversationUpdateConversationReadDate(result: Either<StorageFailure,Unit>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationReadDate)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }

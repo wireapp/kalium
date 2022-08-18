@@ -262,6 +262,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         queries.updateMessageTextContent(newTextContent.messageBody, messageId, conversationId)
     }
 
+    override suspend fun getLastUnreadMessage(
+        conversationID: QualifiedIDEntity
+    ): MessageEntity = queries.getLastUnreadMessage(conversationID).executeAsOne().toMessageEntity()
+
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
         is MessageEntityContent.Asset -> ASSET

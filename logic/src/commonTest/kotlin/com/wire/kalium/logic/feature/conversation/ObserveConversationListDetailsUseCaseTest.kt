@@ -36,6 +36,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
+@Suppress("LongMethod")
 class ObserveConversationListDetailsUseCaseTest {
 
     @Mock
@@ -55,8 +56,7 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
         val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
 
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
+        given(callRepository).suspendFunction(callRepository::ongoingCallsFlow)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))
 
