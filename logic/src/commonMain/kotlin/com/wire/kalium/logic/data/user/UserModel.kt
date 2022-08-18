@@ -99,8 +99,16 @@ data class OtherUser(
     override val completePicture: UserAssetId?,
     val userType: UserType,
     override val availabilityStatus: UserAvailabilityStatus,
-    val botService: BotService?
-) : User()
+    val botService: BotService?,
+    val deleted: Boolean
+) : User() {
+
+    /**
+     * convenience computed field to obtain the unavailable users
+     */
+    val isUnavailableUser
+        get() = !deleted && name.orEmpty().isEmpty()
+}
 
 data class BotService(
     val id: String,

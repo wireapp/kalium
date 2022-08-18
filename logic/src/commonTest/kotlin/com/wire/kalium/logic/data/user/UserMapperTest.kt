@@ -61,6 +61,7 @@ class UserMapperTest {
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.INTERNAL,
             botService = null,
+            deleted = false
         )
         val (_, userMapper) = Arrangement().arrange()
 

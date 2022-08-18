@@ -59,7 +59,8 @@ class PublicUserMapperImpl(
         completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
-        botService = userEntity.botService?.let { BotService(it.id, it.provider) }
+        botService = userEntity.botService?.let { BotService(it.id, it.provider) },
+        deleted = userEntity.deleted
     )
 
     override fun fromUserDetailResponseWithUsertype(
@@ -78,7 +79,8 @@ class PublicUserMapperImpl(
             ?.let { idMapper.toQualifiedAssetId(it.key, userDetailResponse.id.domain) },
         availabilityStatus = UserAvailabilityStatus.NONE,
         userType = userType,
-        botService = userDetailResponse.service?.let { BotService(it.id, it.provider) }
+        botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
+        deleted = userDetailResponse.deleted ?: false
     )
 
     override fun fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
@@ -101,6 +103,7 @@ class PublicUserMapperImpl(
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = userTypeEntity,
         botService = userDetailResponse.service?.let { BotEntity(it.id, it.provider) },
+        deleted = userDetailResponse.deleted ?: false
     )
 
 }

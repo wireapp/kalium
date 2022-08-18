@@ -20,6 +20,10 @@ object TestNetworkException {
         ErrorResponse(403, message = "missing auth", label = "missing-auth")
     )
 
+    val badRequest = KaliumException.InvalidRequestError(
+        ErrorResponse(400, message = "bad request", label = "bad-request")
+    )
+
     val invalidCredentials = KaliumException.InvalidRequestError(
         ErrorResponse(403, message = "invalid credentials", label = "invalid-credentials")
     )
