@@ -16,7 +16,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
@@ -100,10 +99,10 @@ class MessageSenderImpl(
         }
     }
 
-    override suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> = attemptToSend(message)
-        .onSuccess { messageRemoteTime ->
+    override suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> =
+        attemptToSend(message).map { messageRemoteTime ->
             updateDatesOfMessagesWithServerTime(message, messageRemoteTime)
-        }.map { }
+        }
 
     private suspend fun updateDatesOfMessagesWithServerTime(
         message: Message.Regular,

@@ -200,7 +200,8 @@ abstract class UserSessionScopeCommon(
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            timeParser
+            timeParser,
+            persistMessage = lazy { persistMessage }
         )
 
     private val messageRepository: MessageRepository
@@ -498,6 +499,8 @@ abstract class UserSessionScopeCommon(
             syncManager,
             mlsConversationRepository,
             clientRepository,
+            userId,
+            persistMessage,
             teamRepository
         )
     val messages: MessageScope

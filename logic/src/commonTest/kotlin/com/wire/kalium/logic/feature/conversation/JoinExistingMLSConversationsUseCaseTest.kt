@@ -153,7 +153,8 @@ class JoinExistingMLSConversationsUseCaseTest {
                     "group1",
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
-                    keyingMaterialLastUpdate = Clock.System.now()
+                    keyingMaterialLastUpdate = Clock.System.now(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id1", "domain"))
 
@@ -162,7 +163,8 @@ class JoinExistingMLSConversationsUseCaseTest {
                     "group1",
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
-                    keyingMaterialLastUpdate = Clock.System.now()
+                    keyingMaterialLastUpdate = Clock.System.now(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))
         }
