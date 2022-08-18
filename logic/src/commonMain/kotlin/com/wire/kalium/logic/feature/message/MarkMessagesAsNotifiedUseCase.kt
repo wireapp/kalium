@@ -16,10 +16,7 @@ class MarkMessagesAsNotifiedUseCaseImpl(private val conversationRepository: Conv
             conversationRepository.updateAllConversationsNotificationDate(date)
         } else {
             conversationRepository.updateConversationNotificationDate(conversationId, date)
-        }.fold({ Result.Failure(it) }) {
-            println("cyka marked notified")
-            Result.Success
-        }
+        }.fold({ Result.Failure(it) }) { Result.Success }
     }
 }
 
