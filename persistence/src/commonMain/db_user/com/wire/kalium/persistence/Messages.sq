@@ -1,10 +1,7 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.DownloadStatus;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.Status;
-import com.wire.kalium.persistence.dao.message.MessageEntity.Visibility;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
 import kotlin.Int;
 import kotlin.collections.List;
 
@@ -290,3 +287,8 @@ WHERE message.conversation_id
 IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 ORDER BY message.date ASC
 LIMIT  1;
+
+getUnreadMessageCount:
+SELECT COUNT() FROM Message AS message
+WHERE message.conversation_id
+IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id));

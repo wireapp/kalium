@@ -272,9 +272,6 @@ class ConversationDAOImpl(
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 
-    override suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long =
-        conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
-
     override suspend fun getUnreadConversationCount(): Long =
         conversationQueries.getUnreadConversationCount().executeAsOne()
 
@@ -284,9 +281,6 @@ class ConversationDAOImpl(
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role) =
         memberQueries.updateMemberRole(role, userId, conversationId)
-
-    override suspend fun getLastUnreadMessageId(conversationID: QualifiedIDEntity): String? =
-        conversationQueries.getLastUnreadMessage(conversationID).executeAsOneOrNull()
 
     override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
         conversationQueries.updateKeyingMaterialDate(timestamp.epochSeconds, groupId)

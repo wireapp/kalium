@@ -977,6 +977,11 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::getUnreadMessageCount)
                 .whenInvokedWith(any())
                 .thenReturn(10L)
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getUnreadMessageCount)
+                .whenInvokedWith(any())
+                .thenReturn(10L)
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
                 // then
