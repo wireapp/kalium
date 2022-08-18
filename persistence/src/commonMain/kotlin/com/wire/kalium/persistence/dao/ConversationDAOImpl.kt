@@ -28,7 +28,8 @@ private class ConversationMapper {
                     mls_group_id ?: "",
                     mls_group_state,
                     mls_epoch.toULong(),
-                    Instant.fromEpochSeconds(mls_last_keying_material_update)
+                    Instant.fromEpochSeconds(mls_last_keying_material_update),
+                    mls_cipher_suite
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
@@ -53,6 +54,7 @@ class MemberMapper {
 
 private const val MLS_DEFAULT_EPOCH = 0L
 private const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
+private val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 
 class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
@@ -105,6 +107,8 @@ class ConversationDAOImpl(
                 lastReadDate,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate.epochSeconds
                 else MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
+                else MLS_DEFAULT_CIPHER_SUITE
             )
         }
     }

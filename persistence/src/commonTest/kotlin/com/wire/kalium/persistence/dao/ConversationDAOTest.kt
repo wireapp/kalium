@@ -743,7 +743,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 "group2",
                 ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),
             creatorId = "someValue",
             lastNotificationDate = null,
@@ -763,7 +764,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 "group3",
                 ConversationEntity.GroupState.PENDING_JOIN,
                 0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
@@ -785,7 +787,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 "group4",
                 ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it

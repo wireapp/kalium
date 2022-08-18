@@ -104,7 +104,8 @@ actual class UserDatabaseProvider(
                 protocolAdapter = EnumColumnAdapter(),
                 muted_statusAdapter = EnumColumnAdapter(),
                 access_listAdapter = ConversationAccessListAdapter(),
-                access_role_listAdapter = ConversationAccessRoleListAdapter()
+                access_role_listAdapter = ConversationAccessRoleListAdapter(),
+                mls_cipher_suiteAdapter = EnumColumnAdapter()
             ),
             Member.Adapter(
                 userAdapter = QualifiedIDAdapter(),
