@@ -18,6 +18,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
+import kotlin.time.Duration.Companion.days
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UpdateKeyingMaterialsUseCaseTests {
@@ -27,6 +28,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         val (arrangement, updateKeyingMaterialsUseCase) = Arrangement()
             .withOutdatedGroupsReturns(Either.Right(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS))
             .withUpdateKeyingMaterials()
+            .withKeyingMaterialThreshold()
             .arrange()
 
         val actual = updateKeyingMaterialsUseCase()
@@ -44,6 +46,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         val (arrangement, updateKeyingMaterialsUseCase) = Arrangement()
             .withOutdatedGroupsReturns(Either.Right(listOf()))
             .withUpdateKeyingMaterials()
+            .withKeyingMaterialThreshold()
             .arrange()
 
         val actual = updateKeyingMaterialsUseCase()
@@ -61,6 +64,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         val (arrangement, updateKeyingMaterialsUseCase) = Arrangement()
             .withOutdatedGroupsReturns(Either.Left(StorageFailure.DataNotFound))
             .withUpdateKeyingMaterials()
+            .withKeyingMaterialThreshold()
             .arrange()
 
         val actual = updateKeyingMaterialsUseCase()
@@ -89,6 +93,10 @@ class UpdateKeyingMaterialsUseCaseTests {
             given(mlsConversationRepository).suspendFunction(mlsConversationRepository::getMLSGroupsRequiringKeyingMaterialUpdate)
                 .whenInvokedWith(anything())
                 .thenReturn(either)
+        }
+
+        fun withKeyingMaterialThreshold() = apply {
+            given(updateKeyingMaterialsThresholdProvider).invocation { keyingMaterialUpdateThreshold }.thenReturn(1.days)
         }
 
         fun withUpdateKeyingMaterials() = apply {
