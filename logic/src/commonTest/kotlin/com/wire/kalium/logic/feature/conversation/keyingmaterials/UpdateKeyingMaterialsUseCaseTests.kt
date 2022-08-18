@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialsThresholdProvider
 
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -76,8 +77,12 @@ class UpdateKeyingMaterialsUseCaseTests {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
+        @Mock
+        val updateKeyingMaterialsThresholdProvider = mock(classOf<UpdateKeyingMaterialsThresholdProvider>())
+
         private var updateKeyingMaterialsUseCase = UpdateKeyingMaterialsUseCaseImpl(
-            mlsConversationRepository
+            mlsConversationRepository,
+            updateKeyingMaterialsThresholdProvider
         )
 
         fun withOutdatedGroupsReturns(either: Either<CoreFailure, List<String>>) = apply {
