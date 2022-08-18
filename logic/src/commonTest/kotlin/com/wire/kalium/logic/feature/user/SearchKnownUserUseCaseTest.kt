@@ -129,6 +129,7 @@ class SearchKnownUserUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.NONE,
             userType = UserType.EXTERNAL,
             botService = null,
+            deleted = false
         )
 
         val (_, searchKnownUsersUseCase) = Arrangement()
@@ -279,6 +280,7 @@ class SearchKnownUserUseCaseTest {
                                 availabilityStatus = UserAvailabilityStatus.NONE,
                                 userType = UserType.EXTERNAL,
                                 botService = null,
+                                deleted = false
                             )
                         )
                     )
@@ -310,6 +312,7 @@ class SearchKnownUserUseCaseTest {
                     availabilityStatus = UserAvailabilityStatus.NONE,
                     userType = UserType.FEDERATED,
                     botService = null,
+                    deleted = false
                 )
             )
 
