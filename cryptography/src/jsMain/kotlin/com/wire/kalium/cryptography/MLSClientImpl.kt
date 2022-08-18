@@ -62,7 +62,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): PlainMessage? {
+    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
         TODO("Not yet implemented")
     }
 
@@ -70,7 +70,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): HandshakeMessage? {
+    override fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): CommitBundle {
         TODO("Not yet implemented")
     }
 }

@@ -2,7 +2,9 @@ package com.wire.kalium.cryptography
 
 @Suppress("TooManyFunctions")
 actual class MLSClientImpl actual constructor(
-    rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId
+    rootDir: String,
+    databaseKey: MlsDBSecret,
+    clientId: CryptoQualifiedClientId
 ) : MLSClient {
     override fun clearLocalFiles(): Boolean {
         TODO("Not yet implemented")
@@ -33,7 +35,8 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun createConversation(
-        groupId: MLSGroupId, members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+        groupId: MLSGroupId,
+        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
     ): AddMemberCommitBundle? {
         TODO("Not yet implemented")
     }
@@ -58,7 +61,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): PlainMessage? {
+    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
         TODO("Not yet implemented")
     }
 
@@ -66,7 +69,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): HandshakeMessage? {
+    override fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): CommitBundle {
         TODO("Not yet implemented")
     }
 }
