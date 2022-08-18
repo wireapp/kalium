@@ -141,18 +141,7 @@ class MLSConversationDataSource(
     override suspend fun commitPendingProposals(groupID: String): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient()
             .flatMap { mlsClient ->
-                // TODO change to commitPendingProposals() when available
-                val (handshake, welcome) = mlsClient.updateKeyingMaterial(groupID)
-
-                wrapApiRequest {
-                    mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
-                }.flatMap {
-                    welcome?.let {
-                        wrapApiRequest {
-                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
-                        }
-                    } ?: Either.Right(Unit)
-                }.flatMap {
+                sendCommitBundle(groupID, mlsClient.commitPendingProposals(groupID)).flatMap {
                     wrapStorageRequest {
                         conversationDAO.clearProposalTimer(groupID)
                     }
