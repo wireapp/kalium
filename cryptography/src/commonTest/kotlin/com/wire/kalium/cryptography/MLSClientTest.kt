@@ -1,6 +1,5 @@
 package com.wire.kalium.cryptography
 
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -30,7 +29,6 @@ class MLSClientTest : BaseMLSClientTest() {
         assertTrue(mlsClient.generateKeyPackages(10).isNotEmpty())
     }
 
-    @Ignore // TODO: fix
     @Test
     fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() {
         val aliceClient = createClient(ALICE)
@@ -38,13 +36,14 @@ class MLSClientTest : BaseMLSClientTest() {
 
         val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
         val clientKeyPackageList = listOf(Pair(ALICE.qualifiedClientId, aliceKeyPackage))
-        val (_, welcome) = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)!!
+        val welcome = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
-        val (commit, _) = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID)
+        val commit = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID).commit
         val result = aliceClient.decryptMessage(conversationId, commit)
 
-        assertNull(result)
+        assertNull(result.message)
     }
 
     @Test
@@ -54,13 +53,12 @@ class MLSClientTest : BaseMLSClientTest() {
 
         val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
         val clientKeyPackageList = listOf(Pair(ALICE.qualifiedClientId, aliceKeyPackage))
-        val (_, welcome) = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)!!
+        val welcome = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)!!.welcome
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
         assertEquals(MLS_CONVERSATION_ID, conversationId)
     }
 
-    @Ignore // TODO: fix
     @Test
     fun givenTwoClients_whenCallingJoinConversation_weCanProcessTheAddProposalMessage() {
         val aliceClient = createClient(ALICE)
@@ -69,14 +67,13 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.createConversation(MLS_CONVERSATION_ID, emptyList())
         val proposal = aliceClient.joinConversation(MLS_CONVERSATION_ID, 0UL)
         bobClient.decryptMessage(MLS_CONVERSATION_ID, proposal)
-        // updateKeyingMaterial commits any pending proposal
-        val (_, welcome) = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID)
+        val welcome = bobClient.commitPendingProposals(MLS_CONVERSATION_ID).welcome
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome!!)
 
         assertEquals(MLS_CONVERSATION_ID, conversationId)
     }
 
-    @Ignore // TODO: fix
     @Test
     fun givenTwoClients_whenCallingEncryptMessage_weCanDecryptTheMessage() {
         val aliceClient = createClient(ALICE)
@@ -85,11 +82,12 @@ class MLSClientTest : BaseMLSClientTest() {
         val clientKeyPackageList = listOf(
             Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first())
         )
-        val (_, welcome) = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)!!
+        val welcome = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
         val applicationMessage = aliceClient.encryptMessage(conversationId, PLAIN_TEXT.encodeToByteArray())
-        val plainMessage = bobClient.decryptMessage(conversationId, applicationMessage)
+        val plainMessage = bobClient.decryptMessage(conversationId, applicationMessage).message
 
         assertEquals(PLAIN_TEXT, plainMessage?.decodeToString())
     }
@@ -103,35 +101,35 @@ class MLSClientTest : BaseMLSClientTest() {
             Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first())
         )
         bobClient.createConversation(MLS_CONVERSATION_ID, emptyList())
-        val (_, welcome) = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)!!
+        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
+        bobClient.commitAccepted((MLS_CONVERSATION_ID))
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
         assertEquals(MLS_CONVERSATION_ID, conversationId)
     }
 
-    @Ignore // TODO: fix
     @Test
     fun givenThreeClients_whenCallingAddMember_weCanProcessTheHandshakeMessage() {
         val aliceClient = createClient(ALICE)
         val bobClient = createClient(BOB)
         val carolClient = createClient(CAROL)
 
-        val (_, welcome) = bobClient.createConversation(
+        val welcome = bobClient.createConversation(
             MLS_CONVERSATION_ID,
             listOf(Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first()))
-        )!!
+        )?.welcome!!
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
 
         aliceClient.processWelcomeMessage(welcome)
 
-        val (handshake, _) = bobClient.addMember(
+        val commit = bobClient.addMember(
             MLS_CONVERSATION_ID,
             listOf(Pair(CAROL.qualifiedClientId, carolClient.generateKeyPackages(1).first()))
-        )!!
+        )?.commit!!
 
-        assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, handshake))
+        assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit).message)
     }
 
-    @Ignore
     @Test
     fun givenThreeClients_whenCallingRemoveMember_weCanProcessTheHandshakeMessage() {
         val aliceClient = createClient(ALICE)
@@ -142,13 +140,14 @@ class MLSClientTest : BaseMLSClientTest() {
             Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first()),
             Pair(CAROL.qualifiedClientId, carolClient.generateKeyPackages(1).first())
         )
-        val (_, welcome) = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)!!
+        val welcome = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
         val clientRemovalList = listOf(CAROL.qualifiedClientId)
-        val handshake = bobClient.removeMember(conversationId, clientRemovalList)!!
+        val commit = bobClient.removeMember(conversationId, clientRemovalList).commit
 
-        assertNull(aliceClient.decryptMessage(conversationId, handshake))
+        assertNull(aliceClient.decryptMessage(conversationId, commit).message)
     }
 
     companion object {
