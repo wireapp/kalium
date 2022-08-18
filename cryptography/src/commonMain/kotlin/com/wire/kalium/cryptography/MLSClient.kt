@@ -18,7 +18,7 @@ class AddMemberCommitBundle(
     commit: ByteArray,
     override val welcome: ByteArray,
     publicGroupState: ByteArray
-): CommitBundle(commit, welcome, publicGroupState)
+) : CommitBundle(commit, welcome, publicGroupState)
 
 class DecryptedMessageBundle(
     val message: ByteArray?,
