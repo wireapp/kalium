@@ -155,7 +155,7 @@ internal class AssetDataSource(
             }
         }.flatMap { assetResponse ->
             // After successful upload, we persist the asset to a persistent path
-            val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = assetResponse.key)
+            val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = "${assetResponse.key}.pdf")
 
             // After successful upload we finally persist the data now to a persistent path and delete the temporary one
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)
