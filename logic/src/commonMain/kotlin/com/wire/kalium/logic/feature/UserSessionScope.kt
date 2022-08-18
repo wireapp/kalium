@@ -501,6 +501,7 @@ abstract class UserSessionScopeCommon(
             syncManager,
             mlsConversationRepository,
             clientRepository,
+            teamRepository,
             messageSender
         )
     val messages: MessageScope
