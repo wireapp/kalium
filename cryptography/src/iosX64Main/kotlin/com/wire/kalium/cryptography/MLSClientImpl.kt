@@ -25,8 +25,7 @@ actual class MLSClientImpl actual constructor(
     override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
         TODO("Not yet implemented")
     }
-
-
+    
     override fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
         TODO("Not yet implemented")
     }
@@ -45,7 +44,6 @@ actual class MLSClientImpl actual constructor(
     override fun wipeConversation(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
-
 
     override fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
         TODO("Not yet implemented")
