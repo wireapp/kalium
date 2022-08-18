@@ -63,6 +63,7 @@ data class Conversation(
         CODE;
     }
 
+    @Suppress("MagicNumber")
     enum class CipherSuite(val cipherSuiteTag: Int) {
         UNKNOWN(0),
         MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
