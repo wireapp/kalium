@@ -9,7 +9,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -35,8 +36,8 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -111,6 +112,7 @@ class ConversationDataSource(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
+    private val messageDAO: MessageDAO,
     private val clientApi: ClientApi,
     private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -118,7 +120,7 @@ class ConversationDataSource(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
-    private val persistMessage: Lazy<PersistMessageUseCase>
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper()
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -271,13 +273,24 @@ class ConversationDataSource(
                     ConversationDetails.Group(
                         conversation = conversation,
                         legalHoldStatus = LegalHoldStatus.DISABLED,
-                        unreadMessagesCount = getUnreadMessageCount(conversation)
+                        unreadMessagesCount = getUnreadMessageCount(conversation),
+                        lastUnreadMessage = getLastUnreadMessage(conversation),
                     )
                 )
             )
 
             Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
         }
+
+    private suspend fun getLastUnreadMessage(conversation: Conversation): Message? {
+        return messageDAO.getLastUnreadMessage(
+            idMapper.toDaoModel(
+                conversation.id
+            )
+        )?.let {
+            messageMapper.fromEntityToMessage(it)
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
@@ -299,7 +312,8 @@ class ConversationDataSource(
                                     conversation = conversation,
                                     otherUser = otherUser,
                                     selfUser = selfUser,
-                                    unreadMessageCount = getUnreadMessageCount(conversation)
+                                    unreadMessageCount = getUnreadMessageCount(conversation),
+                                    lastUnreadMessage = getLastUnreadMessage(conversation)
                                 )
                             }
                         }
@@ -309,7 +323,7 @@ class ConversationDataSource(
 
     private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
         return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
-            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+            messageDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
             0
         }
@@ -447,14 +461,14 @@ class ConversationDataSource(
                 conversationDAO.insertConversation(conversationEntity)
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
-                    is Proteus -> persistMembersFromConversationResponse(conversationResponse)
+                    is ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
                     is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(
                         conversationResponse, usersList
                     )
                 }
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
-                    is Proteus -> Either.Right(conversation)
+                    is ProtocolInfo.Proteus -> Either.Right(conversation)
                     is ProtocolInfo.MLS ->
                         mlsConversationRepository
                             .establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)

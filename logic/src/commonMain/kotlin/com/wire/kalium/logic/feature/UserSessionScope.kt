@@ -126,6 +126,8 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -199,9 +201,9 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            userDatabaseProvider.messageDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            timeParser,
-            persistMessage = lazy { persistMessage }
+            timeParser
         )
 
     private val messageRepository: MessageRepository
@@ -429,8 +431,6 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getMediaManager()
     }
 
-    private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
-
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
@@ -441,7 +441,9 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userRepository,
             callManager,
-            messageTextEditHandler,
+            MessageTextEditHandler(messageRepository),
+            LastReadContentHandler(conversationRepository, userRepository),
+            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
             userConfigRepository,
             EphemeralNotificationsManager
         )
@@ -499,9 +501,10 @@ abstract class UserSessionScopeCommon(
             syncManager,
             mlsConversationRepository,
             clientRepository,
+            messageSender,
+            teamRepository,
             userId,
-            persistMessage,
-            teamRepository
+            persistMessage
         )
     val messages: MessageScope
         get() = MessageScope(
