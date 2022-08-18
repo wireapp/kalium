@@ -4,13 +4,13 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher.io
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -37,6 +37,8 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -230,10 +232,15 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(true)
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getUnreadMessageCount)
+        given(messageDAO)
+            .suspendFunction(messageDAO::getUnreadMessageCount)
             .whenInvokedWith(any())
             .thenReturn(10)
+
+        given(messageDAO)
+            .suspendFunction(messageDAO::getLastUnreadMessage)
+            .whenInvokedWith(any())
+            .thenReturn(TEST_MESSAGE_ENTITY)
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<Either.Right<ConversationDetails.Group>>(awaitItem())
@@ -290,10 +297,15 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(true)
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getUnreadMessageCount)
+        given(messageDAO)
+            .suspendFunction(messageDAO::getUnreadMessageCount)
             .whenInvokedWith(any())
             .thenReturn(10)
+
+        given(messageDAO)
+            .suspendFunction(messageDAO::getLastUnreadMessage)
+            .whenInvokedWith(any())
+            .thenReturn(TEST_MESSAGE_ENTITY)
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             assertIs<Either.Right<ConversationDetails.OneOne>>(awaitItem())
@@ -336,10 +348,15 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenReturn(true)
 
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::getUnreadMessageCount)
+        given(messageDAO)
+            .suspendFunction(messageDAO::getUnreadMessageCount)
             .whenInvokedWith(any())
             .thenReturn(10)
+
+        given(messageDAO)
+            .suspendFunction(messageDAO::getLastUnreadMessage)
+            .whenInvokedWith(any())
+            .thenReturn(TEST_MESSAGE_ENTITY)
 
         conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
             val firstItem = awaitItem()
@@ -973,15 +990,15 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(true)
 
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getUnreadMessageCount)
+            given(messageDAO)
+                .suspendFunction(messageDAO::getUnreadMessageCount)
                 .whenInvokedWith(any())
                 .thenReturn(10L)
 
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getUnreadMessageCount)
+            given(messageDAO)
+                .suspendFunction(messageDAO::getLastUnreadMessage)
                 .whenInvokedWith(any())
-                .thenReturn(10L)
+                .thenReturn(TEST_MESSAGE_ENTITY)
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
                 // then
@@ -1013,6 +1030,11 @@ class ConversationRepositoryTest {
                 .function(timeParser::isTimeBefore)
                 .whenInvokedWith(any(), any())
                 .thenReturn(false)
+
+            given(messageDAO)
+                .suspendFunction(messageDAO::getLastUnreadMessage)
+                .whenInvokedWith(any())
+                .thenReturn(TEST_MESSAGE_ENTITY)
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
                 // then
@@ -1024,8 +1046,8 @@ class ConversationRepositoryTest {
                 awaitComplete()
             }
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::getUnreadMessageCount)
+            verify(messageDAO)
+                .suspendFunction(messageDAO::getUnreadMessageCount)
                 .with(anything())
                 .wasNotInvoked()
         }
@@ -1064,6 +1086,11 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(TestUser.OTHER))
 
+            given(messageDAO)
+                .suspendFunction(messageDAO::getLastUnreadMessage)
+                .whenInvokedWith(any())
+                .thenReturn(TEST_MESSAGE_ENTITY)
+
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
                 // then
@@ -1075,8 +1102,8 @@ class ConversationRepositoryTest {
                 awaitComplete()
             }
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::getUnreadMessageCount)
+            verify(messageDAO)
+                .suspendFunction(messageDAO::getUnreadMessageCount)
                 .with(anything())
                 .wasNotInvoked()
         }
@@ -1101,8 +1128,8 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(true)
 
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getUnreadMessageCount)
+            given(messageDAO)
+                .suspendFunction(messageDAO::getUnreadMessageCount)
                 .whenInvokedWith(any())
                 .thenReturn(10L)
 
@@ -1119,6 +1146,11 @@ class ConversationRepositoryTest {
                 .suspendFunction(userRepository::getKnownUser)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(TestUser.OTHER))
+
+            given(messageDAO)
+                .suspendFunction(messageDAO::getLastUnreadMessage)
+                .whenInvokedWith(any())
+                .thenReturn(TEST_MESSAGE_ENTITY)
 
             // when
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -1215,6 +1247,18 @@ class ConversationRepositoryTest {
             conversationsFailed = listOf(ConversationIdDTO("failedId", "someDomain")),
             conversationsNotFound = emptyList()
         )
+        private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
+        val TEST_MESSAGE_ENTITY =
+            MessageEntity.Regular(
+                id = "uid",
+                content = MessageEntityContent.Text("content"),
+                conversationId = TEST_QUALIFIED_ID_ENTITY,
+                date = "date",
+                senderUserId = TEST_QUALIFIED_ID_ENTITY,
+                senderClientId = "sender",
+                status = MessageEntity.Status.SENT,
+                editStatus = MessageEntity.EditStatus.NotEdited
+            )
 
         val OTHER_USER_ID = UserId("otherValue", "domain")
 
