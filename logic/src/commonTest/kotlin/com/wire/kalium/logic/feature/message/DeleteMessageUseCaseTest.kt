@@ -122,9 +122,7 @@ class DeleteMessageUseCaseTest {
 
         val deletedForMeContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID, TEST_CONVERSATION_ID.value,
-            arrangement.idMapper.toProtoModel(
-                TEST_CONVERSATION_ID
-            )
+            TEST_CONVERSATION_ID
         )
 
         // then
