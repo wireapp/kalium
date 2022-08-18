@@ -30,7 +30,7 @@ class ConversationScope(
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
-    private val messageSender : MessageSender,
+    private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
 ) {
 

@@ -87,6 +87,7 @@ interface ConversationDAO {
         status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     )
+
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
         mutedStatus: ConversationEntity.MutedStatus,
@@ -104,7 +105,7 @@ interface ConversationDAO {
     suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long
     suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
-    suspend fun getLastUnreadMessageId(conversationID: QualifiedIDEntity) : String?
+    suspend fun getLastUnreadMessageId(conversationID: QualifiedIDEntity): String?
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
     suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
 }

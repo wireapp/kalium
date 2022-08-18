@@ -381,7 +381,7 @@ internal class ConversationEventReceiverImpl(
                 }
                 is MessageContent.Asset -> handleAssetMessage(message)
                 is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
-                is MessageContent.DeleteForMe -> deleteForMeHandler.handle(message,content)
+                is MessageContent.DeleteForMe -> deleteForMeHandler.handle(message, content)
                 is MessageContent.Calling -> {
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - MessageContent.Calling")
                     callManagerImpl.value.onCallingMessageReceived(

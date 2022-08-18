@@ -443,7 +443,7 @@ abstract class UserSessionScopeCommon(
             callManager,
             MessageTextEditHandler(messageRepository),
             LastReadContentHandler(conversationRepository, userRepository),
-            DeleteForMeHandler(conversationRepository,messageRepository,userRepository),
+            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
             userConfigRepository,
             EphemeralNotificationsManager
         )

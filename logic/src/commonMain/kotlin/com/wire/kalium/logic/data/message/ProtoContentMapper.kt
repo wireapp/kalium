@@ -30,7 +30,7 @@ class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
-    private val idMapper : IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
@@ -53,7 +53,7 @@ class ProtoContentMapperImpl(
             is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
                 MessageHide(
                     messageId = readableContent.messageId,
-                    qualifiedConversationId = readableContent.conversationId?.let {  idMapper.toProtoModel(it) },
+                    qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
                     conversationId = readableContent.unqualifiedConversationId
                 )
             )
@@ -63,7 +63,7 @@ class ProtoContentMapperImpl(
                 GenericMessage.Content.LastRead(
                     LastRead(
                         conversationId = readableContent.unqualifiedConversationId,
-                        qualifiedConversationId = readableContent.conversationId?.let {  idMapper.toProtoModel(it) },
+                        qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
                         lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
                     )
                 )
@@ -96,7 +96,7 @@ class ProtoContentMapperImpl(
         }
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     private fun getReadableContent(genericMessage: GenericMessage, encodedContent: PlainMessageBlob): MessageContent.FromProto {
         val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
 

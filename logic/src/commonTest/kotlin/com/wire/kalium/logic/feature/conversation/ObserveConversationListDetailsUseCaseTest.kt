@@ -152,7 +152,14 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
         val groupConversationUpdates =
-            listOf(ConversationDetails.Group(groupConversation, LegalHoldStatus.DISABLED, unreadMessagesCount = 0, lastUnreadMessage = null))
+            listOf(
+                ConversationDetails.Group(
+                    groupConversation,
+                    LegalHoldStatus.DISABLED,
+                    unreadMessagesCount = 0,
+                    lastUnreadMessage = null
+                )
+            )
 
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,

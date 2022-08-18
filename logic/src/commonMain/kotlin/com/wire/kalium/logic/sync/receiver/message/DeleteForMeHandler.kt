@@ -18,18 +18,19 @@ class DeleteForMeHandler(
     suspend fun handle(
         message: Message,
         messageContent: MessageContent.DeleteForMe
-    ){
+    ) {
         // The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
         // we need to get the DOMAIN from the self conversationId[here is the message.conversationId]
-        val conversationId = messageContent.conversationId ?:
-        ConversationId(messageContent.unqualifiedConversationId, userRepository.getSelfUserId().domain)
+        val conversationId = messageContent.conversationId
+            ?: ConversationId(messageContent.unqualifiedConversationId, userRepository.getSelfUserId().domain)
 
         if (message.conversationId == conversationRepository.getSelfConversationId())
             messageRepository.deleteMessage(
                 messageUuid = messageContent.messageId,
                 conversationId = conversationId
             )
-        else kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER).i(message = "Delete message sender is not verified: $message")
+        else kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
+            .i(message = "Delete message sender is not verified: $message")
     }
 
 }

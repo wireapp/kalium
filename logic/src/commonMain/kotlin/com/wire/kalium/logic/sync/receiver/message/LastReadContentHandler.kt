@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.util.TimeParser
 
 // This class handles the messages that arrive when some client has read the conversation.
 class LastReadContentHandler(
@@ -24,7 +23,8 @@ class LastReadContentHandler(
             // If the message is coming from other client, it means that the user has read
             // the conversation on the other device and we can update the read date locally
             // to synchronize the state across the clients.
-            val conversationId = messageContent.conversationId ?: ConversationId(messageContent.unqualifiedConversationId, userRepository.getSelfUserId().domain)
+            val conversationId = messageContent.conversationId
+                ?: ConversationId(messageContent.unqualifiedConversationId, userRepository.getSelfUserId().domain)
 
             conversationRepository.updateConversationReadDate(
                 qualifiedID = conversationId,
