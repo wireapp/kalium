@@ -571,6 +571,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             flowManagerService,
             mediaManagerService,
+            syncManager
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)

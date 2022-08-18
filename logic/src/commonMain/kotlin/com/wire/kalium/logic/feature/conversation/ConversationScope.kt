@@ -24,7 +24,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")
-class ConversationScope(
+class ConversationScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
