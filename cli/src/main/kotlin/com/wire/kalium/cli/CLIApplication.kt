@@ -27,6 +27,7 @@ import com.wire.kalium.logic.feature.client.DeleteClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 import com.wire.kalium.logic.feature.client.SelfClientsResult
+import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
@@ -149,8 +150,8 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
             ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
         )
         when (result) {
-            is Either.Right -> echo("group created successfully")
-            is Either.Left -> throw PrintMessage("group creation failed: ${result.value}")
+            is CreateGroupConversationUseCase.Result.Success -> echo("group created successfully")
+            else -> throw PrintMessage("group creation failed: $result")
         }
     }
 
