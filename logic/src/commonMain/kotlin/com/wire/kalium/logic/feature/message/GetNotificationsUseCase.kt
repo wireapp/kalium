@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
 
 interface GetNotificationsUseCase {
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
