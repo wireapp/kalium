@@ -509,7 +509,7 @@ abstract class UserSessionScopeCommon(
             messageSender,
             teamRepository,
             userId,
-            persistMessage
+            persistMessage,
             updateKeyingMaterialThresholdProvider
         )
     val messages: MessageScope
