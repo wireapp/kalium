@@ -46,6 +46,7 @@ interface MLSConversationRepository {
     suspend fun observeProposalTimers(): Flow<List<ProposalTimer>>
 }
 
+@Suppress("TooManyFunctions", "LongParameterList")
 class MLSConversationDataSource(
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
