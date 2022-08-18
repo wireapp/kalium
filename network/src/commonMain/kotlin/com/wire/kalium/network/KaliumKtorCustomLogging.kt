@@ -252,11 +252,10 @@ private fun obfuscateMessage(text: String) {
                 "password" -> {
                     kaliumLogger.v("${it.key} : ****")
                 }
-            }
-            if (it.key == "password") {
-                kaliumLogger.v(it.key + "****")
-            } else {
-                kaliumLogger.v("${it.key} : ${it.value.toString()}")
+                else -> {
+                    kaliumLogger.v("${it.key} : ${it.value.toString()}")
+
+                }
             }
         }
 
