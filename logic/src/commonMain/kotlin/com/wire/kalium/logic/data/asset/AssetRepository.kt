@@ -52,7 +52,8 @@ interface AssetRepository {
     suspend fun uploadAndPersistPrivateAsset(
         mimeType: String,
         assetDataPath: Path,
-        otrKey: AES256Key
+        otrKey: AES256Key,
+        extension: String
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>
 
     /**
@@ -109,13 +110,14 @@ internal class AssetDataSource(
         assetDataSize: Long
     ): Either<CoreFailure, UploadedAssetId> {
         val uploadAssetData = UploadAssetData(assetDataPath, assetDataSize, mimeType, true, RetentionType.ETERNAL)
-        return uploadAndPersistAsset(uploadAssetData, assetDataPath)
+        return uploadAndPersistAsset(uploadAssetData, assetDataPath, "jpg")
     }
 
     override suspend fun uploadAndPersistPrivateAsset(
         mimeType: String,
         assetDataPath: Path,
-        otrKey: AES256Key
+        otrKey: AES256Key,
+        extension: String
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
 
         val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
@@ -135,7 +137,7 @@ internal class AssetDataSource(
 
         return if (encryptionSucceeded) {
             val uploadAssetData = UploadAssetData(tempEncryptedDataPath, encryptedDataSize, mimeType, false, RetentionType.PERSISTENT)
-            uploadAndPersistAsset(uploadAssetData, assetDataPath).map { it to SHA256Key(sha256!!) }
+            uploadAndPersistAsset(uploadAssetData, assetDataPath, extension).map { it to SHA256Key(sha256!!) }
         } else {
             kaliumLogger.e("Something went wrong when encrypting the Asset Message")
             Either.Left(EncryptionFailure())
@@ -144,7 +146,8 @@ internal class AssetDataSource(
 
     private suspend fun uploadAndPersistAsset(
         uploadAssetData: UploadAssetData,
-        decodedDataPath: Path
+        decodedDataPath: Path,
+        extension: String
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
@@ -155,7 +158,7 @@ internal class AssetDataSource(
             }
         }.flatMap { assetResponse ->
             // After successful upload, we persist the asset to a persistent path
-            val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = "${assetResponse.key}.pdf")
+            val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = "${assetResponse.key}.$extension")
 
             // After successful upload we finally persist the data now to a persistent path and delete the temporary one
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)

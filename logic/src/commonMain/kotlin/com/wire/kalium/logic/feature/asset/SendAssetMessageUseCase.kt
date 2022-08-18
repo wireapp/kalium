@@ -48,7 +48,8 @@ fun interface SendAssetMessageUseCase {
         assetName: String,
         assetMimeType: String,
         assetWidth: Int?,
-        assetHeight: Int?
+        assetHeight: Int?,
+        extension: String
     ): SendAssetMessageResult
 }
 
@@ -68,7 +69,8 @@ internal class SendAssetMessageUseCaseImpl(
         assetName: String,
         assetMimeType: String,
         assetWidth: Int?,
-        assetHeight: Int?
+        assetHeight: Int?,
+        extension: String
     ): SendAssetMessageResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -81,7 +83,8 @@ internal class SendAssetMessageUseCaseImpl(
         return assetDataSource.uploadAndPersistPrivateAsset(
             assetMimeType,
             assetDataPath,
-            otrKey
+            otrKey,
+            extension
         ).flatMap { (assetId, sha256) ->
 
             // Try to send the Asset Message
