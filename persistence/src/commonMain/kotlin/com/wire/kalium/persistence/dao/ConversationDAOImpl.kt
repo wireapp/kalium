@@ -6,6 +6,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.dao.message.MessageMapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -64,6 +65,7 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
+    private val messageMapper = MessageMapper()
 
     // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
     override suspend fun getSelfConversationId() =
@@ -272,9 +274,6 @@ class ConversationDAOImpl(
     ) {
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
-
-    override suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long =
-        conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
 
     override suspend fun getUnreadConversationCount(): Long =
         conversationQueries.getUnreadConversationCount().executeAsOne()
