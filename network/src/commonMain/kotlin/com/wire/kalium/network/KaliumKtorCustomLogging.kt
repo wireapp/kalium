@@ -249,6 +249,7 @@ public class KaliumKtorCustomLogging private constructor(
     }
 }
 
+@Suppress("TooGenericExceptionCaught")
 private fun obfuscateAndLogMessage(text: String): String {
     return try {
         val obj = (Json.decodeFromString(text) as JsonElement)
@@ -272,7 +273,7 @@ fun obfuscateJsonElement(obj: JsonElement) {
                 kaliumLogger.v("${it.key} : ******")
             }
             obfuscateJsonIdKeys.contains(it.key.lowercase()) -> {
-                kaliumLogger.v("${it.key} : ${it.value.toString().substring(0, 7)}")
+                kaliumLogger.v("${it.key} : ${it.value.toString().substring(START_INDEX, END_INDEX)}")
             }
             obfuscateObjects.contains(it.key.lowercase()) -> {
                 obfuscateJsonElement(it.value)
@@ -288,7 +289,8 @@ fun obfuscateJsonElement(obj: JsonElement) {
 private val obfuscateJsonKeys by lazy { listOf("password", "authorization") }
 private val obfuscateJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
 private val obfuscateObjects by lazy { listOf("qualified_id") }
-
+private const val START_INDEX = 0
+private const val END_INDEX = 9
 
 /**
  * Configure and install [Logging] in [HttpClient].
