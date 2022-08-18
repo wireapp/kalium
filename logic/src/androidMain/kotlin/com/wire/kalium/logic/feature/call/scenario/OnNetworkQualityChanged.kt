@@ -8,7 +8,7 @@ class OnNetworkQualityChanged : NetworkQualityChangedHandler {
 
     override fun onNetworkQualityChanged(
         conversationId: String,
-        userId: String,
+        userId: String?,
         clientId: String,
         quality: Int,
         roundTripTimeInMilliseconds: Int,

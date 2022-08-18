@@ -1,8 +1,9 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import kotlinx.datetime.Instant
 
 sealed class MessageContent {
 
@@ -12,7 +13,6 @@ sealed class MessageContent {
     sealed class Signaling : FromProto()
 
     // client message content types
-
     data class Text(val value: String) : Regular()
     data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()
@@ -26,8 +26,9 @@ sealed class MessageContent {
 
     data class DeleteForMe(
         val messageId: String,
-        val conversationId: String,
-        val qualifiedConversationId: QualifiedConversationId?
+        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
+        val unqualifiedConversationId: String,
+        val conversationId: ConversationId?,
     ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()
@@ -46,6 +47,14 @@ sealed class MessageContent {
         data class Added(override val members: List<UserId>) : MemberChange(members)
         data class Removed(override val members: List<UserId>) : MemberChange(members)
     }
+
+    data class LastRead(
+        val messageId: String,
+        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
+        val unqualifiedConversationId: String,
+        val conversationId: ConversationId?,
+        val time: Instant
+    ) : Regular()
 
     object MissedCall : System()
 

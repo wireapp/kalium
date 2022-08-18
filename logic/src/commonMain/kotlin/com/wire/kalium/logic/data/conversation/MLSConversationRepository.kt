@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.CoreFailure
@@ -65,7 +66,7 @@ class MLSConversationDataSource(
                         mlsClient.decryptMessage(
                             (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                             messageEvent.content.decodeBase64Bytes()
-                        )
+                        ).message
                     )
                 } else {
                     Either.Right(null)
@@ -115,24 +116,27 @@ class MLSConversationDataSource(
 
     override suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            mlsClient.updateKeyingMaterial(groupID).let { (handshake, welcome) ->
-                wrapApiRequest {
-                    mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
-                }.flatMap {
-                    welcome?.let {
-                        wrapApiRequest {
-                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
-                        }
-                    } ?: Either.Right(Unit)
-                }.flatMap {
+            sendCommitBundle(groupID, mlsClient.updateKeyingMaterial(groupID)).flatMap {
                     wrapStorageRequest {
                         conversationDAO.updateKeyingMaterial(groupID, Clock.System.now())
                     }
-                }.flatMap {
-                    Either.Right(Unit)
                 }
             }
+
+    private suspend fun sendCommitBundle(groupID: String, bundle: CommitBundle): Either<CoreFailure, Unit> {
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapApiRequest {
+                mlsMessageApi.sendMessage(MLSMessageApi.Message(bundle.commit))
+            }.flatMap {
+                mlsClient.commitAccepted(groupID)
+                bundle.welcome?.let {
+                    wrapApiRequest {
+                        mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(it))
+                    }
+                } ?: Either.Right(Unit)
+            }
         }
+    }
 
     override suspend fun commitPendingProposals(groupID: String): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient()
@@ -174,21 +178,16 @@ class MLSConversationDataSource(
                             it.keyPackage.decodeBase64Bytes()
                         )
                     }
-                client.addMember(groupID, clientKeyPackageList)?.let { (handshake, welcome) ->
-                    wrapApiRequest {
-                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
-                    }.flatMap {
-                        wrapApiRequest {
-                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            val list = userIdList.map {
-                                Member(idMapper.toDaoModel(it), Member.Role.Member)
+                client.addMember(groupID, clientKeyPackageList)?.let { bundle ->
+                    sendCommitBundle(groupID, bundle)
+                        .flatMap {
+                            wrapStorageRequest {
+                                val list = userIdList.map {
+                                    Member(idMapper.toDaoModel(it), Member.Role.Member)
+                                }
+                                conversationDAO.insertMembers(list, groupID)
                             }
-                            conversationDAO.insertMembers(list, groupID)
-                        }
-                    }.flatMap {
+                        }.flatMap {
                         Either.Right(Unit)
                     }
                 } ?: run {
@@ -208,20 +207,15 @@ class MLSConversationDataSource(
                 }
             }
             mlsClientProvider.getMLSClient().flatMap { client ->
-                client.removeMember(groupID, usersCryptoQualifiedClientIDs)?.let { handshake ->
-                    wrapApiRequest {
-                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
-                    }.flatMap {
+                client.removeMember(groupID, usersCryptoQualifiedClientIDs).let { bundle ->
+                    sendCommitBundle(groupID, bundle).flatMap {
                         wrapStorageRequest {
-                            conversationDAO.deleteMembersByQualifiedID(userIdList.map {
-                                idMapper.toDaoModel(it)
-                            }, groupID)
+                            conversationDAO.deleteMembersByQualifiedID(
+                                userIdList.map { idMapper.toDaoModel(it) },
+                                groupID
+                            )
                         }
-                    }.flatMap {
-                        Either.Right(Unit)
                     }
-                } ?: run {
-                    Either.Right(Unit)
                 }
             }
         }
@@ -237,19 +231,11 @@ class MLSConversationDataSource(
                         )
                     }
 
-                client.createConversation(groupID, clientKeyPackageList)?.let { (handshake, welcome) ->
-                    wrapApiRequest {
-                        mlsMessageApi.sendMessage(MLSMessageApi.Message(handshake))
-                    }.flatMap {
-                        wrapApiRequest {
-                            mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(welcome))
-                        }
-                    }.flatMap {
+                client.createConversation(groupID, clientKeyPackageList)?.let { bundle ->
+                    sendCommitBundle(groupID, bundle).flatMap {
                         wrapStorageRequest {
                             conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
                         }
-                    }.flatMap {
-                        Either.Right(Unit)
                     }
                 } ?: run {
                     Either.Right(Unit)
