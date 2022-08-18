@@ -4,7 +4,7 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
-import com.wire.kalium.persistence.utils.stubs.newMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -42,13 +42,13 @@ class MessageDAOTest : BaseDatabaseTest() {
         val otherUser = userEntity2
 
         val expectedMessages = listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 "1",
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 status = MessageEntity.Status.PENDING
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 "2",
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
@@ -57,14 +57,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         val allMessages = expectedMessages + listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 "3",
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 // Different status
                 status = MessageEntity.Status.READ
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 "4",
                 conversationId = conversationEntity1.id,
                 // Different user
@@ -88,14 +88,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         val otherUser = userEntity2
 
         val allMessages = listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 "3",
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 // Different status
                 status = MessageEntity.Status.READ
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 "4",
                 conversationId = conversationEntity1.id,
                 // Different user
@@ -123,14 +123,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         val visibleMessageConversationId = conversationEntity2.id
 
         val allMessages = listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 deleteMessageUuid,
                 conversationId = deleteMessageConversationId,
                 senderUserId = userInQuestion.id,
                 // Different status
                 status = MessageEntity.Status.SENT
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 visibleMessageUuid,
                 conversationId = visibleMessageConversationId,
                 // Different user
@@ -161,14 +161,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         val visibleMessageConversationId = conversationEntity2.id
 
         val allMessages = listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 messageUuid,
                 conversationId = deleteMessageConversationId,
                 senderUserId = userInQuestion.id,
                 // Different status
                 status = MessageEntity.Status.SENT
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 messageUuid,
                 conversationId = visibleMessageConversationId,
                 // Different user
@@ -193,13 +193,13 @@ class MessageDAOTest : BaseDatabaseTest() {
         insertInitialData()
 
         val allMessages = listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 "1",
                 conversationId = conversationEntity1.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 "2",
                 // different conversation
                 conversationId = conversationEntity2.id,
@@ -225,14 +225,14 @@ class MessageDAOTest : BaseDatabaseTest() {
         val otherVisibility = MessageEntity.Visibility.HIDDEN
 
         val expectedMessages = listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 "1",
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 "2",
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
@@ -242,7 +242,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         val allMessages = expectedMessages + listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 "3",
                 // different conversation
                 conversationId = otherConversation.id,
@@ -250,7 +250,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 visibility = visibilityInQuestion
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 "4",
                 // different conversation
                 conversationId = otherConversation.id,
@@ -258,7 +258,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion
             ),
-            newMessageEntity(
+            newRegularMessageEntity(
                 "5",
                 // different conversation
                 conversationId = conversationInQuestion.id,
@@ -282,7 +282,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val dateInQuestion = "2022-03-30T15:36:00.000Z"
 
         val expectedMessages = listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 "1",
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,
@@ -293,7 +293,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         val allMessages = expectedMessages + listOf(
-            newMessageEntity(
+            newRegularMessageEntity(
                 "2",
                 conversationId = conversationInQuestion.id,
                 senderUserId = userEntity1.id,

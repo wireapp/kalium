@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -107,7 +108,8 @@ class AddMemberToConversationUseCaseTest {
                 mlsGroupId,
                 groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED,
                 0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
 
         }

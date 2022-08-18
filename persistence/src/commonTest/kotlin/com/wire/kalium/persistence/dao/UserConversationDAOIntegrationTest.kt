@@ -208,7 +208,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             newConversationEntity(conversationIDEntity)
         )
 
-        conversationDAO.insertMembers(
+        conversationDAO.insertMembersWithQualifiedId(
             memberList = members, conversationID = conversationIDEntity
         )
     }
