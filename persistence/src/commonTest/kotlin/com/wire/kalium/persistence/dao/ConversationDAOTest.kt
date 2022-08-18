@@ -486,7 +486,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         messageDAO.insertMessages(message)
 
         // when
-        val result = conversationDAO.getUnreadMessageCount(conversationId)
+        val result = messageDAO.getUnreadMessageCount(conversationId)
 
         // then
         assertEquals(9L, result)
@@ -522,7 +522,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         messageDAO.insertMessages(message)
 
         // when
-        val result = conversationDAO.getUnreadMessageCount(conversationId)
+        val result = messageDAO.getUnreadMessageCount(conversationId)
 
         // then
         assertEquals(0L, result)
