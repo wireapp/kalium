@@ -280,3 +280,15 @@ SELECT * FROM MessageFailedToDecryptContent WHERE message_id = ? AND conversatio
 
 selectMessageMissedCallContent:
 SELECT * FROM MessageMissedCallContent WHERE message_id = ? AND conversation_id = ?;
+
+getLastUnreadMessage:
+SELECT * FROM Message AS message
+WHERE message.conversation_id
+IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
+ORDER BY message.date ASC
+LIMIT  1;
+
+getUnreadMessageCount:
+SELECT COUNT() FROM Message AS message
+WHERE message.conversation_id
+IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id));
