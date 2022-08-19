@@ -46,7 +46,7 @@ internal class PendingProposalSchedulerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-    ) : PendingProposalScheduler {
+) : PendingProposalScheduler {
 
     /**
      * A dispatcher with limited parallelism of 1.
