@@ -49,11 +49,6 @@ kotlin {
                 implementation(project(":util"))
 
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
                 implementation(Dependencies.Coroutines.core)
                 implementation(Dependencies.Kotlinx.serialization)
                 implementation(Dependencies.Kotlinx.dateTime)

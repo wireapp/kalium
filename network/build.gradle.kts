@@ -43,11 +43,7 @@ kotlin {
                 api(project(":logger"))
 
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation(Dependencies.Coroutines.core)
 
                 // ktor
                 api(Dependencies.Ktor.core)
