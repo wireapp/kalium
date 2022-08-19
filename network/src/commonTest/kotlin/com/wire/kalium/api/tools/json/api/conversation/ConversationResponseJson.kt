@@ -44,6 +44,7 @@ object ConversationResponseJson {
             it.messageTimer?.let { put("message_timer", it) }
             it.name?.let { put("name", it) }
             it.teamId?.let { put("team", it) }
+            it.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
         }.toString()
     }
 
@@ -73,7 +74,8 @@ object ConversationResponseJson {
                 ConversationAccessRoleDTO.GUEST,
                 ConversationAccessRoleDTO.TEAM_MEMBER,
                 ConversationAccessRoleDTO.NON_TEAM_MEMBER
-            )
+            ),
+            mlsCipherSuiteTag = null
         ), conversationResponseSerializer
     )
 }
