@@ -21,12 +21,13 @@ import com.wire.kalium.logic.functional.combine
 import com.wire.kalium.logic.functional.flatMapFromIterable
 import com.wire.kalium.logic.util.TimeParser
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 
 interface GetNotificationsUseCase {
     suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
@@ -59,12 +60,13 @@ class GetNotificationsUseCaseImpl(
 
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
-        return observeRegularNotifications()
-            .combine(observeConnectionRequests()) { messages, connections -> messages.plus(connections) }
-            .combine(ephemeralNotificationsManager.observeEphemeralNotifications()) { messages, ephemeralNotifications ->
-                messages.plus(ephemeralNotifications)
-            }
+        return merge(
+            observeRegularNotifications(),
+            observeConnectionRequests(),
+            ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
+        )
             .distinctUntilChanged()
+            .buffer(capacity = 3) // to cover a case when all 3 flows emits at the same time
     }
 
     private suspend fun observeRegularNotifications(): Flow<List<LocalNotificationConversation>> {
