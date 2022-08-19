@@ -28,8 +28,8 @@ class FeatureConfigApiTest : ApiTest {
         )
 
         // When
-        val assetApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
-        val response = assetApi.featureConfigs()
+        val featureConfigApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
+        val response = featureConfigApi.featureConfigs()
 
         // Then
         assertTrue(response is NetworkResponse.Success)
@@ -51,8 +51,8 @@ class FeatureConfigApiTest : ApiTest {
         )
 
         // When
-        val assetApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
-        val response = assetApi.featureConfigs()
+        val featureConfigApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
+        val response = featureConfigApi.featureConfigs()
 
         // Then
         assertTrue(response is NetworkResponse.Error)
@@ -75,8 +75,8 @@ class FeatureConfigApiTest : ApiTest {
         )
 
         // When
-        val assetApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
-        val response = assetApi.featureConfigs()
+        val featureConfigApi: FeatureConfigApi = FeatureConfigApiImpl(networkClient)
+        val response = featureConfigApi.featureConfigs()
 
         // Then
         assertTrue(response is NetworkResponse.Error)
