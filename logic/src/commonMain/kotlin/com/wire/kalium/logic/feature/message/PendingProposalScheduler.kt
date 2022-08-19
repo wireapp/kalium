@@ -54,10 +54,10 @@ internal class PendingProposalSchedulerImpl(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
-    private val refillKeyPackagesScope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val commitPendingProposalsScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     init {
-        refillKeyPackagesScope.launch() {
+        commitPendingProposalsScope.launch() {
             incrementalSyncRepository.incrementalSyncState.collectLatest { syncState ->
                 ensureActive()
                 if (syncState == IncrementalSyncStatus.Live) {
