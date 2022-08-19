@@ -14,6 +14,7 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
@@ -179,8 +180,9 @@ class MessageSenderTest {
             assertIs<Either.Left<Unit>>(result)
         }
 
+    // Message was sent, better to keep it as pending, than wrongfully marking it as failed
     @Test
-    fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
+    fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnSuccess() =
         runTest {
             // given
             setupGivenSuccessResults(
@@ -191,14 +193,15 @@ class MessageSenderTest {
             // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .with(eq(MessageEntity.Status.SENT), anything(), anything())
                 .wasInvoked(exactly = once)
 
-            assertIs<Either.Left<Unit>>(result)
+            result.shouldSucceed()
         }
 
+    // Message was sent, better to keep it as pending, than wrongfully marking it as failed
     @Test
-    fun givenUpdatingMessageDateFails_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
+    fun givenUpdatingMessageDateFails_WhenSendingOutgoingMessage_ThenMarkMessageAsSentAndReturnSuccess() =
         runTest {
             // given
             setupGivenSuccessResults(
@@ -209,14 +212,15 @@ class MessageSenderTest {
             // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .with(eq(MessageEntity.Status.SENT), anything(), anything())
                 .wasInvoked(exactly = once)
 
-            assertIs<Either.Left<Unit>>(result)
+            result.shouldSucceed()
         }
 
+    // Message was sent, better to keep it as pending, than wrongfully marking it as failed
     @Test
-    fun givenUpdatePendingMessagesAddMillisToDate_WhenSendingOutgoingMessage_ThenReturnFailureAndSetMessageStatusToFailed() =
+    fun givenUpdatePendingMessagesAddMillisToDateFails_WhenSendingOutgoingMessage_ThenMarkMessageAsSentAndReturnSuccess() =
         runTest {
             // given
             setupGivenSuccessResults(
@@ -224,13 +228,14 @@ class MessageSenderTest {
             )
             // when
             val result = messageSender.sendPendingMessage(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID)
+
             // then
             verify(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .with(eq(MessageEntity.Status.SENT), anything(), anything())
                 .wasInvoked(exactly = once)
 
-            assertIs<Either.Left<Unit>>(result)
+            result.shouldSucceed()
         }
 
     @Test
@@ -258,6 +263,7 @@ class MessageSenderTest {
         assertEquals(failure, result)
     }
 
+    @Suppress("LongParameterList")
     private fun setupGivenSuccessResults(
         getMessageById: Boolean = true,
         getConversationProtocol: Boolean = true,

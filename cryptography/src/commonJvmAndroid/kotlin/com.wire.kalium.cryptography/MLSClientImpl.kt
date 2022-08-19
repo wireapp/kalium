@@ -3,12 +3,28 @@ package com.wire.kalium.cryptography
 import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
+import com.wire.crypto.CoreCryptoCallbacks
+import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.Invitee
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import java.io.File
 import java.time.Duration
 
+/**
+ * We provide dummy callbacks because our BE is currently enforcing these constraints are always true
+ */
+private class DummyCallbacks : CoreCryptoCallbacks {
+    override fun authorize(conversationId: List<UByte>, clientId: String): Boolean {
+        return true
+    }
+
+    override fun isUserInGroup(identity: List<UByte>, otherClients: List<List<UByte>>): Boolean {
+        return true
+    }
+}
+
+@Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 actual class MLSClientImpl actual constructor(
     private val rootDir: String,
@@ -21,6 +37,7 @@ actual class MLSClientImpl actual constructor(
 
     init {
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, clientId.toString(), null)
+        coreCrypto.setCallbacks(DummyCallbacks())
     }
 
     override fun clearLocalFiles(): Boolean {
@@ -36,10 +53,12 @@ actual class MLSClientImpl actual constructor(
         return coreCrypto.clientKeypackages(amount.toUInt()).map { it.toUByteArray().asByteArray() }
     }
 
-    override fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?> {
-        return coreCrypto.updateKeyingMaterial(toUByteList(groupId.decodeBase64Bytes())).let { commitBundle ->
-            Pair(toByteArray(commitBundle.commit), commitBundle.welcome?.let { toByteArray(it) })
-        }
+    override fun validKeyPackageCount(): ULong {
+        return coreCrypto.clientValidKeypackagesCount()
+    }
+
+    override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
+        return toCommitBundle(coreCrypto.updateKeyingMaterial(toUByteList(groupId.decodeBase64Bytes())))
     }
 
     override fun conversationExists(groupId: MLSGroupId): Boolean {
@@ -58,7 +77,7 @@ actual class MLSClientImpl actual constructor(
     override fun createConversation(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage>? {
+    ): AddMemberCommitBundle? {
         val invitees = members.map {
             Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
         }
@@ -76,9 +95,12 @@ actual class MLSClientImpl actual constructor(
         return if (members.isEmpty()) {
             null
         } else {
-            val messages = coreCrypto.addClientsToConversation(groupIdAsBytes, invitees)
-            messages.let { Pair(toByteArray(it.commit), toByteArray(it.welcome)) }
+            toAddMemberCommitBundle(coreCrypto.addClientsToConversation(groupIdAsBytes, invitees))
         }
+    }
+
+    override fun wipeConversation(groupId: MLSGroupId) {
+        coreCrypto.wipeConversation(toUByteList(groupId.decodeBase64Bytes()))
     }
 
     override fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
@@ -91,38 +113,62 @@ actual class MLSClientImpl actual constructor(
         return toByteArray(applicationMessage)
     }
 
-    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): PlainMessage? {
-        return coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)).message?.let { toByteArray(it) }
+    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
+        return toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)))
+    }
+
+    override fun commitAccepted(groupId: MLSGroupId) {
+        coreCrypto.commitAccepted(toUByteList(groupId.decodeBase64Bytes()))
+    }
+
+    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle {
+        return toCommitBundle(coreCrypto.commitPendingProposals(toUByteList(groupId.decodeBase64Bytes())))
     }
 
     override fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage> {
+    ): AddMemberCommitBundle? {
+        if (members.isEmpty()) {
+            return null
+        }
+
         val invitees = members.map {
             Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
         }
 
-        val messages = coreCrypto.addClientsToConversation(toUByteList(groupId.decodeBase64Bytes()), invitees)
-        return messages.let { Pair(toByteArray(it.commit), toByteArray(it.welcome)) }
+        return toAddMemberCommitBundle(coreCrypto.addClientsToConversation(toUByteList(groupId.decodeBase64Bytes()), invitees))
     }
 
     override fun removeMember(
         groupId: MLSGroupId,
         members: List<CryptoQualifiedClientId>
-    ): HandshakeMessage {
+    ): CommitBundle {
         val clientIds = members.map {
             toUByteList(it.toString())
         }
 
-        val handshake = coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds)
-        return toByteArray(handshake.commit)
+        return toCommitBundle(coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds))
     }
 
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
         fun toByteArray(value: List<UByte>) = value.toUByteArray().asByteArray()
+        fun toCommitBundle(value: com.wire.crypto.CommitBundle) = CommitBundle(
+            toByteArray(value.commit),
+            value.welcome?.let { toByteArray(it) },
+            toByteArray(value.publicGroupState)
+        )
+        fun toAddMemberCommitBundle(value: com.wire.crypto.MemberAddedMessages) = AddMemberCommitBundle(
+            toByteArray(value.commit),
+            toByteArray(value.welcome),
+            toByteArray(value.publicGroupState)
+        )
+        fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
+            value.message?.let { toByteArray(it) },
+            value.commitDelay?.toLong()
+        )
     }
 
 }

@@ -37,4 +37,12 @@ interface MessageDAO {
         messageId: String,
         newTextContent: MessageEntityContent.Text
     )
+
+    suspend fun getLastUnreadMessage(
+        conversationID: QualifiedIDEntity
+    ): MessageEntity?
+
+    suspend fun getUnreadMessageCount(
+        conversationId: QualifiedIDEntity
+    ): Long
 }

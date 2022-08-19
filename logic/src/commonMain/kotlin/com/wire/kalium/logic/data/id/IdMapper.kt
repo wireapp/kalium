@@ -21,6 +21,7 @@ interface IdMapper {
     fun fromDaoModel(persistenceId: PersistenceQualifiedId): QualifiedID
     fun toApiModel(qualifiedID: QualifiedID): NetworkQualifiedId
     fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId
+    fun toStringDaoModel(qualifiedID: QualifiedID): String
     fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.QualifiedID): PersistenceQualifiedId
     fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
@@ -49,6 +50,8 @@ internal class IdMapperImpl : IdMapper {
 
     override fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId =
         PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+
+    override fun toStringDaoModel(qualifiedID: QualifiedID): String = "${qualifiedID.value}@${qualifiedID.domain}"
 
     override fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.QualifiedID): PersistenceQualifiedId =
         PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
