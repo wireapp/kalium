@@ -18,6 +18,7 @@ data class KaliumConfigs(
     val fileRestrictionEnabled: Boolean = false,
     val shouldEncryptData: Boolean = true,
     val lowerKeyPackageLimits: Boolean = false,
+    val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
     val customUrlScheme: String = "",
     val fileRestrictionList: String = "",
     val httpProxyPort: String = "",

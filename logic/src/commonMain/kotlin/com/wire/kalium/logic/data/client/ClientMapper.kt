@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.user.client.ClientResponse
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
+import com.wire.kalium.network.api.user.client.OtherUserClientsItem
 import com.wire.kalium.network.api.user.client.RegisterClientRequest
 
 class ClientMapper(
@@ -35,7 +36,10 @@ class ClientMapper(
         deviceType = response.deviceType?.let { fromDeviceTypeDTO(it) } ?: run { null },
         label = response.label,
         cookie = response.cookie,
-        capabilities = response.capabilities?.let { capabilities -> Capabilities(capabilities.capabilities.map { fromClientCapabilityDTO(it) }) }
+        capabilities = response.capabilities?.let { capabilities ->
+            Capabilities(capabilities.capabilities.map
+            { fromClientCapabilityDTO(it) })
+        }
             ?: run { null },
         model = response.model
     )
@@ -67,6 +71,11 @@ class ClientMapper(
         DeviceType.LegalHold -> DeviceTypeDTO.LegalHold
         DeviceType.Unknown -> DeviceTypeDTO.Unknown
     }
+
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<OtherUserClientsItem>): List<OtherUserClients> =
+        otherUsersClients.map {
+            OtherUserClients(DeviceType.valueOf(it.deviceType.name), it.id)
+        }
 
     private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {
         DeviceTypeDTO.Phone -> DeviceType.Phone
