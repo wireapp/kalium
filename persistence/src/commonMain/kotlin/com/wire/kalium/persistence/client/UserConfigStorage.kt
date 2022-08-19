@@ -88,6 +88,7 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
 
     override fun persistPersistentWebSocketConnectionStatus(enabled: Boolean) {
         kaliumPreferences.putBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, enabled)
+            .also { isPersistentWebSocketConnectionEnabledFlow.tryEmit(Unit) }
     }
 
     override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Boolean> = isPersistentWebSocketConnectionEnabledFlow
