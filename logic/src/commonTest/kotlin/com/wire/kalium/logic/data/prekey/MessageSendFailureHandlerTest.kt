@@ -56,7 +56,7 @@ class MessageSendFailureHandlerTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::saveNewClients)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any(), any(), any())
             .thenReturn(Either.Right(Unit))
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
@@ -79,19 +79,19 @@ class MessageSendFailureHandlerTest {
 
         given(clientRepository)
             .suspendFunction(clientRepository::saveNewClients)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any(), any(), any())
             .thenReturn(Either.Right(Unit))
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
 
         verify(clientRepository)
             .suspendFunction(clientRepository::saveNewClients)
-            .with(eq(userOne.first), eq(userOne.second))
+            .with(eq(userOne.first), eq(userOne.second), any())
             .wasInvoked(once)
 
         verify(clientRepository)
             .suspendFunction(clientRepository::saveNewClients)
-            .with(eq(userTwo.first), eq(userTwo.second))
+            .with(eq(userTwo.first), eq(userTwo.second), any())
             .wasInvoked(once)
     }
 
@@ -119,7 +119,7 @@ class MessageSendFailureHandlerTest {
             .thenReturn(Either.Right(Unit))
         given(clientRepository)
             .suspendFunction(clientRepository::saveNewClients)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any(), any(), any())
             .thenReturn(Either.Left(failure))
         val failureData = ProteusSendMessageFailure(mapOf(userOne), mapOf(), mapOf())
 
@@ -127,6 +127,7 @@ class MessageSendFailureHandlerTest {
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
     }
+
     private companion object {
         val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
     }

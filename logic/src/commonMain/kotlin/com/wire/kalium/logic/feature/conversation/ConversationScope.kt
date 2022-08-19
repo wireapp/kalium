@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -15,12 +16,12 @@ import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
-import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")
@@ -36,6 +37,7 @@ class ConversationScope internal constructor(
     private val teamRepository: TeamRepository,
     private val selfUserId: UserId,
     private val persistMessage: PersistMessageUseCase,
+    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) {
 
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository)
@@ -106,6 +108,6 @@ class ConversationScope internal constructor(
         get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
-        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository)
+        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)
 
 }
