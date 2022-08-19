@@ -495,7 +495,8 @@ abstract class UserSessionScopeCommon(
             keyPackageRepository,
             keyPackageLimitsProvider,
             mlsClientProvider,
-            notificationTokenRepository
+            notificationTokenRepository,
+            clientRemoteRepository
         )
     val conversations: ConversationScope
         get() = ConversationScope(
