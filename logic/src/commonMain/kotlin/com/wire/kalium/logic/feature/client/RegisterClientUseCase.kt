@@ -16,6 +16,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
 import com.wire.kalium.network.exceptions.isTooManyClients
@@ -77,6 +78,7 @@ class RegisterClientUseCaseImpl(
                             failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
                             failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
                             failure.kaliumException.isInvalidCredentials() -> RegisterClientResult.Failure.InvalidCredentials
+                            failure.kaliumException.isBadRequest() -> RegisterClientResult.Failure.InvalidCredentials
                             else -> RegisterClientResult.Failure.Generic(failure)
                         }
                     else RegisterClientResult.Failure.Generic(failure)

@@ -112,9 +112,7 @@ class ProtoContentMapperTest {
     @Test
     fun givenHideMessageContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val messageContent = MessageContent.DeleteForMe(
-            TEST_MESSAGE_UUID, TEST_CONVERSATION_UUID, idMapper.toProtoModel(
-                TEST_CONVERSATION_ID
-            )
+            TEST_MESSAGE_UUID, TEST_CONVERSATION_UUID, TEST_CONVERSATION_ID
         )
         val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
 

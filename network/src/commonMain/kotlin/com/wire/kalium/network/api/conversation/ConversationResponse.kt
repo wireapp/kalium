@@ -43,6 +43,9 @@ data class ConversationResponse(
     @SerialName("last_event_time")
     val lastEventTime: String,
 
+    @SerialName("cipher_suite")
+    val mlsCipherSuiteTag: Int?,
+
     @SerialName("access") val access: Set<ConversationAccessDTO>,
     @SerialName("access_role_v2") val accessRole: Set<ConversationAccessRoleDTO> = ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL,
 ) {
@@ -63,7 +66,7 @@ data class ConversationResponse(
     }
 }
 
-@Serializable
+@kotlinx.serialization.Serializable
 data class ConversationMembersResponse(
     @SerialName("self")
     val self: ConversationMemberDTO.Self,

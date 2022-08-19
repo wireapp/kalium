@@ -198,7 +198,8 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             false,
-                            unreadMessagesCount = 0
+                            unreadMessagesCount = 0,
+                            lastUnreadMessage = null
                         )
                     )
                 )
@@ -265,7 +266,8 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadMessagesCount = 0
+                            unreadMessagesCount = 0,
+                            lastUnreadMessage = null
                         )
                     )
                 )
@@ -327,7 +329,8 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadMessagesCount = 0
+                            unreadMessagesCount = 0,
+                            lastUnreadMessage = null
                         )
                     )
                 )
@@ -398,7 +401,8 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadMessagesCount = 0
+                            unreadMessagesCount = 0,
+                            lastUnreadMessage = null
                         )
                     )
                 )
@@ -455,7 +459,8 @@ class CallRepositoryTest {
                         ConversationDetails.Group(
                             groupConversation,
                             LegalHoldStatus.ENABLED,
-                            unreadMessagesCount = 0
+                            unreadMessagesCount = 0,
+                            lastUnreadMessage = null
                         )
                     )
                 )
@@ -1285,7 +1290,8 @@ class CallRepositoryTest {
             connectionState = ConnectionState.ACCEPTED,
             legalHoldStatus = LegalHoldStatus.ENABLED,
             userType = UserType.INTERNAL,
-            unreadMessagesCount = 0
+            unreadMessagesCount = 0,
+            lastUnreadMessage = null
         )
     }
 }

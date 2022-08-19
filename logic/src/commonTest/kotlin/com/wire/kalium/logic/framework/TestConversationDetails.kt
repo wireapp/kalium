@@ -26,7 +26,8 @@ object TestConversationDetails {
         ConnectionState.ACCEPTED,
         LegalHoldStatus.DISABLED,
         UserType.EXTERNAL,
-        unreadMessagesCount = 0
+        unreadMessagesCount = 0,
+        lastUnreadMessage = null
     )
 
 }
