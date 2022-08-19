@@ -1200,7 +1200,9 @@ class ConversationRepositoryTest {
         val isMember = true
 
         // given
-        val (_, conversationRepository) = Arrangement().withExpectedIsUserMemberFlow(flowOf(isMember)).arrange()
+        val (arrangement, conversationRepository) = Arrangement()
+            .withExpectedIsUserMemberFlow(flowOf(isMember))
+            .arrange()
 
         // when
         conversationRepository.observeIsUserMember(TestConversation.ID, TestConversation.USER_1).test {
@@ -1209,24 +1211,23 @@ class ConversationRepositoryTest {
 
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
+
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::observeIsUserMember)
+                .with(eq(TestConversation.ID), eq(TestConversation.USER_1))
+                .wasInvoked(exactly = once)
+
             awaitComplete()
         }
-
-//             with(arrange) {
-//                 result.shouldSucceed {}
-//                 verify(conversationDAO)
-//                     .suspendFunction(conversationDAO::observeIsUserMember)
-//                     .with(anything(), anything())
-//                     .wasInvoked(once)
-//             }
-//             awaitComplete()
 
     }
 
     @Test
     fun givenAMemberIsNotInAConversation_WhenCheckingIfItIsMember_ThenShouldSucceed() = runTest {
         val isMember = false
-        val (arrange, conversationRepository) = Arrangement().withExpectedIsUserMemberFlow(flowOf(isMember)).arrange()
+        val (arrangement, conversationRepository) = Arrangement()
+            .withExpectedIsUserMemberFlow(flowOf(isMember))
+            .arrange()
 
         // when
         conversationRepository.observeIsUserMember(TestConversation.ID, TestConversation.USER_1).test {
@@ -1235,6 +1236,12 @@ class ConversationRepositoryTest {
 
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
+
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::observeIsUserMember)
+                .with(eq(TestConversation.ID), eq(TestConversation.USER_1))
+                .wasInvoked(exactly = once)
+
             awaitComplete()
         }
     }

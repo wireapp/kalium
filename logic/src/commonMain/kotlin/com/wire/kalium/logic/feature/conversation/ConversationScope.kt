@@ -22,6 +22,7 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
+import com.wire.kalium.logic.feature.user.GetSelfUserUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")
@@ -39,8 +40,6 @@ class ConversationScope internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) {
-
-    val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCase(userRepository)
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
         get() = GetSelfTeamUseCaseImpl(
@@ -69,8 +68,8 @@ class ConversationScope internal constructor(
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
 
-    val observeIsSelfConversationMemberUseCase: ObserveIsSelfConversationMemberUseCase
-        get() = ObserveIsSelfConversationMemberUseCase(conversationRepository, getSelfUser)
+    val observeIsSelfUserMemberUseCase: ObserveIsSelfUserMemberUseCase
+        get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
         get() = DeleteTeamConversationUseCaseImpl(getSelfTeamUseCase, teamRepository)

@@ -10,7 +10,13 @@ import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectIndexed
+import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -23,7 +29,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.DurationUnit
+import kotlin.time.ExperimentalTime
+import kotlin.time.toDuration
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationDAOTest : BaseDatabaseTest() {
@@ -674,43 +684,39 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenAGroupWithSeveralMembers_whenInvokingIsUserMember_itReturnsACorrectValue() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity1)
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
         conversationDAO.insertMember(member1, conversationEntity1.id)
         conversationDAO.insertMember(member2, conversationEntity1.id)
         conversationDAO.insertMember(member3, conversationEntity1.id)
         conversationDAO.deleteMemberByQualifiedID(member2.user, conversationEntity1.id)
-        conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
-        userDAO.insertUser(user3)
 
         // When
-        val isMember = conversationDAO.isUserMember(
-            conversationEntity1.id, user3.id
-        )
+        conversationDAO.observeIsUserMember(conversationEntity1.id, user3.id).test {
+            // then
+            assertEquals(true, awaitItem())
+        }
 
-        assertTrue(isMember)
     }
 
     @Test
     fun givenAGroupWithSeveralMembers_whenRemovingOneAndInvokingIsUserMember_itReturnsAFalseValue() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertMember(member1, conversationEntity1.id)
-        conversationDAO.insertMember(member2, conversationEntity1.id)
-        conversationDAO.insertMember(member3, conversationEntity1.id)
-        conversationDAO.deleteMemberByQualifiedID(member2.user, conversationEntity1.id)
-        conversationDAO.insertConversation(conversationEntity1)
         userDAO.insertUser(user1)
         userDAO.insertUser(user2)
         userDAO.insertUser(user3)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
         conversationDAO.deleteMemberByQualifiedID(member3.user, conversationEntity1.id)
 
-        // When
-        val isMember = conversationDAO.isUserMember(
-            conversationEntity1.id, user3.id
-        )
+        // when
+        val isMember = conversationDAO.observeIsUserMember(conversationEntity1.id, user3.id).first()
 
-        assertFalse(isMember)
+        // then
+        assertEquals(false, isMember)
     }
 
     private companion object {
