@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -175,6 +177,9 @@ abstract class UserSessionScopeCommon(
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
+
+    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
+        get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
@@ -490,7 +495,8 @@ abstract class UserSessionScopeCommon(
             keyPackageRepository,
             keyPackageLimitsProvider,
             mlsClientProvider,
-            notificationTokenRepository
+            notificationTokenRepository,
+            clientRemoteRepository
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -504,7 +510,8 @@ abstract class UserSessionScopeCommon(
             messageSender,
             teamRepository,
             userId,
-            persistMessage
+            persistMessage,
+            updateKeyingMaterialThresholdProvider
         )
     val messages: MessageScope
         get() = MessageScope(
