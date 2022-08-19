@@ -152,7 +152,7 @@ public class KaliumKtorCustomLogging private constructor(
     }
 
     private fun Logger.logHeader(key: String, value: String) {
-        if (obfuscateJsonKeys.contains(key.lowercase())) {
+        if (sensitiveJsonKeys.contains(key.lowercase())) {
             kaliumLogger.v("-> $key: *******")
         } else {
             kaliumLogger.v("-> $key: $value")
@@ -250,15 +250,15 @@ public class KaliumKtorCustomLogging private constructor(
 }
 
 @Suppress("TooGenericExceptionCaught")
-private fun obfuscateAndLogMessage(text: String): String {
-    return try {
+private fun obfuscateAndLogMessage(text: String) {
+     try {
         val obj = (Json.decodeFromString(text) as JsonElement)
         if (obj.jsonArray.size > 0) {
             obj.jsonArray.map {
-                obfuscateJsonElement(it)
+                logObfuscatedJsonElement(it)
             }
         } else {
-            obfuscateJsonElement(obj)
+            logObfuscatedJsonElement(obj)
         }
         obj.toString()
     } catch (e: Exception) {
@@ -266,17 +266,17 @@ private fun obfuscateAndLogMessage(text: String): String {
     }
 }
 
-fun obfuscateJsonElement(obj: JsonElement) {
+fun logObfuscatedJsonElement(obj: JsonElement) {
     obj.jsonObject.entries.toMutableSet().map {
         when {
-            obfuscateJsonKeys.contains(it.key.lowercase()) -> {
+            sensitiveJsonKeys.contains(it.key.lowercase()) -> {
                 kaliumLogger.v("${it.key} : ******")
             }
-            obfuscateJsonIdKeys.contains(it.key.lowercase()) -> {
+            sensitiveJsonIdKeys.contains(it.key.lowercase()) -> {
                 kaliumLogger.v("${it.key} : ${it.value.toString().substring(START_INDEX, END_INDEX)}")
             }
-            obfuscateObjects.contains(it.key.lowercase()) -> {
-                obfuscateJsonElement(it.value)
+            sensitiveJsonObjects.contains(it.key.lowercase()) -> {
+                logObfuscatedJsonElement(it.value)
             }
             else -> {
                 kaliumLogger.e("${it.key} : ${it.value}")
@@ -286,9 +286,9 @@ fun obfuscateJsonElement(obj: JsonElement) {
 
 }
 
-private val obfuscateJsonKeys by lazy { listOf("password", "authorization") }
-private val obfuscateJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
-private val obfuscateObjects by lazy { listOf("qualified_id") }
+private val sensitiveJsonKeys by lazy { listOf("password", "authorization") }
+private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
+private val sensitiveJsonObjects by lazy { listOf("qualified_id") }
 private const val START_INDEX = 0
 private const val END_INDEX = 9
 
