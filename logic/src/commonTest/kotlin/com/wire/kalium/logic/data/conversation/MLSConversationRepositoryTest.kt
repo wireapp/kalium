@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.cryptography.AddMemberCommitBundle
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
@@ -44,6 +45,7 @@ class MLSConversationRepositoryTest {
             .withCreateMLSConversationSuccessful()
             .withSendWelcomeMessageSuccessful()
             .withSendMLSMessageSuccessful()
+            .withCommitAcceptedSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .arrange()
 
@@ -59,6 +61,11 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.HANDSHAKE)) }
+            .wasInvoked(once)
+
+        verify(Arrangement.MLS_CLIENT)
+            .function(Arrangement.MLS_CLIENT::commitAccepted)
+            .with(eq(Arrangement.GROUP_ID))
             .wasInvoked(once)
     }
 
@@ -108,6 +115,7 @@ class MLSConversationRepositoryTest {
             .withAddMLSMemberSuccessful()
             .withSendWelcomeMessageSuccessful()
             .withSendMLSMessageSuccessful()
+            .withCommitAcceptedSuccessful()
             .withInsertMemberSuccessful()
             .arrange()
 
@@ -123,6 +131,11 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.HANDSHAKE)) }
+            .wasInvoked(once)
+
+        verify(Arrangement.MLS_CLIENT)
+            .function(Arrangement.MLS_CLIENT::commitAccepted)
+            .with(eq(Arrangement.GROUP_ID))
             .wasInvoked(once)
 
         verify(arrangement.conversationDAO)
@@ -214,14 +227,14 @@ class MLSConversationRepositoryTest {
             given(MLS_CLIENT)
                 .function(MLS_CLIENT::createConversation)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Pair(HANDSHAKE, WELCOME))
+                .thenReturn(ADD_MEMBER_COMMIT_BUNDLE)
         }
 
         fun withAddMLSMemberSuccessful() = apply {
             given(MLS_CLIENT)
                 .function(MLS_CLIENT::addMember)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Pair(HANDSHAKE, WELCOME))
+                .thenReturn(ADD_MEMBER_COMMIT_BUNDLE)
         }
 
         fun withJoinConversationSuccessful() = apply {
@@ -236,6 +249,13 @@ class MLSConversationRepositoryTest {
                 .function(MLS_CLIENT::processWelcomeMessage)
                 .whenInvokedWith(anything())
                 .thenReturn(GROUP_ID)
+        }
+
+        fun withCommitAcceptedSuccessful() = apply {
+            given(MLS_CLIENT)
+                .function(MLS_CLIENT::commitAccepted)
+                .whenInvokedWith(anything())
+                .thenReturn(Unit)
         }
 
         fun withSendWelcomeMessageSuccessful() = apply {
@@ -282,6 +302,9 @@ fun withUpdateConversationGroupStateSuccessful() = apply {
             val MLS_CLIENT = mock(classOf<MLSClient>())
             val WELCOME = "welcome".encodeToByteArray()
             val HANDSHAKE = "handshake".encodeToByteArray()
+            val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
+            val COMMIT_BUNDLE = AddMemberCommitBundle(HANDSHAKE, WELCOME, PUBLIC_GROUP_STATE)
+            val ADD_MEMBER_COMMIT_BUNDLE = AddMemberCommitBundle(HANDSHAKE, WELCOME, PUBLIC_GROUP_STATE)
             val WELCOME_EVENT = Event.Conversation.MLSWelcome(
                 "eventId",
                 TestConversation.ID,

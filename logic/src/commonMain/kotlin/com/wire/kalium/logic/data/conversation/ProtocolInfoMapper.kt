@@ -15,7 +15,8 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
                 protocolInfo.groupId,
                 Conversation.ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
-                protocolInfo.keyingMaterialLastUpdate
+                protocolInfo.keyingMaterialLastUpdate,
+                Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
             )
         }
 
@@ -26,7 +27,8 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
                 protocolInfo.groupId,
                 ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
-                protocolInfo.keyingMaterialLastUpdate
+                protocolInfo.keyingMaterialLastUpdate,
+                ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
             )
         }
 }

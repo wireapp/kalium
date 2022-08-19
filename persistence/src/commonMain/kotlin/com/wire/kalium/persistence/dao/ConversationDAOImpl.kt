@@ -6,6 +6,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.dao.message.MessageMapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -28,7 +29,8 @@ private class ConversationMapper {
                     mls_group_id ?: "",
                     mls_group_state,
                     mls_epoch.toULong(),
-                    Instant.fromEpochSeconds(mls_last_keying_material_update)
+                    Instant.fromEpochSeconds(mls_last_keying_material_update),
+                    mls_cipher_suite
                 )
 
                 ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
@@ -53,6 +55,7 @@ class MemberMapper {
 
 private const val MLS_DEFAULT_EPOCH = 0L
 private const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
+private val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 
 class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
@@ -62,6 +65,7 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
+    private val messageMapper = MessageMapper()
 
     // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
     override suspend fun getSelfConversationId() =
@@ -97,7 +101,6 @@ class ConversationDAOImpl(
                 else ConversationEntity.Protocol.PROTEUS,
                 mutedStatus,
                 mutedTime,
-                removedBy,
                 creatorId,
                 lastModifiedDate,
                 lastNotificationDate,
@@ -106,6 +109,8 @@ class ConversationDAOImpl(
                 lastReadDate,
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate.epochSeconds
                 else MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
+                else MLS_DEFAULT_CIPHER_SUITE
             )
         }
     }
@@ -192,7 +197,7 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun insertMembers(memberList: List<Member>, conversationID: QualifiedIDEntity) {
+    override suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             for (member: Member in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
@@ -203,7 +208,7 @@ class ConversationDAOImpl(
 
     override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
         getConversationByGroupID(groupId).firstOrNull()?.let {
-            insertMembers(memberList, it.id)
+            insertMembersWithQualifiedId(memberList, it.id)
         }
     }
 
@@ -270,9 +275,6 @@ class ConversationDAOImpl(
         conversationQueries.updateAccess(accessList, accessRoleList, conversationID)
     }
 
-    override suspend fun getUnreadMessageCount(conversationID: QualifiedIDEntity): Long =
-        conversationQueries.getUnreadMessageCount(conversationID).executeAsOne()
-
     override suspend fun getUnreadConversationCount(): Long =
         conversationQueries.getUnreadConversationCount().executeAsOne()
 
@@ -293,4 +295,11 @@ class ConversationDAOImpl(
             ConversationEntity.Protocol.MLS,
             Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
+
+    override suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean =
+        conversationQueries.isUserMember(conversationId, userId).executeAsOneOrNull() != null
+
+    override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
+        conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
+
 }

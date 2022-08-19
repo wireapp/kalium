@@ -12,7 +12,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.sync.SyncManager
 import kotlinx.datetime.Clock
 
-class CreateGroupConversationUseCase(
+class CreateGroupConversationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val syncManager: SyncManager,
     private val clientRepository: ClientRepository

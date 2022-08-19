@@ -9,6 +9,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -34,8 +36,8 @@ import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -67,7 +69,7 @@ interface ConversationRepository {
     suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>>
     suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMember(userID: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
     suspend fun createGroupConversation(
@@ -100,6 +102,8 @@ interface ConversationRepository {
 
     suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun isUserMember(conversationId: ConversationId, userId: UserId): Either<CoreFailure, Boolean>
+    suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -108,6 +112,7 @@ class ConversationDataSource(
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
+    private val messageDAO: MessageDAO,
     private val clientApi: ClientApi,
     private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
@@ -115,6 +120,7 @@ class ConversationDataSource(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper()
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -194,7 +200,7 @@ class ConversationDataSource(
         }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
-            conversationDAO.insertMembers(
+            conversationDAO.insertMembersWithQualifiedId(
                 memberMapper.fromApiModelToDaoModel(conversationsResponse.members), idMapper.fromApiToDao(conversationsResponse.id)
             )
         }
@@ -267,13 +273,24 @@ class ConversationDataSource(
                     ConversationDetails.Group(
                         conversation = conversation,
                         legalHoldStatus = LegalHoldStatus.DISABLED,
-                        unreadMessagesCount = getUnreadMessageCount(conversation)
+                        unreadMessagesCount = getUnreadMessageCount(conversation),
+                        lastUnreadMessage = getLastUnreadMessage(conversation),
                     )
                 )
             )
 
             Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
         }
+
+    private suspend fun getLastUnreadMessage(conversation: Conversation): Message? {
+        return messageDAO.getLastUnreadMessage(
+            idMapper.toDaoModel(
+                conversation.id
+            )
+        )?.let {
+            messageMapper.fromEntityToMessage(it)
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
@@ -295,7 +312,8 @@ class ConversationDataSource(
                                     conversation = conversation,
                                     otherUser = otherUser,
                                     selfUser = selfUser,
-                                    unreadMessageCount = getUnreadMessageCount(conversation)
+                                    unreadMessageCount = getUnreadMessageCount(conversation),
+                                    lastUnreadMessage = getLastUnreadMessage(conversation)
                                 )
                             }
                         }
@@ -305,7 +323,7 @@ class ConversationDataSource(
 
     private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
         return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
-            conversationDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+            messageDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
             0
         }
@@ -366,7 +384,7 @@ class ConversationDataSource(
     override suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet()).flatMap {
             wrapStorageRequest {
-                conversationDAO.insertMembers(
+                conversationDAO.insertMembersWithQualifiedId(
                     members.map(memberMapper::toDaoModel), idMapper.toDaoModel(conversationID)
                 )
             }
@@ -389,26 +407,30 @@ class ConversationDataSource(
         }
     }
 
-    override suspend fun deleteMember(userID: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun deleteMember(
+        userId: UserId,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> =
         detailsById(conversationId).flatMap { conversation ->
             when (conversation.protocol) {
                 is Conversation.ProtocolInfo.Proteus ->
                     wrapApiRequest {
-                        conversationApi.removeMember(idMapper.toApiModel(userID), idMapper.toApiModel(conversationId))
+                        conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
                     }.fold({
                         Either.Left(it)
                     }, {
                         wrapStorageRequest {
                             conversationDAO.deleteMemberByQualifiedID(
-                                idMapper.toDaoModel(userID),
+                                idMapper.toDaoModel(userId),
                                 idMapper.toDaoModel(conversationId)
                             )
                         }
-                    }
-                    )
+                    })
 
-                is Conversation.ProtocolInfo.MLS ->
-                    mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userID))
+                is Conversation.ProtocolInfo.MLS -> {
+                    // TODO: Should we also map manually the api response and trigger the member-leave system message on MLS?
+                    mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userId))
+                }
             }
         }
 
@@ -439,14 +461,14 @@ class ConversationDataSource(
                 conversationDAO.insertConversation(conversationEntity)
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
-                    is Proteus -> persistMembersFromConversationResponse(conversationResponse)
+                    is ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
                     is ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(
                         conversationResponse, usersList
                     )
                 }
             }.flatMap {
                 when (conversationEntity.protocolInfo) {
-                    is Proteus -> Either.Right(conversation)
+                    is ProtocolInfo.Proteus -> Either.Right(conversation)
                     is ProtocolInfo.MLS ->
                         mlsConversationRepository
                             .establishMLSGroup((conversationEntity.protocolInfo as ProtocolInfo.MLS).groupId)
@@ -519,7 +541,7 @@ class ConversationDataSource(
     private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
-            conversationDAO.insertMembers(memberMapper.fromApiModelToDaoModel(conversationResponse.members), conversationId)
+            conversationDAO.insertMembersWithQualifiedId(memberMapper.fromApiModelToDaoModel(conversationResponse.members), conversationId)
         }
     }
 
@@ -539,7 +561,7 @@ class ConversationDataSource(
             //  ---> at the moment the backend doesn't tell us anything about the member role! till then we are setting them as Member
             val membersWithRole = users.map { userId -> Member(userId, Member.Role.Member) }
             val selfMember = Member(selfUserId, Member.Role.Admin)
-            conversationDAO.insertMembers((membersWithRole + selfMember).map(memberMapper::toDaoModel), conversationId)
+            conversationDAO.insertMembersWithQualifiedId((membersWithRole + selfMember).map(memberMapper::toDaoModel), conversationId)
         }
     }
 
@@ -607,6 +629,22 @@ class ConversationDataSource(
 
     override suspend fun deleteConversation(conversationId: ConversationId) = wrapStorageRequest {
         conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
+    }
+
+    override suspend fun isUserMember(conversationId: ConversationId, userId: UserId): Either<CoreFailure, Boolean> = wrapStorageRequest {
+        conversationDAO.isUserMember(
+            idMapper.toDaoModel(conversationId),
+            idMapper.toDaoModel(userId)
+        )
+    }
+
+    override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {
+        val selfUserId = userRepository.observeSelfUser().first().id
+
+        conversationDAO.whoDeletedMeInConversation(
+            idMapper.toDaoModel(conversationId),
+            idMapper.toStringDaoModel(selfUserId)
+        )?.let { idMapper.fromDaoModel(it) }
     }
 
     companion object {

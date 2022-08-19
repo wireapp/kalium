@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -126,6 +128,8 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -174,6 +178,9 @@ abstract class UserSessionScopeCommon(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
 
+    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
+        get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
+
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
@@ -199,6 +206,7 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
+            userDatabaseProvider.messageDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             timeParser
         )
@@ -428,8 +436,6 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getMediaManager()
     }
 
-    private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
-
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
@@ -440,7 +446,9 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userRepository,
             callManager,
-            messageTextEditHandler,
+            MessageTextEditHandler(messageRepository),
+            LastReadContentHandler(conversationRepository, userRepository),
+            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
             userConfigRepository,
             EphemeralNotificationsManager
         )
@@ -498,7 +506,11 @@ abstract class UserSessionScopeCommon(
             syncManager,
             mlsConversationRepository,
             clientRepository,
-            teamRepository
+            messageSender,
+            teamRepository,
+            userId,
+            persistMessage,
+            updateKeyingMaterialThresholdProvider
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -565,6 +577,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             flowManagerService,
             mediaManagerService,
+            syncManager
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
