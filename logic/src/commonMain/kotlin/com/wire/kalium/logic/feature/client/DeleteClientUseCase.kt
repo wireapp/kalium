@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
 
@@ -27,6 +28,7 @@ class DeleteClientUseCaseImpl(private val clientRepository: ClientRepository) : 
             when {
                 failure.kaliumException.isInvalidCredentials() -> DeleteClientResult.Failure.InvalidCredentials
                 failure.kaliumException.isMissingAuth() -> DeleteClientResult.Failure.PasswordAuthRequired
+                failure.kaliumException.isBadRequest() -> DeleteClientResult.Failure.InvalidCredentials
                 else -> DeleteClientResult.Failure.Generic(failure)
             }
         else {

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
@@ -36,7 +37,8 @@ interface ConversationMapper {
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
-        unreadMessageCount: Long
+        unreadMessageCount: Long,
+        lastUnreadMessage: Message?
     ): ConversationDetails.OneOne
 }
 
@@ -140,6 +142,7 @@ internal class ConversationMapperImpl(
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        lastUnreadMessage: Message?
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
@@ -149,6 +152,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = LegalHoldStatus.DISABLED,
             userType = otherUser.userType,
             unreadMessagesCount = unreadMessageCount,
+            lastUnreadMessage = lastUnreadMessage
         )
     }
 
@@ -178,7 +182,8 @@ internal class ConversationMapperImpl(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
-                keyingMaterialLastUpdate = Clock.System.now()
+                keyingMaterialLastUpdate = Clock.System.now(),
+                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus

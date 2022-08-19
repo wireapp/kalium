@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
@@ -63,19 +64,43 @@ data class Conversation(
         CODE;
     }
 
+    @Suppress("MagicNumber")
+    enum class CipherSuite(val cipherSuiteTag: Int) {
+        UNKNOWN(0),
+        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
+        MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
+        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3),
+        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
+        MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
+        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
+
+        companion object {
+            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.cipherSuiteTag == tag }
+        }
+    }
+
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
     sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo()
+        object Proteus : ProtocolInfo() {
+            override fun name() = "Proteus"
+        }
+
         data class MLS(
             val groupId: String,
             val groupState: GroupState,
             val epoch: ULong,
-            val keyingMaterialLastUpdate: Instant
+            val keyingMaterialLastUpdate: Instant,
+            val cipherSuite: CipherSuite
         ) : ProtocolInfo() {
             enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+
+            override fun name() = "MLS"
         }
+
+        abstract fun name(): String
     }
 }
 
@@ -90,6 +115,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
         val unreadMessagesCount: Long,
+        val lastUnreadMessage: Message?
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -97,6 +123,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val legalHoldStatus: LegalHoldStatus,
         val hasOngoingCall: Boolean = false,
         val unreadMessagesCount: Long,
+        val lastUnreadMessage: Message?
     ) : ConversationDetails(conversation)
 
     data class Connection(

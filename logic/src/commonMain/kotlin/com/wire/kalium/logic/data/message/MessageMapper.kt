@@ -172,6 +172,7 @@ class MessageMapperImpl(
         is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
         is MessageContent.Empty -> MessageEntityContent.Unknown()
+        is MessageContent.LastRead -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {

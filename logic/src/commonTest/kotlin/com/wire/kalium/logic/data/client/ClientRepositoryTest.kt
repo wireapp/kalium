@@ -4,21 +4,26 @@ import app.cash.turbine.test
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.api.user.client.DeviceTypeDTO
+import com.wire.kalium.network.api.user.client.OtherUserClientsItem
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
-import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.mockative.Mock
 import io.mockative.any
@@ -222,7 +227,6 @@ class ClientRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     // selfListOfClients
     @Test
     fun whenSelfListOfClientsIsReturnSuccess_thenTheSuccessIsPropagated() = runTest {
@@ -264,7 +268,6 @@ class ClientRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun whenSelfListOfClientsIsFail_thenTheErrorIsPropagated() = runTest {
         val expected: Either.Left<NetworkFailure> = Either.Left(TEST_FAILURE)
@@ -276,12 +279,12 @@ class ClientRepositoryTest {
         verify(clientRemoteRepository).coroutine { clientRepository.selfListOfClients() }.wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenValidParams_whenPushToken_thenShouldSucceed() = runTest {
         given(clientRemoteRepository).coroutine {
-            registerToken(pushTokenRequestBody) }
-            .then { Either.Right(Unit)}
+            registerToken(pushTokenRequestBody)
+        }
+            .then { Either.Right(Unit) }
 
         given(clientApi)
             .suspendFunction(clientApi::registerToken)
@@ -326,6 +329,78 @@ class ClientRepositoryTest {
         }
     }
 
+    @Test
+    fun whenOtherUsersClientsSuccess_thenTheSuccessIsReturned() = runTest {
+        // Given
+        val userId = UserId("123", "wire.com")
+        val otherUsersClients = listOf(
+            OtherUserClientsItem(DeviceTypeDTO.Phone, "1111"), OtherUserClientsItem(DeviceTypeDTO.Desktop, "2222")
+        )
+
+        val expectedSuccess = Either.Right(otherUsersClients)
+        val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(otherUsersClients).arrange()
+
+        // When
+        val result = clientRepository.fetchOtherUserClients(userId)
+
+        // Then
+        result.shouldSucceed { expectedSuccess.value }
+        verify(arrangement.clientApi)
+            .suspendFunction(arrangement.clientApi::otherUserClients).with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun whenOtherUsersClientsError_thenTheErrorIsPropagated() = runTest {
+        // Given
+        val userId = UserId("123", "wire.com")
+        val notFound = TestNetworkException.noTeam
+        val (arrangement, clientRepository) = Arrangement()
+            .withErrorResponse(notFound).arrange()
+
+        // When
+        val result = clientRepository.fetchOtherUserClients(userId)
+
+        // Then
+        result.shouldFail { Either.Left(notFound).value }
+
+        verify(arrangement.clientApi)
+            .suspendFunction(arrangement.clientApi::otherUserClients).with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val clientApi: ClientApi = mock(classOf<ClientApi>())
+
+        @Mock
+        val clientConfigImpl: ClientConfig = mock(classOf<ClientConfig>())
+
+        var clientRepository = ClientRemoteDataSource(clientApi, clientConfigImpl)
+
+        fun withSuccessfulResponse(expectedResponse: List<OtherUserClientsItem>): Arrangement {
+            given(clientApi)
+                .suspendFunction(clientApi::otherUserClients).whenInvokedWith(any()).then {
+                    NetworkResponse.Success(expectedResponse, mapOf(), 200)
+                }
+            return this
+        }
+
+        fun withErrorResponse(kaliumException: KaliumException): Arrangement {
+            given(clientApi)
+                .suspendFunction(clientApi::otherUserClients)
+                .whenInvokedWith(any())
+                .then {
+                    NetworkResponse.Error(
+                        kaliumException
+                    )
+                }
+            return this
+        }
+
+        fun arrange() = this to clientRepository
+    }
 
     private companion object {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam(
@@ -344,7 +419,5 @@ class ClientRepositoryTest {
             senderId = "7239",
             client = "cliId", token = "7239", transport = "GCM"
         )
-
     }
 }
-

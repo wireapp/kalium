@@ -5,7 +5,8 @@ import kotlinx.coroutines.flow.Flow
 
 data class Client(
     val userId: QualifiedIDEntity,
-    val id: String
+    val id: String,
+    val deviceType: String?
 )
 
 interface ClientDAO {
