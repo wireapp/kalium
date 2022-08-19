@@ -7,7 +7,8 @@ import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
+import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -34,9 +35,9 @@ import kotlinx.coroutines.flow.map
 interface MLSConversationRepository {
 
     suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit>
-    suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
+    suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
-    suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?>
+    suspend fun messageFromMLSMessage(messageEvent: NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
@@ -58,7 +59,7 @@ class MLSConversationDataSource(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : MLSConversationRepository {
 
-    override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?> =
+    override suspend fun messageFromMLSMessage(messageEvent: NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
                 conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
@@ -76,7 +77,7 @@ class MLSConversationDataSource(
             }
         }
 
-    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> =
+    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { client ->
             val groupID = client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes())
 

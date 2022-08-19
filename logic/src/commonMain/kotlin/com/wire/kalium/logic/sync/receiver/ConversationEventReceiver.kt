@@ -46,16 +46,12 @@ import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
-import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration.Companion.seconds
 
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
@@ -357,7 +353,7 @@ internal class ConversationEventReceiverImpl(
             }
     }
 
-    private suspend fun handlePendingProposal(event: Event.Conversation.NewMLSMessage, commitDelay: Long ) {
+    private suspend fun handlePendingProposal(event: Event.Conversation.NewMLSMessage, commitDelay: Long) {
         pendingProposalScheduler.scheduleCommit(
             "event.conversationId",
             event.timestampIso.toInstant().plus(commitDelay.seconds)

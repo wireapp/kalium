@@ -45,6 +45,7 @@ interface ConversationMapper {
     ): ConversationDetails.OneOne
 }
 
+@Suppress("TooManyFunctions")
 internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,

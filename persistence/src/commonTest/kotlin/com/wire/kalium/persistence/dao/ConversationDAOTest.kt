@@ -648,6 +648,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(listOf(proposalTimer2, proposalTimer3), conversationDAO.getProposalTimers().first())
     }
 
+    @Test
     fun givenSeveralRemoveMemberMessages_whenCallingWhoRemovedMe_itReturnsTheCorrectValue() = runTest {
         // Given
         val mySelfMember = member2
@@ -857,7 +858,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val member1 = Member(user1.id, Member.Role.Admin)
         val member2 = Member(user2.id, Member.Role.Member)
         val member3 = Member(user3.id, Member.Role.Admin)
-        val proposalTimer2 = ProposalTimerEntity((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, Instant.DISTANT_FUTURE)
-        val proposalTimer3 = ProposalTimerEntity((conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, Instant.DISTANT_FUTURE)
+        val proposalTimer2 = ProposalTimerEntity(
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+            Instant.DISTANT_FUTURE
+        )
+        val proposalTimer3 = ProposalTimerEntity(
+            (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+            Instant.DISTANT_FUTURE
+        )
     }
 }
