@@ -35,6 +35,8 @@ import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.Base64
@@ -111,6 +113,7 @@ class ConversationEventReceiverTest {
             .withSelfUserIdReturning(TestUser.USER_ID)
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
             .withPersistingMessageReturning(Either.Right(Unit))
+            .withConversationUpdateConversationReadDate(Either.Right(Unit))
             .withProtoContentMapperReturning(matching { it.data.contentEquals(emptyArray) }, externalInstructions)
             .withProtoContentMapperReturning(
                 matching { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
@@ -322,6 +325,8 @@ class ConversationEventReceiverTest {
             userRepository,
             lazyOf(callManager),
             MessageTextEditHandler(messageRepository),
+            LastReadContentHandler(conversationRepository, userRepository),
+            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
             protoContentMapper = protoContentMapper,
             userConfigRepository = userConfigRepository,
             ephemeralNotificationsManager = ephemeralNotifications
@@ -358,6 +363,13 @@ class ConversationEventReceiverTest {
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateConversationModifiedDate)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
+        }
+
+        fun withConversationUpdateConversationReadDate(result: Either<StorageFailure, Unit>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationReadDate)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }

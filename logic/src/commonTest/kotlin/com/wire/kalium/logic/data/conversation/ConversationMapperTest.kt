@@ -182,7 +182,8 @@ class ConversationMapperTest {
                 ConversationAccessRoleDTO.GUEST,
                 ConversationAccessRoleDTO.TEAM_MEMBER,
                 ConversationAccessRoleDTO.NON_TEAM_MEMBER
-            )
+            ),
+            mlsCipherSuiteTag = null
         )
     }
 }
