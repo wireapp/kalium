@@ -14,7 +14,7 @@ fun interface UnblockUserUseCase {
     /**
      * Use case [UnblockUserUseCase] operation
      *
-     * @param userId the target user whom to block
+     * @param userId the target user whom to unblock
      * @return a [UnblockUserResult] indicating the operation result
      */
     suspend operator fun invoke(userId: UserId): UnblockUserResult
