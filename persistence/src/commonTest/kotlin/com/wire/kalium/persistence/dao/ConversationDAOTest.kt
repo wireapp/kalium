@@ -595,7 +595,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
 
     @Test
-<<<<<<< HEAD
     fun givenConversation_whenUpdatingProposalTimer_thenItIsUpdated() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity2)
@@ -647,7 +646,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // then
         assertEquals(listOf(proposalTimer2, proposalTimer3), conversationDAO.getProposalTimers().first())
-=======
+    }
+
     fun givenSeveralRemoveMemberMessages_whenCallingWhoRemovedMe_itReturnsTheCorrectValue() = runTest {
         // Given
         val mySelfMember = member2
@@ -764,7 +764,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
 
         assertFalse(isMember)
->>>>>>> develop
     }
 
     private companion object {
@@ -857,12 +856,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val member1 = Member(user1.id, Member.Role.Admin)
         val member2 = Member(user2.id, Member.Role.Member)
-<<<<<<< HEAD
-
+        val member3 = Member(user3.id, Member.Role.Admin)
         val proposalTimer2 = ProposalTimerEntity((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, Instant.DISTANT_FUTURE)
         val proposalTimer3 = ProposalTimerEntity((conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, Instant.DISTANT_FUTURE)
-=======
-        val member3 = Member(user3.id, Member.Role.Admin)
->>>>>>> develop
     }
 }
