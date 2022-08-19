@@ -3,6 +3,7 @@ package com.wire.kalium.network.api.asset
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
@@ -16,12 +17,14 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.cancel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.close
-import io.ktor.utils.io.core.isEmpty
+import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.core.toByteArray
-import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.read
+import okio.Buffer
 import okio.Sink
 import okio.Source
 import okio.buffer
@@ -66,16 +69,29 @@ class AssetApiImpl internal constructor(
             httpClient.prepareGet(buildAssetsPath(assetId)) {
                 assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
             }.execute { httpResponse ->
-                val channel: ByteReadChannel = httpResponse.body()
-                while (!channel.isClosedForRead) {
-                    val packet = channel.readRemaining()
-                    while (!packet.isEmpty) {
-                        tempFileSink.buffer().use {
-                            it.write(packet.readBytes())
+                val byteBufferSize = 1024 * 5
+                val channel = httpResponse.body<ByteReadChannel>()
+                tempFileSink.use { sink ->
+                    while (!channel.isClosedForRead) {
+                        val packet = channel.readRemaining(byteBufferSize.toLong(), 0)
+                        while (packet.isNotEmpty) {
+                            val (bytes, size) = packet.readBytes().let { byteArray ->
+                                Buffer().write(byteArray) to byteArray.size.toLong()
+                            }
+                            sink.write(bytes, size).also {
+                                kaliumLogger.d("writing $size to temp file")
+                                kaliumLogger.d("bytes buffer size ${bytes.size}")
+                                bytes.clear()
+                                sink.flush()
+                            }
                         }
                     }
+                    channel.cancel()
+                    sink.close().also {
+                        kaliumLogger.d("closing")
+                    }
                 }
-                NetworkResponse.Success(Unit, httpResponse)
+                NetworkResponse.Success(Unit, emptyMap(), 200)
             }
         } catch (exception: Exception) {
             NetworkResponse.Error(KaliumException.GenericError(exception))
