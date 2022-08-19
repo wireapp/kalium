@@ -69,6 +69,9 @@ class ConversationScope internal constructor(
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
 
+    val observeIsSelfConversationMemberUseCase: ObserveIsSelfConversationMemberUseCase
+        get() = ObserveIsSelfConversationMemberUseCase(conversationRepository, getSelfUser)
+
     val deleteTeamConversation: DeleteTeamConversationUseCase
         get() = DeleteTeamConversationUseCaseImpl(getSelfTeamUseCase, teamRepository)
 
