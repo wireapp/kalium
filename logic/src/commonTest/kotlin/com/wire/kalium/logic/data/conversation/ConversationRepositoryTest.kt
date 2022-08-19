@@ -1205,7 +1205,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         // when
-        conversationRepository.observeIsUserMember(TestConversation.ID, TestConversation.USER_1).test {
+        conversationRepository.observeIsUserMember(CONVERSATION_ID, USER_ID).test {
             // then
             val isMemberResponse = awaitItem()
 
@@ -1214,7 +1214,7 @@ class ConversationRepositoryTest {
 
             verify(arrangement.conversationDAO)
                 .suspendFunction(arrangement.conversationDAO::observeIsUserMember)
-                .with(eq(TestConversation.ID), eq(TestConversation.USER_1))
+                .with(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
                 .wasInvoked(exactly = once)
 
             awaitComplete()
@@ -1230,7 +1230,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         // when
-        conversationRepository.observeIsUserMember(TestConversation.ID, TestConversation.USER_1).test {
+        conversationRepository.observeIsUserMember(CONVERSATION_ID, USER_ID).test {
             // then
             val isMemberResponse = awaitItem()
 
@@ -1239,7 +1239,7 @@ class ConversationRepositoryTest {
 
             verify(arrangement.conversationDAO)
                 .suspendFunction(arrangement.conversationDAO::observeIsUserMember)
-                .with(eq(TestConversation.ID), eq(TestConversation.USER_1))
+                .with(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
                 .wasInvoked(exactly = once)
 
             awaitComplete()
@@ -1420,6 +1420,12 @@ class ConversationRepositoryTest {
             )
 
         const val GROUP_NAME = "Group Name"
+
+        val CONVERSATION_ID = TestConversation.ID
+        val USER_ID = TestUser.USER_ID
+
+        val CONVERSATION_ENTITY_ID = QualifiedIDEntity(CONVERSATION_ID.value, CONVERSATION_ID.domain)
+        val USER_ENTITY_ID = QualifiedIDEntity(USER_ID.value, USER_ID.domain)
 
         val CONVERSATION_IDS_DTO_ONE =
             ConversationIdDTO("someValue1", "someDomain1")
