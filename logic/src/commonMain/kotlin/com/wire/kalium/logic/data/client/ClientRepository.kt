@@ -5,10 +5,12 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
@@ -28,16 +30,18 @@ interface ClientRepository {
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
-    suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit>
+    suspend fun saveNewClients(userId: UserId, clients: List<ClientId>, deviceType: List<DeviceType>?): Either<CoreFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
+    suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClients>>
 }
 
 class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
-    private val userMapper: UserMapper = MapperProvider.userMapper()
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
@@ -77,13 +81,20 @@ class ClientDataSource(
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> =
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
 
-    override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<CoreFailure, Unit> =
+    override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>, deviceType: List<DeviceType>?): Either<CoreFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
-            clients.map { ClientEntity(userEntity, it.value) }.let { clientEntityList ->
+            clients.map { ClientEntity(userEntity, it.value, deviceType?.get(clients.indexOf(it))?.name) }.let { clientEntityList ->
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
         }
 
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
     override suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit> = clientRemoteRepository.deregisterToken(token)
+
+    override suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClients>> =
+        wrapStorageRequest {
+            clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(userId))
+        }.map { clientsList ->
+            userMapper.fromOtherUsersClientsDTO(clientsList)
+        }
 }

@@ -1,5 +1,6 @@
 package com.wire.kalium.cryptography
 
+@Suppress("TooManyFunctions")
 actual class MLSClientImpl actual constructor(
     rootDir: String,
     databaseKey: MlsDBSecret,
@@ -17,7 +18,11 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?> {
+    override fun validKeyPackageCount(): ULong {
+        TODO("Not yet implemented")
+    }
+
+    override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
         TODO("Not yet implemented")
     }
 
@@ -32,7 +37,11 @@ actual class MLSClientImpl actual constructor(
     override fun createConversation(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage>? {
+    ): AddMemberCommitBundle? {
+        TODO("Not yet implemented")
+    }
+
+    override fun wipeConversation(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
@@ -40,22 +49,27 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
+    override fun commitAccepted(groupId: MLSGroupId) {
+        TODO("Not yet implemented")
+    }
+
+    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle {
+        TODO("Not yet implemented")
+    }
+
     override fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
         TODO("Not yet implemented")
     }
 
-    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): PlainMessage? {
+    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
         TODO("Not yet implemented")
     }
 
-    override fun addMember(
-        groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage>? {
+    override fun addMember(groupId: MLSGroupId, members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): AddMemberCommitBundle? {
         TODO("Not yet implemented")
     }
 
-    override fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): HandshakeMessage? {
+    override fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): CommitBundle {
         TODO("Not yet implemented")
     }
 }
