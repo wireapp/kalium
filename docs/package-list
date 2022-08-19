@@ -65,6 +65,10 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newPreKeys/#kotli
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/open/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]open.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/path/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]path.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/wrapException/#kotlin.Function0[TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]wrap-exception.html
+$dokka.location:com.wire.kalium.logic.configuration/ClientConfigImpl/clientType/#/PointingToDeclaration/logic/com.wire.kalium.logic.configuration/-client-config-impl/[jvm]client-type.html
+$dokka.location:com.wire.kalium.logic.configuration/ClientConfigImpl/deviceModelName/#/PointingToDeclaration/logic/com.wire.kalium.logic.configuration/-client-config-impl/[jvm]device-model-name.html
+$dokka.location:com.wire.kalium.logic.configuration/ClientConfigImpl/deviceName/#/PointingToDeclaration/logic/com.wire.kalium.logic.configuration/-client-config-impl/[jvm]device-name.html
+$dokka.location:com.wire.kalium.logic.configuration/ClientConfigImpl/deviceType/#/PointingToDeclaration/logic/com.wire.kalium.logic.configuration/-client-config-impl/[jvm]device-type.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/copy/#okio.Path#okio.Path/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]copy.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/createDirectories/#okio.Path/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]create-directories.html
 $dokka.location:com.wire.kalium.logic.data.asset/KaliumFileSystemImpl/createDirectory/#okio.Path#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.data.asset/-kalium-file-system-impl/[jvm]create-directory.html
