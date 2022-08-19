@@ -9,13 +9,12 @@ data class RegisterClientParam(
     val preKeys: List<PreKeyCrypto>,
     val lastKey: PreKeyCrypto,
     val deviceType: DeviceType?,
-    //val type: ClientType,
     val label: String?,
     val capabilities: List<ClientCapability>?,
     val model: String?
 )
 
-data class DeleteClientParam (
+data class DeleteClientParam(
     val password: String?,
     val clientId: ClientId
 )
@@ -55,3 +54,8 @@ enum class DeviceType {
 enum class ClientCapability {
     LegalHoldImplicitConsent;
 }
+
+data class OtherUserClients(
+    val deviceType: DeviceType,
+    val id: String
+)

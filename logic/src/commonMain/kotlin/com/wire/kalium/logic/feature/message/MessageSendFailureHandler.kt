@@ -25,11 +25,11 @@ class MessageSendFailureHandlerImpl(
 ) : MessageSendFailureHandler {
 
     override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit> =
-        //TODO(optimization): add/remove members to/from conversation
+    //TODO(optimization): add/remove members to/from conversation
         //TODO(optimization): remove clients from conversation
         userRepository.fetchUsersByIds(sendFailure.missingClientsOfUsers.keys).flatMap {
             sendFailure.missingClientsOfUsers.entries.foldToEitherWhileRight(Unit) { entry, _ ->
-                clientRepository.saveNewClients(entry.key, entry.value)
+                clientRepository.saveNewClients(entry.key, entry.value, listOf())
             }
         }
 
