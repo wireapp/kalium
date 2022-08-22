@@ -2,15 +2,11 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 
 interface ObserveIsSelfUserMemberUseCase {
     /**

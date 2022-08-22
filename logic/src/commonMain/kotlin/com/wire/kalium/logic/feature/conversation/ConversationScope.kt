@@ -21,8 +21,6 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 
 @Suppress("LongParameterList")

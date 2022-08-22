@@ -2,13 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.user.UserRepositoryTest
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
