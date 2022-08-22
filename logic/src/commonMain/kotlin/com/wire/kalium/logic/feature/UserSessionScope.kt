@@ -90,6 +90,8 @@ import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
+import com.wire.kalium.logic.feature.message.PendingProposalScheduler
+import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
@@ -411,6 +413,12 @@ abstract class UserSessionScopeCommon(
             lazy { conversations.updateMLSGroupsKeyingMaterials }
         )
 
+    private val pendingProposalScheduler: PendingProposalScheduler =
+        PendingProposalSchedulerImpl(
+            incrementalSyncRepository,
+            lazy { mlsConversationRepository }
+        )
+
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
 
     val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper, globalPreferences)
@@ -450,7 +458,8 @@ abstract class UserSessionScopeCommon(
             LastReadContentHandler(conversationRepository, userRepository),
             DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
             userConfigRepository,
-            EphemeralNotificationsManager
+            EphemeralNotificationsManager,
+            pendingProposalScheduler
         )
     }
 

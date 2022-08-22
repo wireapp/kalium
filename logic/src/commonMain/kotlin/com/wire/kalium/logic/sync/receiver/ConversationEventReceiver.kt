@@ -33,6 +33,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
+import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -50,6 +51,8 @@ import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
+import kotlinx.datetime.toInstant
+import kotlin.time.Duration.Companion.seconds
 
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
@@ -70,6 +73,7 @@ internal class ConversationEventReceiverImpl(
     private val deleteForMeHandler: DeleteForMeHandler,
     private val userConfigRepository: UserConfigRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
+    private val pendingProposalScheduler: PendingProposalScheduler,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
 ) : ConversationEventReceiver {
@@ -314,19 +318,26 @@ internal class ConversationEventReceiverImpl(
             .onFailure {
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on MLS message: $it")
                 handleFailedMLSDecryptedMessage(event)
-            }.onSuccess { mlsMessage ->
-                val plainMessageBlob = mlsMessage?.let { PlainMessageBlob(it) } ?: return@onSuccess
-                val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)
-                if (protoContent !is ProtoContent.Readable) {
-                    throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
+            }.onSuccess { bundle ->
+                if (bundle == null) return@onSuccess
+
+                bundle.commitDelay?.let {
+                    handlePendingProposal(event, it)
                 }
-                handleContent(
-                    conversationId = event.conversationId,
-                    timestampIso = event.timestampIso,
-                    senderUserId = event.senderUserId,
-                    senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    content = protoContent
-                )
+
+                bundle.message?.let {
+                    val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(it))
+                    if (protoContent !is ProtoContent.Readable) {
+                        throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
+                    }
+                    handleContent(
+                        conversationId = event.conversationId,
+                        timestampIso = event.timestampIso,
+                        senderUserId = event.senderUserId,
+                        senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                        content = protoContent
+                    )
+                }
             }
 
     private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation): Either<CoreFailure, Unit> {
@@ -340,6 +351,13 @@ internal class ConversationEventReceiverImpl(
                 ephemeralNotificationsManager.scheduleNotification(dataNotification)
                 kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
             }
+    }
+
+    private suspend fun handlePendingProposal(event: Event.Conversation.NewMLSMessage, commitDelay: Long) {
+        pendingProposalScheduler.scheduleCommit(
+            "event.conversationId",
+            event.timestampIso.toInstant().plus(commitDelay.seconds)
+        )
     }
 
     private suspend fun processSignaling(senderUserId: UserId, signaling: MessageContent.Signaling) {
