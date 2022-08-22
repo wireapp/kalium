@@ -568,7 +568,7 @@ abstract class UserSessionScopeCommon(
             kaliumConfigs
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository)
 
     val calls: CallsScope
         get() = CallsScope(
