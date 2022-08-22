@@ -993,13 +993,13 @@ class ConversationRepositoryTest {
             .thenReturn(10L)
 
         given(messageDAO)
-                .suspendFunction(messageDAO::getLastUnreadMessage)
-                .whenInvokedWith(any())
-                .thenReturn(TEST_MESSAGE_ENTITY)
-            // when
-            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
-                // then
-                val conversationDetail = awaitItem()
+            .suspendFunction(messageDAO::getLastUnreadMessage)
+            .whenInvokedWith(any())
+            .thenReturn(TEST_MESSAGE_ENTITY)
+        // when
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            // then
+            val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
@@ -1022,19 +1022,19 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(conversationEntityFlow)
 
-            given(timeParser)
-                .function(timeParser::isTimeBefore)
-                .whenInvokedWith(any(), any())
-                .thenReturn(false)
+        given(timeParser)
+            .function(timeParser::isTimeBefore)
+            .whenInvokedWith(any(), any())
+            .thenReturn(false)
 
-            given(messageDAO)
-                .suspendFunction(messageDAO::getLastUnreadMessage)
-                .whenInvokedWith(any())
-                .thenReturn(TEST_MESSAGE_ENTITY)
-            // when
-            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
-                // then
-                val conversationDetail = awaitItem()
+        given(messageDAO)
+            .suspendFunction(messageDAO::getLastUnreadMessage)
+            .whenInvokedWith(any())
+            .thenReturn(TEST_MESSAGE_ENTITY)
+        // when
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            // then
+            val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
@@ -1082,18 +1082,18 @@ class ConversationRepositoryTest {
             .thenReturn(flowOf(TestUser.OTHER))
 
         given(messageDAO)
-                .suspendFunction(messageDAO::getLastUnreadMessage)
-                .whenInvokedWith(any())
-                .thenReturn(null)
+            .suspendFunction(messageDAO::getLastUnreadMessage)
+            .whenInvokedWith(any())
+            .thenReturn(null)
 
-            // when
-            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
-                // then
-                val conversationDetail = awaitItem()
+        // when
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            // then
+            val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
-                assertTrue { conversationDetail.value.lastUnreadMessage == null }
+            assertTrue { conversationDetail.value.lastUnreadMessage == null }
 
             awaitComplete()
         }
@@ -1143,18 +1143,18 @@ class ConversationRepositoryTest {
             .thenReturn(flowOf(TestUser.OTHER))
 
         given(messageDAO)
-                .suspendFunction(messageDAO::getLastUnreadMessage)
-                .whenInvokedWith(any())
-                .thenReturn(TEST_MESSAGE_ENTITY)
+            .suspendFunction(messageDAO::getLastUnreadMessage)
+            .whenInvokedWith(any())
+            .thenReturn(TEST_MESSAGE_ENTITY)
 
-            // when
-            conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
-                // then
-                val conversationDetail = awaitItem()
+        // when
+        conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
+            // then
+            val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
-                assertTrue(conversationDetail.value.lastUnreadMessage != null)
+            assertTrue(conversationDetail.value.lastUnreadMessage != null)
 
             awaitComplete()
         }
@@ -1198,36 +1198,51 @@ class ConversationRepositoryTest {
     @Test
     fun givenAMemberInAConversation_WhenCheckingIfItIsMember_ThenShouldSucceed() = runTest {
         val isMember = true
-        val conversationId = ConversationId("conv_id", "conv_domain")
-        val userId = UserId("dummy-value", "dummy-domain")
-        val (arrange, conversationRepository) = Arrangement().withExpectedIsUserMember(isMember).arrange()
 
-        val result = conversationRepository.isUserMember(conversationId, userId)
+        // given
+        val (arrangement, conversationRepository) = Arrangement()
+            .withExpectedIsUserMemberFlow(flowOf(isMember))
+            .arrange()
 
-        with(arrange) {
-            result.shouldSucceed {}
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::isUserMember)
-                .with(anything(), anything())
-                .wasInvoked(once)
+        // when
+        conversationRepository.observeIsUserMember(CONVERSATION_ID, USER_ID).test {
+            // then
+            val isMemberResponse = awaitItem()
+
+            assertIs<Either.Right<Boolean>>(isMemberResponse)
+            assertEquals(isMemberResponse.value, isMember)
+
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::observeIsUserMember)
+                .with(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
+                .wasInvoked(exactly = once)
+
+            awaitComplete()
         }
+
     }
 
     @Test
     fun givenAMemberIsNotInAConversation_WhenCheckingIfItIsMember_ThenShouldSucceed() = runTest {
         val isMember = false
-        val conversationId = ConversationId("conv_id", "conv_domain")
-        val userId = UserId("dummy-value", "dummy-domain")
-        val (arrange, conversationRepository) = Arrangement().withExpectedIsUserMember(isMember).arrange()
+        val (arrangement, conversationRepository) = Arrangement()
+            .withExpectedIsUserMemberFlow(flowOf(isMember))
+            .arrange()
 
-        val result = conversationRepository.isUserMember(conversationId, userId)
+        // when
+        conversationRepository.observeIsUserMember(CONVERSATION_ID, USER_ID).test {
+            // then
+            val isMemberResponse = awaitItem()
 
-        with(arrange) {
-            result.shouldSucceed {}
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::isUserMember)
-                .with(anything(), anything())
-                .wasInvoked(once)
+            assertIs<Either.Right<Boolean>>(isMemberResponse)
+            assertEquals(isMemberResponse.value, isMember)
+
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::observeIsUserMember)
+                .with(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
+                .wasInvoked(exactly = once)
+
+            awaitComplete()
         }
     }
 
@@ -1374,9 +1389,9 @@ class ConversationRepositoryTest {
                 .thenReturn(Unit)
         }
 
-        fun withExpectedIsUserMember(expectedIsUserMember: Boolean) = apply {
+        fun withExpectedIsUserMemberFlow(expectedIsUserMember: Flow<Boolean>) = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::isUserMember)
+                .suspendFunction(conversationDAO::observeIsUserMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(expectedIsUserMember)
         }
@@ -1405,6 +1420,12 @@ class ConversationRepositoryTest {
             )
 
         const val GROUP_NAME = "Group Name"
+
+        val CONVERSATION_ID = TestConversation.ID
+        val USER_ID = TestUser.USER_ID
+
+        val CONVERSATION_ENTITY_ID = QualifiedIDEntity(CONVERSATION_ID.value, CONVERSATION_ID.domain)
+        val USER_ENTITY_ID = QualifiedIDEntity(USER_ID.value, USER_ID.domain)
 
         val CONVERSATION_IDS_DTO_ONE =
             ConversationIdDTO("someValue1", "someDomain1")

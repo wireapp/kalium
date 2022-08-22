@@ -102,7 +102,7 @@ interface ConversationRepository {
 
     suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun isUserMember(conversationId: ConversationId, userId: UserId): Either<CoreFailure, Boolean>
+    suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
 }
 
@@ -631,12 +631,9 @@ class ConversationDataSource(
         conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
 
-    override suspend fun isUserMember(conversationId: ConversationId, userId: UserId): Either<CoreFailure, Boolean> = wrapStorageRequest {
-        conversationDAO.isUserMember(
-            idMapper.toDaoModel(conversationId),
-            idMapper.toDaoModel(userId)
-        )
-    }
+    override suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>> =
+        conversationDAO.observeIsUserMember(idMapper.toDaoModel(conversationId), idMapper.toDaoModel(userId))
+            .wrapStorageRequest()
 
     override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {
         val selfUserId = userRepository.observeSelfUser().first().id
