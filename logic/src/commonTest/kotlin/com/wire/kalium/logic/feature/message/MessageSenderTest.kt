@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.message.MessageEnvelope
@@ -16,18 +17,26 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.message.MLSMessageApi
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -140,6 +149,25 @@ class MessageSenderTest {
                 .wasInvoked(exactly = once)
         }
 
+    @Test
+    fun givenSendMlsMessageFails_whenSendingMlsMessage_thenReturnFailureAndSetMessageStatusToFailed() =
+        runTest {
+            // given
+            val (arrangement, messageSender) = Arrangement()
+                .withSendMlsMessage(sendMlsMessageWithResult = Either.Left(CoreFailure.Unknown(Throwable("some exception"))))
+                .arrange()
+
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldFail()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
+                .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+
     // Message was sent, better to keep it as pending, than wrongfully marking it as failed
     @Test
     fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnSuccess() =
@@ -231,6 +259,45 @@ class MessageSenderTest {
         assertEquals(failure, result)
     }
 
+    @Test
+    fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenRetryAfterSyncIsLive() = runTest {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendMlsMessage()
+            .withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
+            .withWaitUntilLiveOrFailure()
+            .arrange()
+
+        // when
+        val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+        // then
+        result.shouldSucceed()
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::sendMLSMessage)
+            .with(eq(Arrangement.TEST_CONVERSATION_ID), eq(Arrangement.TEST_MLS_MESSAGE))
+            .wasInvoked(twice)
+    }
+
+    @Test
+    fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenGiveUpIfSyncIsPending() = runTest {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendMlsMessage(sendMlsMessageWithResult = Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE))
+            .withWaitUntilLiveOrFailure(failing = true)
+            .arrange()
+
+        // when
+        val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+        // then
+        result.shouldFail()
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::updateMessageStatus)
+            .with(eq(MessageEntity.Status.FAILED), anything(), anything())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -313,10 +380,25 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MESSAGE_ENVELOPE))
         }
 
+        fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {
+            given(mlsMessageCreator)
+                .suspendFunction(mlsMessageCreator::createOutgoingMLSMessage)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TEST_MLS_MESSAGE))
+        }
+
         fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right("date")) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
                 .whenInvokedWith(anything(), anything())
+                .thenReturn(result)
+        }
+
+        fun withSendOutgoingMlsMessage(result: Either<CoreFailure, Unit> = Either.Right(Unit), times: Int = kotlin.Int.MAX_VALUE) = apply {
+            var invocationCounter = 0
+            given(messageRepository)
+                .suspendFunction(messageRepository::sendMLSMessage)
+                .whenInvokedWith(matching { invocationCounter +=1; invocationCounter <= times }, anything())
                 .thenReturn(result)
         }
 
@@ -348,6 +430,13 @@ class MessageSenderTest {
                 .thenReturn(20L)
         }
 
+        fun withWaitUntilLiveOrFailure(failing: Boolean = false) = apply {
+            given(syncManager)
+                .suspendFunction(syncManager::waitUntilLiveOrFailure)
+                .whenInvoked()
+                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
+        }
+
         @Suppress("LongParameterList")
         fun withSendProteusMessage(
             getConversationProtocolFailing: Boolean = false,
@@ -373,6 +462,19 @@ class MessageSenderTest {
 
             }
 
+        fun withSendMlsMessage(
+            sendMlsMessageWithResult: Either<CoreFailure, Unit>? = null,
+        ) = apply {
+            withGetMessageById()
+            withGetProtocolInfo(protocolInfo = MLS_PROTOCOL_INFO)
+            withCreateOutgoingMlsMessage()
+            if (sendMlsMessageWithResult != null) withSendOutgoingMlsMessage(sendMlsMessageWithResult) else withSendOutgoingMlsMessage()
+            withUpdateMessageStatus()
+            withUpdateMessageDate()
+            withUpdatePendingMessagesAddMillisToDate()
+            withCalculateMillisDifferenceSuccessful()
+        }
+
         companion object {
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
@@ -383,8 +485,24 @@ class MessageSenderTest {
                 recipients = listOf(),
                 dataBlob = null
             )
-
+            val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
+            val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(
+                "groupId",
+                ConversationEntity.GroupState.ESTABLISHED,
+                0UL,
+                Instant.DISTANT_PAST,
+                ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            )
+            val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
+                KaliumException.InvalidRequestError(
+                    ErrorResponse(
+                        409,
+                        "The conversation epoch in a message is too old",
+                        "mls-stale-message"
+                    )
+                )
+            )
             val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
             val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
             val TEST_MEMBER_1 = UserId("value1", "domain1")
