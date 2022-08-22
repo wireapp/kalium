@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.functional.fold
@@ -20,7 +21,8 @@ fun interface DeleteTeamConversationUseCase {
 
 internal class DeleteTeamConversationUseCaseImpl(
     val getSelfTeam: GetSelfTeamUseCase,
-    val teamRepository: TeamRepository
+    val teamRepository: TeamRepository,
+    val conversationRepository: ConversationRepository,
 ) : DeleteTeamConversationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Result {
@@ -30,6 +32,7 @@ internal class DeleteTeamConversationUseCaseImpl(
                 .fold({
                     Result.Failure.GenericFailure(it)
                 }, {
+                    conversationRepository.deleteConversation(conversationId)
                     Result.Success
                 })
         } ?: Result.Failure.NoTeamFailure
