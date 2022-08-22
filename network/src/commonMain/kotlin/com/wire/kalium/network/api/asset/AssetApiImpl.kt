@@ -12,6 +12,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
@@ -62,16 +63,18 @@ class AssetApiImpl internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun downloadAsset(assetId: AssetId, assetToken: String?, tempFileSink: Sink): NetworkResponse<Unit> {
         return try {
             httpClient.prepareGet(buildAssetsPath(assetId)) {
                 assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
             }.execute { httpResponse ->
-                val byteBufferSize = 1024 * 8
+                // TODO: write the file to specific path using asset-id as temp name
+                // TODO: return path ? instead of Unit
                 val channel = httpResponse.body<ByteReadChannel>()
                 tempFileSink.use { sink ->
                     while (!channel.isClosedForRead) {
-                        val packet = channel.readRemaining(byteBufferSize.toLong(), 0)
+                        val packet = channel.readRemaining(BUFFER_SIZE, 0)
                         while (packet.isNotEmpty) {
                             val (bytes, size) = packet.readBytes().let { byteArray ->
                                 Buffer().write(byteArray) to byteArray.size.toLong()
@@ -85,7 +88,7 @@ class AssetApiImpl internal constructor(
                     channel.cancel()
                     sink.close()
                 }
-                NetworkResponse.Success(Unit, emptyMap(), 200)
+                NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value)
             }
         } catch (exception: Exception) {
             NetworkResponse.Error(KaliumException.GenericError(exception))
@@ -183,3 +186,5 @@ class StreamAssetContent(
         channel.close()
     }
 }
+
+private const val BUFFER_SIZE = 8192L
