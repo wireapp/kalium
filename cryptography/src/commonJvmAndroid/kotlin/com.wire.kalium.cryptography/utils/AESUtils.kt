@@ -110,11 +110,14 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
                 val source = bufferedSource.inputStream().source()
                 val contentBuffer = Buffer()
                 var byteCount: Long
-                while (source.read(contentBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
+                while (source.read(contentBuffer, BUFFER_SIZE).also {
+                        byteCount = it
+                        size += byteCount
+                    } != -1L
+                ) {
                     outputSink.write(contentBuffer, byteCount)
                     outputSink.flush()
                 }
-                size = byteCount
                 source.close()
             }
             kaliumLogger.d("WROTE $size bytes")

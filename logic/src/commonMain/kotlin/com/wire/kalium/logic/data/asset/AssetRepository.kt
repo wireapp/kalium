@@ -197,9 +197,7 @@ internal class AssetDataSource(
         return wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
-                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null }, tempFileSink).also {
-                    kaliumLogger.d("downloaded")
-                }
+                assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null }, tempFileSink)
             }.flatMap { _ ->
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
@@ -209,10 +207,7 @@ internal class AssetDataSource(
 
                 // Public assets are stored already decrypted on the backend, hence no decryption is needed
                 val assetDataSize = if (encryptionKey != null) {
-                    kaliumLogger.d("starting encryption")
-                    decryptFileWithAES256(encryptedAssetDataSource, decodedAssetSink, encryptionKey).also {
-                        kaliumLogger.d("encryption done")
-                    }
+                    decryptFileWithAES256(encryptedAssetDataSource, decodedAssetSink, encryptionKey)
                 } else
                     kaliumFileSystem.writeData(decodedAssetSink, encryptedAssetDataSource)
 
