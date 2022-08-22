@@ -110,11 +110,8 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
                 val source = bufferedSource.inputStream().source()
                 val contentBuffer = Buffer()
                 var byteCount: Long
-                while (source.read(contentBuffer, BUFFER_SIZE).also {
-                        byteCount = it
-                        size += byteCount
-                    } != -1L
-                ) {
+                while (source.read(contentBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
+                    size += byteCount
                     outputSink.write(contentBuffer, byteCount)
                     outputSink.flush()
                 }
