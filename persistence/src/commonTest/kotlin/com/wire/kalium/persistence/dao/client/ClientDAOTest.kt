@@ -32,7 +32,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientIsInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
-        val insertedClient = Client(user.id, "id1")
+        val insertedClient = Client(user.id, "id1", deviceType = null)
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
 
@@ -44,8 +44,8 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenMultipleClientsAreInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
-        val insertedClient = Client(user.id, "id1")
-        val insertedClient2 = Client(user.id, "id2")
+        val insertedClient = Client(user.id, "id1", deviceType = null)
+        val insertedClient2 = Client(user.id, "id2", deviceType = null)
         userDAO.insertUser(user)
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
 
@@ -58,14 +58,14 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientsAreInsertedForMultipleUsers_whenFetchingClientsByUserId_thenOnlyTheRelevantClientsAreReturned() = runTest {
-        val insertedClient = Client(user.id, "id1")
-        val insertedClient2 = Client(user.id, "id2")
+        val insertedClient = Client(user.id, "id1", deviceType = null)
+        val insertedClient2 = Client(user.id, "id2", deviceType = null)
         userDAO.insertUser(user)
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
 
         val unrelatedUserId = QualifiedIDEntity("unrelated", "user")
         val unrelatedUser = newUserEntity(unrelatedUserId)
-        val unrelatedInsertedClient = Client(unrelatedUserId, "id1")
+        val unrelatedInsertedClient = Client(unrelatedUserId, "id1", deviceType = null)
         userDAO.insertUser(unrelatedUser)
         clientDAO.insertClient(unrelatedInsertedClient)
 
@@ -77,7 +77,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientIsInserted_whenDeletingItSpecifically_thenItShouldNotBeReturnedAnymoreOnNextFetch() = runTest {
-        val insertedClient = Client(user.id, "id1")
+        val insertedClient = Client(user.id, "id1", deviceType = null)
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
 
@@ -89,8 +89,8 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientsAreInserted_whenDeletingClientsOfUser_thenTheyShouldNotBeReturnedAnymoreOnNextFetch() = runTest {
-        val insertedClient = Client(user.id, "id1")
-        val insertedClient2 = Client(user.id, "id2")
+        val insertedClient = Client(user.id, "id1", deviceType = null)
+        val insertedClient2 = Client(user.id, "id2", deviceType = null)
         userDAO.insertUser(user)
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
 
