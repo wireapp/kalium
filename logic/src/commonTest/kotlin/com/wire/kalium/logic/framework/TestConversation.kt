@@ -153,6 +153,7 @@ object TestConversation {
             time = "2022-03-30T15:36:00.000Z"
         )
 
+    const val GROUP_ID = "mlsGroupId"
     val ENTITY_ID = QualifiedIDEntity("valueConversation", "domainConversation")
     val ENTITY = ConversationEntity(
         ENTITY_ID,
