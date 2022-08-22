@@ -212,6 +212,8 @@ com.wire.kalium.logic.feature.server
 com.wire.kalium.logic.feature.session
 com.wire.kalium.logic.feature.team
 com.wire.kalium.logic.feature.user
+com.wire.kalium.logic.feature.user.loggingStatus
+com.wire.kalium.logic.feature.user.webSocketStatus
 com.wire.kalium.logic.featureFlags
 com.wire.kalium.logic.functional
 com.wire.kalium.logic.network
