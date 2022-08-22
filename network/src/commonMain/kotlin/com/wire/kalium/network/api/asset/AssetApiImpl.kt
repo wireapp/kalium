@@ -3,7 +3,6 @@ package com.wire.kalium.network.api.asset
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
@@ -23,7 +22,6 @@ import io.ktor.utils.io.close
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.core.toByteArray
-import io.ktor.utils.io.read
 import okio.Buffer
 import okio.Sink
 import okio.Source
@@ -69,7 +67,7 @@ class AssetApiImpl internal constructor(
             httpClient.prepareGet(buildAssetsPath(assetId)) {
                 assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
             }.execute { httpResponse ->
-                val byteBufferSize = 1024 * 5
+                val byteBufferSize = 1024 * 8
                 val channel = httpResponse.body<ByteReadChannel>()
                 tempFileSink.use { sink ->
                     while (!channel.isClosedForRead) {
@@ -79,17 +77,13 @@ class AssetApiImpl internal constructor(
                                 Buffer().write(byteArray) to byteArray.size.toLong()
                             }
                             sink.write(bytes, size).also {
-                                kaliumLogger.d("writing $size to temp file")
-                                kaliumLogger.d("bytes buffer size ${bytes.size}")
                                 bytes.clear()
                                 sink.flush()
                             }
                         }
                     }
                     channel.cancel()
-                    sink.close().also {
-                        kaliumLogger.d("closing")
-                    }
+                    sink.close()
                 }
                 NetworkResponse.Success(Unit, emptyMap(), 200)
             }
