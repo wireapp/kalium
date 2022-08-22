@@ -70,7 +70,7 @@ class ConversationScope internal constructor(
         get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
-        get() = DeleteTeamConversationUseCaseImpl(getSelfTeamUseCase, teamRepository)
+        get() = DeleteTeamConversationUseCaseImpl(getSelfTeamUseCase, teamRepository, conversationRepository)
 
     val createGroupConversation: CreateGroupConversationUseCase
         get() = CreateGroupConversationUseCase(conversationRepository, syncManager, clientRepository)

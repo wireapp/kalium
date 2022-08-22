@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlin.time.Duration
 import com.wire.kalium.persistence.Conversation as SQLDelightConversation
 import com.wire.kalium.persistence.Member as SQLDelightMember
@@ -295,6 +296,21 @@ class ConversationDAOImpl(
             ConversationEntity.Protocol.MLS,
             Clock.System.now().epochSeconds.minus(threshold.inWholeSeconds)
         ).executeAsList()
+
+    override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) {
+        conversationQueries.updateProposalTimer(proposalTimer.firingDate.toString(), proposalTimer.groupID)
+    }
+
+    override suspend fun clearProposalTimer(groupID: String) {
+        conversationQueries.clearProposalTimer(groupID)
+    }
+
+    override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
+        return conversationQueries.selectProposalTimers(ConversationEntity.Protocol.MLS)
+            .asFlow()
+            .mapToList()
+            .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, it.mls_proposal_timer.toInstant()) } }
+    }
 
     override suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean> =
         conversationQueries.isUserMember(conversationId, userId).asFlow().mapToOneOrNull().map { it != null }

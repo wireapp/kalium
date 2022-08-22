@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
+import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
@@ -280,7 +281,6 @@ class ConversationEventReceiverTest {
                 .wasInvoked(exactly = once)
         }
     }
-
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -315,6 +315,9 @@ class ConversationEventReceiverTest {
         @Mock
         private val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
 
+        @Mock
+        private val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
+
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             proteusClient,
             persistMessage,
@@ -327,9 +330,10 @@ class ConversationEventReceiverTest {
             MessageTextEditHandler(messageRepository),
             LastReadContentHandler(conversationRepository, userRepository),
             DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
+            userConfigRepository,
+            ephemeralNotifications,
+            pendingProposalScheduler,
             protoContentMapper = protoContentMapper,
-            userConfigRepository = userConfigRepository,
-            ephemeralNotificationsManager = ephemeralNotifications
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
@@ -453,4 +457,5 @@ class ConversationEventReceiverTest {
 
         fun arrange() = this to conversationEventReceiver
     }
+
 }
