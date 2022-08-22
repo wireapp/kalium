@@ -306,14 +306,14 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
-        return conversationQueries.selectProposalTimers()
+        return conversationQueries.selectProposalTimers(ConversationEntity.Protocol.MLS)
             .asFlow()
             .mapToList()
             .map { list -> list.map { ProposalTimerEntity(it.mls_group_id, it.mls_proposal_timer.toInstant()) } }
     }
 
-    override suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean =
-        conversationQueries.isUserMember(conversationId, userId).executeAsOneOrNull() != null
+    override suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean> =
+        conversationQueries.isUserMember(conversationId, userId).asFlow().mapToOneOrNull().map { it != null }
 
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
         conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()

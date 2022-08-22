@@ -129,6 +129,6 @@ interface ConversationDAO {
     suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity)
     suspend fun clearProposalTimer(groupID: String)
     suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>>
-    suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean
+    suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
 }
