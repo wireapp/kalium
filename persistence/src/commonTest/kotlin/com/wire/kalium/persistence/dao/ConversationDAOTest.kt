@@ -682,11 +682,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.deleteMemberByQualifiedID(member2.user, conversationEntity1.id)
 
         // When
-        conversationDAO.observeIsUserMember(conversationEntity1.id, user3.id).test {
-            // then
-            assertEquals(true, awaitItem())
-        }
+        val isMember = conversationDAO.observeIsUserMember(conversationEntity1.id, user3.id).first()
 
+        // then
+        assertEquals(true, isMember)
     }
 
     @Test
