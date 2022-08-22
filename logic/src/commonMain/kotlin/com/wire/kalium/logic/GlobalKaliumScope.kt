@@ -15,10 +15,14 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
-import com.wire.kalium.logic.feature.user.EnableLoggingUseCase
-import com.wire.kalium.logic.feature.user.EnableLoggingUseCaseImpl
-import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCase
-import com.wire.kalium.logic.feature.user.IsLoggingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCase
+import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCaseImpl
+import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCase
+import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
+import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
+import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -75,4 +79,12 @@ class GlobalKaliumScope(
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
+    val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
+        get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(
+            userConfigRepository
+        )
+    val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
+        get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
+            userConfigRepository
+        )
 }
