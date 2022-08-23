@@ -820,7 +820,7 @@ class ConversationRepositoryTest {
             .arrange()
         val conversationId = ConversationId("conv_id", "conv_domain")
         val userId: UserId = UserId("user_id", "user_domain")
-        val newRole = Member.Role.Admin
+        val newRole = Conversation.Member.Role.Admin
 
         conversationRepository.updateConversationMemberRole(conversationId, userId, newRole).shouldSucceed()
 
