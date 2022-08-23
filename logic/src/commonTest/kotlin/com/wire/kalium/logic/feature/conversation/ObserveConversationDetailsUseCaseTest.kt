@@ -55,8 +55,22 @@ class ObserveConversationDetailsUseCaseTest {
     fun givenTheConversationIsUpdated_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() = runTest {
         val conversation = TestConversation.GROUP()
         val conversationDetailsValues = listOf(
-            Either.Right(ConversationDetails.Group(conversation, LegalHoldStatus.DISABLED, unreadMessagesCount = 0)),
-            Either.Right(ConversationDetails.Group(conversation.copy(name = "New Name"), LegalHoldStatus.DISABLED, unreadMessagesCount = 0))
+            Either.Right(
+                ConversationDetails.Group(
+                    conversation,
+                    LegalHoldStatus.DISABLED,
+                    unreadMessagesCount = 0,
+                    lastUnreadMessage = null
+                )
+            ),
+            Either.Right(
+                ConversationDetails.Group(
+                    conversation.copy(name = "New Name"),
+                    LegalHoldStatus.DISABLED,
+                    unreadMessagesCount = 0,
+                    lastUnreadMessage = null
+                )
+            )
         )
 
         given(conversationRepository)

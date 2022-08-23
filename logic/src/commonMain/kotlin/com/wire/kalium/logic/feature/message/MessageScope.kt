@@ -95,6 +95,7 @@ class MessageScope internal constructor(
             clientRepository,
             assetRepository,
             userRepository,
+            slowSyncRepository,
             messageSender
         )
 
@@ -117,8 +118,7 @@ class MessageScope internal constructor(
             clientRepository,
             assetRepository,
             slowSyncRepository,
-            messageSender,
-            idMapper
+            messageSender
         )
 
     val sendKnock: SendKnockUseCase

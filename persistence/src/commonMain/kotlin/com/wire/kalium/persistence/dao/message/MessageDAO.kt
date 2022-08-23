@@ -43,4 +43,12 @@ interface MessageDAO {
     ): List<MessageEntity>
 
     suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity)
+
+    suspend fun getLastUnreadMessage(
+        conversationID: QualifiedIDEntity
+    ): MessageEntity?
+
+    suspend fun getUnreadMessageCount(
+        conversationId: QualifiedIDEntity
+    ): Long
 }

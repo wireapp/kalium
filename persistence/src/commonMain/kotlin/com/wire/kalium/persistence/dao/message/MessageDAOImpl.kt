@@ -1,20 +1,20 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.Query
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
-import app.cash.sqldelight.coroutines.mapToOneOrNull
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -192,8 +192,6 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     conversation_id = message.conversationId,
                     caller_id = message.senderUserId
                 )
-
-                is MessageEntityContent.Knock -> {} // No need to insert a Knock-specific message
             }
         }
     }
@@ -274,6 +272,13 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         queries.deleteAllConversationMessages(conversationId)
     }
 
+    override suspend fun getLastUnreadMessage(
+        conversationID: QualifiedIDEntity
+    ): MessageEntity? = queries.getLastUnreadMessage(conversationID).executeAsOneOrNull()?.toMessageEntity()
+
+    override suspend fun getUnreadMessageCount(conversationId: QualifiedIDEntity): Long =
+        queries.getUnreadMessageCount(conversationId).executeAsOne()
+
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
         is MessageEntityContent.Asset -> ASSET
@@ -302,7 +307,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         RESTRICTED_ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageRestrictedAssetContent, mapper::toModel)
     }.map { mapper.toModel(this, it) }
 
-    private fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
+    fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
         TEXT -> this.queryOneOrDefault(queries::selectMessageTextContent, mapper::toModel)
         ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, mapper::toModel)
         KNOCK -> MessageEntityContent.Knock(false)

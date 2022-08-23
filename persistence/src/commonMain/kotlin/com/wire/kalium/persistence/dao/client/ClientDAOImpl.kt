@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao.client
 
-import app.cash.sqldelight.coroutines.asFlow
-import app.cash.sqldelight.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
@@ -9,18 +9,18 @@ import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.Client as SQLDelightClient
 
 internal class ClientMapper {
-    fun toModel(dbEntry: SQLDelightClient) = Client(dbEntry.user_id, dbEntry.id)
+    fun toModel(dbEntry: SQLDelightClient) = Client(dbEntry.user_id, dbEntry.id, dbEntry.device_type)
 }
 
 internal class ClientDAOImpl(private val clientsQueries: ClientsQueries) : ClientDAO {
     val mapper = ClientMapper()
 
     override suspend fun insertClient(client: Client): Unit =
-        clientsQueries.insertClient(client.userId, client.id)
+        clientsQueries.insertClient(client.userId, client.id, client.deviceType)
 
     override suspend fun insertClients(clients: List<Client>) = clientsQueries.transaction {
         clients.forEach { client ->
-            clientsQueries.insertClient(client.userId, client.id)
+            clientsQueries.insertClient(client.userId, client.id, client.deviceType)
         }
     }
 
@@ -41,5 +41,4 @@ internal class ClientDAOImpl(private val clientsQueries: ClientsQueries) : Clien
         clientsQueries.deleteClientsOfUser(qualifiedID)
 
     override suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String) = clientsQueries.deleteClient(userId, clientId)
-
 }

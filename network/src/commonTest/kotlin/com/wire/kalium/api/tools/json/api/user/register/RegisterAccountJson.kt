@@ -9,14 +9,12 @@ object RegisterAccountJson {
     private val jsonProvider = { serializable: RegisterApi.RegisterParam ->
         buildJsonObject {
             put("name", serializable.name)
-            when (serializable) {
+            when(serializable) {
                 is RegisterApi.RegisterParam.PersonalAccount -> {
                     put("password", serializable.password)
                     put("email", serializable.email)
                     put("email_code", serializable.emailCode)
                 }
-
-                is RegisterApi.RegisterParam.TeamAccount -> {}
             }
         }.toString()
     }
@@ -27,6 +25,6 @@ object RegisterAccountJson {
             "123456",
             "private user",
             "password"
-        ), jsonProvider
-    )
+        )
+        , jsonProvider)
 }

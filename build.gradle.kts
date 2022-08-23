@@ -3,10 +3,10 @@ import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
 import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 
 buildscript {
-    val kotlinVersion = "1.7.10"
-    val dokkaVersion = "1.7.10"
-    val sqlDelightVersion = "2.0.0-alpha03"
-    val protobufCodegenVersion = "0.8.19"
+    val kotlinVersion = "1.6.10"
+    val dokkaVersion = "1.6.10"
+    val sqlDelightVersion = "2.0.0-alpha01"
+    val protobufCodegenVersion = "0.8.18"
     val carthageVersion = "0.0.1"
     val detektVersion = "1.19.0"
 
@@ -18,7 +18,7 @@ buildscript {
 
     dependencies {
         // keeping this here to allow AS to automatically update
-        classpath("com.android.tools.build:gradle:7.2.2")
+        classpath("com.android.tools.build:gradle:7.0.4")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("app.cash.sqldelight:gradle-plugin:$sqlDelightVersion")
         classpath("com.wire:carthage-gradle-plugin:$carthageVersion")
@@ -36,13 +36,15 @@ repositories {
 }
 
 plugins {
-    id("org.jetbrains.dokka") version "1.7.10"
+    val dokkaVersion = "1.6.10"
+    id("org.jetbrains.dokka") version "$dokkaVersion"
     id("org.jetbrains.kotlinx.kover") version "0.5.1"
     id("scripts.testing")
 }
 
 dependencies {
-    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.7.10")
+    val dokkaVersion = "1.6.10"
+    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:$dokkaVersion")
 }
 
 tasks.withType<Test> {

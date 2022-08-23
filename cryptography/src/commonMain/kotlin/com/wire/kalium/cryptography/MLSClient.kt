@@ -8,6 +8,24 @@ typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
 
+open class CommitBundle(
+    val commit: ByteArray,
+    open val welcome: ByteArray?,
+    val publicGroupState: ByteArray
+)
+
+class AddMemberCommitBundle(
+    commit: ByteArray,
+    override val welcome: ByteArray,
+    publicGroupState: ByteArray
+) : CommitBundle(commit, welcome, publicGroupState)
+
+class DecryptedMessageBundle(
+    val message: ByteArray?,
+    val commitDelay: Long?
+)
+
+@Suppress("TooManyFunctions")
 interface MLSClient {
 
     /**
@@ -33,13 +51,20 @@ interface MLSClient {
     fun generateKeyPackages(amount: Int): List<ByteArray>
 
     /**
+     * Number of valid key packages which haven't been consumed
+     *
+     * @return valid key package count
+     */
+    fun validKeyPackageCount(): ULong
+
+    /**
      * Update your keying material for an existing conversation you're a member of.
      *
      * @param groupId MLS group ID for an existing conversation
      *
-     * @return commit message and a welcome message if an add proposal was pending.
+     * @return commit bundle, which needs to be sent to the distribution service.
      */
-    fun updateKeyingMaterial(groupId: MLSGroupId): Pair<HandshakeMessage, WelcomeMessage?>
+    fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
 
     /**
      * Request to join an existing conversation
@@ -47,7 +72,7 @@ interface MLSClient {
      * @param groupId MLS group ID for an existing conversation
      * @param epoch current epoch for the conversation
      *
-     * @return proposal for being added to the conversation
+     * @return proposal, which needs to be sent to the distribution service.
      */
     fun joinConversation(
         groupId: MLSGroupId,
@@ -69,12 +94,14 @@ interface MLSClient {
      * @param groupId MLS group ID provided by BE
      * @param members list of clients with a claimed key package for each client.
      *
-     * @return handshake & welcome message
+     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun createConversation(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage>?
+    ): AddMemberCommitBundle?
+
+    fun wipeConversation(groupId: MLSGroupId)
 
     /**
      * Process an incoming welcome message
@@ -83,6 +110,18 @@ interface MLSClient {
      * @return MLS group ID
      */
     fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId
+
+    /**
+     * Signal that last sent commit was accepted by the distribution service
+     */
+    fun commitAccepted(groupId: MLSGroupId)
+
+    /**
+     * Create a commit for any pending proposals
+     *
+     * @return commit bundle, which needs to be sent to the distribution service.
+     */
+    fun commitPendingProposals(groupId: MLSGroupId): CommitBundle
 
     /**
      * Encrypt a message for distribution in a group
@@ -105,12 +144,12 @@ interface MLSClient {
      * @param groupId MLS group where the message was received
      * @param message application message or handshake message
      *
-     * @return decrypted message in case of an application message.
+     * @return decrypted message bundle, which contains the decrypted message.
      */
     fun decryptMessage(
         groupId: MLSGroupId,
         message: ApplicationMessage
-    ): PlainMessage?
+    ): DecryptedMessageBundle
 
     /**
      * Add a user/client to an existing MLS group
@@ -118,12 +157,12 @@ interface MLSClient {
      * @param groupId MLS group
      * @param members list of clients with a claimed key package for each client.
      *
-     * * @return handshake & welcome message
+     * * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): Pair<HandshakeMessage, WelcomeMessage>?
+    ): AddMemberCommitBundle?
 
     /**
      * Remove a user/client from an existing MLS group
@@ -131,12 +170,12 @@ interface MLSClient {
      * @param groupId MLS group
      * @param members list of clients
      *
-     * @return handshake message
+     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun removeMember(
         groupId: MLSGroupId,
         members: List<CryptoQualifiedClientId>
-    ): HandshakeMessage?
+    ): CommitBundle
 }
 
 @JvmInline

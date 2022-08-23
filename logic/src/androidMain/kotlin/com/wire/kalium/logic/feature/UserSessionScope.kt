@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature
 import android.content.Context
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
+import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -34,5 +35,9 @@ actual class UserSessionScope(
     kaliumConfigs
 ) {
 
-    override val clientConfig: ClientConfig get() = ClientConfig(applicationContext)
+    override val clientConfig: ClientConfig get() = ClientConfigImpl(applicationContext)
+
+    init {
+        onInit()
+    }
 }

@@ -6,13 +6,15 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
-import com.wire.kalium.persistence.utils.stubs.newMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -140,7 +142,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenAllMembersCanBeRetrieved() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertMembers(listOf(member1, member2), conversationEntity1.id)
+        conversationDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity1.id)
 
         assertEquals(setOf(member1, member2), conversationDAO.getAllMembers(conversationEntity1.id).first().toSet())
     }
@@ -465,7 +467,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // add 9 Message before the lastReadDate
             repeat(9) {
                 add(
-                    newMessageEntity(
+                    newRegularMessageEntity(
                         id = it.toString(),
                         date = "2000-01-01T11:0$it:00.000Z",
                         conversationId = conversationId,
@@ -476,7 +478,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // add 9 Message past the lastReadDate
             repeat(9) {
                 add(
-                    newMessageEntity(
+                    newRegularMessageEntity(
                         id = "${it + 9}",
                         date = "2000-01-01T13:0$it:00.000Z",
                         conversationId = conversationId,
@@ -489,7 +491,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         messageDAO.insertMessages(message)
 
         // when
-        val result = conversationDAO.getUnreadMessageCount(conversationId)
+        val result = messageDAO.getUnreadMessageCount(conversationId)
 
         // then
         assertEquals(9L, result)
@@ -513,7 +515,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // add 9 Message before the lastReadDate
             repeat(9) {
                 add(
-                    newMessageEntity(
+                    newRegularMessageEntity(
                         id = it.toString(), date = "2000-01-01T11:0$it:00.000Z",
                         conversationId = conversationId,
                         senderUserId = user1.id,
@@ -525,7 +527,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         messageDAO.insertMessages(message)
 
         // when
-        val result = conversationDAO.getUnreadMessageCount(conversationId)
+        val result = messageDAO.getUnreadMessageCount(conversationId)
 
         // then
         assertEquals(0L, result)
@@ -677,9 +679,178 @@ class ConversationDAOTest : BaseDatabaseTest() {
             }
         }
 
+    @Test
+    fun givenConversation_whenUpdatingProposalTimer_thenItIsUpdated() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+
+        // when
+        conversationDAO.setProposalTimer(proposalTimer2)
+
+        // then
+         assertEquals(listOf(proposalTimer2), conversationDAO.getProposalTimers().first())
+    }
+
+    @Test
+    fun givenConversationWithExistingProposalTimer_whenUpdatingProposalTimer_thenItIsNotUpdated() = runTest {
+        // given
+        val initialFiringDate = Instant.DISTANT_FUTURE
+        val updatedFiringDate = Instant.DISTANT_PAST
+        val groupID = (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.setProposalTimer(ProposalTimerEntity(groupID, initialFiringDate))
+
+        // when
+        conversationDAO.setProposalTimer(ProposalTimerEntity(groupID, updatedFiringDate))
+
+        // then
+        assertEquals(initialFiringDate, conversationDAO.getProposalTimers().first()[0].firingDate)
+    }
+
+    @Test
+    fun givenConversationWithExistingProposalTimer_whenClearingProposalTimer_thenItIsUpdated() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.setProposalTimer(proposalTimer2)
+
+        // when
+        conversationDAO.clearProposalTimer(proposalTimer2.groupID)
+
+        // then
+        assertEquals(emptyList(), conversationDAO.getProposalTimers().first())
+    }
+
+    @Test
+    fun givenConversationsWithExistingProposalTimer_whenGettingProposalTimers_thenAllTimersAreReturned() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
+        conversationDAO.setProposalTimer(proposalTimer2)
+        conversationDAO.setProposalTimer(proposalTimer3)
+
+        // then
+        assertEquals(listOf(proposalTimer2, proposalTimer3), conversationDAO.getProposalTimers().first())
+    }
+
+    @Test
+    fun givenSeveralRemoveMemberMessages_whenCallingWhoRemovedMe_itReturnsTheCorrectValue() = runTest {
+        // Given
+        val mySelfMember = member2
+        val mySelfId = member2.user
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
+        conversationDAO.insertMember(mySelfMember, conversationEntity1.id)
+        conversationDAO.deleteMemberByQualifiedID(mySelfId, conversationEntity1.id)
+        val message1 = newSystemMessageEntity(
+            senderUserId = member1.user,
+            content = MessageEntityContent.MemberChange(
+                listOf(mySelfId),
+                MessageEntity.MemberChangeType.REMOVED
+            ),
+            date = Clock.System.now().toString(),
+            conversationId = conversationEntity1.id
+        )
+        val message2 = newSystemMessageEntity(
+            senderUserId = member3.user,
+            content = MessageEntityContent.MemberChange(
+                listOf(mySelfId),
+                MessageEntity.MemberChangeType.REMOVED
+            ),
+            date = Clock.System.now().toString(),
+            conversationId = conversationEntity1.id
+        )
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
+        messageDAO.insertMessage(message1)
+        messageDAO.insertMessage(message2)
+
+        // When
+        val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
+            conversationEntity1.id, "${mySelfId.value}@${mySelfId.domain}"
+        )
+
+        // Then
+        assertEquals(whoDeletedMe?.value, member3.user.value)
+    }
+
+    @Test
+    fun givenAGroupThatImStillAMemberOf_whenCallingWhoRemovedMe_itReturnsANullValue() = runTest {
+        // Given
+        val mySelfMember = member2
+        val mySelfId = member2.user
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
+        conversationDAO.insertMember(mySelfMember, conversationEntity1.id)
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
+
+        conversationDAO.deleteMemberByQualifiedID(member3.user, conversationEntity1.id)
+        val removalMessage = newSystemMessageEntity(
+            senderUserId = member1.user,
+            content = MessageEntityContent.MemberChange(
+                listOf(member3.user),
+                MessageEntity.MemberChangeType.REMOVED
+            ),
+            date = Clock.System.now().toString(),
+            conversationId = conversationEntity1.id
+        )
+        messageDAO.insertMessage(removalMessage)
+        // When
+        val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
+            conversationEntity1.id, "${mySelfId.value}@${mySelfId.domain}"
+        )
+
+        // Then
+        assertNull(whoDeletedMe)
+    }
+
+    @Test
+    fun givenAGroupWithSeveralMembers_whenInvokingIsUserMember_itReturnsACorrectValue() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
+        conversationDAO.deleteMemberByQualifiedID(member2.user, conversationEntity1.id)
+
+        // When
+        val isMember = conversationDAO.observeIsUserMember(conversationEntity1.id, user3.id).first()
+
+        // then
+        assertEquals(true, isMember)
+    }
+
+    @Test
+    fun givenAGroupWithSeveralMembers_whenRemovingOneAndInvokingIsUserMember_itReturnsAFalseValue() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+        userDAO.insertUser(user3)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.insertMember(member3, conversationEntity1.id)
+        conversationDAO.deleteMemberByQualifiedID(member3.user, conversationEntity1.id)
+
+        // when
+        val isMember = conversationDAO.observeIsUserMember(conversationEntity1.id, user3.id).first()
+
+        // then
+        assertEquals(false, isMember)
+    }
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
+        val user3 = newUserEntity(id = "3")
 
         const val teamId = "teamId"
 
@@ -706,7 +877,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 "group2",
                 ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),
             creatorId = "someValue",
             lastNotificationDate = null,
@@ -726,7 +898,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 "group3",
                 ConversationEntity.GroupState.PENDING_JOIN,
                 0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
@@ -748,7 +921,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 "group4",
                 ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z")
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
@@ -763,5 +937,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val member1 = Member(user1.id, Member.Role.Admin)
         val member2 = Member(user2.id, Member.Role.Member)
+        val member3 = Member(user3.id, Member.Role.Admin)
+        val proposalTimer2 = ProposalTimerEntity(
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+            Instant.DISTANT_FUTURE
+        )
+        val proposalTimer3 = ProposalTimerEntity(
+            (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+            Instant.DISTANT_FUTURE
+        )
     }
 }

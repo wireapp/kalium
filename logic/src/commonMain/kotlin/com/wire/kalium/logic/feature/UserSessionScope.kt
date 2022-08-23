@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -88,6 +90,8 @@ import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
+import com.wire.kalium.logic.feature.message.PendingProposalScheduler
+import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
@@ -126,6 +130,8 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
+import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -140,7 +146,12 @@ import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
+import kotlin.coroutines.CoroutineContext
 
 expect class UserSessionScope : UserSessionScopeCommon
 
@@ -153,7 +164,7 @@ abstract class UserSessionScopeCommon(
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs
-) {
+) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
@@ -168,6 +179,9 @@ abstract class UserSessionScopeCommon(
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
+
+    private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
+        get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
     private val mlsClientProvider: MLSClientProvider
         get() = MLSClientProviderImpl(
@@ -330,8 +344,6 @@ abstract class UserSessionScopeCommon(
         get() = SyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
     val syncManager: SyncManager by lazy {
-        incrementalSyncManager
-        slowSyncManager
         SyncManagerImpl(
             slowSyncRepository,
             incrementalSyncRepository
@@ -401,6 +413,12 @@ abstract class UserSessionScopeCommon(
             lazy { conversations.updateMLSGroupsKeyingMaterials }
         )
 
+    private val pendingProposalScheduler: PendingProposalScheduler =
+        PendingProposalSchedulerImpl(
+            incrementalSyncRepository,
+            lazy { mlsConversationRepository }
+        )
+
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
 
     val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper, globalPreferences)
@@ -426,8 +444,6 @@ abstract class UserSessionScopeCommon(
         globalCallManager.getMediaManager()
     }
 
-    private val messageTextEditHandler = MessageTextEditHandler(messageRepository)
-
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             authenticatedDataSourceSet.proteusClient,
@@ -438,9 +454,12 @@ abstract class UserSessionScopeCommon(
             mlsConversationRepository,
             userRepository,
             callManager,
-            messageTextEditHandler,
+            MessageTextEditHandler(messageRepository),
+            LastReadContentHandler(conversationRepository, userRepository),
+            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
             userConfigRepository,
-            EphemeralNotificationsManager
+            EphemeralNotificationsManager,
+            pendingProposalScheduler
         )
     }
 
@@ -485,7 +504,8 @@ abstract class UserSessionScopeCommon(
             keyPackageRepository,
             keyPackageLimitsProvider,
             mlsClientProvider,
-            notificationTokenRepository
+            notificationTokenRepository,
+            clientRemoteRepository
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -496,7 +516,12 @@ abstract class UserSessionScopeCommon(
             syncManager,
             mlsConversationRepository,
             clientRepository,
-            assetRepository
+            assetRepository,
+            messageSender,
+            teamRepository,
+            userId,
+            persistMessage,
+            updateKeyingMaterialThresholdProvider
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -554,7 +579,7 @@ abstract class UserSessionScopeCommon(
             kaliumConfigs
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository)
+    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository)
 
     val calls: CallsScope
         get() = CallsScope(
@@ -564,6 +589,7 @@ abstract class UserSessionScopeCommon(
             userRepository,
             flowManagerService,
             mediaManagerService,
+            syncManager
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
@@ -576,5 +602,21 @@ abstract class UserSessionScopeCommon(
             if (!it.exists(dataStoragePaths.assetStoragePath.value.toPath()))
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
+    }
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+
+    fun onInit() {
+        launch {
+            // TODO: Add a public start function to the Managers
+            incrementalSyncManager
+            slowSyncManager
+
+            callRepository.updateOpenCallsToClosedStatus()
+        }
+    }
+
+    fun onDestroy() {
+        cancel()
     }
 }

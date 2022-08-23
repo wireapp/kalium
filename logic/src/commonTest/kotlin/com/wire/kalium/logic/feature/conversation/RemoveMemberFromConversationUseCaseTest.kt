@@ -3,6 +3,8 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -56,8 +58,15 @@ class RemoveMemberFromConversationUseCaseTest {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
+        @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+        var selfUserId = UserId("my-own-user-id", "my-domain")
+
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
-            conversationRepository
+            conversationRepository,
+            selfUserId,
+            persistMessage
         )
 
         fun withRemoveMemberGroupIs(either: Either<CoreFailure, Unit>) = apply {

@@ -3,21 +3,20 @@ import org.gradle.kotlin.dsl.version
 import org.gradle.plugin.use.PluginDependenciesSpec
 
 object Versions {
-    val kotlin = KotlinVersion.CURRENT.toString()
+    const val kotlin = "1.6.10"
     const val activityCompose = "1.3.1"
     const val appCompat = "1.1.0"
     const val cliKt = "3.3.0"
-    const val coroutines = "1.6.4"
-    const val compose = "1.3.0"
-    const val composeMaterial = "1.2.0"
-    const val composeCompiler = "1.3.0"
+    const val coroutines = "1.6.0-native-mt"
+    const val compose = "1.1.0-rc01"
+    const val composeCompiler = "1.1.0-rc02"
     const val cryptobox4j = "1.1.1"
     const val cryptoboxAndroid = "1.1.3"
     const val javaxCrypto = "1.1.0-alpha03"
     const val kover = "0.4.4"
-    const val ktor = "2.1.0"
+    const val ktor = "2.0.0-beta-1"
     const val okio = "3.0.0"
-    const val okHttp = "4.10.0"
+    const val okHttp = "4.9.3"
     const val mockative = "1.1.4"
     const val androidWork = "2.7.1"
     const val androidTestRunner = "1.4.0"
@@ -25,18 +24,18 @@ object Versions {
     const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
     const val benAsherUUID = "0.4.0"
-    const val ktxDateTime = "0.4.0"
-    const val ktxSerialization = "1.3.3"
-    const val multiplatformSettings = "0.9"
+    const val ktxDateTime = "0.3.2"
+    const val ktxSerialization = "1.3.2"
+    const val multiplatformSettings = "0.8.1"
     const val androidSecurity = "1.1.0-alpha03"
-    const val sqlDelight = "2.0.0-alpha03"
+    const val sqlDelight = "2.0.0-alpha01"
     const val pbandk = "0.14.1"
     const val turbine = "0.7.0"
-    const val avs = "8.1.18"
+    const val avs = "8.2.9"
     const val jna = "5.6.0@aar"
-    const val mlsClient = "0.2.2"
+    const val mlsClient = "0.3.1"
     const val desugarJdk = "1.1.5"
-    const val kermit = "1.1.3"
+    const val kermit = "1.0.0"
     const val detekt = "1.19.0"
 }
 
@@ -59,7 +58,7 @@ object Plugins {
         scope.kotlin("jvm")
 
     fun ksp(scope: PluginDependenciesSpec) =
-        scope.id("com.google.devtools.ksp").version("1.7.10-1.0.6")
+        scope.id("com.google.devtools.ksp").version("1.6.10-1.0.2")
 
     fun kover(scope: PluginDependenciesSpec) =
         scope.id("org.jetbrains.kotlinx.kover") version Versions.kover
@@ -91,7 +90,7 @@ object Dependencies {
         const val appCompat = "androidx.appcompat:appcompat:${Versions.appCompat}"
         const val activityCompose = "androidx.activity:activity-compose:${Versions.activityCompose}"
         const val work = "androidx.work:work-runtime-ktx:${Versions.androidWork}"
-        const val composeMaterial = "androidx.compose.material:material:${Versions.composeMaterial}"
+        const val composeMaterial = "androidx.compose.material:material:${Versions.compose}"
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"

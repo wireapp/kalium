@@ -30,7 +30,7 @@ android {
         }
         ndkBuild {
             ndkVersion = Android.Ndk.version
-            //path(File("src/androidMain/jni/Android.mk"))
+            // path(File("src/androidMain/jni/Android.mk"))
         }
     }
 }
@@ -93,7 +93,6 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(Dependencies.Coroutines.test)
                 implementation(Dependencies.Test.okio)
-                implementation(Dependencies.Kotlinx.dateTime)
             }
         }
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
