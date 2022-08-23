@@ -112,7 +112,13 @@ class ConversationScope internal constructor(
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)
 
-    val clearConversationContent : ClearConversationContentUseCase
-    get() = ClearConversationContentUseCase(conversationRepository, assetRepository)
+    val clearConversationContent: ClearConversationContentUseCase
+        get() = ClearConversationContentUseCase(
+            conversationRepository,
+            assetRepository,
+            clientRepository,
+            userRepository,
+            messageSender
+        )
 
 }
