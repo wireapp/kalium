@@ -1,10 +1,26 @@
-JAVA_HOME := $(shell /usr/libexec/java_home)
+SHELL := /bin/bash
 CRYPTOBOX_C_VERSION := "v1.1.3"
 CRYPTOBOX4J_VERSION := "1.1.1"
 LIBSODIUM_VERSION := "1.0.18-RELEASE"
-LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.dylib
-LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.dylib
-LIBSODIUM_ARTIFACT_FILE := libsodium.dylib
+
+ifeq ($(JAVA_HOME),)
+	JAVA_HOME := $(shell /usr/libexec/java_home)
+endif
+
+OS := $(shell uname -s | tr A-Z a-z)
+
+ifeq ($(OS),darwin)
+  LIBNAME_FLAG=-install_name
+  LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.dylib
+  LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.dylib
+  LIBSODIUM_ARTIFACT_FILE := libsodium.dylib
+endif
+ifeq ($(OS),linux)
+  LIBNAME_FLAG=-soname
+  LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.so
+  LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.so
+  LIBSODIUM_ARTIFACT_FILE := libsodium.so
+endif
 
 all: install-rust prepare-native cryptobox-c libsodium cryptobox4j copy-all-libs
 
@@ -60,7 +76,7 @@ cryptobox4j-compile: cryptobox4j-clone
 	JAVA_HOME=$(/usr/libexec/java_home) && \
 	cc -std=c99 -g -Wall src/cryptobox-jni.c \
 		-I"${JAVA_HOME}/include" \
-		-I"${JAVA_HOME}/include/darwin" \
+		-I"${JAVA_HOME}/include/${OS}" \
 		-Ibuild/include \
 		-I../cryptobox-c/src \
 		-L../cryptobox-c/target/release/ \
@@ -69,7 +85,7 @@ cryptobox4j-compile: cryptobox4j-clone
 		-lsodium \
 		-shared \
 		-fPIC \
-		-Wl,-install_name,${LIBCRYPTOBOX_JNI_ARTIFACT_FILE} \
+		-Wl,${LIBNAME_FLAG},${LIBCRYPTOBOX_JNI_ARTIFACT_FILE} \
 		-o build/lib/${LIBCRYPTOBOX_JNI_ARTIFACT_FILE}
 
 copy-all-libs:
