@@ -46,7 +46,7 @@ sealed class MessageContent {
         val unqualifiedConversationId: String,
         val conversationId: ConversationId?,
         val time: Instant
-    )
+    ) : Regular()
 
     // server message content types
     // TODO: rename members to userList

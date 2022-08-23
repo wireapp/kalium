@@ -11,6 +11,7 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
 import com.wire.kalium.protobuf.messages.MessageDelete
@@ -64,7 +65,16 @@ class ProtoContentMapperImpl(
                     LastRead(
                         conversationId = readableContent.unqualifiedConversationId,
                         qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
-                        lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
+                        lastReadTimestamp = readableContent.time.toEpochMilliseconds()
+                    )
+                )
+            }
+            is MessageContent.Cleared -> {
+                GenericMessage.Content.Cleared(
+                    Cleared(
+                        conversationId = readableContent.unqualifiedConversationId,
+                        qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+                        clearedTimestamp = readableContent.time.toEpochMilliseconds()
                     )
                 )
             }
@@ -111,7 +121,13 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
-            is GenericMessage.Content.Cleared -> MessageContent.Ignored
+            is GenericMessage.Content.Cleared -> {
+                MessageContent.Cleared(
+                    unqualifiedConversationId = protoContent.value.conversationId,
+                    conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+                    time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
+                )
+            }
             is GenericMessage.Content.ClientAction -> MessageContent.Ignored
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Confirmation -> MessageContent.Ignored
