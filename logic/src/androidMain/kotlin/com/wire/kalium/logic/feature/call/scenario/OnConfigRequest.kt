@@ -4,7 +4,6 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
 import com.wire.kalium.calling.types.Handle
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.AvsCallBackError
@@ -24,7 +23,7 @@ class OnConfigRequest(
             callRepository.getCallConfigResponse(limit = null)
                 .fold({
                     callingLogger.i("[OnConfigRequest] - Error: $it")
-                    // TODO("Not yet implemented.")
+                    // TODO: Add a better way to handle the Core Failure?
                 }, { config ->
                     calling.wcall_config_update(
                         inst = inst,
