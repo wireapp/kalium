@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.message.MessageEnvelope
@@ -23,6 +22,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
+import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
@@ -35,7 +35,6 @@ import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -298,6 +297,7 @@ class MessageSenderTest {
             .wasInvoked(exactly = once)
     }
 
+    @OptIn(ConfigurationApi::class)
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -394,11 +394,11 @@ class MessageSenderTest {
                 .thenReturn(result)
         }
 
-        fun withSendOutgoingMlsMessage(result: Either<CoreFailure, Unit> = Either.Right(Unit), times: Int = kotlin.Int.MAX_VALUE) = apply {
+        fun withSendOutgoingMlsMessage(result: Either<CoreFailure, Unit> = Either.Right(Unit), times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
             given(messageRepository)
                 .suspendFunction(messageRepository::sendMLSMessage)
-                .whenInvokedWith(matching { invocationCounter +=1; invocationCounter <= times }, anything())
+                .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times }, anything())
                 .thenReturn(result)
         }
 
