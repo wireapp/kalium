@@ -7,7 +7,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -31,8 +30,7 @@ class DeleteMessageUseCase internal constructor(
     private val clientRepository: ClientRepository,
     private val assetRepository: AssetRepository,
     private val slowSyncRepository: SlowSyncRepository,
-    private val messageSender: MessageSender,
-    private val idMapper: IdMapper
+    private val messageSender: MessageSender
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean): Either<CoreFailure, Unit> {
@@ -51,8 +49,8 @@ class DeleteMessageUseCase internal constructor(
                             id = generatedMessageUuid,
                             content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else MessageContent.DeleteForMe(
                                 messageId,
-                                conversationId = conversationId.value,
-                                qualifiedConversationId = idMapper.toProtoModel(conversationId)
+                                unqualifiedConversationId = conversationId.value,
+                                conversationId = conversationId
                             ),
                             conversationId = if (deleteForEveryone) conversationId else selfUser.id,
                             date = Clock.System.now().toString(),

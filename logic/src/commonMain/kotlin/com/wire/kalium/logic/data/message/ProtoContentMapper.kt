@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
@@ -10,10 +12,13 @@ import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Knock
+import com.wire.kalium.protobuf.messages.LastRead
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.Text
+import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
 interface ProtoContentMapper {
@@ -24,7 +29,8 @@ interface ProtoContentMapper {
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
-    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper()
+    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
@@ -47,12 +53,21 @@ class ProtoContentMapperImpl(
             is MessageContent.DeleteForMe -> GenericMessage.Content.Hidden(
                 MessageHide(
                     messageId = readableContent.messageId,
-                    conversationId = readableContent.conversationId,
-                    qualifiedConversationId = readableContent.qualifiedConversationId
+                    qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+                    conversationId = readableContent.unqualifiedConversationId
                 )
             )
             is MessageContent.Availability ->
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
+            is MessageContent.LastRead -> {
+                GenericMessage.Content.LastRead(
+                    LastRead(
+                        conversationId = readableContent.unqualifiedConversationId,
+                        qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
+                        lastReadTimestamp = readableContent.time.toEpochMilliseconds(),
+                    )
+                )
+            }
 
             else -> throw IllegalArgumentException("Unexpected message content type: $readableContent")
         }
@@ -81,7 +96,7 @@ class ProtoContentMapperImpl(
         }
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     private fun getReadableContent(genericMessage: GenericMessage, encodedContent: PlainMessageBlob): MessageContent.FromProto {
         val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
 
@@ -126,7 +141,11 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Hidden -> {
                 val hiddenMessage = genericMessage.hidden
                 if (hiddenMessage != null) {
-                    MessageContent.DeleteForMe(hiddenMessage.messageId, hiddenMessage.conversationId, hiddenMessage.qualifiedConversationId)
+                    MessageContent.DeleteForMe(
+                        messageId = hiddenMessage.messageId,
+                        unqualifiedConversationId = hiddenMessage.conversationId,
+                        conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+                    )
                 } else {
                     kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
                     MessageContent.Ignored
@@ -134,7 +153,14 @@ class ProtoContentMapperImpl(
             }
 
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
-            is GenericMessage.Content.LastRead -> MessageContent.Ignored
+            is GenericMessage.Content.LastRead -> {
+                MessageContent.LastRead(
+                    messageId = genericMessage.messageId,
+                    unqualifiedConversationId = protoContent.value.conversationId,
+                    conversationId = extractConversationId(protoContent.value.qualifiedConversationId),
+                    time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
+                )
+            }
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> MessageContent.Ignored
             else -> {
@@ -143,5 +169,11 @@ class ProtoContentMapperImpl(
             }
         }
         return readableContent
+    }
+
+    private fun extractConversationId(qualifiedConversationID: QualifiedConversationId?): ConversationId? {
+        return if (qualifiedConversationID != null)
+            idMapper.fromProtoModel(qualifiedConversationID)
+        else null
     }
 }

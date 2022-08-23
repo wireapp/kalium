@@ -46,6 +46,6 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(qualifiedID = userId)
-        val client = Client(user.id, "id1")
+        val client = Client(user.id, "id1", null)
     }
 }

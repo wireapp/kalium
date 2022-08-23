@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
@@ -19,15 +20,18 @@ import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import kotlinx.datetime.Clock
+import com.wire.kalium.persistence.dao.ProposalTimerEntity
 import kotlinx.datetime.Instant
 
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
+    fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
     fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState
+    fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -36,10 +40,12 @@ interface ConversationMapper {
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
-        unreadMessageCount: Long
+        unreadMessageCount: Long,
+        lastUnreadMessage: Message?
     ): ConversationDetails.OneOne
 }
 
+@Suppress("TooManyFunctions")
 internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
@@ -88,6 +94,9 @@ internal class ConversationMapperImpl(
         accessRole = daoModel.accessRole.map { it.toDAO() }
     )
 
+    override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
+        ProposalTimer(daoModel.groupID, daoModel.firingDate)
+
     override fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
         when (it) {
             ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
@@ -115,6 +124,9 @@ internal class ConversationMapperImpl(
             Conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
         }
 
+    override fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity =
+        ProposalTimerEntity(proposalTimer.groupID, proposalTimer.timestamp)
+
     override fun toApiModel(
         name: String?,
         members: List<UserId>,
@@ -140,6 +152,7 @@ internal class ConversationMapperImpl(
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        lastUnreadMessage: Message?
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
             conversation = conversation,
@@ -149,6 +162,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = LegalHoldStatus.DISABLED,
             userType = otherUser.userType,
             unreadMessagesCount = unreadMessageCount,
+            lastUnreadMessage = lastUnreadMessage
         )
     }
 
@@ -178,7 +192,8 @@ internal class ConversationMapperImpl(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
-                keyingMaterialLastUpdate = Clock.System.now()
+                keyingMaterialLastUpdate = Clock.System.now(),
+                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus

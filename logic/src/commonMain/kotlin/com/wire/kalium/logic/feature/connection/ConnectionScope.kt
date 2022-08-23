@@ -25,4 +25,7 @@ class ConnectionScope(
     val blockUser: BlockUserUseCase
         get() = BlockUserUseCaseImpl(connectionRepository)
 
+    val unblockUser: UnblockUserUseCase
+        get() = UnblockUserUseCaseImpl(connectionRepository)
+
 }
