@@ -10,26 +10,26 @@ import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.Member as PersistedMember
 
 interface MemberMapper {
-    fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Member
+    fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Conversation.Member
     fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo
     fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient>
     fun fromMapOfClientsToRecipients(qualifiedMap: Map<LogicUserId, List<Client>>): List<Recipient>
     fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
-    fun fromDaoModel(entity: PersistedMember): Member
-    fun toDaoModel(member: Member): PersistedMember
+    fun fromDaoModel(entity: PersistedMember): Conversation.Member
+    fun toDaoModel(member: Conversation.Member): PersistedMember
 }
 
 internal class MemberMapperImpl(private val idMapper: IdMapper, private val roleMapper: ConversationRoleMapper) : MemberMapper {
 
-    override fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Member =
-        Member(idMapper.fromApiModel(conversationMember.id), roleMapper.fromApi(conversationMember.conversationRole))
+    override fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Conversation.Member =
+        Conversation.Member(idMapper.fromApiModel(conversationMember.id), roleMapper.fromApi(conversationMember.conversationRole))
 
     override fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo {
         val self = with(conversationMembersResponse.self) {
-            Member(idMapper.fromApiModel(id), roleMapper.fromApi(conversationRole))
+            Conversation.Member(idMapper.fromApiModel(id), roleMapper.fromApi(conversationRole))
         }
         val others = conversationMembersResponse.otherMembers.map { member ->
-            Member(idMapper.fromApiModel(member.id), roleMapper.fromApi(member.conversationRole))
+            Conversation.Member(idMapper.fromApiModel(member.id), roleMapper.fromApi(member.conversationRole))
         }
         return MembersInfo(self, others)
     }
@@ -44,7 +44,7 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
         return otherMembers + selfMember
     }
 
-    override fun toDaoModel(member: Member): PersistedMember = with(member) {
+    override fun toDaoModel(member: Conversation.Member): PersistedMember = with(member) {
         PersistedMember(idMapper.toDaoModel(id), roleMapper.toDAO(role))
     }
 
@@ -62,42 +62,42 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
             Recipient(id, clients)
         }
 
-    override fun fromDaoModel(entity: PersistedMember): Member = with(entity) {
-        Member(idMapper.fromDaoModel(user), roleMapper.fromDAO(role))
+    override fun fromDaoModel(entity: PersistedMember): Conversation.Member = with(entity) {
+        Conversation.Member(idMapper.fromDaoModel(user), roleMapper.fromDAO(role))
     }
 }
 
 interface ConversationRoleMapper {
-    fun toApi(role: Member.Role): String
-    fun fromApi(roleDTO: String): Member.Role
-    fun fromDAO(roleEntity: PersistedMember.Role): Member.Role
-    fun toDAO(role: Member.Role): PersistedMember.Role
+    fun toApi(role: Conversation.Member.Role): String
+    fun fromApi(roleDTO: String): Conversation.Member.Role
+    fun fromDAO(roleEntity: PersistedMember.Role): Conversation.Member.Role
+    fun toDAO(role: Conversation.Member.Role): PersistedMember.Role
     fun fromApiModelToDaoModel(roleDTO: String): PersistedMember.Role
 }
 
 internal class ConversationRoleMapperImpl : ConversationRoleMapper {
-    override fun toApi(role: Member.Role): String = when (role) {
-        Member.Role.Admin -> ADMIN
-        Member.Role.Member -> MEMBER
-        is Member.Role.Unknown -> role.name
+    override fun toApi(role: Conversation.Member.Role): String = when (role) {
+        Conversation.Member.Role.Admin -> ADMIN
+        Conversation.Member.Role.Member -> MEMBER
+        is Conversation.Member.Role.Unknown -> role.name
     }
 
-    override fun fromApi(roleDTO: String): Member.Role = when (roleDTO) {
-        ADMIN -> Member.Role.Admin
-        MEMBER -> Member.Role.Member
-        else -> Member.Role.Unknown(roleDTO)
+    override fun fromApi(roleDTO: String): Conversation.Member.Role = when (roleDTO) {
+        ADMIN -> Conversation.Member.Role.Admin
+        MEMBER -> Conversation.Member.Role.Member
+        else -> Conversation.Member.Role.Unknown(roleDTO)
     }
 
-    override fun fromDAO(roleEntity: PersistedMember.Role): Member.Role = when (roleEntity) {
-        PersistedMember.Role.Admin -> Member.Role.Admin
-        PersistedMember.Role.Member -> Member.Role.Member
-        is PersistedMember.Role.Unknown -> Member.Role.Unknown(roleEntity.name)
+    override fun fromDAO(roleEntity: PersistedMember.Role): Conversation.Member.Role = when (roleEntity) {
+        PersistedMember.Role.Admin -> Conversation.Member.Role.Admin
+        PersistedMember.Role.Member -> Conversation.Member.Role.Member
+        is PersistedMember.Role.Unknown -> Conversation.Member.Role.Unknown(roleEntity.name)
     }
 
-    override fun toDAO(role: Member.Role): PersistedMember.Role = when (role) {
-        Member.Role.Admin -> PersistedMember.Role.Admin
-        Member.Role.Member -> PersistedMember.Role.Member
-        is Member.Role.Unknown -> PersistedMember.Role.Unknown(role.name)
+    override fun toDAO(role: Conversation.Member.Role): PersistedMember.Role = when (role) {
+        Conversation.Member.Role.Admin -> PersistedMember.Role.Admin
+        Conversation.Member.Role.Member -> PersistedMember.Role.Member
+        is Conversation.Member.Role.Unknown -> PersistedMember.Role.Unknown(role.name)
     }
 
     override fun fromApiModelToDaoModel(roleDTO: String): PersistedMember.Role = when (roleDTO) {

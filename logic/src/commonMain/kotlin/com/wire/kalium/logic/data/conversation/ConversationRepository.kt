@@ -60,14 +60,17 @@ interface ConversationRepository {
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
-    suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>>
+    suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
     suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
 
     /**
      * Fetches a list of all members' IDs or a given conversation including self user
      */
     suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>>
-    suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun persistMembers(
+        members: List<Conversation.Member>, conversationID: ConversationId
+    ): Either<CoreFailure, Unit>
+
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -100,7 +103,10 @@ interface ConversationRepository {
         accessRole: List<Conversation.AccessRole>
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateConversationMemberRole(conversationId: ConversationId, userId: UserId, role: Member.Role): Either<CoreFailure, Unit>
+    suspend fun updateConversationMemberRole(
+        conversationId: ConversationId, userId: UserId, role: Conversation.Member.Role
+    ): Either<CoreFailure, Unit>
+
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
@@ -372,7 +378,7 @@ class ConversationDataSource(
             conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
         }
 
-    override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Member>> =
+    override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
         conversationDAO.getAllMembers(idMapper.toDaoModel(conversationID)).map { members ->
             members.map(memberMapper::fromDaoModel)
         }
@@ -381,7 +387,7 @@ class ConversationDataSource(
         conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
     }
 
-    override suspend fun persistMembers(members: List<Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun persistMembers(members: List<Conversation.Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet()).flatMap {
             wrapStorageRequest {
                 conversationDAO.insertMembersWithQualifiedId(
@@ -401,7 +407,7 @@ class ConversationDataSource(
     }.flatMap {
         userIdList.map { userId ->
             // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
-            Member(userId, Member.Role.Member)
+            Conversation.Member(userId, Conversation.Member.Role.Member)
         }.let { membersList ->
             persistMembers(membersList, conversationID)
         }
@@ -559,8 +565,8 @@ class ConversationDataSource(
             // TODO(IMPORTANT!): having an initial value is not the correct approach, the
             //  only valid source for members role is the backend
             //  ---> at the moment the backend doesn't tell us anything about the member role! till then we are setting them as Member
-            val membersWithRole = users.map { userId -> Member(userId, Member.Role.Member) }
-            val selfMember = Member(selfUserId, Member.Role.Admin)
+            val membersWithRole = users.map { userId -> Conversation.Member(userId, Conversation.Member.Role.Member) }
+            val selfMember = Conversation.Member(selfUserId, Conversation.Member.Role.Admin)
             conversationDAO.insertMembersWithQualifiedId((membersWithRole + selfMember).map(memberMapper::toDaoModel), conversationId)
         }
     }
@@ -610,7 +616,7 @@ class ConversationDataSource(
     override suspend fun updateConversationMemberRole(
         conversationId: ConversationId,
         userId: UserId,
-        role: Member.Role
+        role: Conversation.Member.Role
     ): Either<CoreFailure, Unit> = wrapApiRequest {
         conversationApi.updateConversationMemberRole(
             conversationId = idMapper.toApiModel(conversationId),
