@@ -159,9 +159,8 @@ internal class AssetDataSource(
             }
         }.flatMap { assetResponse ->
             // After successful upload, we persist the asset to a persistent path
-            val persistentAssetDataPath = extension?.let {
-                kaliumFileSystem.providePersistentAssetPath(assetName = "${assetResponse.key}.$extension")
-            } ?: kaliumFileSystem.providePersistentAssetPath(assetName = assetResponse.key)
+            val persistentAssetDataPath =
+                kaliumFileSystem.providePersistentAssetPath(assetName = buildFileName(assetResponse.key, extension))
 
             // After successful upload we finally persist the data now to a persistent path and delete the temporary one
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)
@@ -213,9 +212,7 @@ internal class AssetDataSource(
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
                 // Decrypt and persist decoded asset onto a persistent asset path
-                val decodedAssetPath = assetName.fileExtension()?.let { extension ->
-                    kaliumFileSystem.providePersistentAssetPath("${assetId.value}.${extension}")
-                } ?: kaliumFileSystem.providePersistentAssetPath(assetId.value)
+                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath(buildFileName(assetId.value, assetName.fileExtension()))
 
                 val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
@@ -261,3 +258,6 @@ internal class AssetDataSource(
     override suspend fun deleteAssetLocally(assetId: AssetId): Either<CoreFailure, Unit> =
         wrapStorageRequest { assetDao.deleteAsset(assetId.value) }
 }
+
+private fun buildFileName(name: String, extension: String?): String =
+    extension?.let { "$name.$extension" } ?: name
