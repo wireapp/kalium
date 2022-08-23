@@ -16,18 +16,27 @@ interface UpdateConversationMemberRoleUseCase {
      * @param role new status to set the given conversation
      * @return an [ConversationUpdateStatusResult] containing Success or Failure cases
      */
-    suspend operator fun invoke(conversationId: ConversationId, userId: UserId, role: Conversation.Member.Role): UpdateConversationMemberRoleResult
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        userId: UserId,
+        role: Conversation.Member.Role
+    ): UpdateConversationMemberRoleResult
 }
 
 internal class UpdateConversationMemberRoleUseCaseImpl(
     private val conversationRepository: ConversationRepository
 ) : UpdateConversationMemberRoleUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId, userId: UserId, role: Conversation.Member.Role): UpdateConversationMemberRoleResult =
+    override suspend fun invoke(
+        conversationId: ConversationId,
+        userId: UserId,
+        role: Conversation.Member.Role
+    ): UpdateConversationMemberRoleResult =
         conversationRepository.updateConversationMemberRole(conversationId, userId, role)
             .fold({
                 kaliumLogger.e(
-                    "Something went wrong when updating the role of user:$userId in conversation:$conversationId to $role"
+                    "Something went wrong when updating the role of user:$userId"
+                            + "in conversation:$conversationId to $role"
                 )
                 UpdateConversationMemberRoleResult.Failure
             }, {

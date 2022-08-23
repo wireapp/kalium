@@ -68,7 +68,8 @@ interface ConversationRepository {
      */
     suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>>
     suspend fun persistMembers(
-        members: List<Conversation.Member>, conversationID: ConversationId
+        members: List<Conversation.Member>,
+        conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -104,7 +105,9 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun updateConversationMemberRole(
-        conversationId: ConversationId, userId: UserId, role: Conversation.Member.Role
+        conversationId: ConversationId,
+        userId: UserId,
+        role: Conversation.Member.Role
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
