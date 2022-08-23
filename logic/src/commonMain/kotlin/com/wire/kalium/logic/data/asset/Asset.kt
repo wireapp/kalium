@@ -28,14 +28,4 @@ enum class RetentionType {
     EXPIRING
 }
 
-// sealed class AssetType(open val mimeType: String)
-// data class FileAsset(val fileExtension: String) : AssetType("file/$fileExtension")
-// sealed class ImageAsset(override val mimeType: String) : AssetType(mimeType) {
-//     object JPEG : ImageAsset(mimeType = "image/jpeg")
-//     object JPG : ImageAsset(mimeType = "image/jpg")
-//     object PNG : ImageAsset(mimeType = "image/png")
-// }
-
 fun isValidImage(mimeType: String): Boolean = mimeType in setOf("image/jpg", "image/jpeg", "image/png", "image/heic")
-
-// should put other types of mimetypes, ie: media, audio, etc.

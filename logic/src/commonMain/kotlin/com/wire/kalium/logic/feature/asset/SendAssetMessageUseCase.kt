@@ -24,6 +24,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -48,8 +49,7 @@ fun interface SendAssetMessageUseCase {
         assetName: String,
         assetMimeType: String,
         assetWidth: Int?,
-        assetHeight: Int?,
-        extension: String
+        assetHeight: Int?
     ): SendAssetMessageResult
 }
 
@@ -69,8 +69,7 @@ internal class SendAssetMessageUseCaseImpl(
         assetName: String,
         assetMimeType: String,
         assetWidth: Int?,
-        assetHeight: Int?,
-        extension: String
+        assetHeight: Int?
     ): SendAssetMessageResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -84,7 +83,7 @@ internal class SendAssetMessageUseCaseImpl(
             assetMimeType,
             assetDataPath,
             otrKey,
-            extension
+            assetName.fileExtension()
         ).flatMap { (assetId, sha256) ->
 
             // Try to send the Asset Message

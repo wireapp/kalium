@@ -177,7 +177,7 @@ internal class AssetDataSource(
         }
 
     override suspend fun downloadPublicAsset(assetId: AssetId): Either<CoreFailure, Path> =
-        fetchOrDownloadDecodedAsset(assetId = idMapper.toApiModel(assetId), assetName = "user_avatar_image.jpg", assetToken = null)
+        fetchOrDownloadDecodedAsset(assetId = idMapper.toApiModel(assetId), assetName = assetId.toString(), assetToken = null)
 
     override suspend fun fetchPrivateDecodedAsset(
         assetId: AssetId,
