@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.map
 interface UserConfigRepository {
     fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit>
     fun isLoggingEnabled(): Either<StorageFailure, Boolean>
+    fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Either<StorageFailure, Boolean>>
+    fun persistPersistentWebSocketConnectionStatus(status: Boolean): Either<StorageFailure, Unit>
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
@@ -26,6 +28,12 @@ class UserConfigDataSource(
         wrapStorageRequest { userConfigStorage.enableLogging(enabled) }
 
     override fun isLoggingEnabled(): Either<StorageFailure, Boolean> = wrapStorageRequest { userConfigStorage.isLoggingEnables() }
+
+    override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigStorage.isPersistentWebSocketConnectionEnabledFlow().wrapStorageRequest()
+
+    override fun persistPersistentWebSocketConnectionStatus(status: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.persistPersistentWebSocketConnectionStatus(status) }
 
     override fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistFileSharingStatus(status, isStatusChanged) }

@@ -10,9 +10,11 @@ import com.sun.jna.Pointer
  * QUALITY_NETWORK_PROBLEM = 4
  */
 interface NetworkQualityChangedHandler : Callback {
+
+    @Suppress("LongParameterList")
     fun onNetworkQualityChanged(
         conversationId: String,
-        userId: String,
+        userId: String?,
         clientId: String,
         quality: Int,
         roundTripTimeInMilliseconds: Int,

@@ -133,7 +133,8 @@ object TestConversation {
             ConversationAccessRoleDTO.GUEST,
             ConversationAccessRoleDTO.TEAM_MEMBER,
             ConversationAccessRoleDTO.NON_TEAM_MEMBER
-        )
+        ),
+        mlsCipherSuiteTag = null
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
@@ -152,6 +153,7 @@ object TestConversation {
             time = "2022-03-30T15:36:00.000Z"
         )
 
+    const val GROUP_ID = "mlsGroupId"
     val ENTITY_ID = QualifiedIDEntity("valueConversation", "domainConversation")
     val ENTITY = ConversationEntity(
         ENTITY_ID,
@@ -192,7 +194,8 @@ object TestConversation {
             "group_id",
             ProtocolInfo.MLS.GroupState.PENDING_JOIN,
             0UL,
-            Instant.parse("2021-03-30T15:36:00.000Z")
+            Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         ),
         MutedConversationStatus.AllAllowed,
         null,

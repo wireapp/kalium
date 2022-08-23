@@ -137,7 +137,7 @@ class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = ar
         )
 
         enum class ApplicationFlow {
-            SYNC, EVENT_RECEIVER, CONVERSATIONS, CONNECTIONS, MESSAGES, SEARCH, SESSION, REGISTER, CLIENTS, CALLING, ASSETS
+            SYNC, EVENT_RECEIVER, CONVERSATIONS, CONNECTIONS, MESSAGES, SEARCH, SESSION, REGISTER, CLIENTS, CALLING, ASSETS, LOCAL_STORAGE
         }
     }
 }

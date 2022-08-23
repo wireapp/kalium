@@ -1,5 +1,5 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.ConversationEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.collections.List;
 
 CREATE TABLE Conversation (
@@ -10,17 +10,18 @@ CREATE TABLE Conversation (
     mls_group_id TEXT,
     mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
     mls_epoch INTEGER DEFAULT 0 NOT NULL,
+    mls_proposal_timer TEXT,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
     muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
-    removed_by TEXT AS QualifiedIDEntity,
     creator_id TEXT NOT NULL,
     last_modified_date TEXT NOT NULL,
     last_notified_message_date TEXT,
     last_read_date TEXT DEFAULT "1970-01-01T00:00:00.000Z" NOT NULL,
     access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
-    mls_last_keying_material_update INTEGER DEFAULT 0 NOT NULL
+    mls_last_keying_material_update INTEGER DEFAULT 0 NOT NULL,
+    mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL
 );
 
 deleteAllConversations:
@@ -30,8 +31,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, removed_by, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_message_date, access_list, access_role_list, last_read_date,mls_last_keying_material_update, mls_cipher_suite)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -41,14 +42,14 @@ mls_epoch = excluded.mls_epoch,
 protocol = excluded.protocol,
 muted_status = excluded.muted_status,
 muted_time = excluded.muted_time,
-removed_by = excluded.removed_by,
 creator_id = excluded.creator_id,
 access_list = excluded.access_list,
 access_role_list = excluded.access_role_list,
 last_modified_date = last_modified_date,
 last_notified_message_date = last_notified_message_date,
 last_read_date = last_read_date,
-mls_last_keying_material_update  = excluded.mls_last_keying_material_update;
+mls_last_keying_material_update  = excluded.mls_last_keying_material_update,
+mls_cipher_suite = excluded.mls_cipher_suite;
 
 updateConversation:
 UPDATE Conversation
@@ -75,11 +76,6 @@ UPDATE Conversation
 SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
 
-updateConversationRemovedBy:
-UPDATE Conversation
-SET removed_by = :removed_by
-WHERE qualified_id = :qualified_id;
-
 selectAllConversations:
 SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC;
 
@@ -95,9 +91,6 @@ SELECT * FROM Conversation WHERE mls_group_state = ? AND protocol = ?;
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
-getRemovedBy:
-SELECT removed_by FROM Conversation WHERE qualified_id = ?;
-
 selectConversationsWithUnnotifiedMessages:
 SELECT * FROM Conversation WHERE muted_status != 'ALL_MUTED' AND (last_notified_message_date ISNULL OR DateTime(last_modified_date) > DateTime(last_notified_message_date));
 
@@ -106,12 +99,10 @@ UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
-getUnreadMessageCount:
-SELECT COUNT() FROM Message AS message WHERE  message.conversation_id IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id));
-
 getUnreadConversationCount:
-SELECT COUNT() FROM Conversation AS conversation WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date);
-
+SELECT COUNT() FROM Conversation AS conversation
+ WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date)
+ AND conversation.type IS NOT "SELF";
 
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
@@ -121,3 +112,18 @@ UPDATE Conversation SET mls_last_keying_material_update= ? WHERE mls_group_id = 
 
 selectByKeyingMaterialUpdate:
 SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND mls_last_keying_material_update - ? <0 AND mls_group_id IS NOT NULL;
+
+updateProposalTimer:
+UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;
+
+clearProposalTimer:
+UPDATE Conversation SET mls_proposal_timer = NULL WHERE mls_group_id = ?;
+
+selectProposalTimers:
+SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE protocol = ? AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
+
+isUserMember:
+SELECT user FROM Member WHERE conversation = ? AND user = ?;
+
+whoDeletedMeInConversation:
+SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = "REMOVED" AND member_change_list LIKE :self_user_id) ORDER BY DateTime(date) DESC LIMIT 1;
