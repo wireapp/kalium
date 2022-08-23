@@ -12,7 +12,6 @@ sealed class MessageContent {
     sealed class Signaling : FromProto()
 
     // client message content types
-
     data class Text(val value: String) : Regular()
     data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()
@@ -39,6 +38,10 @@ sealed class MessageContent {
     ) : Regular()
 
     object Empty : Regular()
+
+    data class Cleared(
+
+    )
 
     // server message content types
     // TODO: rename members to userList
