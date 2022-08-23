@@ -19,6 +19,8 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 
@@ -150,12 +152,26 @@ class MessageSenderImpl(
         }
     }
 
+    /**
+     * Attempts to send a MLS application message
+     *
+     * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
+     */
     private suspend fun attemptToSendWithMLS(groupId: String, message: Message.Regular): Either<CoreFailure, String> =
         mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-            // TODO(mls): handle mls-stale-message
-            messageRepository.sendMLSMessage(message.conversationId, mlsMessage).map {
-                message.date // TODO(mls): return actual server time from the response
-            }
+            messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
+                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+                    if (it.kaliumException.isMlsStaleMessage()) {
+                        logger.w("Encrypted MLS message for outdated epoch '${message.id}', re-trying..")
+                        return syncManager.waitUntilLiveOrFailure().flatMap {
+                            attemptToSend(message)
+                        }
+                    }
+                }
+                Either.Left(it)
+            }, {
+                Either.Right(message.date) // TODO(mls): return actual server time from the response
+            })
         }
 
     /**
