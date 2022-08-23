@@ -69,8 +69,6 @@ class AssetApiImpl internal constructor(
             httpClient.prepareGet(buildAssetsPath(assetId)) {
                 assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
             }.execute { httpResponse ->
-                // TODO: write the file to specific path using asset-id as temp name
-                // TODO: return path ? instead of Unit
                 val channel = httpResponse.body<ByteReadChannel>()
                 tempFileSink.use { sink ->
                     while (!channel.isClosedForRead) {
@@ -187,4 +185,4 @@ class StreamAssetContent(
     }
 }
 
-private const val BUFFER_SIZE = 8192L
+private const val BUFFER_SIZE = 1024 * 4L

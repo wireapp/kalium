@@ -150,4 +150,4 @@ private const val KEY_ALGORITHM_CONFIGURATION = "AES/CBC/PKCS5PADDING"
 private const val IV_SIZE = 16
 private const val AES_BLOCK_SIZE = 16
 private const val AES_KEYGEN_SIZE = 256
-private const val BUFFER_SIZE = 8192L
+private const val BUFFER_SIZE = 1024 * 8L

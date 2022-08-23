@@ -192,13 +192,13 @@ internal class AssetDataSource(
         assetToken: String?,
         encryptionKey: AES256Key? = null
     ): Either<CoreFailure, Path> {
-        val tempFile = kaliumFileSystem.tempFilePath()
-        val tempFileSink = kaliumFileSystem.sink(tempFile)
         return wrapStorageRequest { assetDao.getAssetByKey(assetId.value).firstOrNull() }.fold({
+            val tempFile = kaliumFileSystem.tempFilePath("temp_${assetId.value}")
+            val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
                 // Backend sends asset messages with empty asset tokens
                 assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null }, tempFileSink)
-            }.flatMap { _ ->
+            }.flatMap {
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
                 // Decrypt and persist decoded asset onto a persistent asset path
