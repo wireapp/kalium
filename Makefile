@@ -1,4 +1,6 @@
+ifeq ($(JAVA_HOME),)
 JAVA_HOME := $(shell /usr/libexec/java_home)
+endif
 CRYPTOBOX_C_VERSION := "v1.1.3"
 CRYPTOBOX4J_VERSION := "1.1.1"
 LIBSODIUM_VERSION := "1.0.18-RELEASE"
