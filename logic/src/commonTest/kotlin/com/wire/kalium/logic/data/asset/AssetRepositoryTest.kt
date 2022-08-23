@@ -86,7 +86,8 @@ class AssetRepositoryTest {
         val actual = assetRepository.uploadAndPersistPrivateAsset(
             assetDataPath = fullDataPath,
             mimeType = "image/jpg",
-            otrKey = randomAES256Key
+            otrKey = randomAES256Key,
+            extension = null
         )
 
         // Then
@@ -148,7 +149,8 @@ class AssetRepositoryTest {
         val actual = assetRepository.uploadAndPersistPrivateAsset(
             mimeType = "image/jpg",
             assetDataPath = fullDataPath,
-            otrKey = randomAES256Key
+            otrKey = randomAES256Key,
+            extension = null
         )
 
         // Then
@@ -431,6 +433,6 @@ class AssetRepositoryTest {
     }
 
     private fun stubAssetEntity(assetKey: String, dataPath: Path, dataSize: Long) =
-        AssetEntity(assetKey, "domain", null, dataPath.toString(), dataSize, null, 1)
+        AssetEntity(assetKey, "domain", dataPath.toString(), dataSize, null, 1)
 
 }
