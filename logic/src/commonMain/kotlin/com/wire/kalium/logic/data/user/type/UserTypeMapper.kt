@@ -12,7 +12,7 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
         get() = UserTypeEntity.FEDERATED
     override val external: UserTypeEntity
         get() = UserTypeEntity.EXTERNAL
-    val STANDARD: UserTypeEntity
+    override val standard: UserTypeEntity
         get() = UserTypeEntity.STANDARD
     override val admin: UserTypeEntity
         get() = UserTypeEntity.ADMIN
@@ -33,7 +33,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
         get() = UserType.FEDERATED
     override val external: UserType
         get() = UserType.EXTERNAL
-    override val internal: UserType
+    override val standard: UserType
         get() = UserType.INTERNAL
     override val admin: UserType
         get() = UserType.ADMIN
@@ -46,7 +46,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
 
     override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserType {
         return when (userTypeEntity) {
-            UserTypeEntity.STANDARD -> internal
+            UserTypeEntity.STANDARD -> standard
             UserTypeEntity.EXTERNAL -> external
             UserTypeEntity.FEDERATED -> federated
             UserTypeEntity.GUEST -> guest
@@ -70,7 +70,7 @@ interface UserTypeMapper<T> {
     val guest: T
     val federated: T
     val external: T
-    val internal: T
+    val standard: T
     val admin: T
     val owner: T
     val service: T
@@ -86,7 +86,7 @@ interface UserTypeMapper<T> {
     ): T = when {
         isService -> service
         isFromDifferentBackEnd(otherUserDomain, selfUserDomain) -> federated
-        isFromTheSameTeam(otherUserTeamId, selfUserTeamId) -> internal
+        isFromTheSameTeam(otherUserTeamId, selfUserTeamId) -> standard
         selfUserIsTeamMember(selfUserTeamId) -> guest
         else -> none
     }
@@ -101,10 +101,10 @@ interface UserTypeMapper<T> {
 
     fun teamRoleCodeToUserType(permissionCode: Int?): T = when (permissionCode) {
         TeamRole.ExternalPartner.value -> external
-        TeamRole.Member.value -> internal
+        TeamRole.Member.value -> standard
         TeamRole.Admin.value -> admin
         TeamRole.Owner.value -> owner
-        null -> internal
+        null -> standard
         else -> guest
     }
 
