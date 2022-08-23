@@ -59,7 +59,7 @@ class UserMapperTest {
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.INTERNAL,
+            userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false
         )

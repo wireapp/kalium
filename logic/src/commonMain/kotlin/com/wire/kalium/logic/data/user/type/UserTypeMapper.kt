@@ -12,8 +12,8 @@ class UserEntityTypeMapperImpl : UserEntityTypeMapper {
         get() = UserTypeEntity.FEDERATED
     override val external: UserTypeEntity
         get() = UserTypeEntity.EXTERNAL
-    override val internal: UserTypeEntity
-        get() = UserTypeEntity.INTERNAL
+    val STANDARD: UserTypeEntity
+        get() = UserTypeEntity.STANDARD
     override val admin: UserTypeEntity
         get() = UserTypeEntity.ADMIN
     override val owner: UserTypeEntity
@@ -46,7 +46,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
 
     override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserType {
         return when (userTypeEntity) {
-            UserTypeEntity.INTERNAL -> internal
+            UserTypeEntity.STANDARD -> internal
             UserTypeEntity.EXTERNAL -> external
             UserTypeEntity.FEDERATED -> federated
             UserTypeEntity.GUEST -> guest

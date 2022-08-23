@@ -102,6 +102,9 @@ data class Conversation(
 
         abstract fun name(): String
     }
+
+
+
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
