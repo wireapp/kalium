@@ -16,6 +16,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.asset.AssetApi
@@ -53,7 +54,7 @@ interface AssetRepository {
         mimeType: String,
         assetDataPath: Path,
         otrKey: AES256Key,
-        extension: String
+        extension: String?
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>
 
     /**
@@ -110,14 +111,14 @@ internal class AssetDataSource(
         assetDataSize: Long
     ): Either<CoreFailure, UploadedAssetId> {
         val uploadAssetData = UploadAssetData(assetDataPath, assetDataSize, mimeType, true, RetentionType.ETERNAL)
-        return uploadAndPersistAsset(uploadAssetData, assetDataPath, "jpg")
+        return uploadAndPersistAsset(uploadAssetData, assetDataPath, null)
     }
 
     override suspend fun uploadAndPersistPrivateAsset(
         mimeType: String,
         assetDataPath: Path,
         otrKey: AES256Key,
-        extension: String
+        extension: String?
     ): Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>> {
 
         val tempEncryptedDataPath = kaliumFileSystem.tempFilePath("${assetDataPath.name}.aes")
@@ -147,7 +148,7 @@ internal class AssetDataSource(
     private suspend fun uploadAndPersistAsset(
         uploadAssetData: UploadAssetData,
         decodedDataPath: Path,
-        extension: String
+        extension: String?
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
@@ -158,7 +159,9 @@ internal class AssetDataSource(
             }
         }.flatMap { assetResponse ->
             // After successful upload, we persist the asset to a persistent path
-            val persistentAssetDataPath = kaliumFileSystem.providePersistentAssetPath(assetName = "${assetResponse.key}.$extension")
+            val persistentAssetDataPath = extension?.let {
+                kaliumFileSystem.providePersistentAssetPath(assetName = "${assetResponse.key}.$extension")
+            } ?: kaliumFileSystem.providePersistentAssetPath(assetName = assetResponse.key)
 
             // After successful upload we finally persist the data now to a persistent path and delete the temporary one
             kaliumFileSystem.copy(decodedDataPath, persistentAssetDataPath)
@@ -210,7 +213,10 @@ internal class AssetDataSource(
                 val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
                 // Decrypt and persist decoded asset onto a persistent asset path
-                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath("${assetId.value}.${"pdf"}")
+                val decodedAssetPath = assetName.fileExtension()?.let { extension ->
+                    kaliumFileSystem.providePersistentAssetPath("${assetId.value}.${extension}")
+                } ?: kaliumFileSystem.providePersistentAssetPath(assetId.value)
+
                 val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
                 // Public assets are stored already decrypted on the backend, hence no decryption is needed
