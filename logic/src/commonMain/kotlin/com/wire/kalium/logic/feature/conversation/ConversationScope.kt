@@ -33,7 +33,7 @@ class ConversationScope internal constructor(
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
-    private val assetRepository: AssetRepository
+    private val assetRepository: AssetRepository,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
     private val selfUserId: UserId,

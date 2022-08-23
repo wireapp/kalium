@@ -42,7 +42,10 @@ sealed class MessageContent {
     object Empty : Regular()
 
     data class Cleared(
-
+        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
+        val unqualifiedConversationId: String,
+        val conversationId: ConversationId?,
+        val time: Instant
     )
 
     // server message content types
