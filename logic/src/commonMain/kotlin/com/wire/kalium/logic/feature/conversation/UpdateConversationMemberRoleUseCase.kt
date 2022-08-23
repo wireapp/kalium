@@ -35,8 +35,8 @@ internal class UpdateConversationMemberRoleUseCaseImpl(
         conversationRepository.updateConversationMemberRole(conversationId, userId, role)
             .fold({
                 kaliumLogger.e(
-                    "Something went wrong when updating the role of user:$userId"
-                            + "in conversation:$conversationId to $role"
+                    "Something went wrong when updating the role of user:$userId" +
+                            "in conversation:$conversationId to $role"
                 )
                 UpdateConversationMemberRoleResult.Failure
             }, {
