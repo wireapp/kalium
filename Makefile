@@ -1,6 +1,7 @@
 ifeq ($(JAVA_HOME),)
 JAVA_HOME := $(shell /usr/libexec/java_home)
 endif
+SHELL := /bin/bash
 CRYPTOBOX_C_VERSION := "v1.1.3"
 CRYPTOBOX4J_VERSION := "1.1.1"
 LIBSODIUM_VERSION := "1.0.18-RELEASE"
@@ -13,7 +14,7 @@ all: install-rust prepare-native cryptobox-c libsodium cryptobox4j copy-all-libs
 .PHONY: install-rust
 install-rust:
 	@curl https://sh.rustup.rs -sSf | sh -s -- -y
-	@. "${HOME}/.cargo/env"
+	@source "${HOME}/.cargo/env"
 
 .PHONY: clean-native
 clean-native:
