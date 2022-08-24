@@ -8,6 +8,7 @@ import okio.Source
 import okio.buffer
 import okio.cipherSink
 import okio.cipherSource
+import okio.source
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -106,12 +107,15 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
 
             // Decrypt and write the data to given outputPath
             encryptedDataSource.cipherSource(cipher).buffer().use { bufferedSource ->
-                val data = bufferedSource.readByteArray()
-                size = data.size.toLong()
-                outputSink.buffer().use {
-                    it.write(data)
-                    it.flush()
+                val source = bufferedSource.inputStream().source()
+                val contentBuffer = Buffer()
+                var byteCount: Long
+                while (source.read(contentBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
+                    size += byteCount
+                    outputSink.write(contentBuffer, byteCount)
+                    outputSink.flush()
                 }
+                source.close()
             }
             kaliumLogger.d("WROTE $size bytes")
         } catch (e: Exception) {
@@ -146,3 +150,4 @@ private const val KEY_ALGORITHM_CONFIGURATION = "AES/CBC/PKCS5PADDING"
 private const val IV_SIZE = 16
 private const val AES_BLOCK_SIZE = 16
 private const val AES_KEYGEN_SIZE = 256
+private const val BUFFER_SIZE = 1024 * 8L
