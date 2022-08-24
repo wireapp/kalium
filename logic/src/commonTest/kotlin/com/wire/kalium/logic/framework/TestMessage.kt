@@ -12,7 +12,7 @@ object TestMessage {
     val TEXT_MESSAGE = Message.Regular(
         id = TEST_MESSAGE_ID,
         content = TEXT_CONTENT,
-        conversationId = ConversationId("conv", "id"),
+        conversationId = TestConversation.ID,
         date = "date",
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
