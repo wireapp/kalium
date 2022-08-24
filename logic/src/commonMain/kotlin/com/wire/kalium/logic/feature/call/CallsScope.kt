@@ -22,6 +22,7 @@ import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOnUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.util.KaliumDispatcherImpl
 
 @Suppress("LongParameterList")
 class CallsScope internal constructor(
@@ -58,7 +59,7 @@ class CallsScope internal constructor(
 
     val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(callManager)
 
-    val endCall: EndCallUseCase get() = EndCallUseCase(callManager)
+    val endCall: EndCallUseCase get() = EndCallUseCase(callManager, KaliumDispatcherImpl)
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager)
 
