@@ -32,11 +32,11 @@ class MemberMapperTest {
     fun setup() {
         given(roleMapper)
             .invocation { fromApi("wire_admin") }
-            .then { Member.Role.Admin }
+            .then { Conversation.Member.Role.Admin }
 
         given(roleMapper)
             .invocation { fromApi("wire_member") }
-            .then { Member.Role.Member }
+            .then { Conversation.Member.Role.Member }
 
         memberMapper = MemberMapperImpl(idMapper, roleMapper)
     }
@@ -118,11 +118,11 @@ class MemberMapperTest {
 
     private companion object {
         val SELF_MEMBER_RESPONSE = ConversationMemberDTO.Self(UserIdDTO("selfId", "selfDomain"), "wire_admin")
-        val SELF_MEMBER = Member(UserId("selfId", "selfDomain"), Member.Role.Admin)
+        val SELF_MEMBER = Conversation.Member(UserId("selfId", "selfDomain"), Conversation.Member.Role.Admin)
 
         val OTHER_MEMBER_RESPONSE =
             ConversationMemberDTO.Other(id = UserIdDTO("other1", "domain1"), conversationRole = "wire_member", service = null)
-        val OTHER_MEMBER = Member(id = UserId("other1", "domain1"), role = Member.Role.Member)
+        val OTHER_MEMBER = Conversation.Member(id = UserId("other1", "domain1"), role = Conversation.Member.Role.Member)
 
 
         val MEMBERS_RESPONSE = ConversationMembersResponse(SELF_MEMBER_RESPONSE, listOf(OTHER_MEMBER_RESPONSE))

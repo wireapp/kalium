@@ -103,6 +103,14 @@ data class Conversation(
         abstract fun name(): String
     }
 
+    data class Member(val id: UserId, val role: Role) {
+        sealed class Role {
+            object Member : Role()
+            object Admin : Role()
+            data class Unknown(val name: String) : Role()
+        }
+    }
+
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -155,17 +163,9 @@ sealed class ConversationDetails(open val conversation: Conversation) {
     )
 }
 
-data class MembersInfo(val self: Member, val otherMembers: List<Member>)
+data class MembersInfo(val self: Conversation.Member, val otherMembers: List<Conversation.Member>)
 
-data class Member(val id: UserId, val role: Role) { // TODO Kubaz rename to ConversationMember
-    sealed class Role {
-        object Member : Role()
-        object Admin : Role()
-        data class Unknown(val name: String) : Role()
-    }
-}
-
-data class MemberDetails(val user: User, val role: Member.Role)
+data class MemberDetails(val user: User, val role: Conversation.Member.Role)
 
 typealias ClientId = PlainId
 
