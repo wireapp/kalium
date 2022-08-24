@@ -43,9 +43,6 @@ class OnParticipantsVideoStateChangedTest {
         given(qualifiedIdMapper).invocation { fromStringToQualifiedID(conversationIdString) }
             .then { conversationIdQualified }
 
-        given(qualifiedIdMapper).invocation { fromStringToQualifiedID(userIdString) }
-            .then { userIdQualified }
-
         given(callMapper).invocation { fromIntToCallingVideoState(videoStateInt) }
             .then { VideoStateCalling.STARTED }
 
@@ -60,11 +57,6 @@ class OnParticipantsVideoStateChangedTest {
         verify(qualifiedIdMapper)
             .function(qualifiedIdMapper::fromStringToQualifiedID)
             .with(eq(conversationIdString))
-            .wasInvoked(once)
-
-        verify(qualifiedIdMapper)
-            .function(qualifiedIdMapper::fromStringToQualifiedID)
-            .with(eq(userIdString))
             .wasInvoked(once)
 
         verify(callMapper)
