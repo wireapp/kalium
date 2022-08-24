@@ -8,6 +8,7 @@ import com.wire.kalium.logic.feature.asset.SendAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.isLeft
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.testservice.models.Instance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -98,9 +99,14 @@ class ConversationRepository {
                     instance.coreLogic.sessionScope(result.authSession.session.userId) {
                         log.info("Instance ${instance.instanceId}: Send file")
                         runBlocking {
-                            log.info("Wait until alive")
-                            syncManager.waitUntilLiveOrFailure()
-                            log.info("List conversations:")
+                            log.info("Instance ${instance.instanceId}: Wait until alive")
+                            if (syncManager.isSlowSyncOngoing()) {
+                                log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
+                            }
+                            syncManager.waitUntilLiveOrFailure().onFailure {
+                                log.info("Instance ${instance.instanceId}: Sync failed with ${it}")
+                            }
+                            log.info("Instance ${instance.instanceId}: List conversations:")
                             val convos = conversations.getConversations()
                             if (convos is GetConversationsUseCase.Result.Success) {
                                 for (convo in convos.convFlow.first()) {

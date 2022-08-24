@@ -1,17 +1,20 @@
 package com.wire.kalium.testservice.managed
 
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
 import io.dropwizard.lifecycle.Managed
@@ -64,7 +67,7 @@ class InstanceService : Managed {
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
         log.info("Instance ${instanceId}: Creating ${instancePath}")
         val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
-        CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
+        CoreLogger.setLoggingLevel(KaliumLogLevel.INFO)
 
         val serverConfig = if (instanceRequest.customBackend != null) {
             ServerConfig.Links(
@@ -113,12 +116,14 @@ class InstanceService : Managed {
         runBlocking {
             coreLogic.sessionScope(loginResult.session.userId) {
                 if (client.needsToRegisterClient()) {
-                    val result = client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))
-                    when (result) {
+                    when (val result = client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))) {
                         is RegisterClientResult.Failure -> throw WebApplicationException("Instance ${instanceId}: Client registration failed")
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
                             log.info("Instance ${instanceId}: Login with new device ${clientId} successful")
+                            syncManager.waitUntilLiveOrFailure().onFailure {
+                                log.info("Instance ${instanceId}: Sync failed with ${it}")
+                            }
                         }
                     }
                 }
