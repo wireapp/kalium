@@ -36,12 +36,14 @@ class OnParticipantListChanged(
 ) : ParticipantChangedHandler {
 
     override fun onParticipantChanged(remoteConversationIdString: String, data: String, arg: Pointer?) {
-        val participants = mutableListOf<Participant>()
-        val clients = mutableListOf<CallClient>()
-        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
 
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
+
         callingScope.launch {
+            val participants = mutableListOf<Participant>()
+            val clients = mutableListOf<CallClient>()
+            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
+
             val memberList: List<Member> = conversationRepository
                 .observeConversationMembers(conversationIdWithDomain)
                 .first()
