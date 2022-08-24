@@ -121,9 +121,7 @@ class InstanceService : Managed {
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
                             log.info("Instance ${instanceId}: Login with new device ${clientId} successful")
-                            syncManager.waitUntilLiveOrFailure().onFailure {
-                                log.info("Instance ${instanceId}: Sync failed with ${it}")
-                            }
+                            syncManager.waitUntilLive()
                         }
                     }
                 }

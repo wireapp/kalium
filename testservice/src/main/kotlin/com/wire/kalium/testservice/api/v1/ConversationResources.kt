@@ -18,6 +18,7 @@ import javax.ws.rs.Path
 import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 
 @Api
 @Path("/api/v1")
@@ -93,6 +94,7 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     // POST /api/v1/instance/{instanceId}/sendConfirmationRead
     // Send a read confirmation for a message.
+    // Used in: web-mls
 
     // POST /api/v1/instance/{instanceId}/sendEphemeralConfirmationDelivered
     // Send a delivery confirmation for an ephemeral message.
@@ -103,7 +105,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendFile")
     @ApiOperation(value = "Send a file to a conversation")
-    fun sendText(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest) {
+    fun sendText(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendFileRequest) {
             ConversationRepository.sendFile(
@@ -114,6 +116,7 @@ class ConversationResources(private val instanceService: InstanceService) {
                 type
             )
         }
+        return Response.status(Response.Status.OK).build()
     }
 
     // POST /api/v1/instance/{instanceId}/sendImage
@@ -143,14 +146,15 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     // POST /api/v1/instance/{instanceId}/sendReaction
     // Send a reaction to a message.
+    // Used in: web-mls
 
     @POST
     @Path("/instance/{id}/sendText")
     @ApiOperation(value = "Send a text message to a conversation (can include mentions, reply, buttons and link previews)")
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest) {
         val instance = instanceService.getInstanceOrThrow(id)
+        // TODO: Implement mentions, reply and ephemeral messages for web-mls
         with(sendTextRequest) {
-            ConversationRepository.getMessages(instance, ConversationId(conversationId, conversationDomain))
             ConversationRepository.sendTextMessage(
                 instance,
                 ConversationId(conversationId, conversationDomain),
