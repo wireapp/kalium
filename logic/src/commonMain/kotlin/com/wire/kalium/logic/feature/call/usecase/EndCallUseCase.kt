@@ -6,8 +6,9 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-class EndCallUseCase(private val callManager: Lazy<CallManager>,
-                     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+class EndCallUseCase(
+    private val callManager: Lazy<CallManager>,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.io) {
