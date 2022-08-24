@@ -13,7 +13,7 @@ import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.map
@@ -42,7 +42,7 @@ class OnParticipantListChanged(
 
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
         callingScope.launch {
-            val memberList: List<Member> = conversationRepository
+            val memberList: List<Conversation.Member> = conversationRepository
                 .observeConversationMembers(conversationIdWithDomain)
                 .first()
 
@@ -74,7 +74,7 @@ class OnParticipantListChanged(
         callingLogger.i("[onParticipantsChanged] - Total Participants: ${participants.size} | ConversationId: $remoteConversationIdString")
     }
 
-    private fun mapQualifiedMemberId(memberList: List<Member>, member: CallMember) =
+    private fun mapQualifiedMemberId(memberList: List<Conversation.Member>, member: CallMember) =
         memberList.first {
             val userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId)
             it.id.value == userId.value

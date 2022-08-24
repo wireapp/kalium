@@ -23,16 +23,18 @@ internal class ClearConversationContent(
 
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
         return conversationRepository.getAssetMessages(conversationId).flatMap { conversationAssetMessages ->
-            conversationAssetMessages.forEach { assetMessage ->
-                val assetRemoteData = (assetMessage.content as MessageContent.Asset).value.remoteData
+            conversationAssetMessages.forEach { message ->
+                val messageContent: MessageContent = message.content
 
-                with(assetRemoteData) {
-                    assetRepository.deleteAsset(
-                        AssetId(
-                            assetId,
-                            assetDomain.orEmpty()
-                        ), assetToken
-                    )
+                if (messageContent is MessageContent.Asset) {
+                    with(messageContent.value.remoteData) {
+                        assetRepository.deleteAsset(
+                            AssetId(
+                                assetId,
+                                assetDomain.orEmpty()
+                            ), assetToken
+                        )
+                    }
                 }
             }
 
