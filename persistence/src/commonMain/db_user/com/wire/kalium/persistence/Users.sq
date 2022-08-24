@@ -18,7 +18,7 @@ CREATE TABLE User (
     preview_asset_id TEXT AS QualifiedIDEntity,
     complete_asset_id TEXT AS QualifiedIDEntity,
     user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE',
-    user_type TEXT AS UserTypeEntity NOT NULL DEFAULT 'INTERNAL',
+    user_type TEXT AS UserTypeEntity NOT NULL DEFAULT 'STANDARD',
     bot_service TEXT AS BotEntity,
     deleted INTEGER AS Boolean NOT NULL DEFAULT 0
 );
