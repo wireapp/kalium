@@ -16,7 +16,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Member
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -50,9 +49,10 @@ class OnParticipantListChanged(
 
             participantsChange.members.map { member ->
                 val participant = participantMapper.fromCallMemberToParticipant(member)
-                userRepository.userById(mapQualifiedMemberId(memberList, member)).map {
+                val userId = mapQualifiedMemberId(memberList, member)
+                userRepository.getKnownUser(userId).first() {
                     val updatedParticipant = participant.copy(
-                        name = it.name!!,
+                        name = it?.name!!,
                         avatarAssetId = it.completePicture,
                         userType = it.userType
                     )
