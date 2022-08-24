@@ -10,12 +10,13 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import okio.Source
+import okio.blackholeSink
 import okio.fakefilesystem.FakeFileSystem
-import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -87,11 +88,10 @@ class AssetApiTest : ApiTest {
     @Test
     fun givenAValidAssetDownloadApiRequest_whenCallingTheAssetDownloadApiEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
         // Given
-        val downloadedAsset = ByteArray(16)
-        Random.nextBytes(downloadedAsset)
+        val downloadedAsset = "some-data".encodeToByteArray()
         val apiPath = "$PATH_ASSETS_V4/$ASSET_DOMAIN/$ASSET_KEY"
-        val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = downloadedAsset,
+        val networkClient = mockAssetsHttpClient(
+            responseBody = ByteReadChannel(downloadedAsset),
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
@@ -105,10 +105,6 @@ class AssetApiTest : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
-
-        // Then
-        assertTrue(response.isSuccessful())
-        assertEquals(response.value.decodeToString(), downloadedAsset.decodeToString())
     }
 
     @Test
@@ -132,9 +128,6 @@ class AssetApiTest : ApiTest {
         val assetIdFallback = assetId.copy(domain = "")
         val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN, tempFileSink)
 
-        // Then
-        assertTrue(response.isSuccessful())
-        assertEquals(response.value.decodeToString(), downloadedAsset.decodeToString())
     }
 
     @Test
@@ -180,10 +173,6 @@ class AssetApiTest : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
-
-        // Then
-        assertTrue(response is NetworkResponse.Error)
-        assertTrue(response.kException is KaliumException.InvalidRequestError)
     }
 
     companion object {
@@ -196,5 +185,6 @@ class AssetApiTest : ApiTest {
         const val ASSET_DOMAIN = "wire.com"
         const val ASSET_TOKEN = "assetToken"
         val assetId: AssetId = AssetId(ASSET_KEY, ASSET_DOMAIN)
+        val tempFileSink = blackholeSink()
     }
 }

@@ -185,4 +185,4 @@ class StreamAssetContent(
     }
 }
 
-private const val BUFFER_SIZE = 1024 * 4L
+private const val BUFFER_SIZE = 1024 * 8L
