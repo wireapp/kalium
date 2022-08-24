@@ -19,7 +19,8 @@ internal class ServerConfigMapper() {
                 blackList = blackListUrl,
                 teams = teamsUrl,
                 website = websiteUrl,
-                title = title
+                title = title,
+                isOnPremises = isOnPremises
             ),
             ServerConfigEntity.MetaData(
                 federation = federation,
@@ -50,6 +51,7 @@ interface ServerConfigurationDAO {
         val teamsUrl: String,
         val websiteUrl: String,
         val title: String,
+        val isOnPremises: Boolean,
         val federation: Boolean,
         val domain: String?,
         val commonApiVersion: Int
@@ -61,7 +63,6 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
 
     override fun deleteById(id: String) = queries.deleteById(id)
 
-    @Suppress("LongParameterList")
     override fun insert(
         insertData: ServerConfigurationDAO.InsertData
     ) = with(insertData) {
@@ -74,6 +75,7 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
             teamsUrl,
             websiteUrl,
             title,
+            isOnPremises,
             federation,
             domain,
             commonApiVersion

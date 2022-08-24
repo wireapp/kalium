@@ -36,7 +36,8 @@ class ServerConfigApiImpl internal constructor(
                 blackList = Url(it.endpoints.blackListUrl),
                 website = Url(it.endpoints.websiteUrl),
                 teams = Url(it.endpoints.teamsUrl),
-                title = it.title
+                title = it.title,
+                isOnPremises = true
             )
         }
 }
