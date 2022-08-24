@@ -204,7 +204,7 @@ class AssetRepositoryTest {
                 .with(eq(assetKey.value))
                 .wasInvoked(exactly = once)
             verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(matching { it.value == assetKey.value }, eq(null))
+                .with(matching { it.value == assetKey.value }, eq(null), any())
                 .wasInvoked(exactly = once)
             verify(assetDAO)
                 .suspendFunction(assetDAO::insertAsset)
@@ -236,7 +236,7 @@ class AssetRepositoryTest {
                 .with(matching { it == assetKey.value })
                 .wasInvoked(exactly = once)
             verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(matching { it.value == assetKey.value }, eq(null))
+                .with(matching { it.value == assetKey.value }, eq(null), any())
                 .wasInvoked(exactly = once)
 
         }
@@ -263,7 +263,7 @@ class AssetRepositoryTest {
                 .wasInvoked(exactly = once)
 
             verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(matching { it.value == assetKey.value }, eq(null))
+                .with(matching { it.value == assetKey.value }, eq(null), any())
                 .wasNotInvoked()
         }
     }
@@ -352,8 +352,8 @@ class AssetRepositoryTest {
                 withMockedAssetDaoGetByKeyCall(assetKey, null)
                 given(assetApi)
                     .suspendFunction(assetApi::downloadAsset)
-                    .whenInvokedWith(matching { assetId -> assetId.value == assetKey.value }, eq(null))
-                    .thenReturn(NetworkResponse.Success(expectedData, mapOf(), 200))
+                    .whenInvokedWith(matching { assetId -> assetId.value == assetKey.value }, eq(null), any())
+                    .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
 
                 given(assetDAO)
                     .suspendFunction(assetDAO::insertAsset)
@@ -378,7 +378,7 @@ class AssetRepositoryTest {
         fun withErrorDownloadResponse(): Arrangement = apply {
             given(assetApi)
                 .suspendFunction(assetApi::downloadAsset)
-                .whenInvokedWith(anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(
                     NetworkResponse.Error(
                         KaliumException.ServerError(

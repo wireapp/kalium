@@ -116,6 +116,20 @@ internal interface ApiTest {
         ).websocketClient
     }
 
+    fun mockAssetsHttpClient(
+        responseBody: ByteReadChannel,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null
+    ): AuthenticatedNetworkClient {
+        val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
+        return AuthenticatedNetworkClient(
+            engine = mockEngine,
+            sessionManager = TEST_SESSION_NAMAGER,
+            serverMetaDataManager = TestServerMetaDataManager()
+        )
+    }
+
     /**
      * creates an unauthenticated mock Ktor Http client
      * @param responseBody the response body as Json string
