@@ -2,7 +2,7 @@ package com.wire.kalium.testservice.models
 
 data class SendFileRequest (
     val audio: Audio? = null,
-    val conversationDomain: String = "",
+    val conversationDomain: String = "staging.zinfra.io",
     val conversationId: String = "",
     val data: String = "",
     val fileName: String = "",

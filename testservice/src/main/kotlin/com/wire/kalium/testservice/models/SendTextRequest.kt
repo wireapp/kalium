@@ -2,7 +2,7 @@ package com.wire.kalium.testservice.models
 
 data class SendTextRequest(
     val buttons: List<String> = listOf(),
-    val conversationDomain: String = "",
+    val conversationDomain: String = "staging.zinfra.io",
     val conversationId: String = "",
     val expectsReadConfirmation: Boolean = false,
     val legalHoldStatus: Int = 0,

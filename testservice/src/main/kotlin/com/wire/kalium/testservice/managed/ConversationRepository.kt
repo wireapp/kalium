@@ -5,6 +5,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.asset.SendAssetMessageResult
+import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.testservice.models.Instance
@@ -97,6 +98,15 @@ class ConversationRepository {
                     instance.coreLogic.sessionScope(result.authSession.session.userId) {
                         log.info("Instance ${instance.instanceId}: Send file")
                         runBlocking {
+                            log.info("Wait until alive")
+                            syncManager.waitUntilLiveOrFailure()
+                            log.info("List conversations:")
+                            val convos = conversations.getConversations()
+                            if (convos is GetConversationsUseCase.Result.Success) {
+                                for (convo in convos.convFlow.first()) {
+                                    log.info("${convo.name} (${convo.id})")
+                                }
+                            }
                             val sendResult = messages.sendAssetMessage(
                                 conversationId,
                                 temp.toOkioPath(),
