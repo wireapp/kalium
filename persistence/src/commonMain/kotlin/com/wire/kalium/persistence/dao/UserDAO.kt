@@ -50,7 +50,7 @@ enum class UserTypeEntity {
     ADMIN,
 
     /**Team member */
-    INTERNAL, // TODO Kubaz change to STANDARD
+    STANDARD,
 
     /**Team member with limited permissions */
     EXTERNAL,

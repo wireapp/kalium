@@ -95,7 +95,7 @@ class SearchUserRepositoryTest {
 
         given(domainUserTypeMapper).invocation { guest }.then { UserType.GUEST }
 
-        given(domainUserTypeMapper).invocation { internal }.then { UserType.INTERNAL }
+        given(domainUserTypeMapper).invocation { standard }.then { UserType.INTERNAL }
 
         given(domainUserTypeMapper).invocation { external }.then { UserType.EXTERNAL }
 
