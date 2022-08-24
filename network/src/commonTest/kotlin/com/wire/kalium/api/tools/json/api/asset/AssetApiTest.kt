@@ -105,6 +105,7 @@ class AssetApiTest : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
+        // todo: assert response
     }
 
     @Test
@@ -127,7 +128,7 @@ class AssetApiTest : ApiTest {
         val assetApi: AssetApi = AssetApiImpl(networkClient)
         val assetIdFallback = assetId.copy(domain = "")
         val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN, tempFileSink)
-
+        // todo: assert response
     }
 
     @Test
@@ -173,6 +174,7 @@ class AssetApiTest : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiImpl(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
+        // todo: assert response
     }
 
     companion object {
