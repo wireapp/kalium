@@ -24,8 +24,12 @@ class OnSFTRequest(
 ) : SFTRequestHandler {
     override fun onSFTRequest(ctx: Pointer?, url: String, data: Pointer?, length: Size_t, arg: Pointer?): Int {
         callingLogger.i("[OnSFTRequest] -> Start")
+
+        val dataString = data?.getString(0, CallManagerImpl.UTF8_ENCODING)
+        callingLogger.i("[OnSFTRequest] -> Connecting to SFT Server: $url")
+        callingLogger.i("[OnSFTRequest] -> Connecting to SFT Server with data: $dataString")
+
         callingScope.launch {
-            val dataString = data?.getString(0, CallManagerImpl.UTF8_ENCODING)
             dataString?.let {
                 val responseData = callRepository.connectToSFT(
                     url = url,
