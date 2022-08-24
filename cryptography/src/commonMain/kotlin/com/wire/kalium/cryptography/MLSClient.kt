@@ -62,7 +62,7 @@ interface MLSClient {
      *
      * @param groupId MLS group ID for an existing conversation
      *
-     * @return commit message and a welcome message if an add proposal was pending.
+     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
 
@@ -72,7 +72,7 @@ interface MLSClient {
      * @param groupId MLS group ID for an existing conversation
      * @param epoch current epoch for the conversation
      *
-     * @return proposal for being added to the conversation
+     * @return proposal, which needs to be sent to the distribution service.
      */
     fun joinConversation(
         groupId: MLSGroupId,
@@ -94,7 +94,7 @@ interface MLSClient {
      * @param groupId MLS group ID provided by BE
      * @param members list of clients with a claimed key package for each client.
      *
-     * @return handshake & welcome message
+     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun createConversation(
         groupId: MLSGroupId,
@@ -118,6 +118,8 @@ interface MLSClient {
 
     /**
      * Create a commit for any pending proposals
+     *
+     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun commitPendingProposals(groupId: MLSGroupId): CommitBundle
 
@@ -142,7 +144,7 @@ interface MLSClient {
      * @param groupId MLS group where the message was received
      * @param message application message or handshake message
      *
-     * @return decrypted message in case of an application message.
+     * @return decrypted message bundle, which contains the decrypted message.
      */
     fun decryptMessage(
         groupId: MLSGroupId,
@@ -155,7 +157,7 @@ interface MLSClient {
      * @param groupId MLS group
      * @param members list of clients with a claimed key package for each client.
      *
-     * * @return handshake & welcome message
+     * * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun addMember(
         groupId: MLSGroupId,
@@ -168,7 +170,7 @@ interface MLSClient {
      * @param groupId MLS group
      * @param members list of clients
      *
-     * @return handshake message
+     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun removeMember(
         groupId: MLSGroupId,

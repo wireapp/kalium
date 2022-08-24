@@ -22,7 +22,7 @@ class UserEntityTypeMapperTest {
             false
         )
         // then
-        assertEquals(UserTypeEntity.INTERNAL, result)
+        assertEquals(UserTypeEntity.STANDARD, result)
     }
 
     @Test
@@ -54,7 +54,7 @@ class UserEntityTypeMapperTest {
         // when
         val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Member.value)
         // then
-        assertEquals(UserTypeEntity.INTERNAL, result)
+        assertEquals(UserTypeEntity.STANDARD, result)
     }
 
     @Test

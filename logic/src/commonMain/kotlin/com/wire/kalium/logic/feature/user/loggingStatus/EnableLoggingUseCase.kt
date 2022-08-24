@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.feature.user
+package com.wire.kalium.logic.feature.user.loggingStatus
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -11,6 +11,5 @@ interface EnableLoggingUseCase {
 class EnableLoggingUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : EnableLoggingUseCase {
-
     override operator fun invoke(enabled: Boolean) = userConfigRepository.persistEnableLogging(enabled)
 }

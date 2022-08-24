@@ -69,7 +69,7 @@ class UserDAOTest : BaseDatabaseTest() {
             UserAssetIdEntity("asset1", "domain"),
             UserAssetIdEntity("asset1", "domain"),
             UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.INTERNAL,
+            UserTypeEntity.STANDARD,
             botService = null,
             false
         )
@@ -93,7 +93,7 @@ class UserDAOTest : BaseDatabaseTest() {
             UserAssetIdEntity("asset1", "domain"),
             UserAssetIdEntity("asset2", "domain"),
             UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.INTERNAL,
+            UserTypeEntity.STANDARD,
             botService = null,
             false
         )
@@ -120,7 +120,7 @@ class UserDAOTest : BaseDatabaseTest() {
             null,
             null,
             UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.INTERNAL,
+            UserTypeEntity.STANDARD,
             botService = null,
             false
         )
@@ -200,7 +200,7 @@ class UserDAOTest : BaseDatabaseTest() {
                     null,
                     null,
                     UserAvailabilityStatusEntity.NONE,
-                    UserTypeEntity.INTERNAL,
+                    UserTypeEntity.STANDARD,
                     botService = null,
                     false
                 ),
@@ -216,7 +216,7 @@ class UserDAOTest : BaseDatabaseTest() {
                     null,
                     null,
                     UserAvailabilityStatusEntity.NONE,
-                    UserTypeEntity.INTERNAL,
+                    UserTypeEntity.STANDARD,
                     botService = null,
                     deleted = false
                 )
