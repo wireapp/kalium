@@ -75,6 +75,11 @@ data class Member(
     }
 }
 
+data class ProposalTimerEntity(
+    val groupID: String,
+    val firingDate: Instant
+)
+
 interface ConversationDAO {
     suspend fun getSelfConversationId(): QualifiedIDEntity
     suspend fun insertConversation(conversationEntity: ConversationEntity)
@@ -121,6 +126,9 @@ interface ConversationDAO {
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
     suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
-    suspend fun isUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Boolean
+    suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity)
+    suspend fun clearProposalTimer(groupID: String)
+    suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>>
+    suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
 }

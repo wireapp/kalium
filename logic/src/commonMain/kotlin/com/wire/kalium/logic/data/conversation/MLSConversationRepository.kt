@@ -3,10 +3,12 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
+import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
+import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -24,23 +26,29 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
 import io.ktor.util.decodeBase64Bytes
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+import kotlinx.coroutines.flow.map
 
 interface MLSConversationRepository {
 
     suspend fun establishMLSGroup(groupID: String): Either<CoreFailure, Unit>
-    suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
+    suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: String): Either<CoreFailure, Boolean>
-    suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?>
+    suspend fun messageFromMLSMessage(messageEvent: NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
     suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit>
+    suspend fun commitPendingProposals(groupID: String): Either<CoreFailure, Unit>
+    suspend fun setProposalTimer(timer: ProposalTimer)
+    suspend fun observeProposalTimers(): Flow<List<ProposalTimer>>
 }
 
+@Suppress("TooManyFunctions", "LongParameterList")
 class MLSConversationDataSource(
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
@@ -48,9 +56,10 @@ class MLSConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : MLSConversationRepository {
 
-    override suspend fun messageFromMLSMessage(messageEvent: Event.Conversation.NewMLSMessage): Either<CoreFailure, ByteArray?> =
+    override suspend fun messageFromMLSMessage(messageEvent: NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
                 conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
@@ -60,7 +69,7 @@ class MLSConversationDataSource(
                         mlsClient.decryptMessage(
                             (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
                             messageEvent.content.decodeBase64Bytes()
-                        ).message
+                        )
                     )
                 } else {
                     Either.Right(null)
@@ -68,7 +77,7 @@ class MLSConversationDataSource(
             }
         }
 
-    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> =
+    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { client ->
             val groupID = client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes())
 
@@ -130,6 +139,24 @@ class MLSConversationDataSource(
                 } ?: Either.Right(Unit)
             }
         }
+    }
+
+    override suspend fun commitPendingProposals(groupID: String): Either<CoreFailure, Unit> =
+        mlsClientProvider.getMLSClient()
+            .flatMap { mlsClient ->
+                sendCommitBundle(groupID, mlsClient.commitPendingProposals(groupID)).flatMap {
+                    wrapStorageRequest {
+                        conversationDAO.clearProposalTimer(groupID)
+                    }
+                }
+            }
+
+    override suspend fun setProposalTimer(timer: ProposalTimer) {
+        conversationDAO.setProposalTimer(conversationMapper.toDAOProposalTimer(timer))
+    }
+
+    override suspend fun observeProposalTimers(): Flow<List<ProposalTimer>> {
+        return conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }
     }
 
     override suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =

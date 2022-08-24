@@ -20,15 +20,18 @@ import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import kotlinx.datetime.Clock
+import com.wire.kalium.persistence.dao.ProposalTimerEntity
 import kotlinx.datetime.Instant
 
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
+    fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
     fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState
+    fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
@@ -42,6 +45,7 @@ interface ConversationMapper {
     ): ConversationDetails.OneOne
 }
 
+@Suppress("TooManyFunctions")
 internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
@@ -90,6 +94,9 @@ internal class ConversationMapperImpl(
         accessRole = daoModel.accessRole.map { it.toDAO() }
     )
 
+    override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
+        ProposalTimer(daoModel.groupID, daoModel.firingDate)
+
     override fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
         when (it) {
             ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
@@ -116,6 +123,9 @@ internal class ConversationMapperImpl(
             Conversation.ProtocolInfo.MLS.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
             Conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
         }
+
+    override fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity =
+        ProposalTimerEntity(proposalTimer.groupID, proposalTimer.timestamp)
 
     override fun toApiModel(
         name: String?,

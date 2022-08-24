@@ -13,7 +13,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.CoroutineScope
@@ -78,7 +78,7 @@ class OnParticipantListChanged(
         }
     }
 
-    private fun mapQualifiedMemberId(memberList: List<Member>, member: CallMember) =
+    private fun mapQualifiedMemberId(memberList: List<Conversation.Member>, member: CallMember) =
         memberList.first {
             val userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId)
             it.id.value == userId.value
