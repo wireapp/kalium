@@ -22,7 +22,10 @@ internal class ClearConversationContentHandler(
 
         if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
             val conversationId = messageContent.conversationId
-                ?: ConversationId(messageContent.unqualifiedConversationId, userRepository.getSelfUserId().domain)
+                ?: ConversationId(
+                    value = messageContent.unqualifiedConversationId,
+                    domain = userRepository.getSelfUserId().domain
+                )
 
             clearConversationContent(conversationId)
         }
