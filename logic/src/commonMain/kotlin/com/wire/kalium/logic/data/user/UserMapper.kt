@@ -107,7 +107,7 @@ internal class UserMapperImpl(
                 idMapper.toQualifiedAssetIdEntity(it.key, userProfileDTO.id.domain)
             },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userTypeEntity ?: UserTypeEntity.INTERNAL,
+            userType = userTypeEntity ?: UserTypeEntity.STANDARD,
             botService = userProfileDTO.service?.let { BotEntity(it.id, it.provider) },
             deleted = userProfileDTO.deleted ?: false
         )
@@ -165,7 +165,7 @@ internal class UserMapperImpl(
             completeAssetId = updateRequest.assets.getCompleteAssetOrNull()
                 ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.INTERNAL,
+            userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false
         )
@@ -183,7 +183,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { idMapper.toQualifiedAssetIdEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.INTERNAL,
+            userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = userDTO.deleted ?: false
         )
