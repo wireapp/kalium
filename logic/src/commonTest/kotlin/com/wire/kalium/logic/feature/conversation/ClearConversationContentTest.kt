@@ -23,12 +23,12 @@ import kotlin.test.Test
 import kotlin.test.BeforeTest
 import kotlin.test.assertIs
 
-class ClearConversationContentUseCaseTest {
+class ClearConversationContentTest {
 
     @Test
     fun givenConversationHavingAssetMessagesAndTextMessages_whenInvoking_thenThoseAssetsWithMessagesAreRemoved() = runTest {
         // given
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, clearConversationContent) = Arrangement()
             .withDeleteAsset(true)
             .withDeleteAllMessages(ConversationId("someValue", "someDomain"), true)
             .withGetAssetMessages(
@@ -40,7 +40,7 @@ class ClearConversationContentUseCaseTest {
             ).arrange()
 
         // when
-        val result = useCase(ConversationId("someValue", "someDomain"))
+        val result = clearConversationContent(ConversationId("someValue", "someDomain"))
 
         // then
         with(arrangement) {
@@ -56,14 +56,14 @@ class ClearConversationContentUseCaseTest {
     @Test
     fun givenConversationHasNoAssetsButOnlyTextMessages_whenInvoking_thenNoAssetsAreRemoved() = runTest {
         // given
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, clearConversationContent) = Arrangement()
             .withDeleteAsset(true)
             .withDeleteAllMessages(ConversationId("someValue", "someDomain"), true)
             .withGetAssetMessages(emptyList())
             .arrange()
 
         // when
-        val result = useCase(ConversationId("someValue", "someDomain"))
+        val result = clearConversationContent(ConversationId("someValue", "someDomain"))
 
         // then
         with(arrangement) {
@@ -116,18 +116,6 @@ class ClearConversationContentUseCaseTest {
         @Mock
         val assetRepository: AssetRepository = mock(classOf<AssetRepository>())
 
-        @Mock
-        val clearConversationContent: ClearConversationContent = mock(classOf<ClearConversationContent>())
-
-        @Mock
-        val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
-
-        @Mock
-        val userRepository: UserRepository = mock(classOf<UserRepository>())
-
-        @Mock
-        val messageSender: MessageSender = mock(classOf<MessageSender>())
-
         fun withGetAssetMessages(assetMessages: List<Message> = emptyList(), isSuccessFull: Boolean = true): Arrangement {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getAssetMessages)
@@ -155,13 +143,8 @@ class ClearConversationContentUseCaseTest {
             return this
         }
 
-        fun arrange() = this to ClearConversationContentUseCaseImpl(
-            ClearConversationContent(conversationRepository, assetRepository),
-            clientRepository,
-            conversationRepository,
-            userRepository,
-            messageSender
-        )
+        fun arrange() = this to
+            ClearConversationContent(conversationRepository, assetRepository)
 
     }
 
