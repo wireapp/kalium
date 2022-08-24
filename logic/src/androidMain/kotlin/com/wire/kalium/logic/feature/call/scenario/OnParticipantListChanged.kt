@@ -43,7 +43,7 @@ class OnParticipantListChanged(
             val clients = mutableListOf<CallClient>()
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
 
-            val memberList: List<Member> = conversationRepository
+            val memberList: List<Conversation.Member> = conversationRepository
                 .observeConversationMembers(conversationIdWithDomain)
                 .first()
 
