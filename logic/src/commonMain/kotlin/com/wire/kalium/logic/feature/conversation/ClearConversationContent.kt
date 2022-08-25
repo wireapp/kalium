@@ -16,12 +16,16 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import kotlinx.datetime.Clock
 
-internal class ClearConversationContent(
+internal interface ClearConversationContent {
+    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
+}
+
+internal class ClearConversationContentImpl(
     private val conversationRepository: ConversationRepository,
     private val assetRepository: AssetRepository
-) {
+) : ClearConversationContent {
 
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
         return conversationRepository.getAssetMessages(conversationId).flatMap { conversationAssetMessages ->
             conversationAssetMessages.forEach { message ->
                 val messageContent: MessageContent = message.content

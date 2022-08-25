@@ -29,6 +29,7 @@ class ClearConversationContentUseCaseTest {
 
     @Test
     fun givenClearConversationFails_whenInvoking_thenCorrectlyPropagateFailure() = runTest {
+        // given
         val (arrangement, useCase) = Arrangement()
             .withClearConversationContent(false)
             .withMessageSending(true)
@@ -37,9 +38,15 @@ class ClearConversationContentUseCaseTest {
             .withGetSelfUserId()
             .arrange()
 
+        // when
+        val result = useCase(ConversationId("someValue", "someDomain"))
+
+        // then
+        assertIs<ClearConversationContentUseCase.Result.Failure>(result)
     }
 
     fun givenGettingClientIdFails_whenInvoking_thenCorrectlyPropagateFailure() = runTest {
+        // given
         val (arrangement, useCase) = Arrangement()
             .withClearConversationContent(true)
             .withCurrentClientId(false)
@@ -48,10 +55,16 @@ class ClearConversationContentUseCaseTest {
             .withGetSelfUserId()
             .arrange()
 
+        // when
+        val result = useCase(ConversationId("someValue", "someDomain"))
+
+        // then
+        assertIs<ClearConversationContentUseCase.Result.Failure>(result)
     }
 
     @Test
     fun givenSendMessageFails_whenInvoking_thenCorrectlyPropagateFailure() = runTest {
+        // given
         val (arrangement, useCase) = Arrangement()
             .withClearConversationContent(true)
             .withCurrentClientId(true)
@@ -60,6 +73,11 @@ class ClearConversationContentUseCaseTest {
             .withGetSelfUserId()
             .arrange()
 
+        // when
+        val result = useCase(ConversationId("someValue", "someDomain"))
+
+        // then
+        assertIs<ClearConversationContentUseCase.Result.Failure>(result)
     }
 
     private class Arrangement {
@@ -128,7 +146,7 @@ class ClearConversationContentUseCaseTest {
         }
 
         fun arrange() = this to ClearConversationContentUseCaseImpl(
-            ClearConversationContent(conversationRepository, assetRepository),
+            clearConversationContent,
             clientRepository,
             conversationRepository,
             userRepository,

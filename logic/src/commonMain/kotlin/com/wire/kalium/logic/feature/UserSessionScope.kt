@@ -71,6 +71,7 @@ import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ClearConversationContent
+import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
@@ -462,7 +463,7 @@ abstract class UserSessionScopeCommon(
             clearConversationContentHandler = ClearConversationContentHandler(
                 conversationRepository,
                 userRepository,
-                ClearConversationContent(conversationRepository, assetRepository)
+                ClearConversationContentImpl(conversationRepository, assetRepository)
             ),
             deleteForMeHandler = DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
             userConfigRepository = userConfigRepository,

@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.conversation.ClearConversationContent
+import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestClient
@@ -36,6 +38,7 @@ import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
@@ -281,6 +284,7 @@ class ConversationEventReceiverTest {
                 .wasInvoked(exactly = once)
         }
     }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -319,20 +323,27 @@ class ConversationEventReceiverTest {
         private val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
-            proteusClient,
-            persistMessage,
-            messageRepository,
-            assetRepository,
-            conversationRepository,
-            mlsConversationRepository,
-            userRepository,
-            lazyOf(callManager),
-            MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userRepository),
-            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
-            userConfigRepository,
-            ephemeralNotifications,
-            pendingProposalScheduler,
+            proteusClient = proteusClient,
+            persistMessage = persistMessage,
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            userRepository = userRepository,
+            callManagerImpl = lazyOf(callManager),
+            editTextHandler = MessageTextEditHandler(messageRepository),
+            lastReadContentHandler = LastReadContentHandler(conversationRepository, userRepository),
+            clearConversationContentHandler = ClearConversationContentHandler(
+                conversationRepository = conversationRepository,
+                userRepository = userRepository,
+                clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository)
+            ),
+            deleteForMeHandler = DeleteForMeHandler(
+                conversationRepository = conversationRepository, messageRepository = messageRepository, userRepository = userRepository
+            ),
+            userConfigRepository = userConfigRepository,
+            ephemeralNotificationsManager = ephemeralNotifications,
+            pendingProposalScheduler = pendingProposalScheduler,
             protoContentMapper = protoContentMapper,
         )
 

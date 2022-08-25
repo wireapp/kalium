@@ -45,12 +45,12 @@ class ClearConversationContentTest {
         // then
         with(arrangement) {
             verify(assetRepository)
-                .suspendFunction(assetRepository::deleteAsset)
-                .with(anything(), anything())
+                .suspendFunction(assetRepository::deleteAssetLocally)
+                .with(anything())
                 .wasInvoked(Times(3))
         }
 
-        assertIs<Result.Success>(result)
+        assertIs<Either.Right<Unit>>(result)
     }
 
     @Test
@@ -73,7 +73,7 @@ class ClearConversationContentTest {
                 .wasNotInvoked()
         }
 
-        assertIs<Result.Success>(result)
+        assertIs<Either.Right<Unit>>(result)
     }
 
     @Test
@@ -95,7 +95,7 @@ class ClearConversationContentTest {
                 .wasNotInvoked()
         }
 
-        assertIs<Result.Failure>(result)
+        assertIs<Either.Left<CoreFailure>>(result)
     }
 
     @Test
@@ -134,7 +134,7 @@ class ClearConversationContentTest {
                 .wasInvoked()
         }
 
-        assertIs<Result.Failure>(result)
+        assertIs<Either.Left<CoreFailure>>(result)
     }
 
     private class Arrangement {
@@ -156,8 +156,8 @@ class ClearConversationContentTest {
 
         fun withDeleteAsset(isSuccessFull: Boolean): Arrangement {
             given(assetRepository)
-                .suspendFunction(assetRepository::deleteAsset)
-                .whenInvokedWith(anything(), anything())
+                .suspendFunction(assetRepository::deleteAssetLocally)
+                .whenInvokedWith(anything())
                 .thenReturn(if (isSuccessFull) Either.Right(Unit) else Either.Left(CoreFailure.Unknown(Throwable("an error"))))
 
             return this
@@ -173,7 +173,7 @@ class ClearConversationContentTest {
         }
 
         fun arrange() = this to
-                ClearConversationContent(conversationRepository, assetRepository)
+                ClearConversationContentImpl(conversationRepository, assetRepository)
 
     }
 
