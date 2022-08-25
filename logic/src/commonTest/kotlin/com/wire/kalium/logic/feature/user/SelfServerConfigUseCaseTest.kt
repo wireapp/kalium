@@ -17,9 +17,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-
 class SelfServerConfigUseCaseTest {
-
     @Test
     fun givenUserSession_whenGetSelfServerConfig_thenReturnSelfServerConfig() = runTest {
         val expected = validAuthSessionWith(selfUserId)
@@ -37,7 +35,6 @@ class SelfServerConfigUseCaseTest {
             .with(any())
             .wasInvoked(exactly = once)
     }
-
     @Test
     fun givenError_whenGetSelfServerConfig_thenReturnError() = runTest {
         val (arrangement, selfServerConfigUseCase) = Arrangement()
@@ -78,19 +75,16 @@ class SelfServerConfigUseCaseTest {
 
 
         val selfServerConfigUseCase = SelfServerConfigUseCase(sessionRepository, selfUserId)
-
         fun withUserSessionReturnSuccess(session: AuthSession): Arrangement = apply {
             given(sessionRepository)
                 .invocation { sessionRepository.userSession(selfUserId) }
                 .then { Either.Right(session) }
         }
-
         fun withUserSessionReturnError(storageFailure: StorageFailure): Arrangement = apply {
             given(sessionRepository)
                 .invocation { sessionRepository.userSession(selfUserId) }
                 .then { Either.Left(storageFailure) }
         }
-
         fun arrange() = this to selfServerConfigUseCase
     }
 }
