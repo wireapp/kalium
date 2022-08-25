@@ -23,7 +23,7 @@ class EndCallUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        endCall = EndCallUseCase(lazy{ callManager })
+        endCall = EndCallUseCase(lazy { callManager })
     }
 
     @Test
@@ -42,5 +42,4 @@ class EndCallUseCaseTest {
             .with(eq(conversationId))
             .wasInvoked(once)
     }
-
 }
