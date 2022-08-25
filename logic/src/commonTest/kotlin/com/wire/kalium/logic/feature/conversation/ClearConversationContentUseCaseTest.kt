@@ -43,6 +43,22 @@ class ClearConversationContentUseCaseTest {
 
         // then
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
+
+        with(arrangement) {
+            verify(clearConversationContent)
+                .suspendFunction(clearConversationContent::invoke)
+                .with(anything())
+                .wasInvoked(Times(1))
+
+            verify(clientRepository)
+                .suspendFunction(clientRepository::currentClientId)
+                .wasNotInvoked()
+
+            verify(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .with(anything())
+                .wasNotInvoked()
+        }
     }
 
     fun givenGettingClientIdFails_whenInvoking_thenCorrectlyPropagateFailure() = runTest {
@@ -60,6 +76,22 @@ class ClearConversationContentUseCaseTest {
 
         // then
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
+
+        with(arrangement) {
+            verify(clearConversationContent)
+                .suspendFunction(clearConversationContent::invoke)
+                .with(anything())
+                .wasInvoked(Times(1))
+
+            verify(clientRepository)
+                .suspendFunction(clientRepository::currentClientId)
+                .wasInvoked(Times(1))
+
+            verify(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .with(anything())
+                .wasNotInvoked()
+        }
     }
 
     @Test
@@ -78,15 +110,62 @@ class ClearConversationContentUseCaseTest {
 
         // then
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
+
+        with(arrangement) {
+            verify(clearConversationContent)
+                .suspendFunction(clearConversationContent::invoke)
+                .with(anything())
+                .wasInvoked(Times(1))
+
+            verify(clientRepository)
+                .suspendFunction(clientRepository::currentClientId)
+                .wasInvoked(Times(1))
+
+            verify(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .with(anything())
+                .wasInvoked(Times(1))
+        }
+    }
+
+    @Test
+    fun givenClearingConversationSucceeds_whenInvoking_thenCorrectlyPropagateSuccess() = runTest {
+        // given
+        val (arrangement, useCase) = Arrangement()
+            .withClearConversationContent(true)
+            .withCurrentClientId(true)
+            .withMessageSending(true)
+            .withGetSelfConversationId()
+            .withGetSelfUserId()
+            .arrange()
+
+        // when
+        val result = useCase(ConversationId("someValue", "someDomain"))
+
+        // then
+        assertIs<ClearConversationContentUseCase.Result.Success>(result)
+
+        with(arrangement) {
+            verify(clearConversationContent)
+                .suspendFunction(clearConversationContent::invoke)
+                .with(anything())
+                .wasInvoked(Times(1))
+
+            verify(clientRepository)
+                .suspendFunction(clientRepository::currentClientId)
+                .wasInvoked(Times(1))
+
+            verify(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .with(anything())
+                .wasInvoked(Times(1))
+        }
     }
 
     private class Arrangement {
 
         @Mock
         val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
-        val assetRepository: AssetRepository = mock(classOf<AssetRepository>())
 
         @Mock
         val clearConversationContent: ClearConversationContent = mock(classOf<ClearConversationContent>())
