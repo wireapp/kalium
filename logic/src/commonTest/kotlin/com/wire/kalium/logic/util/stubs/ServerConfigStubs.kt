@@ -16,7 +16,8 @@ internal fun newTestServer(id: Int) = ServerConfig(
         blackList = "https://server$id-blackListUrl.de/",
         teams = "https://server$id-teamsUrl.de/",
         website = "https://server$id-websiteUrl.de/",
-        title = "server$id-title"
+        title = "server$id-title",
+        false
     ),
     metaData = ServerConfig.MetaData(
         commonApiVersion = CommonApiVersionType.Valid(id),
@@ -34,7 +35,8 @@ internal fun newServerConfig(id: Int) = ServerConfig(
         blackList = "https://server$id-blackListUrl.de/",
         teams = "https://server$id-teamsUrl.de/",
         website = "https://server$id-websiteUrl.de/",
-        title = "server$id-title"
+        title = "server$id-title",
+        false
     ),
     metaData = ServerConfig.MetaData(
         commonApiVersion = CommonApiVersionType.Valid(id),
@@ -53,6 +55,7 @@ internal fun newServerConfigEntity(id: Int) = ServerConfigEntity(
         teams = "https://server$id-teamsUrl.de/",
         website = "https://server$id-websiteUrl.de/",
         title = "server$id-title",
+        false
     ),
     metaData = ServerConfigEntity.MetaData(
         apiVersion = id,
@@ -70,7 +73,8 @@ internal fun newServerConfigDTO(id: Int) = ServerConfigDTO(
         blackList = Url("https://server$id-blackListUrl.de"),
         teams = Url("https://server$id-teamsUrl.de"),
         website = Url("https://server$id-websiteUrl.de"),
-        title = "server$id-title"
+        title = "server$id-title",
+        false
     ),
     ServerConfigDTO.MetaData(
         false,
