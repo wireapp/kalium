@@ -8,7 +8,7 @@ import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
     fun fromDTO(status: FeatureFlagStatusDTO): Status
-    fun fromDTO(data: FeatureConfigData.MLS): MLSModel
+    fun fromDTO(data: FeatureConfigData.MLS?): MLSModel
     fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel
     fun fromDTO(data: FeatureConfigData.ClassifiedDomains): ClassifiedDomainsModel
     fun fromDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel
@@ -43,10 +43,15 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             FeatureFlagStatusDTO.DISABLED -> Status.DISABLED
         }
 
-    override fun fromDTO(data: FeatureConfigData.MLS): MLSModel =
-        MLSModel(
-            data.config.protocolToggleUsers.map { PlainId(it) },
-            fromDTO(data.status)
+    override fun fromDTO(data: FeatureConfigData.MLS?): MLSModel =
+        data?.let {
+            MLSModel(
+                it.config.protocolToggleUsers.map { userId -> PlainId(userId) },
+                fromDTO(it.status)
+            )
+        } ?: MLSModel(
+            listOf(),
+            Status.DISABLED
         )
 
     override fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel =
