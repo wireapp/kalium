@@ -96,7 +96,6 @@ data class ServerConfig(
     }
 }
 
-
 interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
     fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
@@ -159,7 +158,6 @@ class ServerConfigMapperImpl(
             )
         )
     }
-
 
     override fun fromDTO(wireServer: ServerConfigDTO): ServerConfig = with(wireServer) {
         ServerConfig(id = id, links = fromDTO(links), metaData = fromDTO(metaData))

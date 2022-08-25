@@ -82,5 +82,3 @@ internal fun newServerConfigDTO(id: Int) = ServerConfigDTO(
         domain = "domain$id.com",
     )
 )
-
-
