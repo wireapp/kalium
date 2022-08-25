@@ -1,20 +1,19 @@
 package com.wire.kalium.testservice.managed
 
+import com.codahale.metrics.Gauge
+import com.codahale.metrics.MetricRegistry
 import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
 import io.dropwizard.lifecycle.Managed
@@ -32,13 +31,26 @@ This service makes sure that instances are destroyed (used files deleted) on
 shutdown of the service and also periodically checks for leftover instances
 which are not needed anymore.
  */
-class InstanceService : Managed {
+class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
     private val log = LoggerFactory.getLogger(InstanceService::class.java.name)
     private val instances: MutableMap<String, Instance> = ConcurrentHashMap<String, Instance>()
 
     override fun start() {
         log.info("Instance service started.")
+
+        // metrics
+        metricRegistry.register(MetricRegistry.name("testservice", "instances", "total", "size"),
+            Gauge { instances.size })
+        metricRegistry.register(
+            MetricRegistry.name("testservice", "instances", "startup", "avg"),
+            Gauge {
+                instances.values
+                    .filter { it.startupTime != 0L }
+                    .map { it.startupTime?.toDouble() ?: 0.0}
+                    .average()
+            }
+        )
     }
 
     override fun stop() {
@@ -63,7 +75,7 @@ class InstanceService : Managed {
     }
 
     suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance? {
-
+        var before = System.currentTimeMillis()
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
         log.info("Instance ${instanceId}: Creating ${instancePath}")
         val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
@@ -135,7 +147,8 @@ class InstanceService : Managed {
             instanceRequest.name,
             coreLogic,
             instancePath,
-            instanceRequest.password
+            instanceRequest.password,
+            System.currentTimeMillis() - before
         )
         instances.put(instanceId, instance)
 

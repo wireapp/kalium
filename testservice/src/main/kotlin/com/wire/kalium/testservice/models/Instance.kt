@@ -10,5 +10,6 @@ data class Instance(
     val name: String?,
     val coreLogic: CoreLogic?,
     val instancePath: String?,
-    val password: String
+    val password: String,
+    val startupTime: Long?
 )

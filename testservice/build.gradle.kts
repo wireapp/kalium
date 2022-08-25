@@ -10,6 +10,7 @@ version = "0.0.1-SNAPSHOT"
 object Versions {
     // dropwizard-swagger:2.0.0-1 does not support dropwizard >= 2.0.11
     const val dropwizard = "2.0.10"
+    const val prometheus_simpleclient = "0.1.0"
 }
 
 val mainFunctionClassName = "com.wire.kalium.testservice.TestserviceApplication"
@@ -39,6 +40,11 @@ tasks.jar {
 dependencies {
     add("implementation", "io.dropwizard:dropwizard-core:${Versions.dropwizard}")
     add("implementation", "com.smoketurner:dropwizard-swagger:2.0.0-1")
+
+    // prometheus metrics
+    add("implementation", "io.prometheus:simpleclient_dropwizard:${Versions.prometheus_simpleclient}")
+    add("implementation", "io.prometheus:simpleclient_servlet:${Versions.prometheus_simpleclient}")
+
     add("implementation", project(":network"))
     add("implementation", project(":cryptography"))
     add("implementation", project(":logic"))

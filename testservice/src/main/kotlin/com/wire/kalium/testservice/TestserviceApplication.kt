@@ -1,5 +1,7 @@
 package com.wire.kalium.testservice
 
+import com.codahale.metrics.MetricRegistry
+import com.codahale.metrics.jmx.JmxReporter
 import com.wire.kalium.testservice.api.v1.ClientResources
 import com.wire.kalium.testservice.api.v1.ConversationResources
 import com.wire.kalium.testservice.api.v1.InstanceLifecycle
@@ -10,8 +12,10 @@ import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.VarHandle
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.dropwizard.DropwizardExports
+import io.prometheus.client.exporter.MetricsServlet
+import org.eclipse.jetty.servlet.ServletHolder
 
 
 class TestserviceApplication : Application<TestserviceConfiguration>() {
@@ -34,9 +38,17 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
     }
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
+
+        // metrics containing only application related stuff (no memory, jvm, etc)
+        val metricRegistry = MetricRegistry()
+
         // managed
-        val instanceService = InstanceService()
+        val instanceService = InstanceService(metricRegistry)
         environment.lifecycle().manage(instanceService)
+
+        // metrics
+        CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry))
+        environment.applicationContext.servletHandler.addServletWithMapping(ServletHolder(MetricsServlet()), "/prometheus")
 
         // resources
         val clientResources = ClientResources()
@@ -46,6 +58,10 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         environment.jersey().register(clientResources)
         environment.jersey().register(conversationResources)
         environment.jersey().register(instanceLifecycle)
+
+        // metrics
+        val jmxReporter = JmxReporter.forRegistry(environment.metrics()).build()
+        jmxReporter.start()
     }
 
 }
