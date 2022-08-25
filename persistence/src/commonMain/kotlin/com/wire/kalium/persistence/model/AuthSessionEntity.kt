@@ -18,7 +18,8 @@ data class ServerConfigEntity(
         @SerialName("blackListUrl") val blackList: String,
         @SerialName("teamsUrl") val teams: String,
         @SerialName("websiteUrl") val website: String,
-        @SerialName("title") val title: String
+        @SerialName("title") val title: String,
+        @SerialName("is_on_premises") val isOnPremises: Boolean
     )
 
     @Serializable
