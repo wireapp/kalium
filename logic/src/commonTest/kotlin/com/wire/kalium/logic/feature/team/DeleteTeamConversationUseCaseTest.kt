@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -25,6 +26,7 @@ class DeleteTeamConversationUseCaseTest {
         val (arrangement, deleteTeamConversation) = Arrangement()
             .withGetSelfTeam()
             .withSuccessApiDeletingConversation()
+            .withSuccessDeletingConversationLocally()
             .arrange()
 
         val result = deleteTeamConversation(TestConversation.ID)
@@ -36,6 +38,10 @@ class DeleteTeamConversationUseCaseTest {
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::deleteConversation)
             .with(eq(TestConversation.ID), eq(TestTeam.TEAM.id))
+            .wasInvoked(once)
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::deleteConversation)
+            .with(eq(TestConversation.ID))
             .wasInvoked(once)
     }
 
@@ -56,6 +62,10 @@ class DeleteTeamConversationUseCaseTest {
             .suspendFunction(arrangement.teamRepository::deleteConversation)
             .with(eq(TestConversation.ID), eq(TestTeam.TEAM.id))
             .wasInvoked(once)
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::deleteConversation)
+            .with(eq(TestConversation.ID))
+            .wasNotInvoked()
     }
 
     @Test
@@ -75,6 +85,10 @@ class DeleteTeamConversationUseCaseTest {
             .suspendFunction(arrangement.teamRepository::deleteConversation)
             .with(eq(TestConversation.ID), eq(TestTeam.TEAM.id))
             .wasNotInvoked()
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::deleteConversation)
+            .with(eq(TestConversation.ID))
+            .wasNotInvoked()
     }
 
     private class Arrangement {
@@ -87,8 +101,11 @@ class DeleteTeamConversationUseCaseTest {
         @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
 
+        @Mock
+        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+
         init {
-            deleteTeamConversation = DeleteTeamConversationUseCaseImpl(getSelfTeamUseCase, teamRepository)
+            deleteTeamConversation = DeleteTeamConversationUseCaseImpl(getSelfTeamUseCase, teamRepository, conversationRepository)
         }
 
         fun withGetSelfTeam(team: Team? = TestTeam.TEAM) = apply {
@@ -109,6 +126,13 @@ class DeleteTeamConversationUseCaseTest {
             given(teamRepository)
                 .suspendFunction(teamRepository::deleteConversation)
                 .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSuccessDeletingConversationLocally() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::deleteConversation)
+                .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
