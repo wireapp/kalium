@@ -54,7 +54,6 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             Status.DISABLED
         )
 
-
     override fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel =
         AppLockModel(
             AppLockConfigModel(data.config.enforceAppLock, data.config.inactivityTimeoutSecs),
