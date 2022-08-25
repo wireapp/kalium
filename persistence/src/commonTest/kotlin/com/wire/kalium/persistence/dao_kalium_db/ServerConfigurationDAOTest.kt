@@ -165,7 +165,8 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
                     title = links.title,
                     federation = metaData.federation,
                     domain = metaData.domain,
-                    commonApiVersion = metaData.apiVersion
+                    commonApiVersion = metaData.apiVersion,
+                    isOnPremises = false
                 )
             )
         }
