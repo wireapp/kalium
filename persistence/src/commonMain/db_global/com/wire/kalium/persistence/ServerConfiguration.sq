@@ -10,6 +10,7 @@ CREATE TABLE ServerConfiguration (
     blackListUrl TEXT NOT NULL,
     teamsUrl TEXT NOT NULL,
     websiteUrl TEXT NOT NULL,
+    isOnPremises INTEGER AS Boolean NOT NULL,
     domain TEXT UNIQUE,
     commonApiVersion INTEGER AS Int NOT NULL,
     federation INTEGER AS Boolean NOT NULL,
@@ -20,8 +21,8 @@ deleteById:
 DELETE FROM ServerConfiguration WHERE id = ?;
 
 insert:
-INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, federation, domain, commonApiVersion)
-VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion)
+VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateApiVersion:
 UPDATE ServerConfiguration SET commonApiVersion = ? WHERE id = ?;
