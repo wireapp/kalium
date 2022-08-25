@@ -11,7 +11,8 @@ internal fun newServerConfig(id: Int) = ServerConfigEntity(
         blackList = "https://server$id-blackListUrl.de",
         teams = "https://server$id-teamsUrl.de",
         website = "https://server$id-websiteUrl.de",
-        title = "server$id-title"
+        title = "server$id-title",
+        isOnPremises = false
     ),
     ServerConfigEntity.MetaData(
         federation = false,
