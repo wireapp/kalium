@@ -16,6 +16,7 @@ data class KaliumConfigs(
     val isSafeLoggingEnabled: Boolean = false,
     val enableBlacklist: Boolean = false,
     val fileRestrictionEnabled: Boolean = false,
+    // Disabling db-encryption will crash on android-api level below 30
     val shouldEncryptData: Boolean = true,
     val lowerKeyPackageLimits: Boolean = false,
     val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
