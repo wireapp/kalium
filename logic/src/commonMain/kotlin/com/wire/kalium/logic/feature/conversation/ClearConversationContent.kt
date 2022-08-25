@@ -28,11 +28,11 @@ internal class ClearConversationContent(
 
                 if (messageContent is MessageContent.Asset) {
                     with(messageContent.value.remoteData) {
-                        assetRepository.deleteAsset(
+                        assetRepository.deleteAssetLocally(
                             AssetId(
                                 assetId,
                                 assetDomain.orEmpty()
-                            ), assetToken
+                            )
                         )
                     }
                 }
