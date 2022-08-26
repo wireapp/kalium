@@ -19,14 +19,12 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.cancel
 import io.ktor.utils.io.charsets.Charsets.UTF_8
-import io.ktor.utils.io.close
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
 import io.ktor.utils.io.core.toByteArray
 import okio.Buffer
 import okio.Sink
 import okio.Source
-import okio.buffer
 import okio.use
 
 interface AssetApi {
@@ -167,21 +165,23 @@ class StreamAssetContent(
     private val closingArray = "\r\n--frontier--\r\n".toByteArray(UTF_8)
 
     override suspend fun writeTo(channel: ByteWriteChannel) {
+        // first write, opening data, offset = 0
         channel.writeFully(openingData, 0, openingData.size)
-
-        val stream = fileContentStream.buffer()
-        while (true) {
-            val byteArray = stream.readByteArray()
-            if (byteArray.isEmpty()) {
-                break
-            } else {
-                channel.writeFully(byteArray, 0, byteArray.size)
-                channel.flush()
-            }
+        // todo: implement the correct offset handling for this method
+        // we are getting double reads ?
+        // can we just use one read channel or just see if a channel can be transformed into another thing
+        // the channel is the output / baos / dst file etc.
+        val contentBuffer = Buffer()
+        var byteCount: Long
+        var index = openingData.size
+        // second + n writes, offset = dynamic, starting by openingData.size
+        while (fileContentStream.read(contentBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
+            channel.writeFully(contentBuffer.readByteArray(), index, byteCount.toInt())
+            index += byteCount.toInt()
         }
-
-        channel.writeFully(closingArray, 0, closingArray.size)
-        channel.close()
+        val finalOffset = index - byteCount
+        channel.writeFully(closingArray, finalOffset.toInt(), closingArray.size)
+        channel.close(null)
     }
 }
 
