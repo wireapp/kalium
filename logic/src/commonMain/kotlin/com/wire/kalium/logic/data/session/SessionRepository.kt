@@ -31,7 +31,9 @@ interface SessionRepository {
     // TODO(optimization): exposing all session is unnecessary since we only need the IDs
     //                     of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
     fun allSessions(): Either<StorageFailure, List<AuthSession>>
+    fun allSessionsFlow(): Flow<List<AuthSession>>
     fun allValidSessions(): Either<StorageFailure, List<AuthSession>>
+    fun allValidSessionsFlow(): Flow<List<AuthSession>>
     fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
     fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
@@ -80,11 +82,21 @@ internal class SessionDataSource(
     override fun allSessions(): Either<StorageFailure, List<AuthSession>> =
         wrapStorageRequest { sessionStorage.allSessions()?.values?.toList()?.map { sessionMapper.fromPersistenceSession(it) } }
 
+    override fun allSessionsFlow(): Flow<List<AuthSession>> =
+        sessionStorage.allSessionsFlow()
+            .map { it.values.toList().map { sessionMapper.fromPersistenceSession(it) } }
+
     override fun allValidSessions(): Either<StorageFailure, List<AuthSession>> =
         wrapStorageRequest {
             sessionStorage.allSessions()?.filter { it.value is AuthSessionEntity.Valid }?.values?.toList()
                 ?.map { sessionMapper.fromPersistenceSession(it) }
         }
+
+    override fun allValidSessionsFlow(): Flow<List<AuthSession>> =
+        sessionStorage.allSessionsFlow()
+            .map {
+                it.values.filterIsInstance<AuthSessionEntity.Valid>().toList().map { sessionMapper.fromPersistenceSession(it) }
+            }
 
     override fun userSession(userId: UserId): Either<StorageFailure, AuthSession> =
         idMapper.toDaoModel(userId).let { userIdEntity ->

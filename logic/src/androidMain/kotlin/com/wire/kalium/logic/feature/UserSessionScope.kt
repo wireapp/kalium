@@ -24,7 +24,8 @@ actual class UserSessionScope(
     globalCallManager: GlobalCallManager,
     globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
-    kaliumConfigs: KaliumConfigs
+    kaliumConfigs: KaliumConfigs,
+    userSessionScopeProvider: UserSessionScopeProvider
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
@@ -32,7 +33,8 @@ actual class UserSessionScope(
     globalCallManager,
     globalPreferences,
     dataStoragePaths,
-    kaliumConfigs
+    kaliumConfigs,
+    userSessionScopeProvider
 ) {
 
     override val clientConfig: ClientConfig get() = ClientConfigImpl(applicationContext)
