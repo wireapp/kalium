@@ -3,6 +3,7 @@ package com.wire.kalium.network.api.asset
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
@@ -173,14 +174,17 @@ class StreamAssetContent(
         // the channel is the output / baos / dst file etc.
         val contentBuffer = Buffer()
         var byteCount: Long
-        var index = openingData.size
-        // second + n writes, offset = dynamic, starting by openingData.size
+        var index = openingData.size + 1
         while (fileContentStream.read(contentBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
-            channel.writeFully(contentBuffer.readByteArray(), index, byteCount.toInt())
+            contentBuffer.readByteArray().let { content ->
+                kaliumLogger.d("writing ${content.size} bytes at index $index")
+                channel.writeFully(content, index, content.size)
+            }
             index += byteCount.toInt()
         }
         val finalOffset = index - byteCount
-        channel.writeFully(closingArray, finalOffset.toInt(), closingArray.size)
+        channel.writeFully(closingArray, finalOffset.toInt() + 1, closingArray.size)
+        channel.flush()
         channel.close(null)
     }
 }
