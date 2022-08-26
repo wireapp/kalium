@@ -3,7 +3,6 @@ package com.wire.kalium.network.api.asset
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.AssetId
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
@@ -19,10 +18,10 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.cancel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
+import io.ktor.utils.io.core.ByteReadPacket
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
-import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
 import okio.Sink
 import okio.Source
@@ -135,7 +134,7 @@ class StreamAssetContent(
     private val encryptedDataSize: Long,
     private val fileContentStream: Source
 ) : OutgoingContent.WriteChannelContent() {
-    private val openingData: ByteArray by lazy {
+    private val openingData: String by lazy {
         val body = StringBuilder()
 
         // Part 1
@@ -160,30 +159,20 @@ class StreamAssetContent(
             .append(metadata.md5)
             .append("\r\n\r\n")
 
-        body.toString().toByteArray(UTF_8)
+        body.toString()
     }
 
-    private val closingArray = "\r\n--frontier--\r\n".toByteArray(UTF_8)
+    private val closingArray = "\r\n--frontier--\r\n"
 
     override suspend fun writeTo(channel: ByteWriteChannel) {
-        // first write, opening data, offset = 0
-        channel.writeFully(openingData, 0, openingData.size)
-        // todo: implement the correct offset handling for this method
-        // we are getting double reads ?
-        // can we just use one read channel or just see if a channel can be transformed into another thing
-        // the channel is the output / baos / dst file etc.
+        channel.writeStringUtf8(openingData)
         val contentBuffer = Buffer()
-        var byteCount: Long
-        var index = openingData.size + 1
-        while (fileContentStream.read(contentBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
+        while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
             contentBuffer.readByteArray().let { content ->
-                kaliumLogger.d("writing ${content.size} bytes at index $index")
-                channel.writeFully(content, index, content.size)
+                channel.writePacket(ByteReadPacket(content))
             }
-            index += byteCount.toInt()
         }
-        val finalOffset = index - byteCount
-        channel.writeFully(closingArray, finalOffset.toInt() + 1, closingArray.size)
+        channel.writeStringUtf8(closingArray)
         channel.flush()
         channel.close(null)
     }

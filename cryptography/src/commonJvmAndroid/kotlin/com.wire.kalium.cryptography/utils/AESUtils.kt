@@ -47,10 +47,8 @@ internal class AESEncrypt {
                     encryptedDataSize += byteCount
                     cipheredSink.write(contentBuffer, byteCount)
                     cipheredSink.flush()
-                    kaliumLogger.d("current writing size $encryptedDataSize")
                 }
             }
-            kaliumLogger.d("Finish encryption.")
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while encrypting the asset:\n $e}")
         } finally {
