@@ -1,6 +1,10 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallingParticipantsOrder
+import com.wire.kalium.logic.data.call.CallingParticipantsOrderImpl
+import com.wire.kalium.logic.data.call.ParticipantsFilterImpl
+import com.wire.kalium.logic.data.call.ParticipantsOrderByNameImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
@@ -36,7 +40,7 @@ class CallsScope internal constructor(
 ) {
 
     val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase
-        get() = GetAllCallsWithSortedParticipantsUseCase(callRepository, participantsOrder)
+        get() = GetAllCallsWithSortedParticipantsUseCase(callRepository, callingParticipantsOrder)
 
     val establishedCall: ObserveEstablishedCallsUseCase
         get() = ObserveEstablishedCallsUseCase(
@@ -77,7 +81,12 @@ class CallsScope internal constructor(
 
     val observeSpeaker: ObserveSpeakerUseCase get() = ObserveSpeakerUseCase(mediaManagerService)
 
-    val participantsOrder: ParticipantsOrder get() = ParticipantsOrderImpl()
+    private val callingParticipantsOrder: CallingParticipantsOrder
+        get() = CallingParticipantsOrderImpl(
+            userRepository = userRepository,
+            participantsFilter = ParticipantsFilterImpl(),
+            participantsOrderByName = ParticipantsOrderByNameImpl()
+        )
 
     val isLastCallClosed: IsLastCallClosedUseCase get() = IsLastCallClosedUseCaseImpl(callRepository)
 }
