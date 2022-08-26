@@ -39,7 +39,6 @@ class KeyPackageLimitsProviderTests {
         assertFalse { actual }
     }
 
-
     private class Arrangement {
 
         val kaliumConfigs = KaliumConfigs()

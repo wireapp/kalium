@@ -43,7 +43,6 @@ class MLSKeyPackageCountUseCaseImpl(
         })
 }
 
-
 sealed class MLSKeyPackageCountResult {
     data class Success(val clientId: ClientId, val count: Int, val needsRefill: Boolean) : MLSKeyPackageCountResult()
 
