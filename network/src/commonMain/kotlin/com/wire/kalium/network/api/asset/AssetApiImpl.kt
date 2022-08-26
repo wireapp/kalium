@@ -18,6 +18,7 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.cancel
+import io.ktor.utils.io.close
 import io.ktor.utils.io.core.ByteReadPacket
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
@@ -174,7 +175,7 @@ class StreamAssetContent(
         }
         channel.writeStringUtf8(closingArray)
         channel.flush()
-        channel.close(null)
+        channel.close()
     }
 }
 
