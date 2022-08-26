@@ -7,8 +7,8 @@ import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
+import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -28,9 +28,9 @@ import com.wire.kalium.persistence.dao.Member
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
-import kotlinx.coroutines.flow.map
 
 interface MLSConversationRepository {
 
@@ -40,6 +40,7 @@ interface MLSConversationRepository {
     suspend fun messageFromMLSMessage(messageEvent: NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun leaveMLSGroup(groupID: String): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
     suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit>
@@ -210,6 +211,11 @@ class MLSConversationDataSource(
                     }
                 }
             }
+        }
+
+    override suspend fun leaveMLSGroup(groupID: String) =
+        mlsClientProvider.getMLSClient().map { mlsClient ->
+            mlsClient.wipeConversation(groupID)
         }
 
     private suspend fun establishMLSGroup(groupID: String, members: List<UserId>): Either<CoreFailure, Unit> =
