@@ -1426,7 +1426,6 @@ class ConversationRepositoryTest {
                 )
         }
 
-
         fun withDeleteMemberAPIFailed() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::removeMember)
