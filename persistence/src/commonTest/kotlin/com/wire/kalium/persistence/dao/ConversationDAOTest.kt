@@ -606,7 +606,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val messages = buildList {
                 repeat(10) {
                     add(
-                        newMessageEntity(
+                        newRegularMessageEntity(
                             id = it.toString(),
                             conversationId = conversation.id,
                             senderUserId = user1.id,
@@ -643,7 +643,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val messages = buildList {
                 repeat(10) {
                     add(
-                        newMessageEntity(
+                        newRegularMessageEntity(
                             id = it.toString(),
                             content = MessageEntityContent.Asset(
                                 assetSizeInBytes = 0,
