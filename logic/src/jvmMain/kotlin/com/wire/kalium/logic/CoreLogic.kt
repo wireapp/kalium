@@ -50,8 +50,7 @@ actual class CoreLogic(
     override val globalCallManager: GlobalCallManager = GlobalCallManager()
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
 
-    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
-        get() = lazy {
+    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
             UserSessionScopeProviderImpl(
                 rootPath,
                 sessionRepository,

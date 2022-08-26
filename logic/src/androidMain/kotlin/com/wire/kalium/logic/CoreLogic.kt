@@ -65,8 +65,7 @@ actual class CoreLogic(
         appContext = appContext
     )
 
-    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
-        get() = lazy {
+    override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
             UserSessionScopeProviderImpl(
                 rootPath,
                 appContext,
