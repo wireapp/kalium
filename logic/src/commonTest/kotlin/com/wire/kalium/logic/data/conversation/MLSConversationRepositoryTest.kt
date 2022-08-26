@@ -263,7 +263,7 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withCommitAcceptedSuccessful()
             .withSendWelcomeMessageSuccessful()
-            .withUpdateConversationGroupStateSuccessful()
+            .withDeleteMembersSuccessful()
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
@@ -436,18 +436,17 @@ class MLSConversationRepositoryTest {
         }
 
         fun withDeleteMembersSuccessful() = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers)
-                .whenInvokedWith(anything())
-                .thenReturn(NetworkResponse.Success(value = CLIENTS_OF_USERS_RESPONSE, headers = mapOf(), httpCode = 200))
-        }
-
-        fun withUpdateConversationGroupStateSuccessful() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::deleteMembersByQualifiedID, fun2<List<QualifiedIDEntity>, String>())
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(Unit)
+        }
 
+        fun withUpdateConversationGroupStateSuccessful() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateConversationGroupState)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Unit)
         }
 
         fun arrange() = this to MLSConversationDataSource(
