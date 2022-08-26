@@ -452,7 +452,6 @@ class ConversationDataSource(
             }
         })
 
-
     override suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.deleteMembersByQualifiedID(userIDList.map { idMapper.toDaoModel(it) }, idMapper.toDaoModel(conversationID))
