@@ -423,25 +423,34 @@ class ConversationDataSource(
         detailsById(conversationId).flatMap { conversation ->
             when (conversation.protocol) {
                 is Conversation.ProtocolInfo.Proteus ->
-                    wrapApiRequest {
-                        conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
-                    }.fold({
-                        Either.Left(it)
-                    }, {
-                        wrapStorageRequest {
-                            conversationDAO.deleteMemberByQualifiedID(
-                                idMapper.toDaoModel(userId),
-                                idMapper.toDaoModel(conversationId)
-                            )
-                        }
-                    })
+                    deleteMemberFromCloudAndStorage(userId, conversationId)
 
                 is Conversation.ProtocolInfo.MLS -> {
-                    // TODO: Should we also map manually the api response and trigger the member-leave system message on MLS?
-                    mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userId))
+                    if (userId == userRepository.getSelfUserId()) {
+                        deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                            mlsConversationRepository.leaveGroup(conversation.protocol.groupId)
+                        }
+                    } else {
+                        // when removing a member from an MLS group, don't need to call the api
+                        mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userId))
+                    }
                 }
             }
         }
+
+    private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
+        wrapApiRequest {
+            conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
+        }.fold({
+            Either.Left(it)
+        }, {
+            wrapStorageRequest {
+                conversationDAO.deleteMemberByQualifiedID(
+                    idMapper.toDaoModel(userId),
+                    idMapper.toDaoModel(conversationId)
+                )
+            }
+        })
 
     override suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
