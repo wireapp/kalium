@@ -428,7 +428,7 @@ class ConversationDataSource(
                 is Conversation.ProtocolInfo.MLS -> {
                     if (userId == userRepository.getSelfUserId()) {
                         deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
-                            mlsConversationRepository.leaveMLSGroup(conversation.protocol.groupId)
+                            mlsConversationRepository.leaveGroup(conversation.protocol.groupId)
                         }
                     } else {
                         // when removing a member from an MLS group, don't need to call the api

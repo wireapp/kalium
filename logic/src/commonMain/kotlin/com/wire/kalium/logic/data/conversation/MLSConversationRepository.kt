@@ -40,7 +40,7 @@ interface MLSConversationRepository {
     suspend fun messageFromMLSMessage(messageEvent: NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?>
     suspend fun addMemberToMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: String, userIdList: List<UserId>): Either<CoreFailure, Unit>
-    suspend fun leaveMLSGroup(groupID: String): Either<CoreFailure, Unit>
+    suspend fun leaveGroup(groupID: String): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: String, epoch: ULong): Either<CoreFailure, Unit>
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<String>>
     suspend fun updateKeyingMaterial(groupID: String): Either<CoreFailure, Unit>
@@ -213,7 +213,7 @@ class MLSConversationDataSource(
             }
         }
 
-    override suspend fun leaveMLSGroup(groupID: String) =
+    override suspend fun leaveGroup(groupID: String) =
         mlsClientProvider.getMLSClient().map { mlsClient ->
             mlsClient.wipeConversation(groupID)
         }
