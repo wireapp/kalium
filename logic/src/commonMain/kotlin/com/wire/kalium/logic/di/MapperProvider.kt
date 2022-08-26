@@ -7,7 +7,10 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
-import com.wire.kalium.logic.data.call.CallMapper
+import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
+import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapperImpl
+import com.wire.kalium.logic.data.call.mapper.CallMapper
+import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
@@ -90,7 +93,8 @@ internal object MapperProvider {
     fun clientMapper(clientConfig: ClientConfig): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper(), clientConfig)
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl(idMapper())
     fun protoContentMapper(): ProtoContentMapper = ProtoContentMapperImpl()
-    fun callMapper(): CallMapper = CallMapper()
+    fun callMapper(): CallMapper = CallMapperImpl()
+    fun activeSpeakerMapper(): ActiveSpeakerMapper = ActiveSpeakerMapperImpl()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
     fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapperImpl()
     fun localNotificationMessageMapper(): LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
