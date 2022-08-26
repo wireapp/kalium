@@ -5,6 +5,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -737,6 +738,61 @@ class ConversationRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenAnMLSConversationAndAPISucceeds_whenRemovingLeavingConversation_thenShouldSucceed() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withConversationProtocolIs(MLS_PROTOCOL_INFO)
+            .withDeleteMemberAPISucceed()
+            .withSuccessfulMemberDeletion()
+            .withSuccessfulLeaveMLSGroup()
+            .withSelfUser(TestUser.SELF.id)
+            .arrange()
+
+        conversationRepository.deleteMember(TestUser.SELF.id, TestConversation.ID)
+            .shouldSucceed()
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
+            .with(anything(), anything())
+            .wasInvoked(exactly = once)
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::leaveGroup)
+            .with(eq(MLS_PROTOCOL_INFO.groupId))
+            .wasInvoked(exactly = once)
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
+            .with(any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAnMLSConversationAndAPISucceeds_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withConversationProtocolIs(MLS_PROTOCOL_INFO)
+            .withDeleteMemberAPISucceed()
+            .withSuccessfulMemberDeletion()
+            .withSelfUser(TestUser.SELF.id)
+            .withSuccessfulRemoveMemberFromMLSGroup()
+            .arrange()
+
+        conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+            .shouldSucceed()
+
+        // this function called in the mlsRepo
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
+            .with(anything(), anything())
+            .wasNotInvoked()
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
+            .with(eq(MLS_PROTOCOL_INFO.groupId), eq(listOf(TestConversation.USER_1)))
+            .wasInvoked(exactly = once)
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::leaveGroup)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     @Suppress("LongMethod")
     @Test
     fun givenUpdateAccessRoleSuccess_whenUpdatingConversationAccessInfo_thenTheNewAccessSettingsAreUpdatedLocally() = runTest {
@@ -1304,6 +1360,13 @@ class ConversationRepositoryTest {
                 .thenReturn(selfUserFlow)
         }
 
+        fun withSelfUser(selfUser: QualifiedID) = apply {
+            given(userRepository)
+                .function(userRepository::getSelfUserId)
+                .whenInvoked()
+                .thenReturn(selfUser)
+        }
+
         fun withInsertConversations() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::insertConversations)
@@ -1363,6 +1426,7 @@ class ConversationRepositoryTest {
                 )
         }
 
+
         fun withDeleteMemberAPIFailed() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::removeMember)
@@ -1380,6 +1444,20 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::deleteMemberByQualifiedID)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
+        }
+
+        fun withSuccessfulLeaveMLSGroup() = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::leaveGroup)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSuccessfulRemoveMemberFromMLSGroup() = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::removeMembersFromMLSGroup)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withSuccessfulConversationDeletion() = apply {
