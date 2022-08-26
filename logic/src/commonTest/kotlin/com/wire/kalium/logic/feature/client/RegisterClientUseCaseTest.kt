@@ -69,10 +69,6 @@ class RegisterClientUseCaseTest {
             .whenInvoked()
             .thenReturn(KEY_PACKAGE_LIMIT)
 
-        given(keyPackageLimitsProvider)
-            .getter(keyPackageLimitsProvider::keyPackageUploadThreshold)
-            .whenInvoked()
-            .thenReturn(KEY_PACKAGE_THRESHOLD)
 
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::generateNewPreKeys)
