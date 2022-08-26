@@ -69,7 +69,6 @@ class RegisterClientUseCaseTest {
             .whenInvoked()
             .thenReturn(KEY_PACKAGE_LIMIT)
 
-
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::generateNewPreKeys)
             .whenInvokedWith(any(), any())
