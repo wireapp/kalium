@@ -47,7 +47,6 @@ class MLSKeyPackageCountUseCaseTest {
         assertEquals(actual.genericFailure, CLIENT_FETCH_ERROR)
     }
 
-
     @Test
     fun givenClientId_whenCallingKeyPackageCountReturnValue_ThenReturnKeyPackageCountSuccess() = runTest {
         val (arrangement, keyPackageCountUseCase) = Arrangement()
@@ -72,7 +71,6 @@ class MLSKeyPackageCountUseCaseTest {
             .withAvailableKeyPackageCountReturn(Either.Left(NETWORK_FAILURE))
             .withClientId(Either.Right(TestClient.CLIENT_ID))
             .arrange()
-
 
         val actual = keyPackageCountUseCase()
 
@@ -125,7 +123,4 @@ class MLSKeyPackageCountUseCaseTest {
             val KEY_PACKAGE_COUNT_DTO = KeyPackageCountDTO(KEY_PACKAGE_COUNT)
         }
     }
-
-
 }
-
