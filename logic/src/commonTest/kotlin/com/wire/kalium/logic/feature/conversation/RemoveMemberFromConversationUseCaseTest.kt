@@ -27,6 +27,7 @@ class RemoveMemberFromConversationUseCaseTest {
     fun givenMemberAndConversation_WhenRemoveMemberIsSuccessful_ThenReturnSuccess() = runTest {
         val (arrangement, removeMemberUseCase) = Arrangement()
             .withRemoveMemberGroupIs(Either.Right(Unit))
+            .withPersistMessage(Either.Right(Unit))
             .arrange()
 
         val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
@@ -73,6 +74,13 @@ class RemoveMemberFromConversationUseCaseTest {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::deleteMember)
                 .whenInvokedWith(any(), any())
+                .thenReturn(either)
+        }
+
+        fun withPersistMessage(either: Either<CoreFailure, Unit>) = apply {
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
                 .thenReturn(either)
         }
 

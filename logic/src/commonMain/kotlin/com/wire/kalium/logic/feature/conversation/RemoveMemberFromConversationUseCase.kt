@@ -34,8 +34,6 @@ class RemoveMemberFromConversationUseCaseImpl(
     private val persistMessage: PersistMessageUseCase
 ) : RemoveMemberFromConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdToRemove: UserId): RemoveMemberFromConversationUseCase.Result {
-        val isSelfUserLeaving = userIdToRemove == selfUserId
-
         // Call the endpoint to delete the member from given conversation and remove the members connection from DB
         return conversationRepository.deleteMember(userIdToRemove, conversationId).fold({
             RemoveMemberFromConversationUseCase.Result.Failure(it)
@@ -43,18 +41,16 @@ class RemoveMemberFromConversationUseCaseImpl(
             // Backend doesn't forward a member-leave message event to clients that remove themselves from a conversation but everyone else
             // on the group. Therefore, we need to map the member deletion api response manually, and create and persist the member-leave
             // system message on these cases
-            if (isSelfUserLeaving) {
-                val message = Message.System(
-                    id = uuid4().toString(), // We generate a random uuid for this new system message
-                    content = MessageContent.MemberChange.Removed(members = listOf(userIdToRemove)),
-                    conversationId = conversationId,
-                    date = Clock.System.now().toString(),
-                    senderUserId = selfUserId,
-                    status = Message.Status.SENT,
-                    visibility = Message.Visibility.VISIBLE
-                )
-                persistMessage(message)
-            }
+            val message = Message.System(
+                id = uuid4().toString(), // We generate a random uuid for this new system message
+                content = MessageContent.MemberChange.Removed(members = listOf(userIdToRemove)),
+                conversationId = conversationId,
+                date = Clock.System.now().toString(),
+                senderUserId = selfUserId,
+                status = Message.Status.SENT,
+                visibility = Message.Visibility.VISIBLE
+            )
+            persistMessage(message)
             RemoveMemberFromConversationUseCase.Result.Success
         })
     }

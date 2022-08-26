@@ -184,13 +184,14 @@ abstract class UserSessionScopeCommon(
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
         get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
-    private val mlsClientProvider: MLSClientProvider
-        get() = MLSClientProviderImpl(
+    private val mlsClientProvider: MLSClientProvider by lazy {
+        MLSClientProviderImpl(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
             authenticatedDataSourceSet.kaliumPreferencesSettings
         )
+    }
 
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(

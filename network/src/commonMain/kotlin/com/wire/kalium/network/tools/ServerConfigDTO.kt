@@ -14,7 +14,8 @@ data class ServerConfigDTO(
         val blackList: Url,
         val teams: Url,
         val website: Url,
-        val title: String
+        val title: String,
+        val isOnPremises: Boolean
     )
 
     data class MetaData(

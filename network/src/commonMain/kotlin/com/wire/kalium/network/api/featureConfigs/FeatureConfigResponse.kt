@@ -32,7 +32,7 @@ data class FeatureConfigResponse(
     @SerialName("validateSAMLemails")
     val validateSAMLEmails: FeatureConfigData.ValidateSAMLEmails,
     @SerialName("mls")
-    val mls: FeatureConfigData.MLS
+    val mls: FeatureConfigData.MLS?
 )
 
 @Serializable
