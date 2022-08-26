@@ -25,6 +25,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 
+@Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationDAOTest : BaseDatabaseTest() {
 
@@ -688,7 +689,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.setProposalTimer(proposalTimer2)
 
         // then
-         assertEquals(listOf(proposalTimer2), conversationDAO.getProposalTimers().first())
+        assertEquals(listOf(proposalTimer2), conversationDAO.getProposalTimers().first())
     }
 
     @Test
