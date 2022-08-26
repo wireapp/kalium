@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ParticipantMapper {
+class ParticipantMapperTest {
 
     private val participantMapperImpl = ParticipantMapperImpl()
 
