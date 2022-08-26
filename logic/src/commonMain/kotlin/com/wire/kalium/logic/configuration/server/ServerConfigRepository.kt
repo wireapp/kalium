@@ -120,6 +120,7 @@ internal class ServerConfigDataSource(
                         blackListUrl = links.blackList,
                         teamsUrl = links.teams,
                         websiteUrl = links.website,
+                        isOnPremises = links.isOnPremises,
                         title = links.title,
                         federation = metadata.federation,
                         domain = metadata.domain,

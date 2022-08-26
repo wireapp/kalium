@@ -18,12 +18,15 @@ class VideoStateCheckerTest {
     fun givenAVideoStateIsPauseOrStoppedWhenCheckingIfVideoEnabledThenReturnFalse() {
         val stoppedState = VideoStateCalling.STOPPED
         val pausedState = VideoStateCalling.PAUSED
+        val unknownState = VideoStateCalling.UNKNOWN
 
         val result1 = videoStateChecker.isCameraOn(stoppedState)
         val result2 = videoStateChecker.isCameraOn(pausedState)
+        val result3 = videoStateChecker.isCameraOn(unknownState)
 
         assertEquals(false, result1)
         assertEquals(false, result2)
+        assertEquals(false, result3)
     }
 
     @Test

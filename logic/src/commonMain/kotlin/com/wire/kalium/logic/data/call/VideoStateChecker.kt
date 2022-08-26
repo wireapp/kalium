@@ -9,7 +9,7 @@ interface VideoStateChecker {
 class VideoStateCheckerImpl : VideoStateChecker {
 
     override fun isCameraOn(state: VideoStateCalling) = when (state) {
-        VideoStateCalling.PAUSED, VideoStateCalling.STOPPED -> false
+        VideoStateCalling.PAUSED, VideoStateCalling.STOPPED, VideoStateCalling.UNKNOWN -> false
         else -> true
     }
 }

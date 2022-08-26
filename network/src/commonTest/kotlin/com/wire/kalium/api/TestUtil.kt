@@ -8,8 +8,14 @@ val TEST_BACKEND_CONFIG =
     ServerConfigDTO(
         id = "id",
         ServerConfigDTO.Links(
-            Url("https://test.api.com"), Url("https://test.account.com"), Url("https://test.ws.com"),
-            Url("https://test.blacklist"), Url("https://test.teams.com"), Url("https://test.wire.com"), "Test Title"
+            Url("https://test.api.com"),
+            Url("https://test.account.com"),
+            Url("https://test.ws.com"),
+            Url("https://test.blacklist"),
+            Url("https://test.teams.com"),
+            Url("https://test.wire.com"),
+            "Test Title",
+            false
         ),
         ServerConfigDTO.MetaData(
             false,
@@ -18,11 +24,16 @@ val TEST_BACKEND_CONFIG =
         )
     )
 
-
 val TEST_BACKEND_LINKS =
     ServerConfigDTO.Links(
-        Url("https://test.api.com"), Url("https://test.account.com"), Url("https://test.ws.com"),
-        Url("https://test.blacklist"), Url("https://test.teams.com"), Url("https://test.wire.com"), "Test Title"
+        Url("https://test.api.com"),
+        Url("https://test.account.com"),
+        Url("https://test.ws.com"),
+        Url("https://test.blacklist"),
+        Url("https://test.teams.com"),
+        Url("https://test.wire.com"),
+        "Test Title",
+        false
     )
 
 val TEST_BACKEND =

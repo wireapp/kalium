@@ -17,7 +17,7 @@ class OnParticipantsVideoStateChanged(
     override fun onVideoReceiveStateChanged(conversationId: String, userId: String, clientId: String, state: Int, arg: Pointer?) {
         callingLogger.i(
             "[onVideoReceiveStateChanged] - conversationId: $conversationId | userId: $userId clientId: $clientId" +
-                    "| state: $state"
+                    " | state: $state"
         )
 
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
