@@ -1,18 +1,14 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.contact.search.UserSearchApi
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.anything
@@ -22,7 +18,6 @@ import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.BeforeTest
 import kotlin.test.assertIs
 
 class ClearConversationContentUseCaseTest {
@@ -192,7 +187,10 @@ class ClearConversationContentUseCaseTest {
             given(clientRepository)
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
-                .thenReturn(if (isSuccessFull) Either.Right(ClientId("someValue")) else Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+                .thenReturn(
+                    if (isSuccessFull) Either.Right(ClientId("someValue"))
+                    else Either.Left(CoreFailure.Unknown(Throwable("an error")))
+                )
 
             return this
         }
