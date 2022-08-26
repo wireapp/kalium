@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
+@Suppress("LongParameterList")
 actual class UserSessionScopeProviderImpl(
     private val rootPath: String,
     private val sessionRepository: SessionRepository,
@@ -32,7 +33,7 @@ actual class UserSessionScopeProviderImpl(
     private val globalPreferences: KaliumPreferences,
     private val globalCallManager: GlobalCallManager,
     private val idMapper: IdMapper
-    ) : UserSessionScopeProviderCommon() {
+) : UserSessionScopeProviderCommon() {
 
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"

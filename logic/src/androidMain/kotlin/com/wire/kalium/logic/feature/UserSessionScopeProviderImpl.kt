@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import kotlinx.coroutines.runBlocking
 
+@Suppress("LongParameterList")
 actual class UserSessionScopeProviderImpl(
     private val rootPath: String,
     private val appContext: Context,

@@ -20,6 +20,7 @@ import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+@Suppress("TooManyFunctions")
 interface SessionRepository {
     fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit>
     fun updateTokens(
@@ -45,6 +46,7 @@ interface SessionRepository {
     fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit>
 }
 
+@Suppress("TooManyFunctions")
 internal class SessionDataSource(
     private val sessionStorage: SessionStorage,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),

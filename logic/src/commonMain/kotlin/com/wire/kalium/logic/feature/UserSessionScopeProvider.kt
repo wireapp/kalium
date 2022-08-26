@@ -7,7 +7,7 @@ interface UserSessionScopeProvider {
     fun delete(userId: UserId)
 }
 
-abstract class UserSessionScopeProviderCommon: UserSessionScopeProvider {
+abstract class UserSessionScopeProviderCommon : UserSessionScopeProvider {
     private val userScopeStorage: HashMap<UserId, UserSessionScope> by lazy {
         hashMapOf()
     }
