@@ -64,7 +64,7 @@ class FeatureConfigMapperTest {
         assertEquals(Status.ENABLED, model.status)
         assertEquals(true, model.config.enforceAppLock)
     }
-    
+
     @Test
     fun givenApiModelResponse_whenMappingSelfDeletingMessagesToModel_thenShouldBeMappedCorrectly() {
         val (arrangement, mapper) = Arrangement().arrange()
