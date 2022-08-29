@@ -16,8 +16,8 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
-import com.wire.kalium.logic.feature.user.ObserveSelfUsersWithTeamsUseCase
-import com.wire.kalium.logic.feature.user.ObserveSelfUsersWithTeamsUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
+import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCase
 import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCase
@@ -73,8 +73,8 @@ class GlobalKaliumScope(
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
-    val observeSelfUsersList: ObserveSelfUsersWithTeamsUseCase
-        get() = ObserveSelfUsersWithTeamsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
+    val observeValidAccounts: ObserveValidAccountsUseCase
+        get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
 
     val session: SessionScope get() = SessionScope(sessionRepository)
     val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)

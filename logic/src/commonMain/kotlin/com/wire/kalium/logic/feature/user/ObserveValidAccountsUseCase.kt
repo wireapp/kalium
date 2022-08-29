@@ -9,15 +9,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 
-interface ObserveSelfUsersWithTeamsUseCase {
+interface ObserveValidAccountsUseCase {
 
     suspend operator fun invoke(): Flow<List<Pair<SelfUser, Team?>>>
 }
 
-internal class ObserveSelfUsersWithTeamsUseCaseImpl internal constructor(
+internal class ObserveValidAccountsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val userSessionScopeProvider: UserSessionScopeProvider
-) : ObserveSelfUsersWithTeamsUseCase {
+) : ObserveValidAccountsUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(): Flow<List<Pair<SelfUser, Team?>>> =
