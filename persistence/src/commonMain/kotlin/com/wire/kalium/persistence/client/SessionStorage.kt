@@ -48,6 +48,11 @@ interface SessionStorage {
     fun allSessions(): Map<UserIDEntity, AuthSessionEntity>?
 
     /**
+     * return the Flow of all stored session as a userId to session map
+     */
+    fun allSessionsFlow(): Flow<Map<UserIDEntity, AuthSessionEntity>>
+
+    /**
      * return stored session associated with a userId
      */
     fun userSession(userId: UserIDEntity): AuthSessionEntity?
@@ -81,12 +86,13 @@ class SessionStorageImpl(
             // save the new map if the remove did not return null (session was deleted)
             val temp = sessionMap.toMutableMap()
             temp.remove(userId)?.let {
-                sessionsUpdatedFlow.tryEmit(Unit)
                 if (temp.isEmpty()) {
                     // in case it was the last session then delete sessions key/value from the file
                     removeAllSession()
                 } else {
                     saveAllSessions(SessionsMap(temp))
+                }.also {
+                    sessionsUpdatedFlow.tryEmit(Unit)
                 }
             } ?: run {
                 kaliumLogger.withFeatureId(SESSION).d("trying to delete user session that didn't exists, userId: $userId")
@@ -113,6 +119,12 @@ class SessionStorageImpl(
 
     override fun allSessions(): Map<UserIDEntity, AuthSessionEntity>? =
         kaliumPreferences.getSerializable(SESSIONS_KEY, SessionsMap.serializer())?.sessions?.ifEmpty { null }
+
+    override fun allSessionsFlow(): Flow<Map<UserIDEntity, AuthSessionEntity>> = sessionsUpdatedFlow
+        .map { allSessions() }
+        .onStart { emit(allSessions()) }
+        .map { it ?: mapOf() }
+        .distinctUntilChanged()
 
     override fun userSession(userId: UserIDEntity): AuthSessionEntity? =
         allSessions()?.let { sessionMap ->

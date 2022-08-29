@@ -7,8 +7,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.di.UserSessionScopeProvider
-import com.wire.kalium.logic.di.UserSessionScopeProviderImpl
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onSuccess
@@ -26,7 +25,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val clientRepository: ClientRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
-    private val userSessionScopeProvider: UserSessionScopeProvider = UserSessionScopeProviderImpl
+    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe

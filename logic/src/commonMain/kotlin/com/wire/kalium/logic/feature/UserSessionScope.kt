@@ -165,7 +165,8 @@ abstract class UserSessionScopeCommon(
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
@@ -566,7 +567,8 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet,
             clientRepository,
             mlsClientProvider,
-            client.deregisterNativePushToken
+            client.deregisterNativePushToken,
+            userSessionScopeProvider
         )
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
