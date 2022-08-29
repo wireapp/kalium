@@ -29,6 +29,7 @@ internal class KeyPackageManagerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val keyPackageRepository: Lazy<KeyPackageRepository>,
     private val refillKeyPackagesUseCase: Lazy<RefillKeyPackagesUseCase>,
+    private val keyPackageCountUseCase: Lazy<MLSKeyPackageCountUseCase>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : KeyPackageManager {
     /**
@@ -55,7 +56,14 @@ internal class KeyPackageManagerImpl(
 
     private suspend fun refillKeyPackagesIfNeeded() {
         keyPackageRepository.value.lastKeyPackageCountCheck().flatMap { timestamp ->
-            if (Clock.System.now().minus(timestamp) > KEY_PACKAGE_COUNT_CHECK_DURATION) {
+            val forceRefill = keyPackageCountUseCase.value(fromAPI = false).let {
+                when (it) {
+                    is MLSKeyPackageCountResult.Success -> it.needsRefill
+                    // if that fails, during the next sync we will check again! so it doesn't matter to skip one time!
+                    else -> false
+                }
+            }
+            if (Clock.System.now().minus(timestamp) > KEY_PACKAGE_COUNT_CHECK_DURATION || forceRefill) {
                 kaliumLogger.i("Checking if we need to refill key packages")
                 when (val result = refillKeyPackagesUseCase.value()) {
                     is RefillKeyPackagesResult.Success -> keyPackageRepository.value.updateLastKeyPackageCountCheck(Clock.System.now())
