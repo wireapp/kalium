@@ -9,7 +9,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
-import com.wire.kalium.logic.feature.auth.NumberOfAuthenticatedAccountsUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
@@ -95,6 +94,4 @@ class GlobalKaliumScope(
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
             userConfigRepository
         )
-
-    val numberOfAuthenticatedAccounts: NumberOfAuthenticatedAccountsUseCase get() = NumberOfAuthenticatedAccountsUseCase(sessionRepository)
 }
