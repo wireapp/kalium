@@ -18,15 +18,14 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.cancel
-import io.ktor.utils.io.charsets.Charsets.UTF_8
 import io.ktor.utils.io.close
+import io.ktor.utils.io.core.ByteReadPacket
 import io.ktor.utils.io.core.isNotEmpty
 import io.ktor.utils.io.core.readBytes
-import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
 import okio.Sink
 import okio.Source
-import okio.buffer
 import okio.use
 
 interface AssetApi {
@@ -136,7 +135,7 @@ class StreamAssetContent(
     private val encryptedDataSize: Long,
     private val fileContentStream: Source
 ) : OutgoingContent.WriteChannelContent() {
-    private val openingData: ByteArray by lazy {
+    private val openingData: String by lazy {
         val body = StringBuilder()
 
         // Part 1
@@ -161,26 +160,21 @@ class StreamAssetContent(
             .append(metadata.md5)
             .append("\r\n\r\n")
 
-        body.toString().toByteArray(UTF_8)
+        body.toString()
     }
 
-    private val closingArray = "\r\n--frontier--\r\n".toByteArray(UTF_8)
+    private val closingArray = "\r\n--frontier--\r\n"
 
     override suspend fun writeTo(channel: ByteWriteChannel) {
-        channel.writeFully(openingData, 0, openingData.size)
-
-        val stream = fileContentStream.buffer()
-        while (true) {
-            val byteArray = stream.readByteArray()
-            if (byteArray.isEmpty()) {
-                break
-            } else {
-                channel.writeFully(byteArray, 0, byteArray.size)
-                channel.flush()
+        channel.writeStringUtf8(openingData)
+        val contentBuffer = Buffer()
+        while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
+            contentBuffer.readByteArray().let { content ->
+                channel.writePacket(ByteReadPacket(content))
             }
         }
-
-        channel.writeFully(closingArray, 0, closingArray.size)
+        channel.writeStringUtf8(closingArray)
+        channel.flush()
         channel.close()
     }
 }
