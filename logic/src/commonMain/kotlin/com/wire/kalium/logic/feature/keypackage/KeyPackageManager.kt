@@ -56,7 +56,7 @@ internal class KeyPackageManagerImpl(
 
     private suspend fun refillKeyPackagesIfNeeded() {
         keyPackageRepository.value.lastKeyPackageCountCheck().flatMap { timestamp ->
-            val forceRefill = keyPackageCountUseCase.value().let {
+            val forceRefill = keyPackageCountUseCase.value(fromAPI = false).let {
                 when (it) {
                     is MLSKeyPackageCountResult.Success -> it.needsRefill
                     // if that fails, during the next sync we will check again! so it doesn't matter to skip one time!

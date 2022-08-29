@@ -65,7 +65,7 @@ class RegisterClientUseCaseTest {
         )
 
         given(keyPackageLimitsProvider)
-            .getter(keyPackageLimitsProvider::keyPackageUploadLimit)
+            .function(keyPackageLimitsProvider::refillAmount)
             .whenInvoked()
             .thenReturn(KEY_PACKAGE_LIMIT)
 

@@ -102,7 +102,7 @@ class RefillKeyPackageUseCaseTest {
                 .whenInvokedWith(anything())
                 .thenReturn(needRefill)
             given(keyPackageLimitsProvider).function(keyPackageLimitsProvider::refillAmount)
-                .whenInvokedWith(anything())
+                .whenInvoked()
                 .thenReturn(refillAmount)
         }
 

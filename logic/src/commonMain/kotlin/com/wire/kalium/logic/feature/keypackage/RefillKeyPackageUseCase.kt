@@ -33,7 +33,7 @@ class RefillKeyPackagesUseCaseImpl(
                 .flatMap {
                     if (keyPackageLimitsProvider.needsRefill(it.count)) {
                         kaliumLogger.i("Refilling key packages...")
-                        val amount = keyPackageLimitsProvider.refillAmount(it.count)
+                        val amount = keyPackageLimitsProvider.refillAmount()
                         keyPackageRepository.uploadNewKeyPackages(selfClientId, amount).flatMap {
                             Either.Right(Unit)
                         }

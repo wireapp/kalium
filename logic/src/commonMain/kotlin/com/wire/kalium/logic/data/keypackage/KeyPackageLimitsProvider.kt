@@ -4,10 +4,9 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 interface KeyPackageLimitsProvider {
 
-    val keyPackageUploadLimit: Int
     fun needsRefill(keyPackageCount: Int): Boolean
 
-    fun refillAmount(currentAmount: Int): Int
+    fun refillAmount(): Int
 
 }
 
@@ -15,7 +14,7 @@ class KeyPackageLimitsProviderImpl(
     private val kaliumConfigs: KaliumConfigs
 ) : KeyPackageLimitsProvider {
 
-    override val keyPackageUploadLimit: Int
+    private val keyPackageUploadLimit: Int
         get() = if (kaliumConfigs.lowerKeyPackageLimits) KEY_PACKAGE_LIMIT_LOW else KEY_PACKAGE_LIMIT
 
     private val keyPackageUploadThreshold: Float
@@ -25,8 +24,7 @@ class KeyPackageLimitsProviderImpl(
         return keyPackageCount < (keyPackageUploadLimit * keyPackageUploadThreshold)
     }
 
-    override fun refillAmount(currentAmount: Int) =
-        keyPackageUploadLimit - currentAmount
+    override fun refillAmount() = keyPackageUploadLimit
 
     companion object {
         internal const val KEY_PACKAGE_LIMIT = 100

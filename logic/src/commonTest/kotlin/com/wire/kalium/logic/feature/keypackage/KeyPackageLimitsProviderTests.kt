@@ -26,8 +26,8 @@ class KeyPackageLimitsProviderTests {
         val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD - 1).toInt()
         val (_, keyPackageLimitsProvide) = Arrangement()
             .arrange()
-        val actual = keyPackageLimitsProvide.refillAmount(keyPackageCount)
-        assertEquals(Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount, actual)
+        val actual = keyPackageLimitsProvide.refillAmount()
+        assertEquals(Arrangement.KEY_PACKAGE_LIMIT, actual)
     }
 
     @Test
