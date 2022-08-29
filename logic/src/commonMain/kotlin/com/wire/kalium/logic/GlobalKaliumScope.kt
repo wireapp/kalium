@@ -8,6 +8,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
+import com.wire.kalium.logic.feature.auth.NumberOfAuthenticatedAccountsUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
@@ -75,7 +76,8 @@ class GlobalKaliumScope(
     val observeServerConfig: ObserveServerConfigUseCase get() = ObserveServerConfigUseCase(serverConfigRepository)
     val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
 
-    val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
+    val saveNotificationToken: SaveNotificationTokenUseCase
+        get() = SaveNotificationTokenUseCase(notificationTokenRepository)
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
@@ -87,4 +89,6 @@ class GlobalKaliumScope(
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
             userConfigRepository
         )
+
+    val numberOfAuthenticatedAccounts: NumberOfAuthenticatedAccountsUseCase get() = NumberOfAuthenticatedAccountsUseCase(sessionRepository)
 }
