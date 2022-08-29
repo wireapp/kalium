@@ -1,7 +1,8 @@
 package com.wire.kalium.logic.feature.call
 
-import com.wire.kalium.logic.data.call.CallMapper
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -22,7 +23,8 @@ actual class GlobalCallManager {
         messageSender: MessageSender,
         callMapper: CallMapper,
         federatedIdMapper: FederatedIdMapper,
-        qualifiedIdMapper: QualifiedIdMapper
+        qualifiedIdMapper: QualifiedIdMapper,
+        videoStateChecker: VideoStateChecker
     ): CallManager = CallManagerImpl()
 
     actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl()

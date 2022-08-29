@@ -5,5 +5,6 @@ enum class VideoState {
     STARTED,
     BAD_CONNECTION,
     PAUSED,
-    SCREENSHARE
+    SCREENSHARE,
+    UNKNOWN
 }

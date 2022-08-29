@@ -1,9 +1,12 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.AddMemberCommitBundle
+import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -14,11 +17,14 @@ import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.api.user.client.DeviceTypeDTO
+import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.anyInstanceOf
@@ -247,17 +253,53 @@ class MLSConversationRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenConversation_whenCallingRemoveMemberFromGroup() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withRemoveMemberSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .withFetchClientsOfUsersSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withDeleteMembersSuccessful()
+            .arrange()
+
+        val users = listOf(TestUser.USER_ID)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::removeMember)
+            .with(eq(Arrangement.GROUP_ID), anything())
+            .wasInvoked(once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::deleteMembersByQualifiedID, fun2<List<QualifiedIDEntity>, String>())
+            .with(eq(users.map { arrangement.idMapper.toDaoModel(it) }), eq(Arrangement.GROUP_ID))
+            .wasInvoked(once)
+
+    }
+
     class Arrangement {
+        val idMapper: IdMapper = IdMapperImpl()
+
         @Mock
         val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+
         @Mock
         val mlsClientProvider = mock(classOf<MLSClientProvider>())
+
         @Mock
         val conversationDAO = mock(classOf<ConversationDAO>())
+
         @Mock
         val clientApi = mock(ClientApi::class)
+
         @Mock
         val mlsMessageApi = mock(classOf<MLSMessageApi>())
+
         @Mock
         val mlsClient = mock(classOf<MLSClient>())
 
@@ -379,20 +421,40 @@ class MLSConversationRepositoryTest {
             withCommitAcceptedSuccessful()
         }
 
-fun withUpdateConversationGroupStateSuccessful() = apply {
+        fun withRemoveMemberSuccessful() = apply {
+            given(mlsClient)
+                .function(mlsClient::removeMember)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(COMMIT_BUNDLE)
+        }
+
+        fun withFetchClientsOfUsersSuccessful() = apply {
+            given(clientApi)
+                .suspendFunction(clientApi::listClientsOfUsers)
+                .whenInvokedWith(anything())
+                .thenReturn(NetworkResponse.Success(value = CLIENTS_OF_USERS_RESPONSE, headers = mapOf(), httpCode = 200))
+        }
+
+        fun withDeleteMembersSuccessful() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::deleteMembersByQualifiedID, fun2<List<QualifiedIDEntity>, String>())
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Unit)
+        }
+
+        fun withUpdateConversationGroupStateSuccessful() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::updateConversationGroupState)
-            .whenInvokedWith(anything(), anything())
-            .thenDoNothing()
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Unit)
+        }
 
-            }
-
-    fun arrange() = this to MLSConversationDataSource(
+        fun arrange() = this to MLSConversationDataSource(
             keyPackageRepository,
             mlsClientProvider,
             mlsMessageApi,
             conversationDAO,
-        clientApi
+            clientApi
         )
 
         internal companion object {
@@ -410,7 +472,7 @@ fun withUpdateConversationGroupStateSuccessful() = apply {
             val WELCOME = "welcome".encodeToByteArray()
             val COMMIT = "commit".encodeToByteArray()
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
-            val COMMIT_BUNDLE = AddMemberCommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
+            val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
             val ADD_MEMBER_COMMIT_BUNDLE = AddMemberCommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
             val WELCOME_EVENT = Event.Conversation.MLSWelcome(
                 "eventId",
@@ -419,6 +481,9 @@ fun withUpdateConversationGroupStateSuccessful() = apply {
                 WELCOME.encodeBase64(),
                 timestampIso = "2022-03-30T15:36:00.000Z"
             )
+            private val SIMPLE_CLIENT_RESPONSE = SimpleClientResponse("an ID", DeviceTypeDTO.Desktop)
+
+            val CLIENTS_OF_USERS_RESPONSE = mapOf(TestUser.NETWORK_ID to listOf(SIMPLE_CLIENT_RESPONSE))
         }
     }
 }
