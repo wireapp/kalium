@@ -2,12 +2,14 @@ package com.wire.kalium.logic.sync.incremental
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.notification.WebSocketEvent
 import io.mockative.Mock
 import io.mockative.configure
@@ -24,8 +26,10 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class EventGathererTest {
 
@@ -47,6 +51,8 @@ class EventGathererTest {
 
             // Open Websocket should trigger fetching pending events
             liveEventsChannel.send(WebSocketEvent.Open())
+
+            advanceUntilIdle()
 
             verify(arrangement.eventRepository)
                 .suspendFunction(arrangement.eventRepository::pendingEvents)
@@ -74,6 +80,8 @@ class EventGathererTest {
 
             // Open Websocket should trigger fetching pending events
             liveEventsChannel.send(WebSocketEvent.Open())
+
+            advanceUntilIdle()
 
             verify(arrangement.eventRepository)
                 .suspendFunction(arrangement.eventRepository::pendingEvents)
@@ -155,6 +163,54 @@ class EventGathererTest {
                 assertEquals(EventSource.LIVE, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenWebSocketOpensAndFetchingPendingEventsFail_whenGathering_thenGatheringShouldFailWithSyncException() = runTest {
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
+
+        val failureCause = NetworkFailure.ServerMiscommunication(IOException())
+        val (_, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
+            .withKeepAliveConnectionPolicy()
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            // Open Websocket should trigger fetching pending events
+            liveEventsChannel.send(WebSocketEvent.Open())
+            advanceUntilIdle()
+
+            val error = awaitError()
+            assertIs<KaliumSyncException>(error)
+            assertEquals(failureCause, error.coreFailureCause)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenWebSocketReceivesEventsAndFetchingPendingEventsFail_whenGathering_thenEventsShouldNotBeEmitted() = runTest {
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
+
+        val failureCause = NetworkFailure.ServerMiscommunication(IOException())
+        val (_, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
+            .withKeepAliveConnectionPolicy()
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            // Open Websocket should trigger fetching pending events
+            liveEventsChannel.send(WebSocketEvent.Open())
+            liveEventsChannel.send(WebSocketEvent.BinaryPayloadReceived(TestEvent.newConnection()))
+
+            advanceUntilIdle()
+
+            awaitError()
             cancelAndIgnoreRemainingEvents()
         }
     }
