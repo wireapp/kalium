@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -200,7 +201,7 @@ class EventGathererTest {
             .withLastEventIdReturning(Either.Right("lastEventId"))
             .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
             .withKeepAliveConnectionPolicy()
-            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.receiveAsFlow()))
             .arrange()
 
         eventGatherer.gatherEvents().test {
