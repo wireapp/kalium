@@ -58,6 +58,16 @@ interface UserConfigStorage {
      */
     fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?>
 
+    /**
+     * returns a Flow containing the status and list of classified domains
+     * todo: change return type to entity instead of boolean
+     */
+    fun isClassifiedDomainsEnabled(): Flow<Boolean>
+
+    /**
+     * save the flag and list of trusted domains
+     */
+    fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
 }
 
 @Serializable
@@ -118,6 +128,6 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
         const val ENABLE_LOGGING = "enable_logging"
         const val FILE_SHARING = "file_sharing"
         const val ENABLE_MLS = "enable_mls"
-        const val PERSISTENT_WEB_SOCKET_CONNECTION = "persistent_web_socket_connectiona"
+        const val PERSISTENT_WEB_SOCKET_CONNECTION = "persistent_web_socket_connection"
     }
 }
