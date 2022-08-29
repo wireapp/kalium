@@ -60,8 +60,10 @@ class UserScope internal constructor(
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 
-    val isPasswordRequired get() = IsPasswordRequiredUseCase(
-        selfUserId = selfUserId,
-        sessionRepository = sessionRepository
-    )
+    val isPasswordRequired
+        get() = IsPasswordRequiredUseCase(
+            selfUserId = selfUserId,
+            sessionRepository = sessionRepository
+        )
+    val serverLinks get() = SelfServerConfigUseCase(sessionRepository, selfUserId)
 }
