@@ -9,6 +9,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
+import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
+import com.wire.kalium.logic.feature.server.FetchApiVersionUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
@@ -72,6 +74,7 @@ class GlobalKaliumScope(
 
     val session: SessionScope get() = SessionScope(sessionRepository)
     val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
+    val fetchApiVersion: FetchApiVersionUseCase get() = FetchApiVersionUseCaseImpl(serverConfigRepository)
     val observeServerConfig: ObserveServerConfigUseCase get() = ObserveServerConfigUseCase(serverConfigRepository)
     val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
 
