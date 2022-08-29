@@ -172,7 +172,7 @@ class LoginCommand : CliktCommand(name = "login") {
                 else -> {
                     coreLogic.globalScope {
                         when (val result = fetchServerConfigFromDeepLink(env)) {
-                            is GetServerConfigResult.Success -> result.serverConfig.links
+                            is GetServerConfigResult.Success -> result.serverConfigLinks
                             is GetServerConfigResult.Failure -> throw PrintMessage("failed to fetch server config from: $env")
                         }
                     }
