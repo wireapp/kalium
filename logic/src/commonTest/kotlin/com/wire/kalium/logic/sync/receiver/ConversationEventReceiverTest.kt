@@ -16,6 +16,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -59,8 +60,11 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationEventReceiverTest {
@@ -132,6 +136,26 @@ class ConversationEventReceiverTest {
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching { it.content == decryptedExternalContent })
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewMLSMessageEventWithProposal_whenHandling_thenScheduleProposalTimer() = runTest {
+        val eventTimestamp = Clock.System.now()
+        val commitDelay: Long = 10
+
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withMessageFromMLSMessageReturningProposal(commitDelay)
+            .withScheduleCommitSucceeding()
+            .arrange()
+
+        val messageEvent = arrangement.newMLSMessageEvent(eventTimestamp)
+        eventReceiver.onEvent(messageEvent)
+
+        verify(arrangement.pendingProposalScheduler)
+            .suspendFunction(arrangement.pendingProposalScheduler::scheduleCommit)
+            .with(eq(TestConversation.GROUP_ID), eq(eventTimestamp.plus(commitDelay.seconds)))
+            .wasInvoked(once)
     }
 
     @Test
@@ -316,7 +340,7 @@ class ConversationEventReceiverTest {
         private val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
 
         @Mock
-        private val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
+        val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             proteusClient,
@@ -413,6 +437,20 @@ class ConversationEventReceiverTest {
                 .thenReturn(result)
         }
 
+        fun withMessageFromMLSMessageReturningProposal(commitDelay: Long = 15) = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::messageFromMLSMessage)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(DecryptedMessageBundle(TestConversation.GROUP_ID, null, commitDelay)))
+        }
+
+        fun withScheduleCommitSucceeding() = apply {
+            given(pendingProposalScheduler)
+                .suspendFunction(pendingProposalScheduler::scheduleCommit)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
+        }
+
         fun newMessageEvent(
             encryptedContent: String,
             senderUserId: UserId = TestUser.USER_ID,
@@ -425,6 +463,16 @@ class ConversationEventReceiverTest {
             "time",
             encryptedContent,
             encryptedExternalContent
+        )
+
+        fun newMLSMessageEvent(
+            timestamp: Instant
+        ) = Event.Conversation.NewMLSMessage(
+            "eventId",
+            TestConversation.ID,
+            TestUser.USER_ID,
+            timestamp.toString(),
+            "content"
         )
 
         fun withDeletingConversationSucceeding(conversationId: ConversationId = TestConversation.ID) = apply {
