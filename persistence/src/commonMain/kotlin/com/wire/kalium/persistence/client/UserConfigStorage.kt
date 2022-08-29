@@ -60,9 +60,8 @@ interface UserConfigStorage {
 
     /**
      * returns a Flow containing the status and list of classified domains
-     * todo: change return type to entity instead of boolean
      */
-    fun isClassifiedDomainsEnabled(): Flow<Boolean>
+    fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity>
 
     /**
      * save the flag and list of trusted domains
@@ -76,10 +75,18 @@ data class IsFileSharingEnabledEntity(
     @SerialName("isStatusChanged") val isStatusChanged: Boolean?
 )
 
+@Serializable
+data class ClassifiedDomainsEntity(
+    @SerialName("status") val status: Boolean,
+    @SerialName("trustedDomains") val trustedDomains: List<String>,
+)
+
 class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : UserConfigStorage {
 
     private val isFileSharingEnabledFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private val isPersistentWebSocketConnectionEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val isClassifiedDomainsEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun enableMLS(enabled: Boolean) {
@@ -124,10 +131,22 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
         .onStart { emit(isFileSharingEnabled()) }
         .distinctUntilChanged()
 
+    override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity> {
+        return isClassifiedDomainsEnabledFlow
+            .map { kaliumPreferences.getSerializable(ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsEntity.serializer())!! }
+            .onStart { emit(kaliumPreferences.getSerializable(ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsEntity.serializer())!!) }
+            .distinctUntilChanged()
+    }
+
+    override fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>) {
+        TODO("Not yet implemented")
+    }
+
     private companion object {
         const val ENABLE_LOGGING = "enable_logging"
         const val FILE_SHARING = "file_sharing"
         const val ENABLE_MLS = "enable_mls"
+        const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val PERSISTENT_WEB_SOCKET_CONNECTION = "persistent_web_socket_connection"
     }
 }
