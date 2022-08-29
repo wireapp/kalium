@@ -8,7 +8,7 @@ interface ParticipantsOrder {
 
 class ParticipantsOrderImpl : ParticipantsOrder {
     /**
-     * order alphabetically list of participants except the first one which is the self user
+     * order alphabetically list of participants except the first one who is the self user
      */
     override fun reorderItems(participants: List<Participant>): List<Participant> {
         return if (participants.isNotEmpty()) {
