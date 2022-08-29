@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfigDTO
@@ -41,7 +42,7 @@ class FeatureConfigMapperTest {
         val model = mapper.fromDTO(arrangement.featureConfigResponse.mls)
 
         assertEquals(Status.ENABLED, model.status)
-        assertEquals(emptyList(), model.allowedUsers)
+        assertEquals(listOf(PlainId("someId")), model.allowedUsers)
     }
 
     @Test
@@ -102,7 +103,7 @@ class FeatureConfigMapperTest {
             FeatureConfigData.ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.MLS(
                 MLSConfigDTO(
-                    emptyList(),
+                    listOf("someId"),
                     ConvProtocol.MLS,
                     emptyList(),
                     1
