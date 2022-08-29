@@ -25,7 +25,6 @@ class FeatureConfigMapperTest {
         assertEquals(Status.ENABLED, model.fileSharingModel.status)
     }
 
-
     @Test
     fun givenApiModelResponse_whenMappingStatusToModel_thenShouldBeMappedCorrectly() {
         val (_, mapper) = Arrangement().arrange()
@@ -84,7 +83,6 @@ class FeatureConfigMapperTest {
 
         assertEquals(Status.ENABLED, model.status)
     }
-
 
     private class Arrangement {
         val featureConfigResponse = FeatureConfigResponse(
