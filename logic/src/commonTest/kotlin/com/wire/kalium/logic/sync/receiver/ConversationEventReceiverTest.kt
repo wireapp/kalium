@@ -142,8 +142,7 @@ class ConversationEventReceiverTest {
     fun givenNewMLSMessageEventWithProposal_whenHandling_thenScheduleProposalTimer() = runTest {
         val eventTimestamp = Clock.System.now()
         val commitDelay: Long = 10
-
-
+        
         val (arrangement, eventReceiver) = Arrangement()
             .withMessageFromMLSMessageReturningProposal(commitDelay)
             .withScheduleCommitSucceeding()
