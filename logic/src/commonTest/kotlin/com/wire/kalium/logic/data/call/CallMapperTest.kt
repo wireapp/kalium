@@ -3,8 +3,9 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.call.mapper.CallMapper
+import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -19,7 +20,7 @@ class CallMapperTest {
 
     @BeforeTest
     fun setUp() {
-        callMapper = CallMapper()
+        callMapper = CallMapperImpl()
     }
 
     @Test
@@ -49,44 +50,14 @@ class CallMapperTest {
         val badConnection = callMapper.toVideoStateCalling(videoState = VideoState.BAD_CONNECTION)
         val paused = callMapper.toVideoStateCalling(videoState = VideoState.PAUSED)
         val screenshare = callMapper.toVideoStateCalling(videoState = VideoState.SCREENSHARE)
+        val unknown = callMapper.toVideoStateCalling(videoState = VideoState.UNKNOWN)
 
         assertEquals(VideoStateCalling.STOPPED, stopped)
         assertEquals(VideoStateCalling.STARTED, started)
         assertEquals(VideoStateCalling.BAD_CONNECTION, badConnection)
         assertEquals(VideoStateCalling.PAUSED, paused)
         assertEquals(VideoStateCalling.SCREENSHARE, screenshare)
-    }
-
-    @Test
-    fun whenMappingToParticipant_withCallMember_thenReturnParticipant() = runTest {
-        val participantMap = callMapper.participantMapper.fromCallMemberToParticipant(
-            member = DUMMY_CALL_MEMBER
-        )
-
-        val expectedParticipant = Participant(
-            id = QualifiedID(
-                value = "dummyId",
-                domain = "dummyDomain"
-            ),
-            clientId = "dummyClientId",
-            isMuted = false
-        )
-
-        assertEquals(expectedParticipant, participantMap)
-    }
-
-    @Test
-    fun whenMappingToCallClient_withCallMember_thenReturnCallMember() = runTest {
-        val callClientMap = callMapper.participantMapper.fromCallMemberToCallClient(
-            member = DUMMY_CALL_MEMBER
-        )
-
-        val expectedCallClient = CallClient(
-            userId = "dummyId@dummyDomain",
-            clientId = "dummyClientId"
-        )
-
-        assertEquals(expectedCallClient, callClientMap)
+        assertEquals(VideoStateCalling.UNKNOWN, unknown)
     }
 
     @Test
@@ -114,34 +85,6 @@ class CallMapperTest {
         val actual = callMapper.fromIntToConversationType(4)
 
         assertEquals(expected, actual)
-    }
-
-    @Test
-    fun givenCallActiveSpeakers_whenMappingToParticipantsActiveSpeaker_thenReturnParticipantsActiveSpeaker() = runTest {
-        val dummyParticipantWithDifferentClientId = DUMMY_PARTICIPANT.copy(
-            clientId = "anotherClientId"
-        )
-
-        val callActiveSpeakerMap = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
-            participants = listOf(
-                DUMMY_PARTICIPANT,
-                dummyParticipantWithDifferentClientId
-            ),
-            activeSpeakers = CallActiveSpeakers(
-                activeSpeakers = listOf(DUMMY_CALL_ACTIVE_SPEAKER, DUMMY_CALL_ACTIVE_SPEAKER1)
-            )
-        )
-
-        val expectedParticipantsActiveSpeaker = listOf(
-            DUMMY_PARTICIPANT.copy(
-                isSpeaking = true
-            ),
-            dummyParticipantWithDifferentClientId.copy(
-                isSpeaking = false
-            )
-        )
-
-        assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
     }
 
     @Test
@@ -268,35 +211,27 @@ class CallMapperTest {
         )
     }
 
-    private companion object {
-        private val DUMMY_CALL_MEMBER = CallMember(
-            userId = "dummyId@dummyDomain",
-            clientId = "dummyClientId",
-            aestab = 0,
-            vrecv = 0,
-            isMuted = 0
-        )
-        private val DUMMY_CALL_ACTIVE_SPEAKER = CallActiveSpeaker(
-            userId = "dummyId@dummyDomain",
-            clientId = "dummyClientId",
-            audioLevel = 1,
-            audioLevelNow = 1
-        )
-        private val DUMMY_CALL_ACTIVE_SPEAKER1 = CallActiveSpeaker(
-            userId = "dummyId@dummyDomain",
-            clientId = "anotherClientId",
-            audioLevel = 1,
-            audioLevelNow = 0
-        )
-        private val DUMMY_PARTICIPANT = Participant(
-            id = QualifiedID(
-                value = "dummyId",
-                domain = "dummyDomain"
-            ),
-            clientId = "dummyClientId",
-            isMuted = false,
-            isSpeaking = false
-        )
-    }
+    @Test
+    fun givenVideoStateInt_whenParsingToVideoState_thenReturnCorrespondingValues() {
+        val videoStatedStoppedInt = 0
+        val videoStatedStartedInt = 1
+        val videoStatedBadConnectionInt = 2
+        val videoStatedPausedInt = 3
+        val videoStatedScreenShareInt = 4
+        val videoStatedUnknownInt = 5
 
+        val resultStopped = callMapper.fromIntToCallingVideoState(videoStatedStoppedInt)
+        val resultStarted = callMapper.fromIntToCallingVideoState(videoStatedStartedInt)
+        val resultBadConnection = callMapper.fromIntToCallingVideoState(videoStatedBadConnectionInt)
+        val resultPaused = callMapper.fromIntToCallingVideoState(videoStatedPausedInt)
+        val resultScreenShare = callMapper.fromIntToCallingVideoState(videoStatedScreenShareInt)
+        val resultUnknown = callMapper.fromIntToCallingVideoState(videoStatedUnknownInt)
+
+        assertEquals(VideoStateCalling.STOPPED, resultStopped)
+        assertEquals(VideoStateCalling.STARTED, resultStarted)
+        assertEquals(VideoStateCalling.BAD_CONNECTION, resultBadConnection)
+        assertEquals(VideoStateCalling.PAUSED, resultPaused)
+        assertEquals(VideoStateCalling.SCREENSHARE, resultScreenShare)
+        assertEquals(VideoStateCalling.UNKNOWN, resultUnknown)
+    }
 }

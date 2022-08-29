@@ -5,5 +5,6 @@ enum class VideoStateCalling(val avsValue: Int) {
     STARTED(avsValue = 1),
     BAD_CONNECTION(avsValue = 2),
     PAUSED(avsValue = 3),
-    SCREENSHARE(avsValue = 4)
+    SCREENSHARE(avsValue = 4),
+    UNKNOWN(avsValue = 5) // Internal
 }
