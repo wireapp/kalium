@@ -139,7 +139,12 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
     }
 
     override fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>) {
-        TODO("Not yet implemented")
+        kaliumPreferences.putSerializable(
+            ENABLE_CLASSIFIED_DOMAINS,
+            ClassifiedDomainsEntity(status, classifiedDomains),
+            ClassifiedDomainsEntity.serializer().also {
+                isClassifiedDomainsEnabledFlow.tryEmit(Unit)
+            })
     }
 
     private companion object {
