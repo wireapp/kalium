@@ -1139,7 +1139,7 @@
     <ID>SpacingAroundColon:com.wire.kalium.cryptography.exceptions.ProteusException.kt:3</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.CoreFailure.kt:57</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.data.asset.KaliumFileSystem.kt:10</ID>
-    <ID>SpacingAroundColon:com.wire.kalium.logic.data.call.CallMapper.kt:74</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.logic.data.call.mapper.CallMapper.kt:74</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.data.message.Message.kt:27</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.data.message.Message.kt:46</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.data.message.MessageContent.kt:42</ID>

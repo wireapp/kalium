@@ -50,6 +50,7 @@ class ServerConfigMapperTest {
                         Url(links.teams),
                         Url(links.website),
                         links.title,
+                        links.isOnPremises
                     ),
                     ServerConfigDTO.MetaData(
                         metaData.federation,
@@ -78,6 +79,7 @@ class ServerConfigMapperTest {
                         links.teams,
                         links.website,
                         links.title,
+                        links.isOnPremises
                     ),
                     ServerConfig.MetaData(
                         metaData.federation,
@@ -106,6 +108,7 @@ class ServerConfigMapperTest {
                         links.teams,
                         links.website,
                         links.title,
+                        links.isOnPremises
                     ),
                     ServerConfigEntity.MetaData(
                         metaData.federation,

@@ -28,6 +28,7 @@ class FakeKaliumFileSystem(
     init {
         fakeFileSystem.allowDeletingOpenFiles = true
         fakeFileSystem.allowReadsWhileWriting = true
+        fakeFileSystem.allowWritesWhileWriting = true
         fakeFileSystem.createDirectories(userHomePath)
         fakeFileSystem.createDirectory(dataStoragePaths.cachePath.value.toPath())
         fakeFileSystem.createDirectory(dataStoragePaths.assetStoragePath.value.toPath())

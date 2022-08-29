@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Member
+import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState

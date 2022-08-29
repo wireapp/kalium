@@ -12,6 +12,8 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.VideoStateChecker
+import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -163,7 +165,8 @@ abstract class UserSessionScopeCommon(
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
@@ -183,13 +186,14 @@ abstract class UserSessionScopeCommon(
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
         get() = UpdateKeyingMaterialThresholdProviderImpl(kaliumConfigs)
 
-    private val mlsClientProvider: MLSClientProvider
-        get() = MLSClientProviderImpl(
+    private val mlsClientProvider: MLSClientProvider by lazy {
+        MLSClientProviderImpl(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
             authenticatedDataSourceSet.kaliumPreferencesSettings
         )
+    }
 
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
@@ -413,6 +417,8 @@ abstract class UserSessionScopeCommon(
             lazy { conversations.updateMLSGroupsKeyingMaterials }
         )
 
+    private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
+
     private val pendingProposalScheduler: PendingProposalScheduler =
         PendingProposalSchedulerImpl(
             incrementalSyncRepository,
@@ -432,7 +438,8 @@ abstract class UserSessionScopeCommon(
             conversationRepository = conversationRepository,
             messageSender = messageSender,
             federatedIdMapper = federatedIdMapper,
-            qualifiedIdMapper = qualifiedIdMapper
+            qualifiedIdMapper = qualifiedIdMapper,
+            videoStateChecker = videoStateChecker
         )
     }
 
@@ -560,7 +567,8 @@ abstract class UserSessionScopeCommon(
             authenticatedDataSourceSet,
             clientRepository,
             mlsClientProvider,
-            client.deregisterNativePushToken
+            client.deregisterNativePushToken,
+            userSessionScopeProvider
         )
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
