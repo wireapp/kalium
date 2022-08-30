@@ -409,7 +409,8 @@ abstract class UserSessionScopeCommon(
         KeyPackageManagerImpl(
             incrementalSyncRepository,
             lazy { keyPackageRepository },
-            lazy { client.refillKeyPackages }
+            lazy { client.refillKeyPackages },
+            lazy { client.mlsKeyPackageCountUseCase }
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(

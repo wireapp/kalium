@@ -162,6 +162,10 @@ class GetFeatureConfigsStatusUseCaseTest {
                 .function(userConfigRepository::setMLSEnabled)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+            given(userConfigRepository)
+                .function(userConfigRepository::setClassifiedDomainsStatus)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
             given(userRepository)
                 .function(userRepository::getSelfUserId)
                 .whenInvoked()
@@ -169,6 +173,7 @@ class GetFeatureConfigsStatusUseCaseTest {
             given(featureConfigRepository)
                 .suspendFunction(featureConfigRepository::getFeatureConfigs).whenInvoked()
                 .thenReturn(Either.Right(expectedFileSharingModel))
+
             return this
         }
 

@@ -51,6 +51,7 @@ import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.seconds
 
@@ -322,7 +323,10 @@ internal class ConversationEventReceiverImpl(
                 if (bundle == null) return@onSuccess
 
                 bundle.commitDelay?.let {
-                    handlePendingProposal(event, it)
+                    handlePendingProposal(
+                        timestamp = event.timestampIso.toInstant(),
+                        groupId = bundle.groupID,
+                        commitDelay = it)
                 }
 
                 bundle.message?.let {
@@ -353,10 +357,11 @@ internal class ConversationEventReceiverImpl(
             }
     }
 
-    private suspend fun handlePendingProposal(event: Event.Conversation.NewMLSMessage, commitDelay: Long) {
+    private suspend fun handlePendingProposal(timestamp: Instant, groupId: String, commitDelay: Long) {
+        kaliumLogger.withFeatureId(EVENT_RECEIVER).d("Received MLS proposal, scheduling commit in $commitDelay seconds")
         pendingProposalScheduler.scheduleCommit(
-            "event.conversationId",
-            event.timestampIso.toInstant().plus(commitDelay.seconds)
+            groupId,
+            timestamp.plus(commitDelay.seconds)
         )
     }
 
