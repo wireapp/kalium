@@ -1,17 +1,34 @@
 package com.wire.kalium.logic.data.call
 
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
+import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ParticipantsFilterTest {
 
+    @Mock
+    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
     lateinit var participantsFilter: ParticipantsFilter
 
     @BeforeTest
     fun setUp() {
-        participantsFilter = ParticipantsFilterImpl()
+        participantsFilter = ParticipantsFilterImpl(qualifiedIdMapper)
+
+        given(qualifiedIdMapper).invocation { fromStringToQualifiedID(selfUserIdString) }
+            .then { selfUserId }
+
+        given(qualifiedIdMapper).invocation { fromStringToQualifiedID(userId2String) }
+            .then { userId2 }
+
+        given(qualifiedIdMapper).invocation { fromStringToQualifiedID(userId3String) }
+            .then { userId3 }
     }
 
     @Test
@@ -54,7 +71,14 @@ class ParticipantsFilterTest {
     }
 
     companion object {
+        const val selfUserIdString = "participant1@domain"
         val selfUserId = UserId("participant1", "domain")
+
+        const val userId2String = "participant2@domain"
+        val userId2 = UserId("participant2", "domain")
+
+        const val userId3String = "participant3@domain"
+        val userId3 = UserId("participant3", "domain")
 
         val participant1 = Participant(
             id = selfUserId,
@@ -71,14 +95,14 @@ class ParticipantsFilterTest {
             isMuted = false
         )
         val participant2 = Participant(
-            id = UserId("participant2", "domain"),
+            id = userId2,
             clientId = "clientId",
             name = "Max",
             isCameraOn = true,
             isMuted = false
         )
         val participant3 = Participant(
-            id = UserId("participant3", "domain"),
+            id = userId3,
             clientId = "clientId",
             name = "Hisoka",
             isCameraOn = false,

@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.call.CallingParticipantsOrderImpl
 import com.wire.kalium.logic.data.call.ParticipantsFilterImpl
 import com.wire.kalium.logic.data.call.ParticipantsOrderByNameImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
@@ -36,7 +37,8 @@ class CallsScope internal constructor(
     private val userRepository: UserRepository,
     private val flowManagerService: FlowManagerService,
     private val mediaManagerService: MediaManagerService,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) {
 
     val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase
@@ -84,7 +86,7 @@ class CallsScope internal constructor(
     private val callingParticipantsOrder: CallingParticipantsOrder
         get() = CallingParticipantsOrderImpl(
             userRepository = userRepository,
-            participantsFilter = ParticipantsFilterImpl(),
+            participantsFilter = ParticipantsFilterImpl(qualifiedIdMapper),
             participantsOrderByName = ParticipantsOrderByNameImpl()
         )
 

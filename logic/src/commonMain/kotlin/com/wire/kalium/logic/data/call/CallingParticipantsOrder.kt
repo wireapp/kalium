@@ -9,22 +9,23 @@ interface CallingParticipantsOrder {
 class CallingParticipantsOrderImpl(
     private val userRepository: UserRepository,
     private val participantsFilter: ParticipantsFilter,
-    private val participantsOrderByName: ParticipantsOrderByName
+    private val participantsOrderByName: ParticipantsOrderByName,
 ) : CallingParticipantsOrder {
 
     override fun reorderItems(participants: List<Participant>): List<Participant> {
         return if (participants.isNotEmpty()) {
             val selfUserId = userRepository.getSelfUserId()
 
-            val participantsWithoutUserId = participantsFilter.participantsWithoutUserId(participants, selfUserId)
-            val participantsWithUserIdOnly = participantsFilter.selfParticipants(participants, selfUserId)
+            val selfParticipants = participantsFilter.selfParticipants(participants, selfUserId)
+            val otherParticipants = participantsFilter.participantsWithoutUserId(participants, selfUserId)
+
             val participantsSharingScreen = participantsFilter.participantsWithScreenSharingOn(participants)
             val participantsWithVideoOn = participantsFilter.participantsByCamera(
-                participants = participantsWithoutUserId,
+                participants = otherParticipants,
                 isCameraOn = true
             )
             val participantsWithVideoOff = participantsFilter.participantsByCamera(
-                participants = participantsWithoutUserId,
+                participants = otherParticipants,
                 isCameraOn = false
             )
 
@@ -34,7 +35,7 @@ class CallingParticipantsOrderImpl(
 
             val sortedParticipantsByName =
                 participantsSharingScreenSortedByName + participantsWithVideoOnSortedByName + participantsWithVideoOffSortedByName
-            return participantsWithUserIdOnly + sortedParticipantsByName
+            return selfParticipants + sortedParticipantsByName
         } else participants
     }
 }
