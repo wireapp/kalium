@@ -76,8 +76,7 @@ class GetConversationClassifiedTypeUseCaseTest {
 
             assertIs<ClassifiedTypeResult.Failure>(result)
         }
-
-
+    
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
