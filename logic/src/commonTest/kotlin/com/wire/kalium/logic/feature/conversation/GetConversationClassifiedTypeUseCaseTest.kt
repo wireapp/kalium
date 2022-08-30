@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -63,6 +64,19 @@ class GetConversationClassifiedTypeUseCaseTest {
             assertEquals(ClassifiedType.NOT_CLASSIFIED, result.classifiedType)
         }
 
+    @Test
+    fun givenAConversationId_WhenClassifiedFlagThrowsAnError_ThenResultIsFailure() =
+        runTest {
+            val (_, getConversationClassifiedType) = Arrangement()
+                .withGettingClassifiedDomains()
+                .withParticipantsResponseFails()
+                .arrange()
+
+            val result: ClassifiedTypeResult = getConversationClassifiedType(TestConversation.ID)
+
+            assertIs<ClassifiedTypeResult.Failure>(result)
+        }
+
 
     private class Arrangement {
         @Mock
@@ -94,6 +108,13 @@ class GetConversationClassifiedTypeUseCaseTest {
                 .suspendFunction(conversationRepository::getConversationMembers)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(stubUserIds(domains)))
+        }
+
+        fun withParticipantsResponseFails() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationMembers)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
         }
 
         private fun stubUserIds(domains: List<String>) = domains.map { domain -> UserId(uuid4().toString(), domain) }
