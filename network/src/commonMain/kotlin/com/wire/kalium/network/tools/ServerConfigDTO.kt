@@ -1,19 +1,17 @@
 package com.wire.kalium.network.tools
 
-import io.ktor.http.Url
-
 data class ServerConfigDTO(
     val id: String,
     val links: Links,
     val metaData: MetaData
 ) {
     data class Links(
-        val api: Url,
-        val accounts: Url,
-        val webSocket: Url,
-        val blackList: Url,
-        val teams: Url,
-        val website: Url,
+        val api: String,
+        val accounts: String,
+        val webSocket: String,
+        val blackList: String,
+        val teams: String,
+        val website: String,
         val title: String,
         val isOnPremises: Boolean
     )
