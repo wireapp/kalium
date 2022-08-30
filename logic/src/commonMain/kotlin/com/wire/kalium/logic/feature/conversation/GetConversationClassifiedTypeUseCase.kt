@@ -1,14 +1,13 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigDataSource
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 
 fun interface GetConversationClassifiedTypeUseCase {
@@ -22,9 +21,9 @@ fun interface GetConversationClassifiedTypeUseCase {
 }
 
 internal class GetConversationClassifiedTypeUseCaseImpl(
-    private val selfUser: GetSelfUserUseCase,
+    private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
-    private val userConfigDataSource: UserConfigDataSource
+    private val userConfigDataSource: UserConfigRepository
 ) : GetConversationClassifiedTypeUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): ClassifiedTypeResult {
@@ -33,7 +32,7 @@ internal class GetConversationClassifiedTypeUseCaseImpl(
             return ClassifiedTypeResult.Success(ClassifiedType.NONE)
         }
 
-        val selfUserDomain = selfUser().first().id.domain
+        val selfUserDomain = selfUserId.domain
         val trustedDomains = classifiedDomainsStatus.trustedDomains
         return conversationRepository.getConversationMembers(conversationId).map { participantsIds ->
             participantsIds.map { it.domain }.all { participantDomain ->
