@@ -30,12 +30,12 @@ class ServerConfigApiImpl internal constructor(
             }
         }.mapSuccess {
             ServerConfigDTO.Links(
-                api = Url(it.endpoints.apiBaseUrl),
-                accounts = Url(it.endpoints.accountsBaseUrl),
-                webSocket = Url(it.endpoints.webSocketBaseUrl),
-                blackList = Url(it.endpoints.blackListUrl),
-                website = Url(it.endpoints.websiteUrl),
-                teams = Url(it.endpoints.teamsUrl),
+                api = it.endpoints.apiBaseUrl,
+                accounts = it.endpoints.accountsBaseUrl,
+                webSocket = it.endpoints.webSocketBaseUrl,
+                blackList = it.endpoints.blackListUrl,
+                website = it.endpoints.websiteUrl,
+                teams = it.endpoints.teamsUrl,
                 title = it.title,
                 isOnPremises = true
             )
