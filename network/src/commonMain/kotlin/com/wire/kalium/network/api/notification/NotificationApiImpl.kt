@@ -14,6 +14,7 @@ import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.http.Url
 import io.ktor.websocket.Frame
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -81,7 +82,7 @@ class NotificationApiImpl internal constructor(
         authenticatedWebSocketClient
             .createDisposableHttpClient()
             .webSocket({
-                setWSSUrl(serverLinks.webSocket, PATH_AWAIT)
+                setWSSUrl(Url(serverLinks.webSocket), PATH_AWAIT)
                 parameter(CLIENT_QUERY_KEY, clientId)
             }, {
                 emitWebSocketEvents(this)
