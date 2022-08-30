@@ -121,10 +121,8 @@ class GetConversationClassifiedTypeUseCaseTest {
 
         fun arrange() = this to getConversationClassifiedType
 
-
         companion object {
             val selfUserId = UserId("someValue", "wire.com")
-            val classifiedDomainsStatus = ClassifiedDomainsStatus(true, listOf("wire.com", "bella.com"))
         }
     }
 
