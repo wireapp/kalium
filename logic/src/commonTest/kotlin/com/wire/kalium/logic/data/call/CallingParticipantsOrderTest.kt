@@ -28,7 +28,6 @@ class CallingParticipantsOrderTest {
     @Mock
     private val participantsOrderByName = mock(classOf<ParticipantsOrderByName>())
 
-
     private lateinit var callingParticipantsOrder: CallingParticipantsOrder
 
     @BeforeTest

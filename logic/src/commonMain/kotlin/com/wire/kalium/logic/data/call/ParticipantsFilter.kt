@@ -12,7 +12,9 @@ interface ParticipantsFilter {
 class ParticipantsFilterImpl : ParticipantsFilter {
     override fun participantsWithoutUserId(participants: List<Participant>, userId: UserId) = participants.filter { it.id != userId }
     override fun selfParticipants(participants: List<Participant>, userId: UserId) = participants.filter { it.id == userId }
-    override fun participantsByCamera(participants: List<Participant>, isCameraOn: Boolean) = participants.filter { it.isCameraOn == isCameraOn }
+    override fun participantsByCamera(participants: List<Participant>, isCameraOn: Boolean) =
+        participants.filter { it.isCameraOn == isCameraOn }
+
     // TODO in next PR
     override fun participantsWithScreenSharingOn(participants: List<Participant>): List<Participant> = listOf()
 }
