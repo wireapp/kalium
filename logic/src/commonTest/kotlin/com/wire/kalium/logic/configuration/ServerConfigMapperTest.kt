@@ -43,12 +43,12 @@ class ServerConfigMapperTest {
                 ServerConfigDTO(
                     id = id,
                     ServerConfigDTO.Links(
-                        Url(links.api),
-                        Url(links.accounts),
-                        Url(links.webSocket),
-                        Url(links.blackList),
-                        Url(links.teams),
-                        Url(links.website),
+                        links.api,
+                        links.accounts,
+                        links.webSocket,
+                        links.blackList,
+                        links.teams,
+                        links.website,
                         links.title,
                         links.isOnPremises
                     ),

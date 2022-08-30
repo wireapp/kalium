@@ -1,7 +1,5 @@
 package com.wire.kalium.network.tools
 
-import io.ktor.http.Url
-
 data class ServerConfigDTO(
     val id: String,
     val links: Links,

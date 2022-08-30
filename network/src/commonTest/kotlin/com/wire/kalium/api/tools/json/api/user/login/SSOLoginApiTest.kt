@@ -37,14 +37,16 @@ class SSOLoginApiTest : ApiTest {
 
         assertIs<NetworkResponse.Success<String>>(actual)
         assertEquals(expectedPath, Url(actual.value).encodedPathAndQuery)
-        assertEquals("${TEST_BACKEND.links.api.protocolWithAuthority}$expectedPath", actual.value)
+        assertEquals("${Url(TEST_BACKEND.links.api).protocolWithAuthority}$expectedPath", actual.value)
     }
 
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithRedirect_thenRequestConfiguredCorrectly() = runTest {
         val uuid = "uuid"
-        val param = SSOLoginApi.InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
-        val expectedPathAndQuery = "$PATH_SSO_INITIATE/$uuid?success_redirect=wire%3A%2F%2Fsuccess&error_redirect=wire%3A%2F%2Ferror"
+        val param =
+            SSOLoginApi.InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
+        val expectedPathAndQuery =
+            "$PATH_SSO_INITIATE/$uuid?success_redirect=wire%3A%2F%2Fsuccess&error_redirect=wire%3A%2F%2Ferror"
         val networkClient = mockUnauthenticatedNetworkClient(
             "",
             statusCode = HttpStatusCode.OK,
@@ -58,7 +60,7 @@ class SSOLoginApiTest : ApiTest {
 
         assertIs<NetworkResponse.Success<String>>(actual)
         assertEquals(expectedPathAndQuery, Url(actual.value).encodedPathAndQuery)
-        assertEquals("${TEST_BACKEND.links.api.protocolWithAuthority}$expectedPathAndQuery", actual.value)
+        assertEquals("${Url(TEST_BACKEND.links.api).protocolWithAuthority}$expectedPathAndQuery", actual.value)
     }
 
     @Test
