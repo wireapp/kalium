@@ -57,4 +57,5 @@ class ClientScope(
             clientRepository
         )
 
+    val observeCurrentClientId: ObserveCurrentClientIdUseCase get() = ObserveCurrentClientIdUseCase(clientRepository)
 }
