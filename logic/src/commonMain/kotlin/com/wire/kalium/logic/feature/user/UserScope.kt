@@ -70,5 +70,5 @@ class UserScope internal constructor(
         )
     val serverLinks get() = SelfServerConfigUseCase(sessionRepository, selfUserId)
 
-    val metadataRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
+    val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
 }

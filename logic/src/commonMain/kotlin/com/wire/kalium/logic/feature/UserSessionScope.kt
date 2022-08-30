@@ -408,15 +408,15 @@ abstract class UserSessionScopeCommon(
     internal val keyPackageManager: KeyPackageManager =
         KeyPackageManagerImpl(
             incrementalSyncRepository,
-            lazy { keyPackageRepository },
             lazy { client.refillKeyPackages },
-            lazy { client.mlsKeyPackageCountUseCase }
+            lazy { client.mlsKeyPackageCountUseCase },
+            lazy { users.timestampKeyRepository }
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
             incrementalSyncRepository,
             lazy { conversations.updateMLSGroupsKeyingMaterials },
-            lazy { users.metadataRepository }
+            lazy { users.timestampKeyRepository }
         )
 
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
@@ -494,8 +494,7 @@ abstract class UserSessionScopeCommon(
         get() = KeyPackageDataSource(
             clientRepository,
             authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi,
-            mlsClientProvider,
-            authenticatedDataSourceSet.userDatabaseProvider.metadataDAO,
+            mlsClientProvider
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)

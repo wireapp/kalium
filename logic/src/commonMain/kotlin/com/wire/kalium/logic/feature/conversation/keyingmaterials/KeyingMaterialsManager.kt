@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
+import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -18,7 +19,6 @@ import kotlin.time.Duration.Companion.hours
 
 // The duration in hours after which we should re-check key package count.
 internal val KEYING_MATERIAL_CHECK_DURATION = 24.hours
-internal const val LAST_KEYING_MATERIAL_UPDATE_CHECK = "LAST_KEYING_MATERIAL_UPDATE_CHECK"
 
 /**
  * Observes MLS conversations last keying material update
@@ -56,7 +56,7 @@ internal class KeyingMaterialsManagerImpl(
     }
 
     private suspend fun updateKeyingMaterialIfNeeded() =
-        timestampKeyRepository.value.isPassed(LAST_KEYING_MATERIAL_UPDATE_CHECK, KEYING_MATERIAL_CHECK_DURATION)
+        timestampKeyRepository.value.hasPassed(LAST_KEYING_MATERIAL_UPDATE_CHECK, KEYING_MATERIAL_CHECK_DURATION)
             .flatMap { exceeded ->
                 if (exceeded) {
                     updateKeyingMaterialsUseCase.value().let { result ->
