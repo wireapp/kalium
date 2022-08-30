@@ -204,7 +204,7 @@ class ConversationDataSource(
         val conversationEntities = conversations.map { conversationResponse ->
             conversationMapper.fromApiModelToDaoModel(
                 conversationResponse,
-                mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(GroupID(it), originatedFromEvent) },
+                mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) },
                 selfUserTeamId?.let { TeamId(it) }
             )
         }

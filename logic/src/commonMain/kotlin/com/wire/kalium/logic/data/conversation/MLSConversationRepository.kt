@@ -76,10 +76,10 @@ class MLSConversationDataSource(
                 ).first()
             }.flatMap { conversation ->
                 if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
-                    val groupID = GroupID((conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+                    val groupID = idMapper.fromGroupIDEntity((conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
                     Either.Right(
                         mlsClient.decryptMessage(
-                            groupID.value,
+                            idMapper.toCryptoModel(groupID),
                             messageEvent.content.decodeBase64Bytes()
                         ).let {
                             DecryptedMessageBundle(
@@ -111,7 +111,7 @@ class MLSConversationDataSource(
         }
 
     override suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean> {
-        return mlsClientProvider.getMLSClient().flatMap { Either.Right(it.conversationExists(groupID.value)) }
+        return mlsClientProvider.getMLSClient().flatMap { Either.Right(it.conversationExists(idMapper.toCryptoModel(groupID))) }
     }
 
     override suspend fun establishMLSGroup(groupID: GroupID): Either<CoreFailure, Unit> =
@@ -123,33 +123,33 @@ class MLSConversationDataSource(
         kaliumLogger.d("Requesting to re-join MLS group $groupID with epoch $epoch")
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
-                mlsMessageApi.sendMessage(MLSMessageApi.Message(mlsClient.joinConversation(groupID.value, epoch)))
+                mlsMessageApi.sendMessage(MLSMessageApi.Message(mlsClient.joinConversation(idMapper.toCryptoModel(groupID), epoch)))
             }.onSuccess {
-                conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, groupID.value)
+                conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, idMapper.toCryptoModel(groupID))
             }
         }
     }
 
     override suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>> =
         wrapStorageRequest {
-            conversationDAO.getConversationsByKeyingMaterialUpdate(threshold).map { GroupID(it) }
+            conversationDAO.getConversationsByKeyingMaterialUpdate(threshold).map(idMapper::fromGroupIDEntity)
         }
 
     override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            sendCommitBundle(groupID.value, mlsClient.updateKeyingMaterial(groupID.value)).flatMap {
+            sendCommitBundle(groupID, mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))).flatMap {
                     wrapStorageRequest {
-                        conversationDAO.updateKeyingMaterial(groupID.value, Clock.System.now())
+                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), Clock.System.now())
                     }
                 }
             }
 
-    private suspend fun sendCommitBundle(groupID: String, bundle: CommitBundle): Either<CoreFailure, Unit> {
+    private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
                 mlsMessageApi.sendMessage(MLSMessageApi.Message(bundle.commit))
             }.flatMap {
-                mlsClient.commitAccepted(groupID)
+                mlsClient.commitAccepted(idMapper.toCryptoModel(groupID))
                 bundle.welcome?.let {
                     wrapApiRequest {
                         mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(it))
@@ -162,9 +162,9 @@ class MLSConversationDataSource(
     override suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient()
             .flatMap { mlsClient ->
-                sendCommitBundle(groupID.value, mlsClient.commitPendingProposals(groupID.value)).flatMap {
+                sendCommitBundle(groupID, mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))).flatMap {
                     wrapStorageRequest {
-                        conversationDAO.clearProposalTimer(groupID.value)
+                        conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
                     }
                 }
             }
@@ -188,14 +188,14 @@ class MLSConversationDataSource(
                             it.keyPackage.decodeBase64Bytes()
                         )
                     }
-                client.addMember(groupID.value, clientKeyPackageList)?.let { bundle ->
-                    sendCommitBundle(groupID.value, bundle)
+                client.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)?.let { bundle ->
+                    sendCommitBundle(groupID, bundle)
                         .flatMap {
                             wrapStorageRequest {
                                 val list = userIdList.map {
                                     Member(idMapper.toDaoModel(it), Member.Role.Member)
                                 }
-                                conversationDAO.insertMembers(list, groupID.value)
+                                conversationDAO.insertMembers(list, idMapper.toGroupIDEntity(groupID))
                             }
                         }.flatMap {
                         Either.Right(Unit)
@@ -217,12 +217,12 @@ class MLSConversationDataSource(
                 }
             }
             mlsClientProvider.getMLSClient().flatMap { client ->
-                client.removeMember(groupID.value, usersCryptoQualifiedClientIDs).let { bundle ->
-                    sendCommitBundle(groupID.value, bundle).flatMap {
+                client.removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs).let { bundle ->
+                    sendCommitBundle(groupID, bundle).flatMap {
                         wrapStorageRequest {
                             conversationDAO.deleteMembersByQualifiedID(
                                 userIdList.map { idMapper.toDaoModel(it) },
-                                groupID.value
+                                idMapper.toGroupIDEntity(groupID)
                             )
                         }
                     }
@@ -232,7 +232,7 @@ class MLSConversationDataSource(
 
     override suspend fun leaveGroup(groupID: GroupID) =
         mlsClientProvider.getMLSClient().map { mlsClient ->
-            mlsClient.wipeConversation(groupID.value)
+            mlsClient.wipeConversation(idMapper.toCryptoModel(groupID))
         }
 
     private suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit> =
@@ -246,10 +246,10 @@ class MLSConversationDataSource(
                         )
                     }
 
-                client.createConversation(groupID.value, clientKeyPackageList)?.let { bundle ->
-                    sendCommitBundle(groupID.value, bundle).flatMap {
+                client.createConversation(idMapper.toCryptoModel(groupID), clientKeyPackageList)?.let { bundle ->
+                    sendCommitBundle(groupID, bundle).flatMap {
                         wrapStorageRequest {
-                            conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID.value)
+                            conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, idMapper.toGroupIDEntity(groupID))
                         }
                     }
                 } ?: run {
@@ -260,7 +260,7 @@ class MLSConversationDataSource(
 
     private suspend fun getConversationMembers(groupID: GroupID): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
         val conversationID =
-            conversationDAO.getConversationByGroupID(groupID.value).first()?.id ?: return Either.Left(StorageFailure.DataNotFound)
+            conversationDAO.getConversationByGroupID(idMapper.toGroupIDEntity(groupID)).first()?.id ?: return Either.Left(StorageFailure.DataNotFound)
         conversationDAO.getAllMembers(conversationID).first().map { idMapper.fromDaoModel(it.user) }
     }
 
