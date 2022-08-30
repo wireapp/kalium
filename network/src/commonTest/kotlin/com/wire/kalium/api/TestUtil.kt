@@ -2,7 +2,6 @@ package com.wire.kalium.api
 
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.http.Url
 
 val TEST_BACKEND_CONFIG =
     ServerConfigDTO(

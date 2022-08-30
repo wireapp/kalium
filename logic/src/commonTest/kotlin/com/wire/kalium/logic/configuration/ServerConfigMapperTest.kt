@@ -12,7 +12,6 @@ import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
-import io.ktor.http.Url
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given

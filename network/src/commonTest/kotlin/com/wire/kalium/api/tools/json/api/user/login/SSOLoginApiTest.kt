@@ -81,7 +81,6 @@ class SSOLoginApiTest : ApiTest {
         assertIs<NetworkResponse.Success<String>>(actual)
     }
 
-
     private companion object {
         const val PATH_SSO_INITIATE = "/sso/initiate-login"
         const val PATH_SSO_FINALIZE = "/sso/finalize-login"
