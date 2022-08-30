@@ -36,8 +36,8 @@ internal class GetConversationClassifiedTypeUseCaseImpl(
         val selfUserDomain = selfUser().first().id.domain
         val trustedDomains = classifiedDomainsStatus.trustedDomains
         return conversationRepository.getConversationMembers(conversationId).map { participantsIds ->
-            participantsIds.map { it.domain }.all { domain ->
-                domain == selfUserDomain && trustedDomains.contains(domain)
+            participantsIds.map { it.domain }.all { participantDomain ->
+                participantDomain == selfUserDomain && trustedDomains.contains(participantDomain)
             }
         }.fold({
             ClassifiedTypeResult.Failure(it)
