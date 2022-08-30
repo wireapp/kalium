@@ -125,7 +125,10 @@ class MLSConversationDataSource(
             wrapApiRequest {
                 mlsMessageApi.sendMessage(MLSMessageApi.Message(mlsClient.joinConversation(idMapper.toCryptoModel(groupID), epoch)))
             }.onSuccess {
-                conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE, idMapper.toCryptoModel(groupID))
+                conversationDAO.updateConversationGroupState(
+                    ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+                    idMapper.toCryptoModel(groupID)
+                )
             }
         }
     }
@@ -249,7 +252,10 @@ class MLSConversationDataSource(
                 client.createConversation(idMapper.toCryptoModel(groupID), clientKeyPackageList)?.let { bundle ->
                     sendCommitBundle(groupID, bundle).flatMap {
                         wrapStorageRequest {
-                            conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, idMapper.toGroupIDEntity(groupID))
+                            conversationDAO.updateConversationGroupState(
+                                ConversationEntity.GroupState.ESTABLISHED,
+                                idMapper.toGroupIDEntity(groupID)
+                            )
                         }
                     }
                 } ?: run {
@@ -260,7 +266,8 @@ class MLSConversationDataSource(
 
     private suspend fun getConversationMembers(groupID: GroupID): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
         val conversationID =
-            conversationDAO.getConversationByGroupID(idMapper.toGroupIDEntity(groupID)).first()?.id ?: return Either.Left(StorageFailure.DataNotFound)
+            conversationDAO.getConversationByGroupID(idMapper.toGroupIDEntity(groupID))
+                .first()?.id ?: return Either.Left(StorageFailure.DataNotFound)
         conversationDAO.getAllMembers(conversationID).first().map { idMapper.fromDaoModel(it.user) }
     }
 
