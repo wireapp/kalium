@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
@@ -95,7 +96,7 @@ internal class ConversationMapperImpl(
     )
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
-        ProposalTimer(daoModel.groupID, daoModel.firingDate)
+        ProposalTimer(GroupID(daoModel.groupID), daoModel.firingDate)
 
     override fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
         when (it) {
@@ -125,7 +126,7 @@ internal class ConversationMapperImpl(
         }
 
     override fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity =
-        ProposalTimerEntity(proposalTimer.groupID, proposalTimer.timestamp)
+        ProposalTimerEntity(proposalTimer.groupID.value, proposalTimer.timestamp)
 
     override fun toApiModel(
         name: String?,

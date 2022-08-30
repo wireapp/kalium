@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.id
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.jvm.JvmInline
 
 @Serializable
 data class QualifiedID(
@@ -24,3 +25,6 @@ const val VALUE_DOMAIN_SEPARATOR = '@'
 val FEDERATION_REGEX = """[^@.]+@[^@.]+\.[^@]+""".toRegex()
 
 typealias ConversationId = QualifiedID
+
+@JvmInline
+value class GroupID(val value: String)

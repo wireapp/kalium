@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.persistence.dao.ConversationEntity
 
 interface ProtocolInfoMapper {
@@ -12,7 +13,7 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
         when (protocolInfo) {
             is ConversationEntity.ProtocolInfo.Proteus -> Conversation.ProtocolInfo.Proteus
             is ConversationEntity.ProtocolInfo.MLS -> Conversation.ProtocolInfo.MLS(
-                protocolInfo.groupId,
+                GroupID(protocolInfo.groupId),
                 Conversation.ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
@@ -24,7 +25,7 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
         when (protocolInfo) {
             is Conversation.ProtocolInfo.Proteus -> ConversationEntity.ProtocolInfo.Proteus
             is Conversation.ProtocolInfo.MLS -> ConversationEntity.ProtocolInfo.MLS(
-                protocolInfo.groupId,
+                protocolInfo.groupId.value,
                 ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
