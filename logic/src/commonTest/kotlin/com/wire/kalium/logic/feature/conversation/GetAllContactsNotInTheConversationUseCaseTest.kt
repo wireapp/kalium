@@ -32,7 +32,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
         val result = getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain"))
 
         //then
-        assertIs<Result.Success>(result)
+        assertIs<ClassifiedTypeResult.Success>(result)
         assertTrue { result.contactsNotInConversation == Arrangement.mockAllContacts }
     }
 
@@ -47,7 +47,7 @@ class GetAllContactsNotInTheConversationUseCaseTest {
         val result = getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain"))
 
         //then
-        assertIs<Result.Failure>(result)
+        assertIs<ClassifiedTypeResult.Failure>(result)
     }
 
     private class Arrangement {

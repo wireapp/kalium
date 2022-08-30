@@ -12,11 +12,11 @@ class GetAllContactsNotInConversationUseCase(
     suspend operator fun invoke(conversationId: QualifiedID) =
         userRepository
             .getAllKnownUsersNotInConversation(conversationId)
-            .fold(Result::Failure, Result::Success)
+            .fold(ClassifiedTypeResult::Failure, ClassifiedTypeResult::Success)
 
 }
 
 sealed class Result {
-    data class Success(val contactsNotInConversation: List<OtherUser>) : Result()
-    data class Failure(val storageFailure: StorageFailure) : Result()
+    data class Success(val contactsNotInConversation: List<OtherUser>) : ClassifiedTypeResult()
+    data class Failure(val storageFailure: StorageFailure) : ClassifiedTypeResult()
 }
