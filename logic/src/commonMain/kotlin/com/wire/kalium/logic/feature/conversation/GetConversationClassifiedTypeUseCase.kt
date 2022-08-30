@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.firstOrNull
 
 fun interface GetConversationClassifiedTypeUseCase {
@@ -39,6 +40,7 @@ internal class GetConversationClassifiedTypeUseCaseImpl(
                 participantDomain == selfUserDomain || trustedDomains.contains(participantDomain)
             }
         }.fold({
+            kaliumLogger.e("Unexpected error while calculating conversation classified type $it")
             ClassifiedTypeResult.Failure(it)
         }, { isClassified ->
             when (isClassified) {
