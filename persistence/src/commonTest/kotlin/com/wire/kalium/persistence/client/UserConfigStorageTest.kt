@@ -53,4 +53,13 @@ class UserConfigStorageTest {
         userConfigStorage.persistFileSharingStatus(false, null)
         assertEquals(IsFileSharingEnabledEntity(false, null), userConfigStorage.isFileSharingEnabled())
     }
+
+    @Test
+    fun givenAClassifiedDomainsStatusValue_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
+        userConfigStorage.persistClassifiedDomainsStatus(true, listOf("bella.com", "anta.wire"))
+        assertEquals(
+            ClassifiedDomainsEntity(true, listOf("bella.com", "anta.wire")),
+            userConfigStorage.isClassifiedDomainsEnabledFlow().first()
+        )
+    }
 }
