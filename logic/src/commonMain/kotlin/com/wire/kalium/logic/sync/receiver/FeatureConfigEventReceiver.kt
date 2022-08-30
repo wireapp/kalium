@@ -30,6 +30,7 @@ class FeatureConfigEventReceiverImpl(
                             status = true,
                             isStatusChanged = true
                         )
+
                         Status.DISABLED -> userConfigRepository.setFileSharingStatus(
                             status = false,
                             isStatusChanged = true
@@ -37,11 +38,18 @@ class FeatureConfigEventReceiverImpl(
                     }
                 }
             }
+
             is Event.FeatureConfig.MLSUpdated -> {
                 val mlsEnabled = event.model.status == Status.ENABLED
                 val selfUserIsWhitelisted = event.model.allowedUsers.contains(userRepository.getSelfUserId().toPlainID())
                 userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
             }
+
+            is Event.FeatureConfig.ClassifiedDomainsUpdated -> {
+                val classifiedDomainsEnabled = event.model.status == Status.ENABLED
+                userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, event.model.config.domains)
+            }
+
             is Event.FeatureConfig.UnknownFeatureUpdated -> kaliumLogger.w("Ignoring unknown feature config update")
         }
     }
