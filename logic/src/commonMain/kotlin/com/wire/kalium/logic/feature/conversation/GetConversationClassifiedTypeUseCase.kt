@@ -29,7 +29,7 @@ internal class GetConversationClassifiedTypeUseCaseImpl(
 
     override suspend fun invoke(conversationId: ConversationId): ClassifiedTypeResult {
         val classifiedDomainsStatus = userConfigDataSource.getClassifiedDomainsStatus().onlyRight().firstOrNull()
-        if (classifiedDomainsStatus == null || classifiedDomainsStatus.isClassifiedDomainsEnabled == false) {
+        if (classifiedDomainsStatus == null || !classifiedDomainsStatus.isClassifiedDomainsEnabled) {
             return ClassifiedTypeResult.Success(ClassifiedType.NONE)
         }
 
