@@ -35,6 +35,8 @@ interface KeyPackageRepository {
 
     suspend fun updateLastKeyPackageCountCheck(timestamp: Instant): Either<StorageFailure, Unit>
 
+    suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int>
+
 }
 
 internal const val LAST_KEY_PACKAGE_COUNT_CHECK = "LAST_KEY_PACKAGE_COUNT_CHECK"
@@ -67,6 +69,11 @@ class KeyPackageDataSource(
             wrapApiRequest {
                 keyPackageApi.uploadKeyPackages(clientId.value, mlsClient.generateKeyPackages(amount).map { it.encodeBase64() })
             }
+        }
+
+    override suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int> =
+        mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
+            Either.Right(mlsClient.validKeyPackageCount().toInt())
         }
 
     override suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO> =

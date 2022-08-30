@@ -24,8 +24,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transformWhile
 
 /**
@@ -133,13 +135,14 @@ internal class EventGathererImpl(
         logger.i("Websocket Open")
         eventRepository
             .pendingEvents()
-            .mapNotNull { offlineEventOrFailure ->
-                when (offlineEventOrFailure) {
-                    is Either.Left -> null
-                    is Either.Right -> offlineEventOrFailure.value
+            .onEach {
+                it.onFailure { failure ->
+                    throw KaliumSyncException("Failure to fetch pending events, aborting Incremental Sync", failure)
                 }
-            }
-            .collect {
+            }.filterIsInstance<Either.Right<Event>>()
+            .map { offlineEvent ->
+                offlineEvent.value
+            }.collect {
                 logger.i("Collecting offline event: ${it.id}")
                 offlineEventBuffer.add(it)
                 emit(it)

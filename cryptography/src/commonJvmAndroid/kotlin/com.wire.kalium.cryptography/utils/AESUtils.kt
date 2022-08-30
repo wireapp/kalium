@@ -41,8 +41,13 @@ internal class AESEncrypt {
 
             // Encrypt and write the data to given outputPath
             outputBuffer.cipherSink(cipher).buffer().use { cipheredSink ->
-                encryptedDataSize = cipheredSink.writeAll(assetDataSource)
-                cipheredSink.flush()
+                val contentBuffer = Buffer()
+                var byteCount: Long
+                while (assetDataSource.read(contentBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
+                    encryptedDataSize += byteCount
+                    cipheredSink.write(contentBuffer, byteCount)
+                    cipheredSink.flush()
+                }
             }
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while encrypting the asset:\n $e}")

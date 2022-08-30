@@ -93,7 +93,7 @@ class RegisterClientUseCaseImpl(
     private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> =
         mlsClientProvider.getMLSClient(client.id)
             .flatMap { clientRepository.registerMLSClient(client.id, it.getPublicKey()) }
-            .flatMap { keyPackageRepository.uploadNewKeyPackages(client.id, keyPackageLimitsProvider.keyPackageUploadLimit) }
+            .flatMap { keyPackageRepository.uploadNewKeyPackages(client.id, keyPackageLimitsProvider.refillAmount()) }
             .flatMap { clientRepository.persistClientId(client.id) }
             .map { client }
 
