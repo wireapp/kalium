@@ -68,10 +68,12 @@ internal class PendingProposalSchedulerImpl(
     }
 
     private suspend fun startCommittingPendingProposals() {
+        kaliumLogger.d("Start listening for pending proposals to commit")
         timers().cancellable().collect() { groupID ->
+            kaliumLogger.d("Committing pending proposals in $groupID")
             mlsConversationRepository.value.commitPendingProposals(groupID)
                 .onFailure {
-                    kaliumLogger.e("Failed to commit pending proposals in $groupID")
+                    kaliumLogger.e("Failed to commit pending proposals in $groupID: $it")
                 }
         }
     }
@@ -97,6 +99,7 @@ internal class PendingProposalSchedulerImpl(
     }
 
     override suspend fun scheduleCommit(groupID: String, date: Instant) {
+        kaliumLogger.d("Scheduling to commit pending proposals in $groupID at $date")
         mlsConversationRepository.value.setProposalTimer(ProposalTimer(groupID, date))
     }
 

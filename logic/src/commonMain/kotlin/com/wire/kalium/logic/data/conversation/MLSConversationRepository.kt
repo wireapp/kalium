@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
-import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -31,6 +30,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
+
+data class DecryptedMessageBundle(
+    val groupID: String,
+    val message: ByteArray?,
+    val commitDelay: Long?
+)
 
 interface MLSConversationRepository {
 
@@ -60,17 +65,28 @@ class MLSConversationDataSource(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : MLSConversationRepository {
 
-    override suspend fun messageFromMLSMessage(messageEvent: NewMLSMessage): Either<CoreFailure, DecryptedMessageBundle?> =
+    override suspend fun messageFromMLSMessage(
+        messageEvent: NewMLSMessage
+    ): Either<CoreFailure, DecryptedMessageBundle?> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapStorageRequest {
-                conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(messageEvent.conversationId)).first()
+                conversationDAO.observeGetConversationByQualifiedID(
+                    idMapper.toDaoModel(messageEvent.conversationId)
+                ).first()
             }.flatMap { conversation ->
                 if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
+                    val groupID = (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
                     Either.Right(
                         mlsClient.decryptMessage(
-                            (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                            groupID,
                             messageEvent.content.decodeBase64Bytes()
-                        )
+                        ).let {
+                            DecryptedMessageBundle(
+                                groupID,
+                                it.message,
+                                it.commitDelay
+                            )
+                        }
                     )
                 } else {
                     Either.Right(null)
