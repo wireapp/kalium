@@ -23,11 +23,11 @@ fun interface GetConversationClassifiedTypeUseCase {
 internal class GetConversationClassifiedTypeUseCaseImpl(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
-    private val userConfigDataSource: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository
 ) : GetConversationClassifiedTypeUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): ClassifiedTypeResult {
-        val classifiedDomainsStatus = userConfigDataSource.getClassifiedDomainsStatus().onlyRight().firstOrNull()
+        val classifiedDomainsStatus = userConfigRepository.getClassifiedDomainsStatus().onlyRight().firstOrNull()
         if (classifiedDomainsStatus == null || !classifiedDomainsStatus.isClassifiedDomainsEnabled) {
             return ClassifiedTypeResult.Success(ClassifiedType.NONE)
         }
