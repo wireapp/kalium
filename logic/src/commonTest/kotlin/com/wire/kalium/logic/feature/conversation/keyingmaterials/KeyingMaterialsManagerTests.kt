@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.classOf
@@ -33,12 +34,21 @@ class KeyingMaterialsManagerTests {
                 .wasInvoked(once)
         }
 
+    // update keying materials failed for one
+    // update keying materials succeed
+    // time passed
+    // time not passed
+
+
     private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
         val updateKeyingMaterialsUseCase = mock(classOf<UpdateKeyingMaterialsUseCase>())
+
+        @Mock
+        val timestampKeyRepository = mock(classOf<TimestampKeyRepository>())
 
         fun withUpdateKeyingMaterialsSuccessful() = apply {
             given(updateKeyingMaterialsUseCase)
@@ -50,6 +60,7 @@ class KeyingMaterialsManagerTests {
         fun arrange() = this to KeyingMaterialsManagerImpl(
             incrementalSyncRepository,
             lazy { updateKeyingMaterialsUseCase },
+            lazy { timestampKeyRepository },
             TestKaliumDispatcher
         )
     }

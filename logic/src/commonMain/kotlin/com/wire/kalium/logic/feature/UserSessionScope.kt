@@ -415,7 +415,8 @@ abstract class UserSessionScopeCommon(
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
             incrementalSyncRepository,
-            lazy { conversations.updateMLSGroupsKeyingMaterials }
+            lazy { conversations.updateMLSGroupsKeyingMaterials },
+            lazy { users.metadataRepository }
         )
 
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
@@ -559,6 +560,7 @@ abstract class UserSessionScopeCommon(
             qualifiedIdMapper,
             sessionRepository,
             userId,
+            userDatabaseProvider.metadataDAO
         )
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(

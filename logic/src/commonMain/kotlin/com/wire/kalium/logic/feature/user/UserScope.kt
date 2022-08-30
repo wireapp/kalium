@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.TimestampKeyRepositoryImpl
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
@@ -24,6 +25,7 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCas
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.persistence.dao.MetadataDAO
 
 @Suppress("LongParameterList")
 class UserScope internal constructor(
@@ -35,7 +37,8 @@ class UserScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val sessionRepository: SessionRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val metadataDAO: MetadataDAO
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -66,4 +69,6 @@ class UserScope internal constructor(
             sessionRepository = sessionRepository
         )
     val serverLinks get() = SelfServerConfigUseCase(sessionRepository, selfUserId)
+
+    val metadataRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
 }
