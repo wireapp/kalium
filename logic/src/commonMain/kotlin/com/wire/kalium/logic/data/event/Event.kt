@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.id.ConversationId
@@ -92,6 +93,11 @@ sealed class Event(open val id: String) {
         data class MLSUpdated(
             override val id: String,
             val model: MLSModel
+        ) : FeatureConfig(id)
+
+        data class ClassifiedDomainsUpdated(
+            override val id: String,
+            val model: ClassifiedDomainsModel,
         ) : FeatureConfig(id)
 
         data class UnknownFeatureUpdated(
