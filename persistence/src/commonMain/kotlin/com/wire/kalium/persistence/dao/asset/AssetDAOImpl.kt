@@ -12,7 +12,6 @@ class AssetMapper {
         return AssetEntity(
             key = asset.key,
             domain = asset.domain,
-            mimeType = asset.mime_type,
             dataPath = asset.data_path,
             dataSize = asset.data_size,
             downloadedDate = asset.downloaded_date
@@ -28,7 +27,6 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
         queries.insertAsset(
             assetEntity.key,
             assetEntity.domain,
-            assetEntity.mimeType,
             assetEntity.dataPath,
             assetEntity.dataSize,
             assetEntity.downloadedDate
@@ -41,7 +39,6 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
                 queries.insertAsset(
                     asset.key,
                     asset.domain,
-                    asset.mimeType,
                     asset.dataPath,
                     asset.dataSize,
                     asset.downloadedDate
@@ -66,7 +63,6 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
             assetEntity.downloadedDate,
             assetEntity.dataPath,
             assetEntity.dataSize,
-            assetEntity.mimeType,
             assetEntity.key
         )
     }
