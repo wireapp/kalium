@@ -198,7 +198,7 @@ class SendAssetMessageUseCaseTest {
         fun withSuccessfulResponse(expectedAssetId: UploadedAssetId, assetSHA256Key: SHA256Key): Arrangement {
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-                .whenInvokedWith(any(), any(), any())
+                .whenInvokedWith(any(), any(), any(), any())
                 .thenReturn(Either.Right(expectedAssetId to assetSHA256Key))
             given(userRepository)
                 .suspendFunction(userRepository::observeSelfUser)
@@ -230,7 +230,7 @@ class SendAssetMessageUseCaseTest {
                 .thenReturn(completeStateFlow)
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-                .whenInvokedWith(any(), any(), any())
+                .whenInvokedWith(any(), any(), any(), any())
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
             return this
         }
