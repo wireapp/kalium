@@ -3,10 +3,9 @@ package com.wire.kalium.logic.feature.conversation.keyingmaterials
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 
 sealed class UpdateKeyingMaterialsResult {
 
@@ -23,21 +22,14 @@ class UpdateKeyingMaterialsUseCaseImpl(
     val mlsConversationRepository: MLSConversationRepository,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) : UpdateKeyingMaterialsUseCase {
-    override suspend fun invoke(): UpdateKeyingMaterialsResult =
-        mlsConversationRepository
-            .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold).map { groups ->
-                var updatesSucceeded = true
-                groups.onEach { groupId ->
-                    mlsConversationRepository.updateKeyingMaterial(groupId).onFailure {
-                        updatesSucceeded = false
-                    }
-                }
-                if (updatesSucceeded)
-                    Either.Right(Unit)
-                else Either.Left(Unit)
-            }.fold(
-                { UpdateKeyingMaterialsResult.Failure(it) },
-                { UpdateKeyingMaterialsResult.Success }
-            )
+    override suspend fun invoke(): UpdateKeyingMaterialsResult = mlsConversationRepository
+        .getMLSGroupsRequiringKeyingMaterialUpdate(updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold)
+        .flatMap { groups ->
+            groups.map { mlsConversationRepository.updateKeyingMaterial(it) }
+                .foldToEitherWhileRight(Unit) { value, _ -> value }
+        }.fold(
+            { UpdateKeyingMaterialsResult.Failure(it) },
+            { UpdateKeyingMaterialsResult.Success }
+        )
 
 }
