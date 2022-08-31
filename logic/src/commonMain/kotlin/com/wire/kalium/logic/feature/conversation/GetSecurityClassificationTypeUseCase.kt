@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.firstOrNull
 
 fun interface GetSecurityClassificationTypeUseCase {
     /**
-     * Operation that lets compute if a given conversation [conversationId] is classified or not
+     * Operation that lets compute if a given conversation [conversationId] in terms of compromising security or not.
      *
      * @param conversationId to classify
      * @return SecurityClassificationTypeResult with classification type
