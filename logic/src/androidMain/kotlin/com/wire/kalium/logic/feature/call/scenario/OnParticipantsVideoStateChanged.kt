@@ -23,11 +23,13 @@ class OnParticipantsVideoStateChanged(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         val videoState = callMapper.fromIntToCallingVideoState(state)
         val isCameraOn = videoStateChecker.isCameraOn(videoState)
+        val isSharingScreen = videoStateChecker.isSharingScreen(videoState)
         callRepository.updateParticipantCameraStateById(
             conversationIdWithDomain.toString(),
             userId,
             clientId,
-            isCameraOn
+            isCameraOn,
+            isSharingScreen
         )
     }
 }

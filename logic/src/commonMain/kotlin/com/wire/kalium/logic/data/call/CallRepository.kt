@@ -46,7 +46,14 @@ interface CallRepository {
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
-    fun updateParticipantCameraStateById(conversationIdString: String, userIdString: String, clientIdString: String, isCameraOn: Boolean)
+    fun updateParticipantCameraStateById(
+        conversationIdString: String,
+        userIdString: String,
+        clientIdString: String,
+        isCameraOn: Boolean,
+        isSharingScreen: Boolean
+    )
+
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
@@ -251,7 +258,8 @@ internal class CallDataSource(
         conversationIdString: String,
         userIdString: String,
         clientIdString: String,
-        isCameraOn: Boolean
+        isCameraOn: Boolean,
+        isSharingScreen: Boolean
     ) {
         val callMetadataProfile = _callMetadataProfile.value
 
@@ -259,7 +267,10 @@ internal class CallDataSource(
 
             val updatedParticipants = callMetaData.participants.map {
                 if (it.id.toString() == userIdString && it.clientId == clientIdString) {
-                    it.copy(isCameraOn = isCameraOn)
+                    it.copy(
+                        isCameraOn = isCameraOn,
+                        isSharingScreen = isSharingScreen
+                    )
                 } else it
             }
 

@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.call.mapper
 
+import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallMember
 import com.wire.kalium.logic.data.call.Participant
@@ -20,7 +21,8 @@ class ParticipantMapperImpl : ParticipantMapper {
             ),
             clientId = clientId,
             isMuted = isMuted == 1,
-            isCameraOn = vrecv == 1
+            isCameraOn = vrecv == VideoStateCalling.STARTED.avsValue,
+            isSharingScreen = vrecv == VideoStateCalling.SCREENSHARE.avsValue
         )
     }
 
