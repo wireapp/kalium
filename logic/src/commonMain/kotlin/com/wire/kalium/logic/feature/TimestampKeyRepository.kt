@@ -29,7 +29,6 @@ class TimestampKeyRepositoryImpl(
     override suspend fun reset(key: TimestampKeys): Either<StorageFailure, Unit> =
         update(key, timestamp = Clock.System.now())
 
-
     override suspend fun update(key: TimestampKeys, timestamp: Instant): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             metadataDAO.insertValue(timestamp.toString(), key.name)

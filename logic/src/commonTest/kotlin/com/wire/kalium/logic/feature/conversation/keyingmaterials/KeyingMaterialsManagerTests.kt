@@ -85,7 +85,6 @@ class KeyingMaterialsManagerTests {
                 .wasNotInvoked()
         }
 
-
     private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
