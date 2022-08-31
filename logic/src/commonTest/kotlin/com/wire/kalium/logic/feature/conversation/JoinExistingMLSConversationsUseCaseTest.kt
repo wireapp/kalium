@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -150,7 +151,7 @@ class JoinExistingMLSConversationsUseCaseTest {
 
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
-                    "group1",
+                    GroupID("group1"),
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = Clock.System.now(),
@@ -160,7 +161,7 @@ class JoinExistingMLSConversationsUseCaseTest {
 
             val MLS_CONVERSATION2 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
-                    "group1",
+                    GroupID("group1"),
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = Clock.System.now(),

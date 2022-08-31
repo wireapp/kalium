@@ -45,6 +45,10 @@ sealed class NetworkFailure : CoreFailure() {
         constructor(cause: Throwable) : this(KaliumException.GenericError(cause))
 
         val rootCause: Throwable get() = kaliumException
+
+        override fun toString(): String {
+            return "ServerMiscommunication(cause = $rootCause)"
+        }
     }
 }
 
@@ -54,7 +58,7 @@ class ProteusFailure(internal val proteusException: ProteusException) : CoreFail
     val rootCause: Throwable get() = proteusException
 }
 
-class EncryptionFailure: CoreFailure.FeatureFailure()
+class EncryptionFailure : CoreFailure.FeatureFailure()
 
 sealed class StorageFailure : CoreFailure() {
     object DataNotFound : StorageFailure()

@@ -47,7 +47,8 @@ class ActiveSpeakerMapperTest {
             clientId = "dummyClientId",
             isMuted = false,
             isSpeaking = false,
-            isCameraOn = false
+            isCameraOn = false,
+            isSharingScreen = false
         )
         private val DUMMY_CALL_ACTIVE_SPEAKER = CallActiveSpeaker(
             userId = "dummyId@dummyDomain",

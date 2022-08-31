@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
@@ -89,7 +90,7 @@ data class Conversation(
         }
 
         data class MLS(
-            val groupId: String,
+            val groupId: GroupID,
             val groupState: GroupState,
             val epoch: ULong,
             val keyingMaterialLastUpdate: Instant,

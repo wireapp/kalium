@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUser
@@ -65,7 +66,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -138,19 +138,18 @@ class ConversationRepositoryTest {
 
     @Test
     fun givenNewConversationEventWithMlsConversation_whenCallingInsertConversation_thenMlsGroupExistenceShouldBeQueried() = runTest {
-        val groupId = "group1"
         val event = Event.Conversation.NewConversation(
             "id",
             TestConversation.ID,
             "time",
             CONVERSATION_RESPONSE.copy(
-                groupId = groupId,
-                protocol = ConvProtocol.MLS,
+                groupId = RAW_GROUP_ID,
+                protocol = MLS,
                 mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
             )
         )
         val protocolInfo = ConversationEntity.ProtocolInfo.MLS(
-            groupId,
+            RAW_GROUP_ID,
             ConversationEntity.GroupState.ESTABLISHED,
             0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
@@ -171,7 +170,7 @@ class ConversationRepositoryTest {
 
         verify(mlsConversationRepository)
             .suspendFunction(mlsConversationRepository::hasEstablishedMLSGroup)
-            .with(eq(groupId))
+            .with(eq(GROUP_ID))
             .wasInvoked(once)
 
         verify(conversationDAO)
@@ -490,8 +489,6 @@ class ConversationRepositoryTest {
             .wasInvoked(once)
     }
 
-    // TODO: enable the tests once the issue with creating MLS conversations is solved
-    @Ignore
     @Test
     fun givenMLSProtocolIsUsed_whenCallingCreateGroupConversation_thenMLSGroupIsEstablished() = runTest {
         val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
@@ -506,8 +503,9 @@ class ConversationRepositoryTest {
             .then { flowOf(TestUser.SELF) }
 
         given(userRepository)
-            .coroutine { userRepository.getSelfUserId() }
-            .then { TestUser.SELF.id }
+            .function(userRepository::getSelfUserId)
+            .whenInvoked()
+            .thenReturn(TestUser.SELF.id)
 
         given(conversationDAO)
             .suspendFunction(conversationDAO::insertConversation)
@@ -782,7 +780,7 @@ class ConversationRepositoryTest {
             .wasInvoked(exactly = once)
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::leaveGroup)
-            .with(eq(MLS_PROTOCOL_INFO.groupId))
+            .with(eq(GROUP_ID))
             .wasInvoked(exactly = once)
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
@@ -810,7 +808,7 @@ class ConversationRepositoryTest {
             .wasNotInvoked()
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
-            .with(eq(MLS_PROTOCOL_INFO.groupId), eq(listOf(TestConversation.USER_1)))
+            .with(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
             .wasInvoked(exactly = once)
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::leaveGroup)
@@ -1536,11 +1534,12 @@ class ConversationRepositoryTest {
     }
 
     companion object {
-        private const val MLS_GROUP_ID = "mlsGroupId"
+        private const val RAW_GROUP_ID = "mlsGroupId"
+        val GROUP_ID = GroupID(RAW_GROUP_ID)
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
         val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo
             .MLS(
-                MLS_GROUP_ID,
+                RAW_GROUP_ID,
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
