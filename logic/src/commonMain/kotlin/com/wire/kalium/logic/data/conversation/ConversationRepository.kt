@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -20,6 +21,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -40,6 +42,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -277,64 +280,88 @@ class ConversationDataSource(
         when (conversation.type) {
             Conversation.Type.SELF -> flowOf(Either.Right(ConversationDetails.Self(conversation)))
             // TODO(user-metadata): get actual legal hold status
-            Conversation.Type.GROUP -> flowOf(
-                Either.Right(
-                    ConversationDetails.Group(
-                        conversation = conversation,
-                        legalHoldStatus = LegalHoldStatus.DISABLED,
-                        unreadMessagesCount = getUnreadMessageCount(conversation),
-                        lastUnreadMessage = getLastUnreadMessage(conversation),
-                    )
-                )
-            )
-
+            Conversation.Type.GROUP -> getGroupConversationDetailsFlow(conversation)
             Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
         }
 
-    private suspend fun getLastUnreadMessage(conversation: Conversation): Message? {
-        return messageDAO.getLastUnreadMessage(
-            idMapper.toDaoModel(
-                conversation.id
-            )
-        )?.let {
-            messageMapper.fromEntityToMessage(it)
-        }
+    private suspend fun observeLastUnreadMessage(conversation: Conversation): Flow<Message?> =
+        messageDAO.observeLastUnreadMessage(idMapper.toDaoModel(conversation.id))
+            .map { it?.let { messageMapper.fromEntityToMessage(it) } }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun getGroupConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
+        return userRepository.observeSelfUser()
+            .flatMapLatest { selfUser ->
+                combine(
+                    observeUnreadMessageCount(conversation),
+                    observeLastUnreadMessage(conversation),
+                    observeUnreadMentionsCount(conversation, selfUser.id)
+                ) { unreadMessageCount: Long, lastUnreadMessage: Message?, unreadMentionsCount: Long ->
+                    Either.Right(
+                        ConversationDetails.Group(
+                            conversation = conversation,
+                            legalHoldStatus = LegalHoldStatus.DISABLED,
+                            unreadMessagesCount = unreadMessageCount,
+                            unreadMentionsCount = unreadMentionsCount,
+                            lastUnreadMessage = lastUnreadMessage,
+                        )
+                    )
+                }
+            }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
-        val selfUser = userRepository.observeSelfUser().first()
-        return getConversationMembers(conversation.id)
-            .map { members -> members.firstOrNull { itemId -> itemId != selfUser.id } }
-            .fold(
-                { storageFailure ->
-                    logMemberDetailsError(conversation, storageFailure)
-                    flowOf(Either.Left(storageFailure))
-                },
-                { otherUserId ->
-                    flowOf(otherUserId)
-                        .flatMapLatest { if (it != null) userRepository.getKnownUser(it) else flowOf(it) }
-                        .wrapStorageRequest()
-                        .map {
-                            it.map { otherUser ->
+        return observeConversationMembers(conversation.id)
+            .combine(userRepository.observeSelfUser())
+            { members, selfUser -> selfUser to members.firstOrNull { item -> item.id != selfUser.id } }
+            .flatMapLatest { (selfUser, otherMember) ->
+                val otherUserFlow = if (otherMember != null) userRepository.getKnownUser(otherMember.id) else flowOf(otherMember)
+                otherUserFlow
+                    .wrapStorageRequest()
+                    .mapRight { selfUser to it }
+            }
+            .flatMapLatest {
+                it.fold(
+                    { storageFailure ->
+                        logMemberDetailsError(conversation, storageFailure)
+                        flowOf(Either.Left(storageFailure))
+                    },
+                    { (selfUser, otherUser) ->
+                        combine(
+                            observeUnreadMessageCount(conversation),
+                            observeLastUnreadMessage(conversation),
+                            observeUnreadMentionsCount(conversation, selfUser.id)
+                        ) { unreadMessageCount: Long, lastUnreadMessage: Message?, unreadMentionsCount: Long ->
+                            Either.Right(
                                 conversationMapper.toConversationDetailsOneToOne(
                                     conversation = conversation,
                                     otherUser = otherUser,
                                     selfUser = selfUser,
-                                    unreadMessageCount = getUnreadMessageCount(conversation),
-                                    lastUnreadMessage = getLastUnreadMessage(conversation)
+                                    unreadMessageCount = unreadMessageCount,
+                                    unreadMentionsCount = unreadMentionsCount,
+                                    lastUnreadMessage = lastUnreadMessage
                                 )
-                            }
+                            )
                         }
-                }
-            )
+                    }
+                )
+            }
     }
 
-    private suspend fun getUnreadMessageCount(conversation: Conversation): Long {
+    private suspend fun observeUnreadMessageCount(conversation: Conversation): Flow<Long> {
         return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
-            messageDAO.getUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+            messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
-            0
+            flowOf(0L)
+        }
+    }
+
+    private suspend fun observeUnreadMentionsCount(conversation: Conversation, userId: UserId): Flow<Long> {
+        return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
+            messageDAO.observeUnreadMentionsCount(idMapper.toDaoModel(conversation.id), idMapper.toDaoModel(userId))
+        } else {
+            flowOf(0L)
         }
     }
 

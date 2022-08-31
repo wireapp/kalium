@@ -21,6 +21,18 @@ CREATE TABLE Message (
       PRIMARY KEY (id, conversation_id)
 );
 
+CREATE TABLE MessageMention (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      start INTEGER AS Int NOT NULL,
+      length INTEGER AS Int NOT NULL,
+      user_id TEXT AS QualifiedIDEntity,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id, start) -- there should not be any overlapping mentions
+);
+
 CREATE TABLE MessageTextContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -118,6 +130,9 @@ DELETE FROM Message;
 deleteMessage:
 DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
 
+deleteMessageMentions:
+DELETE FROM MessageMention WHERE  message_id = ? AND conversation_id = ?;
+
 deleteMessageById:
 DELETE FROM Message WHERE  id = ?;
 
@@ -151,6 +166,15 @@ sender_user_id = excluded.sender_user_id,
 sender_client_id = excluded.sender_client_id,
 status = excluded.status,
 visibility = excluded.visibility;
+
+insertMessageMention:
+INSERT INTO MessageMention(message_id, conversation_id, start, length, user_id)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT(message_id, conversation_id, start) DO UPDATE SET
+message_id = excluded.message_id,
+start = excluded.start,
+length = excluded.length,
+user_id = excluded.user_id;
 
 insertMessageTextContent:
 INSERT INTO MessageTextContent(message_id, conversation_id, text_body)
@@ -260,6 +284,9 @@ SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? AND Datetime
 selectMessagesFromUserByStatus:
 SELECT * FROM Message WHERE sender_user_id = ? AND status = ?;
 
+selectMessageMentions:
+SELECT * FROM MessageMention WHERE message_id = ? AND conversation_id = ?;
+
 selectMessageTextContent:
 SELECT * FROM MessageTextContent WHERE message_id = ? AND conversation_id = ?;
 
@@ -290,5 +317,13 @@ LIMIT  1;
 
 getUnreadMessageCount:
 SELECT COUNT() FROM Message AS message
-WHERE message.conversation_id
-IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id));
+WHERE message.conversation_id IS :conversation_id
+AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
+AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
+
+getUnreadMentionsCount:
+SELECT COUNT(DISTINCT message.id) FROM Message AS message
+WHERE message.conversation_id IS :conversation_id
+AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
+AND message.content_type IN ('TEXT')
+AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :user_id);

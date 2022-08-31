@@ -10,6 +10,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import com.wire.kalium.protobuf.messages.QualifiedUserId
 import com.wire.kalium.network.api.UserId as NetworkUserId
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
@@ -30,6 +31,8 @@ interface IdMapper {
     fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
     fun toProtoModel(conversationId: ConversationId): QualifiedConversationId
+    fun fromProtoUserId(qualifiedUserId: QualifiedUserId): QualifiedID
+    fun toProtoUserId(userId: UserId): QualifiedUserId
     fun toQualifiedAssetId(value: String, domain: String = ""): QualifiedID
     fun toQualifiedAssetIdEntity(value: String, domain: String = ""): PersistenceQualifiedId
     fun toSsoId(userSsoIdDTO: UserSsoIdDTO?): SsoId?
@@ -74,6 +77,11 @@ internal class IdMapperImpl : IdMapper {
 
     override fun toProtoModel(conversationId: ConversationId): QualifiedConversationId =
         QualifiedConversationId(conversationId.value, conversationId.domain)
+    override fun fromProtoUserId(qualifiedUserId: QualifiedUserId): UserId =
+        UserId(qualifiedUserId.id, qualifiedUserId.domain)
+
+    override fun toProtoUserId(userId: UserId): QualifiedUserId =
+        QualifiedUserId(userId.value, userId.domain)
 
     override fun toQualifiedAssetId(value: String, domain: String) = QualifiedID(value, domain)
 

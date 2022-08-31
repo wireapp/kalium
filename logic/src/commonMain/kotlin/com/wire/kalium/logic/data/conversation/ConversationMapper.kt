@@ -41,6 +41,7 @@ interface ConversationMapper {
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne
 }
@@ -152,6 +153,7 @@ internal class ConversationMapperImpl(
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
@@ -162,6 +164,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = LegalHoldStatus.DISABLED,
             userType = otherUser.userType,
             unreadMessagesCount = unreadMessageCount,
+            unreadMentionsCount = unreadMentionsCount,
             lastUnreadMessage = lastUnreadMessage
         )
     }
