@@ -15,10 +15,10 @@ internal interface IncrementalSyncRepository {
 
 internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
     private val _syncState = MutableStateFlow<IncrementalSyncStatus>(IncrementalSyncStatus.Pending)
-    override val incrementalSyncState = _syncState.asStateFlow()
+    override val incrementalSyncState get() = _syncState.asStateFlow()
 
     private val _connectionPolicy = MutableStateFlow(ConnectionPolicy.KEEP_ALIVE)
-    override val connectionPolicyState = _connectionPolicy.asStateFlow()
+    override val connectionPolicyState get() = _connectionPolicy.asStateFlow()
 
     override fun updateIncrementalSyncState(newState: IncrementalSyncStatus) {
         kaliumLogger.withFeatureId(SYNC).i("IncrementalSyncStatus Updated FROM:${_syncState.value}; TO: $newState")

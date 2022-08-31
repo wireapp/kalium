@@ -14,10 +14,10 @@ internal interface SlowSyncRepository {
 
 internal class InMemorySlowSyncRepository : SlowSyncRepository {
     private val _lastFullSyncInstant = MutableStateFlow<Instant?>(null)
-    override val lastFullSyncInstant = _lastFullSyncInstant.asStateFlow()
+    override val lastFullSyncInstant get() = _lastFullSyncInstant.asStateFlow()
 
     private val _slowSyncStatus = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
-    override val slowSyncStatus: StateFlow<SlowSyncStatus> = _slowSyncStatus.asStateFlow()
+    override val slowSyncStatus: StateFlow<SlowSyncStatus> get() = _slowSyncStatus.asStateFlow()
 
     override fun setLastSlowSyncCompletionInstant(instant: Instant?) {
         _lastFullSyncInstant.value = instant
