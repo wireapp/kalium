@@ -42,6 +42,7 @@ class ParticipantsOrderTest {
             clientId = "",
             isMuted = false,
             isCameraOn = false,
+            isSharingScreen = false,
             name = "self user"
         )
         val participant2 = Participant(
@@ -49,6 +50,7 @@ class ParticipantsOrderTest {
             clientId = "",
             isMuted = false,
             isCameraOn = false,
+            isSharingScreen = false,
             name = "user name"
         )
         val participant3 = Participant(
@@ -56,6 +58,7 @@ class ParticipantsOrderTest {
             clientId = "",
             isMuted = false,
             isCameraOn = false,
+            isSharingScreen = false,
             name = "A random name"
         )
     }
