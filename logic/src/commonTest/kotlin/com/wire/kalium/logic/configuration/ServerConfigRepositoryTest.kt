@@ -1,8 +1,6 @@
 package com.wire.kalium.logic.configuration
 
-import com.wire.kalium.logic.configuration.server.CURRENT_DOMAIN
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
-import com.wire.kalium.logic.configuration.server.FEDERATION_ENABLED
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
@@ -130,8 +128,6 @@ class ServerConfigRepositoryTest {
             .withApiAversionResponse(expected)
             .withConfigById()
             .withConfigByLinks()
-            .withStoringCurrentDomain()
-            .withStoringFederationEnabled()
             .arrange()
 
         repository.fetchApiVersionAndStore(expected.links).shouldSucceed {
@@ -147,23 +143,12 @@ class ServerConfigRepositoryTest {
             .function(arrangement.serverConfigDAO::configById)
             .with(any())
             .wasInvoked(exactly = once)
-
-        verify(arrangement.kaliumPreferences)
-            .function(arrangement.kaliumPreferences::putBoolean)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.kaliumPreferences)
-            .invocation { arrangement.kaliumPreferences.putString(CURRENT_DOMAIN, "domain1.com") }
-            .wasInvoked(exactly = once)
     }
 
 
     @Test
     fun givenStoredConfig_whenAddingTheSameOneWithNewApiVersionParams_thenStoredOneShouldBeUpdatedAndReturned() {
         val (arrangement, repository) = Arrangement()
-            .withStoringCurrentDomain()
-            .withStoringFederationEnabled(true)
             .withUpdatedServerConfig()
             .arrange()
 
@@ -198,8 +183,6 @@ class ServerConfigRepositoryTest {
         val expected = newServerConfig(1)
         val (arrangement, repository) = Arrangement()
             .withConfigForNewRequest(expected)
-            .withStoringCurrentDomain()
-            .withStoringFederationEnabled()
             .arrange()
 
         repository
@@ -248,7 +231,7 @@ class ServerConfigRepositoryTest {
         val kaliumPreferences = mock(classOf<KaliumPreferences>())
 
         private var serverConfigRepository: ServerConfigRepository =
-            ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi, kaliumPreferences)
+            ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi)
 
         val serverConfigEntity = newServerConfigEntity(1)
         val expectedServerConfig = newServerConfig(1).copy(
@@ -340,20 +323,6 @@ class ServerConfigRepositoryTest {
                 .whenInvokedWith(any())
                 .then { newServerConfigEntity }
 
-            return this
-        }
-
-        fun withStoringCurrentDomain(domain: String = "domain1.com"): Arrangement {
-            given(kaliumPreferences)
-                .invocation { putString(CURRENT_DOMAIN, domain) }
-                .then { Unit }
-            return this
-        }
-
-        fun withStoringFederationEnabled(enabled: Boolean = false): Arrangement {
-            given(kaliumPreferences)
-                .invocation { putBoolean(FEDERATION_ENABLED, enabled) }
-                .then { Unit }
             return this
         }
 

@@ -1,10 +1,8 @@
 package com.wire.kalium.logic.data.id
 
-import com.wire.kalium.logic.configuration.server.CURRENT_DOMAIN
 import com.wire.kalium.logic.configuration.server.FEDERATION_ENABLED
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 interface FederatedIdMapper {
     fun parseToFederatedId(qualifiedID: QualifiedID): String
@@ -19,12 +17,11 @@ interface FederatedIdMapper {
  */
 class FederatedIdMapperImpl(
     private val userRepository: UserRepository,
-    private val qualifiedIdMapper: QualifiedIdMapper,
-    private val kaliumPreferences: KaliumPreferences,
+    private val qualifiedIdMapper: QualifiedIdMapper
 ) : FederatedIdMapper {
 
     private fun isFederationEnabled() = kaliumPreferences.getBoolean(FEDERATION_ENABLED, false)
-    private fun getCurrentDomain() = kaliumPreferences.getString(CURRENT_DOMAIN) ?: userRepository.getSelfUserId()?.domain
+    private fun getCurrentDomain() = userRepository.getSelfUserId().domain
 
     override fun parseToFederatedId(qualifiedID: QualifiedID): String {
         kaliumLogger.v(

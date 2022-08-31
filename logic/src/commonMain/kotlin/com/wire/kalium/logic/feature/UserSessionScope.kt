@@ -431,7 +431,7 @@ abstract class UserSessionScopeCommon(
 
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
 
-    val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper, globalPreferences)
+    val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper)
 
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(

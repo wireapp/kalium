@@ -64,7 +64,6 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
@@ -105,7 +104,6 @@ internal object MapperProvider {
     fun federatedIdMapper(
         userRepository: UserRepository,
         qualifiedIdMapper: QualifiedIdMapper,
-        kaliumPreferences: KaliumPreferences
-    ): FederatedIdMapper = FederatedIdMapperImpl(userRepository, qualifiedIdMapper, kaliumPreferences)
+    ): FederatedIdMapper = FederatedIdMapperImpl(userRepository, qualifiedIdMapper)
 
 }
