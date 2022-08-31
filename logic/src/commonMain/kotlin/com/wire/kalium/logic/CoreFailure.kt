@@ -45,6 +45,10 @@ sealed class NetworkFailure : CoreFailure() {
         constructor(cause: Throwable) : this(KaliumException.GenericError(cause))
 
         val rootCause: Throwable get() = kaliumException
+
+        override fun toString(): String {
+            return "ServerMiscommunication(cause = $rootCause)"
+        }
     }
 }
 
