@@ -26,9 +26,9 @@ class CommonUtilsTest {
     }
 
     @Test
-    fun givenAnEmptyFileName_whenGettingItsFileExtension_itReturnsVoid() {
+    fun givenAnEmptyFileName_whenGettingItsFileExtension_itReturnsNull() {
         val fileName = ""
-        val expectedFileExtension = ""
+        val expectedFileExtension = null
 
         val fileExtension = fileName.fileExtension()
 
