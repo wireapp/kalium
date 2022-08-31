@@ -131,7 +131,7 @@ class UpdateKeyingMaterialsUseCaseTests {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withUpdateKeyingMaterialsFailsFor(failedGroupId: String) = apply {
+        fun withUpdateKeyingMaterialsFailsFor(failedGroupId: GroupID) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::updateKeyingMaterial)
                 .whenInvokedWith(eq(failedGroupId))
