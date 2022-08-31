@@ -88,7 +88,7 @@ data class ServerConfig(
             title = "staging",
             isOnPremises = false
         )
-        val DEFAULT = PRODUCTION
+        val DEFAULT = STAGING
 
         private const val FORGOT_PASSWORD_PATH = "forgot"
         private const val PRICING_PATH = "pricing"
