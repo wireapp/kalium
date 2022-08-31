@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.id.GroupID
 
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -89,7 +90,7 @@ class UpdateKeyingMaterialsUseCaseTests {
             updateKeyingMaterialThresholdProvider
         )
 
-        fun withOutdatedGroupsReturns(either: Either<CoreFailure, List<String>>) = apply {
+        fun withOutdatedGroupsReturns(either: Either<CoreFailure, List<GroupID>>) = apply {
             given(mlsConversationRepository).suspendFunction(mlsConversationRepository::getMLSGroupsRequiringKeyingMaterialUpdate)
                 .whenInvokedWith(anything())
                 .thenReturn(either)
@@ -108,7 +109,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         fun arrange() = this to updateKeyingMaterialsUseCase
 
         companion object {
-            val OUTDATED_KEYING_MATERIALS_GROUPS = listOf("group1", "group2")
+            val OUTDATED_KEYING_MATERIALS_GROUPS = listOf(GroupID("group1"), GroupID("group2"))
         }
     }
 }

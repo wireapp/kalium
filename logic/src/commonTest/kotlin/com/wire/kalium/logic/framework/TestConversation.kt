@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -59,7 +60,7 @@ object TestConversation {
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
-        ID.copy(value = if (protocolInfo is ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"),
+        ID,
         "GROUP Name",
         Conversation.Type.GROUP,
         TestTeam.TEAM_ID,
@@ -153,7 +154,7 @@ object TestConversation {
             time = "2022-03-30T15:36:00.000Z"
         )
 
-    const val GROUP_ID = "mlsGroupId"
+    val GROUP_ID = GroupID("mlsGroupId")
     val ENTITY_ID = QualifiedIDEntity("valueConversation", "domainConversation")
     val ENTITY = ConversationEntity(
         ENTITY_ID,
@@ -191,7 +192,7 @@ object TestConversation {
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
         ProtocolInfo.MLS(
-            "group_id",
+            GroupID("group_id"),
             ProtocolInfo.MLS.GroupState.PENDING_JOIN,
             0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
