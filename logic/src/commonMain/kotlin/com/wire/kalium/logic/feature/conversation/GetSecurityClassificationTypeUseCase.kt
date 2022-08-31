@@ -11,26 +11,26 @@ import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.firstOrNull
 
-fun interface GetConversationClassifiedTypeUseCase {
+fun interface GetSecurityClassificationTypeUseCase {
     /**
      * Operation that lets compute if a given conversation [conversationId] is classified or not
      *
      * @param conversationId to classify
-     * @return ClassifiedTypeResult with classification type
+     * @return SecurityClassificationTypeResult with classification type
      */
-    suspend operator fun invoke(conversationId: ConversationId): ClassifiedTypeResult
+    suspend operator fun invoke(conversationId: ConversationId): SecurityClassificationTypeResult
 }
 
-internal class GetConversationClassifiedTypeUseCaseImpl(
+internal class GetSecurityClassificationTypeUseCaseImpl(
     private val selfUserId: UserId,
     private val conversationRepository: ConversationRepository,
     private val userConfigRepository: UserConfigRepository
-) : GetConversationClassifiedTypeUseCase {
+) : GetSecurityClassificationTypeUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): ClassifiedTypeResult {
+    override suspend fun invoke(conversationId: ConversationId): SecurityClassificationTypeResult {
         val classifiedDomainsStatus = userConfigRepository.getClassifiedDomainsStatus().onlyRight().firstOrNull()
         if (classifiedDomainsStatus == null || !classifiedDomainsStatus.isClassifiedDomainsEnabled) {
-            return ClassifiedTypeResult.Success(ClassifiedType.NONE)
+            return SecurityClassificationTypeResult.Success(SecurityClassificationType.NONE)
         }
 
         val selfUserDomain = selfUserId.domain
@@ -41,21 +41,21 @@ internal class GetConversationClassifiedTypeUseCaseImpl(
             }
         }.fold({
             kaliumLogger.e("Unexpected error while calculating conversation classified type $it")
-            ClassifiedTypeResult.Failure(it)
+            SecurityClassificationTypeResult.Failure(it)
         }, { isClassified ->
             when (isClassified) {
-                true -> ClassifiedTypeResult.Success(ClassifiedType.CLASSIFIED)
-                false -> ClassifiedTypeResult.Success(ClassifiedType.NOT_CLASSIFIED)
+                true -> SecurityClassificationTypeResult.Success(SecurityClassificationType.CLASSIFIED)
+                false -> SecurityClassificationTypeResult.Success(SecurityClassificationType.NOT_CLASSIFIED)
             }
         })
     }
 }
 
-sealed interface ClassifiedTypeResult {
-    data class Success(val classifiedType: ClassifiedType) : ClassifiedTypeResult
-    data class Failure(val cause: CoreFailure) : ClassifiedTypeResult
+sealed interface SecurityClassificationTypeResult {
+    data class Success(val classificationType: SecurityClassificationType) : SecurityClassificationTypeResult
+    data class Failure(val cause: CoreFailure) : SecurityClassificationTypeResult
 }
 
-enum class ClassifiedType {
+enum class SecurityClassificationType {
     CLASSIFIED, NOT_CLASSIFIED, NONE
 }
