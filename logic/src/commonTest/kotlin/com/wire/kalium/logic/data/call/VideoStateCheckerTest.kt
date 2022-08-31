@@ -15,7 +15,7 @@ class VideoStateCheckerTest {
     }
 
     @Test
-    fun givenAVideoStateIsPauseOrStoppedWhenCheckingIfVideoEnabledThenReturnFalse() {
+    fun givenAVideoStateIsPauseOrStopped_whenCheckingIfVideoEnabled_thenReturnFalse() {
         val stoppedState = VideoStateCalling.STOPPED
         val pausedState = VideoStateCalling.PAUSED
         val unknownState = VideoStateCalling.UNKNOWN
@@ -30,17 +30,32 @@ class VideoStateCheckerTest {
     }
 
     @Test
-    fun givenAVideoStateIsStartedWhenCheckingIfVideoEnabledThenReturnTrue() {
+    fun givenAVideoStateIsStarted_whenCheckingIfVideoEnabled_thenReturnTrue() {
         val startedState = VideoStateCalling.STARTED
         val badConnectionState = VideoStateCalling.BAD_CONNECTION
-        val screenShareState = VideoStateCalling.SCREENSHARE
 
         val result1 = videoStateChecker.isCameraOn(startedState)
         val result2 = videoStateChecker.isCameraOn(badConnectionState)
-        val result3 = videoStateChecker.isCameraOn(screenShareState)
 
         assertEquals(true, result1)
         assertEquals(true, result2)
-        assertEquals(true, result3)
+    }
+
+    @Test
+    fun givenAVideoStateSharing_whenCheckingScreenSharing_thenReturnTrue() {
+        val screenShareState = VideoStateCalling.SCREENSHARE
+
+        val result = videoStateChecker.isSharingScreen(screenShareState)
+
+        assertEquals(true, result)
+    }
+
+    @Test
+    fun givenAVideoStateUnknown_whenCheckingScreenSharing_thenReturnFalse() {
+        val unknownState = VideoStateCalling.UNKNOWN
+
+        val result = videoStateChecker.isSharingScreen(unknownState)
+
+        assertEquals(false, result)
     }
 }
