@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.ConversationEntity
 
 interface ProtocolInfoMapper {
@@ -7,12 +9,14 @@ interface ProtocolInfoMapper {
     fun toEntity(protocolInfo: Conversation.ProtocolInfo): ConversationEntity.ProtocolInfo
 }
 
-class ProtocolInfoMapperImpl : ProtocolInfoMapper {
+class ProtocolInfoMapperImpl(
+    val idMapper: IdMapper = MapperProvider.idMapper()
+) : ProtocolInfoMapper {
     override fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo) =
         when (protocolInfo) {
             is ConversationEntity.ProtocolInfo.Proteus -> Conversation.ProtocolInfo.Proteus
             is ConversationEntity.ProtocolInfo.MLS -> Conversation.ProtocolInfo.MLS(
-                protocolInfo.groupId,
+                idMapper.fromGroupIDEntity(protocolInfo.groupId),
                 Conversation.ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
@@ -24,7 +28,7 @@ class ProtocolInfoMapperImpl : ProtocolInfoMapper {
         when (protocolInfo) {
             is Conversation.ProtocolInfo.Proteus -> ConversationEntity.ProtocolInfo.Proteus
             is Conversation.ProtocolInfo.MLS -> ConversationEntity.ProtocolInfo.MLS(
-                protocolInfo.groupId,
+                idMapper.toGroupIDEntity(protocolInfo.groupId),
                 ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
