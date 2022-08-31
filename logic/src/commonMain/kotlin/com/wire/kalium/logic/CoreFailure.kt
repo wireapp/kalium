@@ -58,7 +58,7 @@ class ProteusFailure(internal val proteusException: ProteusException) : CoreFail
     val rootCause: Throwable get() = proteusException
 }
 
-class EncryptionFailure: CoreFailure.FeatureFailure()
+class EncryptionFailure : CoreFailure.FeatureFailure()
 
 sealed class StorageFailure : CoreFailure() {
     object DataNotFound : StorageFailure()
