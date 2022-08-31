@@ -19,13 +19,15 @@ class CallingParticipantsOrderImpl(
             val selfParticipants = participantsFilter.selfParticipants(participants, selfUserId)
             val otherParticipants = participantsFilter.participantsWithoutUserId(participants, selfUserId)
 
-            val participantsSharingScreen = participantsFilter.participantsWithScreenSharingOn(participants)
+            val participantsSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, true)
+            val participantsNotSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, false)
+
             val participantsWithVideoOn = participantsFilter.participantsByCamera(
-                participants = otherParticipants,
+                participants = participantsNotSharingScreen,
                 isCameraOn = true
             )
             val participantsWithVideoOff = participantsFilter.participantsByCamera(
-                participants = otherParticipants,
+                participants = participantsNotSharingScreen,
                 isCameraOn = false
             )
 

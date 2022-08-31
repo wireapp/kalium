@@ -58,29 +58,33 @@ class CallingParticipantsOrderTest {
             .whenInvokedWith(eq(participants), eq(selfUserId))
             .thenReturn(selfParticipants)
 
-        given(participantsFilter).function(participantsFilter::participantsWithScreenSharingOn)
-            .whenInvokedWith(eq(participants))
-            .thenReturn(listOf())
+        given(participantsFilter).function(participantsFilter::participantsSharingScreen)
+            .whenInvokedWith(eq(otherParticipants), eq(true))
+            .thenReturn(participantsSharingScreen)
+
+        given(participantsFilter).function(participantsFilter::participantsSharingScreen)
+            .whenInvokedWith(eq(otherParticipants), eq(false))
+            .thenReturn(participantsNotSharingScreen)
 
         given(participantsFilter).function(participantsFilter::participantsByCamera)
-            .whenInvokedWith(eq(otherParticipants), eq(true))
+            .whenInvokedWith(eq(participantsNotSharingScreen), eq(true))
             .thenReturn(participantsWithCameraOn)
 
         given(participantsFilter).function(participantsFilter::participantsByCamera)
-            .whenInvokedWith(eq(otherParticipants), eq(false))
+            .whenInvokedWith(eq(participantsNotSharingScreen), eq(false))
             .thenReturn(participantsWithCameraOff)
 
         given(participantsOrderByName).function(participantsOrderByName::sortItems)
             .whenInvokedWith(eq(participantsWithCameraOff))
-            .thenReturn(listOf(participant4))
+            .thenReturn(listOf(participant3))
 
         given(participantsOrderByName).function(participantsOrderByName::sortItems)
             .whenInvokedWith(eq(participantsWithCameraOn))
-            .thenReturn(listOf(participant2, participant3))
+            .thenReturn(listOf(participant2))
 
         given(participantsOrderByName).function(participantsOrderByName::sortItems)
-            .whenInvokedWith(eq(listOf()))
-            .thenReturn(listOf())
+            .whenInvokedWith(eq(participantsSharingScreen))
+            .thenReturn(listOf(participant2))
 
         val result = callingParticipantsOrder.reorderItems(participants)
 
@@ -99,8 +103,8 @@ class CallingParticipantsOrderTest {
             .with(eq(participants), eq(selfUserId))
             .wasInvoked(exactly = once)
 
-        verify(participantsFilter).function(participantsFilter::participantsWithScreenSharingOn)
-            .with(eq(participants))
+        verify(participantsFilter).function(participantsFilter::participantsSharingScreen)
+            .with(eq(otherParticipants), eq(true))
             .wasInvoked(exactly = once)
 
         verify(participantsFilter).function(participantsFilter::participantsByCamera)
@@ -132,7 +136,7 @@ class CallingParticipantsOrderTest {
             id = QualifiedID("participant3", "domain"),
             clientId = "client3",
             isMuted = false,
-            isCameraOn = true,
+            isCameraOn = false,
             name = "A random name"
         )
         val participant4 = Participant(
@@ -140,6 +144,7 @@ class CallingParticipantsOrderTest {
             clientId = "client3",
             isMuted = false,
             isCameraOn = false,
+            isSharingScreen = true,
             name = "A random name"
         )
         val participant11 = Participant(
@@ -152,8 +157,10 @@ class CallingParticipantsOrderTest {
         val participants = listOf(participant1, participant2, participant3, participant4, participant11)
         val selfParticipants = listOf(participant1, participant11)
         val otherParticipants = listOf(participant2, participant3, participant4)
-        val participantsWithCameraOn = listOf(participant2, participant3)
-        val participantsWithCameraOff = listOf(participant4)
+        val participantsSharingScreen = listOf(participant4)
+        val participantsNotSharingScreen = listOf(participant2, participant3)
+        val participantsWithCameraOn = listOf(participant2)
+        val participantsWithCameraOff = listOf(participant3)
 
     }
 }
