@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.cryptography.CryptoQualifiedID
+import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
@@ -26,6 +27,10 @@ interface IdMapper {
     fun toStringDaoModel(qualifiedID: QualifiedID): String
     fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.QualifiedID): PersistenceQualifiedId
     fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID
+    fun toCryptoModel(groupID: GroupID): MLSGroupId
+    fun toGroupIDEntity(groupID: GroupID): String
+    fun fromGroupIDEntity(groupID: String): GroupID
+    fun fromCryptoModel(groupID: MLSGroupId): GroupID
     fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
     fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
@@ -50,10 +55,14 @@ internal class IdMapperImpl : IdMapper {
     override fun fromDaoModel(persistenceId: PersistenceQualifiedId) =
         QualifiedID(value = persistenceId.value, domain = persistenceId.domain)
 
+    override fun fromGroupIDEntity(groupID: String): GroupID = GroupID(groupID)
+
     override fun toApiModel(qualifiedID: QualifiedID) = NetworkQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
 
     override fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId =
         PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+
+    override fun toGroupIDEntity(groupID: GroupID): String = groupID.value
 
     override fun toStringDaoModel(qualifiedID: QualifiedID): String = "${qualifiedID.value}@${qualifiedID.domain}"
 
@@ -62,6 +71,10 @@ internal class IdMapperImpl : IdMapper {
 
     override fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID =
         CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)
+
+    override fun toCryptoModel(groupID: GroupID): MLSGroupId = groupID.value
+
+    override fun fromCryptoModel(groupID: MLSGroupId): GroupID = GroupID(groupID)
 
     override fun fromApiToDao(qualifiedID: NetworkQualifiedId) =
         PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)

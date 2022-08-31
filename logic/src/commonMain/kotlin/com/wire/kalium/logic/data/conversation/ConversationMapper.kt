@@ -95,7 +95,7 @@ internal class ConversationMapperImpl(
     )
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
-        ProposalTimer(daoModel.groupID, daoModel.firingDate)
+        ProposalTimer(idMapper.fromGroupIDEntity(daoModel.groupID), daoModel.firingDate)
 
     override fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
         when (it) {
@@ -125,7 +125,7 @@ internal class ConversationMapperImpl(
         }
 
     override fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity =
-        ProposalTimerEntity(proposalTimer.groupID, proposalTimer.timestamp)
+        ProposalTimerEntity(idMapper.toGroupIDEntity(proposalTimer.groupID), proposalTimer.timestamp)
 
     override fun toApiModel(
         name: String?,

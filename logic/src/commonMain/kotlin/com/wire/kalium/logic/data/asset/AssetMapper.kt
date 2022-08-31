@@ -26,7 +26,7 @@ interface AssetMapper {
     fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest
     fun fromApiUploadResponseToDomainModel(asset: AssetResponse): UploadedAssetId
     fun fromUploadedAssetToDaoModel(uploadAssetData: UploadAssetData, uploadedAssetResponse: AssetResponse): AssetEntity
-    fun fromUserAssetToDaoModel(assetId: AssetId, mimeType: AssetType, dataPath: Path, dataSize: Long): AssetEntity
+    fun fromUserAssetToDaoModel(assetId: AssetId, dataPath: Path, dataSize: Long): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
@@ -40,9 +40,10 @@ class AssetMapperImpl(
     override fun toMetadataApiModel(uploadAssetMetadata: UploadAssetData, kaliumFileSystem: KaliumFileSystem): AssetMetadataRequest {
         val dataSource = kaliumFileSystem.source(uploadAssetMetadata.tempEncryptedDataPath)
         return AssetMetadataRequest(
-            uploadAssetMetadata.assetType.mimeType,
+            uploadAssetMetadata.assetType,
             uploadAssetMetadata.isPublic,
             AssetRetentionType.valueOf(uploadAssetMetadata.retentionType.name),
+            // TODO: pass the md5 to the mapper so we can return Either left in case of any error
             calcFileMd5(dataSource) ?: ""
         )
     }
@@ -54,18 +55,16 @@ class AssetMapperImpl(
         return AssetEntity(
             key = uploadedAssetResponse.key,
             domain = uploadedAssetResponse.domain,
-            mimeType = uploadAssetData.assetType.mimeType,
             dataPath = uploadAssetData.tempEncryptedDataPath.toString(),
             dataSize = uploadAssetData.dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()
         )
     }
 
-    override fun fromUserAssetToDaoModel(assetId: AssetId, assetType: AssetType, dataPath: Path, dataSize: Long): AssetEntity {
+    override fun fromUserAssetToDaoModel(assetId: AssetId, dataPath: Path, dataSize: Long): AssetEntity {
         return AssetEntity(
             key = assetId.value,
             domain = assetId.domain,
-            mimeType = assetType.mimeType,
             dataPath = dataPath.toString(),
             dataSize = dataSize,
             downloadedDate = Clock.System.now().toEpochMilliseconds()

@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -102,7 +103,7 @@ class AddMemberToConversationUseCaseTest {
         fun arrange() = this to addMemberUseCase
 
         companion object {
-            const val mlsGroupId = "mlsGroupId"
+            val mlsGroupId = GroupID("mlsGroupId")
             val proteusProtocolInfo = ProtocolInfo.Proteus
             val mlsProtocolInfo = ProtocolInfo.MLS(
                 mlsGroupId,

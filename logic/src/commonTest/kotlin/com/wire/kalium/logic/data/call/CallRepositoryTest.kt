@@ -939,6 +939,7 @@ class CallRepositoryTest {
                 isMuted = true,
                 isSpeaking = false,
                 isCameraOn = false,
+                isSharingScreen = false,
                 avatarAssetId = null
             )
         )
@@ -983,7 +984,8 @@ class CallRepositoryTest {
             isMuted = true,
             isSpeaking = false,
             isCameraOn = false,
-            avatarAssetId = null
+            avatarAssetId = null,
+            isSharingScreen = false
         )
         val participantsList = listOf(participant)
         val expectedParticipantsList = listOf(participant.copy(isSpeaking = true))

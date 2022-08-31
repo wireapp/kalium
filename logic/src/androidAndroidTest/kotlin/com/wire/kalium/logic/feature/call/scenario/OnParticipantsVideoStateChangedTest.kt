@@ -49,8 +49,12 @@ class OnParticipantsVideoStateChangedTest {
         given(videoStateChecker).invocation { isCameraOn(VideoStateCalling.STARTED) }
             .then { isCameraOn }
 
-        given(callRepository).invocation { updateParticipantCameraStateById(conversationIdString, userIdString, clientId, isCameraOn) }
-            .thenDoNothing()
+        given(videoStateChecker).invocation { isSharingScreen(VideoStateCalling.STARTED) }
+            .then { isSharingScreen }
+
+        given(callRepository).invocation {
+            updateParticipantCameraStateById(conversationIdString, userIdString, clientId, isCameraOn, isSharingScreen)
+        }.thenDoNothing()
 
         onParticipantsVideoStateChanged.onVideoReceiveStateChanged(conversationIdString, userIdString, clientId, videoStateInt, null)
 
@@ -69,9 +73,14 @@ class OnParticipantsVideoStateChangedTest {
             .with(eq(VideoStateCalling.STARTED))
             .wasInvoked(once)
 
+        verify(videoStateChecker)
+            .function(videoStateChecker::isSharingScreen)
+            .with(eq(VideoStateCalling.STARTED))
+            .wasInvoked(once)
+
         verify(callRepository)
             .function(callRepository::updateParticipantCameraStateById)
-            .with(eq(conversationIdString), eq(userIdString), eq(clientId), eq(isCameraOn))
+            .with(eq(conversationIdString), eq(userIdString), eq(clientId), eq(isCameraOn), eq(isSharingScreen))
             .wasInvoked(once)
     }
 
@@ -83,5 +92,6 @@ class OnParticipantsVideoStateChangedTest {
         const val clientId = "client-id"
         const val videoStateInt = 1
         const val isCameraOn = true
+        const val isSharingScreen = false
     }
 }
