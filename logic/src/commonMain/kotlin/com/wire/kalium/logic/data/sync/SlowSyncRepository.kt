@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.sync
 
-
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
