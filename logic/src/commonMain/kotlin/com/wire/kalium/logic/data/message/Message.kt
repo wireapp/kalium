@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -24,8 +25,25 @@ sealed class Message(
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         val senderClientId: ClientId,
-        val editStatus : EditStatus
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
+        val editStatus: EditStatus
+    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+        override fun toString(): String {
+            val message: String = when (content) {
+                is MessageContent.Text -> {
+                    "${id.obfuscateId()} ${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+                            "$date ${senderUserId.value.obfuscateId()} $status $visibility ${senderClientId.value.obfuscateId()}" +
+                            "$editStatus"
+                }
+
+                else -> {
+                    "${id.obfuscateId()} $content ${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+                            "$date ${senderUserId.value.obfuscateId()} $status $visibility ${senderClientId.value.obfuscateId()}" +
+                            "$editStatus"
+                }
+            }
+            return message
+        }
+    }
 
     data class System(
         override val id: String,
@@ -35,7 +53,12 @@ sealed class Message(
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
+    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+        override fun toString(): String {
+            return "${id.obfuscateId()} $content ${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+                    "$date ${senderUserId.value.obfuscateId()} $status $visibility"
+        }
+    }
 
     enum class Status {
         PENDING, SENT, READ, FAILED
@@ -43,7 +66,7 @@ sealed class Message(
 
     sealed class EditStatus {
         object NotEdited : EditStatus()
-        data class Edited (val lastTimeStamp : String) : EditStatus()
+        data class Edited(val lastTimeStamp: String) : EditStatus()
     }
 
     enum class DownloadStatus {
