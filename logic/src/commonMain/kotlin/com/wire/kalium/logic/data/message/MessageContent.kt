@@ -17,6 +17,7 @@ sealed class MessageContent {
         val value: String,
         val mentions: List<MessageMention> = listOf()
     ) : Regular()
+
     data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()
     data class DeleteMessage(val messageId: String) : Regular()
@@ -24,7 +25,8 @@ sealed class MessageContent {
         val editMessageId: String,
         val newContent: String,
         val newMentions: List<MessageMention> = listOf()
-        ) : Regular()
+    ) : Regular()
+
     data class RestrictedAsset(
         val mimeType: String,
         val sizeInBytes: Long,

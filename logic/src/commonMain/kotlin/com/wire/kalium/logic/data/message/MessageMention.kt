@@ -18,9 +18,7 @@ interface MessageMentionMapper {
     fun fromModelToProto(mention: MessageMention): Mention
 }
 
-class MessageMentionMapperImpl(
-    private val idMapper: IdMapper
-    ) : MessageMentionMapper {
+class MessageMentionMapperImpl(private val idMapper: IdMapper) : MessageMentionMapper {
 
     override fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention {
         return MessageMention(

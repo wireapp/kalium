@@ -11,7 +11,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -313,8 +312,9 @@ class ConversationDataSource(
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
         return observeConversationMembers(conversation.id)
-            .combine(userRepository.observeSelfUser())
-            { members, selfUser -> selfUser to members.firstOrNull { item -> item.id != selfUser.id } }
+            .combine(userRepository.observeSelfUser()) { members, selfUser ->
+                selfUser to members.firstOrNull { item -> item.id != selfUser.id }
+            }
             .flatMapLatest { (selfUser, otherMember) ->
                 val otherUserFlow = if (otherMember != null) userRepository.getKnownUser(otherMember.id) else flowOf(otherMember)
                 otherUserFlow

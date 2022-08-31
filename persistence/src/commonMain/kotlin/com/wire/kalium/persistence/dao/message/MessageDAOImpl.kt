@@ -325,8 +325,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     private fun SQLDelightMessage.toMessageEntityFlow() = when (this.content_type) {
         TEXT -> queries.selectMessageTextContent(this.id, this.conversation_id).asFlow().mapToOneOrNull()
-            .combine(queries.selectMessageMentions(this.id, this.conversation_id).asFlow().mapToList())
-            { content, mentions -> content?.let { mapper.toModel(content, mentions) } ?: defaultMessageEntityContent }
+            .combine(queries.selectMessageMentions(this.id, this.conversation_id).asFlow().mapToList()) { content, mentions ->
+                content?.let { mapper.toModel(content, mentions) } ?: defaultMessageEntityContent
+            }
         ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageAssetContent, mapper::toModel)
         KNOCK -> flowOf(MessageEntityContent.Knock(false))
         MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, mapper::toModel)

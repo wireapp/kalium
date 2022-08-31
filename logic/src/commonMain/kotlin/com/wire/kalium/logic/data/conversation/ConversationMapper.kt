@@ -36,6 +36,7 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+    @Suppress("LongParameterList")
     fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
