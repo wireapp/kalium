@@ -76,7 +76,9 @@ class MLSConversationDataSource(
                 ).first()
             }.flatMap { conversation ->
                 if (conversation.protocolInfo is ConversationEntity.ProtocolInfo.MLS) {
-                    val groupID = idMapper.fromGroupIDEntity((conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+                    val groupID = idMapper.fromGroupIDEntity(
+                        (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+                    )
                     Either.Right(
                         mlsClient.decryptMessage(
                             idMapper.toCryptoModel(groupID),
@@ -110,9 +112,11 @@ class MLSConversationDataSource(
             }
         }
 
-    override suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean> {
-        return mlsClientProvider.getMLSClient().flatMap { Either.Right(it.conversationExists(idMapper.toCryptoModel(groupID))) }
-    }
+    override suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean> =
+        mlsClientProvider.getMLSClient()
+            .flatMap {
+                Either.Right(it.conversationExists(idMapper.toCryptoModel(groupID)))
+            }
 
     override suspend fun establishMLSGroup(groupID: GroupID): Either<CoreFailure, Unit> =
         getConversationMembers(groupID).flatMap { members ->
@@ -123,7 +127,9 @@ class MLSConversationDataSource(
         kaliumLogger.d("Requesting to re-join MLS group $groupID with epoch $epoch")
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
-                mlsMessageApi.sendMessage(MLSMessageApi.Message(mlsClient.joinConversation(idMapper.toCryptoModel(groupID), epoch)))
+                mlsMessageApi.sendMessage(
+                    MLSMessageApi.Message(mlsClient.joinConversation(idMapper.toCryptoModel(groupID), epoch))
+                )
             }.onSuccess {
                 conversationDAO.updateConversationGroupState(
                     ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
@@ -141,11 +147,11 @@ class MLSConversationDataSource(
     override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             sendCommitBundle(groupID, mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))).flatMap {
-                    wrapStorageRequest {
-                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), Clock.System.now())
-                    }
+                wrapStorageRequest {
+                    conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), Clock.System.now())
                 }
             }
+        }
 
     private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
@@ -201,8 +207,8 @@ class MLSConversationDataSource(
                                 conversationDAO.insertMembers(list, idMapper.toGroupIDEntity(groupID))
                             }
                         }.flatMap {
-                        Either.Right(Unit)
-                    }
+                            Either.Right(Unit)
+                        }
                 } ?: run {
                     Either.Right(Unit)
                 }
