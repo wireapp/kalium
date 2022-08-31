@@ -30,8 +30,6 @@ interface KeyPackageRepository {
 
 }
 
-internal const val LAST_KEY_PACKAGE_COUNT_CHECK = "LAST_KEY_PACKAGE_COUNT_CHECK"
-
 class KeyPackageDataSource(
     private val clientRepository: ClientRepository,
     private val keyPackageApi: KeyPackageApi,
