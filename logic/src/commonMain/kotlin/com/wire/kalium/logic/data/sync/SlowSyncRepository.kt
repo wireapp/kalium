@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.data.sync
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.datetime.Instant
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 
 internal interface SlowSyncRepository {
     val lastFullSyncInstant: StateFlow<Instant?>

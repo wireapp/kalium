@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   gradle-run-tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: wirebot/cryptobox:1.1.1
     steps:
       - name: Checkout
@@ -31,7 +31,9 @@ jobs:
           ./gradlew jsTest
 
       - name: Install Pip for test result publishing
-        run: sudo apt-get install -y python3-pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
