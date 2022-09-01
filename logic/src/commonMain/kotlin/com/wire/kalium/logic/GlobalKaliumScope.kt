@@ -66,7 +66,6 @@ class GlobalKaliumScope(
             unboundNetworkContainer.serverConfigApi,
             globalDatabase.value.serverConfigurationDAO,
             unboundNetworkContainer.remoteVersion,
-            globalPreferences.value
         )
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences.value)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences.value)
