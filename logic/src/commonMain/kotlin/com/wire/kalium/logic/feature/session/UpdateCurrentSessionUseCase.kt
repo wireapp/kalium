@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
 class UpdateCurrentSessionUseCase internal constructor(private val sessionRepository: SessionRepository) {
-    suspend operator fun invoke(userId: UserId) =
+    suspend operator fun invoke(userId: UserId?) =
         sessionRepository.updateCurrentSession(userId).fold({ Result.Failure(it) }, { Result.Success })
 
     sealed class Result {

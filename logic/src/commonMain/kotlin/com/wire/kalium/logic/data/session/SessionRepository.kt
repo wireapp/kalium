@@ -17,9 +17,9 @@ import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.persistence.client.SessionStorage
 import com.wire.kalium.persistence.model.AuthSessionEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-
 @Suppress("TooManyFunctions")
 interface SessionRepository {
     fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit>
@@ -37,7 +37,7 @@ interface SessionRepository {
     fun allValidSessionsFlow(): Flow<List<AuthSession>>
     fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
     fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
-    fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
+    fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
     fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, AuthSession>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>>
@@ -121,10 +121,11 @@ internal class SessionDataSource(
             Either.Right(false)
         })
 
-    override fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit> =
-        idMapper.toDaoModel(userId).let { userIdEntity ->
-            wrapStorageRequest { sessionStorage.setCurrentSession(userIdEntity) }
-        }
+    override fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit> {
+        val userIdEntity: UserIDEntity? = userId?.let { idMapper.toDaoModel(it) }
+        return wrapStorageRequest { sessionStorage.setCurrentSession(userIdEntity) }
+    }
+
 
     override fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {

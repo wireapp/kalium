@@ -40,7 +40,7 @@ interface SessionStorage {
     /**
      * changes the current active user session
      */
-    fun setCurrentSession(userId: UserIDEntity)
+    fun setCurrentSession(userId: UserIDEntity?)
 
     /**
      * return all stored session as a userId to session map
@@ -113,7 +113,7 @@ class SessionStorageImpl(
         .onStart { emit(currentSession()) }
         .distinctUntilChanged()
 
-    override fun setCurrentSession(userId: UserIDEntity) =
+    override fun setCurrentSession(userId: UserIDEntity?) =
         kaliumPreferences.putSerializable(CURRENT_SESSION_KEY, userId, UserIDEntity.serializer())
             .also { sessionsUpdatedFlow.tryEmit(Unit) }
 
