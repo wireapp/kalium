@@ -34,10 +34,8 @@ class FederatedIdMapperImpl internal constructor(
         }
     }
 
-    private fun getCurrentDomain() = selfUserId.domain
-
     override suspend fun parseToFederatedId(qualifiedID: QualifiedID): String {
-        kaliumLogger.v("Parsing stringId: $qualifiedID | FederationEnabled? ${isFederationEnabled()} | Domain? ${getCurrentDomain()}")
+        kaliumLogger.v("Parsing stringId: $qualifiedID | FederationEnabled? ${isFederationEnabled()}")
         return if (isFederationEnabled() && qualifiedID.domain.isNotEmpty()) {
             qualifiedID.toString()
         } else {
@@ -47,7 +45,7 @@ class FederatedIdMapperImpl internal constructor(
 
     override suspend fun parseToFederatedId(qualifiedStringID: String): String {
         val parsedQualifiedID = qualifiedIdMapper.fromStringToQualifiedID(qualifiedStringID)
-        kaliumLogger.v("Parsing stringId: $parsedQualifiedID | FederationEnabled? ${isFederationEnabled()} | Domain? ${getCurrentDomain()}")
+        kaliumLogger.v("Parsing stringId: $parsedQualifiedID | FederationEnabled? ${isFederationEnabled()}")
         return if (isFederationEnabled() && parsedQualifiedID.domain.isNotEmpty()) {
             parsedQualifiedID.toString()
         } else {
