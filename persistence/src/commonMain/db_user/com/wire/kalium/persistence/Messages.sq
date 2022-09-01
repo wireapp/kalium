@@ -27,7 +27,7 @@ CREATE TABLE MessageMention (
 
       start INTEGER AS Int NOT NULL,
       length INTEGER AS Int NOT NULL,
-      user_id TEXT AS QualifiedIDEntity,
+      user_id TEXT AS QualifiedIDEntity NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id, start) -- there should not be any overlapping mentions

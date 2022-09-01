@@ -20,6 +20,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -299,12 +300,15 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun observeLastUnreadMessage(
         conversationID: QualifiedIDEntity
     ): Flow<MessageEntity?> = queries.getLastUnreadMessage(conversationID).asFlow().mapToOneOrNull().map { it?.toMessageEntity() }
+        .distinctUntilChanged()
 
     override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity): Flow<Long> =
         queries.getUnreadMessageCount(conversationId).asFlow().mapToOneOrDefault(0L)
+            .distinctUntilChanged()
 
     override suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Long> =
         queries.getUnreadMentionsCount(conversationId, userId).asFlow().mapToOneOrDefault(0L)
+            .distinctUntilChanged()
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT

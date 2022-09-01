@@ -1097,7 +1097,7 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAGroupConversationHasNotNewMessages_whenGettingConversationDetails_ThenDoNoGetMessageCount() = runTest {
+    fun givenAGroupConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() = runTest {
         // given
         val conversationEntityFlow = flowOf(
             TestConversation.ENTITY.copy(
@@ -1116,9 +1116,19 @@ class ConversationRepositoryTest {
             .thenReturn(false)
 
         given(messageDAO)
+            .suspendFunction(messageDAO::observeUnreadMessageCount)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(0))
+
+        given(messageDAO)
+            .suspendFunction(messageDAO::observeUnreadMentionsCount)
+            .whenInvokedWith(any(), any())
+            .thenReturn(flowOf(0))
+
+        given(messageDAO)
             .suspendFunction(messageDAO::observeLastUnreadMessage)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(TEST_MESSAGE_ENTITY))
+            .thenReturn(flowOf(null))
 
         given(userRepository)
             .coroutine { userRepository.observeSelfUser() }
@@ -1130,22 +1140,14 @@ class ConversationRepositoryTest {
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
+            assertTrue { conversationDetail.value.lastUnreadMessage == null }
 
             awaitComplete()
         }
-
-        verify(messageDAO)
-            .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .with(anything())
-            .wasNotInvoked()
-        verify(messageDAO)
-            .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .with(anything(), anything())
-            .wasNotInvoked()
     }
 
     @Test
-    fun givenAOneToOneConversationHasNotNewMessages_whenGettingConversationDetails_ThenDoNoGetMessageCount() = runTest {
+    fun givenAOneToOneConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() = runTest {
         // given
         val conversationEntityFlow = flowOf(
             TestConversation.ENTITY.copy(
@@ -1178,6 +1180,16 @@ class ConversationRepositoryTest {
             .thenReturn(flowOf(TestUser.OTHER))
 
         given(messageDAO)
+            .suspendFunction(messageDAO::observeUnreadMessageCount)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(0))
+
+        given(messageDAO)
+            .suspendFunction(messageDAO::observeUnreadMentionsCount)
+            .whenInvokedWith(any(), any())
+            .thenReturn(flowOf(0))
+
+        given(messageDAO)
             .suspendFunction(messageDAO::observeLastUnreadMessage)
             .whenInvokedWith(any())
             .thenReturn(flowOf(null))
@@ -1193,15 +1205,6 @@ class ConversationRepositoryTest {
 
             awaitComplete()
         }
-
-        verify(messageDAO)
-            .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .with(anything())
-            .wasNotInvoked()
-        verify(messageDAO)
-            .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .with(anything(), anything())
-            .wasNotInvoked()
     }
 
     @Test

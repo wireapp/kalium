@@ -4,17 +4,18 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Mention
+import com.wire.kalium.protobuf.messages.QualifiedUserId
 
 data class MessageMention(
     val start: Int,
     val length: Int,
-    val userId: UserId?
+    val userId: UserId
 )
 
 interface MessageMentionMapper {
     fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention
     fun fromModelToDao(mention: MessageMention): MessageEntity.Mention
-    fun fromProtoToModel(mention: Mention): MessageMention
+    fun fromProtoToModel(mention: Mention): MessageMention?
     fun fromModelToProto(mention: MessageMention): Mention
 }
 
@@ -24,7 +25,7 @@ class MessageMentionMapperImpl(private val idMapper: IdMapper) : MessageMentionM
         return MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = mention.userId?.let { idMapper.fromDaoModel(it) }
+            userId = idMapper.fromDaoModel(mention.userId)
         )
     }
 
@@ -32,19 +33,22 @@ class MessageMentionMapperImpl(private val idMapper: IdMapper) : MessageMentionM
         return MessageEntity.Mention(
             start = mention.start,
             length = mention.length,
-            userId = mention.userId?.let { idMapper.toDaoModel(it) }
+            userId = idMapper.toDaoModel(mention.userId)
         )
     }
 
-    override fun fromProtoToModel(mention: Mention): MessageMention = MessageMention(
-        start = mention.start,
-        length = mention.length,
-        userId = mention.qualifiedUserId?.let { idMapper.fromProtoUserId(it) }
-    )
+    override fun fromProtoToModel(mention: Mention): MessageMention? = mention.qualifiedUserId?.let { qualifiedUserId: QualifiedUserId ->
+        // for now we only support direct mentions which require userId https://github.com/wireapp/kalium/pull/857#discussion_r960302664
+        MessageMention(
+            start = mention.start,
+            length = mention.length,
+            userId = idMapper.fromProtoUserId(qualifiedUserId)
+        )
+    }
 
     override fun fromModelToProto(mention: MessageMention): Mention = Mention(
         start = mention.start,
         length = mention.length,
-        qualifiedUserId = mention.userId?.let { idMapper.toProtoUserId(it) }
+        qualifiedUserId = idMapper.toProtoUserId(mention.userId)
     )
 }

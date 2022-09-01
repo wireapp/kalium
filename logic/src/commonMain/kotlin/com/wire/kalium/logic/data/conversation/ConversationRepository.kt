@@ -288,6 +288,7 @@ class ConversationDataSource(
     private suspend fun observeLastUnreadMessage(conversation: Conversation): Flow<Message?> =
         messageDAO.observeLastUnreadMessage(idMapper.toDaoModel(conversation.id))
             .map { it?.let { messageMapper.fromEntityToMessage(it) } }
+            .distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getGroupConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
@@ -307,8 +308,8 @@ class ConversationDataSource(
                             lastUnreadMessage = lastUnreadMessage,
                         )
                     )
-                }.distinctUntilChanged()
-            }
+                }
+            }.distinctUntilChanged()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -345,10 +346,10 @@ class ConversationDataSource(
                                     lastUnreadMessage = lastUnreadMessage
                                 )
                             )
-                        }.distinctUntilChanged()
+                        }
                     }
                 )
-            }
+            }.distinctUntilChanged()
     }
 
     private suspend fun observeUnreadMessageCount(conversation: Conversation): Flow<Long> {

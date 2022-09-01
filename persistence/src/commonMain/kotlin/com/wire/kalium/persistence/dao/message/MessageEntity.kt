@@ -90,7 +90,7 @@ sealed class MessageEntity(
     data class Mention(
         val start: Int,
         val length: Int,
-        val userId: QualifiedIDEntity?
+        val userId: QualifiedIDEntity
     )
 }
 

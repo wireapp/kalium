@@ -104,7 +104,7 @@ class ProtoContentMapperImpl(
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(
                 protoContent.value.content,
-                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
+                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull()
             )
             is GenericMessage.Content.Asset -> {
                 // Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one
@@ -129,7 +129,7 @@ class ProtoContentMapperImpl(
                         MessageContent.TextEdited(
                             replacingMessageId,
                             editContent.value.content,
-                            editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
+                            editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull()
                         )
                     }
                     // TODO: for now we do not implement it
