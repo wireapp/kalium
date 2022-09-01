@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.sqldelight.Query
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrDefault
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessagesQueries
@@ -19,6 +20,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -29,6 +31,7 @@ import com.wire.kalium.persistence.MessageMemberChangeContent as SQLDelightMessa
 import com.wire.kalium.persistence.MessageMissedCallContent as SQLDelightMessageMissedCallContent
 import com.wire.kalium.persistence.MessageTextContent as SQLDelightMessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent as SQLDelightMessageUnknownContent
+import com.wire.kalium.persistence.MessageMention as SQLDelightMessageMention
 
 class MessageMapper {
     fun toModel(msg: SQLDelightMessage, content: MessageEntityContent): MessageEntity = when (content) {
@@ -55,7 +58,16 @@ class MessageMapper {
         )
     }
 
-    fun toModel(content: SQLDelightMessageTextContent) = MessageEntityContent.Text(content.text_body ?: "")
+    fun toModel(content: SQLDelightMessageTextContent, mentions: List<SQLDelightMessageMention>) = MessageEntityContent.Text(
+        messageBody = content.text_body ?: "",
+        mentions = mentions.map {
+            MessageEntity.Mention(
+                start = it.start,
+                length = it.length,
+                userId = it.user_id
+            )
+        }
+    )
 
     fun toModel(content: MessageRestrictedAssetContent) = MessageEntityContent.RestrictedAsset(
         content.asset_mime_type, content.asset_size, content.asset_name
@@ -134,11 +146,22 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 content_type = contentTypeOf(message.content)
             )
             when (val content = message.content) {
-                is MessageEntityContent.Text -> queries.insertMessageTextContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    text_body = content.messageBody
-                )
+                is MessageEntityContent.Text -> queries.transaction {
+                    queries.insertMessageTextContent(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        text_body = content.messageBody
+                    )
+                    content.mentions.forEach {
+                        queries.insertMessageMention(
+                            message_id = message.id,
+                            conversation_id = message.conversationId,
+                            start = it.start,
+                            length = it.length,
+                            user_id = it.userId
+                        )
+                    }
+                }
 
                 is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
                     message_id = message.id,
@@ -259,15 +282,33 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         messageId: String,
         newTextContent: MessageEntityContent.Text
     ) {
-        queries.updateMessageTextContent(newTextContent.messageBody, messageId, conversationId)
+        queries.transaction {
+            queries.updateMessageTextContent(newTextContent.messageBody, messageId, conversationId)
+            queries.deleteMessageMentions(messageId, conversationId)
+            newTextContent.mentions.forEach {
+                queries.insertMessageMention(
+                    message_id = messageId,
+                    conversation_id = conversationId,
+                    start = it.start,
+                    length = it.length,
+                    user_id = it.userId
+                )
+            }
+        }
     }
 
-    override suspend fun getLastUnreadMessage(
+    override suspend fun observeLastUnreadMessage(
         conversationID: QualifiedIDEntity
-    ): MessageEntity? = queries.getLastUnreadMessage(conversationID).executeAsOneOrNull()?.toMessageEntity()
+    ): Flow<MessageEntity?> = queries.getLastUnreadMessage(conversationID).asFlow().mapToOneOrNull().map { it?.toMessageEntity() }
+        .distinctUntilChanged()
 
-    override suspend fun getUnreadMessageCount(conversationId: QualifiedIDEntity): Long =
-        queries.getUnreadMessageCount(conversationId).executeAsOne()
+    override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity): Flow<Long> =
+        queries.getUnreadMessageCount(conversationId).asFlow().mapToOneOrDefault(0L)
+            .distinctUntilChanged()
+
+    override suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Long> =
+        queries.getUnreadMentionsCount(conversationId, userId).asFlow().mapToOneOrDefault(0L)
+            .distinctUntilChanged()
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
         is MessageEntityContent.Text -> TEXT
@@ -287,7 +328,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     }
 
     private fun SQLDelightMessage.toMessageEntityFlow() = when (this.content_type) {
-        TEXT -> this.queryOneOrDefaultFlow(queries::selectMessageTextContent, mapper::toModel)
+        TEXT -> queries.selectMessageTextContent(this.id, this.conversation_id).asFlow().mapToOneOrNull()
+            .combine(queries.selectMessageMentions(this.id, this.conversation_id).asFlow().mapToList()) { content, mentions ->
+                content?.let { mapper.toModel(content, mentions) } ?: defaultMessageEntityContent
+            }
         ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageAssetContent, mapper::toModel)
         KNOCK -> flowOf(MessageEntityContent.Knock(false))
         MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, mapper::toModel)
@@ -298,7 +342,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     }.map { mapper.toModel(this, it) }
 
     fun SQLDelightMessage.toMessageEntity() = when (this.content_type) {
-        TEXT -> this.queryOneOrDefault(queries::selectMessageTextContent, mapper::toModel)
+        TEXT -> queries.selectMessageTextContent(this.id, this.conversation_id).executeAsOneOrNull()
+            .let { it to queries.selectMessageMentions(this.id, this.conversation_id).executeAsList() }
+            .let { (content, mentions) -> content?.let { mapper.toModel(content, mentions) } ?: defaultMessageEntityContent }
         ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, mapper::toModel)
         KNOCK -> MessageEntityContent.Knock(false)
         MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, mapper::toModel)

@@ -36,11 +36,13 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+    @Suppress("LongParameterList")
     fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne
 }
@@ -152,6 +154,7 @@ internal class ConversationMapperImpl(
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
@@ -162,6 +165,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = LegalHoldStatus.DISABLED,
             userType = otherUser.userType,
             unreadMessagesCount = unreadMessageCount,
+            unreadMentionsCount = unreadMentionsCount,
             lastUnreadMessage = lastUnreadMessage
         )
     }
