@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.user.UserId
+import io.ktor.util.collections.ConcurrentMap
 
 interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope
@@ -8,12 +9,13 @@ interface UserSessionScopeProvider {
 }
 
 abstract class UserSessionScopeProviderCommon : UserSessionScopeProvider {
-    private val userScopeStorage: HashMap<UserId, UserSessionScope> by lazy {
-        hashMapOf()
+
+    private val userScopeStorage: ConcurrentMap<UserId, UserSessionScope> by lazy {
+        ConcurrentMap()
     }
 
     override fun get(userId: UserId): UserSessionScope =
-        userScopeStorage.getOrPut(userId) { create(userId) }
+        userScopeStorage.computeIfAbsent(userId) { create(userId) }
 
     override fun delete(userId: UserId) {
         userScopeStorage.remove(userId)
