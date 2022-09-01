@@ -38,6 +38,8 @@ import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
+import com.wire.kalium.logic.data.message.MessageMentionMapper
+import com.wire.kalium.logic.data.message.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SendMessageFailureMapper
@@ -86,6 +88,7 @@ internal object MapperProvider {
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
     fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper(), connectionMapper(), featureConfigMapper())
+    fun messageMentionMapper(): MessageMentionMapper = MessageMentionMapperImpl(idMapper())
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
