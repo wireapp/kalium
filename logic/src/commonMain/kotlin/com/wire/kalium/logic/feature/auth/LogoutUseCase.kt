@@ -38,7 +38,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         if (isHardLogout(reason)) {
             clearUserStorage()
         }
-        updateCurrentSession()
         clearInMemoryUserSession()
     }
 
@@ -51,12 +50,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     private fun clearInMemoryUserSession() {
         userSessionScopeProvider.delete(userId)
-    }
-
-    private fun updateCurrentSession() {
-        sessionRepository.allSessions().onSuccess {
-            sessionRepository.updateCurrentSession(it.first().session.userId)
-        }
     }
 
     private fun logout(reason: LogoutReason) =
