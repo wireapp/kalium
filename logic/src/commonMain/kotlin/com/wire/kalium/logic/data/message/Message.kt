@@ -30,15 +30,15 @@ sealed class Message(
         override fun toString(): String {
             val message: String = when (content) {
                 is MessageContent.Text -> {
-                    "${id.obfuscateId()} ${conversationId.value.obfuscateId()}@${conversationId.domain}" +
-                            "$date ${senderUserId.value.obfuscateId()} $status $visibility ${senderClientId.value.obfuscateId()}" +
-                            "$editStatus"
+                    "id: ${id.obfuscateId()} conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+                            "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
+                            "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
                 }
 
                 else -> {
-                    "${id.obfuscateId()} $content ${conversationId.value.obfuscateId()}@${conversationId.domain}" +
-                            "$date ${senderUserId.value.obfuscateId()} $status $visibility ${senderClientId.value.obfuscateId()}" +
-                            "$editStatus"
+                    "id:${id.obfuscateId()} content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+                            "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
+                            "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
                 }
             }
             return message
@@ -55,8 +55,8 @@ sealed class Message(
         override val visibility: Visibility = Visibility.VISIBLE
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
-            return "${id.obfuscateId()} $content ${conversationId.value.obfuscateId()}@${conversationId.domain}" +
-                    "$date ${senderUserId.value.obfuscateId()} $status $visibility"
+            return "id:${id.obfuscateId()} content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+                    "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility"
         }
     }
 

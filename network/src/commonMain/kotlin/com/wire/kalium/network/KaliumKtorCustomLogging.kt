@@ -244,7 +244,6 @@ public class KaliumKtorCustomLogging private constructor(
                     plugin.doneLogging()
                 }
             }
-
             ResponseObserver.install(ResponseObserver(observer), scope)
         }
     }
