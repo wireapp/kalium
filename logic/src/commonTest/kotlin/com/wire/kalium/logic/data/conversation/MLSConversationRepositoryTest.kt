@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
@@ -63,7 +64,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::createConversation)
-            .with(eq(Arrangement.GROUP_ID), anything())
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
         verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
@@ -74,7 +75,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::commitAccepted)
-            .with(eq(Arrangement.GROUP_ID))
+            .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
     }
 
@@ -96,7 +97,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
-            .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(Arrangement.GROUP_ID))
+            .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
     }
 
@@ -133,7 +134,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::addMember)
-            .with(eq(Arrangement.GROUP_ID), anything())
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
         verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
@@ -144,7 +145,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::commitAccepted)
-            .with(eq(Arrangement.GROUP_ID))
+            .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
 
         verify(arrangement.conversationDAO)
@@ -167,12 +168,12 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::joinConversation)
-            .with(eq(Arrangement.GROUP_ID), eq(Arrangement.EPOCH))
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.EPOCH))
             .wasInvoked(once)
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
-            .with(eq(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE), eq(Arrangement.GROUP_ID))
+            .with(eq(ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE), eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
     }
 
@@ -190,7 +191,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::commitPendingProposals)
-            .with(eq(Arrangement.GROUP_ID))
+            .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
     }
 
@@ -214,7 +215,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::commitAccepted)
-            .with(eq(Arrangement.GROUP_ID))
+            .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
     }
 
@@ -232,7 +233,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::clearProposalTimer)
-            .with(eq(Arrangement.GROUP_ID))
+            .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
     }
 
@@ -272,12 +273,12 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::removeMember)
-            .with(eq(Arrangement.GROUP_ID), anything())
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::deleteMembersByQualifiedID, fun2<List<QualifiedIDEntity>, String>())
-            .with(eq(users.map { arrangement.idMapper.toDaoModel(it) }), eq(Arrangement.GROUP_ID))
+            .with(eq(users.map { arrangement.idMapper.toDaoModel(it) }), eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
 
     }
@@ -377,7 +378,7 @@ class MLSConversationRepositoryTest {
             given(mlsClient)
                 .function(mlsClient::processWelcomeMessage)
                 .whenInvokedWith(anything())
-                .thenReturn(GROUP_ID)
+                .thenReturn(RAW_GROUP_ID)
         }
 
         fun withCommitAcceptedSuccessful() = apply {
@@ -459,7 +460,8 @@ class MLSConversationRepositoryTest {
 
         internal companion object {
             const val EPOCH = 5UL
-            const val GROUP_ID = "groupId"
+            const val RAW_GROUP_ID = "groupId"
+            val GROUP_ID = GroupID(RAW_GROUP_ID)
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", ""))
             val MEMBERS = listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))
             val KEY_PACKAGE = KeyPackageDTO(

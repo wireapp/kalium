@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class GetConversationClassifiedTypeUseCaseTest {
+class GetSecurityClassificationTypeUseCaseTest {
 
     @Test
     fun givenAConversationId_WhenNoClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest {
@@ -30,10 +30,10 @@ class GetConversationClassifiedTypeUseCaseTest {
             .withGettingClassifiedDomainsDisabled()
             .arrange()
 
-        val result: ClassifiedTypeResult = getConversationClassifiedType(TestConversation.ID)
+        val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
 
-        assertIs<ClassifiedTypeResult.Success>(result)
-        assertEquals(ClassifiedType.NONE, result.classifiedType)
+        assertIs<SecurityClassificationTypeResult.Success>(result)
+        assertEquals(SecurityClassificationType.NONE, result.classificationType)
     }
 
     @Test
@@ -44,10 +44,10 @@ class GetConversationClassifiedTypeUseCaseTest {
                 .withParticipantsResponseDomains(listOf("wire.com", "bella.com"))
                 .arrange()
 
-            val result: ClassifiedTypeResult = getConversationClassifiedType(TestConversation.ID)
+            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
 
-            assertIs<ClassifiedTypeResult.Success>(result)
-            assertEquals(ClassifiedType.CLASSIFIED, result.classifiedType)
+            assertIs<SecurityClassificationTypeResult.Success>(result)
+            assertEquals(SecurityClassificationType.CLASSIFIED, result.classificationType)
         }
 
     @Test
@@ -58,10 +58,10 @@ class GetConversationClassifiedTypeUseCaseTest {
                 .withParticipantsResponseDomains(listOf("anta.com", "bella.com"))
                 .arrange()
 
-            val result: ClassifiedTypeResult = getConversationClassifiedType(TestConversation.ID)
+            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
 
-            assertIs<ClassifiedTypeResult.Success>(result)
-            assertEquals(ClassifiedType.NOT_CLASSIFIED, result.classifiedType)
+            assertIs<SecurityClassificationTypeResult.Success>(result)
+            assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.classificationType)
         }
 
     @Test
@@ -72,9 +72,9 @@ class GetConversationClassifiedTypeUseCaseTest {
                 .withParticipantsResponseFails()
                 .arrange()
 
-            val result: ClassifiedTypeResult = getConversationClassifiedType(TestConversation.ID)
+            val result: SecurityClassificationTypeResult = getConversationClassifiedType(TestConversation.ID)
 
-            assertIs<ClassifiedTypeResult.Failure>(result)
+            assertIs<SecurityClassificationTypeResult.Failure>(result)
         }
 
     private class Arrangement {
@@ -84,7 +84,7 @@ class GetConversationClassifiedTypeUseCaseTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        private val getConversationClassifiedType = GetConversationClassifiedTypeUseCaseImpl(
+        private val getSecurityClassificationType = GetSecurityClassificationTypeUseCaseImpl(
             selfUserId, conversationRepository, userConfigRepository
         )
 
@@ -118,7 +118,7 @@ class GetConversationClassifiedTypeUseCaseTest {
 
         private fun stubUserIds(domains: List<String>) = domains.map { domain -> UserId(uuid4().toString(), domain) }
 
-        fun arrange() = this to getConversationClassifiedType
+        fun arrange() = this to getSecurityClassificationType
 
         companion object {
             val selfUserId = UserId("someValue", "wire.com")

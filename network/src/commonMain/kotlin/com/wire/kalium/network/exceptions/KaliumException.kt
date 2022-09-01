@@ -37,7 +37,11 @@ sealed class KaliumException() : Exception() {
     /**
      * http error 400 .. 499
      */
-    class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException()
+    class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException() {
+        override fun toString(): String {
+            return "InvalidRequestError(response = $errorResponse"
+        }
+    }
 
     /**
      * http error 500 .. 599

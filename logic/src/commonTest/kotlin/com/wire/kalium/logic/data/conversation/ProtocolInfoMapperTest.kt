@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.persistence.dao.ConversationEntity
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -40,7 +41,7 @@ class ProtocolInfoMapperTest {
 
     companion object {
         val CONVERSATION_MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
-            "GROUP_ID",
+            GroupID("GROUP_ID"),
             Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
             5UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
