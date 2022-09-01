@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.server.ApiVersionMapper
 import com.wire.kalium.logic.configuration.server.ApiVersionMapperImpl
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
@@ -51,12 +52,14 @@ import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.UserMapperImpl
 import com.wire.kalium.logic.data.user.UserRepository
@@ -102,8 +105,10 @@ internal object MapperProvider {
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
     fun qualifiedIdMapper(userRepository: UserRepository): QualifiedIdMapper = QualifiedIdMapperImpl(userRepository)
     fun federatedIdMapper(
-        userRepository: UserRepository,
+        userId: UserId,
         qualifiedIdMapper: QualifiedIdMapper,
-    ): FederatedIdMapper = FederatedIdMapperImpl(userRepository, qualifiedIdMapper)
+        sessionRepository: SessionRepository,
+        serverConfigRepository: ServerConfigRepository,
+    ): FederatedIdMapper = FederatedIdMapperImpl(userId, qualifiedIdMapper, sessionRepository, serverConfigRepository)
 
 }

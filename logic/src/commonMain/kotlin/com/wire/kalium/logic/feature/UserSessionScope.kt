@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -160,7 +161,7 @@ import kotlin.coroutines.CoroutineContext
 expect class UserSessionScope : UserSessionScopeCommon
 
 @Suppress("LongParameterList")
-abstract class UserSessionScopeCommon(
+abstract class UserSessionScopeCommon internal constructor(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository,
@@ -168,7 +169,8 @@ abstract class UserSessionScopeCommon(
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val serverConfigRepository: Lazy<ServerConfigRepository>
 ) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
@@ -431,7 +433,13 @@ abstract class UserSessionScopeCommon(
 
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
 
-    val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper)
+    val federatedIdMapper: FederatedIdMapper
+        get() = MapperProvider.federatedIdMapper(
+            userId,
+            qualifiedIdMapper,
+            sessionRepository,
+            serverConfigRepository.value
+        )
 
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
