@@ -79,7 +79,8 @@ actual class UserSessionScopeProviderImpl(
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
-            this
+            this,
+            lazy { globalScope.serverConfigRepository }
         )
     }
 }
