@@ -25,16 +25,13 @@ class FederatedIdMapperImpl internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
 ) : FederatedIdMapper {
 
-    private fun isFederationEnabled(): Boolean {
-        val isFederationEnabled = when (val session = sessionRepository.userSession(selfUserId)) {
-            is Either.Left -> false
-            is Either.Right -> {
-                serverConfigRepository.configByLinks(session.value.serverLinks).fold({ false }, { config ->
-                    config.metaData.federation
-                })
-            }
+    private fun isFederationEnabled() = when (val session = sessionRepository.userSession(selfUserId)) {
+        is Either.Left -> false
+        is Either.Right -> {
+            serverConfigRepository.configByLinks(session.value.serverLinks).fold({ false }, { config ->
+                config.metaData.federation
+            })
         }
-        return isFederationEnabled
     }
 
     private fun getCurrentDomain() = selfUserId.domain
