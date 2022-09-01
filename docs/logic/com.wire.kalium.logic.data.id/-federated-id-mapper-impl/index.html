@@ -31,49 +31,32 @@ if(savedDarkMode === true){
             <h1 class="cover"><span>Federated</span><wbr><span>Id</span><wbr><span>Mapper</span><wbr><span><span>Impl</span></span></h1>
             <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
               <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">FederatedIdMapperImpl</a><span class="token punctuation">(</span>userRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span>qualifiedIdMapper<span class="token operator">: </span><a href="../-qualified-id-mapper/index.html">QualifiedIdMapper</a><span class="token punctuation">, </span>kaliumPreferences<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.persistence.kmm_settings/KaliumPreferences///PointingToDeclaration/">KaliumPreferences</span><span class="token punctuation">)</span> : <a href="../-federated-id-mapper/index.html">FederatedIdMapper</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><p class="paragraph">Mapper that enables parsing <a href="../-qualified-i-d/index.html">QualifiedID</a> into a <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a> having in consideration federation.</p><p class="paragraph">In detail, if <a href="is-federation-enabled.html">isFederationEnabled</a> is true then the full qualified form will be used otherwise the plain value will be used</p></div>            </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">FederatedIdMapperImpl</a><span class="token punctuation">(</span>selfUserId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="token punctuation">, </span>qualifiedIdMapper<span class="token operator">: </span><a href="../-qualified-id-mapper/index.html">QualifiedIdMapper</a><span class="token punctuation">, </span>sessionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.session/-session-repository/index.html">SessionRepository</a><span class="token punctuation">, </span>serverConfigRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration.server/-server-config-repository/index.html">ServerConfigRepository</a><span class="token punctuation">)</span> : <a href="../-federated-id-mapper/index.html">FederatedIdMapper</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><p class="paragraph">Mapper that enables parsing <a href="../-qualified-i-d/index.html">QualifiedID</a> into a <a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a> having in consideration federation.</p><p class="paragraph">In detail, if <a href="is-federation-enabled.html">isFederationEnabled</a> is true then the full qualified form will be used otherwise the plain value will be used</p></div>            </div>
           </div>
           <div class="tabbedcontent">
             <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Functions">Functions</button><button class="section-tab" data-togglable="Properties">Properties</button></div>
             <div class="tabs-section-body">
               <h2 class="tabbedcontent">Constructors</h2>
-              <div class="table" data-togglable="Constructors"><a data-name="643123866%2FConstructors%2F867774983" anchor-label="FederatedIdMapperImpl" id="643123866%2FConstructors%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+              <div class="table" data-togglable="Constructors"><a data-name="-997990579%2FConstructors%2F867774983" anchor-label="FederatedIdMapperImpl" id="-997990579%2FConstructors%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue TabbedContent">
                     <div class=""><span class="inline-flex">
                         <div><a href="-federated-id-mapper-impl.html"><span>Federated</span><wbr><span>Id</span><wbr><span>Mapper</span><wbr><span><span>Impl</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="643123866%2FConstructors%2F867774983"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-997990579%2FConstructors%2F867774983"></span>
                           <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                         </span></span></div>
                     <div>
                       <div class="title">
                         <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                           <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="-federated-id-mapper-impl.html"><span class="token function">FederatedIdMapperImpl</span></a><span class="token punctuation">(</span>userRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span>qualifiedIdMapper<span class="token operator">: </span><a href="../-qualified-id-mapper/index.html">QualifiedIdMapper</a><span class="token punctuation">, </span>kaliumPreferences<span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.persistence.kmm_settings/KaliumPreferences///PointingToDeclaration/">KaliumPreferences</span><span class="token punctuation">)</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="-federated-id-mapper-impl.html"><span class="token function">FederatedIdMapperImpl</span></a><span class="token punctuation">(</span>selfUserId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="token punctuation">, </span>qualifiedIdMapper<span class="token operator">: </span><a href="../-qualified-id-mapper/index.html">QualifiedIdMapper</a><span class="token punctuation">, </span>sessionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.session/-session-repository/index.html">SessionRepository</a><span class="token punctuation">, </span>serverConfigRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration.server/-server-config-repository/index.html">ServerConfigRepository</a><span class="token punctuation">)</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
               <h2 class="">Functions</h2>
-              <div class="table" data-togglable="Functions"><a data-name="-264342208%2FFunctions%2F867774983" anchor-label="getCurrentDomain" id="-264342208%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="get-current-domain.html"><span>get</span><wbr><span>Current</span><wbr><span><span>Domain</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-264342208%2FFunctions%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="get-current-domain.html"><span class="token function">getCurrentDomain</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="-1029339137%2FFunctions%2F867774983" anchor-label="isFederationEnabled" id="-1029339137%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+              <div class="table" data-togglable="Functions"><a data-name="-1029339137%2FFunctions%2F867774983" anchor-label="isFederationEnabled" id="-1029339137%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
                     <div class=""><span class="inline-flex">
@@ -102,31 +85,14 @@ if(savedDarkMode === true){
                       <div class="title">
                         <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
                           <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="parse-to-federated-id.html"><span class="token function">parseToFederatedId</span></a><span class="token punctuation">(</span>qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d/index.html">QualifiedID</a><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">override </span><span class="token keyword">fun </span><a href="parse-to-federated-id.html"><span class="token function">parseToFederatedId</span></a><span class="token punctuation">(</span>qualifiedStringID<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="parse-to-federated-id.html"><span class="token function">parseToFederatedId</span></a><span class="token punctuation">(</span>qualifiedID<span class="token operator">: </span><a href="../-qualified-i-d/index.html">QualifiedID</a><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><div class="symbol monospace"><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="parse-to-federated-id.html"><span class="token function">parseToFederatedId</span></a><span class="token punctuation">(</span>qualifiedStringID<span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html">String</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
               <h2 class="">Properties</h2>
-              <div class="table" data-togglable="Properties"><a data-name="326872902%2FProperties%2F867774983" anchor-label="kaliumPreferences" id="326872902%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-                  <div class="main-subrow keyValue ">
-                    <div class=""><span class="inline-flex">
-                        <div><a href="kalium-preferences.html">kaliumPreferences</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="326872902%2FProperties%2F867774983"></span>
-                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                        </span></span></div>
-                    <div>
-                      <div class="title">
-                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
-                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="326872902%2FProperties%2F867774983" anchor-label="kaliumPreferences" id="326872902%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="kalium-preferences.html">kaliumPreferences</a><span class="token operator">: </span><span data-unresolved-link="com.wire.kalium.persistence.kmm_settings/KaliumPreferences///PointingToDeclaration/">KaliumPreferences</span><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-<a data-name="1561878651%2FProperties%2F867774983" anchor-label="qualifiedIdMapper" id="1561878651%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+              <div class="table" data-togglable="Properties"><a data-name="1561878651%2FProperties%2F867774983" anchor-label="qualifiedIdMapper" id="1561878651%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
                     <div class=""><span class="inline-flex">
@@ -143,19 +109,53 @@ if(savedDarkMode === true){
                     </div>
                   </div>
                 </div>
-<a data-name="1939629554%2FProperties%2F867774983" anchor-label="userRepository" id="1939629554%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-1319761323%2FProperties%2F867774983" anchor-label="selfUserId" id="-1319761323%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
                 <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
                   <div class="main-subrow keyValue ">
                     <div class=""><span class="inline-flex">
-                        <div><a href="user-repository.html">userRepository</a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1939629554%2FProperties%2F867774983"></span>
+                        <div><a href="self-user-id.html">selfUserId</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1319761323%2FProperties%2F867774983"></span>
                           <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                         </span></span></div>
                     <div>
                       <div class="title">
                         <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
                           <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
-<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="1939629554%2FProperties%2F867774983" anchor-label="userRepository" id="1939629554%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="user-repository.html">userRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1319761323%2FProperties%2F867774983" anchor-label="selfUserId" id="-1319761323%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="self-user-id.html">selfUserId</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="-1565249256%2FProperties%2F867774983" anchor-label="serverConfigRepository" id="-1565249256%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex">
+                        <div><a href="server-config-repository.html">serverConfigRepository</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1565249256%2FProperties%2F867774983"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
+                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1565249256%2FProperties%2F867774983" anchor-label="serverConfigRepository" id="-1565249256%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="server-config-repository.html">serverConfigRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration.server/-server-config-repository/index.html">ServerConfigRepository</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+<a data-name="-1567685901%2FProperties%2F867774983" anchor-label="sessionRepository" id="-1567685901%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+                <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+                  <div class="main-subrow keyValue ">
+                    <div class=""><span class="inline-flex">
+                        <div><a href="session-repository.html">sessionRepository</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1567685901%2FProperties%2F867774983"></span>
+                          <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                        </span></span></div>
+                    <div>
+                      <div class="title">
+                        <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted" data-togglable="Properties">
+                          <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark common-like" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button></div>
+<div class="content sourceset-depenent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1567685901%2FProperties%2F867774983" anchor-label="sessionRepository" id="-1567685901%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword">private </span><span class="token keyword"></span><span class="token keyword">val </span><a href="session-repository.html">sessionRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.session/-session-repository/index.html">SessionRepository</a><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div></div>                        </div>
                       </div>
                     </div>
                   </div>
