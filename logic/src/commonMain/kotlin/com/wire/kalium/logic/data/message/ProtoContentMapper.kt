@@ -88,7 +88,7 @@ class ProtoContentMapperImpl(
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
         val protobufModel = genericMessage.content
         when (protobufModel) {
-            is GenericMessage.Content.Text -> {
+            is GenericMessage.Content.Text, is GenericMessage.Content.Edited -> {
                 val textToLog = GenericMessage(genericMessage.messageId.obfuscateId())
                 kaliumLogger.d("Received message $textToLog")
             }

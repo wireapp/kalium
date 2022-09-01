@@ -29,7 +29,7 @@ sealed class Message(
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
             val message: String = when (content) {
-                is MessageContent.Text -> {
+                is MessageContent.Text, is MessageContent.TextEdited -> {
                     "id: ${id.obfuscateId()} conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
                             "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
                             "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
