@@ -8,8 +8,8 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
 interface FederatedIdMapper {
-    fun parseToFederatedId(qualifiedID: QualifiedID): String
-    fun parseToFederatedId(qualifiedStringID: String): String
+    suspend fun parseToFederatedId(qualifiedID: QualifiedID): String
+    suspend fun parseToFederatedId(qualifiedStringID: String): String
 }
 
 /**
@@ -36,7 +36,7 @@ class FederatedIdMapperImpl internal constructor(
 
     private fun getCurrentDomain() = selfUserId.domain
 
-    override fun parseToFederatedId(qualifiedID: QualifiedID): String {
+    override suspend fun parseToFederatedId(qualifiedID: QualifiedID): String {
         kaliumLogger.v("Parsing stringId: $qualifiedID | FederationEnabled? ${isFederationEnabled()} | Domain? ${getCurrentDomain()}")
         return if (isFederationEnabled() && qualifiedID.domain.isNotEmpty()) {
             qualifiedID.toString()
@@ -45,7 +45,7 @@ class FederatedIdMapperImpl internal constructor(
         }
     }
 
-    override fun parseToFederatedId(qualifiedStringID: String): String {
+    override suspend fun parseToFederatedId(qualifiedStringID: String): String {
         val parsedQualifiedID = qualifiedIdMapper.fromStringToQualifiedID(qualifiedStringID)
         kaliumLogger.v("Parsing stringId: $parsedQualifiedID | FederationEnabled? ${isFederationEnabled()} | Domain? ${getCurrentDomain()}")
         return if (isFederationEnabled() && parsedQualifiedID.domain.isNotEmpty()) {
