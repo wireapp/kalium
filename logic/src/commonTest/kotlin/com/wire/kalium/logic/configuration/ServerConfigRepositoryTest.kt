@@ -145,7 +145,6 @@ class ServerConfigRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenStoredConfig_whenAddingTheSameOneWithNewApiVersionParams_thenStoredOneShouldBeUpdatedAndReturned() {
         val (arrangement, repository) = Arrangement()
