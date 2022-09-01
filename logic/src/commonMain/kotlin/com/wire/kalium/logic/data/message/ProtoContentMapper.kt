@@ -85,7 +85,7 @@ class ProtoContentMapperImpl(
         )
 
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
-        var genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
+        val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
         val protobufModel = genericMessage.content
         when (protobufModel) {
             is GenericMessage.Content.Text -> {
@@ -94,10 +94,11 @@ class ProtoContentMapperImpl(
             }
 
             else -> {
-                genericMessage = genericMessage.copy(
-                    messageId = genericMessage.messageId.obfuscateId()
+                var messageToLog = genericMessage
+                messageToLog = messageToLog.copy(
+                    messageId = messageToLog.messageId.obfuscateId()
                 )
-                kaliumLogger.d("Received message $genericMessage")
+                kaliumLogger.d("Received message $messageToLog")
             }
         }
 

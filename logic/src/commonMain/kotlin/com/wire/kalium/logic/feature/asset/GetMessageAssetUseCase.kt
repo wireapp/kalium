@@ -58,7 +58,7 @@ internal class GetMessageAssetUseCaseImpl(
             }
             assetDataSource.fetchPrivateDecodedAsset(
                 assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
-                assetName= assetMetadata.assetName,
+                assetName = assetMetadata.assetName,
                 assetToken = assetMetadata.assetToken,
                 encryptionKey = assetMetadata.encryptionKey
             ).fold({

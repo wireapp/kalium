@@ -36,7 +36,8 @@ sealed class Message(
                 }
 
                 else -> {
-                    "id:${id.obfuscateId()} content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+                    "id:${id.obfuscateId()} content:$content " +
+                            "conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
                             "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
                             "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
                 }
