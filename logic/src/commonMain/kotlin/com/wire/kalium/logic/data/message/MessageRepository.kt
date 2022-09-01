@@ -84,8 +84,7 @@ interface MessageRepository {
 
     suspend fun updateTextMessageContent(
         conversationId: ConversationId,
-        messageId: String,
-        newTextContent: String
+        messageContent: MessageContent.TextEdited
     ): Either<CoreFailure, Unit>
 
     suspend fun updateMessageId(
@@ -105,7 +104,8 @@ class MessageDataSource(
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
-    private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper()
+    private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(),
 ) : MessageRepository {
 
     override suspend fun getMessagesByConversationIdAndVisibility(
@@ -244,18 +244,20 @@ class MessageDataSource(
 
     override suspend fun updateTextMessageContent(
         conversationId: ConversationId,
-        messageId: String,
-        newTextContent: String
+        messageContent: MessageContent.TextEdited
     ): Either<CoreFailure, Unit> {
-        val messageToUpdate = getMessageById(conversationId, messageId)
+        val messageToUpdate = getMessageById(conversationId, messageContent.editMessageId)
 
         return messageToUpdate.flatMap { message ->
             wrapStorageRequest {
                 if (message.content is MessageContent.Text) {
                     messageDAO.updateTextMessageContent(
                         idMapper.toDaoModel(conversationId),
-                        messageId,
-                        MessageEntityContent.Text(newTextContent)
+                        messageContent.editMessageId,
+                        MessageEntityContent.Text(
+                            messageContent.newContent,
+                            messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
+                        )
                     )
                 } else {
                     throw IllegalStateException("Text message can only be updated on message having TextMessageContent set as content")

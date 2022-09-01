@@ -489,11 +489,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertMessages(message)
 
-        // when
-        val result = messageDAO.getUnreadMessageCount(conversationId)
-
-        // then
-        assertEquals(9L, result)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            // when
+            messageDAO.observeUnreadMessageCount(conversationId).test {
+                // then
+                assertEquals(9L, awaitItem())
+            }
+        }
     }
 
     @Test
@@ -525,11 +527,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertMessages(message)
 
-        // when
-        val result = messageDAO.getUnreadMessageCount(conversationId)
-
-        // then
-        assertEquals(0L, result)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            // when
+            messageDAO.observeUnreadMessageCount(conversationId).test {
+                // then
+                assertEquals(0L, awaitItem())
+            }
+        }
     }
 
     @Test
@@ -602,7 +606,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.setProposalTimer(proposalTimer2)
 
         // then
-         assertEquals(listOf(proposalTimer2), conversationDAO.getProposalTimers().first())
+        assertEquals(listOf(proposalTimer2), conversationDAO.getProposalTimers().first())
     }
 
     @Test
