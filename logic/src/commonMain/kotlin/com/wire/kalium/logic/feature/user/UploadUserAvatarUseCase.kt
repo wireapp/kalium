@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.ImageAsset
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.flatMap
@@ -26,7 +25,7 @@ internal class UploadUserAvatarUseCaseImpl(
 ) : UploadUserAvatarUseCase {
 
     override suspend operator fun invoke(imageDataPath: Path, imageDataSize: Long): UploadAvatarResult {
-        return assetDataSource.uploadAndPersistPublicAsset(ImageAsset.JPEG, imageDataPath, imageDataSize).flatMap { asset ->
+        return assetDataSource.uploadAndPersistPublicAsset("image/jpg", imageDataPath, imageDataSize).flatMap { asset ->
             userDataSource.updateSelfUser(newAssetId = asset.key)
         }.fold({
             UploadAvatarResult.Failure(it)

@@ -12,8 +12,7 @@ class MessageTextEditHandler(private val messageRepository: MessageRepository) {
         messageContent: MessageContent.TextEdited
     ) = messageRepository.updateTextMessageContent(
         conversationId = message.conversationId,
-        messageId = messageContent.editMessageId,
-        newTextContent = messageContent.newContent
+        messageContent = messageContent
     ).flatMap {
         messageRepository.markMessageAsEdited(
             messageUuid = messageContent.editMessageId,
