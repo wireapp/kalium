@@ -43,6 +43,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -306,7 +307,7 @@ class ConversationDataSource(
                             lastUnreadMessage = lastUnreadMessage,
                         )
                     )
-                }
+                }.distinctUntilChanged()
             }
     }
 
@@ -344,14 +345,14 @@ class ConversationDataSource(
                                     lastUnreadMessage = lastUnreadMessage
                                 )
                             )
-                        }
+                        }.distinctUntilChanged()
                     }
                 )
             }
     }
 
     private suspend fun observeUnreadMessageCount(conversation: Conversation): Flow<Long> {
-        return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
+        return if (conversation.supportsUnreadMessageCount) {
             messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
             flowOf(0L)
@@ -359,7 +360,7 @@ class ConversationDataSource(
     }
 
     private suspend fun observeUnreadMentionsCount(conversation: Conversation, userId: UserId): Flow<Long> {
-        return if (conversation.supportsUnreadMessageCount && hasNewMessages(conversation)) {
+        return if (conversation.supportsUnreadMessageCount) {
             messageDAO.observeUnreadMentionsCount(idMapper.toDaoModel(conversation.id), idMapper.toDaoModel(userId))
         } else {
             flowOf(0L)
