@@ -19,6 +19,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
@@ -251,7 +252,7 @@ class MLSConversationDataSource(
                     CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
                 }
             }
-            mlsClientProvider.getMLSClient().flatMap { client ->
+            return mlsClientProvider.getMLSClient().flatMap { client ->
                 client.removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs).let { bundle ->
                     sendCommitBundle(groupID, bundle).flatMap {
                         wrapStorageRequest {
@@ -328,10 +329,17 @@ class MLSConversationDataSource(
 
                 syncManager.waitUntilLiveOrFailure().flatMap {
                     internalCommitPendingProposals(groupID).flatMapLeft { handleMlsFailure(it, groupID, retryOperation) }
+                }.onFailure {
+                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                        kaliumLogger.e("Commit failed while waiting for sync to start")
+
+                        mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+                        Either.Left(failure)
+                    }
                 }
             }
             else -> {
-                kaliumLogger.w("Commit failed permanently: $failure")
+                kaliumLogger.e("Commit failed permanently: $failure")
 
                 mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                     mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
