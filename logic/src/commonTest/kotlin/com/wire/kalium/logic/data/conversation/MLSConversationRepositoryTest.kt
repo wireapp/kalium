@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
@@ -31,6 +32,7 @@ import io.mockative.Mock
 import io.mockative.anyInstanceOf
 import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.configure
 import io.mockative.eq
 import io.mockative.fun2
 import io.mockative.given
@@ -304,6 +306,9 @@ class MLSConversationRepositoryTest {
         @Mock
         val mlsClient = mock(classOf<MLSClient>())
 
+        @Mock
+        val syncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
+
         fun withGetConversationByGroupIdSuccessful() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationByGroupID)
@@ -455,7 +460,8 @@ class MLSConversationRepositoryTest {
             mlsClientProvider,
             mlsMessageApi,
             conversationDAO,
-            clientApi
+            clientApi,
+            syncManager
         )
 
         internal companion object {

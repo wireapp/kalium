@@ -4,6 +4,8 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.MlsFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
@@ -15,13 +17,19 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isMlsClientMismatch
+import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences
+import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
@@ -62,6 +70,7 @@ class MLSConversationDataSource(
     private val mlsMessageApi: MLSMessageApi,
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
+    private val syncManager: SyncManager,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : MLSConversationRepository {
@@ -145,6 +154,11 @@ class MLSConversationDataSource(
         }
 
     override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> =
+        executeOperation(groupID) {
+            internalUpdateKeyingMaterial(groupID)
+        }
+
+    private suspend fun internalUpdateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             sendCommitBundle(groupID, mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))).flatMap {
                 wrapStorageRequest {
@@ -169,6 +183,11 @@ class MLSConversationDataSource(
     }
 
     override suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> =
+        executeOperation(groupID) {
+            internalCommitPendingProposals(groupID)
+        }
+
+    private suspend fun internalCommitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient()
             .flatMap { mlsClient ->
                 sendCommitBundle(groupID, mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))).flatMap {
@@ -187,6 +206,11 @@ class MLSConversationDataSource(
     }
 
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
+        executeOperation(groupID) {
+            internalAddMemberToMLSGroup(groupID, userIdList)
+        }
+
+    private suspend fun internalAddMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         // TODO: check for federated and non-federated members
         keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
             mlsClientProvider.getMLSClient().flatMap { client ->
@@ -215,10 +239,12 @@ class MLSConversationDataSource(
             }
         }
 
-    override suspend fun removeMembersFromMLSGroup(
-        groupID: GroupID,
-        userIdList: List<UserId>
-    ): Either<CoreFailure, Unit> =
+    override suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
+        executeOperation(groupID) {
+            internalRemoveMembersFromMLSGroup(groupID, userIdList)
+        }
+
+    private suspend fun internalRemoveMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
             val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
                 userClients.value.map { userClient ->
@@ -275,6 +301,60 @@ class MLSConversationDataSource(
             conversationDAO.getConversationByGroupID(idMapper.toGroupIDEntity(groupID))
                 .first()?.id ?: return Either.Left(StorageFailure.DataNotFound)
         conversationDAO.getAllMembers(conversationID).first().map { idMapper.fromDaoModel(it.user) }
+    }
+
+    private suspend fun executeOperation(groupID: GroupID, operation: suspend () -> Either<CoreFailure, Unit>) =
+        operation()
+            .flatMapLeft {
+                handleMlsFailure(it, groupID, operation)
+            }
+
+    private suspend fun handleMlsFailure(
+        failure: CoreFailure,
+        groupID: GroupID,
+        retryOperation: suspend () -> Either<CoreFailure, Unit>
+    ): Either<CoreFailure, Unit> {
+        return when (mapToMlsFailure(failure)) {
+            is MlsFailure.ClientMismatch -> {
+                kaliumLogger.w("Client list was out of date when adding members, re-trying")
+
+                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                    mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+                    retryOperation().flatMapLeft { handleMlsFailure(it, groupID, retryOperation) }
+                }
+            }
+            is MlsFailure.StaleMessage, is MlsFailure.CommitMissingReferences -> {
+                kaliumLogger.w("Commit was made for outdated epoch or didn't include all pending proposals, re-trying")
+
+                syncManager.waitUntilLiveOrFailure().flatMap {
+                    internalCommitPendingProposals(groupID).flatMapLeft { handleMlsFailure(it, groupID, retryOperation) }
+                }
+            }
+            else -> {
+                kaliumLogger.w("Commit failed permanently: $failure")
+
+                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                    mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+                    Either.Left(failure)
+                }
+            }
+        }
+    }
+
+    private fun mapToMlsFailure(failure: CoreFailure): MlsFailure {
+        return if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
+            if (failure.kaliumException.isMlsClientMismatch()) {
+                MlsFailure.ClientMismatch()
+            } else if (failure.kaliumException.isMlsStaleMessage()) {
+                MlsFailure.StaleMessage()
+            } else if (failure.kaliumException.isMlsCommitMissingReferences()) {
+                MlsFailure.CommitMissingReferences()
+            } else {
+                MlsFailure.Unknown()
+            }
+        } else {
+            MlsFailure.Unknown()
+        }
     }
 
 }
