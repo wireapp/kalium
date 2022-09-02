@@ -307,10 +307,10 @@ class MLSConversationDataSource(
     private suspend fun executeOperation(groupID: GroupID, operation: suspend () -> Either<CoreFailure, Unit>) =
         operation()
             .flatMapLeft {
-                handleMlsFailure(it, groupID, operation)
+                handleCommitFailure(it, groupID, operation)
             }
 
-    private suspend fun handleMlsFailure(
+    private suspend fun handleCommitFailure(
         failure: CoreFailure,
         groupID: GroupID,
         retryOperation: suspend () -> Either<CoreFailure, Unit>
@@ -321,14 +321,14 @@ class MLSConversationDataSource(
 
                 mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                     mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
-                    retryOperation().flatMapLeft { handleMlsFailure(it, groupID, retryOperation) }
+                    retryOperation().flatMapLeft { handleCommitFailure(it, groupID, retryOperation) }
                 }
             }
             is MlsFailure.StaleMessage, is MlsFailure.CommitMissingReferences -> {
                 kaliumLogger.w("Commit was made for outdated epoch or didn't include all pending proposals, re-trying")
 
                 syncManager.waitUntilLiveOrFailure().flatMap {
-                    internalCommitPendingProposals(groupID).flatMapLeft { handleMlsFailure(it, groupID, retryOperation) }
+                    internalCommitPendingProposals(groupID).flatMapLeft { handleCommitFailure(it, groupID, retryOperation) }
                 }.onFailure {
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                         kaliumLogger.e("Commit failed while waiting for sync to start")
