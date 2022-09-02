@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
-import com.wire.kalium.logic.data.client.OtherUserClients
+import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -23,7 +23,7 @@ class GetOtherUserClientsUseCaseTest {
         // Given
         val userId = UserId("123", "wire.com")
         val otherUserClients = listOf(
-            OtherUserClients(DeviceType.Phone, "111"), OtherUserClients(DeviceType.Desktop, "2222")
+            OtherUserClient(DeviceType.Phone, "111"), OtherUserClient(DeviceType.Desktop, "2222")
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
             .withSuccessfulResponse(otherUserClients)
@@ -65,7 +65,7 @@ class GetOtherUserClientsUseCaseTest {
 
         val getOtherUserClientsUseCaseImpl = GetOtherUserClientsUseCaseImpl(clientRepository)
 
-        fun withSuccessfulResponse(expectedResponse: List<OtherUserClients>): Arrangement {
+        fun withSuccessfulResponse(expectedResponse: List<OtherUserClient>): Arrangement {
             given(clientRepository)
                 .suspendFunction(clientRepository::getClientsByUserId).whenInvokedWith(any())
                 .thenReturn(Either.Right(expectedResponse))

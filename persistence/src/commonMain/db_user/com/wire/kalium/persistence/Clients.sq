@@ -18,10 +18,8 @@ deleteClientsOfUser:
 DELETE FROM Client WHERE user_id = ?;
 
 insertClient:
-INSERT INTO Client(user_id, id,device_type)
-VALUES(?, ?,?)
-ON CONFLICT(id, user_id) DO UPDATE SET
-device_type = excluded.device_type;
+INSERT OR IGNORE INTO Client(user_id, id,device_type)
+VALUES(?, ?,?);
 
 selectAllClients:
 SELECT * FROM Client;

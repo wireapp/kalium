@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.OtherUserClients
+import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
@@ -25,7 +25,7 @@ internal class GetOtherUserClientsUseCaseImpl(
 }
 
 sealed class GetOtherUserClientsResult {
-    class Success(val otherUserClients: List<OtherUserClients>) : GetOtherUserClientsResult()
+    class Success(val otherUserClients: List<OtherUserClient>) : GetOtherUserClientsResult()
 
     sealed class Failure : GetOtherUserClientsResult() {
         object UserNotFound : Failure()

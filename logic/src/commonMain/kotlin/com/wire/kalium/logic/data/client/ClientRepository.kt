@@ -30,10 +30,12 @@ interface ClientRepository {
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
-    suspend fun saveNewClients(userId: UserId, clients: List<ClientId>, deviceType: List<DeviceType>?): Either<CoreFailure, Unit>
+    suspend fun saveNewClients(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit>
+    suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit>
+
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
-    suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClients>>
+    suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
 }
 
 class ClientDataSource(
@@ -81,9 +83,16 @@ class ClientDataSource(
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> =
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
 
-    override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>, deviceType: List<DeviceType>?): Either<CoreFailure, Unit> =
+    override suspend fun saveNewClients(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
-            clients.map { ClientEntity(userEntity, it.value, deviceType?.get(clients.indexOf(it))?.name) }.let { clientEntityList ->
+            clients.map { ClientEntity(userEntity, it.value, null) }.let { clientEntityList ->
+                wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
+            }
+        }
+
+    override suspend fun saveNewClients(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit> =
+        userMapper.toUserIdPersistence(userId).let { userEntity ->
+            clients.map { ClientEntity(userEntity, it.id, it.deviceType.name) }.let { clientEntityList ->
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
         }
@@ -91,7 +100,7 @@ class ClientDataSource(
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
     override suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit> = clientRemoteRepository.deregisterToken(token)
 
-    override suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClients>> =
+    override suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>> =
         wrapStorageRequest {
             clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(userId))
         }.map { clientsList ->
