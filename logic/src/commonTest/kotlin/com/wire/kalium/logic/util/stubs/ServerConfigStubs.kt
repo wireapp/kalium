@@ -25,7 +25,7 @@ internal fun newTestServer(id: Int) = ServerConfig(
     )
 )
 
-internal fun newServerConfig(id: Int) = ServerConfig(
+internal fun newServerConfig(id: Int, federationEnabled: Boolean = false) = ServerConfig(
     id = "config-$id",
     links = ServerConfig.Links(
         api = "https://server$id-apiBaseUrl.de",
@@ -40,7 +40,7 @@ internal fun newServerConfig(id: Int) = ServerConfig(
     metaData = ServerConfig.MetaData(
         commonApiVersion = CommonApiVersionType.Valid(id),
         domain = "domain$id.com",
-        federation = false
+        federation = federationEnabled
     )
 )
 

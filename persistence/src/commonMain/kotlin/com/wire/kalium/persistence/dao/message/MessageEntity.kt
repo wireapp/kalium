@@ -86,6 +86,12 @@ sealed class MessageEntity(
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN
     }
+
+    data class Mention(
+        val start: Int,
+        val length: Int,
+        val userId: QualifiedIDEntity
+    )
 }
 
 sealed class MessageEntityContent {
@@ -94,7 +100,10 @@ sealed class MessageEntityContent {
 
     sealed class System : MessageEntityContent()
 
-    data class Text(val messageBody: String) : Regular()
+    data class Text(
+        val messageBody: String,
+        val mentions: List<MessageEntity.Mention> = listOf()
+    ) : Regular()
 
     data class Asset(
         val assetSizeInBytes: Long,
