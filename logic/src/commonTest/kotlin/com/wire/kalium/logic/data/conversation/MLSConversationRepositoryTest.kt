@@ -36,13 +36,16 @@ import io.mockative.configure
 import io.mockative.eq
 import io.mockative.fun2
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -120,7 +123,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversation_whenCallingAddMemberToMLSGroup_thenCommitAndWelcomeMessagesAreSent() = runTest {
+    fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
@@ -149,15 +152,113 @@ class MLSConversationRepositoryTest {
             .function(arrangement.mlsClient::commitAccepted)
             .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenMemberIsInsertedInDB() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withInsertMemberSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        result.shouldSucceed()
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::insertMembers)
             .with(anything(), anything())
-            .wasInvoked(exactly = once)
+            .wasInvoked(once)
     }
 
     @Test
-    fun givenConversation_whenCallingRequestToJoinGroup_ThenGroupStateIsUpdated() = runTest {
+    fun givenMlsClientMismatchError_whenCallingAddMemberToMLSGroup_thenClearCommitAndRetry() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withSendMLSMessageFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withClearPendingCommitSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withInsertMemberSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+            .wasInvoked(twice)
+    }
+
+    @Test
+    fun givenMlsStaleMessageError_whenCallingAddMemberToMLSGroup_thenWaitUntilLiveAndRetry() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withSendMLSMessageFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
+            .withClearPendingCommitSuccessful()
+            .withCommitPendingProposalsSuccessful()
+            .withClearProposalTimerSuccessful()
+            .withWaitUntilLiveSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withInsertMemberSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        result.shouldSucceed()
+
+        verify(arrangement.syncManager)
+            .suspendFunction(arrangement.syncManager::waitUntilLiveOrFailure)
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasNotInvoked()
+
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+            .wasInvoked(twice)
+    }
+
+    @Test
+    fun givenNonRecoverableError_whenCallingAddMemberToMLSGroup_thenClearCommitAndFail() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withClearPendingCommitSuccessful()
+            .withCommitPendingProposalsSuccessful()
+            .withClearProposalTimerSuccessful()
+            .withWaitUntilLiveSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withInsertMemberSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        result.shouldFail()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSuccessfulResponses_whenCallingRequestToJoinGroup_ThenGroupStateIsUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withJoinConversationSuccessful()
@@ -180,7 +281,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversation_whenCallingCommitPendingProposals_ThenActionIsForwardedToMLsClient() = runTest {
+    fun givenSuccessfulResponses_whenCallingCommitPendingProposals_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
@@ -195,19 +296,6 @@ class MLSConversationRepositoryTest {
             .function(arrangement.mlsClient::commitPendingProposals)
             .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
-    }
-
-    @Test
-    fun givenConversation_whenCallingCommitPendingProposals_ThenCommitBundleIsSentAndAccepted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withCommitPendingProposalsSuccessful()
-            .withCommitBundleSuccessful()
-            .withClearProposalTimerSuccessful()
-            .arrange()
-
-        val result = mlsConversationRepository.commitPendingProposals(Arrangement.GROUP_ID)
-        result.shouldSucceed()
 
         verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
             .wasInvoked(once)
@@ -222,7 +310,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversation_whenCallingCommitPendingProposals_ThenProposalTimerIsClearedOnSuccess() = runTest {
+    fun givenSuccessfulResponses_whenCallingCommitPendingProposals_thenProposalTimerIsClearedOnSuccess() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
@@ -240,11 +328,12 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversation_whenCallingCommitPendingProposals_ThenProposalTimerIsNotClearedOnFailure() = runTest {
+    fun givenNonRecoverableError_whenCallingCommitPendingProposals_thenProposalTimerIsNotCleared() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
             .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withClearPendingCommitSuccessful()
             .arrange()
 
         val result = mlsConversationRepository.commitPendingProposals(Arrangement.GROUP_ID)
@@ -257,7 +346,25 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversation_whenCallingRemoveMemberFromGroup() = runTest {
+    fun givenNonRecoverableError_whenCallingCommitPendingProposals_thenClearCommitAndFail() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withCommitPendingProposalsSuccessful()
+            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withClearPendingCommitSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.commitPendingProposals(Arrangement.GROUP_ID)
+        result.shouldFail()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
@@ -278,11 +385,174 @@ class MLSConversationRepositoryTest {
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+            .wasInvoked(once)
+
+        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenMemberIsRemovedFromDB() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withRemoveMemberSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .withFetchClientsOfUsersSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withDeleteMembersSuccessful()
+            .arrange()
+
+        val users = listOf(TestUser.USER_ID)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        result.shouldSucceed()
+
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::deleteMembersByQualifiedID, fun2<List<QualifiedIDEntity>, String>())
             .with(eq(users.map { arrangement.idMapper.toDaoModel(it) }), eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
+    }
 
+    @Test
+    fun givenNonRecoverableError_whenCallingRemoveMemberFromGroup_thenClearCommitAndFail() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withFetchClientsOfUsersSuccessful()
+            .withRemoveMemberSuccessful()
+            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withClearPendingCommitSuccessful()
+            .arrange()
+
+        val users = listOf(TestUser.USER_ID)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        result.shouldFail()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenClientMismatchError_whenCallingRemoveMemberFromGroup_thenClearCommitAndRetry() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withFetchClientsOfUsersSuccessful()
+            .withRemoveMemberSuccessful()
+            .withSendMLSMessageFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withSendWelcomeMessageSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .withClearPendingCommitSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withDeleteMembersSuccessful()
+            .arrange()
+
+        val users = listOf(TestUser.USER_ID)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+            .wasInvoked(twice)
+    }
+
+    @Test
+    fun givenStaleMessageError_whenCallingRemoveMemberFromGroup_thenWaitUntilLiveAndRetry() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withFetchClientsOfUsersSuccessful()
+            .withRemoveMemberSuccessful()
+            .withSendMLSMessageFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
+            .withSendWelcomeMessageSuccessful()
+            .withCommitPendingProposalsSuccessful()
+            .withClearProposalTimerSuccessful()
+            .withWaitUntilLiveSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withDeleteMembersSuccessful()
+            .arrange()
+
+        val users = listOf(TestUser.USER_ID)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        result.shouldSucceed()
+
+        verify(arrangement.syncManager)
+            .suspendFunction(arrangement.syncManager::waitUntilLiveOrFailure)
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasNotInvoked()
+
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+            .wasInvoked(twice)
+    }
+
+    @Test
+    fun givenSuccessfulResponses_whenCallingUpdateKeyMaterial_thenCommitBundleIsSentAndAccepted() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withUpdateKeyingMaterialSuccessful()
+            .withCommitBundleSuccessful()
+            .withUpdateLastKeyingMaterialTimestampSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+            .wasInvoked(once)
+
+        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSuccessfulResponses_whenCallingUpdateKeyMaterial_thenKeyingMaterialTimestampIsUpdated() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withUpdateKeyingMaterialSuccessful()
+            .withCommitBundleSuccessful()
+            .withUpdateLastKeyingMaterialTimestampSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        result.shouldSucceed()
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateKeyingMaterial)
+            .with(eq(Arrangement.RAW_GROUP_ID), anyInstanceOf(Instant::class))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenNonRecoverableError_whenCallingUpdateKeyMaterial_clearCommitAndFail() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withUpdateKeyingMaterialSuccessful()
+            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withClearPendingCommitSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        result.shouldFail()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
     }
 
     class Arrangement {
@@ -386,6 +656,13 @@ class MLSConversationRepositoryTest {
                 .thenReturn(RAW_GROUP_ID)
         }
 
+        fun withClearPendingCommitSuccessful() = apply {
+            given(mlsClient)
+                .function(mlsClient::clearPendingCommit)
+                .whenInvokedWith(anything())
+                .thenReturn(Unit)
+        }
+
         fun withCommitAcceptedSuccessful() = apply {
             given(mlsClient)
                 .function(mlsClient::commitAccepted)
@@ -400,6 +677,13 @@ class MLSConversationRepositoryTest {
                 .thenReturn(COMMIT_BUNDLE)
         }
 
+        fun withUpdateKeyingMaterialSuccessful() = apply {
+            given(mlsClient)
+                .function(mlsClient::updateKeyingMaterial)
+                .whenInvokedWith(anything())
+                .thenReturn(COMMIT_BUNDLE)
+        }
+
         fun withSendWelcomeMessageSuccessful() = apply {
             given(mlsMessageApi)
                 .suspendFunction(mlsMessageApi::sendWelcomeMessage)
@@ -407,10 +691,12 @@ class MLSConversationRepositoryTest {
                 .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
         }
 
-        fun withSendMLSMessageFailing(failure: KaliumException) = apply {
+        fun withSendMLSMessageFailing(failure: KaliumException, times: Int = Int.MAX_VALUE) = apply {
+            withSendMLSMessageSuccessful()
+            var invocationCounter = 0
             given(mlsMessageApi)
                 .suspendFunction(mlsMessageApi::sendMessage)
-                .whenInvokedWith(anything())
+                .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
                 .then { NetworkResponse.Error(failure) }
         }
 
@@ -455,6 +741,20 @@ class MLSConversationRepositoryTest {
                 .thenReturn(Unit)
         }
 
+        fun withUpdateLastKeyingMaterialTimestampSuccessful() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateKeyingMaterial)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Unit)
+        }
+
+        fun withWaitUntilLiveSuccessful() = apply {
+            given(syncManager)
+                .suspendFunction(syncManager::waitUntilLiveOrFailure)
+                .whenInvoked()
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun arrange() = this to MLSConversationDataSource(
             keyPackageRepository,
             mlsClientProvider,
@@ -468,7 +768,9 @@ class MLSConversationRepositoryTest {
             const val EPOCH = 5UL
             const val RAW_GROUP_ID = "groupId"
             val GROUP_ID = GroupID(RAW_GROUP_ID)
-            val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", ""))
+            val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
+            val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
+            val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
             val MEMBERS = listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))
             val KEY_PACKAGE = KeyPackageDTO(
                 "client1",
