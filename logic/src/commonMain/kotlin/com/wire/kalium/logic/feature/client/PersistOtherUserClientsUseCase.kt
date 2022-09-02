@@ -2,9 +2,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CLIENTS
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
