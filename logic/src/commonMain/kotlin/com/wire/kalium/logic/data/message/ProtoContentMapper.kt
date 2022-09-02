@@ -90,7 +90,7 @@ class ProtoContentMapperImpl(
         when (protobufModel) {
             is GenericMessage.Content.Text, is GenericMessage.Content.Edited -> {
                 val textToLog = GenericMessage(genericMessage.messageId.obfuscateId())
-                kaliumLogger.d("Received message $textToLog")
+                kaliumLogger.d("Decoded message $textToLog")
             }
 
             else -> {
@@ -98,7 +98,7 @@ class ProtoContentMapperImpl(
                 messageToLog = messageToLog.copy(
                     messageId = messageToLog.messageId.obfuscateId()
                 )
-                kaliumLogger.d("Received message $messageToLog")
+                kaliumLogger.d("Decoded message $messageToLog")
             }
         }
 
