@@ -55,7 +55,7 @@ enum class ClientCapability {
     LegalHoldImplicitConsent;
 }
 
-data class OtherUserClients(
+data class OtherUserClient(
     val deviceType: DeviceType,
     val id: String
 )

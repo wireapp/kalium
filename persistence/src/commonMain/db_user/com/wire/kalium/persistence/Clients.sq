@@ -21,7 +21,7 @@ insertClient:
 INSERT INTO Client(user_id, id,device_type)
 VALUES(?, ?,?)
 ON CONFLICT(id, user_id) DO UPDATE SET
-device_type = excluded.device_type;
+device_type = coalesce(excluded.device_type, device_type);
 
 selectAllClients:
 SELECT * FROM Client;
