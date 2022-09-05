@@ -28,21 +28,41 @@ sealed class Message(
         val editStatus: EditStatus
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
-            val message: String = when (content) {
+            val contentString: String
+            when (content) {
                 is MessageContent.Text, is MessageContent.TextEdited -> {
-                    "id: ${id.obfuscateId()} conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
-                            "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
-                            "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
+                    contentString = ""
+                }
+
+                is MessageContent.Asset -> {
+                    contentString = "content:{sizeInBytes:${content.value.sizeInBytes}," + "mimeType:${content.value.mimeType}," +
+                            "metaData : ${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}}"
+                }
+
+                is MessageContent.RestrictedAsset -> {
+                    contentString = "content:{sizeInBytes:${content.sizeInBytes} ," +
+                            " mimeType:${content.mimeType}"
+                }
+
+                is MessageContent.DeleteForMe -> {
+                    contentString = "content:{messageId:${content.messageId.obfuscateId()}"
+                }
+
+                is MessageContent.LastRead -> {
+                    contentString = "content:{time:${content.time}"
+                }
+
+                is MessageContent.FailedDecryption -> {
+                    contentString = "content:{size:${content.encodedData?.size}"
                 }
 
                 else -> {
-                    "id:${id.obfuscateId()} content:$content " +
-                            "conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
-                            "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
-                            "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
+                    contentString = "content:$content"
                 }
             }
-            return message
+            return "id: ${id.obfuscateId()} $contentString conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+                    "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
+                    "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
         }
     }
 
