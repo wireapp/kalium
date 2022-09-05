@@ -4,9 +4,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+@IgnoreIOS
 class QualifiedIDTest {
 
-    @IgnoreIOS
     @Test
     fun givenQualifiedUserID_whenCallingToString_EncodesCorrectly() {
         assertEquals(ENCODED_QUALIFIED_USER_ID, QUALIFIED_USER_ID.toString())
