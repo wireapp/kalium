@@ -9,7 +9,7 @@ import kotlin.test.assertNotNull
 
 @IgnoreIOS
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalJsExport::class)
-class ProteusClientTest: BaseProteusClientTest() {
+class ProteusClientTest : BaseProteusClientTest() {
 
     data class SampleUser(val id: CryptoUserID, val name: String)
 
