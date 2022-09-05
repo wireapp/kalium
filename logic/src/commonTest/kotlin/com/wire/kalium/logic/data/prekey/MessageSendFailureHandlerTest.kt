@@ -46,7 +46,6 @@ class MessageSendFailureHandlerTest {
         userTwo = UserId("userId2", "bella.wire") to listOf(ClientId("clientId2"), ClientId("secondClientId2"))
     }
 
-
     @Test
     fun givenMissingClients_whenHandlingClientsHaveChangedFailure_thenUsersThatControlTheseClientsShouldBeFetched() = runTest {
         val failureData = ProteusSendMessageFailure(missingClientsOfUsers = mapOf(userOne, userTwo), mapOf(), mapOf())
@@ -68,7 +67,6 @@ class MessageSendFailureHandlerTest {
             .with(eq(failureData.missingClientsOfUsers.keys))
             .wasInvoked(once)
     }
-
 
     @Test
     fun givenMissingContactsAndClients_whenHandlingClientsHaveChangedFailureThenClientsShouldBeAddedToContacts() = runTest {
@@ -96,7 +94,6 @@ class MessageSendFailureHandlerTest {
             .with(eq(userTwo.first), eq(userTwo.second))
             .wasInvoked(once)
     }
-
 
     @Test
     fun givenRepositoryFailsToFetchContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
