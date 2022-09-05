@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
@@ -20,6 +21,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import okio.IOException
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,8 +57,8 @@ class MessageSendFailureHandlerTest {
             .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .suspendFunction(clientRepository::saveNewClients)
-            .whenInvokedWith(any(), any(), any())
+            .suspendFunction(clientRepository::storeUserClientIdList)
+            .whenInvokedWith(any(), any())
             .thenReturn(Either.Right(Unit))
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
@@ -78,20 +80,20 @@ class MessageSendFailureHandlerTest {
             .thenReturn(Either.Right(Unit))
 
         given(clientRepository)
-            .suspendFunction(clientRepository::saveNewClients)
-            .whenInvokedWith(any(), any(), any())
+            .suspendFunction(clientRepository::storeUserClientIdList)
+            .whenInvokedWith(any(), any())
             .thenReturn(Either.Right(Unit))
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::saveNewClients)
-            .with(eq(userOne.first), eq(userOne.second), any())
+            .suspendFunction(clientRepository::storeUserClientIdList)
+            .with(eq(userOne.first), eq(userOne.second))
             .wasInvoked(once)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::saveNewClients)
-            .with(eq(userTwo.first), eq(userTwo.second), any())
+            .suspendFunction(clientRepository::storeUserClientIdList)
+            .with(eq(userTwo.first), eq(userTwo.second))
             .wasInvoked(once)
     }
 
@@ -112,14 +114,14 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenRepositoryFailsToAddClientsToContacts_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
-        val failure = NETWORK_ERROR
+        val failure = StorageFailure.Generic(IOException())
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
         given(clientRepository)
-            .suspendFunction(clientRepository::saveNewClients)
-            .whenInvokedWith(any(), any(), any())
+            .suspendFunction(clientRepository::storeUserClientIdList)
+            .whenInvokedWith(any(), any())
             .thenReturn(Either.Left(failure))
         val failureData = ProteusSendMessageFailure(mapOf(userOne), mapOf(), mapOf())
 

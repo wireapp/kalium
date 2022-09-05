@@ -22,6 +22,6 @@ internal class PersistOtherUserClientsUseCaseImpl(
         clientRemoteRepository.fetchOtherUserClients(userId).fold({
             kaliumLogger.withFeatureId(CLIENTS).e("Failure while fetching other users clients $it")
         }, { clientList ->
-            clientRepository.saveNewClients(userId, clientList)
+            clientRepository.storeUserClientList(userId, clientList)
         })
 }

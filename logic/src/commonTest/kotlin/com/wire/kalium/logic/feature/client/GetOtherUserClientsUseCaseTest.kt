@@ -13,10 +13,12 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+@ExperimentalCoroutinesApi
 class GetOtherUserClientsUseCaseTest {
     @Test
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
@@ -71,7 +73,8 @@ class GetOtherUserClientsUseCaseTest {
                 .thenReturn(Either.Right(expectedResponse))
 
             given(clientRepository)
-                .suspendFunction(clientRepository::saveNewClients).whenInvokedWith(any(), any(), any())
+                .suspendFunction(clientRepository::storeUserClientList)
+                .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
             return this
         }
