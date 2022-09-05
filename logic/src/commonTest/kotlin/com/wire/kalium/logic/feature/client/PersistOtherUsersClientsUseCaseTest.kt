@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
-import com.wire.kalium.logic.data.client.OtherUserClients
+import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -12,6 +12,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.fun2
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -26,17 +27,22 @@ class PersistOtherUsersClientsUseCaseTest {
         // Given
         val userId = UserId("123", "wire.com")
         val otherUserClients = listOf(
-            OtherUserClients(DeviceType.Phone, "111"), OtherUserClients(DeviceType.Desktop, "2222")
+            OtherUserClient(DeviceType.Phone, "111"), OtherUserClient(DeviceType.Desktop, "2222")
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
-            .withSuccessfulResponse(otherUserClients)
+            .withSuccessfulResponse(userId, otherUserClients)
             .arrange()
 
         // When
-        getOtherUsersClientsUseCase.invoke(userId)
+        getOtherUsersClientsUseCase(userId)
 
         verify(arrangement.clientRemoteRepository)
             .suspendFunction(arrangement.clientRemoteRepository::fetchOtherUserClients).with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::storeUserClientList, fun2<UserId, List<OtherUserClient>>())
+            .with(any(), any())
             .wasInvoked(exactly = once)
 
     }
@@ -70,14 +76,15 @@ class PersistOtherUsersClientsUseCaseTest {
 
         val persistOtherUserClientsUseCase = PersistOtherUserClientsUseCaseImpl(clientRemoteRepository, clientRepository)
 
-        fun withSuccessfulResponse(expectedResponse: List<OtherUserClients>): Arrangement {
+        suspend fun withSuccessfulResponse(userId: UserId, expectedResponse: List<OtherUserClient>): Arrangement {
             given(clientRemoteRepository)
                 .suspendFunction(clientRemoteRepository::fetchOtherUserClients).whenInvokedWith(any())
                 .thenReturn(Either.Right(expectedResponse))
 
             given(clientRepository)
-                .suspendFunction(clientRepository::saveNewClients).whenInvokedWith(any(), any(), any())
+                .coroutine { clientRepository.storeUserClientList(userId, expectedResponse) }
                 .thenReturn(Either.Right(Unit))
+
             return this
         }
 

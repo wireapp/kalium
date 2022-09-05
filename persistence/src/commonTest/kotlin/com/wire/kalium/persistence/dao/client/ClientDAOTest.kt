@@ -4,6 +4,7 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -11,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@ExperimentalCoroutinesApi
 class ClientDAOTest : BaseDatabaseTest() {
 
     private lateinit var clientDAO: ClientDAO
@@ -98,6 +100,23 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun givenClientWithDeviceIsStored_whenInsertingTheSameClientWithNullType_thenTypeIsNotOverwritten() = runTest {
+        val insertClientWithType = Client(user.id, "id1", deviceType = "Tablet")
+        val insertClientWithNullType = insertClientWithType.copy(deviceType = null)
+        userDAO.insertUser(user)
+        clientDAO.insertClients(listOf(insertClientWithType))
+        clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
+            assertEquals(listOf(insertClientWithType), resultList)
+        }
+
+        clientDAO.insertClients(listOf(insertClientWithNullType))
+
+        clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
+            assertEquals(listOf(insertClientWithType), resultList)
+        }
     }
 
     private companion object {
