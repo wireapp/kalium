@@ -34,8 +34,8 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         deregisterTokenUseCase()
         logoutRepository.logout()
         logout(reason)
-        clearCrypto()
         if (isHardLogout(reason)) {
+            clearCrypto()
             clearUserStorage()
         }
         clearInMemoryUserSession()
