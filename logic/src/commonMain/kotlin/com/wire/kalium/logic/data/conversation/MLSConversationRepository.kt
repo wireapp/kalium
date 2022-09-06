@@ -176,7 +176,7 @@ class MLSConversationDataSource(
         }
 
     override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> =
-        executeOperation(groupID) {
+        retryOnCommitFailure(groupID) {
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 sendCommitBundle(groupID, mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))).flatMap {
                     wrapStorageRequest {
@@ -202,7 +202,7 @@ class MLSConversationDataSource(
     }
 
     override suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> =
-        executeOperation(groupID) {
+        retryOnCommitFailure(groupID) {
             internalCommitPendingProposals(groupID)
         }
 
@@ -225,7 +225,7 @@ class MLSConversationDataSource(
     }
 
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        executeOperation(groupID) {
+        retryOnCommitFailure(groupID) {
             // TODO: check for federated and non-federated members
             keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
                 mlsClientProvider.getMLSClient().flatMap { client ->
@@ -256,14 +256,14 @@ class MLSConversationDataSource(
         }
 
     override suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        executeOperation(groupID) {
+        retryOnCommitFailure(groupID) {
             wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
                 val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
                     userClients.value.map { userClient ->
                         CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
                     }
                 }
-                return@executeOperation mlsClientProvider.getMLSClient().flatMap { client ->
+                return@retryOnCommitFailure mlsClientProvider.getMLSClient().flatMap { client ->
                     client.removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs).let { bundle ->
                         sendCommitBundle(groupID, bundle).flatMap {
                             wrapStorageRequest {
@@ -316,7 +316,7 @@ class MLSConversationDataSource(
         conversationDAO.getAllMembers(conversationID).first().map { idMapper.fromDaoModel(it.user) }
     }
 
-    private suspend fun executeOperation(groupID: GroupID, operation: suspend () -> Either<CoreFailure, Unit>) =
+    private suspend fun retryOnCommitFailure(groupID: GroupID, operation: suspend () -> Either<CoreFailure, Unit>) =
         operation()
             .flatMapLeft {
                 handleCommitFailure(it, groupID, operation)
