@@ -88,19 +88,9 @@ class ProtoContentMapperImpl(
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
         val protobufModel = genericMessage.content
-        when (protobufModel) {
-            is GenericMessage.Content.Text, is GenericMessage.Content.Edited -> {
-                val textToLog = GenericMessage(genericMessage.messageId.obfuscateId())
-                kaliumLogger.d("Decoded message $textToLog")
-            }
-
-            else -> {
-                var messageToLog = genericMessage
-                messageToLog = messageToLog.copy(
-                    messageId = messageToLog.messageId.obfuscateId()
-                )
-                kaliumLogger.d("Decoded message $messageToLog")
-            }
+        protobufModel?.let{
+            kaliumLogger.d("Decoded message: {id:${genericMessage.messageId.obfuscateId()} ," +
+                    "content: ${it::class}}")
         }
 
         return if (protobufModel is GenericMessage.Content.External) {
