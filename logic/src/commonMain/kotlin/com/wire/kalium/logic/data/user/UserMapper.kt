@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.client.DeviceType
-import com.wire.kalium.logic.data.client.OtherUserClients
+import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
@@ -60,7 +60,7 @@ interface UserMapper {
         permissionsCode: Int?,
     ): UserEntity
 
-    fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients>
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient>
 }
 
 internal class UserMapperImpl(
@@ -220,8 +220,8 @@ internal class UserMapperImpl(
             deleted = false
         )
 
-    override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClients> =
+    override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClients(DeviceType.valueOf(it.deviceType ?: ""), it.id)
+            OtherUserClient(DeviceType.valueOf(it.deviceType ?: ""), it.id)
         }
 }
