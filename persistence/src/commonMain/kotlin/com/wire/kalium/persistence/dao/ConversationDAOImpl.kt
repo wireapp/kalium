@@ -66,7 +66,6 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
-    private val messageMapper = MessageMapper()
 
     // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
     override suspend fun getSelfConversationId() =
