@@ -4,12 +4,12 @@ import com.wire.kalium.logic.data.id.FEDERATION_REGEX
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserRepository
-
+import kotlinx.coroutines.flow.flowOf
 
 interface SearchKnownUsersUseCase {
-    suspend operator fun invoke(searchQuery: String, searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default): Result
+    suspend operator fun invoke(searchQuery: String, searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default): SearchUserResult
 }
 
 internal class SearchKnownUsersUseCaseImpl(
@@ -22,7 +22,7 @@ internal class SearchKnownUsersUseCaseImpl(
     override suspend fun invoke(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
-    ): Result {
+    ): SearchUserResult {
         val searchResult = if (isUserLookingForHandle(searchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
                 handle = searchQuery,
@@ -39,16 +39,16 @@ internal class SearchKnownUsersUseCaseImpl(
             )
         }
 
-        return Result.Success(excludeSelfUser(searchResult))
+        return SearchUserResult.Success(flowOf(excludeSelfUser(searchResult)))
     }
 
     private fun isUserLookingForHandle(searchQuery: String) = searchQuery.startsWith('@')
 
     // TODO: we should think about the way to exclude the self user on TABLE level
-    private suspend fun excludeSelfUser(searchResult: UserSearchResult): UserSearchResult {
+    private suspend fun excludeSelfUser(searchResult: List<OtherUser>): List<OtherUser> {
         val selfUser = userRepository.getSelfUser()
 
-        return searchResult.copy(result = searchResult.result.filter { it.id != selfUser?.id })
+        return searchResult.filter { it.id != selfUser?.id }
     }
 
 }

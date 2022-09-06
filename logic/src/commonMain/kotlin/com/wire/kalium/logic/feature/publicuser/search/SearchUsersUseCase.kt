@@ -8,14 +8,14 @@ import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
-
+import kotlinx.coroutines.flow.map
 
 interface SearchUsersUseCase {
     suspend operator fun invoke(
         searchQuery: String,
         maxResultSize: Int? = null,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Result
+    ): SearchUserResult
 }
 
 internal class SearchUsersUseCaseImpl(
@@ -24,11 +24,13 @@ internal class SearchUsersUseCaseImpl(
     private val qualifiedIdMapper: QualifiedIdMapper
 ) : SearchUsersUseCase {
 
+    private val observeConnectionRequests = connectionRepository.observeConnectionRequests()
+
     override suspend operator fun invoke(
         searchQuery: String,
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
-    ): Result {
+    ): SearchUserResult {
         val qualifiedID = qualifiedIdMapper.fromStringToQualifiedID(searchQuery)
 
         return searchUserRepository.searchUserDirectory(
@@ -39,23 +41,24 @@ internal class SearchUsersUseCaseImpl(
         ).fold({
             if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                 return when (it.kaliumException.errorResponse.code) {
-                    HttpStatusCode.BadRequest.value -> Result.Failure.InvalidRequest
-                    HttpStatusCode.NotFound.value -> Result.Failure.InvalidQuery
-                    else -> Result.Failure.Generic(it)
+                    HttpStatusCode.BadRequest.value -> SearchUserResult.Failure.InvalidRequest
+                    HttpStatusCode.NotFound.value -> SearchUserResult.Failure.InvalidQuery
+                    else -> SearchUserResult.Failure.Generic(it)
                 }
             }
-            Result.Failure.Generic(it)
+            SearchUserResult.Failure.Generic(it)
         }, { response ->
-            val connections = connectionRepository.getConnectionRequests()
-            val usersWithConnectionStatus = response.copy(result = response.result
-                .map { user ->
-                    user.copy(
-                        connectionStatus = connections.firstOrNull { user.id == it.qualifiedToId }?.status
-                            ?: user.connectionStatus
-                    )
-                })
+            val usersWithConnectionStatusFlow = observeConnectionRequests
+                .map { connections ->
+                    response.map { user ->
+                        connections.firstOrNull { user.id == it.qualifiedToId }
+                            ?.status
+                            ?.let { status -> user.copy(connectionStatus = status) }
+                            ?: user
+                    }
+                }
 
-            Result.Success(usersWithConnectionStatus)
+            SearchUserResult.Success(usersWithConnectionStatusFlow)
         })
     }
 }

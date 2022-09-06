@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -264,7 +263,7 @@ class SearchUserRepositoryTest {
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         // then
-        assertIs<Either.Right<UserSearchResult>>(actual)
+        assertIs<Either.Right<List<OtherUser>>>(actual)
     }
 
     @Test
@@ -305,13 +304,11 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any(), any(), any(), any(), any())
                 .then { _, _, _, _, _ -> UserType.FEDERATED }
 
-            val expectedResult = UserSearchResult(
-                result = listOf(PUBLIC_USER)
-            )
+            val expectedResult = listOf(PUBLIC_USER)
             // when
             val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-            assertIs<Either.Right<UserSearchResult>>(actual)
+            assertIs<Either.Right<List<OtherUser>>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 
@@ -343,13 +340,11 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { SELF_USER }
 
-            val expectedResult = UserSearchResult(
-                result = emptyList()
-            )
+            val expectedResult = emptyList<OtherUser>()
             // when
             val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
-            assertIs<Either.Right<UserSearchResult>>(actual)
+            assertIs<Either.Right<List<OtherUser>>>(actual)
             assertEquals(expectedResult, actual.value)
         }
 

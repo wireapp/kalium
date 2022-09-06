@@ -41,7 +41,7 @@ data class ConnectionEntity(
 }
 
 interface ConnectionDAO {
-    suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>>
+    fun getConnectionRequests(): Flow<List<ConnectionEntity>>
     suspend fun insertConnection(connectionEntity: ConnectionEntity)
     suspend fun insertConnections(users: List<ConnectionEntity>)
     suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String)

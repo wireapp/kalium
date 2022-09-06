@@ -4,7 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapper
@@ -34,19 +34,19 @@ internal interface SearchUserRepository {
     suspend fun searchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): UserSearchResult
+    ): List<OtherUser>
 
     suspend fun searchKnownUsersByHandle(
         handle: String,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): UserSearchResult
+    ): List<OtherUser>
 
     suspend fun searchUserDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int? = null,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Either<NetworkFailure, UserSearchResult>
+    ): Either<NetworkFailure, List<OtherUser>>
 
 }
 
@@ -82,7 +82,7 @@ internal class SearchUserRepositoryImpl(
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
-    ): UserSearchResult =
+    ): List<OtherUser> =
         handeSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
@@ -102,7 +102,7 @@ internal class SearchUserRepositoryImpl(
     override suspend fun searchKnownUsersByHandle(
         handle: String,
         searchUsersOptions: SearchUsersOptions
-    ): UserSearchResult =
+    ): List<OtherUser> =
         handeSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
@@ -124,7 +124,7 @@ internal class SearchUserRepositoryImpl(
         domain: String,
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
-    ): Either<NetworkFailure, UserSearchResult> =
+    ): Either<NetworkFailure, List<OtherUser>> =
         userSearchAPiWrapper.search(
             searchQuery,
             domain,
@@ -136,7 +136,7 @@ internal class SearchUserRepositoryImpl(
             }.map { userDetailsResponses ->
                 val selfUser = getSelfUser()
 
-                UserSearchResult(userDetailsResponses.map { userProfileDTO ->
+                userDetailsResponses.map { userProfileDTO ->
                     publicUserMapper.fromUserDetailResponseWithUsertype(
                         userDetailResponse = userProfileDTO,
                         userType = userTypeMapper.fromTeamAndDomain(
@@ -147,7 +147,7 @@ internal class SearchUserRepositoryImpl(
                             isService = userProfileDTO.service != null,
                         )
                     )
-                })
+                }
             }
         }
 
@@ -170,13 +170,13 @@ internal class SearchUserRepositoryImpl(
         localSearchUserOptions: SearchUsersOptions,
         excluded: suspend (conversationId: ConversationId) -> List<UserEntity>,
         default: suspend () -> List<UserEntity>
-    ): UserSearchResult {
+    ): List<OtherUser> {
         val result = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
             ConversationMemberExcludedOptions.None -> default()
             is ConversationMemberExcludedOptions.ConversationExcluded -> excluded(searchOptions.conversationId)
         }
 
-        return UserSearchResult(result.map(publicUserMapper::fromDaoModelToPublicUser))
+        return result.map(publicUserMapper::fromDaoModelToPublicUser)
     }
 
 }

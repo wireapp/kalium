@@ -47,7 +47,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
@@ -58,11 +57,11 @@ interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
     suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection>
-    suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
+    fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
-    suspend fun observeConnectionList(): Flow<List<ConversationDetails>>
-    suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
-    suspend fun getConnectionRequests(): List<Connection>
+    fun observeConnectionList(): Flow<List<ConversationDetails>>
+    fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
+    fun observeConnectionRequests(): Flow<List<Connection>>
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
@@ -147,11 +146,11 @@ internal class ConnectionDataSource(
         else -> false
     }
 
-    override suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>> = wrapStorageRequest {
+    override fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>> = wrapStorageRequest {
         observeConnectionList()
     }
 
-    override suspend fun observeConnectionList(): Flow<List<ConversationDetails>> {
+    override fun observeConnectionList(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
@@ -160,7 +159,7 @@ internal class ConnectionDataSource(
         }
     }
 
-    override suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
+    override fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequests().map {
             it.map { connection ->
                 val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
@@ -169,10 +168,12 @@ internal class ConnectionDataSource(
         }
     }
 
-    override suspend fun getConnectionRequests(): List<Connection> {
-        return connectionDAO.getConnectionRequests().first().map { connection ->
-            val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-            connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
+    override fun observeConnectionRequests(): Flow<List<Connection>> {
+        return connectionDAO.getConnectionRequests().map {
+            it.map { connection ->
+                val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+                connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
+            }
         }
     }
 

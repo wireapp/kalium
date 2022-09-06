@@ -9,13 +9,12 @@ import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUserResult
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
 import com.wire.kalium.logic.functional.Either
@@ -29,6 +28,8 @@ import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -37,52 +38,19 @@ import kotlin.test.assertIs
 
 class SearchUserUseCaseTest {
 
-    @Mock
-    private val searchUserRepository = mock(classOf<SearchUserRepository>())
-
-    @Mock
-    private val connectionRepository = mock(classOf<ConnectionRepository>())
-
-    @Mock
-    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
-
-    private lateinit var searchUsersUseCase: SearchUsersUseCase
-
-    @BeforeTest
-    fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
-
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::getConnectionRequests)
-            .whenInvoked()
-            .thenReturn(listOf())
-
-        given(qualifiedIdMapper)
-            .function(qualifiedIdMapper::fromStringToQualifiedID)
-            .whenInvokedWith(eq(TEST_QUERY))
-            .thenReturn(QualifiedID(TEST_QUERY, ""))
-
-        given(qualifiedIdMapper)
-            .function(qualifiedIdMapper::fromStringToQualifiedID)
-            .whenInvokedWith(eq(TEST_QUERY_FEDERATED))
-            .thenReturn(QualifiedID(TEST_QUERY, "wire.com"))
-
-    }
-
     @Test
     fun givenValidParams_whenSearchingPublicUser_thenCorrectlyPropagateSuccessResult() = runTest {
         // given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything(), anything())
-            .thenReturn(expected)
+        val (_, searchUsersUseCase) = Arrangement()
+            .withSearchUserDirectory(expected)
+            .arrange()
         // when
         val actual = searchUsersUseCase(TEST_QUERY)
         // then
-        assertIs<Result.Success>(actual)
-        assertEquals(expected.value, actual.userSearchResult)
+        assertIs<SearchUserResult.Success>(actual)
+        assertEquals(expected.value, actual.userSearchResultFlow.first())
     }
 
     @Test
@@ -90,21 +58,16 @@ class SearchUserUseCaseTest {
         // given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::getConnectionRequests)
-            .whenInvoked()
-            .thenReturn(listOf(PENDING_CONNECTION))
-
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything(), anything())
-            .thenReturn(expected)
+        val (_, searchUsersUseCase) = Arrangement()
+            .withSearchUserDirectory(expected)
+            .withConnectionRequests(listOf(PENDING_CONNECTION))
+            .arrange()
         // when
         val actual = searchUsersUseCase(TEST_QUERY)
         // then
-        assertIs<Result.Success>(actual)
+        assertIs<SearchUserResult.Success>(actual)
         assertEquals(
-            actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
+            actual.userSearchResultFlow.first().first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
             ConnectionState.PENDING
         )
     }
@@ -113,48 +76,43 @@ class SearchUserUseCaseTest {
     fun givenValidParams_federated_whenSearchingPublicUser_thenCorrectlyPropagateSuccessResult() = runTest {
         // given
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
-
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything(), anything())
-            .thenReturn(expected)
+        val (_, searchUsersUseCase) = Arrangement()
+            .withSearchUserDirectory(expected)
+            .arrange()
         // when
         val actual = searchUsersUseCase(TEST_QUERY_FEDERATED)
         // then
-        assertIs<Result.Success>(actual)
-        assertEquals(expected.value, actual.userSearchResult)
+        assertIs<SearchUserResult.Success>(actual)
+        assertEquals(expected.value, actual.userSearchResultFlow.first())
     }
 
     @Test
     fun givenFailure_whenSearchingPublicUser_thenCorrectlyPropagateFailureResult() = runTest {
         // given
         val expected = TEST_CORE_FAILURE
-
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(eq("testQuery"), eq(""), anything(), anything())
-            .thenReturn(expected)
+        val (_, searchUsersUseCase) = Arrangement()
+            .withSearchUserDirectory(expected)
+            .arrange()
         // when
         val actual = searchUsersUseCase(TEST_QUERY)
 
         // then
-        assertIs<Result.Failure.InvalidQuery>(actual)
+        assertIs<SearchUserResult.Failure.InvalidQuery>(actual)
     }
 
     @Test
     fun givenNoSearchOptionSpecific_whenSearchingPublicUser_thenCorrectlyPropagateDefaultSearchOption() = runTest {
         // given
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(anything(), anything(), anything(), anything())
-            .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
+        val (arrangement, searchUsersUseCase) = Arrangement()
+            .withSearchUserDirectory(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
+            .arrange()
 
         // when
         searchUsersUseCase(TEST_QUERY)
 
         // then
-        verify(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchUserDirectory)
             .with(anything(), anything(), anything(), eq(SearchUsersOptions.Default))
             .wasInvoked(Times(1))
     }
@@ -172,24 +130,70 @@ class SearchUserUseCaseTest {
             selfUserIncluded = false
         )
 
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
-            .whenInvokedWith(
-                anything(),
-                anything(),
-                anything(),
-                eq(givenSearchUsersOptions)
-            )
-            .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
+        val (arrangement, searchUsersUseCase) = Arrangement()
+            .withSearchUserDirectory(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
+            .arrange()
 
         // when
         searchUsersUseCase(searchQuery = TEST_QUERY, searchUsersOptions = givenSearchUsersOptions)
 
         // then
-        verify(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchUserDirectory)
             .with(anything(), anything(), anything(), eq(givenSearchUsersOptions))
             .wasInvoked(Times(1))
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val searchUserRepository = mock(classOf<SearchUserRepository>())
+
+        @Mock
+        val connectionRepository = mock(classOf<ConnectionRepository>())
+
+        @Mock
+        val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
+        private lateinit var searchUsersUseCase: SearchUsersUseCase
+
+        init {
+            given(connectionRepository)
+                .invocation { connectionRepository.observeConnectionRequests() }
+                .then { flowOf(listOf()) }
+
+            given(qualifiedIdMapper)
+                .function(qualifiedIdMapper::fromStringToQualifiedID)
+                .whenInvokedWith(eq(TEST_QUERY))
+                .thenReturn(QualifiedID(TEST_QUERY, ""))
+
+            given(qualifiedIdMapper)
+                .function(qualifiedIdMapper::fromStringToQualifiedID)
+                .whenInvokedWith(eq(TEST_QUERY_FEDERATED))
+                .thenReturn(QualifiedID(TEST_QUERY, "wire.com"))
+
+            given(connectionRepository)
+                .invocation { connectionRepository.observeConnectionRequests() }
+                .then { flowOf(listOf()) }
+        }
+
+        fun withSearchUserDirectory(expected: Either<NetworkFailure, List<OtherUser>>) = apply {
+            given(searchUserRepository)
+                .suspendFunction(searchUserRepository::searchUserDirectory)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .thenReturn(expected)
+        }
+
+        fun withConnectionRequests(connections: List<Connection>) = apply {
+            given(connectionRepository)
+                .invocation { connectionRepository.observeConnectionRequests() }
+                .then { flowOf(connections) }
+        }
+
+        fun arrange(): Pair<Arrangement, SearchUsersUseCase> {
+            searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
+            return this to searchUsersUseCase
+        }
     }
 
     private companion object {
@@ -211,26 +215,24 @@ class SearchUserUseCaseTest {
             null
         )
 
-        val VALID_SEARCH_PUBLIC_RESULT = UserSearchResult(
-            result = MutableList(size = 5) {
-                OtherUser(
-                    id = UserId(it.toString(), "domain$it"),
-                    name = "name$it",
-                    handle = null,
-                    email = null,
-                    phone = null,
-                    accentId = it,
-                    teamId = null,
-                    connectionStatus = ConnectionState.ACCEPTED,
-                    previewPicture = null,
-                    completePicture = null,
-                    availabilityStatus = UserAvailabilityStatus.NONE,
-                    userType = UserType.FEDERATED,
-                    botService = null,
-                    deleted = false
-                )
-            }
-        )
+        val VALID_SEARCH_PUBLIC_RESULT = MutableList(size = 5) {
+            OtherUser(
+                id = UserId(it.toString(), "domain$it"),
+                name = "name$it",
+                handle = null,
+                email = null,
+                phone = null,
+                accentId = it,
+                teamId = null,
+                connectionStatus = ConnectionState.ACCEPTED,
+                previewPicture = null,
+                completePicture = null,
+                availabilityStatus = UserAvailabilityStatus.NONE,
+                userType = UserType.FEDERATED,
+                botService = null,
+                deleted = false
+            )
+        }
     }
 
 }

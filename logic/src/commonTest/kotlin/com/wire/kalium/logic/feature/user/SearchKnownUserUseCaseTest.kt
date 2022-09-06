@@ -6,13 +6,12 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
-import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUserResult
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.framework.TestUser
@@ -25,6 +24,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -139,8 +139,8 @@ class SearchKnownUserUseCaseTest {
         // when
         val result = searchKnownUsersUseCase(searchQuery)
         // then
-        assertIs<Result.Success>(result)
-        assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
+        assertIs<SearchUserResult.Success>(result)
+        assertFalse(result.userSearchResultFlow.first().contains(otherUserContainingSelfUserId))
     }
 
     @Test
@@ -173,7 +173,7 @@ class SearchKnownUserUseCaseTest {
         )
 
         // then
-        assertIs<Result.Success>(result)
+        assertIs<SearchUserResult.Success>(result)
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
             .with(anything(), eq(searchUsersOptions))
@@ -209,7 +209,7 @@ class SearchKnownUserUseCaseTest {
         )
 
         // then
-        assertIs<Result.Success>(result)
+        assertIs<SearchUserResult.Success>(result)
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
             .with(anything(), eq(searchUsersOptions))
@@ -261,27 +261,25 @@ class SearchKnownUserUseCaseTest {
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(
-                    UserSearchResult(
-                        listOf(
-                            OtherUser(
-                                id = QualifiedID(
-                                    value = "someValue",
-                                    domain = "someDomain",
-                                ),
-                                name = null,
-                                handle = null,
-                                email = null,
-                                phone = null,
-                                accentId = 0,
-                                teamId = null,
-                                connectionStatus = ConnectionState.ACCEPTED,
-                                previewPicture = null,
-                                completePicture = null,
-                                availabilityStatus = UserAvailabilityStatus.NONE,
-                                userType = UserType.EXTERNAL,
-                                botService = null,
-                                deleted = false
-                            )
+                    listOf(
+                        OtherUser(
+                            id = QualifiedID(
+                                value = "someValue",
+                                domain = "someDomain",
+                            ),
+                            name = null,
+                            handle = null,
+                            email = null,
+                            phone = null,
+                            accentId = 0,
+                            teamId = null,
+                            connectionStatus = ConnectionState.ACCEPTED,
+                            previewPicture = null,
+                            completePicture = null,
+                            availabilityStatus = UserAvailabilityStatus.NONE,
+                            userType = UserType.EXTERNAL,
+                            botService = null,
+                            deleted = false
                         )
                     )
                 )
@@ -326,11 +324,7 @@ class SearchKnownUserUseCaseTest {
                     if (searchQuery == null) any() else eq(searchQuery),
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
-                .thenReturn(
-                    UserSearchResult(
-                        otherUsers
-                    )
-                )
+                .thenReturn(otherUsers)
 
             return this
         }
