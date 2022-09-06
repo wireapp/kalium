@@ -65,6 +65,10 @@ actual class MLSClientImpl actual constructor(
         return coreCrypto.conversationExists(toUByteList(groupId.decodeBase64Bytes()))
     }
 
+    override fun conversationEpoch(groupId: MLSGroupId): ULong {
+        return coreCrypto.conversationEpoch(toUByteList(groupId.decodeBase64Bytes()))
+    }
+
     override fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
         return toByteArray(
             coreCrypto.newExternalAddProposal(
@@ -125,6 +129,10 @@ actual class MLSClientImpl actual constructor(
         return toCommitBundle(coreCrypto.commitPendingProposals(toUByteList(groupId.decodeBase64Bytes())))
     }
 
+    override fun clearPendingCommit(groupId: MLSGroupId) {
+        coreCrypto.clearPendingCommit(toUByteList(groupId.decodeBase64Bytes()))
+    }
+
     override fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
@@ -167,7 +175,8 @@ actual class MLSClientImpl actual constructor(
         )
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
-            value.commitDelay?.toLong()
+            value.commitDelay?.toLong(),
+            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it))) }
         )
     }
 

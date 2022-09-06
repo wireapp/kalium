@@ -24,4 +24,18 @@ data class CryptoQualifiedClientId(
     val userId: CryptoQualifiedID
 ) {
     override fun toString() = "${userId.value}:${value}@${userId.domain}"
+
+    companion object {
+        private const val CLIENT_ID_COMPONENT_COUNT = 3
+
+        fun fromEncodedString(value: String): CryptoQualifiedClientId? {
+            val components = value.split(":", "@")
+            if (components.size != CLIENT_ID_COMPONENT_COUNT) return null
+
+            return CryptoQualifiedClientId(
+                components[1],
+                CryptoQualifiedID(components[0], components[2])
+            )
+        }
+    }
 }
