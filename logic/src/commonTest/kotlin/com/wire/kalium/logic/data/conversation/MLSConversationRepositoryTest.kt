@@ -51,13 +51,14 @@ import kotlin.test.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class MLSConversationRepositoryTest {
     @Test
-    fun givenConversation_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndWelcomeMessageIsSent() = runTest {
+    fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetConversationByGroupIdSuccessful()
             .withGetAllMembersSuccessful()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withCreateMLSConversationSuccessful()
+            .withAddMLSMemberSuccessful()
             .withSendWelcomeMessageSuccessful()
             .withSendMLSMessageSuccessful()
             .withCommitAcceptedSuccessful()
@@ -69,6 +70,11 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::addMember)
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
@@ -85,7 +91,35 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
+    fun givenMlsClientMismatchError_whenCallingEstablishMLSGroup_thenClearCommitAndRetry() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetConversationByGroupIdSuccessful()
+            .withGetAllMembersSuccessful()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withCreateMLSConversationSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withSendMLSMessageFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withClearPendingCommitSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+            .wasInvoked(twice)
+    }
+
+    @Test
+    fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_thenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withProcessWelcomeMessageSuccessful()
@@ -631,8 +665,8 @@ class MLSConversationRepositoryTest {
         fun withCreateMLSConversationSuccessful() = apply {
             given(mlsClient)
                 .function(mlsClient::createConversation)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(ADD_MEMBER_COMMIT_BUNDLE)
+                .whenInvokedWith(anything())
+                .thenReturn(Unit)
         }
 
         fun withAddMLSMemberSuccessful() = apply {
