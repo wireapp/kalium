@@ -30,6 +30,13 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     @Test
+    fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() {
+        val mlsClient = createClient(ALICE)
+        mlsClient.createConversation(MLS_CONVERSATION_ID, emptyList())
+        assertEquals(0UL, mlsClient.conversationEpoch(MLS_CONVERSATION_ID))
+    }
+
+    @Test
     fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() {
         val aliceClient = createClient(ALICE)
         val bobClient = createClient(BOB)
