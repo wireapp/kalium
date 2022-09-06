@@ -12,4 +12,3 @@ sealed class SearchUserResult {
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
-
