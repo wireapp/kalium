@@ -45,7 +45,7 @@ class FederatedIdMapperTest {
         given(sessionRepository)
             .function(sessionRepository::userSession)
             .whenInvokedWith(any())
-            .then { Either.Right(authSession) }
+            .then { Either.Right(authToken) }
 
         given(serverConfigRepository)
             .function(serverConfigRepository::configByLinks)
@@ -62,7 +62,7 @@ class FederatedIdMapperTest {
         given(sessionRepository)
             .function(sessionRepository::userSession)
             .whenInvokedWith(any())
-            .then { Either.Right(authSession) }
+            .then { Either.Right(authToken) }
 
         given(serverConfigRepository)
             .function(serverConfigRepository::configByLinks)
@@ -79,8 +79,8 @@ class FederatedIdMapperTest {
         val serverConfigFederated = newServerConfig(1, federationEnabled = true)
         val serverConfigNonFederated = newServerConfig(2, federationEnabled = false)
 
-        val authSession = AuthSession(
-            AuthSession.Session.Valid(
+        val authToken = AuthSession(
+            AuthSession.Token.Valid(
                 selfUserId,
                 "accessToken",
                 "refreshToken",

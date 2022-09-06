@@ -18,15 +18,15 @@ class AddAuthenticatedUserUseCase(
     }
 
     operator fun invoke(authSession: AuthSession, ssoId: SsoId?, replace: Boolean = false): Result =
-        sessionRepository.doesSessionExist(authSession.session.userId).fold(
+        sessionRepository.doesSessionExist(authSession.token.userId).fold(
             {
                 Result.Failure.Generic(it)
             }, {
                 when (it) {
                     true -> {
-                        val forceReplace = sessionRepository.userSession(authSession.session.userId).fold(
+                        val forceReplace = sessionRepository.userSession(authSession.token.userId).fold(
                             { replace },
-                            { existSession -> existSession.session is AuthSession.Session.Invalid || replace }
+                            { existSession -> existSession.token is AuthSession.Token.Invalid || replace }
                         )
                         onUserExist(authSession, ssoId, forceReplace)
                     }
@@ -38,14 +38,14 @@ class AddAuthenticatedUserUseCase(
 
     private fun storeUser(authSession: AuthSession, ssoId: SsoId?): Result {
         sessionRepository.storeSession(authSession, ssoId)
-        sessionRepository.updateCurrentSession(authSession.session.userId)
-        return Result.Success(authSession.session.userId)
+        sessionRepository.updateCurrentSession(authSession.token.userId)
+        return Result.Success(authSession.token.userId)
     }
 
     private fun onUserExist(newSession: AuthSession, ssoId: SsoId?, replace: Boolean): Result =
         when (replace) {
             true -> {
-                sessionRepository.userSession(newSession.session.userId).fold(
+                sessionRepository.userSession(newSession.token.userId).fold(
                     // in case of the new session have a different server configurations the new session should not be added
                     { Result.Failure.Generic(it) }, { oldSession ->
                         if (oldSession.serverLinks == newSession.serverLinks) {

@@ -23,7 +23,7 @@ interface RegisterAccountRepository {
         code: String,
         name: String,
         password: String
-    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>>
+    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Token.Valid>>
 
     @Suppress("LongParameterList")
     suspend fun registerTeamWithEmail(
@@ -33,7 +33,7 @@ interface RegisterAccountRepository {
         password: String,
         teamName: String,
         teamIcon: String
-    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>>
+    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Token.Valid>>
 }
 
 class RegisterAccountDataSource(
@@ -55,7 +55,7 @@ class RegisterAccountDataSource(
         code: String,
         name: String,
         password: String
-    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>> =
+    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Token.Valid>> =
         register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password))
 
     override suspend fun registerTeamWithEmail(
@@ -65,7 +65,7 @@ class RegisterAccountDataSource(
         password: String,
         teamName: String,
         teamIcon: String
-    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>> =
+    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Token.Valid>> =
         register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
 
     private suspend fun requestActivation(
@@ -75,7 +75,7 @@ class RegisterAccountDataSource(
     private suspend fun activateUser(param: RegisterApi.ActivationParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { registerApi.activate(param) }
 
-    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>> =
+    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SsoId?, AuthSession.Token.Valid>> =
         wrapApiRequest { registerApi.register(param) }.map {
             Pair(idMapper.toSsoId(it.first.ssoID), sessionMapper.fromSessionDTO(it.second))
         }

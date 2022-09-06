@@ -34,25 +34,25 @@ class AddAuthenticatedUserUseCaseTest {
 
     @Test
     fun givenUserWithNoAlreadyStoredSession_whenInvoked_thenSuccessIsReturned() = runTest {
-        val session = TEST_SESSION
-        given(sessionRepository).invocation { doesSessionExist(session.session.userId) }.then { Either.Right(false) }
+        val session = TEST_Token
+        given(sessionRepository).invocation { doesSessionExist(session.token.userId) }.then { Either.Right(false) }
 
         given(sessionRepository).invocation { storeSession(session, TEST_SSO_ID) }.then { Either.Right(Unit) }
-        given(sessionRepository).invocation { updateCurrentSession(session.session.userId) }.then { Either.Right(Unit) }
+        given(sessionRepository).invocation { updateCurrentSession(session.token.userId) }.then { Either.Right(Unit) }
 
         val actual = addAuthenticatedUserUseCase(session, TEST_SSO_ID, false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         verify(sessionRepository).invocation { storeSession(session, TEST_SSO_ID) }.wasInvoked(exactly = once)
-        verify(sessionRepository).invocation { updateCurrentSession(session.session.userId) }.wasInvoked(exactly = once)
+        verify(sessionRepository).invocation { updateCurrentSession(session.token.userId) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserWithAlreadyStoredSession_whenInvoked_thenUserAlreadyExistsIsReturned() = runTest {
-        val session = TEST_SESSION
-        given(sessionRepository).invocation { doesSessionExist(session.session.userId) }.then { Either.Right(true) }
-        given(sessionRepository).invocation { userSession(session.session.userId) }.then { Either.Left(StorageFailure.DataNotFound) }
+        val session = TEST_Token
+        given(sessionRepository).invocation { doesSessionExist(session.token.userId) }.then { Either.Right(true) }
+        given(sessionRepository).invocation { userSession(session.token.userId) }.then { Either.Left(StorageFailure.DataNotFound) }
 
         val actual = addAuthenticatedUserUseCase(session, TEST_SSO_ID, false)
 
@@ -64,31 +64,31 @@ class AddAuthenticatedUserUseCaseTest {
 
     @Test
     fun givenUserWithAlreadyStoredSession_whenInvokedWithReplace_thenSuccessReturned() = runTest {
-        val oldSession =
-            AuthSession(AuthSession.Session.Valid(TEST_USERID, "access-token", "refresh-token", "type"), TEST_SERVER_CONFIG.links)
-        val newSession = TEST_SESSION
-        given(sessionRepository).invocation { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
-        given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
+        val oldToken =
+            AuthSession(AuthSession.Token.Valid(TEST_USERID, "access-token", "refresh-token", "type"), TEST_SERVER_CONFIG.links)
+        val newSession = TEST_Token
+        given(sessionRepository).invocation { doesSessionExist(newSession.token.userId) }.then { Either.Right(true) }
+        given(sessionRepository).invocation { userSession(newSession.token.userId) }.then { Either.Right(oldToken) }
         given(sessionRepository).invocation { storeSession(newSession, TEST_SSO_ID) }.then { Either.Right(Unit) }
-        given(sessionRepository).invocation { updateCurrentSession(newSession.session.userId) }.then { Either.Right(Unit) }
+        given(sessionRepository).invocation { updateCurrentSession(newSession.token.userId) }.then { Either.Right(Unit) }
 
         val actual = addAuthenticatedUserUseCase(newSession, TEST_SSO_ID, true)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         verify(sessionRepository).invocation { storeSession(newSession, TEST_SSO_ID) }.wasInvoked(exactly = once)
-        verify(sessionRepository).invocation { updateCurrentSession(newSession.session.userId) }.wasInvoked(exactly = once)
+        verify(sessionRepository).invocation { updateCurrentSession(newSession.token.userId) }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserWithAlreadyStoredSessionWithDifferentServerConfig_whenInvokedWithReplace_thenUserAlreadyExistsReturned() = runTest {
-        val oldSession = AuthSession(
-            AuthSession.Session.Valid(TEST_USERID, "access-token", "refresh-token", "type"),
+        val oldToken = AuthSession(
+            AuthSession.Token.Valid(TEST_USERID, "access-token", "refresh-token", "type"),
             newServerConfig(999).links
         )
-        val newSession = TEST_SESSION
-        given(sessionRepository).invocation { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
-        given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
+        val newSession = TEST_Token
+        given(sessionRepository).invocation { doesSessionExist(newSession.token.userId) }.then { Either.Right(true) }
+        given(sessionRepository).invocation { userSession(newSession.token.userId) }.then { Either.Right(oldToken) }
 
         val actual = addAuthenticatedUserUseCase(newSession, TEST_SSO_ID, true)
 
@@ -101,9 +101,9 @@ class AddAuthenticatedUserUseCaseTest {
     private companion object {
         val TEST_USERID = UserId("user_id", "domain.de")
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-        val TEST_SESSION =
+        val TEST_Token =
             AuthSession(
-                AuthSession.Session.Valid(
+                AuthSession.Token.Valid(
                     userId = TEST_USERID,
                     accessToken = "access_token",
                     refreshToken = "refresh_token",

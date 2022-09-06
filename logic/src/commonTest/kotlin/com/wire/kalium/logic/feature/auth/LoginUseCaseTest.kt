@@ -51,7 +51,7 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(cleanEmail) }
                 .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(cleanEmail, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
-                Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID)
+                Either.Right(TEST_VALID_AUTH_Token to TEST_SSO_ID)
             }
 
             val loginUserCaseResult = loginUseCase("   $cleanEmail  ", TEST_PASSWORD, TEST_PERSIST_CLIENT)
@@ -74,7 +74,7 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(cleanHandle) }
                 .then { ValidateUserHandleResult.Valid(cleanHandle) }
             given(loginRepository).coroutine { loginWithHandle(cleanHandle, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
-                Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID)
+                Either.Right(TEST_VALID_AUTH_Token to TEST_SSO_ID)
             }
 
             val loginUserCaseResult = loginUseCase("   $cleanHandle  ", TEST_PASSWORD, TEST_PERSIST_CLIENT)
@@ -97,7 +97,7 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
                 .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
-                Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID)
+                Either.Right(TEST_VALID_AUTH_Token to TEST_SSO_ID)
             }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
@@ -120,7 +120,7 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(TEST_HANDLE) }
                 .then { ValidateUserHandleResult.Valid(TEST_HANDLE) }
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
-                Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID)
+                Either.Right(TEST_VALID_AUTH_Token to TEST_SSO_ID)
             }
 
             // when
@@ -150,7 +150,7 @@ class LoginUseCaseTest {
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
                 .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
-                .then { Either.Right(TEST_VALID_AUTH_SESSION to TEST_SSO_ID) }
+                .then { Either.Right(TEST_VALID_AUTH_Token to TEST_SSO_ID) }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
@@ -284,7 +284,7 @@ class LoginUseCaseTest {
         const val TEST_PASSWORD = "123456"
         val TEST_PERSIST_CLIENT = Random.nextBoolean()
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-        val TEST_VALID_AUTH_SESSION = AuthSession.Session.Valid(
+        val TEST_VALID_AUTH_Token = AuthSession.Token.Valid(
             userId = UserId("user_id", "domain.de"),
             accessToken = "access_token",
             refreshToken = "refresh_token",
@@ -292,7 +292,7 @@ class LoginUseCaseTest {
         )
         val TEST_AUTH_SESSION =
             AuthSession(
-                TEST_VALID_AUTH_SESSION,
+                TEST_VALID_AUTH_Token,
                 TEST_SERVER_CONFIG.links
             )
         val TEST_SSO_ID = SsoId("scim_external", "subject", null)

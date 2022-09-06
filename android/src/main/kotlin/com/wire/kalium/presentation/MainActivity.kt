@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
         login(coreLogic, serverConfig).let {
-            val session = coreLogic.getSessionScope(it.session.userId)
+            val session = coreLogic.getSessionScope(it.token.userId)
             val kaliumFileSystem = session.kaliumFileSystem
             val conversations = session.conversations.getConversations().let { result ->
                 when (result) {

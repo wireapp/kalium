@@ -26,7 +26,7 @@ class GetSessionsUseCase(
 
     fun deleteInvalidSession(userId: UserId) {
         sessionRepository.userSession(userId).map {
-            if (it.session is AuthSession.Session.Invalid)
+            if (it.token is AuthSession.Token.Invalid)
                 sessionRepository.deleteSession(userId)
         }
     }

@@ -40,7 +40,7 @@ class UserEventReceiverImpl(
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
         sessionRepository.currentSession().map { currentSession ->
-            if (currentSession.session.userId == event.userId) {
+            if (currentSession.token.userId == event.userId) {
                 logoutUseCase(LogoutReason.DELETED_ACCOUNT)
             } else {
                 /* TODO: handle a connection delete their account:

@@ -44,7 +44,7 @@ class RegisterAccountUseCaseTest {
     fun givenRepositoryCallIsSuccessful_whenRegisteringPersonalAccount_thenSuccessIsPropagated() = runTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val ssoId = TEST_SSO_ID
-        val validAuthSession = TEST_VALID_AUTH_SESSION
+        val validAuthSession = TEST_VALID_AUTH_Token
         val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
         given(registerAccountRepository).coroutine {
@@ -66,7 +66,7 @@ class RegisterAccountUseCaseTest {
     fun givenRepositoryCallIsSuccessful_whenRegisteringTeamAccount_thenSuccessIsPropagated() = runTest {
         val param = TEST_TEAM_ACCOUNT_PARAM
         val ssoId = TEST_SSO_ID
-        val validAuthSession = TEST_VALID_AUTH_SESSION
+        val validAuthSession = TEST_VALID_AUTH_Token
         val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
         given(registerAccountRepository).coroutine {
@@ -93,7 +93,7 @@ class RegisterAccountUseCaseTest {
         runTest {
             val param = TEST_PRIVATE_ACCOUNT_PARAM
             val ssoId = TEST_SSO_ID
-            val validAuthSession = TEST_VALID_AUTH_SESSION
+            val validAuthSession = TEST_VALID_AUTH_Token
             val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
 
             given(registerAccountRepository).coroutine {
@@ -207,8 +207,8 @@ class RegisterAccountUseCaseTest {
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE
         )
-        val TEST_VALID_AUTH_SESSION =
-            AuthSession.Session.Valid(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type")
+        val TEST_VALID_AUTH_Token =
+            AuthSession.Token.Valid(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type")
         val TEST_SSO_ID = SsoId(null, null, null)
     }
 }
