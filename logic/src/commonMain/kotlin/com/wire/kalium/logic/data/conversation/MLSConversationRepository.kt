@@ -4,7 +4,6 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.MlsFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -19,7 +18,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
@@ -62,6 +60,29 @@ interface MLSConversationRepository {
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer)
     suspend fun observeProposalTimers(): Flow<List<ProposalTimer>>
+}
+
+private enum class CommitStrategy {
+    KEEP_AND_RETRY,
+    DISCARD_AND_RETRY,
+    ABORT
+}
+
+private fun CoreFailure.getStrategy(): CommitStrategy {
+    return if (this is NetworkFailure.ServerMiscommunication && this.kaliumException is KaliumException.InvalidRequestError) {
+        if (this.kaliumException.isMlsClientMismatch()) {
+            CommitStrategy.DISCARD_AND_RETRY
+        } else if (
+            this.kaliumException.isMlsStaleMessage() ||
+            this.kaliumException.isMlsCommitMissingReferences()
+        ) {
+            CommitStrategy.KEEP_AND_RETRY
+        } else {
+            CommitStrategy.ABORT
+        }
+    } else {
+        CommitStrategy.ABORT
+    }
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -315,54 +336,41 @@ class MLSConversationDataSource(
         groupID: GroupID,
         retryOperation: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Unit> {
-        return when (mapToMlsFailure(failure)) {
-            is MlsFailure.ClientMismatch -> {
-                kaliumLogger.w("Client list was out of date when adding members, re-trying")
-
-                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                    mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
-                    retryOperation().flatMapLeft { handleCommitFailure(it, groupID, retryOperation) }
-                }
-            }
-            is MlsFailure.StaleMessage, is MlsFailure.CommitMissingReferences -> {
-                kaliumLogger.w("Commit was made for outdated epoch or didn't include all pending proposals, re-trying")
-
-                syncManager.waitUntilLiveOrFailure().flatMap {
-                    internalCommitPendingProposals(groupID).flatMapLeft { handleCommitFailure(it, groupID, retryOperation) }
-                }.onFailure {
-                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        kaliumLogger.e("Commit failed while waiting for sync to start")
-
-                        mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
-                        Either.Left(failure)
-                    }
-                }
-            }
-            else -> {
-                kaliumLogger.e("Commit failed permanently: $failure")
-
-                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                    mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
-                    Either.Left(failure)
-                }
-            }
+        return when (failure.getStrategy()) {
+            CommitStrategy.KEEP_AND_RETRY -> keepCommitAndRetry(groupID)
+            CommitStrategy.DISCARD_AND_RETRY -> discardCommitAndRetry(groupID, retryOperation)
+            CommitStrategy.ABORT -> return discardCommit(groupID).flatMap { Either.Left(failure) }
+        }.flatMapLeft {
+            handleCommitFailure(it, groupID, retryOperation)
         }
     }
 
-    private fun mapToMlsFailure(failure: CoreFailure): MlsFailure {
-        return if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-            if (failure.kaliumException.isMlsClientMismatch()) {
-                MlsFailure.ClientMismatch()
-            } else if (failure.kaliumException.isMlsStaleMessage()) {
-                MlsFailure.StaleMessage()
-            } else if (failure.kaliumException.isMlsCommitMissingReferences()) {
-                MlsFailure.CommitMissingReferences()
-            } else {
-                MlsFailure.Unknown()
-            }
-        } else {
-            MlsFailure.Unknown()
+    private suspend fun keepCommitAndRetry(groupID: GroupID): Either<CoreFailure, Unit> {
+        kaliumLogger.w("Migrating failed commit to new epoch and re-trying.")
+
+        return syncManager.waitUntilLiveOrFailure().flatMap {
+            internalCommitPendingProposals(groupID)
         }
     }
 
+    private suspend fun discardCommitAndRetry(
+        groupID: GroupID,
+        operation: suspend () -> Either<CoreFailure, Unit>
+    ): Either<CoreFailure, Unit> {
+        kaliumLogger.w("Discarding failed commit and retry by re-generating the commit.")
+
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+            operation()
+        }
+    }
+
+    private suspend fun discardCommit(groupID: GroupID): Either<CoreFailure, Unit> {
+        kaliumLogger.w("Discarding the failed commit.")
+
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+            Either.Right(Unit)
+        }
+    }
 }

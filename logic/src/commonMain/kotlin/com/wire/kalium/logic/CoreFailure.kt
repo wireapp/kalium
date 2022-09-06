@@ -52,13 +52,6 @@ sealed class NetworkFailure : CoreFailure() {
     }
 }
 
-sealed class MlsFailure: CoreFailure() {
-    class StaleMessage(): MlsFailure()
-    class ClientMismatch(): MlsFailure()
-    class CommitMissingReferences(): MlsFailure()
-    class Unknown(): MlsFailure()
-}
-
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure() {
     constructor(cause: Throwable) : this(ProteusException("Unknown error caught from logic", code = ProteusException.Code.UNKNOWN_ERROR))
 
