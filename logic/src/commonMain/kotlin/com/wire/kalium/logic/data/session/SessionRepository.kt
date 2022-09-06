@@ -114,7 +114,7 @@ internal class SessionDataSource(
             }
         }, { sessionsList ->
             sessionsList.forEach {
-                if (it.session.userId == userId) {
+                if (it.token.userId == userId) {
                     return@fold Either.Right(true)
                 }
             }
@@ -135,10 +135,13 @@ internal class SessionDataSource(
                 sessionStorage.addOrReplaceSession(
                     AuthSessionEntity.Invalid(
                         idMapper.toDaoModel(userId),
-                        existSession.serverLinks,
-                        com.wire.kalium.persistence.model.LogoutReason.values()[reason.ordinal],
-                        isHardLogout,
-                        existSession.ssoId
+                        serverLinks = existSession.serverLinks,
+                        reason = com.wire.kalium.persistence.model.LogoutReason.values()[reason.ordinal],
+                        hardLogout = isHardLogout,
+                        ssoId = existSession.ssoId,
+                        tokenType = existSession.tokenType,
+                        refreshToken = existSession.refreshToken,
+                        accessToken = existSession.accessToken
                     )
                 )
             }

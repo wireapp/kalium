@@ -40,16 +40,20 @@ data class SsoIdEntity(
 @Serializable
 sealed class AuthSessionEntity {
     @SerialName("user_id") abstract val userId: QualifiedIDEntity
+    @SerialName("token_type") abstract val tokenType: String
+    @SerialName("access_token") abstract val accessToken: String
+    @SerialName("refresh_token") abstract val refreshToken: String
     @SerialName("user_sso_id") abstract val ssoId: SsoIdEntity?
     @SerialName("wire_server") abstract val serverLinks: ServerConfigEntity.Links
+
 
     @Serializable
     @SerialName("authsession.valid")
     data class Valid(
         override val userId: QualifiedIDEntity,
-        @SerialName("token_type") val tokenType: String,
-        @SerialName("access_token") val accessToken: String,
-        @SerialName("refresh_token") val refreshToken: String,
+        @SerialName("token_type") override val tokenType: String,
+        @SerialName("access_token") override val accessToken: String,
+        @SerialName("refresh_token") override val refreshToken: String,
         override val serverLinks: ServerConfigEntity.Links,
         override val ssoId: SsoIdEntity?
     ) : AuthSessionEntity()
@@ -58,6 +62,9 @@ sealed class AuthSessionEntity {
     @SerialName("authsession.invalid")
     data class Invalid(
         override val userId: QualifiedIDEntity,
+        @SerialName("token_type") override val tokenType: String,
+        @SerialName("access_token") override val accessToken: String,
+        @SerialName("refresh_token") override val refreshToken: String,
         override val serverLinks: ServerConfigEntity.Links,
         @SerialName("reason") val reason: LogoutReason,
         @SerialName("hardLogout") val hardLogout: Boolean,

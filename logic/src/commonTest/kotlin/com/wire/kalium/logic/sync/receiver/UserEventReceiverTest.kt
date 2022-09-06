@@ -125,7 +125,7 @@ class UserEventReceiverTest {
 
         fun validAuthSessionWith(userId: UserId): AuthSession =
             AuthSession(
-                AuthSession.Session.Valid(
+                AuthSession.Token.Valid(
                     userId,
                     randomString,
                     randomString,
