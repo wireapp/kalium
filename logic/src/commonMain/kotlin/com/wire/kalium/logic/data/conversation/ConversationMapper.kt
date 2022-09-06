@@ -36,11 +36,13 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+    @Suppress("LongParameterList")
     fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne
 }
@@ -95,7 +97,7 @@ internal class ConversationMapperImpl(
     )
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
-        ProposalTimer(daoModel.groupID, daoModel.firingDate)
+        ProposalTimer(idMapper.fromGroupIDEntity(daoModel.groupID), daoModel.firingDate)
 
     override fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access> = accessList.map {
         when (it) {
@@ -125,7 +127,7 @@ internal class ConversationMapperImpl(
         }
 
     override fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity =
-        ProposalTimerEntity(proposalTimer.groupID, proposalTimer.timestamp)
+        ProposalTimerEntity(idMapper.toGroupIDEntity(proposalTimer.groupID), proposalTimer.timestamp)
 
     override fun toApiModel(
         name: String?,
@@ -152,6 +154,7 @@ internal class ConversationMapperImpl(
         otherUser: OtherUser,
         selfUser: SelfUser,
         unreadMessageCount: Long,
+        unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne {
         return ConversationDetails.OneOne(
@@ -162,6 +165,7 @@ internal class ConversationMapperImpl(
             legalHoldStatus = LegalHoldStatus.DISABLED,
             userType = otherUser.userType,
             unreadMessagesCount = unreadMessageCount,
+            unreadMentionsCount = unreadMentionsCount,
             lastUnreadMessage = lastUnreadMessage
         )
     }

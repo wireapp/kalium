@@ -4,6 +4,7 @@ import android.content.Context
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -16,7 +17,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
  * and it should only override functions/variables from UserSessionScopeCommon
  */
 @Suppress("LongParameterList")
-actual class UserSessionScope(
+actual class UserSessionScope internal constructor(
     private val applicationContext: Context,
     userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
@@ -24,7 +25,9 @@ actual class UserSessionScope(
     globalCallManager: GlobalCallManager,
     globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
-    kaliumConfigs: KaliumConfigs
+    kaliumConfigs: KaliumConfigs,
+    userSessionScopeProvider: UserSessionScopeProvider,
+    serverConfigRepository: Lazy<ServerConfigRepository>
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
@@ -32,7 +35,9 @@ actual class UserSessionScope(
     globalCallManager,
     globalPreferences,
     dataStoragePaths,
-    kaliumConfigs
+    kaliumConfigs,
+    userSessionScopeProvider,
+    serverConfigRepository
 ) {
 
     override val clientConfig: ClientConfig get() = ClientConfigImpl(applicationContext)

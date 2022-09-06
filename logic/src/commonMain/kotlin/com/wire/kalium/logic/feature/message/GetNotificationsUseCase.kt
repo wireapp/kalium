@@ -214,22 +214,11 @@ class GetNotificationsUseCaseImpl(
             allMuted(conversationMutedStatus, selfUser) -> false
             onlyMentionsAllowed(conversationMutedStatus, selfUser) -> {
                 when (val content = message.content) {
-                    is MessageContent.Text -> {
-                        val containsSelfUserName = selfUser.name?.let { selfUsername ->
-                            content.value.contains("@$selfUsername")
-                        } ?: false
-                        val containsSelfHandle = selfUser.handle?.let { selfHandle ->
-                            content.value.contains("@$selfHandle")
-                        } ?: false
-
-                        containsSelfUserName or containsSelfHandle
-                    }
-
+                    is MessageContent.Text -> content.mentions.firstOrNull { it.userId == selfUser.id } != null
                     is MessageContent.MissedCall -> true
                     else -> false
                 }
             }
-
             allNotificationsAllowed(conversationMutedStatus, selfUser) -> true
             else -> false
         }

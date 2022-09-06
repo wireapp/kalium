@@ -25,12 +25,12 @@ import kotlin.test.assertIs
 class RefillKeyPackageUseCaseTest {
 
     @Test
-    fun givenKeyPackageCountIs50PercentBelowLimit_ThenRequestToRefillKeyPackageIsPerformed() = runTest {
+    fun givenRefillKeyPackageUseCase_WhenNeedRefillReturnTrue_ThenRequestToRefillKeyPackageIsPerformed() = runTest {
         val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD - 1).toInt()
 
         val (arrangement, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withDefaultKeyPackageLimits()
+            .withKeyPackageLimits(true, Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount)
             .withKeyPackageCount(keyPackageCount)
             .withUploadKeyPackagesSuccessful()
             .arrange()
@@ -45,12 +45,12 @@ class RefillKeyPackageUseCaseTest {
     }
 
     @Test
-    fun givenKeyPackageCount50PercentAboveLimit_ThenNoRequestToRefillKeyPackagesIsPerformed() = runTest {
+    fun givenRefillKeyPackageUseCase_WhenNeedRefillReturnFalse_ThenRequestToRefillKeyPackageIsPerformed() = runTest {
         val keyPackageCount = (Arrangement.KEY_PACKAGE_LIMIT * Arrangement.KEY_PACKAGE_THRESHOLD).toInt()
 
         val (_, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withDefaultKeyPackageLimits()
+            .withKeyPackageLimits(false, 0)
             .withKeyPackageCount(keyPackageCount)
             .arrange()
 
@@ -65,7 +65,7 @@ class RefillKeyPackageUseCaseTest {
 
         val (_, refillKeyPackagesUseCase) = Arrangement()
             .withExistingSelfClientId()
-            .withDefaultKeyPackageLimits()
+            .withKeyPackageLimits(true, 0)
             .withGetAvailableKeyPackagesFailing(networkFailure)
             .arrange()
 
@@ -97,14 +97,13 @@ class RefillKeyPackageUseCaseTest {
                 .then { Either.Right(TestClient.CLIENT_ID) }
         }
 
-        fun withDefaultKeyPackageLimits() = apply {
-            given(keyPackageLimitsProvider).getter(keyPackageLimitsProvider::keyPackageUploadLimit)
+        fun withKeyPackageLimits(needRefill: Boolean, refillAmount: Int) = apply {
+            given(keyPackageLimitsProvider).function(keyPackageLimitsProvider::needsRefill)
+                .whenInvokedWith(anything())
+                .thenReturn(needRefill)
+            given(keyPackageLimitsProvider).function(keyPackageLimitsProvider::refillAmount)
                 .whenInvoked()
-                .thenReturn(KEY_PACKAGE_LIMIT)
-
-            given(keyPackageLimitsProvider).getter(keyPackageLimitsProvider::keyPackageUploadThreshold)
-                .whenInvoked()
-                .thenReturn(KEY_PACKAGE_THRESHOLD)
+                .thenReturn(refillAmount)
         }
 
         fun withKeyPackageCount(count: Int) = apply {

@@ -44,11 +44,16 @@ interface MessageDAO {
 
     suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity)
 
-    suspend fun getLastUnreadMessage(
+    suspend fun observeLastUnreadMessage(
         conversationID: QualifiedIDEntity
-    ): MessageEntity?
+    ): Flow<MessageEntity?>
 
-    suspend fun getUnreadMessageCount(
+    suspend fun observeUnreadMessageCount(
         conversationId: QualifiedIDEntity
-    ): Long
+    ): Flow<Long>
+
+    suspend fun observeUnreadMentionsCount(
+        conversationId: QualifiedIDEntity,
+        userId: UserIDEntity
+    ): Flow<Long>
 }

@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.distinct
@@ -38,7 +39,7 @@ interface PendingProposalScheduler {
      * @param groupID
      * @param date desired time for when proposals should be committed
      */
-    suspend fun scheduleCommit(groupID: String, date: Instant)
+    suspend fun scheduleCommit(groupID: GroupID, date: Instant)
 
 }
 
@@ -68,10 +69,12 @@ internal class PendingProposalSchedulerImpl(
     }
 
     private suspend fun startCommittingPendingProposals() {
+        kaliumLogger.d("Start listening for pending proposals to commit")
         timers().cancellable().collect() { groupID ->
+            kaliumLogger.d("Committing pending proposals in $groupID")
             mlsConversationRepository.value.commitPendingProposals(groupID)
                 .onFailure {
-                    kaliumLogger.e("Failed to commit pending proposals in $groupID")
+                    kaliumLogger.e("Failed to commit pending proposals in $groupID: $it")
                 }
         }
     }
@@ -96,7 +99,8 @@ internal class PendingProposalSchedulerImpl(
         }
     }
 
-    override suspend fun scheduleCommit(groupID: String, date: Instant) {
+    override suspend fun scheduleCommit(groupID: GroupID, date: Instant) {
+        kaliumLogger.d("Scheduling to commit pending proposals in $groupID at $date")
         mlsConversationRepository.value.setProposalTimer(ProposalTimer(groupID, date))
     }
 

@@ -127,6 +127,27 @@ class SessionStorageTest {
         }
     }
 
+    @Test
+    fun givenASession_whenObservingAllSessionsList_thenChangesArePropagated() = runTest {
+        val session1 = AuthSessionEntity.Valid(
+            QualifiedIDEntity("user_id_1", "user_domain_1"),
+            "JWT",
+            Random.nextBytes(32).decodeToString(),
+            Random.nextBytes(32).decodeToString(),
+            TEST_SERVER_CONFIG.links,
+            TEST_SSO_ID_ENTITY
+        )
+        val sessionsMapExpectedValue = mapOf(session1.userId to session1)
+
+        sessionStorage.allSessionsFlow().test {
+            assertEquals(mapOf(), awaitItem())
+            sessionStorage.addOrReplaceSession(session1)
+            assertEquals(sessionsMapExpectedValue, awaitItem())
+            sessionStorage.deleteSession(session1.userId)
+            assertEquals(mapOf(), awaitItem())
+        }
+    }
+
     private companion object {
         val TEST_SERVER_CONFIG: ServerConfigEntity = newServerConfig(1)
         val TEST_SSO_ID_ENTITY = SsoIdEntity(null, null, null)

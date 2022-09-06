@@ -18,6 +18,8 @@ interface UserConfigRepository {
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
     fun isMLSEnabled(): Either<StorageFailure, Boolean>
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit>
+    fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
 }
 
 class UserConfigDataSource(
@@ -60,5 +62,15 @@ class UserConfigDataSource(
 
     override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
+
+    override fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
+        wrapStorageRequest { userConfigStorage.persistClassifiedDomainsStatus(enabled, domains) }
+
+    override fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>> =
+        userConfigStorage.isClassifiedDomainsEnabledFlow().wrapStorageRequest().map {
+            it.map { classifiedDomain ->
+                ClassifiedDomainsStatus(classifiedDomain.status, classifiedDomain.trustedDomains)
+            }
+        }
 
 }

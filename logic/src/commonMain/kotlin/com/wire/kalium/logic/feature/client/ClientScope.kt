@@ -40,7 +40,7 @@ class ClientScope(
     val registerPushToken: RegisterTokenUseCase get() = RegisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val deregisterNativePushToken: DeregisterTokenUseCase get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
-        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientRepository)
+        get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientRepository, keyPackageLimitsProvider)
     val refillKeyPackages: RefillKeyPackagesUseCase
         get() = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
@@ -57,4 +57,5 @@ class ClientScope(
             clientRepository
         )
 
+    val observeCurrentClientId: ObserveCurrentClientIdUseCase get() = ObserveCurrentClientIdUseCase(clientRepository)
 }

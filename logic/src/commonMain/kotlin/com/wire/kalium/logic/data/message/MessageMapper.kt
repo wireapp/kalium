@@ -23,7 +23,8 @@ interface MessageMapper {
 class MessageMapperImpl(
     private val idMapper: IdMapper,
     private val memberMapper: MemberMapper,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper()
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message): MessageEntity {
@@ -121,7 +122,10 @@ class MessageMapperImpl(
 
     @Suppress("ComplexMethod")
     private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
-        is MessageContent.Text -> MessageEntityContent.Text(messageBody = this.value)
+        is MessageContent.Text -> MessageEntityContent.Text(
+            messageBody = this.value,
+            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) }
+        )
         is MessageContent.Asset -> with(this.value) {
             val assetWidth = when (metadata) {
                 is Image -> metadata.width
@@ -192,7 +196,10 @@ class MessageMapperImpl(
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
-        is MessageEntityContent.Text -> MessageContent.Text(this.messageBody)
+        is MessageEntityContent.Text -> MessageContent.Text(
+            value = this.messageBody,
+            mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) }
+        )
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )

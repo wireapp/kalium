@@ -30,6 +30,13 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     @Test
+    fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() {
+        val mlsClient = createClient(ALICE)
+        mlsClient.createConversation(MLS_CONVERSATION_ID, emptyList())
+        assertEquals(0UL, mlsClient.conversationEpoch(MLS_CONVERSATION_ID))
+    }
+
+    @Test
     fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() {
         val aliceClient = createClient(ALICE)
         val bobClient = createClient(BOB)
@@ -63,9 +70,14 @@ class MLSClientTest : BaseMLSClientTest() {
     fun givenTwoClients_whenCallingJoinConversation_weCanProcessTheAddProposalMessage() {
         val aliceClient = createClient(ALICE)
         val bobClient = createClient(BOB)
+        val carolClient = createClient(CAROL)
 
-        bobClient.createConversation(MLS_CONVERSATION_ID, emptyList())
-        val proposal = aliceClient.joinConversation(MLS_CONVERSATION_ID, 0UL)
+        val carolKeyPackage = carolClient.generateKeyPackages(1).first()
+        val clientKeyPackageList = listOf(Pair(CAROL.qualifiedClientId, carolKeyPackage))
+
+        bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)
+        bobClient.commitAccepted(MLS_CONVERSATION_ID)
+        val proposal = aliceClient.joinConversation(MLS_CONVERSATION_ID, 1UL)
         bobClient.decryptMessage(MLS_CONVERSATION_ID, proposal)
         val welcome = bobClient.commitPendingProposals(MLS_CONVERSATION_ID).welcome
         bobClient.commitAccepted(MLS_CONVERSATION_ID)

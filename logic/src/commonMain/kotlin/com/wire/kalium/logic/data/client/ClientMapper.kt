@@ -72,9 +72,9 @@ class ClientMapper(
         DeviceType.Unknown -> DeviceTypeDTO.Unknown
     }
 
-    fun fromOtherUsersClientsDTO(otherUsersClients: List<OtherUserClientsItem>): List<OtherUserClients> =
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<OtherUserClientsItem>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClients(DeviceType.valueOf(it.deviceType.name), it.id)
+            OtherUserClient(DeviceType.valueOf(it.deviceType.name), it.id)
         }
 
     private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {

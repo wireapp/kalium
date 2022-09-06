@@ -42,12 +42,13 @@ class MessageTextEditHandlerTest {
 
         val mockMessageContent = MessageContent.TextEdited(
             editMessageId = "someId",
-            newContent = "some new content"
+            newContent = "some new content",
+            newMentions = listOf()
         )
 
         given(messageRepository)
             .suspendFunction(messageRepository::updateTextMessageContent)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything())
             .thenReturn(Either.Right(Unit))
 
         given(messageRepository)
@@ -64,7 +65,7 @@ class MessageTextEditHandlerTest {
         // then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateTextMessageContent)
-            .with(eq(mockMessage.conversationId), eq(mockMessageContent.editMessageId), eq(mockMessageContent.newContent))
+            .with(eq(mockMessage.conversationId), eq(mockMessageContent))
             .wasInvoked(exactly = once)
 
         verify(messageRepository)
