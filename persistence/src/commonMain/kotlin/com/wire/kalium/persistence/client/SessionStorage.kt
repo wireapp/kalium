@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -71,7 +72,7 @@ class SessionStorageImpl(
 
     private val sessionsUpdatedFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    override fun addOrReplaceSession(authSessionEntity: AuthSessionEntity) =
+    override fun addOrReplaceSession(authSessionEntity: AuthSessionEntity) {
         allSessions()?.let { sessionMap ->
             val temp = sessionMap.toMutableMap()
             temp[authSessionEntity.userId] = authSessionEntity
@@ -79,7 +80,9 @@ class SessionStorageImpl(
         } ?: run {
             val sessions = mapOf(authSessionEntity.userId to authSessionEntity)
             saveAllSessions(SessionsMap(sessions))
-        }.also { sessionsUpdatedFlow.tryEmit(Unit) }
+        }
+        sessionsUpdatedFlow.tryEmit(Unit)
+    }
 
     override fun deleteSession(userId: UserIDEntity) =
         allSessions()?.let { sessionMap ->
@@ -112,6 +115,7 @@ class SessionStorageImpl(
         .map { currentSession() }
         .onStart { emit(currentSession()) }
         .distinctUntilChanged()
+        .onEach { kaliumLogger.d("currentSessionFlow kalium $it") }
 
     override fun setCurrentSession(userId: UserIDEntity?) =
         kaliumPreferences.putSerializable(CURRENT_SESSION_KEY, userId, UserIDEntity.serializer())
