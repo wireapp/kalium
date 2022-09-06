@@ -177,14 +177,11 @@ class MLSConversationDataSource(
 
     override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> =
         executeOperation(groupID) {
-            internalUpdateKeyingMaterial(groupID)
-        }
-
-    private suspend fun internalUpdateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> =
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            sendCommitBundle(groupID, mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))).flatMap {
-                wrapStorageRequest {
-                    conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), Clock.System.now())
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                sendCommitBundle(groupID, mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))).flatMap {
+                    wrapStorageRequest {
+                        conversationDAO.updateKeyingMaterial(idMapper.toCryptoModel(groupID), Clock.System.now())
+                    }
                 }
             }
         }
@@ -229,58 +226,52 @@ class MLSConversationDataSource(
 
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         executeOperation(groupID) {
-            internalAddMemberToMLSGroup(groupID, userIdList)
-        }
-
-    private suspend fun internalAddMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        // TODO: check for federated and non-federated members
-        keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
-            mlsClientProvider.getMLSClient().flatMap { client ->
-                val clientKeyPackageList = keyPackages
-                    .map {
-                        Pair(
-                            CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
-                            it.keyPackage.decodeBase64Bytes()
-                        )
-                    }
-                client.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)?.let { bundle ->
-                    sendCommitBundle(groupID, bundle)
-                        .flatMap {
-                            wrapStorageRequest {
-                                val list = userIdList.map {
-                                    Member(idMapper.toDaoModel(it), Member.Role.Member)
-                                }
-                                conversationDAO.insertMembers(list, idMapper.toGroupIDEntity(groupID))
-                            }
-                        }.flatMap {
-                            Either.Right(Unit)
+            // TODO: check for federated and non-federated members
+            keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
+                mlsClientProvider.getMLSClient().flatMap { client ->
+                    val clientKeyPackageList = keyPackages
+                        .map {
+                            Pair(
+                                CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
+                                it.keyPackage.decodeBase64Bytes()
+                            )
                         }
-                } ?: run {
-                    Either.Right(Unit)
+                    client.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)?.let { bundle ->
+                        sendCommitBundle(groupID, bundle)
+                            .flatMap {
+                                wrapStorageRequest {
+                                    val list = userIdList.map {
+                                        Member(idMapper.toDaoModel(it), Member.Role.Member)
+                                    }
+                                    conversationDAO.insertMembers(list, idMapper.toGroupIDEntity(groupID))
+                                }
+                            }.flatMap {
+                                Either.Right(Unit)
+                            }
+                    } ?: run {
+                        Either.Right(Unit)
+                    }
                 }
             }
         }
 
     override suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         executeOperation(groupID) {
-            internalRemoveMembersFromMLSGroup(groupID, userIdList)
-        }
-
-    private suspend fun internalRemoveMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
-            val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
-                userClients.value.map { userClient ->
-                    CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
+            wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
+                val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
+                    userClients.value.map { userClient ->
+                        CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
+                    }
                 }
-            }
-            return mlsClientProvider.getMLSClient().flatMap { client ->
-                client.removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs).let { bundle ->
-                    sendCommitBundle(groupID, bundle).flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.deleteMembersByQualifiedID(
-                                userIdList.map { idMapper.toDaoModel(it) },
-                                idMapper.toGroupIDEntity(groupID)
-                            )
+                return@executeOperation mlsClientProvider.getMLSClient().flatMap { client ->
+                    client.removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs).let { bundle ->
+                        sendCommitBundle(groupID, bundle).flatMap {
+                            wrapStorageRequest {
+                                conversationDAO.deleteMembersByQualifiedID(
+                                    userIdList.map { idMapper.toDaoModel(it) },
+                                    idMapper.toGroupIDEntity(groupID)
+                                )
+                            }
                         }
                     }
                 }
