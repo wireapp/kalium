@@ -135,7 +135,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val hasOngoingCall: Boolean = false,
         val unreadMessagesCount: Long = 0L,
         val unreadMentionsCount: Long = 0L,
-        val lastUnreadMessage: Message?
+        val lastUnreadMessage: Message?,
+        val isSelfUserMember: Boolean = true
     ) : ConversationDetails(conversation)
 
     data class Connection(
