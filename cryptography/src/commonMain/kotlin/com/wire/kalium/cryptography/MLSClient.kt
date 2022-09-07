@@ -100,14 +100,10 @@ interface MLSClient {
      * Create a new MLS conversation
      *
      * @param groupId MLS group ID provided by BE
-     * @param members list of clients with a claimed key package for each client.
-     *
-     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun createConversation(
-        groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): AddMemberCommitBundle?
+        groupId: MLSGroupId
+    )
 
     fun wipeConversation(groupId: MLSGroupId)
 

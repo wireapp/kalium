@@ -294,17 +294,21 @@ class MLSConversationDataSource(
                         )
                     }
 
-                client.createConversation(idMapper.toCryptoModel(groupID), clientKeyPackageList)?.let { bundle ->
-                    sendCommitBundle(groupID, bundle).flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.updateConversationGroupState(
-                                ConversationEntity.GroupState.ESTABLISHED,
-                                idMapper.toGroupIDEntity(groupID)
-                            )
+                client.createConversation(idMapper.toCryptoModel(groupID))
+
+                retryOnCommitFailure(groupID) {
+                    client.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)?.let { bundle ->
+                        sendCommitBundle(groupID, bundle).flatMap {
+                            wrapStorageRequest {
+                                conversationDAO.updateConversationGroupState(
+                                    ConversationEntity.GroupState.ESTABLISHED,
+                                    idMapper.toGroupIDEntity(groupID)
+                                )
+                            }
                         }
+                    } ?: run {
+                        Either.Right(Unit)
                     }
-                } ?: run {
-                    Either.Right(Unit)
                 }
             }
         }

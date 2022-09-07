@@ -38,10 +38,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun createConversation(
-        groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): AddMemberCommitBundle? {
+    override fun createConversation(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
