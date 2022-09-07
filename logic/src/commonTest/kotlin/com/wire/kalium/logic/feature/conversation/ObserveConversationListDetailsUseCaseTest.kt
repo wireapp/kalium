@@ -62,9 +62,9 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When
-
         observeConversationsUseCase().collect()
 
+        // Then
         with(arrangement) {
             verify(conversationRepository)
                 .suspendFunction(conversationRepository::observeConversationList)
@@ -74,6 +74,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
+        // Given
         val selfConversation = TestConversation.SELF
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(selfConversation, groupConversation)
@@ -95,6 +96,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .withIsSelfUserMember(true)
             .arrange()
 
+        // When
         observeConversationsUseCase().collect()
 
         with(arrangement) {
@@ -109,6 +111,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenSomeConversationsDetailsAreUpdated_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
+        // Given
         val oneOnOneConversation = TestConversation.ONE_ON_ONE
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
@@ -152,6 +155,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .withIsSelfUserMember(true)
             .arrange()
 
+        // When, Then
         observeConversationsUseCase().test {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
 
@@ -169,6 +173,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
+        // Given
         val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
@@ -193,6 +198,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .withIsSelfUserMember(true)
             .arrange()
 
+        // When, Then
         observeConversationsUseCase().test {
             assertContentEquals(listOf(groupConversationDetails), awaitItem().conversationList)
 
@@ -204,6 +210,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
+        // Given
         val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
@@ -237,6 +244,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .withIsSelfUserMember(true)
             .arrange()
 
+        // When, Then
         observeConversationsUseCase().test {
             assertEquals(true, (awaitItem().conversationList[0] as ConversationDetails.Group).hasOngoingCall)
         }
@@ -244,6 +252,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
+        // Given
         val groupConversation = TestConversation.GROUP()
 
         val groupConversationDetails = ConversationDetails.Group(
@@ -266,6 +275,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .withIsSelfUserMember(true)
             .arrange()
 
+        // When, Then
         observeConversationsUseCase().test {
             assertEquals(false, (awaitItem().conversationList[0] as ConversationDetails.Group).hasOngoingCall)
         }
@@ -274,6 +284,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenConversationDetailsFailure_whenObservingDetailsList_thenIgnoreConversationWithFailure() = runTest {
+        // Given
         val successConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("successId", "domain"))
         val successConversationDetails = TestConversationDetails.CONVERSATION_ONE_ONE.copy(conversation = successConversation)
         val failureConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("failedId", "domain"))
@@ -287,6 +298,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .withIsSelfUserMember(true)
             .arrange()
 
+        // When, Then
         observeConversationsUseCase().test {
             assertEquals(awaitItem().conversationList, listOf(successConversationDetails))
             awaitComplete()
