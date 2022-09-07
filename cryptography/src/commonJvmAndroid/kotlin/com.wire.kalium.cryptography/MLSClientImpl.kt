@@ -80,12 +80,7 @@ actual class MLSClientImpl actual constructor(
 
     override fun createConversation(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): AddMemberCommitBundle? {
-        val invitees = members.map {
-            Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
-        }
-
+    ) {
         val conf = ConversationConfiguration(
             emptyList(),
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
@@ -95,12 +90,6 @@ actual class MLSClientImpl actual constructor(
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
         coreCrypto.createConversation(groupIdAsBytes, conf)
-
-        return if (members.isEmpty()) {
-            null
-        } else {
-            toAddMemberCommitBundle(coreCrypto.addClientsToConversation(groupIdAsBytes, invitees))
-        }
     }
 
     override fun wipeConversation(groupId: MLSGroupId) {
