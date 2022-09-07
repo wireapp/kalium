@@ -22,8 +22,8 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchUserDirectoryUseCaseImpl
-import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.dao.MetadataDAO
 
@@ -44,7 +44,7 @@ class UserScope internal constructor(
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
     val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
-    val searchUsers: SearchUsersUseCase get() = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
+    val searchUsers: SearchPublicUsersUseCase get() = SearchPublicUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
     val searchKnownUsers: SearchKnownUsersUseCase
         get() = SearchKnownUsersUseCaseImpl(
             searchUserRepository,

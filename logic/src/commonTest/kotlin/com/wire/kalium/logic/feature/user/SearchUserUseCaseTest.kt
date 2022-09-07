@@ -16,8 +16,8 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.publicuser.search.Result
-import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -29,6 +29,7 @@ import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -46,16 +47,21 @@ class SearchUserUseCaseTest {
     @Mock
     private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
-    private lateinit var searchUsersUseCase: SearchUsersUseCase
+    private lateinit var searchPublicUsersUseCase: SearchPublicUsersUseCase
 
     @BeforeTest
     fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
+        searchPublicUsersUseCase = SearchPublicUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
 
         given(connectionRepository)
             .suspendFunction(connectionRepository::getConnectionRequests)
             .whenInvoked()
             .thenReturn(listOf())
+
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::observeConnectionList)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
 
         given(qualifiedIdMapper)
             .function(qualifiedIdMapper::fromStringToQualifiedID)
@@ -79,7 +85,7 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         // when
-        val actual = searchUsersUseCase(TEST_QUERY)
+        val actual = searchPublicUsersUseCase(TEST_QUERY)
         // then
         assertIs<Result.Success>(actual)
         assertEquals(expected.value, actual.userSearchResult)
@@ -100,7 +106,7 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         // when
-        val actual = searchUsersUseCase(TEST_QUERY)
+        val actual = searchPublicUsersUseCase(TEST_QUERY)
         // then
         assertIs<Result.Success>(actual)
         assertEquals(
@@ -119,7 +125,7 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything(), anything())
             .thenReturn(expected)
         // when
-        val actual = searchUsersUseCase(TEST_QUERY_FEDERATED)
+        val actual = searchPublicUsersUseCase(TEST_QUERY_FEDERATED)
         // then
         assertIs<Result.Success>(actual)
         assertEquals(expected.value, actual.userSearchResult)
@@ -135,7 +141,7 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(eq("testQuery"), eq(""), anything(), anything())
             .thenReturn(expected)
         // when
-        val actual = searchUsersUseCase(TEST_QUERY)
+        val actual = searchPublicUsersUseCase(TEST_QUERY)
 
         // then
         assertIs<Result.Failure.InvalidQuery>(actual)
@@ -150,7 +156,7 @@ class SearchUserUseCaseTest {
             .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
 
         // when
-        searchUsersUseCase(TEST_QUERY)
+        searchPublicUsersUseCase(TEST_QUERY)
 
         // then
         verify(searchUserRepository)
@@ -183,7 +189,7 @@ class SearchUserUseCaseTest {
             .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
 
         // when
-        searchUsersUseCase(searchQuery = TEST_QUERY, searchUsersOptions = givenSearchUsersOptions)
+        searchPublicUsersUseCase(searchQuery = TEST_QUERY, searchUsersOptions = givenSearchUsersOptions)
 
         // then
         verify(searchUserRepository)
