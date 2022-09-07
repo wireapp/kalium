@@ -4,7 +4,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.CallMapper
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.id.QualifiedIdMapper

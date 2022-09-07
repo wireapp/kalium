@@ -2,14 +2,19 @@ package com.wire.kalium.api
 
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.http.Url
 
 val TEST_BACKEND_CONFIG =
     ServerConfigDTO(
         id = "id",
         ServerConfigDTO.Links(
-            Url("https://test.api.com"), Url("https://test.account.com"), Url("https://test.ws.com"),
-            Url("https://test.blacklist"), Url("https://test.teams.com"), Url("https://test.wire.com"), "Test Title"
+            "https://test.api.com",
+            "https://test.account.com",
+            "https://test.ws.com",
+            "https://test.blacklist",
+            "https://test.teams.com",
+            "https://test.wire.com",
+            "Test Title",
+            false
         ),
         ServerConfigDTO.MetaData(
             false,
@@ -18,11 +23,16 @@ val TEST_BACKEND_CONFIG =
         )
     )
 
-
 val TEST_BACKEND_LINKS =
     ServerConfigDTO.Links(
-        Url("https://test.api.com"), Url("https://test.account.com"), Url("https://test.ws.com"),
-        Url("https://test.blacklist"), Url("https://test.teams.com"), Url("https://test.wire.com"), "Test Title"
+        "https://test.api.com",
+        "https://test.account.com",
+        "https://test.ws.com",
+        "https://test.blacklist",
+        "https://test.teams.com",
+        "https://test.wire.com",
+        "Test Title",
+        false
     )
 
 val TEST_BACKEND =

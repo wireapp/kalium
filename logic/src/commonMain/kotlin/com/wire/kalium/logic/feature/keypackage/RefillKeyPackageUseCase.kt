@@ -25,15 +25,15 @@ interface RefillKeyPackagesUseCase {
 class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
 ) : RefillKeyPackagesUseCase {
     override suspend operator fun invoke(): RefillKeyPackagesResult =
         clientRepository.currentClientId().flatMap { selfClientId ->
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
                 .flatMap {
-                    if (needsRefill(it.count)) {
+                    if (keyPackageLimitsProvider.needsRefill(it.count)) {
                         kaliumLogger.i("Refilling key packages...")
-                        val amount = keyPackageLimitsProvider.keyPackageUploadLimit - it.count
+                        val amount = keyPackageLimitsProvider.refillAmount()
                         keyPackageRepository.uploadNewKeyPackages(selfClientId, amount).flatMap {
                             Either.Right(Unit)
                         }
@@ -48,7 +48,4 @@ class RefillKeyPackagesUseCaseImpl(
             RefillKeyPackagesResult.Success
         })
 
-    private fun needsRefill(keyPackageCount: Int): Boolean {
-        return keyPackageCount < (keyPackageLimitsProvider.keyPackageUploadLimit * keyPackageLimitsProvider.keyPackageUploadThreshold)
-    }
 }

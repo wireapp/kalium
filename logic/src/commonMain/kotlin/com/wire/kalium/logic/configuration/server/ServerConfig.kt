@@ -29,7 +29,8 @@ data class ServerConfig(
         @SerialName("blackListUrl") val blackList: String,
         @SerialName("teamsUrl") val teams: String,
         @SerialName("websiteUrl") val website: String,
-        @SerialName("title") val title: String
+        @SerialName("title") val title: String,
+        @SerialName("is_on_premises") val isOnPremises: Boolean
     ) {
         val forgotPassword: String
             get() = URLBuilder().apply {
@@ -73,7 +74,8 @@ data class ServerConfig(
             teams = """https://teams.wire.com""",
             blackList = """https://clientblacklist.wire.com/prod""",
             website = """https://wire.com""",
-            title = "production"
+            title = "production",
+            isOnPremises = false
         )
 
         val STAGING = Links(
@@ -83,7 +85,8 @@ data class ServerConfig(
             teams = """https://wire-teams-staging.zinfra.io""",
             blackList = """https://clientblacklist.wire.com/staging""",
             website = """https://wire.com""",
-            title = "staging"
+            title = "staging",
+            isOnPremises = false
         )
         val DEFAULT = PRODUCTION
 
@@ -92,7 +95,6 @@ data class ServerConfig(
         private const val TOS_PATH = "legal"
     }
 }
-
 
 interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
@@ -113,13 +115,14 @@ class ServerConfigMapperImpl(
     override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO = with(serverConfig) {
         ServerConfigDTO(
             id = id, links = ServerConfigDTO.Links(
-                Url(links.api),
-                Url(links.accounts),
-                Url(links.webSocket),
-                Url(links.blackList),
-                Url(links.teams),
-                Url(links.website),
+                links.api,
+                links.accounts,
+                links.webSocket,
+                links.blackList,
+                links.teams,
+                links.website,
                 links.title,
+                isOnPremises = links.isOnPremises
             ), ServerConfigDTO.MetaData(
                 federation = metaData.federation, apiVersionMapper.toDTO(metaData.commonApiVersion), metaData.domain
             )
@@ -128,32 +131,33 @@ class ServerConfigMapperImpl(
 
     override fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links = with(links) {
         ServerConfigDTO.Links(
-            Url(links.api),
-            Url(links.accounts),
-            Url(links.webSocket),
-            Url(links.blackList),
-            Url(links.teams),
-            Url(links.website),
+            links.api,
+            links.accounts,
+            links.webSocket,
+            links.blackList,
+            links.teams,
+            links.website,
             title,
+            isOnPremises
         )
     }
 
     override fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO = with(serverConfigEntity) {
         ServerConfigDTO(
             id = id, links = ServerConfigDTO.Links(
-                api = Url(links.api),
-                accounts = Url(links.accounts),
-                webSocket = Url(links.webSocket),
-                blackList = Url(links.blackList),
-                teams = Url(links.teams),
-                website = Url(links.website),
+                api = links.api,
+                accounts = links.accounts,
+                webSocket = links.webSocket,
+                blackList = links.blackList,
+                teams = links.teams,
+                website = links.website,
                 title = links.title,
+                isOnPremises = links.isOnPremises
             ), ServerConfigDTO.MetaData(
                 federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain
             )
         )
     }
-
 
     override fun fromDTO(wireServer: ServerConfigDTO): ServerConfig = with(wireServer) {
         ServerConfig(id = id, links = fromDTO(links), metaData = fromDTO(metaData))
@@ -161,13 +165,14 @@ class ServerConfigMapperImpl(
 
     override fun fromDTO(links: ServerConfigDTO.Links): ServerConfig.Links = with(links) {
         ServerConfig.Links(
-            api = api.toString(),
-            website = website.toString(),
-            webSocket = webSocket.toString(),
-            accounts = accounts.toString(),
-            blackList = blackList.toString(),
-            teams = teams.toString(),
+            api = api,
+            website = website,
+            webSocket = webSocket,
+            accounts = accounts,
+            blackList = blackList,
+            teams = teams,
             title = title,
+            isOnPremises = isOnPremises
         )
     }
 
@@ -194,6 +199,7 @@ class ServerConfigMapperImpl(
             teams = teams,
             website = website,
             title = title,
+            isOnPremises = isOnPremises
         )
     }
 
@@ -207,7 +213,14 @@ class ServerConfigMapperImpl(
 
     override fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links = with(serverConfigEntityLinks) {
         ServerConfig.Links(
-            api = api, accounts = accounts, webSocket = webSocket, blackList = blackList, teams = teams, website = website, title = title
+            api = api,
+            accounts = accounts,
+            webSocket = webSocket,
+            blackList = blackList,
+            teams = teams,
+            website = website,
+            title = title,
+            isOnPremises = isOnPremises
         )
     }
 }

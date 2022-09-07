@@ -25,7 +25,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
-import com.wire.kalium.logic.util.fileExtensionToAssetType
 import com.wire.kalium.logic.util.isGreaterThan
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -81,9 +80,10 @@ internal class SendAssetMessageUseCaseImpl(
 
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         return assetDataSource.uploadAndPersistPrivateAsset(
-            assetName.fileExtension().fileExtensionToAssetType(),
+            assetMimeType,
             assetDataPath,
-            otrKey
+            otrKey,
+            assetName.fileExtension()
         ).flatMap { (assetId, sha256) ->
 
             // Try to send the Asset Message

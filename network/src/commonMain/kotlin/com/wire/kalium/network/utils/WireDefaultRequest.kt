@@ -207,7 +207,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
 
                 fetchAndStoreMetadata = {
                     val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
-                    when (val result = versionApi.fetchApiVersion(backendLinks.api)) {
+                    when (val result = versionApi.fetchApiVersion(Url(backendLinks.api))) {
                         is NetworkResponse.Success ->
                             serverMetaDataManager.storeServerConfig(
                                 backendLinks, result.value
@@ -221,7 +221,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
                 buildDefaultRequest = {
                     header(HttpHeaders.ContentType, ContentType.Application.Json)
                     with(it) {
-                        val apiBaseUrl = links.api
+                        val apiBaseUrl = Url(links.api)
                         // enforce https as url protocol
                         url.protocol = URLProtocol.HTTPS
                         // add the default host

@@ -1,10 +1,13 @@
 package com.wire.kalium.logic.data.id
 
-import com.wire.kalium.logic.configuration.server.CURRENT_DOMAIN
-import com.wire.kalium.logic.configuration.server.FEDERATION_ENABLED
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -18,34 +21,36 @@ class FederatedIdMapperTest {
     lateinit var federatedIdMapper: FederatedIdMapper
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
+    private val sessionRepository = mock(classOf<SessionRepository>())
+
+    @Mock
+    private val serverConfigRepository = mock(classOf<ServerConfigRepository>())
 
     @Mock
     private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
-
-    @Mock
-    private val kaliumPreferences = mock(classOf<KaliumPreferences>())
 
     private val qualifiedId = "aaa-bbb-ccc@wire.com"
 
     @BeforeTest
     fun setUp() {
-        federatedIdMapper = FederatedIdMapperImpl(userRepository, qualifiedIdMapper, kaliumPreferences)
-
-        given(kaliumPreferences)
-            .invocation { getString(CURRENT_DOMAIN) }
-            .then { "wire.com" }
+        federatedIdMapper =
+            FederatedIdMapperImpl(selfUserId, qualifiedIdMapper, sessionRepository, serverConfigRepository)
 
         given(qualifiedIdMapper).invocation { qualifiedIdMapper.fromStringToQualifiedID(qualifiedId) }
             .then { QualifiedID("aaa-bbb-ccc", "wire.com") }
-
     }
 
     @Test
     fun givenAUserId_whenCurrentEnvironmentIsFederated_thenShouldMapTheValueWithDomain() = runTest {
-        given(kaliumPreferences)
-            .invocation { getBoolean(FEDERATION_ENABLED, false) }
-            .then { true }
+        given(sessionRepository)
+            .function(sessionRepository::userSession)
+            .whenInvokedWith(any())
+            .then { Either.Right(authSession) }
+
+        given(serverConfigRepository)
+            .function(serverConfigRepository::configByLinks)
+            .whenInvokedWith(any())
+            .then { Either.Right(serverConfigFederated) }
 
         val federatedId = federatedIdMapper.parseToFederatedId(qualifiedId)
 
@@ -54,12 +59,34 @@ class FederatedIdMapperTest {
 
     @Test
     fun givenAUserId_whenCurrentEnvironmentIsNotFederated_thenShouldMapTheValueWithoutDomain() = runTest {
-        given(kaliumPreferences)
-            .invocation { getBoolean(FEDERATION_ENABLED, false) }
-            .then { false }
+        given(sessionRepository)
+            .function(sessionRepository::userSession)
+            .whenInvokedWith(any())
+            .then { Either.Right(authSession) }
+
+        given(serverConfigRepository)
+            .function(serverConfigRepository::configByLinks)
+            .whenInvokedWith(any())
+            .then { Either.Right(serverConfigNonFederated) }
 
         val federatedId = federatedIdMapper.parseToFederatedId(qualifiedId)
 
         assertEquals("aaa-bbb-ccc", federatedId)
+    }
+
+    companion object {
+        val selfUserId = UserId("aaa-bbb-ccc", "wire.com")
+        val serverConfigFederated = newServerConfig(1, federationEnabled = true)
+        val serverConfigNonFederated = newServerConfig(2, federationEnabled = false)
+
+        val authSession = AuthSession(
+            AuthSession.Session.Valid(
+                selfUserId,
+                "accessToken",
+                "refreshToken",
+                "token_type",
+            ),
+            serverConfigFederated.links
+        )
     }
 }

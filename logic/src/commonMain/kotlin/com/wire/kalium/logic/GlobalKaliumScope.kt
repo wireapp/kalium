@@ -7,14 +7,19 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenReposit
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
+import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
+import com.wire.kalium.logic.feature.server.FetchApiVersionUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
+import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
+import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCase
 import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCase
@@ -48,7 +53,8 @@ class GlobalKaliumScope(
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
     private val globalPreferences: Lazy<KaliumPreferences>,
     private val sessionRepository: SessionRepository,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
 ) {
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
@@ -60,7 +66,6 @@ class GlobalKaliumScope(
             unboundNetworkContainer.serverConfigApi,
             globalDatabase.value.serverConfigurationDAO,
             unboundNetworkContainer.remoteVersion,
-            globalPreferences.value
         )
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences.value)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences.value)
@@ -69,13 +74,17 @@ class GlobalKaliumScope(
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    val observeValidAccounts: ObserveValidAccountsUseCase
+        get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
 
     val session: SessionScope get() = SessionScope(sessionRepository)
     val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
+    val fetchApiVersion: FetchApiVersionUseCase get() = FetchApiVersionUseCaseImpl(serverConfigRepository)
     val observeServerConfig: ObserveServerConfigUseCase get() = ObserveServerConfigUseCase(serverConfigRepository)
     val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
 
-    val saveNotificationToken: SaveNotificationTokenUseCase get() = SaveNotificationTokenUseCase(notificationTokenRepository)
+    val saveNotificationToken: SaveNotificationTokenUseCase
+        get() = SaveNotificationTokenUseCase(notificationTokenRepository)
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)

@@ -66,7 +66,7 @@ class SessionMapperTest {
     fun givenAnAuthSession_whenMappingToPersistenceSession_thenValuesAreMappedCorrectly() {
         val authSession: AuthSession = randomAuthSession()
         val serverConfigEntity = with(authSession.serverLinks) {
-            ServerConfigEntity.Links(api, accounts, webSocket, blackList, teams, website, title)
+            ServerConfigEntity.Links(api, accounts, webSocket, blackList, teams, website, title, isOnPremises)
         }
 
         given(idMapper).invocation { toDaoModel(authSession.session.userId) }
@@ -95,7 +95,7 @@ class SessionMapperTest {
     fun givenAPersistenceSession_whenMappingFromPersistenceSession_thenValuesAreMappedCorrectly() {
         val authSessionEntity: AuthSessionEntity.Valid = randomPersistenceSession()
         val serverLinks = with(authSessionEntity.serverLinks) {
-            ServerConfig.Links(api, accounts, webSocket, blackList, teams, website, title)
+            ServerConfig.Links(api, accounts, webSocket, blackList, teams, website, title, isOnPremises)
         }
 
         given(idMapper).invocation { fromDaoModel(authSessionEntity.userId) }

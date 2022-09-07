@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.call
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -62,7 +64,8 @@ internal class CallDataSource(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
     private val timeParser: TimeParser,
-    private val callMapper: CallMapper = MapperProvider.callMapper()
+    private val callMapper: CallMapper = MapperProvider.callMapper(),
+    private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper()
 ) : CallRepository {
 
     private val _callMetadataProfile = MutableStateFlow(CallMetadataProfile(data = emptyMap()))
@@ -283,7 +286,7 @@ internal class CallDataSource(
         callMetadataProfile.data[conversationIdWithDomain.toString()]?.let { call ->
             callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.activeSpeakers.size}")
 
-            val updatedParticipants = callMapper.activeSpeakerMapper.mapParticipantsActiveSpeaker(
+            val updatedParticipants = activeSpeakerMapper.mapParticipantsActiveSpeaker(
                 participants = call.participants, activeSpeakers = activeSpeakers
             )
 

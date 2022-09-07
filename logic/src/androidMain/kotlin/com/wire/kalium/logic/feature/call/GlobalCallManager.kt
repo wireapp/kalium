@@ -6,8 +6,9 @@ import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.CallMapper
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -47,7 +48,8 @@ actual class GlobalCallManager(
         messageSender: MessageSender,
         callMapper: CallMapper,
         federatedIdMapper: FederatedIdMapper,
-        qualifiedIdMapper: QualifiedIdMapper
+        qualifiedIdMapper: QualifiedIdMapper,
+        videoStateChecker: VideoStateChecker
     ): CallManager {
         return callManagerHolder[userId] ?: CallManagerImpl(
             calling = calling,
@@ -58,7 +60,8 @@ actual class GlobalCallManager(
             messageSender = messageSender,
             conversationRepository = conversationRepository,
             federatedIdMapper = federatedIdMapper,
-            qualifiedIdMapper = qualifiedIdMapper
+            qualifiedIdMapper = qualifiedIdMapper,
+            videoStateChecker = videoStateChecker
         ).also {
             callManagerHolder[userId] = it
         }

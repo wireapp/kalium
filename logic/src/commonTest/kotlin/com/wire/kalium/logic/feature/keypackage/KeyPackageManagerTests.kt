@@ -1,9 +1,11 @@
 package com.wire.kalium.logic.feature.keypackage
 
-import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.feature.TimestampKeyRepository
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -16,19 +18,18 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class KeyPackageManagerTests {
 
     @Test
-    fun givenLastCheckWithinDuration_whenObservingAndSyncFinishes_refillKeyPackagesIsNotPerformed() =
+    fun givenLastCheckWithinDurationAndMLSValidPackageCountFailed_whenObservingAndSyncFinishes_refillKeyPackagesIsNotPerformed() =
         runTest(TestKaliumDispatcher.default) {
 
             val (arrangement, _) = Arrangement()
-                .withLastKeyPackageCountCheck(Clock.System.now())
+                .withLastKeyPackageCountCheck(false)
+                .withKeyPackageCountFailed()
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -39,8 +40,9 @@ class KeyPackageManagerTests {
     fun givenLastCheckAfterDuration_whenObservingSyncFinishes_refillKeyPackagesIsPerformed() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
-                .withLastKeyPackageCountCheck(Clock.System.now() - KEY_PACKAGE_COUNT_CHECK_DURATION)
+                .withLastKeyPackageCountCheck(true)
                 .withRefillKeyPackagesUseCaseSuccessful()
+                .withKeyPackageCountFailed()
                 .withUpdateLastKeyPackageCountCheckSuccessful()
                 .arrange()
 
@@ -51,8 +53,31 @@ class KeyPackageManagerTests {
                 .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
                 .wasInvoked(once)
 
-            verify(arrangement.keyPackageRepository)
-                .suspendFunction(arrangement.keyPackageRepository::updateLastKeyPackageCountCheck)
+            verify(arrangement.timestampKeyRepository)
+                .suspendFunction(arrangement.timestampKeyRepository::reset)
+                .with(anything())
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenLastCheckBeforeDuration_whenKeyPackageCountsReturnRefillTrue_refillKeyPackagesIsPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withLastKeyPackageCountCheck(false)
+                .withRefillKeyPackagesUseCaseSuccessful()
+                .withKeyPackageCountReturnsRefillTrue()
+                .withUpdateLastKeyPackageCountCheckSuccessful()
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            verify(arrangement.refillKeyPackagesUseCase)
+                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
+                .wasInvoked(once)
+
+            verify(arrangement.timestampKeyRepository)
+                .suspendFunction(arrangement.timestampKeyRepository::reset)
                 .with(anything())
                 .wasInvoked(once)
         }
@@ -62,16 +87,19 @@ class KeyPackageManagerTests {
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
-        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+        val timestampKeyRepository = mock(classOf<TimestampKeyRepository>())
 
         @Mock
         val refillKeyPackagesUseCase = mock(classOf<RefillKeyPackagesUseCase>())
 
-        fun withLastKeyPackageCountCheck(timestamp: Instant) = apply {
-            given(keyPackageRepository)
-                .suspendFunction(keyPackageRepository::lastKeyPackageCountCheck)
-                .whenInvoked()
-                .thenReturn(Either.Right(timestamp))
+        @Mock
+        val keyPackageCountUseCase = mock(classOf<MLSKeyPackageCountUseCase>())
+
+        fun withLastKeyPackageCountCheck(hasPassed: Boolean) = apply {
+            given(timestampKeyRepository)
+                .suspendFunction(timestampKeyRepository::hasPassed)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(hasPassed))
         }
 
         fun withRefillKeyPackagesUseCaseSuccessful() = apply {
@@ -82,16 +110,36 @@ class KeyPackageManagerTests {
         }
 
         fun withUpdateLastKeyPackageCountCheckSuccessful() = apply {
-            given(keyPackageRepository)
-                .suspendFunction(keyPackageRepository::updateLastKeyPackageCountCheck)
+            given(timestampKeyRepository)
+                .suspendFunction(timestampKeyRepository::reset)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withKeyPackageCountReturnsRefillTrue() = apply {
+            given(keyPackageCountUseCase)
+                .suspendFunction(keyPackageCountUseCase::invoke)
+                .whenInvokedWith(anything())
+                .thenReturn(
+                    MLSKeyPackageCountResult.Success(
+                        TestClient.CLIENT_ID,
+                        0, true
+                    )
+                )
+        }
+
+        fun withKeyPackageCountFailed() = apply {
+            given(keyPackageCountUseCase)
+                .suspendFunction(keyPackageCountUseCase::invoke)
+                .whenInvokedWith(anything())
+                .thenReturn(MLSKeyPackageCountResult.Failure.Generic(CoreFailure.MissingClientRegistration))
+        }
+
         fun arrange() = this to KeyPackageManagerImpl(
             incrementalSyncRepository,
-            lazy { keyPackageRepository },
             lazy { refillKeyPackagesUseCase },
+            lazy { keyPackageCountUseCase },
+            lazy { timestampKeyRepository },
             TestKaliumDispatcher
         )
     }

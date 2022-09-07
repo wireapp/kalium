@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import io.mockative.Mock
@@ -19,11 +20,14 @@ class EndCallUseCaseTest {
     @Mock
     private val callManager = mock(classOf<CallManager>())
 
+    @Mock
+    private val callRepository = mock(classOf<CallRepository>())
+
     private lateinit var endCall: EndCallUseCase
 
     @BeforeTest
     fun setup() {
-        endCall = EndCallUseCase(lazy{ callManager })
+        endCall = EndCallUseCase(lazy { callManager }, callRepository)
     }
 
     @Test
@@ -35,12 +39,21 @@ class EndCallUseCaseTest {
             .whenInvokedWith(eq(conversationId))
             .thenDoNothing()
 
+        given(callRepository)
+            .function(callRepository::updateIsCameraOnById)
+            .whenInvokedWith(eq(conversationId.toString()), eq(false))
+            .thenDoNothing()
+
         endCall.invoke(conversationId)
 
         verify(callManager)
             .suspendFunction(callManager::endCall)
             .with(eq(conversationId))
             .wasInvoked(once)
-    }
 
+        verify(callRepository)
+            .function(callRepository::updateIsCameraOnById)
+            .with(eq(conversationId.toString()), eq(false))
+            .wasInvoked(once)
+    }
 }

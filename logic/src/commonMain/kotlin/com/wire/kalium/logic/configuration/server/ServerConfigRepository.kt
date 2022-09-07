@@ -14,7 +14,6 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -48,7 +47,7 @@ internal interface ServerConfigRepository {
     /**
      * calculate the app/server common api version for a new non stored config and store it locally if the version is valid
      * can return a ServerConfigFailure in case of an invalid version
-     * @param serverConfigResponse
+     * @param links
      * @return ServerConfigFailure in case of an invalid version
      * @return NetworkFailure in case of remote communication error
      * @return StorageFailure in case of DB errors when storing configuration
@@ -75,7 +74,6 @@ internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
     private val versionApi: VersionApi,
-    private val kaliumPreferences: KaliumPreferences,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : ServerConfigRepository {
 
@@ -120,6 +118,7 @@ internal class ServerConfigDataSource(
                         blackListUrl = links.blackList,
                         teamsUrl = links.teams,
                         websiteUrl = links.website,
+                        isOnPremises = links.isOnPremises,
                         title = links.title,
                         federation = metadata.federation,
                         domain = metadata.domain,
@@ -132,9 +131,6 @@ internal class ServerConfigDataSource(
             wrapStorageRequest { dao.configById(storedConfigId) }
         }.map {
             serverConfigMapper.fromEntity(it)
-        }.also {
-            kaliumPreferences.putBoolean(FEDERATION_ENABLED, metadata.federation)
-            kaliumPreferences.putString(CURRENT_DOMAIN, metadata.domain)
         }
 
     override suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
@@ -154,6 +150,3 @@ internal class ServerConfigDataSource(
         .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.links.api)) } }
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
 }
-
-const val FEDERATION_ENABLED = "federation_enabled"
-const val CURRENT_DOMAIN = "current_domain"

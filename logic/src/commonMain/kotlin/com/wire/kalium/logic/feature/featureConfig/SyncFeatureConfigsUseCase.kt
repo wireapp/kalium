@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.featureConfig
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSModel
@@ -37,6 +38,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             // TODO handle other feature flags
             checkFileSharingStatus(it.fileSharingModel)
             checkMLSStatus(it.mlsModel)
+            checkClassifiedDomainsStatus(it.classifiedDomainsModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -52,6 +54,11 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 kaliumLogger.d("$networkFailure")
             }
         }
+
+    private fun checkClassifiedDomainsStatus(model: ClassifiedDomainsModel) {
+        val classifiedDomainsEnabled = model.status == Status.ENABLED
+        userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, model.config.domains)
+    }
 
     private fun checkFileSharingStatus(model: ConfigsStatusModel) {
         if (kaliumConfigs.fileRestrictionEnabled) {

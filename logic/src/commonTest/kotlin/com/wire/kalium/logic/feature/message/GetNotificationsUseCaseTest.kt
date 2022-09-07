@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.message.MessageMention
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
@@ -289,7 +290,9 @@ class GetNotificationsUseCaseTest {
                 listOf(
                     entityTextMessage(conversationId, otherUserId(), "0"),
                     entityTextMessage(conversationId, otherUserId(), "1"),
-                    entityTextMessage(conversationId, otherUserId(), "2", MessageContent.Text(mentionMessageText))
+                    entityTextMessage(conversationId, otherUserId(), "2",
+                        MessageContent.Text(mentionMessageText, listOf(MessageMention(0, 7, MY_ID)))
+                    )
                 )
             }
             .arrange()
@@ -356,7 +359,9 @@ class GetNotificationsUseCaseTest {
                 listOf(
                     entityTextMessage(conversationId, otherUserId(), "0"),
                     entityTextMessage(conversationId, otherUserId(), "1"),
-                    entityTextMessage(conversationId, otherUserId(), "2", MessageContent.Text(mentionMessageText))
+                    entityTextMessage(conversationId, otherUserId(), "2",
+                        MessageContent.Text(mentionMessageText, listOf(MessageMention(0, 7, MY_ID)))
+                    )
                 )
             }
             .withKnownUser()

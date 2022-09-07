@@ -9,7 +9,9 @@ data class Participant(
     val clientId: String,
     val name: String = "",
     val isMuted: Boolean,
+    val isCameraOn: Boolean,
     val isSpeaking: Boolean = false,
+    val isSharingScreen: Boolean,
     val avatarAssetId: UserAssetId? = null,
     val userType: UserType = UserType.NONE,
 )

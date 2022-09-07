@@ -1,5 +1,6 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.logger.obfuscateId
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
@@ -34,6 +35,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 
 /**
  * A client's logging plugin.
@@ -122,7 +128,7 @@ public class KaliumKtorCustomLogging private constructor(
         kaliumLogger.v("BODY Content-Type: $contentType")
         kaliumLogger.v("BODY START")
         val message = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "[response body omitted]"
-        kaliumLogger.v(message)
+        obfuscateAndLogMessage(message)
         kaliumLogger.v("BODY END")
     }
 
@@ -147,7 +153,11 @@ public class KaliumKtorCustomLogging private constructor(
     }
 
     private fun Logger.logHeader(key: String, value: String) {
-        kaliumLogger.v("-> $key: $value")
+        if (sensitiveJsonKeys.contains(key.lowercase())) {
+            kaliumLogger.v("-> $key: *******")
+        } else {
+            kaliumLogger.v("-> $key: $value")
+        }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -160,7 +170,7 @@ public class KaliumKtorCustomLogging private constructor(
         GlobalScope.launch(Dispatchers.Unconfined) {
             val text = channel.tryReadText(charset) ?: "[request body omitted]"
             kaliumLogger.v("BODY START")
-            kaliumLogger.v(text)
+            obfuscateAndLogMessage(text)
             kaliumLogger.v("BODY END")
         }
 
@@ -234,11 +244,51 @@ public class KaliumKtorCustomLogging private constructor(
                     plugin.doneLogging()
                 }
             }
-
             ResponseObserver.install(ResponseObserver(observer), scope)
         }
     }
 }
+
+@Suppress("TooGenericExceptionCaught")
+private fun obfuscateAndLogMessage(text: String) {
+    try {
+        val obj = (Json.decodeFromString(text) as JsonElement)
+        if (obj.jsonArray.size > 0) {
+            obj.jsonArray.map {
+                logObfuscatedJsonElement(it)
+            }
+        } else {
+            logObfuscatedJsonElement(obj)
+        }
+        obj.toString()
+    } catch (e: Exception) {
+        "error the body content while logging "
+    }
+}
+
+fun logObfuscatedJsonElement(obj: JsonElement) {
+    obj.jsonObject.entries.toMutableSet().map {
+        when {
+            sensitiveJsonKeys.contains(it.key.lowercase()) -> {
+                kaliumLogger.v("${it.key} : ******")
+            }
+            sensitiveJsonIdKeys.contains(it.key.lowercase()) -> {
+                kaliumLogger.v("${it.key} : ${it.value.toString().obfuscateId()}")
+            }
+            sensitiveJsonObjects.contains(it.key.lowercase()) -> {
+                logObfuscatedJsonElement(it.value)
+            }
+            else -> {
+                kaliumLogger.v("${it.key} : ${it.value}")
+            }
+        }
+    }
+
+}
+
+private val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie") }
+private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
+private val sensitiveJsonObjects by lazy { listOf("qualified_id") }
 
 /**
  * Configure and install [Logging] in [HttpClient].

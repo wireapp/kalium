@@ -5,7 +5,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.DeleteClientParam
-import com.wire.kalium.logic.data.client.OtherUserClients
+import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -27,7 +27,7 @@ interface ClientRemoteRepository {
     suspend fun fetchSelfUserClients(): Either<NetworkFailure, List<Client>>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(pid: String): Either<NetworkFailure, Unit>
-    suspend fun fetchOtherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClients>>
+    suspend fun fetchOtherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClient>>
 }
 
 class ClientRemoteDataSource(
@@ -65,7 +65,7 @@ class ClientRemoteDataSource(
         clientApi.deregisterToken(pid)
     }
 
-    override suspend fun fetchOtherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClients>> =
+    override suspend fun fetchOtherUserClients(userId: UserId): Either<NetworkFailure, List<OtherUserClient>> =
         wrapApiRequest { clientApi.otherUserClients(idMapper.toNetworkUserId(userId)) }.map { otherUserClientsItems ->
             clientMapper.fromOtherUsersClientsDTO(otherUserClientsItems)
         }

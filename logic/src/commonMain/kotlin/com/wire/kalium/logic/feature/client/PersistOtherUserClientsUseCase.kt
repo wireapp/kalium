@@ -2,9 +2,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CLIENTS
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -23,13 +21,7 @@ internal class PersistOtherUserClientsUseCaseImpl(
     override suspend operator fun invoke(userId: UserId): Unit =
         clientRemoteRepository.fetchOtherUserClients(userId).fold({
             kaliumLogger.withFeatureId(CLIENTS).e("Failure while fetching other users clients $it")
-        }, { otherUserClients ->
-            val clientIdList = arrayListOf<ClientId>()
-            val deviceTypesList = arrayListOf<DeviceType>()
-            otherUserClients.map {
-                clientIdList.add(ClientId(it.id))
-                deviceTypesList.add(it.deviceType)
-            }
-            clientRepository.saveNewClients(userId, clientIdList, deviceTypesList)
+        }, { clientList ->
+            clientRepository.storeUserClientList(userId, clientList)
         })
 }
