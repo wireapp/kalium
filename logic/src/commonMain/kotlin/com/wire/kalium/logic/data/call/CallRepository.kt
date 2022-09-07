@@ -46,14 +46,6 @@ interface CallRepository {
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
-    fun updateParticipantCameraStateById(
-        conversationIdString: String,
-        userIdString: String,
-        clientIdString: String,
-        isCameraOn: Boolean,
-        isSharingScreen: Boolean
-    )
-
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
@@ -245,38 +237,6 @@ internal class CallDataSource(
             val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
                 this[conversationId] = callMetadata.copy(
                     isMuted = isMuted
-                )
-            }
-
-            _callMetadataProfile.value = callMetadataProfile.copy(
-                data = updatedCallMetaData
-            )
-        }
-    }
-
-    override fun updateParticipantCameraStateById(
-        conversationIdString: String,
-        userIdString: String,
-        clientIdString: String,
-        isCameraOn: Boolean,
-        isSharingScreen: Boolean
-    ) {
-        val callMetadataProfile = _callMetadataProfile.value
-
-        callMetadataProfile.data[conversationIdString]?.let { callMetaData ->
-
-            val updatedParticipants = callMetaData.participants.map {
-                if (it.id.toString() == userIdString && it.clientId == clientIdString) {
-                    it.copy(
-                        isCameraOn = isCameraOn,
-                        isSharingScreen = isSharingScreen
-                    )
-                } else it
-            }
-
-            val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationIdString] = callMetaData.copy(
-                    participants = updatedParticipants
                 )
             }
 
