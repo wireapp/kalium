@@ -33,7 +33,7 @@ object Versions {
     const val turbine = "0.7.0"
     const val avs = "8.2.9"
     const val jna = "5.6.0@aar"
-    const val mlsClient = "0.3.1"
+    const val mlsClient = "0.4.2"
     const val desugarJdk = "1.1.5"
     const val kermit = "1.0.0"
     const val detekt = "1.19.0"

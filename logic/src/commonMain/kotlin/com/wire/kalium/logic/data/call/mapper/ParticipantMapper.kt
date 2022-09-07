@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.data.call.mapper
 
-import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallMember
 import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.id.QualifiedID
 
 interface ParticipantMapper {
@@ -11,9 +11,16 @@ interface ParticipantMapper {
     fun fromCallMemberToCallClient(member: CallMember): CallClient
 }
 
-class ParticipantMapperImpl : ParticipantMapper {
+class ParticipantMapperImpl(
+    private val videoStateChecker: VideoStateChecker,
+    private val callMapper: CallMapper
+) : ParticipantMapper {
 
     override fun fromCallMemberToParticipant(member: CallMember): Participant = with(member) {
+        val videoState = callMapper.fromIntToCallingVideoState(vrecv)
+        val isCameraOn = videoStateChecker.isCameraOn(videoState)
+        val isSharingScreen = videoStateChecker.isSharingScreen(videoState)
+
         Participant(
             id = QualifiedID(
                 value = userId.removeDomain(),
@@ -21,8 +28,8 @@ class ParticipantMapperImpl : ParticipantMapper {
             ),
             clientId = clientId,
             isMuted = isMuted == 1,
-            isCameraOn = vrecv == VideoStateCalling.STARTED.avsValue,
-            isSharingScreen = vrecv == VideoStateCalling.SCREENSHARE.avsValue
+            isCameraOn = isCameraOn,
+            isSharingScreen = isSharingScreen
         )
     }
 

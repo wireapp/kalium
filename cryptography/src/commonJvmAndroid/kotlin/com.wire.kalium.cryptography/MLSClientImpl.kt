@@ -65,6 +65,10 @@ actual class MLSClientImpl actual constructor(
         return coreCrypto.conversationExists(toUByteList(groupId.decodeBase64Bytes()))
     }
 
+    override fun conversationEpoch(groupId: MLSGroupId): ULong {
+        return coreCrypto.conversationEpoch(toUByteList(groupId.decodeBase64Bytes()))
+    }
+
     override fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
         return toByteArray(
             coreCrypto.newExternalAddProposal(
@@ -76,12 +80,7 @@ actual class MLSClientImpl actual constructor(
 
     override fun createConversation(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): AddMemberCommitBundle? {
-        val invitees = members.map {
-            Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
-        }
-
+    ) {
         val conf = ConversationConfiguration(
             emptyList(),
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
@@ -91,12 +90,6 @@ actual class MLSClientImpl actual constructor(
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
         coreCrypto.createConversation(groupIdAsBytes, conf)
-
-        return if (members.isEmpty()) {
-            null
-        } else {
-            toAddMemberCommitBundle(coreCrypto.addClientsToConversation(groupIdAsBytes, invitees))
-        }
     }
 
     override fun wipeConversation(groupId: MLSGroupId) {
@@ -123,6 +116,10 @@ actual class MLSClientImpl actual constructor(
 
     override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle {
         return toCommitBundle(coreCrypto.commitPendingProposals(toUByteList(groupId.decodeBase64Bytes())))
+    }
+
+    override fun clearPendingCommit(groupId: MLSGroupId) {
+        coreCrypto.clearPendingCommit(toUByteList(groupId.decodeBase64Bytes()))
     }
 
     override fun addMember(
@@ -167,7 +164,8 @@ actual class MLSClientImpl actual constructor(
         )
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
-            value.commitDelay?.toLong()
+            value.commitDelay?.toLong(),
+            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it))) }
         )
     }
 
