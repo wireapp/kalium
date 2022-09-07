@@ -1,14 +1,37 @@
 package com.wire.kalium.logic.data.call
 
+import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
+import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.mock
 import kotlinx.coroutines.test.runTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ParticipantMapperTest {
 
-    private val participantMapperImpl = ParticipantMapperImpl()
+    @Mock
+    private val videoStateChecker = mock(classOf<VideoStateChecker>())
+
+    @Mock
+    private val callMapper = mock(classOf<CallMapper>())
+
+    private val participantMapperImpl = ParticipantMapperImpl(videoStateChecker, callMapper)
+
+    @BeforeTest
+    fun setUp() {
+        given(callMapper).invocation { callMapper.fromIntToCallingVideoState(0) }
+            .then { VideoStateCalling.STOPPED }
+        given(videoStateChecker).invocation { videoStateChecker.isCameraOn(VideoStateCalling.STOPPED) }
+            .then { false }
+        given(videoStateChecker).invocation { videoStateChecker.isSharingScreen(VideoStateCalling.STOPPED) }
+            .then { false }
+    }
 
     @Test
     fun whenMappingToParticipant_withCallMember_thenReturnParticipant() = runTest {

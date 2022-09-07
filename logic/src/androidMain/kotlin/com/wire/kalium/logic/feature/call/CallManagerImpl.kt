@@ -134,8 +134,7 @@ actual class CallManagerImpl(
             ConstantBitRateStateChangeHandler { userId: String, clientId: String, isEnabled: Boolean, arg: Pointer? ->
                 callingLogger.i("$TAG -> constantBitRateStateChangeHandler")
             }.keepingStrongReference(),
-            videoReceiveStateHandler = OnParticipantsVideoStateChanged(callRepository, qualifiedIdMapper, callMapper, videoStateChecker)
-                .keepingStrongReference(),
+            videoReceiveStateHandler = OnParticipantsVideoStateChanged(),
             arg = null
         )
         callingLogger.d("$TAG - wcall_create() called")
@@ -291,7 +290,7 @@ actual class CallManagerImpl(
                     calling = calling,
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
-                    participantMapper = ParticipantMapperImpl(),
+                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
                     conversationRepository = conversationRepository,
                     callingScope = scope
