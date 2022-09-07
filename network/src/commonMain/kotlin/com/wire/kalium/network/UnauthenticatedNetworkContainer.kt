@@ -27,12 +27,13 @@ class UnauthenticatedNetworkContainer constructor(
 
 
 class UnboundNetworkContainer(
-    engine: HttpClientEngine = defaultHttpEngine()
+    engine: HttpClientEngine = defaultHttpEngine(),
+    val developmentApiEnabled: Boolean
 ) {
     internal val unboundNetworkClient by lazy {
         UnboundNetworkClient(engine)
     }
 
     val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
-    val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient)
+    val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
 }
