@@ -1,5 +1,6 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.logger.obfuscateId
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
@@ -243,7 +244,6 @@ public class KaliumKtorCustomLogging private constructor(
                     plugin.doneLogging()
                 }
             }
-
             ResponseObserver.install(ResponseObserver(observer), scope)
         }
     }
@@ -251,7 +251,7 @@ public class KaliumKtorCustomLogging private constructor(
 
 @Suppress("TooGenericExceptionCaught")
 private fun obfuscateAndLogMessage(text: String) {
-     try {
+    try {
         val obj = (Json.decodeFromString(text) as JsonElement)
         if (obj.jsonArray.size > 0) {
             obj.jsonArray.map {
@@ -273,24 +273,22 @@ fun logObfuscatedJsonElement(obj: JsonElement) {
                 kaliumLogger.v("${it.key} : ******")
             }
             sensitiveJsonIdKeys.contains(it.key.lowercase()) -> {
-                kaliumLogger.v("${it.key} : ${it.value.toString().substring(START_INDEX, END_INDEX)}")
+                kaliumLogger.v("${it.key} : ${it.value.toString().obfuscateId()}")
             }
             sensitiveJsonObjects.contains(it.key.lowercase()) -> {
                 logObfuscatedJsonElement(it.value)
             }
             else -> {
-                kaliumLogger.e("${it.key} : ${it.value}")
+                kaliumLogger.v("${it.key} : ${it.value}")
             }
         }
     }
 
 }
 
-private val sensitiveJsonKeys by lazy { listOf("password", "authorization") }
+private val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie") }
 private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
 private val sensitiveJsonObjects by lazy { listOf("qualified_id") }
-private const val START_INDEX = 0
-private const val END_INDEX = 9
 
 /**
  * Configure and install [Logging] in [HttpClient].
