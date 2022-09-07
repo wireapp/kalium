@@ -14,7 +14,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 interface LogoutUseCase {
-    suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT)
+    suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT, isHardLogout: Boolean = false)
 }
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
@@ -30,23 +30,16 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
-    override suspend operator fun invoke(reason: LogoutReason) {
+    override suspend operator fun invoke(reason: LogoutReason, isHardLogout: Boolean) {
         deregisterTokenUseCase()
         logoutRepository.logout()
-        logout(reason)
-        clearCrypto()
-        if (isHardLogout(reason)) {
+        logout(reason, isHardLogout)
+        if (isHardLogout) {
+            clearCrypto()
             clearUserStorage()
         }
         updateCurrentSession()
         clearInMemoryUserSession()
-    }
-
-    private fun isHardLogout(reason: LogoutReason) = when (reason) {
-        LogoutReason.SELF_LOGOUT -> true
-        LogoutReason.REMOVED_CLIENT -> false
-        LogoutReason.DELETED_ACCOUNT -> false
-        LogoutReason.SESSION_EXPIRED -> false
     }
 
     private fun clearInMemoryUserSession() {
@@ -59,8 +52,8 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         }
     }
 
-    private fun logout(reason: LogoutReason) =
-        sessionRepository.logout(userId = userId, reason, isHardLogout(reason))
+    private fun logout(reason: LogoutReason, isHardLogout: Boolean) =
+        sessionRepository.logout(userId = userId, reason, isHardLogout)
 
     private fun clearUserStorage() {
         authenticatedDataSourceSet.userDatabaseProvider.nuke()
