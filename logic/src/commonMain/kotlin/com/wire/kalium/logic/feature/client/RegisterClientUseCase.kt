@@ -72,7 +72,8 @@ class RegisterClientUseCaseImpl(
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam).flatMap { client ->
-                    createMLSClient(client)
+                    kaliumLogger.i("createMLSClient")
+                    createMLSClient(client).also { kaliumLogger.i("createMLSClient done!") }
                 }.fold({ failure ->
                     if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
                         when {
@@ -93,12 +94,9 @@ class RegisterClientUseCaseImpl(
     // can remove registerMLSClient() and supply the MLS public key in registerClient().
     private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> =
         mlsClientProvider.getMLSClient(client.id)
-            .flatMap { kaliumLogger.i("registerMLSClient")
-                clientRepository.registerMLSClient(client.id, it.getPublicKey()) }
-            .flatMap { kaliumLogger.i("uploadNewKeyPackages")
-                keyPackageRepository.uploadNewKeyPackages(client.id, keyPackageLimitsProvider.refillAmount()) }
-            .flatMap { kaliumLogger.i("persistClientId")
-                clientRepository.persistClientId(client.id) }
+            .flatMap { clientRepository.registerMLSClient(client.id, it.getPublicKey()) }
+            .flatMap { keyPackageRepository.uploadNewKeyPackages(client.id, keyPackageLimitsProvider.refillAmount()) }
+            .flatMap { clientRepository.persistClientId(client.id) }
             .map { client }
 
     private suspend fun generateProteusPreKeys(
