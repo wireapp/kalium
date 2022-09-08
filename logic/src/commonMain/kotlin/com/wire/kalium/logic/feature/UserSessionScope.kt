@@ -580,8 +580,7 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet,
             clientRepository,
             mlsClientProvider,
-            client.deregisterNativePushToken,
-            userSessionScopeProvider
+            client.deregisterNativePushToken
         )
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)

@@ -16,6 +16,7 @@ import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
+import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
@@ -24,10 +25,10 @@ import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCase
 import com.wire.kalium.logic.feature.user.loggingStatus.EnableLoggingUseCaseImpl
 import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCase
 import com.wire.kalium.logic.feature.user.loggingStatus.IsLoggingEnabledUseCaseImpl
-import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
-import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
+import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -58,7 +59,7 @@ class GlobalKaliumScope(
 ) {
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
-        UnboundNetworkContainer()
+        UnboundNetworkContainer(developmentApiEnabled = kaliumConfigs.developmentApiEnabled)
     }
 
     internal val serverConfigRepository: ServerConfigRepository
@@ -96,4 +97,5 @@ class GlobalKaliumScope(
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
             userConfigRepository
         )
+    val deleteSession: DeleteSessionUseCase get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
 }
