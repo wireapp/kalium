@@ -40,7 +40,6 @@ class VersionApiImpl internal constructor(
         util.calculateApiVersion(it, developmentApiEnabled = developmentApiEnabled)
     }
 
-
     private companion object {
         const val API_VERSION_PATH = "api-version"
     }
