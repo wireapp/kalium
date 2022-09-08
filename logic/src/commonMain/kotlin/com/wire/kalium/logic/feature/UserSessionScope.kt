@@ -574,7 +574,13 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.metadataDAO
         )
     val clearUserData: ClearUserDataUseCase
-        get() = ClearUserDataUseCaseImpl(authenticatedDataSourceSet, clientRepository, mlsClientProvider)
+        get() = ClearUserDataUseCaseImpl(
+            userId,
+            authenticatedDataSourceSet,
+            clientRepository,
+            mlsClientProvider,
+            userSessionScopeProvider
+        )
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,

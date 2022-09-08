@@ -39,7 +39,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private fun updateCurrentSession() {
-        sessionRepository.allSessions().onSuccess {
+        sessionRepository.allValidSessions().onSuccess {
             sessionRepository.updateCurrentSession(it.first().session.userId)
         }
     }
