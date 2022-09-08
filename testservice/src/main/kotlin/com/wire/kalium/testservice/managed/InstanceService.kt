@@ -79,7 +79,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
         log.info("Instance ${instanceId}: Creating ${instancePath}")
         val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
-        CoreLogger.setLoggingLevel(KaliumLogLevel.INFO)
+        CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
 
         val serverConfig = if (instanceRequest.customBackend != null) {
             ServerConfig.Links(
