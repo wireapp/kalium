@@ -54,7 +54,7 @@ fun restoreSession(): AuthSession? {
 
 fun currentUserSession(): UserSessionScope {
     val authSession = restoreSession() ?: throw PrintMessage("no active session")
-    return coreLogic.getSessionScope(authSession.session.userId)
+    return coreLogic.getSessionScope(authSession.token.userId)
 }
 
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
@@ -194,7 +194,7 @@ class LoginCommand : CliktCommand(name = "login") {
 
         val userId = coreLogic.globalScope {
             addAuthenticatedAccount(loginResult, ssoId, true)
-            loginResult.session.userId
+            loginResult.token.userId
         }
 
         coreLogic.sessionScope(userId) {

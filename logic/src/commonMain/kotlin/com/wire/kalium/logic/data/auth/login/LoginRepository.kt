@@ -16,13 +16,13 @@ interface LoginRepository {
         email: String,
         password: String,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>>
+    ): Either<NetworkFailure, Pair<AuthSession.Token.Valid, SsoId?>>
 
     suspend fun loginWithHandle(
         handle: String,
         password: String,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>>
+    ): Either<NetworkFailure, Pair<AuthSession.Token.Valid, SsoId?>>
 }
 
 class LoginRepositoryImpl(
@@ -36,20 +36,20 @@ class LoginRepositoryImpl(
         email: String,
         password: String,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> =
+    ): Either<NetworkFailure, Pair<AuthSession.Token.Valid, SsoId?>> =
         login(LoginApi.LoginParam.LoginWithEmail(email, password, clientLabel), shouldPersistClient)
 
     override suspend fun loginWithHandle(
         handle: String,
         password: String,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> =
+    ): Either<NetworkFailure, Pair<AuthSession.Token.Valid, SsoId?>> =
         login(LoginApi.LoginParam.LoginWithHandel(handle, password, clientLabel), shouldPersistClient)
 
     private suspend fun login(
         loginParam: LoginApi.LoginParam,
         persistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> = wrapApiRequest {
+    ): Either<NetworkFailure, Pair<AuthSession.Token.Valid, SsoId?>> = wrapApiRequest {
         loginApi.login(param = loginParam, persist = persistClient)
     }.map {
         Pair(sessionMapper.fromSessionDTO(it.first), idMapper.toSsoId(it.second.ssoID))

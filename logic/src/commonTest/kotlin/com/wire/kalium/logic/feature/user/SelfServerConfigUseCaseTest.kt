@@ -60,7 +60,7 @@ class SelfServerConfigUseCaseTest {
 
         fun validAuthSessionWith(userId: UserId): AuthSession =
             AuthSession(
-                AuthSession.Session.Valid(
+                AuthSession.Token.Valid(
                     userId,
                     "accessToken",
                     "refreshToken",
