@@ -25,7 +25,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val clientRepository: ClientRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
-    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
@@ -34,12 +33,11 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         deregisterTokenUseCase()
         logoutRepository.logout()
         logout(reason)
-        clearCrypto()
         if (isHardLogout(reason)) {
+            clearCrypto()
             clearUserStorage()
         }
         updateCurrentSession()
-        clearInMemoryUserSession()
     }
 
     private fun isHardLogout(reason: LogoutReason) = when (reason) {
@@ -47,10 +45,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         LogoutReason.REMOVED_CLIENT -> false
         LogoutReason.DELETED_ACCOUNT -> false
         LogoutReason.SESSION_EXPIRED -> false
-    }
-
-    private fun clearInMemoryUserSession() {
-        userSessionScopeProvider.delete(userId)
     }
 
     private fun updateCurrentSession() {
