@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onSuccess

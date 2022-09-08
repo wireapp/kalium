@@ -37,7 +37,6 @@ class DeleteSessionUseCaseTest {
             .with(eq(userId))
             .wasInvoked(exactly = once)
 
-
         verify(arrange.userSessionScopeProvider)
             .function(arrange.userSessionScopeProvider::delete)
             .with(eq(userId))
@@ -70,7 +69,6 @@ class DeleteSessionUseCaseTest {
             .wasNotInvoked()
     }
 
-
     private class Arrangement {
         @Mock
         val sessionRepository: SessionRepository = mock(classOf<SessionRepository>())
@@ -79,7 +77,6 @@ class DeleteSessionUseCaseTest {
         val userSessionScopeProvider: UserSessionScopeProvider = mock(classOf<UserSessionScopeProvider>())
 
         val deleteSessionUseCase = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider)
-
 
         fun withSessionDeleteSuccess(userId: UserId): Arrangement = apply {
             given(sessionRepository)
@@ -101,5 +98,4 @@ class DeleteSessionUseCaseTest {
 
         fun arrange() = this to deleteSessionUseCase
     }
-
 }
