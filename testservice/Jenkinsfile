@@ -30,7 +30,8 @@ pipeline {
                 }
             }
         }
-        stage('Deploy') {
+        stage('Deploy on Linux') {
+            when { environment name: 'OSTYPE', value: 'linux-gnu' }
             steps {
                 sh "mkdir -p ${HOME}/.config/systemd/user/"
                 sh """printf \\
@@ -50,12 +51,14 @@ Restart=always
 WantedBy=default.target
 ' \\
 > ${HOME}/.config/systemd/user/kalium-testservice.service"""
-            }
-        }
-        stage('Restart') {
-            steps {
                 sh 'systemctl --user daemon-reload'
                 sh 'systemctl --user restart kalium-testservice'
+            }
+        }
+        stage('Deploy on macOS') {
+            when { environment name: 'OSTYPE', value: 'darwin21.0' }
+            steps {
+                sh "echo 'macOS'"
             }
         }
     }
