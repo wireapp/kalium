@@ -90,7 +90,7 @@ internal class SessionDataSource(
 
     override fun allValidSessions(): Either<StorageFailure, List<AuthSession>> =
         wrapStorageRequest {
-            sessionStorage.allSessions()?.filter { it.value is AuthSessionEntity.Valid }?.values?.toList()
+            sessionStorage.allSessions()?.filter { it.value is AuthSessionEntity.Valid }?.values?.toList()?.ifEmpty { null }
                 ?.map { sessionMapper.fromPersistenceSession(it) }
         }
 
