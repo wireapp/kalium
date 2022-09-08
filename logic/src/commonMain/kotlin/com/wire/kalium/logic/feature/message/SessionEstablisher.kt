@@ -65,11 +65,10 @@ class SessionEstablisherImpl(
         val acc = mutableMapOf<String, Map<String, Map<String, PreKeyCrypto>>>()
         preKeyInfoList.forEach {
             val userToClientsToPreKeyMap: Map<String, Map<String, PreKeyCrypto>> = preKeyInfoList.associate { userInfo ->
-                userInfo.userId.value to userInfo.clientsInfo.filter { clientPreKeyInfo -> clientPreKeyInfo.preKey != null }
-                    .associate { clientInfo ->
-                        // the double bang is safe because we filter out clients with no preKey above
-                        clientInfo.clientId to clientInfo.preKey!!
-                    }
+                userInfo.userId.value to userInfo.clientsInfo
+                    .mapNotNull { clientPreKeyInfo ->
+                        clientPreKeyInfo.preKey?.let { preKey -> clientPreKeyInfo.clientId to preKey }
+                    }.toMap()
             }
             acc[it.userId.domain] = userToClientsToPreKeyMap
         }
