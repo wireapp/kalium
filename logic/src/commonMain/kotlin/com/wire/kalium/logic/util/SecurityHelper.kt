@@ -24,9 +24,9 @@ internal class SecurityHelper(private val kaliumPreferences: KaliumPreferences) 
 
     fun mlsDBSecret(userId: UserId): MlsDBSecret = MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId").also { kaliumLogger.i("Generated PassPhrase") })
 
-    private fun getOrGeneratePassPhrase(alias: String): String = getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword()).also { kaliumLogger.i("store db password") }
+    private fun getOrGeneratePassPhrase(alias: String): String = getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword()).also { kaliumLogger.i("store db password: ${it}") }
 
-    private fun getStoredDbPassword(passwordAlias: String): String? = kaliumPreferences.getString(passwordAlias).also { kaliumLogger.i("got stored db password") }
+    private fun getStoredDbPassword(passwordAlias: String): String? = kaliumPreferences.getString(passwordAlias).also { kaliumLogger.i("got stored db password: ${it}") }
 
     private fun storeDbPassword(alias: String, keyBytes: ByteArray): String {
         val key = keyBytes.toPreservedString
