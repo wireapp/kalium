@@ -115,9 +115,6 @@ internal fun provideBaseHttpClient(
             level = LogLevel.ALL
         }
     }
-    engine {
-
-    }
 
     if (installCompression) {
         install(ContentEncoding) {
