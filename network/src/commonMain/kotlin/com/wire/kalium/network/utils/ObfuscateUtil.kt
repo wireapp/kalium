@@ -1,3 +1,4 @@
+@file:Suppress("TooGenericExceptionCaught")
 package com.wire.kalium.network.utils
 
 import com.wire.kalium.logger.obfuscateId
@@ -10,8 +11,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
-
-@Suppress("TooGenericExceptionCaught")
 fun obfuscateAndLogMessage(text: String) {
     try {
         val obj = (Json.decodeFromString(text) as JsonElement)
@@ -85,7 +84,6 @@ fun deleteSensitiveItemsFromJson(text: String): String {
         return "error while logging "
     }
 }
-
 
 val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie", "location", "x-amz-meta-user") }
 private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }

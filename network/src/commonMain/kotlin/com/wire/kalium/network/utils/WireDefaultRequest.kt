@@ -28,7 +28,6 @@ import io.ktor.util.AttributeKey
 import io.ktor.util.Attributes
 import io.ktor.util.appendAll
 
-
 /**
  * Sets default request parameters. Used to add common headers and URL for a request.
  * Note that trailing slash in base URL and leading slash in request URL are important.
@@ -92,7 +91,7 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
                     headers.appendAll(context.headers)
                     serverConfigDTO?.let {
                         plugin.provider.buildDefaultRequest(this, it)
-                    }?: return@intercept
+                    } ?: return@intercept
                 }
                 val defaultUrl = defaultRequest.url.build()
                 if (context.url.host.isEmpty()) {
@@ -143,7 +142,11 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
          * Pass `null` to keep existing value in the [URLBuilder].
          */
         fun url(
-            scheme: String? = null, host: String? = null, port: Int? = null, path: String? = null, block: URLBuilder.() -> Unit = {}
+            scheme: String? = null,
+            host: String? = null,
+            port: Int? = null,
+            path: String? = null,
+            block: URLBuilder.() -> Unit = {}
         ) {
             url.set(scheme, host, port, path, block)
         }
@@ -182,7 +185,6 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
     }
 }
 
-
 class WireServerMetaDataConfig {
     internal var fetchAndStoreMetadata: suspend () -> ServerConfigDTO? = { null }
     internal var loadServerData: suspend () -> ServerConfigDTO? = { null }
@@ -213,6 +215,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
                             serverMetaDataManager.storeServerConfig(
                                 backendLinks, result.value
                             )
+
                         is NetworkResponse.Error -> null
                     }.also {
                         kaliumLogger.d("WireDefaultRequest: loading server config from remote: ${it?.id?.obfuscateId()}")

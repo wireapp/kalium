@@ -210,7 +210,8 @@ internal class CallDataSource(
             )
             callingLogger.i(
                 "[CallRepository][UpdateCallStatusById] ->" +
-                        " ConversationId: [${modifiedConversationId.value.obfuscateId()}@${modifiedConversationId.domain.obfuscateDomain()}]" +
+                        " ConversationId: [${modifiedConversationId.value.obfuscateId()}" +
+                        "@${modifiedConversationId.domain.obfuscateDomain()}]" +
                         " " + "| status: [$status]"
             )
         }
@@ -295,7 +296,8 @@ internal class CallDataSource(
         callMetadataProfile.data[conversationIdWithDomain.toString()]?.let { call ->
             callingLogger.i(
                 "updateActiveSpeakers() -" +
-                        " conversationId: ${conversationIdWithDomain.value.obfuscateId()}@${conversationIdWithDomain.domain.obfuscateDomain()}" +
+                        " conversationId: ${conversationIdWithDomain.value.obfuscateId()}" +
+                        "@${conversationIdWithDomain.domain.obfuscateDomain()}" +
                         "with size of: ${activeSpeakers.activeSpeakers.size}"
             )
 
