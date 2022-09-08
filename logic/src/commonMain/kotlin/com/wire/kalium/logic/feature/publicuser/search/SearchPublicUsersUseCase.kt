@@ -47,8 +47,9 @@ internal class SearchPublicUsersUseCaseImpl(
                             HttpStatusCode.NotFound.value -> Result.Failure.InvalidQuery
                             else -> Result.Failure.Generic(it)
                         }
+                    } else {
+                        Result.Failure.Generic(it)
                     }
-                    Result.Failure.Generic(it)
                 }, { response ->
                     val usersWithConnectionStatus = response.copy(result = response.result
                         .map { user ->

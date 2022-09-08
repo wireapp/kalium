@@ -44,7 +44,12 @@ class UserScope internal constructor(
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
     val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
-    val searchUsers: SearchPublicUsersUseCase get() = SearchPublicUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
+    val searchUsers: SearchPublicUsersUseCase
+        get() = SearchPublicUsersUseCaseImpl(
+            searchUserRepository,
+            connectionRepository,
+            qualifiedIdMapper
+        )
     val searchKnownUsers: SearchKnownUsersUseCase
         get() = SearchKnownUsersUseCaseImpl(
             searchUserRepository,
