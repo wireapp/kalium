@@ -14,10 +14,13 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
 class UnauthenticatedNetworkContainer constructor(
-    backendLinks: ServerConfigDTO.Links, serverMetaDataManager: ServerMetaDataManager, engine: HttpClientEngine = defaultHttpEngine()
+    backendLinks: ServerConfigDTO.Links,
+    serverMetaDataManager: ServerMetaDataManager,
+    engine: HttpClientEngine = defaultHttpEngine(),
+    developmentApiEnabled: Boolean = false
 ) {
     internal val unauthenticatedNetworkClient by lazy {
-        UnauthenticatedNetworkClient(engine, backendLinks, serverMetaDataManager)
+        UnauthenticatedNetworkClient(engine, backendLinks, serverMetaDataManager, developmentApiEnabled)
     }
 
     val loginApi: LoginApi get() = LoginApiImpl(unauthenticatedNetworkClient)
@@ -25,14 +28,14 @@ class UnauthenticatedNetworkContainer constructor(
     val sso: SSOLoginApi get() = SSOLoginApiImpl(unauthenticatedNetworkClient)
 }
 
-
 class UnboundNetworkContainer(
-    engine: HttpClientEngine = defaultHttpEngine()
+    engine: HttpClientEngine = defaultHttpEngine(),
+    val developmentApiEnabled: Boolean
 ) {
     internal val unboundNetworkClient by lazy {
         UnboundNetworkClient(engine)
     }
 
     val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
-    val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient)
+    val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
 }

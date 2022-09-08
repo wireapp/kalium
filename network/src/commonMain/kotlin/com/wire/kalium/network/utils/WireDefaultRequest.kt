@@ -91,7 +91,7 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
                     headers.appendAll(context.headers)
                     serverConfigDTO?.let {
                         plugin.provider.buildDefaultRequest(this, it)
-                    }?: return@intercept
+                    } ?: return@intercept
                 }
                 val defaultUrl = defaultRequest.url.build()
                 if (context.url.host.isEmpty()) {
@@ -194,7 +194,8 @@ fun WireDefaultRequest.config(block: () -> WireServerMetaDataConfig) {
 
 fun HttpClientConfig<*>.installWireDefaultRequest(
     backendLinks: ServerConfigDTO.Links,
-    serverMetaDataManager: ServerMetaDataManager
+    serverMetaDataManager: ServerMetaDataManager,
+    developmentApiEnabled: Boolean
 ) {
     install(WireDefaultRequest) {
         config {
@@ -206,12 +207,16 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
                 }
 
                 fetchAndStoreMetadata = {
-                    val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
+                    val versionApi = VersionApiImpl(
+                        httpClient = provideBaseHttpClient(defaultHttpEngine()),
+                        developmentApiEnabled = developmentApiEnabled
+                    )
                     when (val result = versionApi.fetchApiVersion(Url(backendLinks.api))) {
                         is NetworkResponse.Success ->
                             serverMetaDataManager.storeServerConfig(
                                 backendLinks, result.value
                             )
+
                         is NetworkResponse.Error -> null
                     }.also {
                         kaliumLogger.d("WireDefaultRequest: loading server config from remote: $it")

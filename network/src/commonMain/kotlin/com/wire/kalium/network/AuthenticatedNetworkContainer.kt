@@ -39,19 +39,20 @@ import io.ktor.client.engine.HttpClientEngine
 class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
     serverMetaDataManager: ServerMetaDataManager,
-    private val engine: HttpClientEngine = defaultHttpEngine()
+    private val engine: HttpClientEngine = defaultHttpEngine(),
+    private val developmentApiEnabled: Boolean = false
 ) {
 
     private val backendConfig = sessionManager.session().second
 
     internal val networkClient by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager)
+        AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager, developmentApiEnabled = developmentApiEnabled)
     }
     internal val websocketClient by lazy {
-        AuthenticatedWebSocketClient(engine, sessionManager, serverMetaDataManager)
+        AuthenticatedWebSocketClient(engine, sessionManager, serverMetaDataManager, developmentApiEnabled)
     }
     internal val networkClientWithoutCompression by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager, false)
+        AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager, false, developmentApiEnabled)
     }
 
     val logoutApi: LogoutApi get() = LogoutImpl(networkClient, sessionManager)
