@@ -35,7 +35,7 @@ object BackendMetaDataUtilImpl : BackendMetaDataUtil {
     }
 
     private fun commonApiVersion(serverVersion: VersionInfoDTO, appVersion: Set<Int>, developmentAPIEnabled: Boolean): Int? {
-        val supported = if (developmentAPIEnabled) {
+        val supported = if (developmentAPIEnabled && serverVersion.developmentSupported != null) {
             serverVersion.supported + serverVersion.developmentSupported
         } else {
             serverVersion.supported

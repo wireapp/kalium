@@ -28,10 +28,11 @@ internal class AuthenticatedNetworkClient(
     engine: HttpClientEngine,
     sessionManager: SessionManager,
     serverMetaDataManager: ServerMetaDataManager,
-    installCompression: Boolean = true
+    installCompression: Boolean = true,
+    developmentApiEnabled: Boolean
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
-        installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager)
+        installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager, developmentApiEnabled)
         installAuth(sessionManager)
         install(ContentNegotiation) {
             mls()
@@ -48,10 +49,11 @@ internal class AuthenticatedNetworkClient(
 internal class UnauthenticatedNetworkClient(
     engine: HttpClientEngine,
     backendLinks: ServerConfigDTO.Links,
-    serverMetaDataManager: ServerMetaDataManager
+    serverMetaDataManager: ServerMetaDataManager,
+    developmentApiEnabled: Boolean
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-        installWireDefaultRequest(backendLinks, serverMetaDataManager)
+        installWireDefaultRequest(backendLinks, serverMetaDataManager, developmentApiEnabled)
     }
 }
 
@@ -73,7 +75,8 @@ internal class UnboundNetworkClient(engine: HttpClientEngine) {
 internal class AuthenticatedWebSocketClient(
     private val engine: HttpClientEngine,
     private val sessionManager: SessionManager,
-    private val serverMetaDataManager: ServerMetaDataManager
+    private val serverMetaDataManager: ServerMetaDataManager,
+    private val developmentApiEnabled: Boolean
 ) {
     /**
      * Creates a disposable [HttpClient] for a single use.
@@ -83,7 +86,7 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager)
+            installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager, developmentApiEnabled)
             installAuth(sessionManager)
             install(ContentNegotiation) {
                 mls()
