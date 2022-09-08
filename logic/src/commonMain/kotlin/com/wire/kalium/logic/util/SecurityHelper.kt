@@ -2,7 +2,6 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.cryptography.MlsDBSecret
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -22,11 +21,11 @@ internal class SecurityHelper(private val kaliumPreferences: KaliumPreferences) 
     fun userDBSecret(userId: UserId): UserDBSecret =
         UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
 
-    fun mlsDBSecret(userId: UserId): MlsDBSecret = MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId").also { kaliumLogger.i("Generated PassPhrase") })
+    fun mlsDBSecret(userId: UserId): MlsDBSecret = MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId"))
 
-    private fun getOrGeneratePassPhrase(alias: String): String = getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword()).also { kaliumLogger.i("store db password") }
+    private fun getOrGeneratePassPhrase(alias: String): String = getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
 
-    private fun getStoredDbPassword(passwordAlias: String): String? = kaliumPreferences.getString(passwordAlias).also { kaliumLogger.i("got stored db password") }
+    private fun getStoredDbPassword(passwordAlias: String): String? = kaliumPreferences.getString(passwordAlias)
 
     private fun storeDbPassword(alias: String, keyBytes: ByteArray): String {
         val key = keyBytes.toPreservedString
