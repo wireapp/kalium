@@ -82,10 +82,13 @@ class SessionRepositoryTest {
         )
         val sessionEntityInvalid = AuthSessionEntity.Invalid(
             QualifiedIDEntity("user_id_invalid", "user_domain"),
-            newServerConfigEntity(1).links,
-            LogoutReason.DELETED_ACCOUNT,
-            true,
-            SsoIdEntity(null, null, null)
+            accessToken = Random.nextBytes(32).decodeToString(),
+            refreshToken = Random.nextBytes(32).decodeToString(),
+            tokenType = "JWT",
+            serverLinks = newServerConfigEntity(1).links,
+            reason = LogoutReason.DELETED_ACCOUNT,
+            hardLogout = true,
+            ssoId = SsoIdEntity(null, null, null)
         )
         val sessionValid = sessionMapper.fromPersistenceSession(sessionEntityValid)
 
