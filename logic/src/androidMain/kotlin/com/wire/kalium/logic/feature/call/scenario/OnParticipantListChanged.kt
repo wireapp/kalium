@@ -4,6 +4,7 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.calling.types.Handle
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
@@ -73,7 +74,8 @@ class OnParticipantListChanged(
                 json = CallClientList(clients = clients).toJsonString()
             )
             callingLogger.i(
-                "[onParticipantsChanged] - Total Participants: ${participants.size} | ConversationId: $remoteConversationIdString"
+                "[onParticipantsChanged] - Total Participants: ${participants.size}" +
+                        " | ConversationId: ${remoteConversationIdString.obfuscateId()}"
             )
         }
     }
