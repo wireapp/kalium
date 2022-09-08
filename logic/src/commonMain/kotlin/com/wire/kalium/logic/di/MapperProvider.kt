@@ -49,7 +49,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
-import com.wire.kalium.logic.data.prekey.remote.PreKeyListMapper
+import com.wire.kalium.logic.data.prekey.PreKeyListMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.session.SessionMapper

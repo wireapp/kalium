@@ -1,8 +1,7 @@
-package com.wire.kalium.logic.data.prekey.remote
+package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.network.api.prekey.PreKeyDTO
 import io.mockative.Mock
 import io.mockative.any

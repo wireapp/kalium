@@ -48,8 +48,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
-import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
@@ -494,11 +492,10 @@ abstract class UserSessionScopeCommon internal constructor(
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs)
 
-    private val preKeyRemoteRepository: PreKeyRemoteRepository
-        get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
-            preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
+            authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
+            authenticatedDataSourceSet.proteusClient
         )
 
     private val keyPackageRepository: KeyPackageRepository
