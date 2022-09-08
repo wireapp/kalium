@@ -17,7 +17,6 @@ import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.anything
 import io.mockative.eq
 import io.mockative.given
@@ -31,7 +30,6 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -39,127 +37,93 @@ import kotlin.test.assertEquals
 @Suppress("LongMethod")
 class ObserveConversationListDetailsUseCaseTest {
 
-    @Mock
-    private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-
-    @Mock
-    private val callRepository: CallRepository = mock(CallRepository::class)
-
-    private lateinit var observeConversationsUseCase: ObserveConversationListDetailsUseCaseImpl
-
-    @BeforeTest
-    fun setup() {
-        observeConversationsUseCase = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository)
-    }
-
     @Test
     fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationListShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
+        // Given
+        val groupConversation = TestConversation.GROUP()
+        val selfConversation = TestConversation.SELF
+        val conversations = listOf(selfConversation, groupConversation)
+        val selfConversationDetails = ConversationDetails.Self(selfConversation)
+        val groupConversationDetails =
+            ConversationDetails.Group(
+                groupConversation,
+                LegalHoldStatus.DISABLED,
+                unreadMessagesCount = 0,
+                lastUnreadMessage = null
+            )
 
-        given(callRepository).suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
+        val (arrangement, observeConversationsUseCase) = Arrangement()
+            .withOngoingCalls(listOf())
+            .withConversationsList(conversations)
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
+            .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
+            .withUnreadConversationCount(0L)
+            .withIsSelfUserMember(true)
+            .arrange()
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(flowOf(conversations))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getUnreadConversationCount)
-            .whenInvoked()
-            .thenReturn(Either.Right(0L))
-
+        // When
         observeConversationsUseCase().collect()
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .wasInvoked(exactly = once)
-
-    }
-
-    @Test
-    fun givenSomeConversations_whenObservingDetailsList_thenSyncManagerShouldBeCalled() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
-
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(flowOf(conversations))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getUnreadConversationCount)
-            .whenInvoked()
-            .thenReturn(Either.Right(0L))
-
-        observeConversationsUseCase().collect()
-
-    }
-
-    @Test
-    fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
-        val conversations = listOf(TestConversation.SELF, TestConversation.GROUP())
-
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(flowOf(conversations))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf())
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getUnreadConversationCount)
-            .whenInvoked()
-            .thenReturn(Either.Right(0L))
-
-        observeConversationsUseCase().collect()
-
-        conversations.forEach { conversation ->
+        // Then
+        with(arrangement) {
             verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
-                .with(eq(conversation.id))
+                .suspendFunction(conversationRepository::observeConversationList)
                 .wasInvoked(exactly = once)
         }
     }
 
     @Test
+    fun givenSomeConversations_whenObservingDetailsList_thenObserveConversationDetailsShouldBeCalledForEachID() = runTest {
+        // Given
+        val selfConversation = TestConversation.SELF
+        val groupConversation = TestConversation.GROUP()
+        val conversations = listOf(selfConversation, groupConversation)
+
+        val selfConversationDetails = ConversationDetails.Self(selfConversation)
+        val groupConversationDetails = ConversationDetails.Group(
+            conversation = groupConversation,
+            legalHoldStatus = LegalHoldStatus.DISABLED,
+            unreadMessagesCount = 0,
+            lastUnreadMessage = null
+        )
+
+        val (arrangement, observeConversationsUseCase) = Arrangement()
+            .withOngoingCalls(listOf())
+            .withConversationsList(conversations)
+            .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
+            .withUnreadConversationCount(0L)
+            .withIsSelfUserMember(true)
+            .arrange()
+
+        // When
+        observeConversationsUseCase().collect()
+
+        with(arrangement) {
+            conversations.forEach { conversation ->
+                verify(conversationRepository)
+                    .suspendFunction(conversationRepository::observeConversationDetailsById)
+                    .with(eq(conversation.id))
+                    .wasInvoked(exactly = once)
+            }
+        }
+    }
+
+    @Test
     fun givenSomeConversationsDetailsAreUpdated_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
+        // Given
         val oneOnOneConversation = TestConversation.ONE_ON_ONE
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
-        val groupConversationUpdates =
-            listOf(
-                ConversationDetails.Group(
-                    groupConversation,
-                    LegalHoldStatus.DISABLED,
-                    unreadMessagesCount = 0,
-                    lastUnreadMessage = null
-                )
+        val groupConversationUpdates = listOf(
+            ConversationDetails.Group(
+                groupConversation,
+                LegalHoldStatus.DISABLED,
+                unreadMessagesCount = 0,
+                lastUnreadMessage = null
             )
+        )
 
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
@@ -182,31 +146,16 @@ class ObserveConversationListDetailsUseCaseTest {
 
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
 
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
+        val (_, observeConversationsUseCase) = Arrangement()
+            .withOngoingCalls(listOf())
+            .withConversationsList(conversations)
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation, groupConversationUpdates)
+            .withConversationsDetailsChannelUpdates(oneOnOneConversation, oneOnOneDetailsChannel)
+            .withUnreadConversationCount(0L)
+            .withIsSelfUserMember(true)
+            .arrange()
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(flowOf(conversations))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(groupConversationUpdates.asFlow().map { Either.Right(it) })
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(oneOnOneConversation.id))
-            .thenReturn(oneOnOneDetailsChannel.consumeAsFlow().map { Either.Right(it) })
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getUnreadConversationCount)
-            .whenInvoked()
-            .thenReturn(Either.Right(0L))
-
+        // When, Then
         observeConversationsUseCase().test {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
 
@@ -224,6 +173,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
+        // Given
         val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
@@ -239,31 +189,16 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
         conversationListUpdates.send(firstConversationsList)
 
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
+        val (_, observeConversationsUseCase) = Arrangement()
+            .withOngoingCalls(listOf())
+            .withConversationsList(conversationListUpdates)
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
+            .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
+            .withUnreadConversationCount(0L)
+            .withIsSelfUserMember(true)
+            .arrange()
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(conversationListUpdates.consumeAsFlow())
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(Either.Right(groupConversationDetails)))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(selfConversation.id))
-            .thenReturn(flowOf(Either.Right(selfConversationDetails)))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getUnreadConversationCount)
-            .whenInvoked()
-            .thenReturn(Either.Right(0L))
-
+        // When, Then
         observeConversationsUseCase().test {
             assertContentEquals(listOf(groupConversationDetails), awaitItem().conversationList)
 
@@ -275,6 +210,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
+        // Given
         val groupConversation = TestConversation.GROUP()
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
@@ -300,26 +236,15 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
         conversationListUpdates.send(firstConversationsList)
 
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf(ongoingCall)))
+        val (_, observeConversationsUseCase) = Arrangement()
+            .withOngoingCalls(listOf(ongoingCall))
+            .withConversationsList(conversationListUpdates)
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
+            .withUnreadConversationCount(0L)
+            .withIsSelfUserMember(true)
+            .arrange()
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(conversationListUpdates.consumeAsFlow())
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(groupConversationDetails).map { Either.Right(it) })
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getUnreadConversationCount)
-            .whenInvoked()
-            .thenReturn(Either.Right(0L))
-
+        // When, Then
         observeConversationsUseCase().test {
             assertEquals(true, (awaitItem().conversationList[0] as ConversationDetails.Group).hasOngoingCall)
         }
@@ -327,6 +252,7 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Test
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
+        // Given
         val groupConversation = TestConversation.GROUP()
 
         val groupConversationDetails = ConversationDetails.Group(
@@ -341,26 +267,15 @@ class ObserveConversationListDetailsUseCaseTest {
         val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
         conversationListUpdates.send(firstConversationsList)
 
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
+        val (_, observeConversationsUseCase) = Arrangement()
+            .withOngoingCalls(listOf())
+            .withConversationsList(conversationListUpdates)
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
+            .withUnreadConversationCount(0L)
+            .withIsSelfUserMember(true)
+            .arrange()
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(conversationListUpdates.consumeAsFlow())
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(groupConversation.id))
-            .thenReturn(flowOf(groupConversationDetails).map { Either.Right(it) })
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getUnreadConversationCount)
-            .whenInvoked()
-            .thenReturn(Either.Right(0L))
-
+        // When, Then
         observeConversationsUseCase().test {
             assertEquals(false, (awaitItem().conversationList[0] as ConversationDetails.Group).hasOngoingCall)
         }
@@ -369,37 +284,100 @@ class ObserveConversationListDetailsUseCaseTest {
     @Suppress("FunctionNaming")
     @Test
     fun givenConversationDetailsFailure_whenObservingDetailsList_thenIgnoreConversationWithFailure() = runTest {
+        // Given
         val successConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("successId", "domain"))
         val successConversationDetails = TestConversationDetails.CONVERSATION_ONE_ONE.copy(conversation = successConversation)
         val failureConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("failedId", "domain"))
 
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
+        val (_, observeConversationsUseCase) = Arrangement()
+            .withOngoingCalls(listOf())
+            .withConversationsList(listOf(successConversation, failureConversation))
+            .withSuccessfulConversationsDetailsListUpdates(successConversation, listOf(successConversationDetails))
+            .withErrorConversationsDetailsListUpdates(failureConversation)
+            .withUnreadConversationCount(0L)
+            .withIsSelfUserMember(true)
+            .arrange()
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationList)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf(successConversation, failureConversation)))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getUnreadConversationCount)
-            .whenInvoked()
-            .thenReturn(Either.Right(0L))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(any())
-            .then {
-                if (it == successConversation.id) flowOf(Either.Right(successConversationDetails))
-                else flowOf(Either.Left(StorageFailure.DataNotFound))
-            }
-
+        // When, Then
         observeConversationsUseCase().test {
             assertEquals(awaitItem().conversationList, listOf(successConversationDetails))
             awaitComplete()
         }
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+
+        @Mock
+        val callRepository: CallRepository = mock(CallRepository::class)
+
+        @Mock
+        val observeIsSelfUserMember: ObserveIsSelfUserMemberUseCase = mock(ObserveIsSelfUserMemberUseCase::class)
+
+        fun withIsSelfUserMember(isMember: Boolean) = apply {
+            given(observeIsSelfUserMember)
+                .suspendFunction(observeIsSelfUserMember::invoke)
+                .whenInvokedWith(anything())
+                .thenReturn(flowOf(IsSelfUserMemberResult.Success(isMember)))
+        }
+
+        fun withUnreadConversationCount(count: Long) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getUnreadConversationCount)
+                .whenInvoked()
+                .thenReturn(Either.Right(count))
+        }
+
+        fun withConversationsDetailsChannelUpdates(
+            conversation: Conversation,
+            expectedConversationDetails: Channel<ConversationDetails.OneOne>
+        ) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .whenInvokedWith(eq(conversation.id))
+                .thenReturn(expectedConversationDetails.consumeAsFlow().map { Either.Right(it) })
+        }
+
+        fun withSuccessfulConversationsDetailsListUpdates(
+            conversation: Conversation,
+            expectedConversationDetailsList: List<ConversationDetails>
+        ) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .whenInvokedWith(eq(conversation.id))
+                .thenReturn(expectedConversationDetailsList.asFlow().map { Either.Right(it) })
+        }
+
+        fun withErrorConversationsDetailsListUpdates(conversation: Conversation) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .whenInvokedWith(eq(conversation.id))
+                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        }
+
+        fun withConversationsList(conversations: List<Conversation>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeConversationList)
+                .whenInvoked()
+                .thenReturn(flowOf(conversations))
+        }
+
+        fun withConversationsList(conversations: Channel<List<Conversation>>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeConversationList)
+                .whenInvoked()
+                .thenReturn(conversations.consumeAsFlow())
+        }
+
+        fun withOngoingCalls(callsList: List<Call>) = apply {
+            given(callRepository).suspendFunction(callRepository::ongoingCallsFlow)
+                .whenInvoked()
+                .thenReturn(flowOf(callsList))
+        }
+
+        fun arrange() = this to ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository, observeIsSelfUserMember)
     }
 
 }
