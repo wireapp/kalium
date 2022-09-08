@@ -36,10 +36,8 @@ actual class MLSClientImpl actual constructor(
     private val keyRotationDuration: Duration = Duration.ofDays(30)
 
     init {
-        kaliumLogger.i("Init CoreCrypto")
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, clientId.toString(), null)
         coreCrypto.setCallbacks(DummyCallbacks())
-        kaliumLogger.i("Init CoreCrypto done")
     }
 
     override fun clearLocalFiles(): Boolean {
