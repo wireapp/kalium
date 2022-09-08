@@ -29,6 +29,7 @@ import javax.ws.rs.core.MediaType
 class InstanceLifecycle(private val instanceService: InstanceService) {
 
     private val log = LoggerFactory.getLogger(InstanceLifecycle::class.java.name)
+    private val timeoutCreation: Long = 60 // TODO use configuration
 
     @GET
     @Path("/instances")
@@ -44,9 +45,9 @@ class InstanceLifecycle(private val instanceService: InstanceService) {
         val instanceId = UUID.randomUUID().toString()
 
         // handles unresponsive instances
-        ar.setTimeout(170, TimeUnit.SECONDS) // TODO use configuration
+        ar.setTimeout(timeoutCreation, TimeUnit.SECONDS)
         ar.setTimeoutHandler { asyncResponse: AsyncResponse ->
-            log.error("Async create instance request timed out after 170 seconds")
+            log.error("Async create instance request timed out after ${timeoutCreation} seconds")
             asyncResponse.cancel()
             instanceService.deleteInstance(instanceId)
         }
