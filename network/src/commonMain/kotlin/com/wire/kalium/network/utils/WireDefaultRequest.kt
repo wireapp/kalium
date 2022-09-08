@@ -197,7 +197,8 @@ fun WireDefaultRequest.config(block: () -> WireServerMetaDataConfig) {
 
 fun HttpClientConfig<*>.installWireDefaultRequest(
     backendLinks: ServerConfigDTO.Links,
-    serverMetaDataManager: ServerMetaDataManager
+    serverMetaDataManager: ServerMetaDataManager,
+    developmentApiEnabled: Boolean
 ) {
     install(WireDefaultRequest) {
         config {
@@ -209,7 +210,10 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
                 }
 
                 fetchAndStoreMetadata = {
-                    val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
+                    val versionApi = VersionApiImpl(
+                        httpClient = provideBaseHttpClient(defaultHttpEngine()),
+                        developmentApiEnabled = developmentApiEnabled
+                    )
                     when (val result = versionApi.fetchApiVersion(Url(backendLinks.api))) {
                         is NetworkResponse.Success ->
                             serverMetaDataManager.storeServerConfig(
