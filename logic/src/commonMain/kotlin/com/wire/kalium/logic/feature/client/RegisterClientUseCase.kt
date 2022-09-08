@@ -15,6 +15,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
@@ -71,7 +72,8 @@ class RegisterClientUseCaseImpl(
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam).flatMap { client ->
-                    createMLSClient(client)
+                    kaliumLogger.i("createMLSClient")
+                    createMLSClient(client).also { kaliumLogger.i("createMLSClient done!") }
                 }.fold({ failure ->
                     if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
                         when {
