@@ -35,9 +35,12 @@ object BackendMetaDataUtilImpl : BackendMetaDataUtil {
     }
 
     private fun commonApiVersion(serverVersion: VersionInfoDTO, appVersion: Set<Int>, developmentAPIEnabled: Boolean): Int? {
-        val commonDevelopmentApiVersion = serverVersion.developmentSupported.intersect(appVersion).maxOrNull()
-        val commonProductionApiVersion = serverVersion.supported.intersect(appVersion).maxOrNull()
-        return if (developmentAPIEnabled && commonDevelopmentApiVersion != null) commonDevelopmentApiVersion else commonProductionApiVersion
+        val supported = if (developmentAPIEnabled) {
+            serverVersion.supported + serverVersion.developmentSupported
+        } else {
+            serverVersion.supported
+        }
+        return supported.intersect(appVersion).maxOrNull()
     }
 
     private fun handleNoCommonVersion(serverVersion: List<Int>, appVersion: Set<Int>): ApiVersionDTO.Invalid {
