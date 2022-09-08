@@ -35,12 +35,8 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
     private val log = LoggerFactory.getLogger(InstanceService::class.java.name)
     private val instances: MutableMap<String, Instance> = ConcurrentHashMap<String, Instance>()
-    private val dataPath = "${System.getProperty("user.home")}/.testservice/"
-    private var coreLogic: CoreLogic = CoreLogic("Kalium Testservice", dataPath, kaliumConfigs = KaliumConfigs())
 
     override fun start() {
-        log.info("Set logging level for Core Logic...")
-        CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
         log.info("Instance service started.")
 
         // metrics
@@ -64,22 +60,6 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             deleteInstance(instance.key)
         }
         log.info("Instance service stopped.")
-        log.info("Delete locate files in ${dataPath}")
-        dataPath.let {
-            try {
-                val files = Files.walk(Path.of(dataPath))
-
-                // delete directory including files and sub-folders
-                files.sorted(Comparator.reverseOrder())
-                    .map { obj: Path -> obj.toFile() }
-                    .forEach { obj: File -> obj.delete() }
-
-                // close the stream
-                files.close()
-            } catch (e: IOException) {
-                log.warn("Could not delete directory: ${dataPath}")
-            }
-        }
     }
 
     fun getInstances(): Collection<Instance> {
@@ -96,6 +76,10 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
 
     suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance? {
         var before = System.currentTimeMillis()
+        val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
+        log.info("Instance ${instanceId}: Creating ${instancePath}")
+        val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
+        CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
 
         val serverConfig = if (instanceRequest.customBackend != null) {
             ServerConfig.Links(
@@ -163,10 +147,12 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             instanceId,
             instanceRequest.name,
             coreLogic,
+            instancePath,
             instanceRequest.password,
             System.currentTimeMillis() - before
         )
         instances.put(instanceId, instance)
+
         return instance
     }
 
@@ -188,6 +174,22 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             // TODO: Something like session.allSessions.deleteInvalidSession()
         }
         log.info("Instance $id: Logged out")
+        log.info("Instance $id: Delete locate files in ${instance.instancePath}")
+        instance.instancePath?.let {
+            try {
+                val files = Files.walk(Path.of(instance.instancePath))
+
+                // delete directory including files and sub-folders
+                files.sorted(Comparator.reverseOrder())
+                    .map { obj: Path -> obj.toFile() }
+                    .forEach { obj: File -> obj.delete() }
+
+                // close the stream
+                files.close()
+            } catch (e: IOException) {
+                log.warn("Instance $id: Could not delete directory: ${instance.instancePath}")
+            }
+        }
         instances.remove(id)
     }
 
