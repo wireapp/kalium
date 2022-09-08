@@ -74,7 +74,6 @@ class PreKeyRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-
     @Test
     fun givenValidCrypto_whenGeneratingLastPreyKeys_thenSuccess() = runTest {
         val expected = PreKeyCrypto(44, "key")
@@ -99,7 +98,6 @@ class PreKeyRepositoryTest {
 
         @Mock
         val proteusClient: ProteusClient = mock(ProteusClient::class)
-
 
         private val preKeyRepository = PreKeyDataSource(preKeyApi, proteusClient)
 
@@ -128,7 +126,6 @@ class PreKeyRepositoryTest {
                 .coroutine { proteusClient.newLastPreKey() }
                 .then { expected }
         }
-
 
         fun arrange() = this to preKeyRepository
     }

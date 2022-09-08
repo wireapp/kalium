@@ -27,10 +27,7 @@ class PreKeyListMapperTest {
     fun setup() {
         subject = PreKeyListMapper(preKeyMapper)
 
-        given(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyDTO)
-            .whenInvokedWith(any())
-            .then { PreKeyCrypto(1, "2") }
+        given(preKeyMapper).function(preKeyMapper::fromPreKeyDTO).whenInvokedWith(any()).then { PreKeyCrypto(1, "2") }
 
     }
 
@@ -38,11 +35,15 @@ class PreKeyListMapperTest {
     fun given_PreKeyMap_when_mapping_to_qualifiedUserPreKeyInfo_then_usersIDs_should_be_converted_correctly() {
         val preKeyResponse = mapOf(
             "domA" to mapOf(
-                "userA" to mapOf("clientA" to PreKeyDTO(1, "keyA")),
-                "userB" to mapOf("clientB" to PreKeyDTO(32, "key"))
-            ),
-            "domB" to mapOf(
-                "userB" to mapOf("clientB" to PreKeyDTO(22, "keyC"))
+                "userA" to mapOf(
+                    "clientA" to PreKeyDTO(1, "keyA")
+                ), "userB" to mapOf(
+                    "clientB" to PreKeyDTO(32, "key")
+                )
+            ), "domB" to mapOf(
+                "userB" to mapOf(
+                    "clientB" to PreKeyDTO(22, "keyC")
+                )
             )
         )
 
@@ -52,9 +53,9 @@ class PreKeyListMapperTest {
             it.userId
         }.containsAll(
             listOf(
-                QualifiedID("userA","domA"),
-                QualifiedID("userB","domA"),
-                QualifiedID("userB","domB")
+                QualifiedID("userA", "domA"),
+                QualifiedID("userB", "domA"),
+                QualifiedID("userB", "domB")
             )
         )
 
@@ -75,10 +76,7 @@ class PreKeyListMapperTest {
 
         subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)
 
-        verify(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyDTO)
-            .with(any())
-            .wasInvoked(exactly = twice)
+        verify(preKeyMapper).function(preKeyMapper::fromPreKeyDTO).with(any()).wasInvoked(exactly = twice)
     }
 
     @Test
@@ -88,8 +86,7 @@ class PreKeyListMapperTest {
         val preKeyResponse = mapOf(
             "domA" to mapOf(
                 "userA" to mapOf(
-                    "clientA" to firstKey,
-                    "clientB" to secondKey
+                    "clientA" to firstKey, "clientB" to secondKey
                 )
             )
         )
@@ -115,7 +112,9 @@ class PreKeyListMapperTest {
                     "clientA" to PreKeyDTO(1, "keyA"),
                     "clientB" to PreKeyDTO(1, "keyA")
                 ),
-                "userB" to mapOf("clientC" to PreKeyDTO(1, "keyA"))
+                "userB" to mapOf(
+                    "clientC" to PreKeyDTO(1, "keyA")
+                )
             )
         )
 
@@ -137,17 +136,27 @@ class PreKeyListMapperTest {
     fun `given_PreKeyMap_when_mapping_to_list_QualifiedUserPreKeyInfo_then_keys_should_be_returned_in_the_right_clients`() {
         class KeyMappingTestSet(val clientId: String, val response: PreKeyDTO, val mapped: PreKeyCrypto)
 
-        val firstKeySet = KeyMappingTestSet("a", PreKeyDTO(1, "keyA"), PreKeyCrypto(1, "keyA"))
-        val secondKeySet = KeyMappingTestSet("b", PreKeyDTO(4, "keyB"), PreKeyCrypto(4, "keyB"))
-        val thirdKeySet = KeyMappingTestSet("c", PreKeyDTO(4, "keyC"), PreKeyCrypto(4, "keyC"))
+        val firstKeySet = KeyMappingTestSet(
+            "a",
+            PreKeyDTO(1, "keyA"),
+            PreKeyCrypto(1, "keyA")
+        )
+        val secondKeySet = KeyMappingTestSet(
+            "b",
+            PreKeyDTO(4, "keyB"),
+            PreKeyCrypto(4, "keyB")
+        )
+        val thirdKeySet = KeyMappingTestSet(
+            "c",
+            PreKeyDTO(4, "keyC"),
+            PreKeyCrypto(4, "keyC")
+        )
 
         val preKeyResponse = mapOf(
             "domA" to mapOf(
                 "userA" to mapOf(
-                    firstKeySet.clientId to firstKeySet.response,
-                    secondKeySet.clientId to secondKeySet.response
-                ),
-                "userB" to mapOf(thirdKeySet.clientId to thirdKeySet.response)
+                    firstKeySet.clientId to firstKeySet.response, secondKeySet.clientId to secondKeySet.response
+                ), "userB" to mapOf(thirdKeySet.clientId to thirdKeySet.response)
             )
         )
         given(preKeyMapper)

@@ -8,7 +8,9 @@ import com.wire.kalium.network.api.prekey.PreKeyDTO
 class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
 
     // TODO(testing): unit test to be created later
-    fun toRemoteClientPreKeyInfoTo(clientPreKeyInfo: Map<UserId, List<ClientId>>): Map<String, Map<String, List<String>>> =
+    fun toRemoteClientPreKeyInfoTo(
+        clientPreKeyInfo: Map<UserId, List<ClientId>>
+    ): Map<String, Map<String, List<String>>> =
         clientPreKeyInfo.entries.groupBy { it.key.domain }
             .mapValues { domainEntry ->
                 domainEntry.value.associate { userEntry ->
@@ -16,7 +18,9 @@ class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
                 }
             }
 
-    fun fromRemoteQualifiedPreKeyInfoMap(qualifiedPreKeyListResponse: Map<String, Map<String, Map<String, PreKeyDTO?>>>): List<QualifiedUserPreKeyInfo> =
+    fun fromRemoteQualifiedPreKeyInfoMap(
+        qualifiedPreKeyListResponse: Map<String, Map<String, Map<String, PreKeyDTO?>>>
+    ): List<QualifiedUserPreKeyInfo> =
         qualifiedPreKeyListResponse.entries.flatMap { domainEntry ->
             domainEntry.value.mapKeys { userEntry ->
                 QualifiedID(userEntry.key, domainEntry.key)
