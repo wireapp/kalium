@@ -60,7 +60,7 @@ class DeleteSessionUseCaseTest {
         verify(arrange.sessionRepository)
             .function(arrange.sessionRepository::deleteSession)
             .with(any())
-            .wasNotInvoked()
+            .wasInvoked(exactly = once)
 
         verify(arrange.userSessionScopeProvider)
             .function(arrange.userSessionScopeProvider::delete)
