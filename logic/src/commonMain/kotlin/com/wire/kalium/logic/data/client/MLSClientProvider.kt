@@ -40,12 +40,18 @@ class MLSClientProviderImpl(
         return mlsClient?.let {
             Either.Right(it)
         } ?: run {
+            kaliumLogger.i("security helper")
+            val securityHelper = SecurityHelper(kaliumPreferences)
+            kaliumLogger.i("db secret")
+            val dbSecret = securityHelper.mlsDBSecret(userId)
+            kaliumLogger.i("new client")
             val newClient = mlsClient(
                 cryptoUserId,
                 currentClientId,
                 location,
-                SecurityHelper(kaliumPreferences).mlsDBSecret(userId)
+                dbSecret
             )
+            kaliumLogger.i("new client done")
             mlsClient = newClient
             Either.Right(newClient)
         }
