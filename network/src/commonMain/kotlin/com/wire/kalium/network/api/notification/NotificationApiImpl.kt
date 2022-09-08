@@ -11,11 +11,12 @@ import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
-import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.Url
 import io.ktor.websocket.Frame
+import io.ktor.websocket.close
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.collect
@@ -79,40 +80,41 @@ class NotificationApiImpl internal constructor(
         //       before attempting to open the websocket
         lastNotification(clientId)
 
-        authenticatedWebSocketClient
+        val session = authenticatedWebSocketClient
             .createDisposableHttpClient()
-            .webSocket({
+            .webSocketSession {
                 setWSSUrl(Url(serverLinks.webSocket), PATH_AWAIT)
                 parameter(CLIENT_QUERY_KEY, clientId)
-            }, {
-                emitWebSocketEvents(this)
-            })
+            }
+        emitWebSocketEvents(session)
     }
 
     private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(
         defaultClientWebSocketSession: DefaultClientWebSocketSession
     ) {
-        kaliumLogger.i("Websocket open")
+        val logger = kaliumLogger.withFeatureId(EVENT_RECEIVER)
+        logger.i("Websocket open")
         emit(WebSocketEvent.Open())
 
         defaultClientWebSocketSession.incoming
             .consumeAsFlow()
             .onCompletion {
-                kaliumLogger.w("Websocket Closed", it)
+                defaultClientWebSocketSession.close()
+                logger.w("Websocket Closed", it)
                 emit(WebSocketEvent.Close(it))
             }
             .collect { frame ->
-                kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Websocket Received Frame: $frame")
+                logger.v("Websocket Received Frame: $frame")
                 when (frame) {
                     is Frame.Binary -> {
                         // assuming here the byteArray is an ASCII character set
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
-                        kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Binary frame content: '$jsonString'")
+                        logger.v("Binary frame content: '$jsonString'")
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
                     else -> {
-                        kaliumLogger.withFeatureId(EVENT_RECEIVER).v("Websocket frame not handled: $frame")
+                        logger.v("Websocket frame not handled: $frame")
                         emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))
                     }
                 }
