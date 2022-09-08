@@ -1,5 +1,6 @@
 package com.wire.kalium.network.utils
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.api.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
@@ -26,7 +27,6 @@ import io.ktor.http.takeFrom
 import io.ktor.util.AttributeKey
 import io.ktor.util.Attributes
 import io.ktor.util.appendAll
-
 
 /**
  * Sets default request parameters. Used to add common headers and URL for a request.
@@ -91,7 +91,7 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
                     headers.appendAll(context.headers)
                     serverConfigDTO?.let {
                         plugin.provider.buildDefaultRequest(this, it)
-                    }?: return@intercept
+                    } ?: return@intercept
                 }
                 val defaultUrl = defaultRequest.url.build()
                 if (context.url.host.isEmpty()) {
@@ -142,7 +142,11 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
          * Pass `null` to keep existing value in the [URLBuilder].
          */
         fun url(
-            scheme: String? = null, host: String? = null, port: Int? = null, path: String? = null, block: URLBuilder.() -> Unit = {}
+            scheme: String? = null,
+            host: String? = null,
+            port: Int? = null,
+            path: String? = null,
+            block: URLBuilder.() -> Unit = {}
         ) {
             url.set(scheme, host, port, path, block)
         }
@@ -181,7 +185,6 @@ class WireDefaultRequest private constructor(var provider: WireServerMetaDataCon
     }
 }
 
-
 class WireServerMetaDataConfig {
     internal var fetchAndStoreMetadata: suspend () -> ServerConfigDTO? = { null }
     internal var loadServerData: suspend () -> ServerConfigDTO? = { null }
@@ -194,27 +197,32 @@ fun WireDefaultRequest.config(block: () -> WireServerMetaDataConfig) {
 
 fun HttpClientConfig<*>.installWireDefaultRequest(
     backendLinks: ServerConfigDTO.Links,
-    serverMetaDataManager: ServerMetaDataManager
+    serverMetaDataManager: ServerMetaDataManager,
+    developmentApiEnabled: Boolean
 ) {
     install(WireDefaultRequest) {
         config {
             WireServerMetaDataConfig().apply {
                 loadServerData = {
                     serverMetaDataManager.getLocalMetaData(backendLinks).also {
-                        kaliumLogger.d("WireDefaultRequest: loading server config from local: $it")
+                        kaliumLogger.d("WireDefaultRequest: loading server config from local: ${it?.id?.obfuscateId()}")
                     }
                 }
 
                 fetchAndStoreMetadata = {
-                    val versionApi = VersionApiImpl(provideBaseHttpClient(defaultHttpEngine()))
+                    val versionApi = VersionApiImpl(
+                        httpClient = provideBaseHttpClient(defaultHttpEngine()),
+                        developmentApiEnabled = developmentApiEnabled
+                    )
                     when (val result = versionApi.fetchApiVersion(Url(backendLinks.api))) {
                         is NetworkResponse.Success ->
                             serverMetaDataManager.storeServerConfig(
                                 backendLinks, result.value
                             )
+
                         is NetworkResponse.Error -> null
                     }.also {
-                        kaliumLogger.d("WireDefaultRequest: loading server config from remote: $it")
+                        kaliumLogger.d("WireDefaultRequest: loading server config from remote: ${it?.id?.obfuscateId()}")
                     }
                 }
 
