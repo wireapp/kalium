@@ -22,7 +22,8 @@ class AddMemberCommitBundle(
 
 class DecryptedMessageBundle(
     val message: ByteArray?,
-    val commitDelay: Long?
+    val commitDelay: Long?,
+    val senderClientId: CryptoQualifiedClientId?
 )
 
 @Suppress("TooManyFunctions")
@@ -89,17 +90,20 @@ interface MLSClient {
     fun conversationExists(groupId: MLSGroupId): Boolean
 
     /**
+     * Query the current epoch of a conversation
+     *
+     * @return conversation epoch
+     */
+    fun conversationEpoch(groupId: MLSGroupId): ULong
+
+    /**
      * Create a new MLS conversation
      *
      * @param groupId MLS group ID provided by BE
-     * @param members list of clients with a claimed key package for each client.
-     *
-     * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun createConversation(
-        groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): AddMemberCommitBundle?
+        groupId: MLSGroupId
+    )
 
     fun wipeConversation(groupId: MLSGroupId)
 
@@ -122,6 +126,11 @@ interface MLSClient {
      * @return commit bundle, which needs to be sent to the distribution service.
      */
     fun commitPendingProposals(groupId: MLSGroupId): CommitBundle
+
+    /**
+     * Clear a pending commit which has not yet been accepted by the distribution service
+     */
+    fun clearPendingCommit(groupId: MLSGroupId)
 
     /**
      * Encrypt a message for distribution in a group

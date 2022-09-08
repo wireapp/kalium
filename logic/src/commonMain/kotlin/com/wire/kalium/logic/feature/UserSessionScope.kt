@@ -5,6 +5,7 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -73,8 +74,8 @@ import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.conversation.GetConversationClassifiedTypeUseCase
-import com.wire.kalium.logic.feature.conversation.GetConversationClassifiedTypeUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
+import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
@@ -160,7 +161,7 @@ import kotlin.coroutines.CoroutineContext
 expect class UserSessionScope : UserSessionScopeCommon
 
 @Suppress("LongParameterList")
-abstract class UserSessionScopeCommon(
+abstract class UserSessionScopeCommon internal constructor(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val sessionRepository: SessionRepository,
@@ -168,7 +169,8 @@ abstract class UserSessionScopeCommon(
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val serverConfigRepository: Lazy<ServerConfigRepository>
 ) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
@@ -203,7 +205,8 @@ abstract class UserSessionScopeCommon(
             mlsClientProvider,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
             userDatabaseProvider.conversationDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            syncManager
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
@@ -410,14 +413,15 @@ abstract class UserSessionScopeCommon(
     internal val keyPackageManager: KeyPackageManager =
         KeyPackageManagerImpl(
             incrementalSyncRepository,
-            lazy { keyPackageRepository },
             lazy { client.refillKeyPackages },
-            lazy { client.mlsKeyPackageCountUseCase }
+            lazy { client.mlsKeyPackageCountUseCase },
+            lazy { users.timestampKeyRepository }
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
             incrementalSyncRepository,
-            lazy { conversations.updateMLSGroupsKeyingMaterials }
+            lazy { conversations.updateMLSGroupsKeyingMaterials },
+            lazy { users.timestampKeyRepository }
         )
 
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
@@ -430,7 +434,13 @@ abstract class UserSessionScopeCommon(
 
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
 
-    val federatedIdMapper: FederatedIdMapper get() = MapperProvider.federatedIdMapper(userRepository, qualifiedIdMapper, globalPreferences)
+    val federatedIdMapper: FederatedIdMapper
+        get() = MapperProvider.federatedIdMapper(
+            userId,
+            qualifiedIdMapper,
+            sessionRepository,
+            serverConfigRepository.value
+        )
 
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
@@ -495,8 +505,7 @@ abstract class UserSessionScopeCommon(
         get() = KeyPackageDataSource(
             clientRepository,
             authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi,
-            mlsClientProvider,
-            authenticatedDataSourceSet.userDatabaseProvider.metadataDAO,
+            mlsClientProvider
         )
 
     private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
@@ -561,6 +570,7 @@ abstract class UserSessionScopeCommon(
             qualifiedIdMapper,
             sessionRepository,
             userId,
+            userDatabaseProvider.metadataDAO
         )
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
@@ -604,8 +614,8 @@ abstract class UserSessionScopeCommon(
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
-    val getConversationClassifiedType: GetConversationClassifiedTypeUseCase
-        get() = GetConversationClassifiedTypeUseCaseImpl(userId, conversationRepository, userConfigRepository)
+    val getSecurityClassificationType: GetSecurityClassificationTypeUseCase
+        get() = GetSecurityClassificationTypeUseCaseImpl(userId, conversationRepository, userConfigRepository)
 
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories

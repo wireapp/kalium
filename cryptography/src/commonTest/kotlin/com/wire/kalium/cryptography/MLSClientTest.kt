@@ -30,13 +30,21 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     @Test
+    fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() {
+        val mlsClient = createClient(ALICE)
+        mlsClient.createConversation(MLS_CONVERSATION_ID)
+        assertEquals(0UL, mlsClient.conversationEpoch(MLS_CONVERSATION_ID))
+    }
+
+    @Test
     fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() {
         val aliceClient = createClient(ALICE)
         val bobClient = createClient(BOB)
 
         val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
         val clientKeyPackageList = listOf(Pair(ALICE.qualifiedClientId, aliceKeyPackage))
-        val welcome = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
+        bobClient.createConversation(MLS_CONVERSATION_ID)
+        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
@@ -53,7 +61,8 @@ class MLSClientTest : BaseMLSClientTest() {
 
         val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
         val clientKeyPackageList = listOf(Pair(ALICE.qualifiedClientId, aliceKeyPackage))
-        val welcome = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)!!.welcome
+        bobClient.createConversation(MLS_CONVERSATION_ID)
+        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)!!.welcome
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
         assertEquals(MLS_CONVERSATION_ID, conversationId)
@@ -68,7 +77,8 @@ class MLSClientTest : BaseMLSClientTest() {
         val carolKeyPackage = carolClient.generateKeyPackages(1).first()
         val clientKeyPackageList = listOf(Pair(CAROL.qualifiedClientId, carolKeyPackage))
 
-        bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)
+        bobClient.createConversation(MLS_CONVERSATION_ID)
+        bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val proposal = aliceClient.joinConversation(MLS_CONVERSATION_ID, 1UL)
         bobClient.decryptMessage(MLS_CONVERSATION_ID, proposal)
@@ -87,7 +97,8 @@ class MLSClientTest : BaseMLSClientTest() {
         val clientKeyPackageList = listOf(
             Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first())
         )
-        val welcome = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
+        bobClient.createConversation(MLS_CONVERSATION_ID)
+        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
@@ -105,7 +116,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val clientKeyPackageList = listOf(
             Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first())
         )
-        bobClient.createConversation(MLS_CONVERSATION_ID, emptyList())
+        bobClient.createConversation(MLS_CONVERSATION_ID)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted((MLS_CONVERSATION_ID))
         val conversationId = aliceClient.processWelcomeMessage(welcome)
@@ -119,7 +130,8 @@ class MLSClientTest : BaseMLSClientTest() {
         val bobClient = createClient(BOB)
         val carolClient = createClient(CAROL)
 
-        val welcome = bobClient.createConversation(
+        bobClient.createConversation(MLS_CONVERSATION_ID)
+        val welcome = bobClient.addMember(
             MLS_CONVERSATION_ID,
             listOf(Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first()))
         )?.welcome!!
@@ -145,7 +157,8 @@ class MLSClientTest : BaseMLSClientTest() {
             Pair(ALICE.qualifiedClientId, aliceClient.generateKeyPackages(1).first()),
             Pair(CAROL.qualifiedClientId, carolClient.generateKeyPackages(1).first())
         )
-        val welcome = bobClient.createConversation(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
+        bobClient.createConversation(MLS_CONVERSATION_ID)
+        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 

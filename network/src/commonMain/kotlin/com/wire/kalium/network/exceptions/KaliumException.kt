@@ -16,6 +16,8 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_TEAM
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.OPERATION_DENIED
@@ -37,7 +39,11 @@ sealed class KaliumException() : Exception() {
     /**
      * http error 400 .. 499
      */
-    class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException()
+    class InvalidRequestError(val errorResponse: ErrorResponse) : KaliumException() {
+        override fun toString(): String {
+            return "InvalidRequestError(response = $errorResponse"
+        }
+    }
 
     /**
      * http error 500 .. 599
@@ -130,6 +136,14 @@ fun KaliumException.InvalidRequestError.isOperationDenied(): Boolean {
 
 fun KaliumException.InvalidRequestError.isMlsStaleMessage(): Boolean {
     return errorResponse.label == MLS_STALE_MESSAGE
+}
+
+fun KaliumException.InvalidRequestError.isMlsClientMismatch(): Boolean {
+    return errorResponse.label == MLS_CLIENT_MISMATCH
+}
+
+fun KaliumException.InvalidRequestError.isMlsCommitMissingReferences(): Boolean {
+    return errorResponse.label == MLS_COMMIT_MISSING_REFERENCES
 }
 
 fun KaliumException.ServerError.isFederationError(): Boolean {

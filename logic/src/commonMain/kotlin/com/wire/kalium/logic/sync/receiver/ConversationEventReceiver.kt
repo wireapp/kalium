@@ -40,7 +40,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
@@ -49,7 +48,6 @@ import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.wrapCryptoRequest
 import io.ktor.utils.io.core.toByteArray
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -327,7 +325,8 @@ internal class ConversationEventReceiverImpl(
                     handlePendingProposal(
                         timestamp = event.timestampIso.toInstant(),
                         groupId = bundle.groupID,
-                        commitDelay = it)
+                        commitDelay = it
+                    )
                 }
 
                 bundle.message?.let {
@@ -345,17 +344,22 @@ internal class ConversationEventReceiverImpl(
                 }
             }
 
-    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation): Either<CoreFailure, Unit> {
-        val conversation = conversationRepository.observeConversationDetailsById(event.conversationId).onlyRight().first()
-        return conversationRepository.deleteConversation(event.conversationId)
-            .onFailure { coreFailure ->
-                kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
-            }.onSuccess {
-                val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
-                val dataNotification = EphemeralConversationNotification(event, conversation.conversation, senderUser)
-                ephemeralNotificationsManager.scheduleNotification(dataNotification)
-                kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
+    private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation) {
+        when (val conversation = conversationRepository.observeConversationDetailsById(event.conversationId).firstOrNull()) {
+            is Either.Right -> {
+                conversationRepository.deleteConversation(event.conversationId)
+                    .onFailure { coreFailure ->
+                        kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
+                    }.onSuccess {
+                        val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
+                        val dataNotification = EphemeralConversationNotification(event, conversation.value.conversation, senderUser)
+                        ephemeralNotificationsManager.scheduleNotification(dataNotification)
+                        kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
+                    }
             }
+
+            else -> kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation")
+        }
     }
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
@@ -403,6 +407,7 @@ internal class ConversationEventReceiverImpl(
                     }
                     persistMessage(message)
                 }
+
                 is MessageContent.Asset -> handleAssetMessage(message)
                 is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
                 is MessageContent.DeleteForMe -> deleteForMeHandler.handle(message, content)
@@ -413,6 +418,7 @@ internal class ConversationEventReceiverImpl(
                         content = content
                     )
                 }
+
                 is MessageContent.TextEdited -> editTextHandler.handle(message, content)
                 is MessageContent.LastRead -> lastReadContentHandler.handle(message, content)
                 is MessageContent.Unknown -> {
@@ -422,6 +428,7 @@ internal class ConversationEventReceiverImpl(
 
                 is MessageContent.Empty -> TODO()
             }
+
             is Message.System -> when (message.content) {
                 is MessageContent.MemberChange -> {
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "System MemberChange Message received: $message")
