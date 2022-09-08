@@ -57,6 +57,9 @@ actual class CoreLogic(
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.get(userId)
 
+    override fun deleteSessionScope(userId: UserId) =
+        userSessionScopeProvider.value.delete(userId)
+
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
         appContext = appContext
     )
