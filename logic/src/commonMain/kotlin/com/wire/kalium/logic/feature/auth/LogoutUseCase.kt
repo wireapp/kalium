@@ -37,7 +37,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
             clearCrypto()
             clearUserStorage()
         }
-        clearInMemoryUserSession()
+//         clearInMemoryUserSession()
     }
 
     private fun isHardLogout(reason: LogoutReason) = when (reason) {
