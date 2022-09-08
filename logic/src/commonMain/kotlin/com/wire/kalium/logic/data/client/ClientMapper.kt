@@ -10,6 +10,7 @@ import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.OtherUserClientsItem
 import com.wire.kalium.network.api.user.client.RegisterClientRequest
+import com.wire.kalium.network.api.user.client.SimpleClientResponse
 
 class ClientMapper(
     private val preyKeyMapper: PreKeyMapper,
@@ -72,9 +73,9 @@ class ClientMapper(
         DeviceType.Unknown -> DeviceTypeDTO.Unknown
     }
 
-    fun fromOtherUsersClientsDTO(otherUsersClients: List<OtherUserClientsItem>): List<OtherUserClient> =
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<SimpleClientResponse>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClient(DeviceType.valueOf(it.deviceType.name), it.id)
+            OtherUserClient(DeviceType.valueOf(it.deviceClass.name), it.id)
         }
 
     private fun fromDeviceTypeDTO(deviceTypeDTO: DeviceTypeDTO): DeviceType = when (deviceTypeDTO) {
