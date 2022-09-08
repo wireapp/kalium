@@ -45,7 +45,8 @@ actual class UserSessionScopeProviderImpl(
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         val networkContainer = AuthenticatedNetworkContainer(
             SessionManagerImpl(sessionRepository, userId),
-            ServerMetaDataManagerImpl(globalScope.serverConfigRepository)
+            ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
+            developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )
         val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
         runBlocking { proteusClient.open() }
