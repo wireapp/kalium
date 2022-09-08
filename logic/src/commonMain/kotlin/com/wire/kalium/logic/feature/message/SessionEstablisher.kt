@@ -64,10 +64,12 @@ class SessionEstablisherImpl(
     private fun getMapOfSessionIdsToPreKeys(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Map<String, Map<String, Map<String, PreKeyCrypto>>> {
         val acc = mutableMapOf<String, Map<String, Map<String, PreKeyCrypto>>>()
         preKeyInfoList.forEach {
-            val userToClientsToPreKeyMap = preKeyInfoList.associate { userInfo ->
-                userInfo.userId.value to userInfo.clientsInfo.associate { clientInfo ->
-                    clientInfo.clientId to clientInfo.preKey
-                }
+            val userToClientsToPreKeyMap: Map<String, Map<String, PreKeyCrypto>> = preKeyInfoList.associate { userInfo ->
+                userInfo.userId.value to userInfo.clientsInfo.filter { clientPreKeyInfo -> clientPreKeyInfo.preKey != null }
+                    .associate { clientInfo ->
+                        // the double bang is safe because we filter out clients with no preKey above
+                        clientInfo.clientId to clientInfo.preKey!!
+                    }
             }
             acc[it.userId.domain] = userToClientsToPreKeyMap
         }

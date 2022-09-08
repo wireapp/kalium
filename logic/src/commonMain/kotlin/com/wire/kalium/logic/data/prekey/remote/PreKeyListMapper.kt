@@ -10,7 +10,7 @@ import com.wire.kalium.network.api.prekey.PreKeyDTO
 
 class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
 
-    //TODO(testing): unit test to be created later
+    // TODO(testing): unit test to be created later
     fun toRemoteClientPreKeyInfoTo(clientPreKeyInfo: Map<UserId, List<ClientId>>): Map<String, Map<String, List<String>>> =
         clientPreKeyInfo.entries.groupBy { it.key.domain }
             .mapValues { domainEntry ->
@@ -19,16 +19,17 @@ class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
                 }
             }
 
-    fun fromRemoteQualifiedPreKeyInfoMap(qualifiedPreKeyListResponse: Map<String, Map<String, Map<String, PreKeyDTO>>>): List<QualifiedUserPreKeyInfo> =
+    fun fromRemoteQualifiedPreKeyInfoMap(qualifiedPreKeyListResponse: Map<String, Map<String, Map<String, PreKeyDTO?>>>): List<QualifiedUserPreKeyInfo> =
         qualifiedPreKeyListResponse.entries.flatMap { domainEntry ->
             domainEntry.value.mapKeys { userEntry ->
                 QualifiedID(userEntry.key, domainEntry.key)
             }.mapValues { userEntry ->
                 userEntry.value.mapValues { clientEntry ->
-                    preKeyMapper.fromPreKeyDTO(clientEntry.value)
+                    clientEntry.value?.let { preKeyDTO -> preKeyMapper.fromPreKeyDTO(preKeyDTO) }
                 }
             }.map { entry ->
-                val clientsInfo = entry.value.map { clientEntry -> ClientPreKeyInfo(clientEntry.key, clientEntry.value) }
+                val clientsInfo = entry.value
+                    .map { clientEntry -> ClientPreKeyInfo(clientEntry.key, clientEntry.value) }
                 QualifiedUserPreKeyInfo(entry.key, clientsInfo)
             }
         }
