@@ -4,7 +4,6 @@ import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.kaliumLogger
 
@@ -16,18 +15,12 @@ class ClearUserDataUseCaseImpl @Suppress("LongParameterList") constructor(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val clientRepository: ClientRepository,
-    private val mlsClientProvider: MLSClientProvider,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val mlsClientProvider: MLSClientProvider
 ) : ClearUserDataUseCase {
 
     override suspend operator fun invoke() {
         clearCrypto()
         clearUserStorage()
-        clearInMemoryUserSession()
-    }
-
-    private fun clearInMemoryUserSession() {
-        userSessionScopeProvider.delete(userId)
     }
 
     private fun clearUserStorage() {
