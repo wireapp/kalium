@@ -578,8 +578,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             authenticatedDataSourceSet,
             clientRepository,
-            mlsClientProvider,
-            userSessionScopeProvider
+            mlsClientProvider
         )
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
