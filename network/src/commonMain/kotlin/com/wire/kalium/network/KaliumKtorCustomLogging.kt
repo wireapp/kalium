@@ -1,6 +1,7 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logger.obfuscateUrlPath
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
@@ -90,7 +91,7 @@ public class KaliumKtorCustomLogging private constructor(
 
     private suspend fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
         if (level.info) {
-            kaliumLogger.v("REQUEST: ${Url(request.url)}")
+            kaliumLogger.v("REQUEST: ${obfuscatePath(Url(request.url))} ")
             kaliumLogger.v("METHOD: ${request.method}")
         }
 
@@ -115,7 +116,7 @@ public class KaliumKtorCustomLogging private constructor(
         if (level.info) {
             kaliumLogger.v("RESPONSE: ${response.status}")
             kaliumLogger.v("METHOD: ${response.call.request.method}")
-            kaliumLogger.v("FROM: ${response.call.request.url}")
+            kaliumLogger.v("FROM: ${obfuscatePath(response.call.request.url)}")
         }
 
         if (level.headers) {
@@ -134,13 +135,13 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun logRequestException(context: HttpRequestBuilder, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("REQUEST ${Url(context.url)} failed with exception: $cause")
+            kaliumLogger.v("REQUEST ${obfuscatePath(Url(context.url))} failed with exception: $cause")
         }
     }
 
     private fun logResponseException(request: HttpRequest, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("RESPONSE ${request.url} failed with exception: $cause")
+            kaliumLogger.v("RESPONSE ${obfuscatePath(request.url)} failed with exception: $cause")
         }
     }
 
@@ -283,10 +284,25 @@ fun logObfuscatedJsonElement(obj: JsonElement) {
             }
         }
     }
-
 }
 
-private val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie") }
+private fun obfuscatePath(url: Url): String {
+    var requestToLog = url.host
+    if (url.pathSegments.isNotEmpty()) {
+        url.pathSegments.map {
+            requestToLog += "/${it.obfuscateUrlPath()}"
+        }
+    }
+    url.parameters.entries().map {
+        if (it.value.isNotEmpty()) {
+            requestToLog += "/${it.key} = ${it.value[0].obfuscateUrlPath()}"
+        }
+    }
+    return requestToLog
+}
+
+
+private val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie","Location", "x-amz-meta-user") }
 private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
 private val sensitiveJsonObjects by lazy { listOf("qualified_id") }
 
