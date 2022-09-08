@@ -88,8 +88,7 @@ class BackendMetaDataUtilTest {
         val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, false)
         assertEquals(expected, actual)
     }
-
-
+    
     @Test
     fun givenAnEmptyServerVersionList_whenCalculateApiVersion_thenTheUnknownServerIsReturned() {
         val appVersion = setOf(0)

@@ -52,7 +52,6 @@ class AuthenticationScope(
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, backendLinks, globalScope.serverConfigRepository)
 }
 
-
 class ServerMetaDataManagerImpl internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()

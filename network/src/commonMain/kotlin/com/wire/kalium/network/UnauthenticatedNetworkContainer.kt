@@ -28,7 +28,6 @@ class UnauthenticatedNetworkContainer constructor(
     val sso: SSOLoginApi get() = SSOLoginApiImpl(unauthenticatedNetworkClient)
 }
 
-
 class UnboundNetworkContainer(
     engine: HttpClientEngine = defaultHttpEngine(),
     val developmentApiEnabled: Boolean
