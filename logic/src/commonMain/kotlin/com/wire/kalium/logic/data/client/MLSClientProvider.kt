@@ -43,13 +43,13 @@ class MLSClientProviderImpl(
             kaliumLogger.i("security helper")
             val securityHelper = SecurityHelper(kaliumPreferences)
             kaliumLogger.i("db secret")
-            val dbSecret = securityHelper.mlsDBSecret(userId)
+            //val dbSecret = securityHelper.mlsDBSecret(userId)
             kaliumLogger.i("new client")
             val newClient = mlsClient(
                 cryptoUserId,
                 currentClientId,
                 location,
-                dbSecret
+                MlsDBSecret("123456")
             )
             kaliumLogger.i("new client done")
             mlsClient = newClient
