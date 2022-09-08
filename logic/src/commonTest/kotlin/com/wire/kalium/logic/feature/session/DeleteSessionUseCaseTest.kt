@@ -62,7 +62,6 @@ class DeleteSessionUseCaseTest {
             .with(any())
             .wasNotInvoked()
 
-
         verify(arrange.userSessionScopeProvider)
             .function(arrange.userSessionScopeProvider::delete)
             .with(any())
@@ -84,6 +83,10 @@ class DeleteSessionUseCaseTest {
                 .whenInvokedWith(eq(userId))
                 .thenReturn(Either.Right(Unit))
 
+            given(userSessionScopeProvider)
+                .function(userSessionScopeProvider::delete)
+                .whenInvokedWith(eq(userId))
+                .thenReturn(Unit)
             return this
         }
 
