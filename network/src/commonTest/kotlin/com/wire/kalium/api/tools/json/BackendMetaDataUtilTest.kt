@@ -32,6 +32,35 @@ class BackendMetaDataUtilTest {
 
     }
 
+    @Test
+    fun givenCommonVersionBetweenAppAndDBAndEnabledDevApi_whenCalculateApiVersion_thenTheHighestCommonVersionIsReturned() {
+        val appVersion = setOf(1, 2, 3, 4, 5)
+        val serverVersion = VersionInfoDTO(listOf(5), "domain.com", false, listOf(0, 1, 2, 3, 4))
+        val expected = ServerConfigDTO.MetaData(
+            serverVersion.federation,
+            ApiVersionDTO.Valid(5),
+            serverVersion.domain
+        )
+
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, true)
+        assertEquals(expected, actual)
+
+    }
+
+    @Test
+    fun givenCommonVersionAndEnabledDevApiAndNullDevApiSupported_whenCalculateApiVersion_thenTheHighestCommonVersionIsReturned() {
+        val appVersion = setOf(1, 2, 3, 4, 5)
+        val serverVersion = VersionInfoDTO(null, "domain.com", false, listOf(0, 1, 2, 3, 4))
+        val expected = ServerConfigDTO.MetaData(
+            serverVersion.federation,
+            ApiVersionDTO.Valid(4),
+            serverVersion.domain
+        )
+
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, true)
+        assertEquals(expected, actual)
+
+    }
 
     @Test
     fun givenOldBEVersion_whenCalculateApiVersion_thenTheUnknownServerIsReturned() {
