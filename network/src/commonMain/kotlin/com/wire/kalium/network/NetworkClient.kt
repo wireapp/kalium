@@ -29,7 +29,7 @@ internal class AuthenticatedNetworkClient(
     sessionManager: SessionManager,
     serverMetaDataManager: ServerMetaDataManager,
     installCompression: Boolean = true,
-    developmentApiEnabled: Boolean
+    developmentApiEnabled: Boolean = false
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
         installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager, developmentApiEnabled)

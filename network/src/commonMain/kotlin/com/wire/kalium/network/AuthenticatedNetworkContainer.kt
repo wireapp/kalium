@@ -40,7 +40,7 @@ class AuthenticatedNetworkContainer(
     private val sessionManager: SessionManager,
     serverMetaDataManager: ServerMetaDataManager,
     private val engine: HttpClientEngine = defaultHttpEngine(),
-    private val developmentApiEnabled: Boolean
+    private val developmentApiEnabled: Boolean = false
 ) {
 
     private val backendConfig = sessionManager.session().second

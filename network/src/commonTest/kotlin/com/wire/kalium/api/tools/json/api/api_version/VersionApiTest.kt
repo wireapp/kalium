@@ -31,7 +31,7 @@ class VersionApiTest : ApiTest {
             }
         )
 
-        val versionApi: VersionApi = VersionApiImpl(httpClient)
+        val versionApi: VersionApi = VersionApiImpl(httpClient, false)
         versionApi.fetchApiVersion(Url("https://wire.de")).also { actual ->
             assertIs<NetworkResponse.Success<ServerConfigDTO.MetaData>>(actual)
             assertEquals(expected, actual.value)
@@ -46,7 +46,7 @@ class VersionApiTest : ApiTest {
             statusCode = HttpStatusCode.NotFound
         )
 
-        val versionApi: VersionApi = VersionApiImpl(httpClient)
+        val versionApi: VersionApi = VersionApiImpl(httpClient, false)
         versionApi.fetchApiVersion(Url("https://wire.de")).also { actual ->
             assertIs<NetworkResponse.Success<ServerConfigDTO.MetaData>>(actual)
             assertEquals(expected, actual.value)

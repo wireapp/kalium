@@ -17,7 +17,7 @@ class UnauthenticatedNetworkContainer constructor(
     backendLinks: ServerConfigDTO.Links,
     serverMetaDataManager: ServerMetaDataManager,
     engine: HttpClientEngine = defaultHttpEngine(),
-    developmentApiEnabled: Boolean
+    developmentApiEnabled: Boolean = false
 ) {
     internal val unauthenticatedNetworkClient by lazy {
         UnauthenticatedNetworkClient(engine, backendLinks, serverMetaDataManager, developmentApiEnabled)
