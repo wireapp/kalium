@@ -52,7 +52,7 @@ class ConversationScope internal constructor(
         get() = GetConversationUseCase(conversationRepository)
 
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
-        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository)
+        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository, observeIsSelfUserMemberUseCase)
 
     val observeConversationsAndConnectionListUseCase: ObserveConversationsAndConnectionsUseCase
         get() = ObserveConversationsAndConnectionsUseCaseImpl(observeConversationListDetails, observeConnectionList)
