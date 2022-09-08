@@ -1,5 +1,6 @@
 package com.wire.kalium.network.utils
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.api.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
@@ -201,7 +202,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
             WireServerMetaDataConfig().apply {
                 loadServerData = {
                     serverMetaDataManager.getLocalMetaData(backendLinks).also {
-                        kaliumLogger.d("WireDefaultRequest: loading server config from local: $it")
+                        kaliumLogger.d("WireDefaultRequest: loading server config from local: ${it?.id?.obfuscateId()}")
                     }
                 }
 
@@ -214,7 +215,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
                             )
                         is NetworkResponse.Error -> null
                     }.also {
-                        kaliumLogger.d("WireDefaultRequest: loading server config from remote: $it")
+                        kaliumLogger.d("WireDefaultRequest: loading server config from remote: ${it?.id?.obfuscateId()}")
                     }
                 }
 

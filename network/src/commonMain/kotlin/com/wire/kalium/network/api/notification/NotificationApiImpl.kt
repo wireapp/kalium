@@ -110,6 +110,7 @@ class NotificationApiImpl internal constructor(
                         // assuming here the byteArray is an ASCII character set
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
                         logger.v("Binary frame content: '$jsonString'")
+                        // todo
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }

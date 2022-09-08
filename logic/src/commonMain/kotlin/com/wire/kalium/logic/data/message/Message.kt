@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -60,7 +61,7 @@ sealed class Message(
                     contentString = "content:$content"
                 }
             }
-            return "id: ${id.obfuscateId()} $contentString conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+            return "id: ${id.obfuscateId()} $contentString conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}" +
                     "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
                     "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
         }
@@ -76,7 +77,7 @@ sealed class Message(
         override val visibility: Visibility = Visibility.VISIBLE
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
-            return "id:${id.obfuscateId()} content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain}" +
+            return "id:${id.obfuscateId()} content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}" +
                     "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility"
         }
     }
