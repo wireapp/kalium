@@ -102,7 +102,7 @@ class UserEventReceiverTest {
         }
 
         fun withLogoutUseCaseSucceed() = apply {
-            given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any(), any()).thenReturn(Unit)
+            given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any(), any()).thenReturn(null)
         }
 
         fun withCurrentSessionReturns(userId: UserId) = apply {

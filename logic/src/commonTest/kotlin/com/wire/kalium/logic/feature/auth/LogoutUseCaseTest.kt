@@ -25,6 +25,8 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LogoutUseCaseTest {
@@ -82,17 +84,19 @@ class LogoutUseCaseTest {
     }
 
     @Test
-    fun givenOtherValidSessions_whenLoggingOut_thenUpdateCurrentSession() = runTest {
+    fun givenOtherValidSessions_whenLoggingOut_thenUpdateCurrentSessionAndReturnNewUserId() = runTest {
         val reason = LogoutReason.SELF_LOGOUT
         val isHardLogout = true
+        val expectedSession = Arrangement.validAuthSession
         val (arrangement, logoutUseCase) = Arrangement()
             .withLogoutResult(Either.Right(Unit))
             .withSessionLogoutResult(Either.Right(Unit))
-            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.validAuthSession)))
+            .withAllValidSessionsResult(Either.Right(listOf(expectedSession)))
             .withUpdateCurrentSessionResult(Either.Right(Unit))
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
             .arrange()
-        logoutUseCase.invoke(reason, isHardLogout)
+        val result = logoutUseCase.invoke(reason, isHardLogout)
+        assertEquals(expectedSession.session.userId, result)
         verify(arrangement.sessionRepository)
             .function(arrangement.sessionRepository::updateCurrentSession)
             .with(eq(Arrangement.validAuthSession.session.userId))
@@ -100,7 +104,7 @@ class LogoutUseCaseTest {
     }
 
     @Test
-    fun givenNoOtherValidSessions_whenLoggingOut_thenDoNotUpdateCurrentSession() = runTest {
+    fun givenNoOtherValidSessions_whenLoggingOut_thenDoNotUpdateCurrentSessionAndReturnNoUserId() = runTest {
         val reason = LogoutReason.SELF_LOGOUT
         val isHardLogout = true
         val (arrangement, logoutUseCase) = Arrangement()
@@ -110,7 +114,8 @@ class LogoutUseCaseTest {
             .withUpdateCurrentSessionResult(Either.Right(Unit))
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
             .arrange()
-        logoutUseCase.invoke(reason, isHardLogout)
+        val result = logoutUseCase.invoke(reason, isHardLogout)
+        assertNull(result)
         verify(arrangement.sessionRepository)
             .function(arrangement.sessionRepository::updateCurrentSession)
             .with(any())
