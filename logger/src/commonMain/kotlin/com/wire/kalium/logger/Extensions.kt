@@ -22,7 +22,7 @@ fun String.obfuscateDomain(): String {
 }
 
 fun String.obfuscateUrlPath(): String {
-    return if (this.length >= END_INDEX_DOMAIN) {
+    return if (this.length >= END_INDEX_URL_PATH) {
         "${this.substring(START_INDEX, END_INDEX_URL_PATH)}****"
     } else {
         this

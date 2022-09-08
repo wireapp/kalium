@@ -92,8 +92,7 @@ fun itemsToKeep(obj: JsonElement) {
     }
 }
 
-
- val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie", "Location", "x-amz-meta-user") }
+val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie", "location", "x-amz-meta-user") }
 private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
 private val sensitiveJsonObjects by lazy { listOf("qualified_id") }
 private val notSensitiveJsonKeys by lazy { listOf("type", "time") }
