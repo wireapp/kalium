@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -92,7 +93,8 @@ class SearchUserUseCaseTest {
             // then
             val actual = awaitItem()
             assertIs<Result.Success>(actual)
-            assertEquals(expected.value, actual.userSearchResult)
+            assertContentEquals(expected.value.result, actual.userSearchResult.result)
+            awaitComplete()
         }
     }
 
@@ -119,6 +121,7 @@ class SearchUserUseCaseTest {
                 actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
                 ConnectionState.PENDING
             )
+            awaitComplete()
         }
 
     }
@@ -138,6 +141,7 @@ class SearchUserUseCaseTest {
             val actual = awaitItem()
             assertIs<Result.Success>(actual)
             assertEquals(expected.value, actual.userSearchResult)
+            awaitComplete()
         }
 
     }
@@ -155,6 +159,7 @@ class SearchUserUseCaseTest {
         searchPublicUsersUseCase(TEST_QUERY).test {
             // then
             assertIs<Result.Failure.InvalidQuery>(awaitItem())
+            awaitComplete()
         }
 
     }
@@ -175,6 +180,7 @@ class SearchUserUseCaseTest {
                 .suspendFunction(searchUserRepository::searchUserDirectory)
                 .with(anything(), anything(), anything(), eq(SearchUsersOptions.Default))
                 .wasInvoked(Times(1))
+            awaitComplete()
         }
     }
 
@@ -209,6 +215,7 @@ class SearchUserUseCaseTest {
                 .suspendFunction(searchUserRepository::searchUserDirectory)
                 .with(anything(), anything(), anything(), eq(givenSearchUsersOptions))
                 .wasInvoked(Times(1))
+            awaitComplete()
         }
     }
 
