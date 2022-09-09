@@ -1,6 +1,8 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.network.utils.obfuscateAndLogMessage
+import com.wire.kalium.network.utils.obfuscatePath
+import com.wire.kalium.network.utils.sensitiveJsonKeys
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
@@ -35,11 +37,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 
 /**
  * A client's logging plugin.
@@ -90,7 +87,7 @@ public class KaliumKtorCustomLogging private constructor(
 
     private suspend fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
         if (level.info) {
-            kaliumLogger.v("REQUEST: ${Url(request.url)}")
+            kaliumLogger.v("REQUEST: ${obfuscatePath(Url(request.url))} ")
             kaliumLogger.v("METHOD: ${request.method}")
         }
 
@@ -115,7 +112,7 @@ public class KaliumKtorCustomLogging private constructor(
         if (level.info) {
             kaliumLogger.v("RESPONSE: ${response.status}")
             kaliumLogger.v("METHOD: ${response.call.request.method}")
-            kaliumLogger.v("FROM: ${response.call.request.url}")
+            kaliumLogger.v("FROM: ${obfuscatePath(response.call.request.url)}")
         }
 
         if (level.headers) {
@@ -134,13 +131,13 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun logRequestException(context: HttpRequestBuilder, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("REQUEST ${Url(context.url)} failed with exception: $cause")
+            kaliumLogger.v("REQUEST ${obfuscatePath(Url(context.url))} failed with exception: $cause")
         }
     }
 
     private fun logResponseException(request: HttpRequest, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("RESPONSE ${request.url} failed with exception: $cause")
+            kaliumLogger.v("RESPONSE ${obfuscatePath(request.url)} failed with exception: $cause")
         }
     }
 
@@ -248,47 +245,6 @@ public class KaliumKtorCustomLogging private constructor(
         }
     }
 }
-
-@Suppress("TooGenericExceptionCaught")
-private fun obfuscateAndLogMessage(text: String) {
-    try {
-        val obj = (Json.decodeFromString(text) as JsonElement)
-        if (obj.jsonArray.size > 0) {
-            obj.jsonArray.map {
-                logObfuscatedJsonElement(it)
-            }
-        } else {
-            logObfuscatedJsonElement(obj)
-        }
-        obj.toString()
-    } catch (e: Exception) {
-        "error the body content while logging "
-    }
-}
-
-fun logObfuscatedJsonElement(obj: JsonElement) {
-    obj.jsonObject.entries.toMutableSet().map {
-        when {
-            sensitiveJsonKeys.contains(it.key.lowercase()) -> {
-                kaliumLogger.v("${it.key} : ******")
-            }
-            sensitiveJsonIdKeys.contains(it.key.lowercase()) -> {
-                kaliumLogger.v("${it.key} : ${it.value.toString().obfuscateId()}")
-            }
-            sensitiveJsonObjects.contains(it.key.lowercase()) -> {
-                logObfuscatedJsonElement(it.value)
-            }
-            else -> {
-                kaliumLogger.v("${it.key} : ${it.value}")
-            }
-        }
-    }
-
-}
-
-private val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie") }
-private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
-private val sensitiveJsonObjects by lazy { listOf("qualified_id") }
 
 /**
  * Configure and install [Logging] in [HttpClient].
