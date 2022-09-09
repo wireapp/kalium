@@ -123,7 +123,7 @@ class PreKeyRepositoryTest {
 
         suspend fun withGenerateLastPreKeysSuccess(expected: PreKeyCrypto) = apply {
             given(proteusClient)
-                .coroutine { proteusClient.newLastPreKey() }
+                .invocation { proteusClient.newLastPreKey() }
                 .then { expected }
         }
 

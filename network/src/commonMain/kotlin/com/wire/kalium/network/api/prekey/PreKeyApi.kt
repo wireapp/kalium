@@ -8,7 +8,7 @@ interface PreKeyApi {
      * @return a prekey for each one. You can't request information for more users than maximum conversation size.
      */
     suspend fun getUsersPreKey(
-        users:  Map<String, Map<String, List<String>>>
+        users: Map<String, Map<String, List<String>>>
     ): NetworkResponse<Map<String, Map<String, Map<String, PreKeyDTO?>>>>
 
     suspend fun getClientAvailablePrekeys(clientId: String): NetworkResponse<List<Int>>

@@ -33,4 +33,3 @@ class PreKeyApiImpl internal constructor(private val authenticatedNetworkClient:
         const val PATH_List_PREKEYS = "list-prekeys"
     }
 }
-
