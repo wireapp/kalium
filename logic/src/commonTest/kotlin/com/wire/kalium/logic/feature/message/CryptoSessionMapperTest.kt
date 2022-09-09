@@ -28,7 +28,7 @@ class CryptoSessionMapperTest {
                         preKey = null
                     ),
                     ClientPreKeyInfo(
-                        clientId = "client1_null",
+                        clientId = "valid_client",
                         preKey = PreKeyCrypto(
                             id = 1,
                             encodedData = "key1"
@@ -54,11 +54,12 @@ class CryptoSessionMapperTest {
         val expected: Map<String, Map<String, Map<String, PreKeyCrypto>>> = mapOf(
             "domain1" to mapOf(
                 "user1" to mapOf(
-                    "client1_null" to PreKeyCrypto(
+                    "valid_client" to PreKeyCrypto(
                         id = 1,
                         encodedData = "key1"
                     )
-                )
+                ),
+                "user2" to emptyMap<String, PreKeyCrypto>()
             )
         )
 
