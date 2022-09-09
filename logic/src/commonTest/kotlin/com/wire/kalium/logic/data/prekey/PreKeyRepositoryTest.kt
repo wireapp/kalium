@@ -24,7 +24,7 @@ class PreKeyRepositoryTest {
 
     @Test
     fun givenGetUserPreKeySuccess_whenGetUserPreKey_thenSuccess() = runTest {
-        val expected: DomainToUserIdToClientsToPreKeyMap =
+        val expected: Map<String, Map<String, Map<String, PreKeyDTO?>>> =
             mapOf(
                 "domain_1" to
                         mapOf(

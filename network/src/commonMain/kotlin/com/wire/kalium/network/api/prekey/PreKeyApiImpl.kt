@@ -12,7 +12,10 @@ class PreKeyApiImpl internal constructor(private val authenticatedNetworkClient:
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun getUsersPreKey(users: DomainToUserIdToClientsMap): NetworkResponse<DomainToUserIdToClientsToPreKeyMap> =
+    override suspend fun getUsersPreKey(
+        users: Map<String, Map<String, List<String>>>
+    ): NetworkResponse<Map<String, Map<String, Map<String, PreKeyDTO?>>>
+            > =
         wrapKaliumResponse {
             httpClient.post("$PATH_USERS/$PATH_List_PREKEYS") {
                 setBody(users)
