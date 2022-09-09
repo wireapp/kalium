@@ -67,7 +67,7 @@ class LogoutUseCaseTest {
     }
 
     @Test
-    fun givenSoftLogout_whenLoggingOut_thenDoNotExecuteClearingUserData() = runTest{
+    fun givenSoftLogout_whenLoggingOut_thenDoNotExecuteClearingUserData() = runTest {
         val reason = LogoutReason.SELF_LOGOUT
         val isHardLogout = false
         val (arrangement, logoutUseCase) = Arrangement()
