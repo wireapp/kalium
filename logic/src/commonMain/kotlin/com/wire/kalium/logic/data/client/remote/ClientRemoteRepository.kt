@@ -27,7 +27,9 @@ interface ClientRemoteRepository {
     suspend fun fetchSelfUserClients(): Either<NetworkFailure, List<Client>>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(pid: String): Either<NetworkFailure, Unit>
-    suspend fun fetchOtherUserClients(userIdList: List<UserId>): Either<NetworkFailure, List<Pair<UserId, List<OtherUserClient>>>>
+    suspend fun fetchOtherUserClients(
+        userIdList: List<UserId>
+    ): Either<NetworkFailure, List<Pair<UserId, List<OtherUserClient>>>>
 }
 
 class ClientRemoteDataSource(
@@ -42,7 +44,12 @@ class ClientRemoteDataSource(
             .map { clientResponse -> clientMapper.fromClientResponse(clientResponse) }
 
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: String): Either<NetworkFailure, Unit> =
-        wrapApiRequest { clientApi.updateClient(UpdateClientRequest(mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, publicKey))), clientId.value) }
+        wrapApiRequest {
+            clientApi.updateClient(
+                UpdateClientRequest(mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, publicKey))),
+                clientId.value
+            )
+        }
 
     override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { clientApi.deleteClient(param.password, param.clientId.value) }
@@ -65,10 +72,13 @@ class ClientRemoteDataSource(
         clientApi.deregisterToken(pid)
     }
 
-    override suspend fun fetchOtherUserClients(userIdList: List<UserId>): Either<NetworkFailure, List<Pair<UserId, List<OtherUserClient>>>> {
+    override suspend fun fetchOtherUserClients(
+        userIdList: List<UserId>
+    ): Either<NetworkFailure, List<Pair<UserId, List<OtherUserClient>>>> {
         val networkUserId = userIdList.map { idMapper.toNetworkUserId(it) }
         return wrapApiRequest { clientApi.listClientsOfUsers(networkUserId) }.map { userIdTOClientListMap ->
-            userIdTOClientListMap.map {  keys -> idMapper.fromApiModel(keys.key) to clientMapper.fromOtherUsersClientsDTO(keys.value)  }
+            userIdTOClientListMap
+                .map { keys -> idMapper.fromApiModel(keys.key) to clientMapper.fromOtherUsersClientsDTO(keys.value) }
         }
     }
 }

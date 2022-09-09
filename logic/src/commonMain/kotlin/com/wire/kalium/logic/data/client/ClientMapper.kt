@@ -8,7 +8,6 @@ import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.user.client.ClientResponse
 import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.OtherUserClientsItem
 import com.wire.kalium.network.api.user.client.RegisterClientRequest
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 
