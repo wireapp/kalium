@@ -9,12 +9,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ClientRegistrationStorageTest: BaseDatabaseTest() {
+class ClientRegistrationStorageTest : BaseDatabaseTest() {
 
     private lateinit var clientRegistrationStorage: ClientRegistrationStorageImpl
 
     @BeforeTest
-    fun setup(){
+    fun setup() {
         deleteDatabase()
         val database = createDatabase()
         clientRegistrationStorage = ClientRegistrationStorageImpl(database.metadataDAO)
