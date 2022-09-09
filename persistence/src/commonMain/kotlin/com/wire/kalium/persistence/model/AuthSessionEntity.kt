@@ -8,7 +8,8 @@ import kotlinx.serialization.Serializable
 data class ServerConfigEntity(
     @SerialName("id") val id: String,
     @SerialName("links") val links: Links,
-    @SerialName("metadata") val metaData: MetaData
+    @SerialName("metadata") val metaData: MetaData,
+
 ) {
     @Serializable
     data class Links(
@@ -19,7 +20,8 @@ data class ServerConfigEntity(
         @SerialName("teamsUrl") val teams: String,
         @SerialName("websiteUrl") val website: String,
         @SerialName("title") val title: String,
-        @SerialName("is_on_premises") val isOnPremises: Boolean
+        @SerialName("is_on_premises") val isOnPremises: Boolean,
+        @SerialName("proxy") val proxy: Proxy?
     )
 
     @Serializable
@@ -27,6 +29,12 @@ data class ServerConfigEntity(
         @SerialName("federation") val federation: Boolean,
         @SerialName("commonApiVersion") val apiVersion: Int,
         @SerialName("domain") val domain: String?
+    )
+
+    @Serializable
+    data class Proxy(
+        @SerialName("needsAuthentication") val needsAuthentication: Boolean?,
+        @SerialName("apiProxy") val apiProxy: String?
     )
 }
 

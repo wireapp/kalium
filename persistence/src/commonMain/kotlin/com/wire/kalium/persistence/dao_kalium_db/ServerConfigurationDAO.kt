@@ -20,7 +20,10 @@ internal class ServerConfigMapper() {
                 teams = teamsUrl,
                 website = websiteUrl,
                 title = title,
-                isOnPremises = isOnPremises
+                isOnPremises = isOnPremises,
+                proxy = ServerConfigEntity.Proxy(
+                    needsAuthentication, apiProxy
+                )
             ),
             ServerConfigEntity.MetaData(
                 federation = federation,
@@ -54,7 +57,9 @@ interface ServerConfigurationDAO {
         val isOnPremises: Boolean,
         val federation: Boolean,
         val domain: String?,
-        val commonApiVersion: Int
+        val commonApiVersion: Int,
+        val apiProxy: String?,
+        val needsAuthentication: Boolean?
     )
 }
 
@@ -78,7 +83,9 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
             isOnPremises,
             federation,
             domain,
-            commonApiVersion
+            commonApiVersion,
+            apiProxy,
+            needsAuthentication
         )
     }
 

@@ -37,7 +37,8 @@ class ServerConfigApiImpl internal constructor(
                 website = it.endpoints.websiteUrl,
                 teams = it.endpoints.teamsUrl,
                 title = it.title,
-                isOnPremises = true
+                isOnPremises = true,
+                proxy = ServerConfigDTO.Proxy(it.proxy?.needsAuthentication, it.proxy?.apiProxy)
             )
         }
 }

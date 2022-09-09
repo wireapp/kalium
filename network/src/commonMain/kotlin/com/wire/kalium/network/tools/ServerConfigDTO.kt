@@ -13,13 +13,19 @@ data class ServerConfigDTO(
         val teams: String,
         val website: String,
         val title: String,
-        val isOnPremises: Boolean
+        val isOnPremises: Boolean,
+        val proxy: Proxy?
     )
 
     data class MetaData(
         val federation: Boolean,
         val commonApiVersion: ApiVersionDTO,
         val domain: String?
+    )
+
+    data class Proxy(
+        val needsAuthentication: Boolean?,
+        val apiProxy: String?
     )
 }
 
