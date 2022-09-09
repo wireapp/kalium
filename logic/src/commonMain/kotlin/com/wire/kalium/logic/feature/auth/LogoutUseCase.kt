@@ -40,6 +40,11 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         userSessionScopeProvider.delete(userId)
     }
 
+    /**
+     * Updates the current session to let all subscribers know that the session data changed.
+     * If there is other valid session after logout then switch to the first found valid session, otherwise update current invalid session.
+     * @return userId of the session that was switched to, if no other valid session then null
+     */
     private fun updateCurrentSession(): UserId? {
         sessionRepository.allValidSessions().onSuccess {
             val updatedUserId = it.first().session.userId
