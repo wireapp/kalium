@@ -64,6 +64,6 @@ class ClientScope(
     val clearClientData: ClearClientDataUseCase
         get() = ClearClientDataUseCaseImpl(clientRepository, mlsClientProvider, proteusClient)
 
-    val getOrRegisterClientUseCase: GetOrRegisterClientUseCase
+    val getOrRegister: GetOrRegisterClientUseCase
         get() = GetOrRegisterClientUseCaseImpl(observeCurrentClientId, selfClients, register, clearClientData, proteusClient)
 }
