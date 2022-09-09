@@ -7,6 +7,7 @@ import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
 import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
@@ -109,10 +110,11 @@ class NotificationApiImpl internal constructor(
                     is Frame.Binary -> {
                         // assuming here the byteArray is an ASCII character set
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
-                        logger.v("Binary frame content: '$jsonString'")
+                        logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))
                     }
+
                     else -> {
                         logger.v("Websocket frame not handled: $frame")
                         emit(WebSocketEvent.NonBinaryPayloadReceived(frame.data))

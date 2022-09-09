@@ -9,6 +9,7 @@ import com.wire.kalium.logic.functional.isRight
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
@@ -19,17 +20,21 @@ fun interface ObserveConversationListDetailsUseCase {
 internal class ObserveConversationListDetailsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val callRepository: CallRepository,
+    private val observeIsSelfUserMember: ObserveIsSelfUserMemberUseCase
 ) : ObserveConversationListDetailsUseCase {
 
     override suspend operator fun invoke(): Flow<ConversationListDetails> {
         return combine(observeLatestConversationDetails(), callRepository.ongoingCallsFlow()) { conversations, calls ->
             conversations.map {
+                val result = observeIsSelfUserMember(it.conversation.id).first()
+                val isSelfUserMember = if (result is IsSelfUserMemberResult.Success) result.isMember else true
                 when (it) {
                     is ConversationDetails.Self,
                     is ConversationDetails.Connection,
                     is ConversationDetails.OneOne -> it
                     is ConversationDetails.Group -> it.copy(
-                        hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId })
+                        hasOngoingCall = (it.conversation.id in calls.map { call -> call.conversationId }),
+                        isSelfUserMember = isSelfUserMember
                     )
                 }
             }
