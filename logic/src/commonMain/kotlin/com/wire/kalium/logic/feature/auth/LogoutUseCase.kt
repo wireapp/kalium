@@ -43,9 +43,12 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private fun updateCurrentSession(): UserId? {
         sessionRepository.allValidSessions().onSuccess {
             val updatedUserId = it.first().session.userId
+            // there is another valid session so switch to that one
             sessionRepository.updateCurrentSession(updatedUserId)
             return updatedUserId
         }
+        // there is no other valid session so update current one
+        sessionRepository.updateCurrentSession(userId)
         return null
     }
 
