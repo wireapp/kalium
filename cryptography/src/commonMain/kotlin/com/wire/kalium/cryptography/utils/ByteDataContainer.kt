@@ -1,10 +1,10 @@
 package com.wire.kalium.cryptography.utils
 
-
 /**
  * Simple utility class that enables holding ByteArrays.
  * This implements equals and hash code.
  */
+@Suppress("UnnecessaryAbstractClass")
 abstract class ByteDataContainer(val data: ByteArray) {
 
     override fun hashCode(): Int {
@@ -23,10 +23,10 @@ abstract class ByteDataContainer(val data: ByteArray) {
     }
 }
 
-class SHA256Key(data: ByteArray): ByteDataContainer(data)
+class SHA256Key(data: ByteArray) : ByteDataContainer(data)
 
-class AES256Key(data: ByteArray): ByteDataContainer(data)
+class AES256Key(data: ByteArray) : ByteDataContainer(data)
 
-class EncryptedData(data: ByteArray): ByteDataContainer(data)
+class EncryptedData(data: ByteArray) : ByteDataContainer(data)
 
-class PlainData(data: ByteArray): ByteDataContainer(data)
+class PlainData(data: ByteArray) : ByteDataContainer(data)
