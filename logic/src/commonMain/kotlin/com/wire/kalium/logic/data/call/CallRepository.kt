@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.call
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
@@ -46,14 +48,6 @@ interface CallRepository {
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
-    fun updateParticipantCameraStateById(
-        conversationIdString: String,
-        userIdString: String,
-        clientIdString: String,
-        isCameraOn: Boolean,
-        isSharingScreen: Boolean
-    )
-
     fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean)
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
@@ -147,7 +141,8 @@ internal class CallDataSource(
         )
 
         callingLogger.i(
-            "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] | ConversationId: [$conversationId] " +
+            "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] |" +
+                    " ConversationId: [${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}] " +
                     "| status: [$status]"
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
@@ -214,7 +209,10 @@ internal class CallDataSource(
                 conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
             )
             callingLogger.i(
-                "[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationIdString] " + "| status: [$status]"
+                "[CallRepository][UpdateCallStatusById] ->" +
+                        " ConversationId: [${modifiedConversationId.value.obfuscateId()}" +
+                        "@${modifiedConversationId.domain.obfuscateDomain()}]" +
+                        " " + "| status: [$status]"
             )
         }
 
@@ -254,38 +252,6 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateParticipantCameraStateById(
-        conversationIdString: String,
-        userIdString: String,
-        clientIdString: String,
-        isCameraOn: Boolean,
-        isSharingScreen: Boolean
-    ) {
-        val callMetadataProfile = _callMetadataProfile.value
-
-        callMetadataProfile.data[conversationIdString]?.let { callMetaData ->
-
-            val updatedParticipants = callMetaData.participants.map {
-                if (it.id.toString() == userIdString && it.clientId == clientIdString) {
-                    it.copy(
-                        isCameraOn = isCameraOn,
-                        isSharingScreen = isSharingScreen
-                    )
-                } else it
-            }
-
-            val updatedCallMetaData = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationIdString] = callMetaData.copy(
-                    participants = updatedParticipants
-                )
-            }
-
-            _callMetadataProfile.value = callMetadataProfile.copy(
-                data = updatedCallMetaData
-            )
-        }
-    }
-
     override fun updateIsCameraOnById(conversationId: String, isCameraOn: Boolean) {
         val callMetadataProfile = _callMetadataProfile.value
         callMetadataProfile.data[conversationId]?.let { call ->
@@ -303,9 +269,13 @@ internal class CallDataSource(
 
     override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
         val callMetadataProfile = _callMetadataProfile.value
-
+        val conversationIdToLog = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         callMetadataProfile.data[conversationId]?.let { call ->
-            callingLogger.i("updateCallParticipants() - conversationId: $conversationId with size of: ${participants.size}")
+            callingLogger.i(
+                "updateCallParticipants() -" +
+                        " conversationId: ${conversationIdToLog.value.obfuscateId()}@${conversationIdToLog.domain.obfuscateDomain()}" +
+                        " with size of: ${participants.size}"
+            )
 
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                 this[conversationId] = call.copy(
@@ -324,7 +294,12 @@ internal class CallDataSource(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         callMetadataProfile.data[conversationIdWithDomain.toString()]?.let { call ->
-            callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.activeSpeakers.size}")
+            callingLogger.i(
+                "updateActiveSpeakers() -" +
+                        " conversationId: ${conversationIdWithDomain.value.obfuscateId()}" +
+                        "@${conversationIdWithDomain.domain.obfuscateDomain()}" +
+                        "with size of: ${activeSpeakers.activeSpeakers.size}"
+            )
 
             val updatedParticipants = activeSpeakerMapper.mapParticipantsActiveSpeaker(
                 participants = call.participants, activeSpeakers = activeSpeakers

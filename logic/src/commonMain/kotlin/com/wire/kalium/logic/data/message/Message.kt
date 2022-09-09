@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -24,8 +26,47 @@ sealed class Message(
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         val senderClientId: ClientId,
-        val editStatus : EditStatus
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
+        val editStatus: EditStatus
+    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+        override fun toString(): String {
+            val contentString: String
+            when (content) {
+                is MessageContent.Text, is MessageContent.TextEdited -> {
+                    contentString = ""
+                }
+
+                is MessageContent.Asset -> {
+                    contentString = "content:{sizeInBytes:${content.value.sizeInBytes}," + "mimeType:${content.value.mimeType}," +
+                            "metaData : ${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}}"
+                }
+
+                is MessageContent.RestrictedAsset -> {
+                    contentString = "content:{sizeInBytes:${content.sizeInBytes} ," +
+                            " mimeType:${content.mimeType}"
+                }
+
+                is MessageContent.DeleteForMe -> {
+                    contentString = "content:{messageId:${content.messageId.obfuscateId()}"
+                }
+
+                is MessageContent.LastRead -> {
+                    contentString = "content:{time:${content.time}"
+                }
+
+                is MessageContent.FailedDecryption -> {
+                    contentString = "content:{size:${content.encodedData?.size}"
+                }
+
+                else -> {
+                    contentString = "content:$content"
+                }
+            }
+            return "id: ${id.obfuscateId()} " +
+                    "$contentString conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}" +
+                    "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
+                    "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
+        }
+    }
 
     data class System(
         override val id: String,
@@ -35,7 +76,13 @@ sealed class Message(
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility)
+    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+        override fun toString(): String {
+            return "id:${id.obfuscateId()} " +
+                    "content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}" +
+                    "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility"
+        }
+    }
 
     enum class Status {
         PENDING, SENT, READ, FAILED
@@ -43,7 +90,7 @@ sealed class Message(
 
     sealed class EditStatus {
         object NotEdited : EditStatus()
-        data class Edited (val lastTimeStamp : String) : EditStatus()
+        data class Edited(val lastTimeStamp: String) : EditStatus()
     }
 
     enum class DownloadStatus {
