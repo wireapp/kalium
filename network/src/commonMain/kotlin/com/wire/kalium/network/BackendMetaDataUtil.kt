@@ -7,13 +7,21 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 val SupportedApiVersions = setOf(0, 1)
 
 interface BackendMetaDataUtil {
-    fun calculateApiVersion(versionInfoDTO: VersionInfoDTO, appVersion: Set<Int> = SupportedApiVersions): ServerConfigDTO.MetaData
+    fun calculateApiVersion(
+        versionInfoDTO: VersionInfoDTO,
+        appVersion: Set<Int> = SupportedApiVersions,
+        developmentApiEnabled: Boolean
+    ): ServerConfigDTO.MetaData
 
 }
 
 object BackendMetaDataUtilImpl : BackendMetaDataUtil {
-    override fun calculateApiVersion(versionInfoDTO: VersionInfoDTO, appVersion: Set<Int>): ServerConfigDTO.MetaData {
-        val apiVersion = commonApiVersion(versionInfoDTO.supported, appVersion)?.let { maxCommonVersion ->
+    override fun calculateApiVersion(
+        versionInfoDTO: VersionInfoDTO,
+        appVersion: Set<Int>,
+        developmentApiEnabled: Boolean
+    ): ServerConfigDTO.MetaData {
+        val apiVersion = commonApiVersion(versionInfoDTO, appVersion, developmentApiEnabled)?.let { maxCommonVersion ->
             ApiVersionDTO.Valid(maxCommonVersion)
         } ?: run {
             handleNoCommonVersion(versionInfoDTO.supported, appVersion)
@@ -26,7 +34,14 @@ object BackendMetaDataUtilImpl : BackendMetaDataUtil {
         )
     }
 
-    private fun commonApiVersion(serverVersion: List<Int>, appVersion: Set<Int>): Int? = serverVersion.intersect(appVersion).maxOrNull()
+    private fun commonApiVersion(serverVersion: VersionInfoDTO, appVersion: Set<Int>, developmentAPIEnabled: Boolean): Int? {
+        val supported = if (developmentAPIEnabled && serverVersion.developmentSupported != null) {
+            serverVersion.supported + serverVersion.developmentSupported
+        } else {
+            serverVersion.supported
+        }
+        return supported.intersect(appVersion).maxOrNull()
+    }
 
     private fun handleNoCommonVersion(serverVersion: List<Int>, appVersion: Set<Int>): ApiVersionDTO.Invalid {
         return serverVersion.maxOrNull()?.let { maxBEVersion ->

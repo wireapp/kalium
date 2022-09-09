@@ -19,9 +19,13 @@ interface VersionApi {
 
 class VersionApiImpl internal constructor(
     private val httpClient: HttpClient,
-    private val util: BackendMetaDataUtil = BackendMetaDataUtilImpl
+    private val util: BackendMetaDataUtil = BackendMetaDataUtilImpl,
+    private val developmentApiEnabled: Boolean
 ) : VersionApi {
-    internal constructor(unboundNetworkClient: UnboundNetworkClient) : this(unboundNetworkClient.httpClient)
+    internal constructor(unboundNetworkClient: UnboundNetworkClient, developmentApiEnabled: Boolean) : this(
+        unboundNetworkClient.httpClient,
+        developmentApiEnabled = developmentApiEnabled
+    )
 
     override suspend fun fetchApiVersion(baseApiUrl: Url): NetworkResponse<ServerConfigDTO.MetaData> = wrapKaliumResponse({
         if (it.status.value != HttpStatusCode.NotFound.value) null
@@ -33,9 +37,8 @@ class VersionApiImpl internal constructor(
             setUrl(baseApiUrl, API_VERSION_PATH)
         }
     }).mapSuccess {
-        util.calculateApiVersion(it)
+        util.calculateApiVersion(it, developmentApiEnabled = developmentApiEnabled)
     }
-
 
     private companion object {
         const val API_VERSION_PATH = "api-version"
