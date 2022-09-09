@@ -84,7 +84,7 @@ class LogoutUseCaseTest {
     }
 
     @Test
-    fun givenOtherValidSessions_whenLoggingOut_thenUpdateCurrentSessionAndReturnNewUserId() = runTest {
+    fun givenOtherValidSessions_whenLoggingOut_thenSetNewCurrentSessionAndReturnNewUserId() = runTest {
         val reason = LogoutReason.SELF_LOGOUT
         val isHardLogout = true
         val expectedSession = Arrangement.validAuthSession
@@ -104,7 +104,7 @@ class LogoutUseCaseTest {
     }
 
     @Test
-    fun givenNoOtherValidSessions_whenLoggingOut_thenDoNotUpdateCurrentSessionAndReturnNoUserId() = runTest {
+    fun givenNoOtherValidSessions_whenLoggingOut_thenUpdateCurrentSessionAndReturnNoUserId() = runTest {
         val reason = LogoutReason.SELF_LOGOUT
         val isHardLogout = true
         val (arrangement, logoutUseCase) = Arrangement()
@@ -118,8 +118,8 @@ class LogoutUseCaseTest {
         assertNull(result)
         verify(arrangement.sessionRepository)
             .function(arrangement.sessionRepository::updateCurrentSession)
-            .with(any())
-            .wasNotInvoked()
+            .with(eq(Arrangement.userId))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
