@@ -526,7 +526,8 @@ abstract class UserSessionScopeCommon internal constructor(
             keyPackageLimitsProvider,
             mlsClientProvider,
             notificationTokenRepository,
-            clientRemoteRepository
+            clientRemoteRepository,
+            authenticatedDataSourceSet.proteusClient
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -574,19 +575,14 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             userDatabaseProvider.metadataDAO
         )
-    val clearUserData: ClearUserDataUseCase
-        get() = ClearUserDataUseCaseImpl(
-            userId,
-            authenticatedDataSourceSet,
-            clientRepository,
-            mlsClientProvider
-        )
+    private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(authenticatedDataSourceSet)
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
             userId,
             client.deregisterNativePushToken,
+            client.clearClientData,
             clearUserData,
             userSessionScopeProvider
         )

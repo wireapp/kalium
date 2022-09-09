@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
@@ -53,6 +54,9 @@ class LogoutUseCaseTest {
             .function(arrangement.sessionRepository::logout)
             .with(any(), eq(reason), eq(isHardLogout))
             .wasInvoked(atLeast = once)
+        verify(arrangement.clearClientDataUseCase)
+            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
+            .wasInvoked(atLeast = once)
         verify(arrangement.clearUserDataUseCase)
             .suspendFunction(arrangement.clearUserDataUseCase::invoke)
             .wasInvoked(atLeast = once)
@@ -78,6 +82,9 @@ class LogoutUseCaseTest {
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
             .arrange()
         logoutUseCase.invoke(reason, isHardLogout)
+        verify(arrangement.clearClientDataUseCase)
+            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
+            .wasNotInvoked()
         verify(arrangement.clearUserDataUseCase)
             .suspendFunction(arrangement.clearUserDataUseCase::invoke)
             .wasNotInvoked()
@@ -130,12 +137,20 @@ class LogoutUseCaseTest {
         @Mock
         val deregisterTokenUseCase = mock(classOf<DeregisterTokenUseCase>())
         @Mock
+        val clearClientDataUseCase = configure(mock(ClearClientDataUseCase::class)) { stubsUnitByDefault = true }
+        @Mock
         val clearUserDataUseCase = configure(mock(ClearUserDataUseCase::class)) { stubsUnitByDefault = true }
         @Mock
         val userSessionScopeProvider = configure(mock(classOf<UserSessionScopeProvider>())) { stubsUnitByDefault = true }
 
         private val logoutUseCase: LogoutUseCase = LogoutUseCaseImpl(
-            logoutRepository, sessionRepository, userId, deregisterTokenUseCase, clearUserDataUseCase, userSessionScopeProvider
+            logoutRepository,
+            sessionRepository,
+            userId,
+            deregisterTokenUseCase,
+            clearClientDataUseCase,
+            clearUserDataUseCase,
+            userSessionScopeProvider
         )
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {

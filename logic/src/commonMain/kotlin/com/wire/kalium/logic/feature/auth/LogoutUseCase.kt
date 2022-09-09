@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.onSuccess
 
@@ -18,6 +19,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
+    private val clearClientDataUseCase: ClearClientDataUseCase,
     private val clearUserDataUseCase: ClearUserDataUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider
 ) : LogoutUseCase {
@@ -29,6 +31,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         logoutRepository.logout()
         logout(reason, isHardLogout)
         if (isHardLogout) {
+            clearClientDataUseCase()
             clearUserDataUseCase()
         }
         val updatedUserId = updateCurrentSession()
