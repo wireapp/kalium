@@ -60,8 +60,8 @@ interface ConnectionRepository {
     suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection>
     suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
-    suspend fun observeConnectionList(): Flow<List<ConversationDetails>>
-    suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>>
+    suspend fun observeConnectionList(): Flow<List<Connection>>
+    suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails>>
     suspend fun getConnectionRequests(): List<Connection>
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
@@ -148,24 +148,16 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>> = wrapStorageRequest {
-        observeConnectionList()
+        observeConnectionRequestList()
     }
 
-    override suspend fun observeConnectionList(): Flow<List<ConversationDetails>> {
-        return connectionDAO.getConnectionRequests().map {
-            it.map { connection ->
-                val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
-            }
-        }
-    }
-
-    override suspend fun observeConnectionListAsDetails(): Flow<List<ConversationDetails>> {
-        return connectionDAO.getConnectionRequests().map {
-            it.map { connection ->
-                val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
-            }
+    override suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails>> {
+        return connectionDAO.getConnectionRequests().map { connections ->
+            connections
+                .map { connection ->
+                    val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+                    connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
+                }
         }
     }
 
@@ -196,6 +188,15 @@ internal class ConnectionDataSource(
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
         persistConnection(event.connection)
+
+    override suspend fun observeConnectionList(): Flow<List<Connection>> {
+        return connectionDAO.getConnections().map { connections ->
+            connections.map { connection ->
+                val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
+                connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
+            }
+        }
+    }
 
     // TODO: Vitor : Instead of duplicating, we could pass selfUser.teamId from the UseCases to this function.
     // This way, the UseCases can tie the different Repos together, calling these functions.

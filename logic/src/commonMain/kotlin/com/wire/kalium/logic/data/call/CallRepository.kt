@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.call
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
@@ -139,7 +141,8 @@ internal class CallDataSource(
         )
 
         callingLogger.i(
-            "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] | ConversationId: [$conversationId] " +
+            "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] |" +
+                    " ConversationId: [${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}] " +
                     "| status: [$status]"
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
@@ -206,7 +209,10 @@ internal class CallDataSource(
                 conversationId = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = modifiedConversationId)
             )
             callingLogger.i(
-                "[CallRepository][UpdateCallStatusById] -> ConversationId: [$conversationIdString] " + "| status: [$status]"
+                "[CallRepository][UpdateCallStatusById] ->" +
+                        " ConversationId: [${modifiedConversationId.value.obfuscateId()}" +
+                        "@${modifiedConversationId.domain.obfuscateDomain()}]" +
+                        " " + "| status: [$status]"
             )
         }
 
@@ -263,9 +269,13 @@ internal class CallDataSource(
 
     override fun updateCallParticipants(conversationId: String, participants: List<Participant>) {
         val callMetadataProfile = _callMetadataProfile.value
-
+        val conversationIdToLog = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         callMetadataProfile.data[conversationId]?.let { call ->
-            callingLogger.i("updateCallParticipants() - conversationId: $conversationId with size of: ${participants.size}")
+            callingLogger.i(
+                "updateCallParticipants() -" +
+                        " conversationId: ${conversationIdToLog.value.obfuscateId()}@${conversationIdToLog.domain.obfuscateDomain()}" +
+                        " with size of: ${participants.size}"
+            )
 
             val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                 this[conversationId] = call.copy(
@@ -284,7 +294,12 @@ internal class CallDataSource(
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         callMetadataProfile.data[conversationIdWithDomain.toString()]?.let { call ->
-            callingLogger.i("updateActiveSpeakers() - conversationId: $conversationId with size of: ${activeSpeakers.activeSpeakers.size}")
+            callingLogger.i(
+                "updateActiveSpeakers() -" +
+                        " conversationId: ${conversationIdWithDomain.value.obfuscateId()}" +
+                        "@${conversationIdWithDomain.domain.obfuscateDomain()}" +
+                        "with size of: ${activeSpeakers.activeSpeakers.size}"
+            )
 
             val updatedParticipants = activeSpeakerMapper.mapParticipantsActiveSpeaker(
                 participants = call.participants, activeSpeakers = activeSpeakers
