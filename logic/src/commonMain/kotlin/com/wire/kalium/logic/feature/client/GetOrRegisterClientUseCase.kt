@@ -18,22 +18,22 @@ class GetOrRegisterClientUseCaseImpl(
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
-        val currentClientId = observeCurrentClientId().firstOrNull()
-        if (currentClientId != null) { // probably there was a soft logout, we still have client data stored locally
-            val selfClientsResult = selfClients()
-            if (selfClientsResult is SelfClientsResult.Failure) {
-                return selfClientsResult.toRegisterClientResult()
-            } else if (selfClientsResult is SelfClientsResult.Success) {
-                val client = selfClientsResult.clients.firstOrNull { it.id == currentClientId }
-                if (client != null) { // client stored locally is still valid
-                    return RegisterClientResult.Success(client)
-                } else { // client stored locally isn't valid anymore
-                    clearClientData()
-                    proteusClient.open()
+        val result: RegisterClientResult? = observeCurrentClientId().firstOrNull()?.let { currentClientId ->
+            when (val selfClientsResult = selfClients()) {
+                is SelfClientsResult.Failure -> selfClientsResult.toRegisterClientResult()
+                is SelfClientsResult.Success -> {
+                    val client = selfClientsResult.clients.firstOrNull { it.id == currentClientId }
+                    if (client != null) { // client stored locally is still valid
+                        RegisterClientResult.Success(client)
+                    } else { // client stored locally isn't valid anymore
+                        clearClientData()
+                        proteusClient.open()
+                        null
+                    }
                 }
             }
         }
-        return registerClient(registerClientParam)
+        return result ?: registerClient(registerClientParam)
     }
 
     private fun SelfClientsResult.Failure.toRegisterClientResult(): RegisterClientResult = when (this) {
