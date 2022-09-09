@@ -17,7 +17,7 @@ object Versions {
     const val ktor = "2.0.0-beta-1"
     const val okio = "3.0.0"
     const val okHttp = "4.9.3"
-    const val mockative = "1.1.4"
+    const val mockative = "1.2.6"
     const val androidWork = "2.7.1"
     const val androidTestRunner = "1.4.0"
     const val androidTestRules = "1.4.0"
