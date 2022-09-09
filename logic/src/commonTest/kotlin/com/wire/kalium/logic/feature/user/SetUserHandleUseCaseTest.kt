@@ -8,7 +8,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -24,7 +23,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class, ConfigurationApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class SetUserHandleUseCaseTest {
     @Mock
     private val validateHandleUseCase = mock(classOf<ValidateUserHandleUseCase>())
