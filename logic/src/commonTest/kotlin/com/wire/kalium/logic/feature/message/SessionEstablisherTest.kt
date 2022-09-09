@@ -162,7 +162,10 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
 
-        val cryptoSessionId = CryptoSessionId(CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain), CryptoClientId(clientPreKeyInfo.clientId))
+        val cryptoSessionId = CryptoSessionId(
+            CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain),
+            CryptoClientId(clientPreKeyInfo.clientId)
+        )
         verify(proteusClient)
             .suspendFunction(proteusClient::createSession)
             .with(eq(preKey), eq(cryptoSessionId))

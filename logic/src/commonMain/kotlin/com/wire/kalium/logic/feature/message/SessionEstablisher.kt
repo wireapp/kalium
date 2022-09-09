@@ -100,9 +100,10 @@ internal interface CryptoSessionMapper {
     ): Map<String, Map<String, Map<String, PreKeyCrypto>>>
 }
 
-internal class CryptoSessionMapperImpl internal constructor(
-) : CryptoSessionMapper {
-    override fun getMapOfSessionIdsToPreKeysAndIgnoreNull(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Map<String, Map<String, Map<String, PreKeyCrypto>>> {
+internal class CryptoSessionMapperImpl internal constructor() : CryptoSessionMapper {
+    override fun getMapOfSessionIdsToPreKeysAndIgnoreNull(
+        preKeyInfoList: List<QualifiedUserPreKeyInfo>
+    ): Map<String, Map<String, Map<String, PreKeyCrypto>>> {
         val acc = mutableMapOf<String, Map<String, Map<String, PreKeyCrypto>>>()
         preKeyInfoList.forEach {
             val userToClientsToPreKeyMap: Map<String, Map<String, PreKeyCrypto>> = preKeyInfoList.associate { userInfo ->

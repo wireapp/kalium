@@ -31,7 +31,7 @@ class CryptoSessionMapperTest {
                         clientId = "client1_null",
                         preKey = PreKeyCrypto(
                             id = 1,
-                            key = "key1"
+                            encodedData = "key1"
                         )
                     )
                 )
@@ -51,13 +51,12 @@ class CryptoSessionMapperTest {
             )
         )
 
-
-        val expected = Map<String, Map<String, Map<String, PreKeyCrypto>>> = mapOf(
+        val expected: Map<String, Map<String, Map<String, PreKeyCrypto>>> = mapOf(
             "domain1" to mapOf(
                 "user1" to mapOf(
                     "client1_null" to PreKeyCrypto(
                         id = 1,
-                        key = "key1"
+                        encodedData = "key1"
                     )
                 )
             )

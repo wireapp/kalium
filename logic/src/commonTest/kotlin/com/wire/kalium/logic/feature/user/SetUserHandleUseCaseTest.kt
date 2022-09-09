@@ -165,7 +165,6 @@ class SetUserHandleUseCaseTest {
             .wasNotInvoked()
     }
 
-
     @Test
     fun givenValidHandleAndRepositoryFailWithGenericError_thenErrorIsPropagated() = runTest {
         val handle = "user_handle"
@@ -202,7 +201,6 @@ class SetUserHandleUseCaseTest {
     @Test
     fun givenValidHandleAndRepositoryFailWithHandleExists_thenHandleExistsPropagated() =
         testErrors(TestNetworkException.handleExists, SetUserHandleResult.Failure.HandleExists)
-
 
     private fun testErrors(kaliumException: KaliumException, expectedError: SetUserHandleResult.Failure) = runTest {
         val handle = "user_handle"
