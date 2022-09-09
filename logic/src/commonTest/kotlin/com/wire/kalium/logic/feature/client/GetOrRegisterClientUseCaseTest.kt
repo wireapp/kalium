@@ -3,9 +3,13 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.functional.Either
 import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
@@ -16,8 +20,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,8 +33,8 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model")
         val (arrangement, useCase) = Arrangement()
-            .withObserveCurrentClientIdResult(flowOf(clientId))
-            .withSelfClientsResult(SelfClientsResult.Success(listOf(client)))
+            .withRetainedClientIdResult(Either.Right(clientId))
+            .withSelfClientsResult(Either.Right(listOf(client)))
             .arrange()
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
         assertIs<RegisterClientResult.Success>(result)
@@ -48,8 +50,8 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model")
         val (arrangement, useCase) = Arrangement()
-            .withObserveCurrentClientIdResult(flowOf(clientId))
-            .withSelfClientsResult(SelfClientsResult.Success(listOf()))
+            .withRetainedClientIdResult(Either.Right(clientId))
+            .withSelfClientsResult(Either.Right(listOf()))
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .arrange()
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
@@ -69,7 +71,7 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model")
         val (arrangement, useCase) = Arrangement()
-            .withObserveCurrentClientIdResult(flowOf(null))
+            .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .arrange()
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
@@ -84,10 +86,7 @@ class GetOrRegisterClientUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val observeCurrentClientIdUseCase = mock(classOf<ObserveCurrentClientIdUseCase>())
-
-        @Mock
-        val selfClientsUseCase = mock(classOf<SelfClientsUseCase>())
+        val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
         val registerClientUseCase = mock(classOf<RegisterClientUseCase>())
@@ -99,19 +98,19 @@ class GetOrRegisterClientUseCaseTest {
         val proteusClient = configure(mock(classOf<ProteusClient>())) { stubsUnitByDefault = true }
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
-            observeCurrentClientIdUseCase, selfClientsUseCase, registerClientUseCase, clearClientDataUseCase, proteusClient,
+            clientRepository, registerClientUseCase, clearClientDataUseCase, proteusClient,
         )
 
-        fun withObserveCurrentClientIdResult(result: Flow<ClientId?>): Arrangement {
-            given(observeCurrentClientIdUseCase)
-                .suspendFunction(observeCurrentClientIdUseCase::invoke)
+        fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>): Arrangement {
+            given(clientRepository)
+                .suspendFunction(clientRepository::retainedClientId)
                 .whenInvoked()
                 .thenReturn(result)
             return this
         }
-        fun withSelfClientsResult(result: SelfClientsResult): Arrangement {
-            given(selfClientsUseCase)
-                .suspendFunction(selfClientsUseCase::invoke)
+        fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>): Arrangement {
+            given(clientRepository)
+                .suspendFunction(clientRepository::selfListOfClients)
                 .whenInvoked()
                 .thenReturn(result)
             return this

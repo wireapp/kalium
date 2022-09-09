@@ -580,6 +580,7 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
+            clientRepository,
             userId,
             client.deregisterNativePushToken,
             client.clearClientData,

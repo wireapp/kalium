@@ -4,10 +4,12 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
@@ -26,8 +28,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LogoutUseCaseTest {
@@ -42,32 +42,37 @@ class LogoutUseCaseTest {
             .withAllValidSessionsResult(Either.Right(listOf(Arrangement.validAuthSession)))
             .withUpdateCurrentSessionResult(Either.Right(Unit))
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
             .arrange()
         logoutUseCase.invoke(reason, isHardLogout)
         verify(arrangement.deregisterTokenUseCase)
             .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
-            .wasInvoked(atLeast = once)
+            .wasInvoked(exactly = once)
         verify(arrangement.logoutRepository)
             .suspendFunction(arrangement.logoutRepository::logout)
-            .wasInvoked(atLeast = once)
+            .wasInvoked(exactly = once)
         verify(arrangement.sessionRepository)
             .function(arrangement.sessionRepository::logout)
             .with(any(), eq(reason), eq(isHardLogout))
-            .wasInvoked(atLeast = once)
+            .wasInvoked(exactly = once)
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
-            .wasInvoked(atLeast = once)
+            .wasInvoked(exactly = once)
         verify(arrangement.clearUserDataUseCase)
             .suspendFunction(arrangement.clearUserDataUseCase::invoke)
-            .wasInvoked(atLeast = once)
+            .wasInvoked(exactly = once)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::clearCurrentClientId)
+            .wasInvoked(exactly = once)
         verify(arrangement.sessionRepository)
             .function(arrangement.sessionRepository::updateCurrentSession)
             .with(any())
-            .wasInvoked(atLeast = once)
+            .wasInvoked(exactly = once)
         verify(arrangement.userSessionScopeProvider)
             .function(arrangement.userSessionScopeProvider::delete)
             .with(any())
-            .wasInvoked(atLeast = once)
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -80,6 +85,8 @@ class LogoutUseCaseTest {
             .withAllValidSessionsResult(Either.Right(listOf(Arrangement.validAuthSession)))
             .withUpdateCurrentSessionResult(Either.Right(Unit))
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
             .arrange()
         logoutUseCase.invoke(reason, isHardLogout)
         verify(arrangement.clearClientDataUseCase)
@@ -90,62 +97,32 @@ class LogoutUseCaseTest {
             .wasNotInvoked()
     }
 
-    @Test
-    fun givenOtherValidSessions_whenLoggingOut_thenSetNewCurrentSessionAndReturnNewUserId() = runTest {
-        val reason = LogoutReason.SELF_LOGOUT
-        val isHardLogout = true
-        val expectedSession = Arrangement.validAuthSession
-        val (arrangement, logoutUseCase) = Arrangement()
-            .withLogoutResult(Either.Right(Unit))
-            .withSessionLogoutResult(Either.Right(Unit))
-            .withAllValidSessionsResult(Either.Right(listOf(expectedSession)))
-            .withUpdateCurrentSessionResult(Either.Right(Unit))
-            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
-            .arrange()
-        val result = logoutUseCase.invoke(reason, isHardLogout)
-        assertEquals(expectedSession.session.userId, result)
-        verify(arrangement.sessionRepository)
-            .function(arrangement.sessionRepository::updateCurrentSession)
-            .with(eq(Arrangement.validAuthSession.session.userId))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenNoOtherValidSessions_whenLoggingOut_thenUpdateCurrentSessionAndReturnNoUserId() = runTest {
-        val reason = LogoutReason.SELF_LOGOUT
-        val isHardLogout = true
-        val (arrangement, logoutUseCase) = Arrangement()
-            .withLogoutResult(Either.Right(Unit))
-            .withSessionLogoutResult(Either.Right(Unit))
-            .withAllValidSessionsResult(Either.Left(StorageFailure.DataNotFound))
-            .withUpdateCurrentSessionResult(Either.Right(Unit))
-            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
-            .arrange()
-        val result = logoutUseCase.invoke(reason, isHardLogout)
-        assertNull(result)
-        verify(arrangement.sessionRepository)
-            .function(arrangement.sessionRepository::updateCurrentSession)
-            .with(eq(Arrangement.userId))
-            .wasInvoked(exactly = once)
-    }
-
     private class Arrangement {
         @Mock
         val logoutRepository = mock(classOf<LogoutRepository>())
+
         @Mock
         val sessionRepository = mock(classOf<SessionRepository>())
+
+        @Mock
+        val clientRepository = mock(classOf<ClientRepository>())
+
         @Mock
         val deregisterTokenUseCase = mock(classOf<DeregisterTokenUseCase>())
+
         @Mock
         val clearClientDataUseCase = configure(mock(ClearClientDataUseCase::class)) { stubsUnitByDefault = true }
+
         @Mock
         val clearUserDataUseCase = configure(mock(ClearUserDataUseCase::class)) { stubsUnitByDefault = true }
+
         @Mock
         val userSessionScopeProvider = configure(mock(classOf<UserSessionScopeProvider>())) { stubsUnitByDefault = true }
 
         private val logoutUseCase: LogoutUseCase = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
+            clientRepository,
             userId,
             deregisterTokenUseCase,
             clearClientDataUseCase,
@@ -154,12 +131,13 @@ class LogoutUseCaseTest {
         )
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {
-           given(deregisterTokenUseCase)
-               .suspendFunction(deregisterTokenUseCase::invoke)
-               .whenInvoked()
-               .thenReturn(result)
+            given(deregisterTokenUseCase)
+                .suspendFunction(deregisterTokenUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(result)
             return this
         }
+
         fun withLogoutResult(result: Either<CoreFailure, Unit>): Arrangement {
             given(logoutRepository)
                 .suspendFunction(logoutRepository::logout)
@@ -167,6 +145,7 @@ class LogoutUseCaseTest {
                 .thenReturn(result)
             return this
         }
+
         fun withSessionLogoutResult(result: Either<StorageFailure, Unit>): Arrangement {
             given(sessionRepository)
                 .function(sessionRepository::logout)
@@ -174,6 +153,7 @@ class LogoutUseCaseTest {
                 .thenReturn(result)
             return this
         }
+
         fun withUpdateCurrentSessionResult(result: Either<StorageFailure, Unit>): Arrangement {
             given(sessionRepository)
                 .function(sessionRepository::updateCurrentSession)
@@ -181,10 +161,27 @@ class LogoutUseCaseTest {
                 .thenReturn(result)
             return this
         }
+
         fun withAllValidSessionsResult(result: Either<StorageFailure, List<AuthSession>>): Arrangement {
             given(sessionRepository)
                 .function(sessionRepository::allValidSessions)
                 .whenInvoked()
+                .thenReturn(result)
+            return this
+        }
+
+        fun withClearCurrentClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
+            given(clientRepository)
+                .suspendFunction(clientRepository::clearCurrentClientId)
+                .whenInvoked()
+                .thenReturn(result)
+            return this
+        }
+
+        fun withUserSessionScopeGetResult(result: UserSessionScope?): Arrangement {
+            given(userSessionScopeProvider)
+                .function(userSessionScopeProvider::get)
+                .whenInvokedWith(any())
                 .thenReturn(result)
             return this
         }

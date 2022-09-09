@@ -26,6 +26,8 @@ interface ClientRepository {
     suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
+    suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
+    suspend fun retainedClientId(): Either<CoreFailure, ClientId>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
@@ -51,15 +53,18 @@ class ClientDataSource(
     override suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.setRegisteredClientId(clientId.value) }
 
-    override suspend fun currentClientId(): Either<CoreFailure, ClientId> = wrapStorageRequest {
-        clientRegistrationStorage.getRegisteredClientId()?.let { ClientId(it) }
-    }.mapLeft {
-        if (it is StorageFailure.DataNotFound) {
-            CoreFailure.MissingClientRegistration
-        } else {
-            it
-        }
-    }
+    override suspend fun clearCurrentClientId(): Either<CoreFailure, Unit> =
+        wrapStorageRequest { clientRegistrationStorage.setRegisteredClientId(null) }
+
+    override suspend fun currentClientId(): Either<CoreFailure, ClientId> =
+        wrapStorageRequest { clientRegistrationStorage.getRegisteredClientId() }
+            .map { ClientId(it) }
+            .mapLeft { if (it is StorageFailure.DataNotFound) { CoreFailure.MissingClientRegistration } else { it } }
+
+    override suspend fun retainedClientId(): Either<CoreFailure, ClientId> =
+        wrapStorageRequest { clientRegistrationStorage.getRetainedClientId() }
+            .map { ClientId(it) }
+            .mapLeft { if (it is StorageFailure.DataNotFound) { CoreFailure.MissingClientRegistration } else { it } }
 
     override suspend fun observeCurrentClientId(): Flow<ClientId?> =
         clientRegistrationStorage.observeRegisteredClientId().map { rawClientId ->

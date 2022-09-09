@@ -1,7 +1,11 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.ProteusClient
-import kotlinx.coroutines.flow.firstOrNull
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.nullableFold
 
 interface GetOrRegisterClientUseCase {
     suspend operator fun invoke(
@@ -10,33 +14,30 @@ interface GetOrRegisterClientUseCase {
 }
 
 class GetOrRegisterClientUseCaseImpl(
-    private val observeCurrentClientId: ObserveCurrentClientIdUseCase,
-    private val selfClients: SelfClientsUseCase,
+    private val clientRepository: ClientRepository,
     private val registerClient: RegisterClientUseCase,
     private val clearClientData: ClearClientDataUseCase,
     private val proteusClient: ProteusClient
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
-        val result: RegisterClientResult? = observeCurrentClientId().firstOrNull()?.let { currentClientId ->
-            when (val selfClientsResult = selfClients()) {
-                is SelfClientsResult.Failure -> selfClientsResult.toRegisterClientResult()
-                is SelfClientsResult.Success -> {
-                    val client = selfClientsResult.clients.firstOrNull { it.id == currentClientId }
-                    if (client != null) { // client stored locally is still valid
+        val result: RegisterClientResult? = clientRepository.retainedClientId()
+            .flatMap { currentClientId -> clientRepository.selfListOfClients().map { currentClientId to it } }
+            .nullableFold(
+                {
+                    if (it is CoreFailure.MissingClientRegistration) null
+                    else RegisterClientResult.Failure.Generic(it)
+                }, { (currentClientId, listOfClients) ->
+                    val client = listOfClients.firstOrNull { it.id == currentClientId }
+                    if (client != null) {
                         RegisterClientResult.Success(client)
-                    } else { // client stored locally isn't valid anymore
+                    } else {
                         clearClientData()
                         proteusClient.open()
                         null
                     }
                 }
-            }
-        }
+            )
         return result ?: registerClient(registerClientParam)
-    }
-
-    private fun SelfClientsResult.Failure.toRegisterClientResult(): RegisterClientResult = when (this) {
-        is SelfClientsResult.Failure.Generic -> RegisterClientResult.Failure.Generic(this.genericFailure)
     }
 }
