@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
@@ -117,16 +118,16 @@ internal class EventGathererImpl(
         if (offlineEventBuffer.contains(event)) {
             if (offlineEventBuffer.clearBufferIfLastEventEquals(event)) {
                 // Really live
-                logger.d("Removed most recent event from offlineEventBuffer: '${event.id}'")
+                logger.d("Removed most recent event from offlineEventBuffer: '${event.id.obfuscateId()}'")
             } else {
                 // Really live
-                logger.d("Removing event from offlineEventBuffer: ${event.id}")
+                logger.d("Removing event from offlineEventBuffer: ${event.id.obfuscateId()}")
                 offlineEventBuffer.remove(event)
             }
             logger
-                .d("Skipping emit of event from WebSocket because already emitted as offline event ${event.id}")
+                .d("Skipping emit of event from WebSocket because already emitted as offline event ${event.id.obfuscateId()}")
         } else {
-            logger.d("Event never seen before ${event.id} - We are live")
+            logger.d("Event never seen before ${event.id.obfuscateId()} - We are live")
             emit(event)
         }
     }
@@ -143,7 +144,7 @@ internal class EventGathererImpl(
             .map { offlineEvent ->
                 offlineEvent.value
             }.collect {
-                logger.i("Collecting offline event: ${it.id}")
+                logger.i("Collecting offline event: ${it.id.obfuscateId()}")
                 offlineEventBuffer.add(it)
                 emit(it)
             }

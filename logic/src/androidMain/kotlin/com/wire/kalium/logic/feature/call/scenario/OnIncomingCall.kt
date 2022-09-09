@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.IncomingCallHandler
 import com.wire.kalium.calling.types.Uint32_t
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
@@ -30,7 +31,8 @@ class OnIncomingCall(
         arg: Pointer?
     ) {
         callingLogger.i(
-            "[OnIncomingCall] -> ConversationId: $conversationIdString | UserId: $userId | shouldRing: $shouldRing"
+            "[OnIncomingCall] -> ConversationId: ${conversationIdString.obfuscateId()}" +
+                    " | UserId: ${userId.obfuscateId()} | shouldRing: $shouldRing"
         )
         val mappedConversationType = callMapper.fromIntToConversationType(conversationType)
         val isMuted = mappedConversationType == ConversationType.Conference

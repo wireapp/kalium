@@ -44,13 +44,13 @@ class KaliumWebSocketFactory(private val okHttpClient: OkHttpClient) : WebSocket
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             super.onMessage(webSocket, text)
-            kaliumLogger.v("WEBSOCKET: onMessage($text)")
+            kaliumLogger.v("WEBSOCKET: onMessage()")
             wrappedListener.onMessage(webSocket, text)
         }
 
         override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
             super.onMessage(webSocket, bytes)
-            kaliumLogger.v("WEBSOCKET: onMessage($bytes)")
+            kaliumLogger.v("WEBSOCKET: onMessage()")
             wrappedListener.onMessage(webSocket, bytes)
         }
 
