@@ -40,10 +40,10 @@ class AddAuthenticatedUserUseCase internal constructor(
                             { replace },
                             { doesValidSessionExist -> (doesValidSessionExist || replace) }
                         )
-                        onUserExist(authSession, ssoId, forceReplace)
+                        onUserExist(userId,serverConfigId, ssoId, authTokens, forceReplace)
                     }
 
-                    false -> storeUser(authSession, ssoId)
+                    false -> storeUser(userId,serverConfigId, ssoId, authTokens)
                 }
             }
         )
@@ -64,19 +64,20 @@ class AddAuthenticatedUserUseCase internal constructor(
 
     private suspend fun onUserExist(
         userId: UserId,
-        serverConfigId: String,
+        newServerConfigId: String,
         ssoId: SsoId?,
         newAuthTokens: AuthTokens,
         replace: Boolean
     ): Result =
         when (replace) {
             true -> {
-                sessionRepository.(userId).fold(
+                sessionRepository.fullAccountInfo(userId).fold(
                     // in case of the new session have a different server configurations the new session should not be added
                     { Result.Failure.Generic(it) },
                     { oldSession ->
-                        if (oldSession. == newSession.serverLinks) {
-                            storeUser()
+                        val newServerConfig = serverConfigRepository.configById(newServerConfigId).fold({return Result.Failure.Generic(it)}, {it})
+                        if (oldSession.serverConfig.links == newServerConfig.links) {
+                            storeUser(userId, newServerConfigId, ssoId, newAuthTokens)
                         } else Result.Failure.UserAlreadyExists
                     }
                 )
