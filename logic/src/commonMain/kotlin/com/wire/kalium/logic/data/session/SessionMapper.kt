@@ -34,12 +34,23 @@ internal class SessionMapperImpl(
 ) : SessionMapper {
 
     override fun toSessionDTO(authSession: AuthSession.Session.Valid): SessionDTO = with(authSession) {
-        SessionDTO(userId = idMapper.toApiModel(userId), tokenType = tokenType, accessToken = accessToken, refreshToken = refreshToken)
+        SessionDTO(
+            userId = idMapper.toApiModel(userId),
+            tokenType = tokenType,
+            accessToken = accessToken,
+            refreshToken = refreshToken
+        )
     }
 
     override fun fromEntityToSessionDTO(tokenEntity: TokenEntity): SessionDTO = with(tokenEntity) {
-        SessionDTO(userId = idMapper.fromDaoToDto(userId), tokenType = tokenType, accessToken = accessToken, refreshToken = refreshToken)
+        SessionDTO(
+            userId = idMapper.fromDaoToDto(userId),
+            tokenType = tokenType,
+            accessToken = accessToken,
+            refreshToken = refreshToken
+        )
     }
+
     override fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Session.Valid = with(sessionDTO) {
         AuthSession.Session.Valid(idMapper.fromApiModel(userId), accessToken, refreshToken, tokenType)
     }

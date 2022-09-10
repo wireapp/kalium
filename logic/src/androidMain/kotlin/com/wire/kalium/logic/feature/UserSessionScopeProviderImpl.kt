@@ -18,6 +18,7 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -44,7 +45,7 @@ actual class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         val networkContainer = AuthenticatedNetworkContainer(
-            SessionManagerImpl(sessionRepository, userId),
+            SessionManagerImpl(sessionRepository, userId, AuthTokenStorage(globalPreferences)),
             ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )

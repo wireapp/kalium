@@ -42,8 +42,8 @@ interface SessionRepository {
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
     suspend fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
-    fun currentSession(): Either<StorageFailure, UserId>
-    fun currentSessionFlow(): Flow<Either<StorageFailure, UserId?>>
+    fun currentSession(): Either<StorageFailure, AccountInfo>
+    fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>>
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit>
@@ -128,11 +128,13 @@ internal class SessionDataSource(
         }
 
 
-    override fun currentSession(): Either<StorageFailure, UserId> =
-        wrapStorageRequest { accountsDAO.currentAccount() }.map { idMapper.fromDaoModel(it) }
+    override fun currentSession(): Either<StorageFailure, AccountInfo> =
+        wrapStorageRequest { accountsDAO.currentAccount() }.map { sessionMapper.fromAccountInfoEntity(it) }
 
-    override fun currentSessionFlow(): Flow<Either<StorageFailure, UserId?>> =
-        accountsDAO.observerCurrentAccount().map { it?.let { idMapper.fromDaoModel(it) } }.wrapStorageRequest()
+    override fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>> =
+        accountsDAO.observerCurrentAccount()
+            .map { it?.let { sessionMapper.fromAccountInfoEntity(it) } }
+            .wrapStorageRequest()
 
     override suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit> =
         wrapStorageRequest { accountsDAO.deleteAccount(idMapper.toDaoModel(userId)) }

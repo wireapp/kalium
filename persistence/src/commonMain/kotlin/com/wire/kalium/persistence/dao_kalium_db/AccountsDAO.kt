@@ -106,13 +106,12 @@ class AccountsDAO(
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
 
 
-    fun currentAccount(): UserIDEntity? =
-        currentAccountQueries.currentUserId().executeAsOneOrNull()?.let { it.user_id }
+    fun currentAccount(): AccountInfoEntity? = currentAccountQueries.currentAccountInfo().executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
 
-    fun observerCurrentAccount(): Flow<UserIDEntity?> = currentAccountQueries.currentUserId()
+    fun observerCurrentAccount(): Flow<AccountInfoEntity?> = currentAccountQueries.currentAccountInfo()
         .asFlow()
         .mapToOneOrNull()
-        .map { it?.user_id }
+        .map { it?.let { AccountInfoEntity(it.id, it.logoutReason) } }
         .distinctUntilChanged()
 
     suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) {

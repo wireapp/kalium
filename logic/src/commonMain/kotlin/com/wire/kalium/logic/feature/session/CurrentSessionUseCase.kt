@@ -4,10 +4,11 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.functional.fold
 
 sealed class CurrentSessionResult {
-    data class Success(val authSession: UserId) : CurrentSessionResult()
+    data class Success(val accountInfo: AccountInfo) : CurrentSessionResult()
 
     sealed class Failure : CurrentSessionResult() {
         object SessionNotFound : Failure()
