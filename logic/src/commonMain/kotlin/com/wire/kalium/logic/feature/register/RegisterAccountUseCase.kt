@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.register
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
@@ -103,6 +104,6 @@ sealed class RegisterResult {
         object TeamMembersLimitReached : Failure()
         object BlackListed : Failure()
         object InvalidEmail : Failure()
-        class Generic(val failure: NetworkFailure) : Failure()
+        class Generic(val failure: CoreFailure) : Failure()
     }
 }

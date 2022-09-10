@@ -31,15 +31,12 @@ actual class CoreLogic(
 ) : CoreLogicCommon(clientLabel, rootPath, kaliumConfigs = kaliumConfigs) {
 
     // TODO: no need to have session repo as singleton any more
-    override fun getSessionRepo(): SessionRepository {
-        return SessionDataSource(globalDatabase.value.accountsDAO, AuthTokenStorage(globalPreferences.value), getGlobalScope().serverConfigRepository)
-    }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
         KaliumPreferencesSettings(
             EncryptedSettingsHolder(
-                 appContext,
-                 SettingOptions.AppSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData)
+                appContext,
+                SettingOptions.AppSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData)
             ).encryptedSettings
         )
     }
@@ -65,15 +62,14 @@ actual class CoreLogic(
     )
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
-            UserSessionScopeProviderImpl(
-                rootPath,
-                appContext,
-                sessionRepository,
-                getGlobalScope(),
-                kaliumConfigs,
-                globalPreferences.value,
-                globalCallManager,
-                idMapper
-            )
-        }
+        UserSessionScopeProviderImpl(
+            rootPath,
+            appContext,
+            getGlobalScope(),
+            kaliumConfigs,
+            globalPreferences.value,
+            globalCallManager,
+            idMapper
+        )
+    }
 }

@@ -30,7 +30,6 @@ import kotlinx.coroutines.runBlocking
 actual class UserSessionScopeProviderImpl(
     private val rootPath: String,
     private val appContext: Context,
-    private val sessionRepository: SessionRepository,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: KaliumPreferences,
@@ -45,7 +44,7 @@ actual class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         val networkContainer = AuthenticatedNetworkContainer(
-            SessionManagerImpl(sessionRepository, userId, AuthTokenStorage(globalPreferences)),
+            SessionManagerImpl(globalScope.sessionRepository, userId, AuthTokenStorage(globalPreferences)),
             ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )
@@ -80,7 +79,7 @@ actual class UserSessionScopeProviderImpl(
             appContext,
             userId,
             userDataSource,
-            sessionRepository,
+            globalScope.sessionRepository,
             globalCallManager,
             globalPreferences,
             dataStoragePaths,

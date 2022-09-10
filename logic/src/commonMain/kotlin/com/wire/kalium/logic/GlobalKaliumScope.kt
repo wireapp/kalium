@@ -6,6 +6,7 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
@@ -53,10 +54,10 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 class GlobalKaliumScope(
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
     private val globalPreferences: Lazy<KaliumPreferences>,
-    private val sessionRepository: SessionRepository,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
 ) {
+
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainer(developmentApiEnabled = kaliumConfigs.developmentApiEnabled)
@@ -72,6 +73,9 @@ class GlobalKaliumScope(
 
     private val authTokenStorage: AuthTokenStorage get() = AuthTokenStorage(globalPreferences.value)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences.value)
+
+    val sessionRepository: SessionRepository get() =
+        SessionDataSource(globalDatabase.value.accountsDAO, authTokenStorage, serverConfigRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)

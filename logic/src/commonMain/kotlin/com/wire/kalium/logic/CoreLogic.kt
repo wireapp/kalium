@@ -24,24 +24,17 @@ abstract class CoreLogicCommon(
     protected val kaliumConfigs: KaliumConfigs,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
-
-    val sessionRepository: SessionRepository by lazy {
-        getSessionRepo()
-    }
-
-    protected abstract fun getSessionRepo(): SessionRepository
-
     protected abstract val globalPreferences: Lazy<KaliumPreferences>
     protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
 
     fun getGlobalScope(): GlobalKaliumScope =
-        GlobalKaliumScope(globalDatabase, globalPreferences, sessionRepository, kaliumConfigs, userSessionScopeProvider)
+        GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(backendLinks: ServerConfig.Links): AuthenticationScope =
         // TODO(logic): make it lazier
-        AuthenticationScope(clientLabel, globalPreferences.value, backendLinks, getGlobalScope(), kaliumConfigs)
+        AuthenticationScope(clientLabel, backendLinks, getGlobalScope(), kaliumConfigs)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

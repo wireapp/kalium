@@ -2,9 +2,13 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
@@ -13,9 +17,7 @@ import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
     data class Success(
-        val tokens: AuthTokens,
-        val ssoId: SsoId?,
-        val serverConfigId: String
+        val authData: Triple<AuthTokens, SsoId?, String>
     ) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
@@ -38,10 +40,11 @@ interface LoginUseCase {
     ): AuthenticationResult
 }
 
-internal class LoginUseCaseImpl(
+internal class LoginUseCaseImpl internal constructor(
     private val loginRepository: LoginRepository,
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase,
+    private val serverConfigRepository: ServerConfigRepository,
     private val serverLinks: ServerConfig.Links
 ) : LoginUseCase {
     override suspend operator fun invoke(
@@ -62,23 +65,23 @@ internal class LoginUseCaseImpl(
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
-        }.map {
-
-        }
-
-            .fold({
-            when (it) {
-                is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
-                is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
-            }
-        }, {
-            TODO()
-        })
+        }.flatMap { loginResult ->
+            serverConfigRepository.configByLinks(serverLinks).map { Triple(loginResult.first, loginResult.second, it.id) }
+        }.fold({
+                when (it) {
+                    is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
+                    is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
+                    else -> AuthenticationResult.Failure.Generic(it)
+                }
+            }, {
+                AuthenticationResult.Success(it)
+            })
     }
 
     private fun handleServerMiscommunication(error: NetworkFailure.ServerMiscommunication): AuthenticationResult.Failure {
         return if (error.kaliumException is KaliumException.InvalidRequestError &&
-            (error.kaliumException.isInvalidCredentials() || error.kaliumException.isBadRequest())) {
+            (error.kaliumException.isInvalidCredentials() || error.kaliumException.isBadRequest())
+        ) {
             AuthenticationResult.Failure.InvalidCredentials
         } else {
             AuthenticationResult.Failure.Generic(error)

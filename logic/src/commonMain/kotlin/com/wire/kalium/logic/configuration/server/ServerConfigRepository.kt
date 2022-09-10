@@ -85,9 +85,9 @@ internal class ServerConfigDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ServerConfigRepository {
 
-    override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> = wrapApiRequest {
-        api.fetchServerConfig(serverConfigUrl)
-    }.map { serverConfigMapper.fromDTO(it) }
+    override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> =
+        wrapApiRequest { api.fetchServerConfig(serverConfigUrl) }
+            .map { serverConfigMapper.fromDTO(it) }
 
     override fun configList(): Either<StorageFailure, List<ServerConfig>> =
         wrapStorageRequest { dao.allConfig() }.map { it.map(serverConfigMapper::fromEntity) }

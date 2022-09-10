@@ -22,7 +22,6 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 class AuthenticationScope(
     private val clientLabel: String,
-    private val globalPreferences: KaliumPreferences,
     private val backendLinks: ServerConfig.Links,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs
@@ -47,9 +46,12 @@ class AuthenticationScope(
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
-    val login: LoginUseCase get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase, backendLinks)
-    val register: RegisterScope get() = RegisterScope(registerAccountRepository, backendLinks)
-    val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, backendLinks, globalScope.serverConfigRepository)
+    val login: LoginUseCase
+        get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase, globalScope.serverConfigRepository, backendLinks)
+    val register: RegisterScope
+        get() = RegisterScope(registerAccountRepository, globalScope.serverConfigRepository, backendLinks)
+    val ssoLoginScope: SSOLoginScope
+        get() = SSOLoginScope(ssoLoginRepository, backendLinks, globalScope.serverConfigRepository)
 }
 
 class ServerMetaDataManagerImpl internal constructor(
