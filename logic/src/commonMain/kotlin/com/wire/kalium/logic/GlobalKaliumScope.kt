@@ -32,6 +32,7 @@ import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.UnboundNetworkContainer
+import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.client.UserConfigStorage
@@ -68,11 +69,13 @@ class GlobalKaliumScope(
             unboundNetworkContainer.remoteVersion,
         )
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences.value)
+
+    private val authTokenStorage: AuthTokenStorage get() = AuthTokenStorage(globalPreferences.value)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences.value)
 
     private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
-    val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository)
+    val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository, authTokenStorage)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)

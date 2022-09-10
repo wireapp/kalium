@@ -9,5 +9,5 @@ CREATE TABLE CurrentAccount (
 update:
 INSERT OR REPLACE INTO CurrentAccount (id, user_id) VALUES (1, :user_id);
 
-currentAccount:
+currentUserId:
 SELECT user_id FROM CurrentAccount WHERE id = 1;

@@ -4,7 +4,9 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.AccountInfo
+import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.AccountsQueries
+import com.wire.kalium.persistence.AllAccounts
 import com.wire.kalium.persistence.CurrentAccountQueries
 import com.wire.kalium.persistence.client.TokenEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -14,15 +16,27 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
-sealed class AccountInfoEntity {
-    abstract val userIDEntity: UserIDEntity
+data class AccountInfoEntity(
+    val userIDEntity: UserIDEntity,
+    val logoutReason: LogoutReason?
+) {
+    internal constructor(accountInfo: AccountInfo) : this(
+        userIDEntity = accountInfo.id,
+        logoutReason = accountInfo.logoutReason
+    )
 
-    data class Valid(override val userIDEntity: UserIDEntity) : AccountInfoEntity()
-    data class Invalid(
-        override val userIDEntity: UserIDEntity,
-        val logoutReason: LogoutReason
-    ) : AccountInfoEntity()
+    internal constructor(allAccounts: AllAccounts) : this(
+        userIDEntity = allAccounts.id,
+        logoutReason = allAccounts.logoutReason
+    )
 }
+
+data class FullAccountEntity(
+    val info: AccountInfoEntity,
+    val serverConfigId: String,
+    val ssoId: SsoIdEntity?,
+    val logoutReason: LogoutReason?
+)
 
 class AccountsDAO(
     private val queries: AccountsQueries,
@@ -48,13 +62,7 @@ class AccountsDAO(
             .asFlow()
             .mapToOneOrNull()
             .map { accountInfo ->
-                accountInfo?.let {
-                    if (it.logoutReason == null) {
-                        AccountInfoEntity.Valid(it.id)
-                    } else {
-                        AccountInfoEntity.Invalid(it.id, it.logoutReason)
-                    }
-                }
+                accountInfo?.let { AccountInfoEntity(accountInfo) }
             }
 
 
@@ -62,27 +70,23 @@ class AccountsDAO(
         queries.allAccounts()
             .executeAsList()
             .map { accountInfo ->
-                if (accountInfo.logoutReason == null) {
-                    AccountInfoEntity.Valid(accountInfo.id)
-                } else {
-                    AccountInfoEntity.Invalid(accountInfo.id, accountInfo.logoutReason)
-                }
+                AccountInfoEntity(accountInfo)
             }
 
-    suspend fun allValidAccountList(): List<AccountInfoEntity.Valid> =
-        queries.allAccounts()
+    suspend fun allValidAccountList(): List<AccountInfoEntity> =
+        queries.allValidAccounts()
             .executeAsList()
-            .map { accountInfo ->
-                AccountInfoEntity.Valid(accountInfo.id)
+            .map { validAccount ->
+                AccountInfoEntity(validAccount.id, validAccount.logoutReason)
             }
 
-    suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity.Valid>> =
+    suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allAccounts()
             .asFlow()
             .mapToList()
             .map { accountInfoList ->
                 accountInfoList.map { accountInfo ->
-                    AccountInfoEntity.Valid(accountInfo.id)
+                    AccountInfoEntity(accountInfo.id, null)
                 }
             }
 
@@ -91,13 +95,7 @@ class AccountsDAO(
             .asFlow()
             .mapToList()
             .map { accountInfoList ->
-                accountInfoList.map { accountInfo ->
-                    if (accountInfo.logoutReason == null) {
-                        AccountInfoEntity.Valid(accountInfo.id)
-                    } else {
-                        AccountInfoEntity.Invalid(accountInfo.id, accountInfo.logoutReason)
-                    }
-                }
+                accountInfoList.map { AccountInfoEntity(it) }
             }
 
 
@@ -106,11 +104,14 @@ class AccountsDAO(
     suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean =
         queries.doesAccountExist(userIDEntity).executeAsOne()
 
+    suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean =
+        queries.doesValidAccountExist(userIDEntity).executeAsOne()
+
 
     fun currentAccount(): UserIDEntity? =
-        currentAccountQueries.currentAccount().executeAsOneOrNull()?.let { it.user_id }
+        currentAccountQueries.currentUserId().executeAsOneOrNull()?.let { it.user_id }
 
-    fun observerCurrentAccount(): Flow<UserIDEntity?> = currentAccountQueries.currentAccount()
+    fun observerCurrentAccount(): Flow<UserIDEntity?> = currentAccountQueries.currentUserId()
         .asFlow()
         .mapToOneOrNull()
         .map { it?.user_id }
@@ -136,4 +137,23 @@ class AccountsDAO(
     suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason) {
         queries.markAccountAsLoggedOut(logoutReason, userIDEntity)
     }
+
+    suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? =
+        queries.accountInfo(userIDEntity).executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
+
+    suspend fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
+        queries.fullAccountInfo(userIDEntity).executeAsOneOrNull()?.let {
+            FullAccountEntity(
+                info = AccountInfoEntity(it.id, it.logoutReason),
+                serverConfigId = it.serverConfigId,
+                ssoId = it.scimExternalId?.let { scimExternalId ->
+                    SsoIdEntity(
+                        scimExternalId = scimExternalId,
+                        subject = it.subject,
+                        tenant = it.tenant
+                    )
+                },
+                logoutReason = it.logoutReason
+            )
+        }
 }

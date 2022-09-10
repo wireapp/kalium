@@ -30,7 +30,7 @@ allAccounts:
 SELECT id, logoutReason FROM Accounts;
 
 allValidAccounts:
-SELECT id FROM Accounts WHERE logoutReason IS NULL;
+SELECT id, logoutReason FROM Accounts WHERE logoutReason IS NULL;
 
 isFederationEnabled:
 SELECT federation FROM ServerConfiguration WHERE id = (SELECT serverConfigId FROM Accounts WHERE id = :userId);
@@ -38,8 +38,14 @@ SELECT federation FROM ServerConfiguration WHERE id = (SELECT serverConfigId FRO
 doesAccountExist:
 SELECT EXISTS(SELECT 1 FROM Accounts WHERE id = :userId);
 
+doesValidAccountExist:
+SELECT EXISTS(SELECT 1 FROM Accounts WHERE id = :userId AND logoutReason IS NULL);
+
 markAccountAsLoggedOut:
 UPDATE Accounts SET logoutReason = :logoutReason WHERE id = :userId;
 
 updateSsoId:
 UPDATE Accounts SET scimExternalId = :scimExternalId, subject = :subject, tenant = :tenant WHERE id = :userId;
+
+fullAccountInfo:
+SELECT * FROM Accounts WHERE id = :userId;

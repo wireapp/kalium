@@ -8,11 +8,14 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.dao.UserIDEntity
 
 class SessionManagerImpl(
     private val sessionRepository: SessionRepository,

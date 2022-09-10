@@ -110,8 +110,7 @@ internal object MapperProvider {
     fun federatedIdMapper(
         userId: UserId,
         qualifiedIdMapper: QualifiedIdMapper,
-        sessionRepository: SessionRepository,
-        serverConfigRepository: ServerConfigRepository,
-    ): FederatedIdMapper = FederatedIdMapperImpl(userId, qualifiedIdMapper, sessionRepository, serverConfigRepository)
+        sessionRepository: SessionRepository
+    ): FederatedIdMapper = FederatedIdMapperImpl(userId, qualifiedIdMapper, sessionRepository)
 
 }

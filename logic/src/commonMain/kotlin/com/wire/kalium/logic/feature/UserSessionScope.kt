@@ -438,8 +438,7 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = MapperProvider.federatedIdMapper(
             userId,
             qualifiedIdMapper,
-            sessionRepository,
-            serverConfigRepository.value
+            sessionRepository
         )
 
     private val callManager: Lazy<CallManager> = lazy {
@@ -488,7 +487,7 @@ abstract class UserSessionScopeCommon internal constructor(
             connectionRepository,
             logout,
             clientRepository,
-            sessionRepository
+            userId
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver

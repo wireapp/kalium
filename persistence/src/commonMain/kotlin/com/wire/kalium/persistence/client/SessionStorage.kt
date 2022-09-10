@@ -73,7 +73,7 @@ data class TokenEntity(
     val tokenType: String
 )
 
-class AuthTokenStorage internal constructor(
+class AuthTokenStorage (
     private val kaliumPreferences: KaliumPreferences
 ) {
     suspend fun saveToken(tokenEntity: TokenEntity) {
@@ -84,7 +84,7 @@ class AuthTokenStorage internal constructor(
         )
     }
 
-    suspend fun getToken(userId: UserIDEntity): TokenEntity? {
+    fun getToken(userId: UserIDEntity): TokenEntity? {
         return kaliumPreferences.getSerializable(
             "user_tokens_${userId.value}@${userId.domain}",
             TokenEntity.serializer()

@@ -21,7 +21,6 @@ interface SessionMapper {
     fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity
     fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
     fun toAuthTokensEntity(authSession: AuthTokens): TokenEntity
-    fun fromAuthTokensEntity(authSessionEntity: AuthSessionEntity): AuthTokens
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession
@@ -41,15 +40,43 @@ internal class SessionMapperImpl(
         AuthSession.Session.Valid(idMapper.fromApiModel(userId), accessToken, refreshToken, tokenType)
     }
 
-    override fun fromAccountInfoEntity(accountInfoEntity: AccountInfoEntity): AccountInfo = with(accountInfoEntity) {
-        when (this) {
-            is AccountInfoEntity.Invalid -> AccountInfo.Invalid(
-                idMapper.fromDaoModel(userIDEntity),
-                LogoutReason.valueOf(logoutReason.name)
+    override fun fromAccountInfoEntity(accountInfoEntity: AccountInfoEntity): AccountInfo =
+        accountInfoEntity.logoutReason?.let {
+            AccountInfo.Invalid(
+                idMapper.fromDaoModel(accountInfoEntity.userIDEntity),
+                toLogoutReason(it)
             )
-            is AccountInfoEntity.Valid -> AccountInfo.Valid(idMapper.fromDaoModel(userIDEntity))
+        } ?: AccountInfo.Valid(idMapper.fromDaoModel(accountInfoEntity.userIDEntity))
+
+
+    override fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity =
+        when (reason) {
+            LogoutReason.SELF_LOGOUT -> LogoutReasonEntity.SELF_LOGOUT
+            LogoutReason.REMOVED_CLIENT -> LogoutReasonEntity.REMOVED_CLIENT
+            LogoutReason.DELETED_ACCOUNT -> LogoutReasonEntity.DELETED_ACCOUNT
+            LogoutReason.SESSION_EXPIRED -> LogoutReasonEntity.SESSION_EXPIRED
         }
-    }
+
+    override fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity? =
+        ssoId?.let { SsoIdEntity(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
+
+    override fun toAuthTokensEntity(authSession: AuthTokens): TokenEntity = TokenEntity(
+        userId = idMapper.toDaoModel(authSession.userId),
+        accessToken = authSession.accessToken,
+        refreshToken = authSession.refreshToken,
+        tokenType = authSession.tokenType
+    )
+
+    override fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId? =
+        ssoIdEntity?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
+
+    override fun toLogoutReason(reason: com.wire.kalium.persistence.model.LogoutReason): LogoutReason =
+        when (reason) {
+            LogoutReasonEntity.SELF_LOGOUT -> LogoutReason.SELF_LOGOUT
+            LogoutReasonEntity.REMOVED_CLIENT -> LogoutReason.REMOVED_CLIENT
+            LogoutReasonEntity.DELETED_ACCOUNT -> LogoutReason.DELETED_ACCOUNT
+            LogoutReasonEntity.SESSION_EXPIRED -> LogoutReason.SESSION_EXPIRED
+        }
 
     override fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession =
         when (authSessionEntity) {

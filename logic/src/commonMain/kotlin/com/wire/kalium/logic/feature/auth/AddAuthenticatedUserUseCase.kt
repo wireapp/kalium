@@ -1,13 +1,19 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.persistence.client.AuthTokenStorage
 
-class AddAuthenticatedUserUseCase(
-    private val sessionRepository: SessionRepository
+class AddAuthenticatedUserUseCase internal constructor(
+    private val sessionRepository: SessionRepository,
+    private val authTokenRepository: AuthTokenStorage,
+    private val serverConfigRepository: ServerConfigRepository
 ) {
     sealed class Result {
         data class Success(val userId: UserId) : Result()
@@ -17,16 +23,22 @@ class AddAuthenticatedUserUseCase(
         }
     }
 
-    operator fun invoke(authSession: AuthSession, ssoId: SsoId?, replace: Boolean = false): Result =
-        sessionRepository.doesSessionExist(authSession.session.userId).fold(
+    suspend operator fun invoke(
+        userId: UserId,
+        serverConfigId: String,
+        ssoId: SsoId?,
+        authTokens: AuthTokens,
+        replace: Boolean = false
+    ): Result =
+        sessionRepository.doesSessionExist(userId).fold(
             {
                 Result.Failure.Generic(it)
             }, {
                 when (it) {
                     true -> {
-                        val forceReplace = sessionRepository.userSession(authSession.session.userId).fold(
+                        val forceReplace = sessionRepository.doesSessionExist(userId).fold(
                             { replace },
-                            { existSession -> existSession.session is AuthSession.Session.Invalid || replace }
+                            { doesValidSessionExist -> (doesValidSessionExist || replace) }
                         )
                         onUserExist(authSession, ssoId, forceReplace)
                     }
@@ -36,20 +48,35 @@ class AddAuthenticatedUserUseCase(
             }
         )
 
-    private fun storeUser(authSession: AuthSession, ssoId: SsoId?): Result {
-        sessionRepository.storeSession(authSession, ssoId)
-        sessionRepository.updateCurrentSession(authSession.session.userId)
-        return Result.Success(authSession.session.userId)
-    }
+    private suspend fun storeUser(
+        userId: UserId,
+        serverConfigId: String,
+        ssoId: SsoId?,
+        authTokens: AuthTokens
+    ): Result =
+        sessionRepository.storeSession(userId, serverConfigId, ssoId, authTokens)
+            .onSuccess {
+                sessionRepository.updateCurrentSession(userId)
+            }.fold(
+                { Result.Failure.Generic(it) },
+                { Result.Success(userId) }
+            )
 
-    private fun onUserExist(newSession: AuthSession, ssoId: SsoId?, replace: Boolean): Result =
+    private suspend fun onUserExist(
+        userId: UserId,
+        serverConfigId: String,
+        ssoId: SsoId?,
+        newAuthTokens: AuthTokens,
+        replace: Boolean
+    ): Result =
         when (replace) {
             true -> {
-                sessionRepository.userSession(newSession.session.userId).fold(
+                sessionRepository.(userId).fold(
                     // in case of the new session have a different server configurations the new session should not be added
-                    { Result.Failure.Generic(it) }, { oldSession ->
-                        if (oldSession.serverLinks == newSession.serverLinks) {
-                            storeUser(newSession.copy(serverLinks = oldSession.serverLinks), ssoId)
+                    { Result.Failure.Generic(it) },
+                    { oldSession ->
+                        if (oldSession. == newSession.serverLinks) {
+                            storeUser()
                         } else Result.Failure.UserAlreadyExists
                     }
                 )

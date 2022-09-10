@@ -1,23 +1,31 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.auth.Account
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapLeft
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.dao_kalium_db.AccountInfoEntity
 import com.wire.kalium.persistence.dao_kalium_db.AccountsDAO
+import com.wire.kalium.persistence.dao_kalium_db.FullAccountEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -31,22 +39,14 @@ interface SessionRepository {
         authTokens: AuthTokens
     ): Either<StorageFailure, Unit>
 
-    @Deprecated("Use TokenStorage instead")
-    suspend fun updateTokens(
-        userId: UserId,
-        accessTokenDTO: AccessTokenDTO,
-        refreshTokenDTO: RefreshTokenDTO?
-    ): Either<StorageFailure, AuthSession?>
-
-    // TODO(optimization): exposing all session is unnecessary since we only need the IDs
-    //                     of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
     suspend fun allSessionsFlow(): Flow<List<AccountInfo>>
     suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>>
     suspend fun allValidSessionsFlow(): Flow<List<AccountInfo>>
-
-    // suspend fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
     suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
+    suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, UserId>
@@ -54,7 +54,6 @@ interface SessionRepository {
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit>
-
     fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
 }
 
@@ -63,6 +62,7 @@ internal class SessionDataSource(
     // private val sessionStorage: SessionStorage,
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
+    private val serverConfigRepository: ServerConfigRepository,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
@@ -83,14 +83,6 @@ internal class SessionDataSource(
             wrapStorageRequest { authTokenStorage.saveToken(sessionMapper.toAuthTokensEntity(authTokens)) }
         }
 
-    override suspend fun updateTokens(
-        userId: UserId,
-        accessTokenDTO: AccessTokenDTO,
-        refreshTokenDTO: RefreshTokenDTO?
-    ): Either<StorageFailure, AuthSession?> {
-        TODO("deprecated to not use")
-    }
-
     override suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>> =
         wrapStorageRequest { accountsDAO.allAccountList() }.map { it.map { sessionMapper.fromAccountInfoEntity(it) } }
 
@@ -109,6 +101,24 @@ internal class SessionDataSource(
 
     override suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
         wrapStorageRequest { accountsDAO.doesAccountExists(idMapper.toDaoModel(userId)) }
+
+    override suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { accountsDAO.doesValidAccountExists(idMapper.toDaoModel(userId)) }
+
+    override suspend fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account> =
+        wrapStorageRequest { accountsDAO.fullAccountInfo(idMapper.toDaoModel(userId)) }
+            .flatMap {
+                val accountInfo = sessionMapper.fromAccountInfoEntity(it.info)
+                val serverConfig: ServerConfig =
+                    serverConfigRepository.configById(it.serverConfigId).fold({ return Either.Left(it) }, { it })
+                val ssoId: SsoId? = sessionMapper.fromSsoIdEntity(it.ssoId)
+                Either.Right(Account(accountInfo, serverConfig, ssoId))
+            }
+
+
+    override suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo> =
+        wrapStorageRequest { accountsDAO.accountInfo(idMapper.toDaoModel(userId)) }
+            .map { sessionMapper.fromAccountInfoEntity(it) }
 
     override suspend fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit> =
         wrapStorageRequest { accountsDAO.setCurrentAccount(idMapper.toDaoModel(userId)) }
@@ -135,7 +145,7 @@ internal class SessionDataSource(
     override suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit> =
         wrapStorageRequest { accountsDAO.deleteAccount(idMapper.toDaoModel(userId)) }
             .onSuccess {
-                TODO("delete acount tokens")
+                TODO("delete account tokens")
             }
 
     override suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?> =
