@@ -16,18 +16,48 @@ data class TokenEntity(
 class AuthTokenStorage(
     private val kaliumPreferences: KaliumPreferences
 ) {
-    suspend fun saveToken(tokenEntity: TokenEntity) {
+    fun addOrReplace(tokenEntity: TokenEntity) {
         kaliumPreferences.putSerializable(
-            "user_tokens_${tokenEntity.userId.value}@${tokenEntity.userId.domain}",
+            getTokenKey(tokenEntity.userId),
             tokenEntity,
             TokenEntity.serializer()
         )
     }
 
-    fun getToken(userId: UserIDEntity): TokenEntity? {
-        return kaliumPreferences.getSerializable(
-            "user_tokens_${userId.value}@${userId.domain}",
+    fun updateToken(
+        userId: UserIDEntity,
+        accessToken: String,
+        tokenType: String,
+        refreshToken: String?,
+    ): TokenEntity {
+        val key = getTokenKey(userId)
+        val newToken: TokenEntity = (refreshToken?.let {
+            TokenEntity(userId, accessToken, refreshToken, tokenType)
+        } ?: run {
+            kaliumPreferences.getSerializable(key, TokenEntity.serializer())?.copy(
+                accessToken = accessToken,
+                tokenType = tokenType
+            )
+        }) ?: throw IllegalStateException("No token found for user")
+
+        kaliumPreferences.putSerializable(
+            key,
+            newToken,
             TokenEntity.serializer()
         )
+
+        return newToken
+    }
+
+    fun getToken(userId: UserIDEntity): TokenEntity? {
+        return kaliumPreferences.getSerializable(
+            getTokenKey(userId),
+            TokenEntity.serializer()
+        )
+    }
+
+
+    private fun getTokenKey(userId: UserIDEntity): String {
+        return "user_tokens_${userId.value}@${userId.domain}"
     }
 }

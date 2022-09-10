@@ -10,22 +10,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.Account
 import com.wire.kalium.logic.feature.auth.AccountInfo
-import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapLeft
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.model.AccessTokenDTO
-import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
-import com.wire.kalium.persistence.dao_kalium_db.AccountInfoEntity
 import com.wire.kalium.persistence.dao_kalium_db.AccountsDAO
-import com.wire.kalium.persistence.dao_kalium_db.FullAccountEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -45,7 +38,7 @@ interface SessionRepository {
     suspend fun allValidSessionsFlow(): Flow<List<AccountInfo>>
     suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
-    suspend fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
+    fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
     suspend fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
@@ -79,7 +72,7 @@ internal class SessionDataSource(
                 serverConfigId
             )
         }.flatMap {
-            wrapStorageRequest { authTokenStorage.saveToken(sessionMapper.toAuthTokensEntity(authTokens)) }
+            wrapStorageRequest { authTokenStorage.addOrReplace(sessionMapper.toAuthTokensEntity(authTokens)) }
         }
 
     override suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>> =
@@ -104,7 +97,7 @@ internal class SessionDataSource(
     override suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
         wrapStorageRequest { accountsDAO.doesValidAccountExists(idMapper.toDaoModel(userId)) }
 
-    override suspend fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account> =
+    override fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account> =
         wrapStorageRequest { accountsDAO.fullAccountInfo(idMapper.toDaoModel(userId)) }
             .flatMap {
                 val accountInfo = sessionMapper.fromAccountInfoEntity(it.info)

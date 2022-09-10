@@ -16,6 +16,7 @@ import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 
 interface SessionMapper {
     fun toSessionDTO(authSession: AuthSession.Session.Valid): SessionDTO
+    fun fromEntityToSessionDTO(tokenEntity: TokenEntity): SessionDTO
     fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Session.Valid
     fun fromAccountInfoEntity(accountInfoEntity: AccountInfoEntity): AccountInfo
     fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity
@@ -36,6 +37,9 @@ internal class SessionMapperImpl(
         SessionDTO(userId = idMapper.toApiModel(userId), tokenType = tokenType, accessToken = accessToken, refreshToken = refreshToken)
     }
 
+    override fun fromEntityToSessionDTO(tokenEntity: TokenEntity): SessionDTO = with(tokenEntity) {
+        SessionDTO(userId = idMapper.fromDaoToDto(userId), tokenType = tokenType, accessToken = accessToken, refreshToken = refreshToken)
+    }
     override fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Session.Valid = with(sessionDTO) {
         AuthSession.Session.Valid(idMapper.fromApiModel(userId), accessToken, refreshToken, tokenType)
     }

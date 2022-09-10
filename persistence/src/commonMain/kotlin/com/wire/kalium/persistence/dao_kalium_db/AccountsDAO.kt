@@ -4,11 +4,9 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.AccountInfo
-import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.AccountsQueries
 import com.wire.kalium.persistence.AllAccounts
 import com.wire.kalium.persistence.CurrentAccountQueries
-import com.wire.kalium.persistence.client.TokenEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.SsoIdEntity
@@ -141,7 +139,7 @@ class AccountsDAO(
     suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? =
         queries.accountInfo(userIDEntity).executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
 
-    suspend fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
+    fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
         queries.fullAccountInfo(userIDEntity).executeAsOneOrNull()?.let {
             FullAccountEntity(
                 info = AccountInfoEntity(it.id, it.logoutReason),

@@ -3,17 +3,12 @@ package com.wire.kalium.logic.data.session
 import app.cash.turbine.test
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
-import com.wire.kalium.persistence.client.SessionStorage
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.AuthSessionEntity
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.SsoIdEntity
-import io.mockative.Mock
-import io.mockative.given
-import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random

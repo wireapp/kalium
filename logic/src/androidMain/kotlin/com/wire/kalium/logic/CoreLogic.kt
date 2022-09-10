@@ -37,8 +37,8 @@ actual class CoreLogic(
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
         KaliumPreferencesSettings(
             EncryptedSettingsHolder(
-                appContext,
-                SettingOptions.AppSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData)
+                 appContext,
+                 SettingOptions.AppSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData)
             ).encryptedSettings
         )
     }
