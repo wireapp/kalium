@@ -53,13 +53,13 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         userSessionScopeProvider.delete(userId)
     }
 
-    private fun updateCurrentSession() {
-        sessionRepository.allSessions().onSuccess {
-            sessionRepository.updateCurrentSession(it.first().session.userId)
+    private suspend fun updateCurrentSession() {
+        sessionRepository.allValidSessions().onSuccess {
+            sessionRepository.updateCurrentSession(it.firstOrNull()?.userId)
         }
     }
 
-    private fun logout(reason: LogoutReason) =
+    private suspend fun logout(reason: LogoutReason) =
         sessionRepository.logout(userId = userId, reason, isHardLogout(reason))
 
     private fun clearUserStorage() {

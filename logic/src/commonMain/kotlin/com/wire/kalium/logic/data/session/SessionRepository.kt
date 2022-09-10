@@ -40,7 +40,7 @@ interface SessionRepository {
     suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
-    suspend fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
+    suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
     suspend fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, UserId>
     fun currentSessionFlow(): Flow<Either<StorageFailure, UserId?>>
@@ -112,8 +112,8 @@ internal class SessionDataSource(
         wrapStorageRequest { accountsDAO.accountInfo(idMapper.toDaoModel(userId)) }
             .map { sessionMapper.fromAccountInfoEntity(it) }
 
-    override suspend fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit> =
-        wrapStorageRequest { accountsDAO.setCurrentAccount(idMapper.toDaoModel(userId)) }
+    override suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit> =
+        wrapStorageRequest { accountsDAO.setCurrentAccount(userId?.let { idMapper.toDaoModel(it) }) }
 
     override suspend fun logout(
         userId: UserId,

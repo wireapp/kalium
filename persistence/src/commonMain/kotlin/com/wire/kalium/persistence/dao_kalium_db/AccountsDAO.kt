@@ -115,7 +115,7 @@ class AccountsDAO(
         .map { it?.user_id }
         .distinctUntilChanged()
 
-    suspend fun setCurrentAccount(userIDEntity: UserIDEntity) {
+    suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) {
         currentAccountQueries.update(userIDEntity)
     }
 
