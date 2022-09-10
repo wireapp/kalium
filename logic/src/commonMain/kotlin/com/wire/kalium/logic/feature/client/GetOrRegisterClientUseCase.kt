@@ -30,6 +30,7 @@ class GetOrRegisterClientUseCaseImpl(
                 }, { (currentClientId, listOfClients) ->
                     val client = listOfClients.firstOrNull { it.id == currentClientId }
                     if (client != null) {
+                        clientRepository.persistClientId(client.id)
                         RegisterClientResult.Success(client)
                     } else {
                         clearClientData()
