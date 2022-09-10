@@ -59,7 +59,6 @@ interface SessionRepository {
 
 @Suppress("TooManyFunctions")
 internal class SessionDataSource(
-    // private val sessionStorage: SessionStorage,
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
     private val serverConfigRepository: ServerConfigRepository,

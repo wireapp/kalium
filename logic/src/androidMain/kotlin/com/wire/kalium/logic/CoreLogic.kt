@@ -12,8 +12,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
-import com.wire.kalium.persistence.client.SessionStorage
-import com.wire.kalium.persistence.client.SessionStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -31,9 +29,9 @@ actual class CoreLogic(
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(clientLabel, rootPath, kaliumConfigs = kaliumConfigs) {
 
+    // TODO: no need to have session repo as singleton any more
     override fun getSessionRepo(): SessionRepository {
-        val sessionStorage: SessionStorage = SessionStorageImpl(globalPreferences.value)
-        return SessionDataSource(sessionStorage, globalDatabase.value.accountsDAO)
+        return SessionDataSource(globalDatabase.value.accountsDAO)
     }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {

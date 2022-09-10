@@ -26,9 +26,7 @@ actual class CoreLogic(
     clientLabel = clientLabel, rootPath = rootPath, kaliumConfigs = kaliumConfigs
 ) {
     override fun getSessionRepo(): SessionRepository {
-        // TODO: make lazier
-        val sessionStorage = SessionStorageImpl(globalPreferences.value)
-        return SessionDataSource(sessionStorage)
+        return SessionDataSource(globalDatabase.value.accountsDAO, TODO(), TODO())
     }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {

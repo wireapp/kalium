@@ -27,7 +27,6 @@ class SessionRepositoryTest {
     fun givenASession_whenObservingAllSessions_thenChangesArePropagated() = runTest {
         val sessionsStateFlow = MutableStateFlow(mapOf<UserIDEntity, AuthSessionEntity>())
         val (arrangement, sessionRepository) = Arrangement()
-            .withAllSessionsFlow(sessionsStateFlow)
             .arrange()
         val sessionsMapExpectedValue = listOf(arrangement.sessionValid)
         sessionRepository.allSessionsFlow().test {
@@ -43,7 +42,6 @@ class SessionRepositoryTest {
     fun givenASession_whenObservingAllValidSessions_thenOnlyValidOnesArePropagated() = runTest {
         val sessionsStateFlow = MutableStateFlow(mapOf<UserIDEntity, AuthSessionEntity>())
         val (arrangement, sessionRepository) = Arrangement()
-            .withAllSessionsFlow(sessionsStateFlow)
             .arrange()
         val sessionsMapExpectedValue = listOf(arrangement.sessionValid)
         sessionRepository.allValidSessionsFlow().test {
@@ -58,19 +56,11 @@ class SessionRepositoryTest {
 
     class Arrangement {
 
-        @Mock
-        val sessionStorage = mock(SessionStorage::class)
         val sessionMapper = MapperProvider.sessionMapper()
         val idMapper = MapperProvider.idMapper()
 
-        private val sessionRepository = SessionDataSource(sessionStorage, sessionMapper, idMapper)
+        private val sessionRepository = SessionDataSource(TODO(), TODO(), TODO(), sessionMapper, idMapper)
 
-        internal fun withAllSessionsFlow(flow: Flow<Map<UserIDEntity, AuthSessionEntity>>): Arrangement = apply {
-            given(sessionStorage)
-                .function(sessionStorage::allSessionsFlow)
-                .whenInvoked()
-                .thenReturn(flow)
-        }
 
         val sessionEntityValid = AuthSessionEntity.Valid(
             QualifiedIDEntity("user_id_valid", "user_domain"),
