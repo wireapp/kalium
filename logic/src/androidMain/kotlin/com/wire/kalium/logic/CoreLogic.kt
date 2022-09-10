@@ -33,7 +33,7 @@ actual class CoreLogic(
 
     override fun getSessionRepo(): SessionRepository {
         val sessionStorage: SessionStorage = SessionStorageImpl(globalPreferences.value)
-        return SessionDataSource(sessionStorage)
+        return SessionDataSource(sessionStorage, globalDatabase.value.accountsDAO)
     }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {

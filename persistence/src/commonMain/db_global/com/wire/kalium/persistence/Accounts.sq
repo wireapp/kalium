@@ -1,0 +1,45 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.model.LogoutReason;
+
+CREATE TABLE Accounts (
+    id TEXT AS QualifiedIDEntity PRIMARY KEY NOT NULL,
+    scimExternalId TEXT,
+    subject TEXT,
+    tenant TEXT,
+    serverConfigId TEXT NOT NULL,
+    logoutReason TEXT AS LogoutReason
+);
+
+insertOrReplace:
+INSERT OR REPLACE INTO Accounts (id, scimExternalId, subject, tenant, serverConfigId, logoutReason)
+ VALUES (:id, :scimExternalId, :subject, :tenant, :serverConfigId, :logoutReason);
+
+delete:
+DELETE FROM Accounts WHERE id = :id;
+
+ssoId:
+SELECT scimExternalId, subject, tenant FROM Accounts WHERE id = :userId;
+
+logoutReason:
+SELECT logoutReason FROM Accounts WHERE id = :userId;
+
+accountInfo:
+SELECT id, logoutReason FROM Accounts WHERE id = :userId;
+
+allAccounts:
+SELECT id, logoutReason FROM Accounts;
+
+allValidAccounts:
+SELECT id FROM Accounts WHERE logoutReason IS NULL;
+
+isFederationEnabled:
+SELECT federation FROM ServerConfiguration WHERE id = (SELECT serverConfigId FROM Accounts WHERE id = :userId);
+
+doesAccountExist:
+SELECT EXISTS(SELECT 1 FROM Accounts WHERE id = :userId);
+
+markAccountAsLoggedOut:
+UPDATE Accounts SET logoutReason = :logoutReason WHERE id = :userId;
+
+updateSsoId:
+UPDATE Accounts SET scimExternalId = :scimExternalId, subject = :subject, tenant = :tenant WHERE id = :userId;

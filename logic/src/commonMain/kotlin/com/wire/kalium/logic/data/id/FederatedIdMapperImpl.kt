@@ -24,17 +24,12 @@ class FederatedIdMapperImpl internal constructor(
     private val selfUserId: UserId,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val sessionRepository: SessionRepository,
-    private val serverConfigRepository: ServerConfigRepository,
 ) : FederatedIdMapper {
 
-    private fun isFederationEnabled() = when (val session = sessionRepository.userSession(selfUserId)) {
-        is Either.Left -> false
-        is Either.Right -> {
-            serverConfigRepository.configByLinks(session.value.serverLinks).fold({ false }, { config ->
-                config.metaData.federation
-            })
-        }
-    }
+    private fun isFederationEnabled() = sessionRepository.isFederated(selfUserId).fold(
+        { false },
+        { it }
+    )
 
     override suspend fun parseToFederatedId(qualifiedID: QualifiedID): String {
         kaliumLogger.v(

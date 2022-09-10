@@ -65,6 +65,33 @@ interface SessionStorage {
     fun updateSsoId(userId: UserIDEntity, ssoIdEntity: SsoIdEntity?)
 }
 
+@kotlinx.serialization.Serializable
+data class TokenEntity(
+    val userId: UserIDEntity,
+    val accessToken: String,
+    val refreshToken: String,
+    val tokenType: String
+)
+
+class AuthTokenStorage internal constructor(
+    private val kaliumPreferences: KaliumPreferences
+) {
+    suspend fun saveToken(tokenEntity: TokenEntity) {
+        kaliumPreferences.putSerializable(
+            "user_tokens_${tokenEntity.userId.value}@${tokenEntity.userId.domain}",
+            tokenEntity,
+            TokenEntity.serializer()
+        )
+    }
+
+    suspend fun getToken(userId: UserIDEntity): TokenEntity? {
+        return kaliumPreferences.getSerializable(
+            "user_tokens_${userId.value}@${userId.domain}",
+            TokenEntity.serializer()
+        )
+    }
+}
+
 class SessionStorageImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : SessionStorage {

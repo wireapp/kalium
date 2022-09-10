@@ -1,11 +1,18 @@
 package com.wire.kalium.persistence.db
 
+import android.accounts.Account
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wire.kalium.persistence.Accounts
+import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
+import com.wire.kalium.persistence.dao.QualifiedIDAdapter
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao_kalium_db.AccountsDAO
+import com.wire.kalium.persistence.dao_kalium_db.LogoutReasonAdapter
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -42,7 +49,10 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
         }
 
         database = GlobalDatabase(
-            driver, ServerConfiguration.Adapter(
+            driver,
+            AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter),
+            CurrentAccountAdapter = CurrentAccount.Adapter(QualifiedIDAdapter),
+            ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter
             )
         )
@@ -51,8 +61,12 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
     actual val serverConfigurationDAO: ServerConfigurationDAO
         get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
 
+    actual val accountsDAO: AccountsDAO
+        get() = AccountsDAO(database.accountsQueries, database.currentAccountQueries)
+
     actual fun nuke(): Boolean {
         driver.close()
         return context.deleteDatabase(dbName)
     }
+
 }
