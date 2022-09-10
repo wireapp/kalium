@@ -1,18 +1,15 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.persistence.client.AuthTokenStorage
 
 class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
-    private val authTokenRepository: AuthTokenStorage,
     private val serverConfigRepository: ServerConfigRepository
 ) {
     sealed class Result {
