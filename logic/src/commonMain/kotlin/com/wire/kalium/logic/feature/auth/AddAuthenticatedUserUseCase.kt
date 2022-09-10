@@ -21,46 +21,43 @@ class AddAuthenticatedUserUseCase internal constructor(
     }
 
     suspend operator fun invoke(
-        userId: UserId,
         serverConfigId: String,
         ssoId: SsoId?,
         authTokens: AuthTokens,
         replace: Boolean = false
     ): Result =
-        sessionRepository.doesSessionExist(userId).fold(
+        sessionRepository.doesSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
             }, {
                 when (it) {
                     true -> {
-                        val forceReplace = sessionRepository.doesSessionExist(userId).fold(
+                        val forceReplace = sessionRepository.doesSessionExist(authTokens.userId).fold(
                             { replace },
                             { doesValidSessionExist -> (doesValidSessionExist || replace) }
                         )
-                        onUserExist(userId,serverConfigId, ssoId, authTokens, forceReplace)
+                        onUserExist(serverConfigId, ssoId, authTokens, forceReplace)
                     }
 
-                    false -> storeUser(userId,serverConfigId, ssoId, authTokens)
+                    false -> storeUser(serverConfigId, ssoId, authTokens)
                 }
             }
         )
 
     private suspend fun storeUser(
-        userId: UserId,
         serverConfigId: String,
         ssoId: SsoId?,
         authTokens: AuthTokens
     ): Result =
-        sessionRepository.storeSession(userId, serverConfigId, ssoId, authTokens)
+        sessionRepository.storeSession(serverConfigId, ssoId, authTokens)
             .onSuccess {
-                sessionRepository.updateCurrentSession(userId)
+                sessionRepository.updateCurrentSession(authTokens.userId)
             }.fold(
                 { Result.Failure.Generic(it) },
-                { Result.Success(userId) }
+                { Result.Success(authTokens.userId) }
             )
 
     private suspend fun onUserExist(
-        userId: UserId,
         newServerConfigId: String,
         ssoId: SsoId?,
         newAuthTokens: AuthTokens,
@@ -68,13 +65,18 @@ class AddAuthenticatedUserUseCase internal constructor(
     ): Result =
         when (replace) {
             true -> {
-                sessionRepository.fullAccountInfo(userId).fold(
+                sessionRepository.fullAccountInfo(newAuthTokens.userId).fold(
                     // in case of the new session have a different server configurations the new session should not be added
                     { Result.Failure.Generic(it) },
                     { oldSession ->
-                        val newServerConfig = serverConfigRepository.configById(newServerConfigId).fold({return Result.Failure.Generic(it)}, {it})
+                        val newServerConfig =
+                            serverConfigRepository.configById(newServerConfigId).fold({ return Result.Failure.Generic(it) }, { it })
                         if (oldSession.serverConfig.links == newServerConfig.links) {
-                            storeUser(userId, newServerConfigId, ssoId, newAuthTokens)
+                            storeUser(
+                                serverConfigId = newServerConfigId,
+                                ssoId = ssoId,
+                                authTokens = newAuthTokens
+                            )
                         } else Result.Failure.UserAlreadyExists
                     }
                 )

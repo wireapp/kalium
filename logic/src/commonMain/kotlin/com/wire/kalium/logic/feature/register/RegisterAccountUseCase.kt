@@ -2,12 +2,13 @@ package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBlackListedEmail
 import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
@@ -41,8 +42,9 @@ sealed class RegisterParam(
     ) : RegisterParam(firstName, lastName, email, password)
 }
 
-class RegisterAccountUseCase(
+class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
+    private val serverConfigRepository: ServerConfigRepository,
     private val serverLinks: ServerConfig.Links
 ) {
     suspend operator fun invoke(
@@ -61,6 +63,9 @@ class RegisterAccountUseCase(
                 )
             }
         }
+    }.flatMap { registerResult ->
+        serverConfigRepository.configByLinks(serverLinks)
+            .map { Triple(registerResult.second, registerResult.first, it.id) }
     }.fold({
         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
             handleSpecialErrors(it.kaliumException)
@@ -68,10 +73,7 @@ class RegisterAccountUseCase(
             RegisterResult.Failure.Generic(it)
         }
     }, {
-        RegisterResult.Success(
-            AuthSession(it.second, serverLinks),
-            it.first
-        )
+        RegisterResult.Success(it)
     })
 
     private fun handleSpecialErrors(error: KaliumException.InvalidRequestError) = with(error) {
@@ -90,8 +92,7 @@ class RegisterAccountUseCase(
 
 sealed class RegisterResult {
     class Success(
-        val userSession: AuthSession,
-        val ssoId: SsoId?
+        val authData: Triple<AuthTokens, SsoId?, String>
     ) : RegisterResult()
 
     sealed class Failure : RegisterResult() {

@@ -5,7 +5,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
@@ -16,13 +16,13 @@ interface LoginRepository {
         email: String,
         password: String,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>>
+    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 
     suspend fun loginWithHandle(
         handle: String,
         password: String,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>>
+    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 }
 
 class LoginRepositoryImpl(
@@ -36,20 +36,20 @@ class LoginRepositoryImpl(
         email: String,
         password: String,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> =
+    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
         login(LoginApi.LoginParam.LoginWithEmail(email, password, clientLabel), shouldPersistClient)
 
     override suspend fun loginWithHandle(
         handle: String,
         password: String,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> =
+    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
         login(LoginApi.LoginParam.LoginWithHandel(handle, password, clientLabel), shouldPersistClient)
 
     private suspend fun login(
         loginParam: LoginApi.LoginParam,
         persistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthSession.Session.Valid, SsoId?>> = wrapApiRequest {
+    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> = wrapApiRequest {
         loginApi.login(param = loginParam, persist = persistClient)
     }.map {
         Pair(sessionMapper.fromSessionDTO(it.first), idMapper.toSsoId(it.second.ssoID))

@@ -6,14 +6,16 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
     data class Success(
-        val userSession: AuthSession,
-        val ssoId: SsoId?
+        val tokens: AuthTokens,
+        val ssoId: SsoId?,
+        val serverConfigId: String
     ) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
@@ -60,13 +62,17 @@ internal class LoginUseCaseImpl(
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
-        }.fold({
+        }.map {
+
+        }
+
+            .fold({
             when (it) {
                 is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
                 is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
             }
         }, {
-            AuthenticationResult.Success(AuthSession(it.first, serverLinks), it.second)
+            TODO()
         })
     }
 

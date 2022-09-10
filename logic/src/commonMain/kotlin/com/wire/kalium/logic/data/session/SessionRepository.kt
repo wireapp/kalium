@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.map
 @Suppress("TooManyFunctions")
 interface SessionRepository {
     suspend fun storeSession(
-        userId: UserId,
         serverConfigId: String,
         ssoId: SsoId?,
         authTokens: AuthTokens
@@ -60,14 +59,13 @@ internal class SessionDataSource(
 ) : SessionRepository {
 
     override suspend fun storeSession(
-        userId: UserId,
         serverConfigId: String,
         ssoId: SsoId?,
         authTokens: AuthTokens
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
-                idMapper.toDaoModel(userId),
+                idMapper.toDaoModel(authTokens.userId),
                 sessionMapper.toSsoIdEntity(ssoId),
                 serverConfigId
             )
