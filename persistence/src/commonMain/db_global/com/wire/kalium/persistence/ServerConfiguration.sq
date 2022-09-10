@@ -42,3 +42,6 @@ SELECT * FROM ServerConfiguration WHERE id = ?;
 
 getByLinks:
 SELECT * FROM ServerConfiguration WHERE title = ? AND apiBaseUrl = ? AND webSocketBaseUrl = ?;
+
+getByUser:
+SELECT * FROM ServerConfiguration WHERE id = (SELECT serverConfigId FROM Accounts WHERE id = :userId LIMIT 1);

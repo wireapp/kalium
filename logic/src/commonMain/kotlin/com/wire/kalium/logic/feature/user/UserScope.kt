@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -37,6 +38,7 @@ class UserScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val sessionRepository: SessionRepository,
+    private val serverConfigRepository: Lazy<ServerConfigRepository>,
     private val selfUserId: UserId,
     private val metadataDAO: MetadataDAO
 ) {
@@ -73,7 +75,7 @@ class UserScope internal constructor(
             selfUserId = selfUserId,
             sessionRepository = sessionRepository
         )
-    val serverLinks get() = SelfServerConfigUseCase(sessionRepository, selfUserId)
+    val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository.value)
 
     val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
 }

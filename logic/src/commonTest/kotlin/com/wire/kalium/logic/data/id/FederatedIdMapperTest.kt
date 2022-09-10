@@ -34,7 +34,7 @@ class FederatedIdMapperTest {
     @BeforeTest
     fun setUp() {
         federatedIdMapper =
-            FederatedIdMapperImpl(selfUserId, qualifiedIdMapper, sessionRepository, serverConfigRepository)
+            FederatedIdMapperImpl(selfUserId, qualifiedIdMapper, sessionRepository)
 
         given(qualifiedIdMapper).invocation { qualifiedIdMapper.fromStringToQualifiedID(qualifiedId) }
             .then { QualifiedID("aaa-bbb-ccc", "wire.com") }

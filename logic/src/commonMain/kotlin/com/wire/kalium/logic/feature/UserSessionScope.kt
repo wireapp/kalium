@@ -568,8 +568,9 @@ abstract class UserSessionScopeCommon internal constructor(
             connectionRepository,
             qualifiedIdMapper,
             sessionRepository,
+            serverConfigRepository,
             userId,
-            userDatabaseProvider.metadataDAO
+            userDatabaseProvider.metadataDAO,
         )
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
