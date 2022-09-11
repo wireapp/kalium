@@ -100,9 +100,9 @@ interface MessageRepository {
 class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
-    internal val messageDAO: MessageDAO,
-    internal val messageMapper: MessageMapper = MapperProvider.messageMapper(),
-    internal val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val messageDAO: MessageDAO,
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(),
