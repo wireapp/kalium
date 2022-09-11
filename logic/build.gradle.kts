@@ -48,8 +48,6 @@ kotlin {
                 api(project(":calling"))
                 implementation(project(":util"))
 
-                implementation(Dependencies.Android.paging3)
-
                 // coroutines
                 implementation(Dependencies.Coroutines.core) {
                     version {

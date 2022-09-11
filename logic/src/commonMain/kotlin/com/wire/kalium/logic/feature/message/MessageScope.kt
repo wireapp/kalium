@@ -40,7 +40,7 @@ class MessageScope internal constructor(
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
     private val syncManager: SyncManager,
-    internal val slowSyncRepository: SlowSyncRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
     private val kaliumFileSystem: KaliumFileSystem
