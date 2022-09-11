@@ -24,7 +24,6 @@ package com.wire.kalium.persistence.paging
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import app.cash.sqldelight.Query
 import app.cash.sqldelight.Transacter
