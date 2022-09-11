@@ -23,6 +23,8 @@ internal class OffsetQueryPagingSource<RowType : Any>(
 
     override val jumpingSupported get() = true
 
+    // Nothing we can do about the exception :shrug:
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun load(
         params: LoadParams<Long>
     ): LoadResult<Long, RowType> = withContext(dispatcher) {

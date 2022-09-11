@@ -6,7 +6,6 @@ import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
-import com.wire.kalium.persistence.dao.message.MessageMapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -58,6 +57,10 @@ private const val MLS_DEFAULT_EPOCH = 0L
 private const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE = 0L
 private val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 
+// TODO: Refactor. We can split this into smaller DAOs.
+//       For example, one for Members, one for Protocol/MLS-related things, etc.
+//       Even if they operate on the same table underneath, these DAOs can represent/do different things.
+@Suppress("TooManyFunctions")
 class ConversationDAOImpl(
     private val conversationQueries: ConversationsQueries,
     private val userQueries: UsersQueries,

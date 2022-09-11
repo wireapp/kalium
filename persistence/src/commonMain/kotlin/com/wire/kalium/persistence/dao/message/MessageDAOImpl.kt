@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.sqldelight.Query
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrDefault
@@ -165,7 +164,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         queries.selectById(id, conversationId)
             .asFlow()
             .mapToOneOrNull()
-            .flatMapLatest { it?.let{ mapper.toMessageEntityFlow(it) } ?: flowOf(null) }
+            .flatMapLatest { it?.let { mapper.toMessageEntityFlow(it) } ?: flowOf(null) }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,

@@ -9,7 +9,6 @@ import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
-import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
@@ -24,7 +23,7 @@ class MessageMapper(private val queries: MessagesQueries) {
 
     private val defaultMessageEntityContent = MessageEntityContent.Text("")
 
-    fun toModel(msg: Message, content: MessageEntityContent): MessageEntity = when (content) {
+    private fun toModel(msg: Message, content: MessageEntityContent): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
             id = msg.id,
@@ -48,7 +47,7 @@ class MessageMapper(private val queries: MessagesQueries) {
         )
     }
 
-    fun toModel(content: MessageTextContent, mentions: List<MessageMention>) = MessageEntityContent.Text(
+    private fun toModel(content: MessageTextContent, mentions: List<MessageMention>) = MessageEntityContent.Text(
         messageBody = content.text_body ?: "",
         mentions = mentions.map {
             MessageEntity.Mention(
@@ -59,11 +58,11 @@ class MessageMapper(private val queries: MessagesQueries) {
         }
     )
 
-    fun toModel(content: MessageRestrictedAssetContent) = MessageEntityContent.RestrictedAsset(
+    private fun toModel(content: MessageRestrictedAssetContent) = MessageEntityContent.RestrictedAsset(
         content.asset_mime_type, content.asset_size, content.asset_name
     )
 
-    fun toModel(content: MessageAssetContent) = MessageEntityContent.Asset(
+    private fun toModel(content: MessageAssetContent) = MessageEntityContent.Asset(
         assetSizeInBytes = content.asset_size,
         assetName = content.asset_name,
         assetMimeType = content.asset_mime_type,
@@ -80,26 +79,23 @@ class MessageMapper(private val queries: MessagesQueries) {
         assetNormalizedLoudness = content.asset_normalized_loudness,
     )
 
-    fun toModel(content: MessageMemberChangeContent) = MessageEntityContent.MemberChange(
+    private fun toModel(content: MessageMemberChangeContent) = MessageEntityContent.MemberChange(
         memberUserIdList = content.member_change_list,
         memberChangeType = content.member_change_type
     )
 
-    fun toModel(content: MessageUnknownContent) = MessageEntityContent.Unknown(
+    private fun toModel(content: MessageUnknownContent) = MessageEntityContent.Unknown(
         typeName = content.unknown_type_name,
         encodedData = content.unknown_encoded_data
     )
 
-    fun toModel(content: MessageFailedToDecryptContent) = MessageEntityContent.FailedDecryption(
+    private fun toModel(content: MessageFailedToDecryptContent) = MessageEntityContent.FailedDecryption(
         encodedData = content.unknown_encoded_data
     )
-
-    fun toModel(content: MessageMissedCallContent) = MessageEntityContent.MissedCall
 
     private fun mapEditStatus(lastEditTimestamp: String?) =
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
-
 
     private fun <T : Any> Message.queryOneOrDefault(
         query: (String, QualifiedIDEntity) -> Query<T>,
@@ -115,24 +111,24 @@ class MessageMapper(private val queries: MessagesQueries) {
     ): Flow<MessageEntityContent> =
         query(this.id, this.conversation_id).asFlow().mapToOneOrNull().map { it?.let(mapper) ?: default }
 
-
     fun toMessageEntityFlow(message: Message) = message.run {
         when (this.content_type) {
             MessageEntity.ContentType.TEXT -> queries.selectMessageTextContent(this.id, this.conversation_id).asFlow().mapToOneOrNull()
                 .combine(queries.selectMessageMentions(this.id, this.conversation_id).asFlow().mapToList()) { content, mentions ->
                     content?.let { toModel(content, mentions) } ?: defaultMessageEntityContent
                 }
-
             MessageEntity.ContentType.ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageAssetContent, ::toModel)
             MessageEntity.ContentType.KNOCK -> flowOf(MessageEntityContent.Knock(false))
             MessageEntity.ContentType.MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, ::toModel)
-            MessageEntity.ContentType.MISSED_CALL -> this.queryOneOrDefaultFlow(queries::selectMessageMissedCallContent, ::toModel)
+            MessageEntity.ContentType.MISSED_CALL -> this.queryOneOrDefaultFlow(
+                queries::selectMessageMissedCallContent,
+                { MessageEntityContent.MissedCall }
+            )
             MessageEntity.ContentType.UNKNOWN -> this.queryOneOrDefaultFlow(queries::selectMessageUnknownContent, ::toModel)
             MessageEntity.ContentType.FAILED_DECRYPTION -> this.queryOneOrDefaultFlow(
                 queries::selectFailedDecryptionMessageContent,
                 ::toModel
             )
-
             MessageEntity.ContentType.RESTRICTED_ASSET -> this.queryOneOrDefaultFlow(
                 queries::selectMessageRestrictedAssetContent,
                 ::toModel
@@ -142,10 +138,7 @@ class MessageMapper(private val queries: MessagesQueries) {
 
     fun toMessageEntity(message: Message) = message.run {
         when (this.content_type) {
-            MessageEntity.ContentType.TEXT -> queries.selectMessageTextContent(this.id, this.conversation_id).executeAsOneOrNull()
-                .let { it to queries.selectMessageMentions(this.id, this.conversation_id).executeAsList() }
-                .let { (content, mentions) -> content?.let { toModel(content, mentions) } ?: defaultMessageEntityContent }
-
+            MessageEntity.ContentType.TEXT -> fetchTextContent()
             MessageEntity.ContentType.ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, ::toModel)
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
             MessageEntity.ContentType.MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, ::toModel)
@@ -155,4 +148,9 @@ class MessageMapper(private val queries: MessagesQueries) {
             MessageEntity.ContentType.RESTRICTED_ASSET -> this.queryOneOrDefault(queries::selectMessageRestrictedAssetContent, ::toModel)
         }.let { toModel(this, it) }
     }
+
+    private fun Message.fetchTextContent(): MessageEntityContent.Text =
+        queries.selectMessageTextContent(this.id, this.conversation_id).executeAsOneOrNull()
+            .let { it to queries.selectMessageMentions(this.id, this.conversation_id).executeAsList() }
+            .let { (content, mentions) -> content?.let { toModel(content, mentions) } ?: defaultMessageEntityContent }
 }
