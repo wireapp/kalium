@@ -58,7 +58,7 @@ actual class UserDatabaseProvider(
 ) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
-    private val database: UserDatabase
+    internal val database: UserDatabase
 
     init {
         val onConnectCallback = object : AndroidSqliteDriver.Callback(UserDatabase.Schema) {
