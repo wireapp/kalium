@@ -142,7 +142,9 @@ class MessageMapper(private val queries: MessagesQueries) {
             MessageEntity.ContentType.ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, ::toModel)
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
             MessageEntity.ContentType.MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, ::toModel)
-            MessageEntity.ContentType.MISSED_CALL -> this.queryOneOrDefault(queries::selectMessageMissedCallContent, ::toModel)
+            MessageEntity.ContentType.MISSED_CALL -> this.queryOneOrDefault(queries::selectMessageMissedCallContent, {
+                MessageEntityContent.MissedCall
+            })
             MessageEntity.ContentType.UNKNOWN -> this.queryOneOrDefault(queries::selectMessageUnknownContent, ::toModel)
             MessageEntity.ContentType.FAILED_DECRYPTION -> this.queryOneOrDefault(queries::selectFailedDecryptionMessageContent, ::toModel)
             MessageEntity.ContentType.RESTRICTED_ASSET -> this.queryOneOrDefault(queries::selectMessageRestrictedAssetContent, ::toModel)
