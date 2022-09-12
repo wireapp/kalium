@@ -37,6 +37,15 @@ internal class ClientDAOImpl(private val clientsQueries: ClientsQueries) : Clien
             .executeAsList()
             .map(mapper::toModel)
 
+    override suspend fun getClientsOfUsersByQualifiedIDs(ids: List<QualifiedIDEntity>): Map<QualifiedIDEntity, List<Client>> =
+        clientsQueries.transactionWithResult {
+            ids.associateWith { qualifiedID ->
+                clientsQueries.selectAllClientsByUserId(qualifiedID)
+                    .executeAsList()
+                    .map(mapper::toModel)
+            }
+        }
+
     override suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): Unit =
         clientsQueries.deleteClientsOfUser(qualifiedID)
 

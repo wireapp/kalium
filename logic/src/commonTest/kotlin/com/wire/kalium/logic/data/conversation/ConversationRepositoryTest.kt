@@ -40,6 +40,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -93,7 +94,7 @@ class ConversationRepositoryTest {
     private val conversationApi = mock(ConversationApi::class)
 
     @Mock
-    private val clientApi = mock(ClientApi::class)
+    private val clientDao = mock(ClientDAO::class)
 
     @Mock
     private val timeParser: TimeParser = mock(TimeParser::class)
@@ -108,7 +109,7 @@ class ConversationRepositoryTest {
             conversationDAO,
             conversationApi,
             messageDAO,
-            clientApi,
+            clientDao,
             timeParser
         )
     }
@@ -1386,7 +1387,7 @@ class ConversationRepositoryTest {
         val conversationApi: ConversationApi = mock(ConversationApi::class)
 
         @Mock
-        val clientApi: ClientApi = mock(ClientApi::class)
+        val clientDao: ClientDAO = mock(ClientDAO::class)
 
         @Mock
         private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
@@ -1401,7 +1402,7 @@ class ConversationRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 messageDAO,
-                clientApi,
+                clientDao,
                 timeParser,
             )
 
