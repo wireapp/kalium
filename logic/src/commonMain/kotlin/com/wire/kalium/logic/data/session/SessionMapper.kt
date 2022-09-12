@@ -22,8 +22,6 @@ interface SessionMapper {
     fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
-    // fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession
-    // fun toPersistenceSession(authSession: AuthSession, ssoId: SsoId?): AuthSessionEntity
 }
 
 internal class SessionMapperImpl(
@@ -95,52 +93,4 @@ internal class SessionMapperImpl(
             LogoutReasonEntity.DELETED_ACCOUNT -> LogoutReason.DELETED_ACCOUNT
             LogoutReasonEntity.SESSION_EXPIRED -> LogoutReason.SESSION_EXPIRED
         }
-
-    /*
-    override fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession =
-        when (authSessionEntity) {
-            is AuthSessionEntity.Valid -> AuthSession(
-                AuthSession.Session.Valid(
-                    userId = idMapper.fromDaoModel(authSessionEntity.userId),
-                    accessToken = authSessionEntity.accessToken,
-                    refreshToken = authSessionEntity.refreshToken,
-                    tokenType = authSessionEntity.tokenType,
-                ),
-                serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
-            )
-
-            is AuthSessionEntity.Invalid -> {
-                AuthSession(
-                    AuthSession.Session.Invalid(
-                        userId = idMapper.fromDaoModel(authSessionEntity.userId),
-                        reason = LogoutReason.values()[authSessionEntity.reason.ordinal],
-                        authSessionEntity.hardLogout
-                    ),
-                    serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
-                )
-            }
-        }
-    override fun toPersistenceSession(authSession: AuthSession, ssoId: SsoId?): AuthSessionEntity =
-        when (authSession.session) {
-            is AuthSession.Session.Valid -> AuthSessionEntity.Valid(
-                userId = idMapper.toDaoModel(authSession.session.userId),
-                accessToken = authSession.session.accessToken,
-                refreshToken = authSession.session.refreshToken,
-                tokenType = authSession.session.tokenType,
-                serverLinks = serverConfigMapper.toEntity(authSession.serverLinks),
-                ssoId = idMapper.toSsoIdEntity(ssoId)
-
-            )
-
-            is AuthSession.Session.Invalid -> {
-                AuthSessionEntity.Invalid(
-                    userId = idMapper.toDaoModel(authSession.session.userId),
-                    serverLinks = serverConfigMapper.toEntity(authSession.serverLinks),
-                    reason = com.wire.kalium.persistence.model.LogoutReason.values()[authSession.session.reason.ordinal],
-                    hardLogout = authSession.session.hardLogout,
-                    ssoId = idMapper.toSsoIdEntity(ssoId)
-                )
-            }
-        }
-     */
 }

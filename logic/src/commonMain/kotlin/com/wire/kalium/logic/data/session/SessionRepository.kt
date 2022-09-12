@@ -84,10 +84,11 @@ internal class SessionDataSource(
         wrapStorageRequest { accountsDAO.allValidAccountList() }
             .map { it.map { AccountInfo.Valid(idMapper.fromDaoModel(it.userIDEntity)) } }
 
+    // TODO: .wrapStorageRequest()
     override suspend fun allValidSessionsFlow(): Flow<List<AccountInfo>> =
         accountsDAO.observerValidAccountList()
             .map { it.map { AccountInfo.Valid(idMapper.fromDaoModel(it.userIDEntity)) } }
-    //.wrapStorageRequest()
+
 
     override suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
         wrapStorageRequest { accountsDAO.doesAccountExists(idMapper.toDaoModel(userId)) }
