@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
@@ -34,12 +35,12 @@ internal interface SearchUserRepository {
     suspend fun searchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): UserSearchResult
+    ): Flow<UserSearchResult>
 
     suspend fun searchKnownUsersByHandle(
         handle: String,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): UserSearchResult
+    ): Flow<UserSearchResult>
 
     suspend fun searchUserDirectory(
         searchQuery: String,
@@ -82,7 +83,7 @@ internal class SearchUserRepositoryImpl(
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
-    ): UserSearchResult =
+    ): Flow<UserSearchResult> =
         handeSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
@@ -102,7 +103,7 @@ internal class SearchUserRepositoryImpl(
     override suspend fun searchKnownUsersByHandle(
         handle: String,
         searchUsersOptions: SearchUsersOptions
-    ): UserSearchResult =
+    ): Flow<UserSearchResult> =
         handeSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
@@ -168,15 +169,17 @@ internal class SearchUserRepositoryImpl(
 
     private suspend fun handeSearchUsersOptions(
         localSearchUserOptions: SearchUsersOptions,
-        excluded: suspend (conversationId: ConversationId) -> List<UserEntity>,
-        default: suspend () -> List<UserEntity>
-    ): UserSearchResult {
-        val result = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
+        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserEntity>>,
+        default: suspend () -> Flow<List<UserEntity>>
+    ): Flow<UserSearchResult> {
+        val listFlow = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
             ConversationMemberExcludedOptions.None -> default()
             is ConversationMemberExcludedOptions.ConversationExcluded -> excluded(searchOptions.conversationId)
         }
 
-        return UserSearchResult(result.map(publicUserMapper::fromDaoModelToPublicUser))
+        return listFlow.map {
+            UserSearchResult(it.map(publicUserMapper::fromDaoModelToPublicUser))
+        }
     }
 
 }

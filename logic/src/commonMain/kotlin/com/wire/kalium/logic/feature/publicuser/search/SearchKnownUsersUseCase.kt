@@ -6,10 +6,15 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.UserRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 
 interface SearchKnownUsersUseCase {
-    suspend operator fun invoke(searchQuery: String, searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default): SearchUsersResult
+    suspend operator fun invoke(
+        searchQuery: String,
+        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
+    ): Flow<SearchUsersResult>
 }
 
 internal class SearchKnownUsersUseCaseImpl(
@@ -22,8 +27,8 @@ internal class SearchKnownUsersUseCaseImpl(
     override suspend fun invoke(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
-    ): SearchUsersResult {
-        val searchResult = if (isUserLookingForHandle(searchQuery)) {
+    ): Flow<SearchUsersResult> {
+        return if (isUserLookingForHandle(searchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
                 handle = searchQuery,
                 searchUsersOptions = searchUsersOptions
@@ -38,8 +43,7 @@ internal class SearchKnownUsersUseCaseImpl(
                 searchUsersOptions = searchUsersOptions
             )
         }
-
-        return SearchUsersResult.Success(excludeSelfUser(searchResult))
+            .map { SearchUsersResult.Success(excludeSelfUser(it)) }
     }
 
     private fun isUserLookingForHandle(searchQuery: String) = searchQuery.startsWith('@')

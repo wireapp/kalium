@@ -360,12 +360,12 @@ class SearchUserRepositoryTest {
             given(userDAO)
                 .suspendFunction(userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
                 .whenInvokedWith(anything(), anything())
-                .then { _, _ -> listOf() }
+                .then { _, _ -> flowOf(listOf()) }
 
             given(userDAO)
                 .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionStates)
                 .whenInvokedWith(anything(), anything())
-                .then { _, _ -> listOf() }
+                .then { _, _ -> flowOf(listOf()) }
 
             // when
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
@@ -395,12 +395,12 @@ class SearchUserRepositoryTest {
         given(userDAO)
             .suspendFunction(userDAO::getUserByHandleAndConnectionStates)
             .whenInvokedWith(anything(), anything())
-            .then { _, _ -> listOf() }
+            .then { _, _ -> flowOf(listOf()) }
 
         given(userDAO)
             .suspendFunction(userDAO::getUsersNotInConversationByHandle)
             .whenInvokedWith(anything(), anything())
-            .then { _, _ -> listOf() }
+            .then { _, _ -> flowOf(listOf()) }
 
         // when
         searchUserRepository.searchKnownUsersByHandle(

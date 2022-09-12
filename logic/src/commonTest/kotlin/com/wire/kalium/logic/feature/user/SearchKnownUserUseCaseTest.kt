@@ -25,6 +25,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -261,7 +262,7 @@ class SearchKnownUserUseCaseTest {
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(
-                    UserSearchResult(
+                    flowOf(UserSearchResult(
                         listOf(
                             OtherUser(
                                 id = QualifiedID(
@@ -283,7 +284,7 @@ class SearchKnownUserUseCaseTest {
                                 deleted = false
                             )
                         )
-                    )
+                    ))
                 )
 
             return this
@@ -326,11 +327,7 @@ class SearchKnownUserUseCaseTest {
                     if (searchQuery == null) any() else eq(searchQuery),
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
-                .thenReturn(
-                    UserSearchResult(
-                        otherUsers
-                    )
-                )
+                .thenReturn(flowOf(UserSearchResult(otherUsers)))
 
             return this
         }
