@@ -27,14 +27,15 @@ class GetOrRegisterClientUseCaseImpl(
                 {
                     if (it is CoreFailure.MissingClientRegistration) null
                     else RegisterClientResult.Failure.Generic(it)
-                }, { (currentClientId, listOfClients) ->
-                    val client = listOfClients.firstOrNull { it.id == currentClientId }
+                }, { (retainedClientId, listOfClients) ->
+                    val client = listOfClients.firstOrNull { it.id == retainedClientId }
                     if (client != null) {
                         clientRepository.persistClientId(client.id)
                         RegisterClientResult.Success(client)
                     } else {
                         clearClientData()
                         proteusClient.open()
+                        clientRepository.clearRetainedClientId()
                         null
                     }
                 }

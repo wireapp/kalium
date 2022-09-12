@@ -56,7 +56,7 @@ class ClientDataSource(
         wrapStorageRequest { clientRegistrationStorage.setRegisteredClientId(clientId.value) }
 
     override suspend fun clearCurrentClientId(): Either<CoreFailure, Unit> =
-        wrapStorageRequest { clientRegistrationStorage.setRegisteredClientId(null) }
+        wrapStorageRequest { clientRegistrationStorage.clearRegisteredClientId() }
 
     override suspend fun clearRetainedClientId(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.clearRetainedClientId() }
