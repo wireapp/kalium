@@ -220,18 +220,20 @@ class SearchKnownUserUseCaseTest {
             .arrange()
 
         // when
-        searchKnownUsersUseCase(
-            searchQuery = searchQuery,
-            searchUsersOptions = searchUsersOptions
-        ).test {
-            // then
-            val result = awaitItem()
-            assertIs<SearchUsersResult.Success>(result)
-            awaitComplete()
-            verify(arrangement.searchUserRepository)
-                .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-                .with(anything(), eq(searchUsersOptions))
-                .wasInvoked(exactly = once)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchKnownUsersUseCase(
+                searchQuery = searchQuery,
+                searchUsersOptions = searchUsersOptions
+            ).test {
+                // then
+                val result = awaitItem()
+                assertIs<SearchUsersResult.Success>(result)
+                awaitComplete()
+                verify(arrangement.searchUserRepository)
+                    .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+                    .with(anything(), eq(searchUsersOptions))
+                    .wasInvoked(exactly = once)
+            }
         }
 
     }
@@ -281,29 +283,31 @@ class SearchKnownUserUseCaseTest {
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(
-                    flowOf(UserSearchResult(
-                        listOf(
-                            OtherUser(
-                                id = QualifiedID(
-                                    value = "someValue",
-                                    domain = "someDomain",
-                                ),
-                                name = null,
-                                handle = null,
-                                email = null,
-                                phone = null,
-                                accentId = 0,
-                                teamId = null,
-                                connectionStatus = ConnectionState.ACCEPTED,
-                                previewPicture = null,
-                                completePicture = null,
-                                availabilityStatus = UserAvailabilityStatus.NONE,
-                                userType = UserType.EXTERNAL,
-                                botService = null,
-                                deleted = false
+                    flowOf(
+                        UserSearchResult(
+                            listOf(
+                                OtherUser(
+                                    id = QualifiedID(
+                                        value = "someValue",
+                                        domain = "someDomain",
+                                    ),
+                                    name = null,
+                                    handle = null,
+                                    email = null,
+                                    phone = null,
+                                    accentId = 0,
+                                    teamId = null,
+                                    connectionStatus = ConnectionState.ACCEPTED,
+                                    previewPicture = null,
+                                    completePicture = null,
+                                    availabilityStatus = UserAvailabilityStatus.NONE,
+                                    userType = UserType.EXTERNAL,
+                                    botService = null,
+                                    deleted = false
+                                )
                             )
                         )
-                    ))
+                    )
                 )
 
             return this
