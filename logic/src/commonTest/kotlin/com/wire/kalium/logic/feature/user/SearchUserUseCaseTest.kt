@@ -97,7 +97,7 @@ class SearchUserUseCaseTest {
                 val actual = awaitItem()
                 assertIs<SearchUsersResult.Success>(actual)
                 assertContentEquals(expected.value.result, actual.userSearchResult.result)
-                cancelAndIgnoreRemainingEvents()
+                awaitComplete()
             }
         }
     }
@@ -126,7 +126,7 @@ class SearchUserUseCaseTest {
                     actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
                     ConnectionState.PENDING
                 )
-                cancelAndIgnoreRemainingEvents()
+                awaitComplete()
             }
         }
 
@@ -148,7 +148,7 @@ class SearchUserUseCaseTest {
                 val actual = awaitItem()
                 assertIs<SearchUsersResult.Success>(actual)
                 assertEquals(expected.value, actual.userSearchResult)
-                cancelAndIgnoreRemainingEvents()
+                awaitComplete()
             }
         }
 
@@ -168,7 +168,7 @@ class SearchUserUseCaseTest {
             searchPublicUsersUseCase(TEST_QUERY).test {
                 // then
                 assertIs<SearchUsersResult.Failure.InvalidQuery>(awaitItem())
-                cancelAndIgnoreRemainingEvents()
+                awaitComplete()
             }
         }
     }
@@ -190,7 +190,7 @@ class SearchUserUseCaseTest {
                     .suspendFunction(searchUserRepository::searchUserDirectory)
                     .with(anything(), anything(), anything(), eq(SearchUsersOptions.Default))
                     .wasInvoked(Times(1))
-                cancelAndIgnoreRemainingEvents()
+                awaitComplete()
             }
         }
     }
@@ -227,7 +227,7 @@ class SearchUserUseCaseTest {
                     .suspendFunction(searchUserRepository::searchUserDirectory)
                     .with(anything(), anything(), anything(), eq(givenSearchUsersOptions))
                     .wasInvoked(Times(1))
-                cancelAndIgnoreRemainingEvents()
+                awaitComplete()
             }
         }
     }

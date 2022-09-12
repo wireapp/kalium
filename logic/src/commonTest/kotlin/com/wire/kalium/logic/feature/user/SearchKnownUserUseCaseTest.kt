@@ -149,7 +149,7 @@ class SearchKnownUserUseCaseTest {
                 val result = awaitItem()
                 assertIs<SearchUsersResult.Success>(result)
                 assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
-                cancelAndIgnoreRemainingEvents()
+                awaitComplete()
             }
         }
 
@@ -191,7 +191,7 @@ class SearchKnownUserUseCaseTest {
                     .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
                     .with(anything(), eq(searchUsersOptions))
                     .wasInvoked(exactly = once)
-                cancelAndIgnoreRemainingEvents()
+                awaitComplete()
             }
         }
 
