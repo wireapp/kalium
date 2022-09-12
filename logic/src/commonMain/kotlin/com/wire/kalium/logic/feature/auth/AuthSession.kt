@@ -18,15 +18,15 @@ sealed class AccountInfo {
     ) : AccountInfo()
 }
 
-data class Account (
+data class Account(
     val info: AccountInfo,
-     val serverConfig: ServerConfig,
-     val ssoId: SsoId?
+    val serverConfig: ServerConfig,
+    val ssoId: SsoId?
 )
 
 data class AuthTokens(
+    val userId: UserId,
     val accessToken: String,
     val refreshToken: String,
-    val tokenType: String,
-    val userId: UserId
+    val tokenType: String
 )

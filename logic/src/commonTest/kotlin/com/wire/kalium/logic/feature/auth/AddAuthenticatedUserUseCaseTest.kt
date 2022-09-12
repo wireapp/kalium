@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
@@ -25,34 +26,44 @@ class AddAuthenticatedUserUseCaseTest {
 
     @Mock
     private val sessionRepository = mock(classOf<SessionRepository>())
+
+    @Mock
+    private val serverConfigRepository = mock(ServerConfigRepository::class)
     private lateinit var addAuthenticatedUserUseCase: AddAuthenticatedUserUseCase
 
     @BeforeTest
     fun setup() {
-        addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository)
+        addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
     }
 
     @Test
     fun givenUserWithNoAlreadyStoredSession_whenInvoked_thenSuccessIsReturned() = runTest {
-        val session = TEST_SESSION
-        given(sessionRepository).invocation { doesSessionExist(session.session.userId) }.then { Either.Right(false) }
+        val tokens = TEST_AUTH_TOKENS
+        given(sessionRepository).coroutine { doesSessionExist(tokens.userId) }.then { Either.Right(false) }
 
-        given(sessionRepository).invocation { storeSession(session, TEST_SSO_ID) }.then { Either.Right(Unit) }
-        given(sessionRepository).invocation { updateCurrentSession(session.session.userId) }.then { Either.Right(Unit) }
+        given(sessionRepository).coroutine { storeSession(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens) }.then { Either.Right(Unit) }
+        given(sessionRepository).coroutine { updateCurrentSession(tokens.userId) }.then { Either.Right(Unit) }
 
-        val actual = addAuthenticatedUserUseCase(session, TEST_SSO_ID, false)
+        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens,false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
-        verify(sessionRepository).invocation { storeSession(session, TEST_SSO_ID) }.wasInvoked(exactly = once)
-        verify(sessionRepository).invocation { updateCurrentSession(session.session.userId) }.wasInvoked(exactly = once)
+        verify(sessionRepository)
+            .suspendFunction(sessionRepository::storeSession)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(sessionRepository)
+            .suspendFunction(sessionRepository::updateCurrentSession)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserWithAlreadyStoredSession_whenInvoked_thenUserAlreadyExistsIsReturned() = runTest {
-        val session = TEST_SESSION
-        given(sessionRepository).invocation { doesSessionExist(session.session.userId) }.then { Either.Right(true) }
-        given(sessionRepository).invocation { userSession(session.session.userId) }.then { Either.Left(StorageFailure.DataNotFound) }
+        val tokens = TEST_AUTH_TOKENS
+        given(sessionRepository).coroutine { doesSessionExist(session.session.userId) }.then { Either.Right(true) }
+        given(sessionRepository).invocation { (session.session.userId) }.then { Either.Left(StorageFailure.DataNotFound) }
 
         val actual = addAuthenticatedUserUseCase(session, TEST_SSO_ID, false)
 
@@ -94,23 +105,14 @@ class AddAuthenticatedUserUseCaseTest {
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
-        verify(sessionRepository).function(sessionRepository::storeSession).with(any(), any()).wasNotInvoked()
-        verify(sessionRepository).function(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
+        verify(sessionRepository).suspendFunction(sessionRepository::storeSession).with(any(), any(), any()).wasNotInvoked()
+        verify(sessionRepository).suspendFunction(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
     }
 
     private companion object {
         val TEST_USERID = UserId("user_id", "domain.de")
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-        val TEST_SESSION =
-            AuthSession(
-                AuthSession.Session.Valid(
-                    userId = TEST_USERID,
-                    accessToken = "access_token",
-                    refreshToken = "refresh_token",
-                    tokenType = "token_type",
-                ),
-                TEST_SERVER_CONFIG.links
-            )
+        val TEST_AUTH_TOKENS = AuthTokens(TEST_USERID, "access-token", "refresh-token", "type")
         val TEST_SSO_ID = SsoId(
             "scim",
             null,

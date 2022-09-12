@@ -29,16 +29,12 @@ class AddAuthenticatedUserUseCase internal constructor(
         sessionRepository.doesSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
-            }, {
-                when (it) {
+            }, { doesValidSessionExist ->
+                when (doesValidSessionExist) {
                     true -> {
-                        val forceReplace = sessionRepository.doesSessionExist(authTokens.userId).fold(
-                            { replace },
-                            { doesValidSessionExist -> (doesValidSessionExist || replace) }
-                        )
+                        val forceReplace = (doesValidSessionExist || replace)
                         onUserExist(serverConfigId, ssoId, authTokens, forceReplace)
                     }
-
                     false -> storeUser(serverConfigId, ssoId, authTokens)
                 }
             }
