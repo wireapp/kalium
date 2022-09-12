@@ -66,7 +66,7 @@ class RegisterAccountUseCase internal constructor(
         }
     }.flatMap { registerResult ->
         serverConfigRepository.configByLinks(serverLinks)
-            .map { Triple(registerResult.second, registerResult.first, it.id) }
+            .map { RegisterResult.Success(registerResult.second, registerResult.first, it.id) }
     }.fold({
         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
             handleSpecialErrors(it.kaliumException)
@@ -74,7 +74,7 @@ class RegisterAccountUseCase internal constructor(
             RegisterResult.Failure.Generic(it)
         }
     }, {
-        RegisterResult.Success(it)
+        it
     })
 
     private fun handleSpecialErrors(error: KaliumException.InvalidRequestError) = with(error) {
@@ -92,8 +92,10 @@ class RegisterAccountUseCase internal constructor(
 }
 
 sealed class RegisterResult {
-    class Success(
-        val authData: Triple<AuthTokens, SsoId?, String>
+    data class Success(
+        val authData: AuthTokens,
+        val ssoID: SsoId?,
+        val serverConfigId: String
     ) : RegisterResult()
 
     sealed class Failure : RegisterResult() {

@@ -24,9 +24,6 @@ actual class CoreLogic(
 ) : CoreLogicCommon(
     clientLabel = clientLabel, rootPath = rootPath, kaliumConfigs = kaliumConfigs
 ) {
-    override fun getSessionRepo(): SessionRepository {
-        return SessionDataSource(globalDatabase.value.accountsDAO, TODO(), TODO())
-    }
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
         KaliumPreferencesSettings(
@@ -50,7 +47,6 @@ actual class CoreLogic(
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
             UserSessionScopeProviderImpl(
                 rootPath,
-                sessionRepository,
                 getGlobalScope(),
                 kaliumConfigs,
                 globalPreferences.value,

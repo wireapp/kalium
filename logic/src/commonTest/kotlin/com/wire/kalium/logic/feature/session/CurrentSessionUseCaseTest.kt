@@ -4,6 +4,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
@@ -35,14 +36,14 @@ class CurrentSessionUseCaseTest {
 
     @Test
     fun givenAUserID_whenCurrentSessionSuccess_thenTheSuccessIsPropagated() = runTest {
-        val expected: AuthSession = randomAuthSession()
+        val expected: AccountInfo = TEST_Account_INFO
 
         given(sessionRepository).invocation { currentSession() }.then { Either.Right(expected) }
 
         val actual = currentSessionUseCase()
 
         assertIs<CurrentSessionResult.Success>(actual)
-        assertEquals(expected, actual.authSession)
+        assertEquals(expected, actual.accountInfo)
 
         verify(sessionRepository).invocation { currentSession() }.wasInvoked(exactly = once)
     }
@@ -62,13 +63,6 @@ class CurrentSessionUseCaseTest {
 
 
     private companion object {
-        val randomString get() = Random.nextBytes(64).decodeToString()
-        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-
-        fun randomAuthSession(): AuthSession =
-            AuthSession(
-                AuthSession.Session.Valid(UserId("user_id", "domain.de"), randomString, randomString, randomString),
-                TEST_SERVER_CONFIG.links
-            )
+        val TEST_Account_INFO = AccountInfo.Valid(userId = UserId("test", "domain"))
     }
 }

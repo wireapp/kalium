@@ -7,19 +7,19 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.persistence.client.TokenEntity
+import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.dao_kalium_db.AccountInfoEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 
 interface SessionMapper {
     fun toSessionDTO(authSession: AuthTokens): SessionDTO
-    fun fromEntityToSessionDTO(tokenEntity: TokenEntity): SessionDTO
+    fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO
     fun fromSessionDTO(sessionDTO: SessionDTO): AuthTokens
     fun fromAccountInfoEntity(accountInfoEntity: AccountInfoEntity): AccountInfo
     fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity
     fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
-    fun toAuthTokensEntity(authSession: AuthTokens): TokenEntity
+    fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     // fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession
@@ -40,7 +40,7 @@ internal class SessionMapperImpl(
         )
     }
 
-    override fun fromEntityToSessionDTO(tokenEntity: TokenEntity): SessionDTO = with(tokenEntity) {
+    override fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO = with(authTokenEntity) {
         SessionDTO(
             userId = idMapper.fromDaoToDto(userId),
             tokenType = tokenType,
@@ -78,7 +78,7 @@ internal class SessionMapperImpl(
     override fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity? =
         ssoId?.let { SsoIdEntity(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
 
-    override fun toAuthTokensEntity(authSession: AuthTokens): TokenEntity = TokenEntity(
+    override fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity = AuthTokenEntity(
         userId = idMapper.toDaoModel(authSession.userId),
         accessToken = authSession.accessToken,
         refreshToken = authSession.refreshToken,

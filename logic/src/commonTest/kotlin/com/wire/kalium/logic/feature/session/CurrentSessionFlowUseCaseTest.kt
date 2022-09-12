@@ -2,12 +2,10 @@ package com.wire.kalium.logic.feature.session
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -17,7 +15,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
-import kotlin.random.Random
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,14 +34,14 @@ class CurrentSessionFlowUseCaseTest {
 
     @Test
     fun givenAUserID_whenCurrentSessionFlowEmitsSuccess_thenTheSuccessIsPropagated() = runTest {
-        val expected: AuthSession = randomAuthSession()
+        val expected: AccountInfo = TEST_ACCOUNT_INFO
 
         given(sessionRepository).invocation { currentSessionFlow() }.then { flow { emit(Either.Right(expected)) } }
 
         currentSessionFlowUseCase().test {
             awaitItem().run {
                 assertIs<CurrentSessionResult.Success>(this)
-                assertEquals(expected, this.authSession)
+                assertEquals(expected, this.accountInfo)
             }
             awaitComplete()
         }
@@ -68,13 +65,8 @@ class CurrentSessionFlowUseCaseTest {
 
 
     private companion object {
-        val randomString get() = Random.nextBytes(64).decodeToString()
-        val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-
-        fun randomAuthSession(): AuthSession =
-            AuthSession(
-                AuthSession.Session.Valid(UserId("user_id", "domain.de"), randomString, randomString, randomString),
-                TEST_SERVER_CONFIG.links
-            )
+        val TEST_ACCOUNT_INFO: AccountInfo = AccountInfo.Valid(
+            userId = UserId("user_id", "domain")
+        )
     }
 }

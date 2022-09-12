@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
+import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
@@ -15,23 +16,23 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 actual class UserSessionScope internal constructor(
     userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
-    sessionRepository: SessionRepository,
     globalCallManager: GlobalCallManager,
     globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
     userSessionScopeProvider: UserSessionScopeProvider,
-    serverConfigRepository: Lazy<ServerConfigRepository>
+    serverConfigRepository: Lazy<ServerConfigRepository>,
+    globalScope: GlobalKaliumScope
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
-    sessionRepository,
     globalCallManager,
     globalPreferences,
     dataStoragePaths,
     kaliumConfigs,
     userSessionScopeProvider,
-    serverConfigRepository
+    serverConfigRepository,
+    globalScope
 ) {
     override val clientConfig: ClientConfig get() = ClientConfigImpl()
 

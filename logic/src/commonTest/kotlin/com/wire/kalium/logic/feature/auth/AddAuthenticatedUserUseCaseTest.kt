@@ -67,17 +67,17 @@ class AddAuthenticatedUserUseCaseTest {
         val oldSession =
             AuthSession(AuthSession.Session.Valid(TEST_USERID, "access-token", "refresh-token", "type"), TEST_SERVER_CONFIG.links)
         val newSession = TEST_SESSION
-        given(sessionRepository).invocation { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
+        given(sessionRepository).coroutine { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
         given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
-        given(sessionRepository).invocation { storeSession(newSession, TEST_SSO_ID) }.then { Either.Right(Unit) }
-        given(sessionRepository).invocation { updateCurrentSession(newSession.session.userId) }.then { Either.Right(Unit) }
+        given(sessionRepository).coroutine { storeSession(newSession, TEST_SSO_ID) }.then { Either.Right(Unit) }
+        given(sessionRepository).coroutine { updateCurrentSession(newSession.session.userId) }.then { Either.Right(Unit) }
 
         val actual = addAuthenticatedUserUseCase(newSession, TEST_SSO_ID, true)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
-        verify(sessionRepository).invocation { storeSession(newSession, TEST_SSO_ID) }.wasInvoked(exactly = once)
-        verify(sessionRepository).invocation { updateCurrentSession(newSession.session.userId) }.wasInvoked(exactly = once)
+        verify(sessionRepository).coroutine { storeSession(newSession, TEST_SSO_ID) }.wasInvoked(exactly = once)
+        verify(sessionRepository).coroutine { updateCurrentSession(newSession.session.userId) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -87,7 +87,7 @@ class AddAuthenticatedUserUseCaseTest {
             newServerConfig(999).links
         )
         val newSession = TEST_SESSION
-        given(sessionRepository).invocation { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
+        given(sessionRepository).coroutine { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
         given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
 
         val actual = addAuthenticatedUserUseCase(newSession, TEST_SSO_ID, true)

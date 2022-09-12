@@ -17,7 +17,9 @@ import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
     data class Success(
-        val authData: Triple<AuthTokens, SsoId?, String>
+        val authData: AuthTokens,
+        val ssoID:SsoId?,
+        val serverConfigId: String
     ) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
@@ -66,7 +68,7 @@ internal class LoginUseCaseImpl internal constructor(
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
         }.flatMap { loginResult ->
-            serverConfigRepository.configByLinks(serverLinks).map { Triple(loginResult.first, loginResult.second, it.id) }
+            serverConfigRepository.configByLinks(serverLinks).map { AuthenticationResult.Success(loginResult.first, loginResult.second, it.id) }
         }.fold({
                 when (it) {
                     is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
@@ -74,7 +76,7 @@ internal class LoginUseCaseImpl internal constructor(
                     else -> AuthenticationResult.Failure.Generic(it)
                 }
             }, {
-                AuthenticationResult.Success(it)
+                it
             })
     }
 

@@ -5,9 +5,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -63,7 +62,6 @@ class UserEventReceiverTest {
         val event = TestEvent.userDelete(userId = USER_ID)
         val (arrangement, eventReceiver) = Arrangement()
             .withLogoutUseCaseSucceed()
-            .withCurrentSessionReturns(USER_ID)
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -84,12 +82,9 @@ class UserEventReceiverTest {
         @Mock
         val logoutUseCase = mock(classOf<LogoutUseCase>())
 
-        @Mock
-        val sessionRepository: SessionRepository = mock(classOf<SessionRepository>())
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            connectionRepository, logoutUseCase, clientRepository, sessionRepository
-        )
+            connectionRepository, logoutUseCase, clientRepository, USER_ID)
 
         fun withCurrentClientIdIs(clientId: ClientId) = apply {
             given(clientRepository)
@@ -101,14 +96,6 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
-        }
-
-        fun withCurrentSessionReturns(userId: UserId) = apply {
-            given(sessionRepository).function(sessionRepository::currentSession).whenInvoked().thenReturn(
-                Either.Right(
-                    validAuthSessionWith(userId)
-                )
-            )
         }
 
         fun arrange() = this to userEventReceiver
@@ -123,15 +110,6 @@ class UserEventReceiverTest {
         val CLIENT_ID1 = ClientId("clientId1")
         val CLIENT_ID2 = ClientId("clientId2")
 
-        fun validAuthSessionWith(userId: UserId): AuthSession =
-            AuthSession(
-                AuthSession.Session.Valid(
-                    userId,
-                    randomString,
-                    randomString,
-                    randomString
-                ),
-                TEST_SERVER_CONFIG.links
-            )
+        fun validAuthSessionWith(userId: UserId): AccountInfo.Valid = AccountInfo.Valid(userId)
     }
 }

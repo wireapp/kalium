@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class TokenEntity(
+data class AuthTokenEntity(
     @SerialName("user_id") val userId: UserIDEntity,
     @SerialName("access_token") val accessToken: String,
     @SerialName("refresh_token") val refreshToken: String,
@@ -16,11 +16,11 @@ data class TokenEntity(
 class AuthTokenStorage(
     private val kaliumPreferences: KaliumPreferences
 ) {
-    fun addOrReplace(tokenEntity: TokenEntity) {
+    fun addOrReplace(authTokenEntity: AuthTokenEntity) {
         kaliumPreferences.putSerializable(
-            getTokenKey(tokenEntity.userId),
-            tokenEntity,
-            TokenEntity.serializer()
+            getTokenKey(authTokenEntity.userId),
+            authTokenEntity,
+            AuthTokenEntity.serializer()
         )
     }
 
@@ -29,12 +29,12 @@ class AuthTokenStorage(
         accessToken: String,
         tokenType: String,
         refreshToken: String?,
-    ): TokenEntity {
+    ): AuthTokenEntity {
         val key = getTokenKey(userId)
-        val newToken: TokenEntity = (refreshToken?.let {
-            TokenEntity(userId, accessToken, refreshToken, tokenType)
+        val newToken: AuthTokenEntity = (refreshToken?.let {
+            AuthTokenEntity(userId, accessToken, refreshToken, tokenType)
         } ?: run {
-            kaliumPreferences.getSerializable(key, TokenEntity.serializer())?.copy(
+            kaliumPreferences.getSerializable(key, AuthTokenEntity.serializer())?.copy(
                 accessToken = accessToken,
                 tokenType = tokenType
             )
@@ -43,16 +43,16 @@ class AuthTokenStorage(
         kaliumPreferences.putSerializable(
             key,
             newToken,
-            TokenEntity.serializer()
+            AuthTokenEntity.serializer()
         )
 
         return newToken
     }
 
-    fun getToken(userId: UserIDEntity): TokenEntity? {
+    fun getToken(userId: UserIDEntity): AuthTokenEntity? {
         return kaliumPreferences.getSerializable(
             getTokenKey(userId),
-            TokenEntity.serializer()
+            AuthTokenEntity.serializer()
         )
     }
 

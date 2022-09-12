@@ -18,6 +18,7 @@ class SelfServerConfigUseCase internal constructor(
         })
 
     sealed class Result {
+        // TODO: rename serverLinks to serverConfig
         data class Success(val serverLinks: ServerConfig) : Result()
         data class Failure(val cause: CoreFailure) : Result()
     }

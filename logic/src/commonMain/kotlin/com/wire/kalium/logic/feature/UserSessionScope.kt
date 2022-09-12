@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
+import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -164,13 +165,13 @@ expect class UserSessionScope : UserSessionScopeCommon
 abstract class UserSessionScopeCommon internal constructor(
     private val userId: QualifiedID,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
-    private val sessionRepository: SessionRepository,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val serverConfigRepository: Lazy<ServerConfigRepository>
+    private val serverConfigRepository: Lazy<ServerConfigRepository>,
+    private val globalScope: GlobalKaliumScope
 ) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
@@ -236,7 +237,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            sessionRepository
+            globalScope.sessionRepository
         )
 
     private val teamRepository: TeamRepository
@@ -438,7 +439,7 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = MapperProvider.federatedIdMapper(
             userId,
             qualifiedIdMapper,
-            sessionRepository
+            globalScope.sessionRepository
         )
 
     private val callManager: Lazy<CallManager> = lazy {
@@ -566,7 +567,7 @@ abstract class UserSessionScopeCommon internal constructor(
             teamRepository,
             connectionRepository,
             qualifiedIdMapper,
-            sessionRepository,
+            globalScope.sessionRepository,
             serverConfigRepository,
             userId,
             userDatabaseProvider.metadataDAO,
@@ -574,7 +575,7 @@ abstract class UserSessionScopeCommon internal constructor(
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,
-            sessionRepository,
+            globalScope.sessionRepository,
             userId,
             authenticatedDataSourceSet,
             clientRepository,

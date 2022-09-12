@@ -28,7 +28,6 @@ import java.io.File
 @Suppress("LongParameterList")
 actual class UserSessionScopeProviderImpl(
     private val rootPath: String,
-    private val sessionRepository: SessionRepository,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: KaliumPreferences,
@@ -44,7 +43,7 @@ actual class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         val networkContainer = AuthenticatedNetworkContainer(
-            SessionManagerImpl(sessionRepository, userId, tokenStorage = AuthTokenStorage(globalPreferences)),
+            SessionManagerImpl(globalScope.sessionRepository, userId, tokenStorage = AuthTokenStorage(globalPreferences)),
             ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )
@@ -75,14 +74,14 @@ actual class UserSessionScopeProviderImpl(
         return UserSessionScope(
             userId,
             userDataSource,
-            sessionRepository,
             globalCallManager,
             // TODO: make lazier
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
             this,
-            lazy { globalScope.serverConfigRepository }
+            lazy { globalScope.serverConfigRepository },
+            globalScope
         )
     }
 }

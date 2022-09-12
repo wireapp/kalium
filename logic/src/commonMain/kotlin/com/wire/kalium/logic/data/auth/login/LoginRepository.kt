@@ -11,7 +11,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.login.LoginApi
 
-interface LoginRepository {
+internal interface LoginRepository {
     suspend fun loginWithEmail(
         email: String,
         password: String,
@@ -25,7 +25,7 @@ interface LoginRepository {
     ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
 }
 
-class LoginRepositoryImpl(
+internal class LoginRepositoryImpl internal constructor(
     private val loginApi: LoginApi,
     private val clientLabel: String,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
