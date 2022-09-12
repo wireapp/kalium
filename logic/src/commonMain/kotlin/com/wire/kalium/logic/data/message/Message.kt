@@ -106,6 +106,29 @@ sealed class Message(
         data class Edited(val lastTimeStamp: String) : EditStatus()
     }
 
+    enum class UploadStatus {
+        /**
+         * There was no attempt done to upload the asset's data to remote (server) storage.
+         */
+        NOT_UPLOADED,
+
+        /**
+         * The asset is currently being uploaded and will be saved internally after a successful upload
+         * @see UPLOADED
+         */
+        IN_PROGRESS,
+
+        /**
+         * The asset was uploaded and saved in the internal storage, that should be only readable by this Kalium client.
+         */
+        UPLOADED,
+
+        /**
+         * The last attempt at uploading and saving this asset's data failed.
+         */
+        FAILED
+    }
+
     enum class DownloadStatus {
         /**
          * There was no attempt done to fetch the asset's data from remote (server) storage.

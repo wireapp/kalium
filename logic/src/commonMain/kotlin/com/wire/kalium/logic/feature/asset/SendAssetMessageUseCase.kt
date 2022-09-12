@@ -77,6 +77,39 @@ internal class SendAssetMessageUseCaseImpl(
 
         // Generate the otr asymmetric key that will be used to encrypt the data
         val otrKey = generateRandomAES256Key()
+        var message: Message = Message()
+
+        clientRepository.currentClientId().flatMap { currentClientId ->
+            // Get my current user
+            val selfUser = userRepository.observeSelfUser().first()
+
+            // Create a unique message ID
+            val generatedMessageUuid = uuid4().toString()
+
+            message = Message.Regular(
+                id = generatedMessageUuid,
+                content = MessageContent.Asset(
+                    provideAssetMessageContent(
+                        dataSize = assetDataSize,
+                        assetName = assetName,
+                        mimeType = assetMimeType,
+                        sha256 = ByteArray(0),
+                        otrKey = otrKey,
+                        assetId = UploadedAssetId(""),
+                        assetWidth = assetWidth,
+                        assetHeight = assetHeight,
+                    )
+                ),
+                conversationId = conversationId,
+                date = Clock.System.now().toString(),
+                senderUserId = selfUser.id,
+                senderClientId = currentClientId,
+                status = Message.Status.PENDING,
+                editStatus = Message.EditStatus.NotEdited
+            )
+            persistMessage(message).map { message }
+        }
+
 
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         return assetDataSource.uploadAndPersistPrivateAsset(
@@ -88,15 +121,8 @@ internal class SendAssetMessageUseCaseImpl(
 
             // Try to send the Asset Message
             prepareAndSendAssetMessage(
-                conversationId,
-                assetDataSize,
-                assetName,
-                assetMimeType,
-                sha256.data,
-                otrKey,
-                assetId,
-                assetWidth,
-                assetHeight
+                message ,
+                conversationId
             ).flatMap {
                 Either.Right(Unit)
             }
@@ -110,50 +136,13 @@ internal class SendAssetMessageUseCaseImpl(
 
     @Suppress("LongParameterList")
     private suspend fun prepareAndSendAssetMessage(
-        conversationId: ConversationId,
-        dataSize: Long,
-        assetName: String?,
-        assetMimeType: String,
-        sha256: ByteArray,
-        otrKey: AES256Key,
-        assetId: UploadedAssetId,
-        assetWidth: Int?,
-        assetHeight: Int?
-    ): Either<CoreFailure, Unit> = clientRepository.currentClientId().flatMap { currentClientId ->
-        // Get my current user
-        val selfUser = userRepository.observeSelfUser().first()
-
-        // Create a unique message ID
-        val generatedMessageUuid = uuid4().toString()
-
-        val message = Message.Regular(
-            id = generatedMessageUuid,
-            content = MessageContent.Asset(
-                provideAssetMessageContent(
-                    dataSize = dataSize,
-                    assetName = assetName,
-                    mimeType = assetMimeType,
-                    sha256 = sha256,
-                    otrKey = otrKey,
-                    assetId = assetId,
-                    assetWidth = assetWidth,
-                    assetHeight = assetHeight,
-                )
-            ),
-            conversationId = conversationId,
-            date = Clock.System.now().toString(),
-            senderUserId = selfUser.id,
-            senderClientId = currentClientId,
-            status = Message.Status.PENDING,
-            editStatus = Message.EditStatus.NotEdited
-        )
-        persistMessage(message).map { message }
-    }.flatMap { message ->
-        messageSender.sendPendingMessage(conversationId, message.id)
-    }.onFailure {
+        message: Message,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> =
+        messageSender.sendPendingMessage(conversationId, message.id).onFailure {
         kaliumLogger.e("There was an error when trying to send the asset on the conversation")
     }
-}
+
 
 @Suppress("LongParameterList")
 private fun provideAssetMessageContent(
@@ -183,6 +172,7 @@ private fun provideAssetMessageContent(
         assetDomain = assetId.domain,
         assetToken = assetId.assetToken
     ),
+    uploadStatus = Message.UploadStatus.IN_PROGRESS,
     // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
     // will only be treated as "SAVED_INTERNALLY"
     downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY

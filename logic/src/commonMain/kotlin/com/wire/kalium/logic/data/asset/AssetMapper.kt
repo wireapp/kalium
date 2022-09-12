@@ -32,6 +32,8 @@ interface AssetMapper {
     fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
+    fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus
+    fun fromUploadStatusEntityToLogicModel(uploadStatus: MessageEntity.UploadStatus?): Message.UploadStatus
 }
 
 class AssetMapperImpl(
@@ -90,6 +92,7 @@ class AssetMapperImpl(
                         else -> AES_CBC
                     }
                 ),
+                uploadStatus = fromUploadStatusEntityToLogicModel(assetUploadStatus),
                 downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus)
             )
         }
@@ -155,7 +158,8 @@ class AssetMapperImpl(
                         is Asset.Status.NotUploaded -> defaultRemoteData
                     }
                 } ?: defaultRemoteData,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
+                uploadStatus = Message.UploadStatus.UPLOADED
             )
         }
     }
@@ -187,6 +191,25 @@ class AssetMapperImpl(
                 )
             ),
         )
+    }
+
+    override fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus {
+        return when (uploadStatus) {
+            Message.UploadStatus.NOT_UPLOADED -> MessageEntity.UploadStatus.NOT_UPLOADED
+            Message.UploadStatus.IN_PROGRESS -> MessageEntity.UploadStatus.IN_PROGRESS
+            Message.UploadStatus.UPLOADED -> MessageEntity.UploadStatus.UPLOADED
+            Message.UploadStatus.FAILED -> MessageEntity.UploadStatus.FAILED
+        }
+    }
+
+    override fun fromUploadStatusEntityToLogicModel(uploadStatus: MessageEntity.UploadStatus?): Message.UploadStatus {
+        return when (uploadStatus) {
+            MessageEntity.UploadStatus.NOT_UPLOADED -> Message.UploadStatus.NOT_UPLOADED
+            MessageEntity.UploadStatus.IN_PROGRESS -> Message.UploadStatus.IN_PROGRESS
+            MessageEntity.UploadStatus.UPLOADED -> Message.UploadStatus.UPLOADED
+            MessageEntity.UploadStatus.FAILED -> Message.UploadStatus.FAILED
+            null -> Message.UploadStatus.NOT_UPLOADED
+        }
     }
 
     override fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus {

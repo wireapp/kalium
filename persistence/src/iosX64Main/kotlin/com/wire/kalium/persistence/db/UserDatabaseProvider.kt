@@ -103,6 +103,7 @@ actual class UserDatabaseProvider(
                 conversation_idAdapter = QualifiedIDAdapter,
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
+                asset_upload_statusAdapter = EnumColumnAdapter(),
                 asset_download_statusAdapter = EnumColumnAdapter(),
             ),
             MessageFailedToDecryptContent.Adapter(
