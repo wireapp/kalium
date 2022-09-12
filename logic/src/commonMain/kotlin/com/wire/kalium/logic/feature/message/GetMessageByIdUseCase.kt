@@ -7,14 +7,15 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 /**
  * Provides a way to get a full message using its [ConversationId] and message ID coordinates.
  */
-class GetMessageByIdUseCase(
+class GetMessageByIdUseCase internal constructor(
     private val messageRepository: MessageRepository,
-    private val dispatchers: KaliumDispatcher
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     suspend operator fun invoke(
