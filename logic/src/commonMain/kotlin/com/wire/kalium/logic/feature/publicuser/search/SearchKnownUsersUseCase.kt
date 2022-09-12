@@ -9,7 +9,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-
 interface SearchKnownUsersUseCase {
     suspend operator fun invoke(
         searchQuery: String,
