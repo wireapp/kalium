@@ -26,31 +26,25 @@ class GetMessageByIdUseCaseTest {
 
     @Test
     fun givenMessageAndConversationId_whenInvokingUseCase_thenShouldCallMessageRepository() = runTest(testDispatchers.io) {
-        val messageId = "messID"
-        val conversationId = TestConversation.ID
-
         val (arrangement, getMessageByIdUseCase) = Arrangement()
-            .withRepositoryMessageByIdReturning(conversationId, messageId, Either.Left(CoreFailure.Unknown(null)))
+            .withRepositoryMessageByIdReturning(CONVERSATION_ID, MESSAGE_ID, Either.Left(CoreFailure.Unknown(null)))
             .arrange()
 
-        getMessageByIdUseCase(conversationId, messageId)
+        getMessageByIdUseCase(CONVERSATION_ID, MESSAGE_ID)
 
         verify(arrangement.messageRepository)
-            .coroutine { arrangement.messageRepository.getMessageById(conversationId, messageId) }
+            .coroutine { arrangement.messageRepository.getMessageById(CONVERSATION_ID, MESSAGE_ID) }
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryFails_whenInvokingUseCase_thenShouldPropagateTheFailure() = runTest(testDispatchers.io) {
-        val messageId = "messID"
-        val conversationId = TestConversation.ID
-
         val cause = StorageFailure.DataNotFound
-        val (arrangement, getMessageByIdUseCase) = Arrangement()
-            .withRepositoryMessageByIdReturning(conversationId, messageId, Either.Left(cause))
+        val (_, getMessageByIdUseCase) = Arrangement()
+            .withRepositoryMessageByIdReturning(CONVERSATION_ID, MESSAGE_ID, Either.Left(cause))
             .arrange()
 
-        val result = getMessageByIdUseCase(conversationId, messageId)
+        val result = getMessageByIdUseCase(CONVERSATION_ID, MESSAGE_ID)
 
         assertIs<GetMessageByIdUseCase.Result.Failure>(result)
         assertEquals(cause, result.cause)
@@ -58,18 +52,14 @@ class GetMessageByIdUseCaseTest {
 
     @Test
     fun givenRepositorySucceeds_whenInvokingUseCase_thenShouldPropagateTheSuccess() = runTest(testDispatchers.io) {
-        val messageId = "messID"
-        val conversationId = TestConversation.ID
-        val message = TestMessage.TEXT_MESSAGE
-
-        val (arrangement, getMessageByIdUseCase) = Arrangement()
-            .withRepositoryMessageByIdReturning(conversationId, messageId, Either.Right(message))
+        val (_, getMessageByIdUseCase) = Arrangement()
+            .withRepositoryMessageByIdReturning(CONVERSATION_ID, MESSAGE_ID, Either.Right(MESSAGE))
             .arrange()
 
-        val result = getMessageByIdUseCase(conversationId, messageId)
+        val result = getMessageByIdUseCase(CONVERSATION_ID, MESSAGE_ID)
 
         assertIs<GetMessageByIdUseCase.Result.Success>(result)
-        assertEquals(message, result.message)
+        assertEquals(MESSAGE, result.message)
     }
 
     private inner class Arrangement {
@@ -92,5 +82,11 @@ class GetMessageByIdUseCaseTest {
         }
 
         fun arrange() = this to getMessageById
+    }
+
+    private companion object {
+        const val MESSAGE_ID = TestMessage.TEST_MESSAGE_ID
+        val MESSAGE = TestMessage.TEXT_MESSAGE
+        val CONVERSATION_ID = TestConversation.ID
     }
 }
