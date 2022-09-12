@@ -9,4 +9,4 @@ expect class MessageRepositoryExtensionsImpl(
     messageDAO: MessageDAO,
     idMapper: IdMapper,
     messageMapper: MessageMapper
-): MessageRepositoryExtensions
+) : MessageRepositoryExtensions

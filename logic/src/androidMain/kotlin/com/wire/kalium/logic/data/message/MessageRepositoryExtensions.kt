@@ -23,7 +23,7 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
     private val messageDAO: MessageDAO,
     private val idMapper: IdMapper,
     private val messageMapper: MessageMapper,
-): MessageRepositoryExtensions {
+) : MessageRepositoryExtensions {
 
     override suspend fun getPaginatedMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -36,7 +36,7 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
             pagingConfig
         )
 
-        return pager.pagingDataFlow.map{ pagingData: PagingData<MessageEntity> ->
+        return pager.pagingDataFlow.map { pagingData: PagingData<MessageEntity> ->
             pagingData.map(messageMapper::fromEntityToMessage)
         }
     }
