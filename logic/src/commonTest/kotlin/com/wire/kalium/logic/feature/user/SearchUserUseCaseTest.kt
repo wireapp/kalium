@@ -16,7 +16,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersResult
 import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCaseImpl
 import com.wire.kalium.logic.functional.Either
@@ -92,7 +92,7 @@ class SearchUserUseCaseTest {
         searchPublicUsersUseCase(TEST_QUERY).test {
             // then
             val actual = awaitItem()
-            assertIs<Result.Success>(actual)
+            assertIs<SearchUsersResult.Success>(actual)
             assertContentEquals(expected.value.result, actual.userSearchResult.result)
             awaitComplete()
         }
@@ -116,7 +116,7 @@ class SearchUserUseCaseTest {
         searchPublicUsersUseCase(TEST_QUERY).test {
             // then
             val actual = awaitItem()
-            assertIs<Result.Success>(actual)
+            assertIs<SearchUsersResult.Success>(actual)
             assertEquals(
                 actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
                 ConnectionState.PENDING
@@ -139,7 +139,7 @@ class SearchUserUseCaseTest {
         searchPublicUsersUseCase(TEST_QUERY_FEDERATED).test {
             // then
             val actual = awaitItem()
-            assertIs<Result.Success>(actual)
+            assertIs<SearchUsersResult.Success>(actual)
             assertEquals(expected.value, actual.userSearchResult)
             awaitComplete()
         }
@@ -158,7 +158,7 @@ class SearchUserUseCaseTest {
         // when
         searchPublicUsersUseCase(TEST_QUERY).test {
             // then
-            assertIs<Result.Failure.InvalidQuery>(awaitItem())
+            assertIs<SearchUsersResult.Failure.InvalidQuery>(awaitItem())
             awaitComplete()
         }
 

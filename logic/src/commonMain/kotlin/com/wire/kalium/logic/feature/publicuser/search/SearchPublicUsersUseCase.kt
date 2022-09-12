@@ -17,7 +17,7 @@ interface SearchPublicUsersUseCase {
         searchQuery: String,
         maxResultSize: Int? = null,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Flow<Result>
+    ): Flow<SearchUsersResult>
 }
 
 internal class SearchPublicUsersUseCaseImpl(
@@ -30,7 +30,7 @@ internal class SearchPublicUsersUseCaseImpl(
         searchQuery: String,
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
-    ): Flow<Result> {
+    ): Flow<SearchUsersResult> {
         val qualifiedID = qualifiedIdMapper.fromStringToQualifiedID(searchQuery)
 
         return connectionRepository.observeConnectionList()
@@ -43,12 +43,12 @@ internal class SearchPublicUsersUseCaseImpl(
                 ).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         when (it.kaliumException.errorResponse.code) {
-                            HttpStatusCode.BadRequest.value -> Result.Failure.InvalidRequest
-                            HttpStatusCode.NotFound.value -> Result.Failure.InvalidQuery
-                            else -> Result.Failure.Generic(it)
+                            HttpStatusCode.BadRequest.value -> SearchUsersResult.Failure.InvalidRequest
+                            HttpStatusCode.NotFound.value -> SearchUsersResult.Failure.InvalidQuery
+                            else -> SearchUsersResult.Failure.Generic(it)
                         }
                     } else {
-                        Result.Failure.Generic(it)
+                        SearchUsersResult.Failure.Generic(it)
                     }
                 }, { response ->
                     val usersWithConnectionStatus = response.copy(result = response.result
@@ -64,7 +64,7 @@ internal class SearchPublicUsersUseCaseImpl(
                         .filter { it.connectionStatus != ConnectionState.ACCEPTED }
                     )
 
-                    Result.Success(usersWithConnectionStatus)
+                    SearchUsersResult.Success(usersWithConnectionStatus)
                 })
             }
 

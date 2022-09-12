@@ -12,7 +12,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersResult
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.framework.TestUser
@@ -139,7 +139,7 @@ class SearchKnownUserUseCaseTest {
         // when
         val result = searchKnownUsersUseCase(searchQuery)
         // then
-        assertIs<Result.Success>(result)
+        assertIs<SearchUsersResult.Success>(result)
         assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
     }
 
@@ -173,7 +173,7 @@ class SearchKnownUserUseCaseTest {
         )
 
         // then
-        assertIs<Result.Success>(result)
+        assertIs<SearchUsersResult.Success>(result)
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
             .with(anything(), eq(searchUsersOptions))
@@ -209,7 +209,7 @@ class SearchKnownUserUseCaseTest {
         )
 
         // then
-        assertIs<Result.Success>(result)
+        assertIs<SearchUsersResult.Success>(result)
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
             .with(anything(), eq(searchUsersOptions))

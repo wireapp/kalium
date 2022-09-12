@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 
 
 interface SearchKnownUsersUseCase {
-    suspend operator fun invoke(searchQuery: String, searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default): Result
+    suspend operator fun invoke(searchQuery: String, searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default): SearchUsersResult
 }
 
 internal class SearchKnownUsersUseCaseImpl(
@@ -22,7 +22,7 @@ internal class SearchKnownUsersUseCaseImpl(
     override suspend fun invoke(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
-    ): Result {
+    ): SearchUsersResult {
         val searchResult = if (isUserLookingForHandle(searchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
                 handle = searchQuery,
@@ -39,7 +39,7 @@ internal class SearchKnownUsersUseCaseImpl(
             )
         }
 
-        return Result.Success(excludeSelfUser(searchResult))
+        return SearchUsersResult.Success(excludeSelfUser(searchResult))
     }
 
     private fun isUserLookingForHandle(searchQuery: String) = searchQuery.startsWith('@')
