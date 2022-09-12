@@ -271,21 +271,23 @@ internal class CallDataSource(
         val callMetadataProfile = _callMetadataProfile.value
         val conversationIdToLog = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
         callMetadataProfile.data[conversationId]?.let { call ->
-            callingLogger.i(
-                "updateCallParticipants() -" +
-                        " conversationId: ${conversationIdToLog.value.obfuscateId()}@${conversationIdToLog.domain.obfuscateDomain()}" +
-                        " with size of: ${participants.size}"
-            )
+            if (call.participants != participants) {
+                callingLogger.i(
+                    "updateCallParticipants() -" +
+                            " conversationId: ${conversationIdToLog.value.obfuscateId()}@${conversationIdToLog.domain.obfuscateDomain()}" +
+                            " with size of: ${participants.size}"
+                )
 
-            val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
-                this[conversationId] = call.copy(
-                    participants = participants, maxParticipants = max(call.maxParticipants, participants.size + 1)
+                val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
+                    this[conversationId] = call.copy(
+                        participants = participants, maxParticipants = max(call.maxParticipants, participants.size + 1)
+                    )
+                }
+
+                _callMetadataProfile.value = callMetadataProfile.copy(
+                    data = updatedCallMetadata
                 )
             }
-
-            _callMetadataProfile.value = callMetadataProfile.copy(
-                data = updatedCallMetadata
-            )
         }
     }
 
