@@ -29,6 +29,7 @@ interface ClientRepository {
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
     suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
     suspend fun retainedClientId(): Either<CoreFailure, ClientId>
+    suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
@@ -56,6 +57,9 @@ class ClientDataSource(
 
     override suspend fun clearCurrentClientId(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.setRegisteredClientId(null) }
+
+    override suspend fun clearRetainedClientId(): Either<CoreFailure, Unit> =
+        wrapStorageRequest { clientRegistrationStorage.clearRetainedClientId() }
 
     override suspend fun currentClientId(): Either<CoreFailure, ClientId> =
         wrapStorageRequest { clientRegistrationStorage.getRegisteredClientId() }

@@ -43,6 +43,7 @@ class LogoutUseCaseTest {
             .withUpdateCurrentSessionResult(Either.Right(Unit))
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
             .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
             .arrange()
         logoutUseCase.invoke(reason, isHardLogout)
@@ -86,6 +87,7 @@ class LogoutUseCaseTest {
             .withUpdateCurrentSessionResult(Either.Right(Unit))
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
             .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
             .arrange()
         logoutUseCase.invoke(reason, isHardLogout)
@@ -173,6 +175,14 @@ class LogoutUseCaseTest {
         fun withClearCurrentClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
             given(clientRepository)
                 .suspendFunction(clientRepository::clearCurrentClientId)
+                .whenInvoked()
+                .thenReturn(result)
+            return this
+        }
+
+        fun withClearRetainedClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
+            given(clientRepository)
+                .suspendFunction(clientRepository::clearRetainedClientId)
                 .whenInvoked()
                 .thenReturn(result)
             return this

@@ -94,4 +94,14 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
 
         assertEquals(testId, result)
     }
+    @Test
+    fun givenTheRetainedIdExists_whenCleared_thenNullIdShouldBeReturned() = runTest {
+        val testId = "😎ClientId"
+        clientRegistrationStorage.setRegisteredClientId(testId)
+        clientRegistrationStorage.clearRetainedClientId()
+
+        val result = clientRegistrationStorage.getRetainedClientId()
+
+        assertNull(result)
+    }
 }

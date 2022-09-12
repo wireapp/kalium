@@ -34,6 +34,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         if (isHardLogout) {
             clearClientDataUseCase()
             clearUserDataUseCase()
+            clientRepository.clearRetainedClientId()
         }
         clientRepository.clearCurrentClientId()
         sessionRepository.updateCurrentSession(userId)

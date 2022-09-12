@@ -9,6 +9,7 @@ interface ClientRegistrationStorage {
     suspend fun setRegisteredClientId(registeredClientId: String?)
     suspend fun observeRegisteredClientId(): Flow<String?>
     suspend fun getRetainedClientId(): String?
+    suspend fun clearRetainedClientId()
 }
 
 class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : ClientRegistrationStorage {
@@ -25,6 +26,7 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
     override suspend fun observeRegisteredClientId(): Flow<String?> = metadataDAO.valueByKeyFlow(REGISTERED_CLIENT_ID_KEY)
 
     override suspend fun getRetainedClientId(): String? = metadataDAO.valueByKey(RETAINED_CLIENT_ID_KEY)
+    override suspend fun clearRetainedClientId() = metadataDAO.deleteValue(RETAINED_CLIENT_ID_KEY)
 
     private companion object {
         const val REGISTERED_CLIENT_ID_KEY = "registered_client_id"
