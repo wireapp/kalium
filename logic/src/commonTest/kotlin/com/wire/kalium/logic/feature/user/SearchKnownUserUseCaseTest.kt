@@ -187,7 +187,6 @@ class SearchKnownUserUseCaseTest {
                 .wasInvoked(exactly = once)
         }
 
-
     }
 
     @Test
@@ -226,7 +225,6 @@ class SearchKnownUserUseCaseTest {
                 .with(anything(), eq(searchUsersOptions))
                 .wasInvoked(exactly = once)
         }
-
 
     }
 
