@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.user
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -138,10 +139,14 @@ class SearchKnownUserUseCaseTest {
             .withSearchKnownUsersByNameOrHandleOrEmail(searchQuery, otherUserContainingSelfUserId)
             .arrange()
         // when
-        val result = searchKnownUsersUseCase(searchQuery)
-        // then
-        assertIs<SearchUsersResult.Success>(result)
-        assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
+        searchKnownUsersUseCase(searchQuery).test {
+            // then
+            val result = awaitItem()
+            awaitComplete()
+            assertIs<SearchUsersResult.Success>(result)
+            assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
+        }
+
     }
 
     @Test
@@ -168,17 +173,21 @@ class SearchKnownUserUseCaseTest {
             .arrange()
 
         // when
-        val result = searchKnownUsersUseCase(
+        searchKnownUsersUseCase(
             searchQuery = searchQuery,
             searchUsersOptions = searchUsersOptions
-        )
+        ).test {
+            // then
+            val result = awaitItem()
+            assertIs<SearchUsersResult.Success>(result)
+            awaitComplete()
+            verify(arrangement.searchUserRepository)
+                .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
+                .with(anything(), eq(searchUsersOptions))
+                .wasInvoked(exactly = once)
+        }
 
-        // then
-        assertIs<SearchUsersResult.Success>(result)
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
-            .with(anything(), eq(searchUsersOptions))
-            .wasInvoked(exactly = once)
+
     }
 
     @Test
@@ -204,17 +213,21 @@ class SearchKnownUserUseCaseTest {
             .arrange()
 
         // when
-        val result = searchKnownUsersUseCase(
+        searchKnownUsersUseCase(
             searchQuery = searchQuery,
             searchUsersOptions = searchUsersOptions
-        )
+        ).test {
+            // then
+            val result = awaitItem()
+            assertIs<SearchUsersResult.Success>(result)
+            awaitComplete()
+            verify(arrangement.searchUserRepository)
+                .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+                .with(anything(), eq(searchUsersOptions))
+                .wasInvoked(exactly = once)
+        }
 
-        // then
-        assertIs<SearchUsersResult.Success>(result)
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-            .with(anything(), eq(searchUsersOptions))
-            .wasInvoked(exactly = once)
+
     }
 
     private class Arrangement {
