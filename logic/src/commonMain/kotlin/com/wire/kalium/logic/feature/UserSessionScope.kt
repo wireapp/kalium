@@ -205,7 +205,8 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsClientProvider,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
             userDatabaseProvider.conversationDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
+            syncManager
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
@@ -556,7 +557,6 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             timeParser,
-            kaliumFileSystem
         )
     val users: UserScope
         get() = UserScope(
