@@ -90,6 +90,9 @@ class MessageScope internal constructor(
             messageSender
         )
 
+    val getMessageById: GetMessageByIdUseCase
+        get() = GetMessageByIdUseCase(messageRepository)
+
     val sendAssetMessage: SendAssetMessageUseCase
         get() = SendAssetMessageUseCaseImpl(
             persistMessage,
