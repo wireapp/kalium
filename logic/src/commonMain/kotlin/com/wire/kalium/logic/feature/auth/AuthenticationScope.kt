@@ -33,13 +33,15 @@ class AuthenticationScope(
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )
     }
-    private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
+    private val loginRepository: LoginRepository
+        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
 
     private val registerAccountRepository: RegisterAccountRepository
         get() = RegisterAccountDataSource(
             unauthenticatedNetworkContainer.registerApi
         )
-    private val ssoLoginRepository: SSOLoginRepository get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso)
+    private val ssoLoginRepository: SSOLoginRepository
+        get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso)
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -65,13 +67,18 @@ class ServerMetaDataManagerImpl internal constructor(
 ) : ServerMetaDataManager {
 
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? =
-        serverConfigRepository.configByLinks(serverConfigMapper.fromDTO(backendLinks)).nullableFold({
+        serverConfigRepository.configByLinks(
+            serverConfigMapper.fromDTO(backendLinks)
+        ).nullableFold({
             null
         }, {
             serverConfigMapper.toDTO(it)
         })
 
-    override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO? {
+    override fun storeServerConfig(
+        links: ServerConfigDTO.Links,
+        metaData: ServerConfigDTO.MetaData
+    ): ServerConfigDTO? {
         return serverConfigRepository.storeConfig(
             serverConfigMapper.fromDTO(links),
             serverConfigMapper.fromDTO(metaData)
