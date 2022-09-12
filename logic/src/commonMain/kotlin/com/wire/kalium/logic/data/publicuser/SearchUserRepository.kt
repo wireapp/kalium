@@ -84,7 +84,7 @@ internal class SearchUserRepositoryImpl(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
     ): Flow<UserSearchResult> =
-        handeSearchUsersOptions(
+        handleSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
