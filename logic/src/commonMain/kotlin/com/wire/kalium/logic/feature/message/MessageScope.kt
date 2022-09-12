@@ -26,6 +26,8 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 
 @Suppress("LongParameterList")
 class MessageScope internal constructor(
@@ -43,7 +45,7 @@ class MessageScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
-    private val kaliumFileSystem: KaliumFileSystem
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
