@@ -20,11 +20,13 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.PublicAssetResult
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import okio.buffer
 import java.io.IOException
 
@@ -40,9 +42,9 @@ class MainActivity : ComponentActivity() {
 
     private fun loginAndFetchConversationList(coreLogic: CoreLogic) = lifecycleScope.launchWhenCreated {
         login(coreLogic, serverConfig).let {
-            val session = coreLogic.getSessionScope(it.session.userId)
+            val session = coreLogic.getSessionScope(it)
             val kaliumFileSystem = session.kaliumFileSystem
-            val conversations = session.conversations.getConversations().let { result ->
+            val conversations = runBlocking { session.conversations.getConversations() }.let { result ->
                 when (result) {
                     is GetConversationsUseCase.Result.Failure -> {
                         throw IOException()
@@ -78,7 +80,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthSession {
+    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): UserId {
         val result = coreLogic.authenticationScope(backendLinks) {
             login("jacob.persson+summer1@wire.com", "hepphepp", false)
         }
@@ -90,10 +92,14 @@ class MainActivity : ComponentActivity() {
         }
 
         coreLogic.globalScope {
-            addAuthenticatedAccount(result.userSession, result.ssoId)
+            addAuthenticatedAccount(
+                serverConfigId = result.authData.third,
+                ssoId = result.authData.second,
+                authTokens = result.authData.first
+            )
         }
 
-        return result.userSession
+        return result.authData.first.userId
     }
 }
 
