@@ -2,4 +2,5 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.MessagesQueries
 
-expect class MessageExtensions(messagesQueries: MessagesQueries, messageMapper: MessageMapper)
+expect interface MessageExtensions
+expect class MessageExtensionsImpl(messagesQueries: MessagesQueries, messageMapper: MessageMapper) : MessageExtensions
