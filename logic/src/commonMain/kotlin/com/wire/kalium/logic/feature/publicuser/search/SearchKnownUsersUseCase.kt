@@ -6,7 +6,10 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 interface SearchKnownUsersUseCase {
@@ -19,7 +22,8 @@ interface SearchKnownUsersUseCase {
 internal class SearchKnownUsersUseCaseImpl(
     private val searchUserRepository: SearchUserRepository,
     private val userRepository: UserRepository,
-    private val qualifiedIdMapper: QualifiedIdMapper
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SearchKnownUsersUseCase {
 
     // TODO:handle failure
@@ -43,6 +47,7 @@ internal class SearchKnownUsersUseCaseImpl(
             )
         }
             .map { SearchUsersResult.Success(excludeSelfUser(it)) }
+            .flowOn(dispatcher.io)
     }
 
     private fun isUserLookingForHandle(searchQuery: String) = searchQuery.startsWith('@')

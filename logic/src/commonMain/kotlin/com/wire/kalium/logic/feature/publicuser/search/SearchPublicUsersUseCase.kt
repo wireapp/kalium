@@ -8,8 +8,11 @@ import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 interface SearchPublicUsersUseCase {
@@ -23,7 +26,8 @@ interface SearchPublicUsersUseCase {
 internal class SearchPublicUsersUseCaseImpl(
     private val searchUserRepository: SearchUserRepository,
     private val connectionRepository: ConnectionRepository,
-    private val qualifiedIdMapper: QualifiedIdMapper
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SearchPublicUsersUseCase {
 
     override suspend operator fun invoke(
@@ -67,6 +71,6 @@ internal class SearchPublicUsersUseCaseImpl(
                     SearchUsersResult.Success(usersWithConnectionStatus)
                 })
             }
-
+            .flowOn(dispatcher.io)
     }
 }
