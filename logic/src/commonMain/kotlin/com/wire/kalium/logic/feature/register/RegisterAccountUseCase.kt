@@ -28,7 +28,11 @@ sealed class RegisterParam(
     val name: String = "$firstName $lastName"
 
     class PrivateAccount(
-        firstName: String, lastName: String, email: String, password: String, val emailActivationCode: String
+        firstName: String,
+        lastName: String,
+        email: String,
+        password: String,
+        val emailActivationCode: String
     ) : RegisterParam(firstName, lastName, email, password)
 
     @Suppress("LongParameterList")
@@ -60,7 +64,12 @@ class RegisterAccountUseCase internal constructor(
         is RegisterParam.Team -> {
             with(param) {
                 registerAccountRepository.registerTeamWithEmail(
-                    email, emailActivationCode, name, password, teamName, teamIcon
+                    email,
+                    emailActivationCode,
+                    name,
+                    password,
+                    teamName,
+                    teamIcon
                 )
             }
         }

@@ -18,7 +18,6 @@ import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 class AuthenticationScope(
     private val clientLabel: String,
@@ -47,7 +46,13 @@ class AuthenticationScope(
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
     val login: LoginUseCase
-        get() = LoginUseCaseImpl(loginRepository, validateEmailUseCase, validateUserHandleUseCase, globalScope.serverConfigRepository, backendLinks)
+        get() = LoginUseCaseImpl(
+            loginRepository,
+            validateEmailUseCase,
+            validateUserHandleUseCase,
+            globalScope.serverConfigRepository,
+            backendLinks
+        )
     val register: RegisterScope
         get() = RegisterScope(registerAccountRepository, globalScope.serverConfigRepository, backendLinks)
     val ssoLoginScope: SSOLoginScope
@@ -67,7 +72,10 @@ class ServerMetaDataManagerImpl internal constructor(
         })
 
     override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO? {
-        return serverConfigRepository.storeConfig(serverConfigMapper.fromDTO(links), serverConfigMapper.fromDTO(metaData)).nullableFold({
+        return serverConfigRepository.storeConfig(
+            serverConfigMapper.fromDTO(links),
+            serverConfigMapper.fromDTO(metaData)
+        ).nullableFold({
             null
         }, {
             serverConfigMapper.toDTO(it)

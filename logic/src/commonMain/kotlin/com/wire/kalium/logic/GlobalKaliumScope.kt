@@ -58,7 +58,6 @@ class GlobalKaliumScope(
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
 ) {
 
-
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainer(developmentApiEnabled = kaliumConfigs.developmentApiEnabled)
     }
@@ -74,12 +73,15 @@ class GlobalKaliumScope(
     private val authTokenStorage: AuthTokenStorage get() = AuthTokenStorage(globalPreferences.value)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences.value)
 
-    val sessionRepository: SessionRepository get() =
-        SessionDataSource(globalDatabase.value.accountsDAO, authTokenStorage, serverConfigRepository)
+    val sessionRepository: SessionRepository
+        get() =
+            SessionDataSource(globalDatabase.value.accountsDAO, authTokenStorage, serverConfigRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
-    val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
+    val addAuthenticatedAccount: AddAuthenticatedUserUseCase
+        get() =
+            AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)

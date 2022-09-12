@@ -182,19 +182,19 @@ class LoginCommand : CliktCommand(name = "login") {
     }
 
     override fun run() = runBlocking {
-        val (loginResult, ssoId) = coreLogic.authenticationScope(serverConfig()) {
+        val loginResult = coreLogic.authenticationScope(serverConfig()) {
             login(email, password, true).let {
                 if (it !is AuthenticationResult.Success) {
                     throw PrintMessage("Login failed, check your credentials")
                 } else {
-                    it.userSession to it.ssoId
+                    it
                 }
             }
         }
 
         val userId = coreLogic.globalScope {
-            addAuthenticatedAccount(loginResult, ssoId, true)
-            loginResult.session.userId
+            addAuthenticatedAccount(loginResult.serverConfigId, loginResult.ssoID,loginResult.authData, true)
+            loginResult.authData.userId
         }
 
         coreLogic.sessionScope(userId) {

@@ -25,7 +25,6 @@ interface SessionMapper {
 }
 
 internal class SessionMapperImpl(
-    private val serverConfigMapper: ServerConfigMapper,
     private val idMapper: IdMapper
 ) : SessionMapper {
 
