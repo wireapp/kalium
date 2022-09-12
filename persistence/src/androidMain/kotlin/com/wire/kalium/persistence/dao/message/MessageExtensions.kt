@@ -7,12 +7,20 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.paging.QueryPagingSource
 
-actual class MessageExtensions actual constructor(
+actual interface MessageExtensions {
+    fun getPagerForConversation(
+        conversationId: ConversationIDEntity,
+        visibilities: Collection<MessageEntity.Visibility>,
+        pagingConfig: PagingConfig
+    ): KaliumPager<Message, MessageEntity>
+}
+
+actual class MessageExtensionsImpl actual constructor(
     private val messagesQueries: MessagesQueries,
     private val messageMapper: MessageMapper
-) {
+) : MessageExtensions {
 
-    fun getPagerForConversation(
+    override fun getPagerForConversation(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig
