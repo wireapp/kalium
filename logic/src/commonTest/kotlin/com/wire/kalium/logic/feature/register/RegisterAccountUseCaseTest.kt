@@ -58,7 +58,7 @@ class RegisterAccountUseCaseTest {
         }.then { Either.Right(Pair(ssoId, authTokens)) }
 
         given(serverConfigRepository)
-            .coroutine { serverConfigRepository.configForUser(authTokens.userId) }
+            .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
             .then { Either.Right(userServerConfig) }
 
         val actual = registerAccountUseCase(param)
@@ -73,7 +73,7 @@ class RegisterAccountUseCaseTest {
         }.wasInvoked(exactly = once)
 
         verify(serverConfigRepository)
-            .suspendFunction(serverConfigRepository::configForUser)
+            .function(serverConfigRepository::configByLinks)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -93,7 +93,7 @@ class RegisterAccountUseCaseTest {
         }.then { Either.Right(Pair(ssoId, authTokens)) }
 
         given(serverConfigRepository)
-            .coroutine { serverConfigRepository.configForUser(authTokens.userId) }
+            .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
             .then { Either.Right(userServerConfig) }
 
 
@@ -112,7 +112,7 @@ class RegisterAccountUseCaseTest {
         }.wasInvoked(exactly = once)
 
         verify(serverConfigRepository)
-            .suspendFunction(serverConfigRepository::configForUser)
+            .function(serverConfigRepository::configByLinks)
             .with(any())
             .wasInvoked(exactly = once)
     }

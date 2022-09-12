@@ -31,10 +31,7 @@ class AddAuthenticatedUserUseCase internal constructor(
                 Result.Failure.Generic(it)
             }, { doesValidSessionExist ->
                 when (doesValidSessionExist) {
-                    true -> {
-                        val forceReplace = (doesValidSessionExist || replace)
-                        onUserExist(serverConfigId, ssoId, authTokens, forceReplace)
-                    }
+                    true -> onUserExist(serverConfigId, ssoId, authTokens, replace)
                     false -> storeUser(serverConfigId, ssoId, authTokens)
                 }
             }

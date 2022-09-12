@@ -63,7 +63,6 @@ class AddAuthenticatedUserUseCaseTest {
         val tokens = TEST_AUTH_TOKENS
         given(sessionRepository).coroutine { doesSessionExist(tokens.userId) }.then { Either.Right(true) }
 
-
         val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
@@ -113,13 +112,15 @@ class AddAuthenticatedUserUseCaseTest {
     @Test
     fun givenUserWithAlreadyStoredSessionWithDifferentServerConfig_whenInvokedWithReplace_thenUserAlreadyExistsReturned() = runTest {
         val oldSession = TEST_AUTH_TOKENS.copy(accessToken = "oldAccessToken", refreshToken = "oldRefreshToken")
-        val oldSessionServer = newServerConfig(id = "oldServerId".toInt())
+        val oldSessionServer = newServerConfig(id = 11)
 
         val newSession = TEST_AUTH_TOKENS.copy(accessToken = "newAccessToken", refreshToken = "newRefreshToken")
-        val newSessionServer = newServerConfig(id = "newServerId".toInt())
+        val newSessionServer = newServerConfig(id = 22)
 
         given(sessionRepository).coroutine { doesSessionExist(newSession.userId) }.then { Either.Right(true) }
         given(serverConfigRepository).coroutine { configForUser(oldSession.userId) }.then { Either.Right(oldSessionServer) }
+        given(sessionRepository).invocation { fullAccountInfo(oldSession.userId) }.then { Either.Right(Account(AccountInfo.Valid(oldSession.userId), oldSessionServer, TEST_SSO_ID)) }
+        given(serverConfigRepository).invocation { configById(newSessionServer.id) }.then { Either.Right(newSessionServer) }
 
         val actual = addAuthenticatedUserUseCase(newSessionServer.id, TEST_SSO_ID, newSession, true)
 
@@ -127,7 +128,8 @@ class AddAuthenticatedUserUseCaseTest {
 
         verify(sessionRepository).suspendFunction(sessionRepository::storeSession).with(any(), any(), any()).wasNotInvoked()
         verify(sessionRepository).suspendFunction(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
-        verify(serverConfigRepository).suspendFunction(serverConfigRepository::configForUser).with(any()).wasInvoked(exactly = once)
+        verify(sessionRepository).function(sessionRepository::fullAccountInfo).with(any()).wasInvoked(exactly = once)
+        verify(serverConfigRepository).function(serverConfigRepository::configById).with(any()).wasInvoked(exactly = once)
     }
 
     private companion object {
