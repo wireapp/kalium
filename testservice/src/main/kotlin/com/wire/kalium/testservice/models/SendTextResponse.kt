@@ -1,7 +1,7 @@
 package com.wire.kalium.testservice.models
 
-class SendTextResponse(
-    instanceId: String = "",
-    messageId: String = "",
-    name: String = ""
+data class SendTextResponse(
+    val instanceId: String = "",
+    val messageId: String = "",
+    val name: String = ""
 )
