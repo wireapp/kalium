@@ -104,7 +104,7 @@ internal class SearchUserRepositoryImpl(
         handle: String,
         searchUsersOptions: SearchUsersOptions
     ): Flow<UserSearchResult> =
-        handeSearchUsersOptions(
+        handleSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
                 userDAO.getUsersNotInConversationByHandle(
@@ -167,7 +167,7 @@ internal class SearchUserRepositoryImpl(
             }.firstOrNull() ?: throw IllegalStateException()
     }
 
-    private suspend fun handeSearchUsersOptions(
+    private suspend fun handleSearchUsersOptions(
         localSearchUserOptions: SearchUsersOptions,
         excluded: suspend (conversationId: ConversationId) -> Flow<List<UserEntity>>,
         default: suspend () -> Flow<List<UserEntity>>
