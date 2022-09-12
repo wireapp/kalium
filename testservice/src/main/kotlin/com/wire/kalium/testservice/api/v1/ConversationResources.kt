@@ -7,6 +7,7 @@ import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.SendFileRequest
+import com.wire.kalium.testservice.models.SendImageRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendTextRequest
 import io.swagger.annotations.Api
@@ -105,7 +106,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendFile")
     @ApiOperation(value = "Send a file to a conversation")
-    fun sendText(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
+    fun sendFile(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendFileRequest) {
             ConversationRepository.sendFile(
@@ -119,8 +120,23 @@ class ConversationResources(private val instanceService: InstanceService) {
         return Response.status(Response.Status.OK).build()
     }
 
-    // POST /api/v1/instance/{instanceId}/sendImage
-    // Send an image to a conversation.
+    @POST
+    @Path("/instance/{id}/sendImage")
+    @ApiOperation(value = "Send an image to a conversation")
+    fun sendImage(@PathParam("id") id: String, @Valid sendImageRequest: SendImageRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(sendImageRequest) {
+            ConversationRepository.sendImage(
+                instance,
+                ConversationId(conversationId, conversationDomain),
+                data,
+                type,
+                height,
+                width
+            )
+        }
+        return Response.status(Response.Status.OK).build()
+    }
 
     // POST /api/v1/instance/{instanceId}/sendLocation
     // Send an location to a conversation.

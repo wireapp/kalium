@@ -133,5 +133,51 @@ class ConversationRepository {
                 }
             }
         }
+
+        fun sendImage(instance: Instance, conversationId: ConversationId, data: String, type: String, width: Int, height: Int) {
+            val temp: File = Files.createTempFile("asset", ".data").toFile()
+            val byteArray = Base64.getDecoder().decode(data)
+            FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
+
+            instance.coreLogic?.globalScope {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                        log.info("Instance ${instance.instanceId}: Send file")
+                        runBlocking {
+                            log.info("Instance ${instance.instanceId}: Wait until alive")
+                            if (syncManager.isSlowSyncOngoing()) {
+                                log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
+                            }
+                            syncManager.waitUntilLiveOrFailure().onFailure {
+                                log.info("Instance ${instance.instanceId}: Sync failed with ${it}")
+                            }
+                            log.info("Instance ${instance.instanceId}: List conversations:")
+                            val convos = conversations.getConversations()
+                            if (convos is GetConversationsUseCase.Result.Success) {
+                                for (convo in convos.convFlow.first()) {
+                                    log.info("${convo.name} (${convo.id})")
+                                }
+                            }
+                            val sendResult = messages.sendAssetMessage(
+                                conversationId,
+                                temp.toOkioPath(),
+                                byteArray.size.toLong(),
+                                "image", type,
+                                width,
+                                height
+                            )
+                            if (sendResult is SendAssetMessageResult.Failure) {
+                                if (sendResult.coreFailure is StorageFailure.Generic) {
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${(sendResult.coreFailure as StorageFailure.Generic).rootCause.message}")
+                                } else {
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
