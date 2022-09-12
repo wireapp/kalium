@@ -54,6 +54,7 @@ class GetOrRegisterClientUseCaseTest {
             .withRetainedClientIdResult(Either.Right(clientId))
             .withSelfClientsResult(Either.Right(listOf()))
             .withRegisterClientResult(RegisterClientResult.Success(client))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
             .arrange()
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
         assertIs<RegisterClientResult.Success>(result)
@@ -127,6 +128,13 @@ class GetOrRegisterClientUseCaseTest {
             given(registerClientUseCase)
                 .suspendFunction(registerClientUseCase::invoke)
                 .whenInvokedWith(any())
+                .thenReturn(result)
+            return this
+        }
+        fun withClearRetainedClientIdResult(result: Either<CoreFailure, Unit>): Arrangement {
+            given(clientRepository)
+                .suspendFunction(clientRepository::clearRetainedClientId)
+                .whenInvoked()
                 .thenReturn(result)
             return this
         }
