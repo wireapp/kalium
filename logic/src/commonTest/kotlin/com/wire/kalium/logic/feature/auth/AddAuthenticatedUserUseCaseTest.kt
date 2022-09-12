@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -44,7 +43,7 @@ class AddAuthenticatedUserUseCaseTest {
         given(sessionRepository).coroutine { storeSession(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens) }.then { Either.Right(Unit) }
         given(sessionRepository).coroutine { updateCurrentSession(tokens.userId) }.then { Either.Right(Unit) }
 
-        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens,false)
+        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
@@ -62,51 +61,52 @@ class AddAuthenticatedUserUseCaseTest {
     @Test
     fun givenUserWithAlreadyStoredSession_whenInvoked_thenUserAlreadyExistsIsReturned() = runTest {
         val tokens = TEST_AUTH_TOKENS
-        given(sessionRepository).coroutine { doesSessionExist(session.session.userId) }.then { Either.Right(true) }
-        given(sessionRepository).invocation { (session.session.userId) }.then { Either.Left(StorageFailure.DataNotFound) }
+        given(sessionRepository).coroutine { doesSessionExist(tokens.userId) }.then { Either.Right(true) }
 
-        val actual = addAuthenticatedUserUseCase(session, TEST_SSO_ID, false)
-
-        assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
-
-        verify(sessionRepository).function(sessionRepository::storeSession).with(any(), any()).wasNotInvoked()
-        verify(sessionRepository).function(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
-    }
-
-    @Test
-    fun givenUserWithAlreadyStoredSession_whenInvokedWithReplace_thenSuccessReturned() = runTest {
-        val oldSession =
-            AuthSession(AuthSession.Session.Valid(TEST_USERID, "access-token", "refresh-token", "type"), TEST_SERVER_CONFIG.links)
-        val newSession = TEST_SESSION
-        given(sessionRepository).coroutine { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
-        given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
-        given(sessionRepository).coroutine { storeSession(newSession, TEST_SSO_ID) }.then { Either.Right(Unit) }
-        given(sessionRepository).coroutine { updateCurrentSession(newSession.session.userId) }.then { Either.Right(Unit) }
-
-        val actual = addAuthenticatedUserUseCase(newSession, TEST_SSO_ID, true)
-
-        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
-
-        verify(sessionRepository).coroutine { storeSession(newSession, TEST_SSO_ID) }.wasInvoked(exactly = once)
-        verify(sessionRepository).coroutine { updateCurrentSession(newSession.session.userId) }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenUserWithAlreadyStoredSessionWithDifferentServerConfig_whenInvokedWithReplace_thenUserAlreadyExistsReturned() = runTest {
-        val oldSession = AuthSession(
-            AuthSession.Session.Valid(TEST_USERID, "access-token", "refresh-token", "type"),
-            newServerConfig(999).links
-        )
-        val newSession = TEST_SESSION
-        given(sessionRepository).coroutine { doesSessionExist(newSession.session.userId) }.then { Either.Right(true) }
-        given(sessionRepository).invocation { userSession(newSession.session.userId) }.then { Either.Right(oldSession) }
-
-        val actual = addAuthenticatedUserUseCase(newSession, TEST_SSO_ID, true)
+        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
         verify(sessionRepository).suspendFunction(sessionRepository::storeSession).with(any(), any(), any()).wasNotInvoked()
         verify(sessionRepository).suspendFunction(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserWithAlreadyStoredSession_whenInvokedWithReplaceAndServerConfigAreTheSame_thenSuccessReturned() = runTest {
+        val oldSession = TEST_AUTH_TOKENS.copy(accessToken = "oldAccessToken", refreshToken = "oldRefreshToken")
+        val newSession = TEST_AUTH_TOKENS.copy(accessToken = "newAccessToken", refreshToken = "newRefreshToken")
+
+        given(sessionRepository).coroutine { doesSessionExist(newSession.userId) }.then { Either.Right(true) }
+        given(sessionRepository).coroutine { storeSession(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession) }.then { Either.Right(Unit) }
+        given(sessionRepository).coroutine { updateCurrentSession(newSession.userId) }.then { Either.Right(Unit) }
+        given(serverConfigRepository).coroutine { configForUser(oldSession.userId) }.then { Either.Right(TEST_SERVER_CONFIG) }
+
+        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, true)
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
+
+        verify(sessionRepository).coroutine { storeSession(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession) }.wasInvoked(exactly = once)
+        verify(sessionRepository).coroutine { updateCurrentSession(newSession.userId) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenUserWithAlreadyStoredSessionWithDifferentServerConfig_whenInvokedWithReplace_thenUserAlreadyExistsReturned() = runTest {
+        val oldSession = TEST_AUTH_TOKENS.copy(accessToken = "oldAccessToken", refreshToken = "oldRefreshToken")
+        val oldSessionServer = newServerConfig(id = "oldServerId".toInt())
+
+        val newSession = TEST_AUTH_TOKENS.copy(accessToken = "newAccessToken", refreshToken = "newRefreshToken")
+        val newSessionServer = newServerConfig(id = "newServerId".toInt())
+
+        given(sessionRepository).coroutine { doesSessionExist(newSession.userId) }.then { Either.Right(true) }
+        given(serverConfigRepository).coroutine { configForUser(oldSession.userId) }.then { Either.Right(oldSessionServer) }
+
+        val actual = addAuthenticatedUserUseCase(newSessionServer.id, TEST_SSO_ID,  newSession, true)
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
+
+        verify(sessionRepository).suspendFunction(sessionRepository::storeSession).with(any(), any(), any()).wasNotInvoked()
+        verify(sessionRepository).suspendFunction(sessionRepository::updateCurrentSession).with(any()).wasNotInvoked()
+        verify(serverConfigRepository).suspendFunction(serverConfigRepository::configForUser).with(any()).wasInvoked(exactly = once)
     }
 
     private companion object {
