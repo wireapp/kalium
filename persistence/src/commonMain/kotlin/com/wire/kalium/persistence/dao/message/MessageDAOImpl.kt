@@ -243,5 +243,5 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         else combine(it.map { message -> mapper.toMessageEntityFlow(message) }) { it.asList() }
     }
 
-    override val platformExtensions: MessageExtensions = MessageExtensions(queries, mapper)
+    override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 }
