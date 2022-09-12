@@ -32,6 +32,8 @@ import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -89,12 +91,14 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         // when
-        searchPublicUsersUseCase(TEST_QUERY).test {
-            // then
-            val actual = awaitItem()
-            assertIs<SearchUsersResult.Success>(actual)
-            assertContentEquals(expected.value.result, actual.userSearchResult.result)
-            awaitComplete()
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY).test {
+                // then
+                val actual = awaitItem()
+                assertIs<SearchUsersResult.Success>(actual)
+                assertContentEquals(expected.value.result, actual.userSearchResult.result)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
     }
 
@@ -113,15 +117,17 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         // when
-        searchPublicUsersUseCase(TEST_QUERY).test {
-            // then
-            val actual = awaitItem()
-            assertIs<SearchUsersResult.Success>(actual)
-            assertEquals(
-                actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
-                ConnectionState.PENDING
-            )
-            awaitComplete()
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY).test {
+                // then
+                val actual = awaitItem()
+                assertIs<SearchUsersResult.Success>(actual)
+                assertEquals(
+                    actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
+                    ConnectionState.PENDING
+                )
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 
     }
@@ -136,12 +142,14 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything(), anything())
             .thenReturn(expected)
         // when
-        searchPublicUsersUseCase(TEST_QUERY_FEDERATED).test {
-            // then
-            val actual = awaitItem()
-            assertIs<SearchUsersResult.Success>(actual)
-            assertEquals(expected.value, actual.userSearchResult)
-            awaitComplete()
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY_FEDERATED).test {
+                // then
+                val actual = awaitItem()
+                assertIs<SearchUsersResult.Success>(actual)
+                assertEquals(expected.value, actual.userSearchResult)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 
     }
@@ -156,12 +164,13 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(eq("testQuery"), eq(""), anything(), anything())
             .thenReturn(expected)
         // when
-        searchPublicUsersUseCase(TEST_QUERY).test {
-            // then
-            assertIs<SearchUsersResult.Failure.InvalidQuery>(awaitItem())
-            awaitComplete()
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY).test {
+                // then
+                assertIs<SearchUsersResult.Failure.InvalidQuery>(awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-
     }
 
     @Test
@@ -173,14 +182,16 @@ class SearchUserUseCaseTest {
             .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
 
         // when
-        searchPublicUsersUseCase(TEST_QUERY).test {
-            // then
-            awaitItem()
-            verify(searchUserRepository)
-                .suspendFunction(searchUserRepository::searchUserDirectory)
-                .with(anything(), anything(), anything(), eq(SearchUsersOptions.Default))
-                .wasInvoked(Times(1))
-            awaitComplete()
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY).test {
+                // then
+                awaitItem()
+                verify(searchUserRepository)
+                    .suspendFunction(searchUserRepository::searchUserDirectory)
+                    .with(anything(), anything(), anything(), eq(SearchUsersOptions.Default))
+                    .wasInvoked(Times(1))
+                cancelAndIgnoreRemainingEvents()
+            }
         }
     }
 
@@ -208,14 +219,16 @@ class SearchUserUseCaseTest {
             .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
 
         // when
-        searchPublicUsersUseCase(searchQuery = TEST_QUERY, searchUsersOptions = givenSearchUsersOptions).test {
-            // then
-            awaitItem()
-            verify(searchUserRepository)
-                .suspendFunction(searchUserRepository::searchUserDirectory)
-                .with(anything(), anything(), anything(), eq(givenSearchUsersOptions))
-                .wasInvoked(Times(1))
-            awaitComplete()
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(searchQuery = TEST_QUERY, searchUsersOptions = givenSearchUsersOptions).test {
+                // then
+                awaitItem()
+                verify(searchUserRepository)
+                    .suspendFunction(searchUserRepository::searchUserDirectory)
+                    .with(anything(), anything(), anything(), eq(givenSearchUsersOptions))
+                    .wasInvoked(Times(1))
+                cancelAndIgnoreRemainingEvents()
+            }
         }
     }
 

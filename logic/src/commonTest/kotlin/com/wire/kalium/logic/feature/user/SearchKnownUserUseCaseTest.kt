@@ -26,12 +26,16 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SearchKnownUserUseCaseTest {
 
     @Test
@@ -139,12 +143,14 @@ class SearchKnownUserUseCaseTest {
             .withSearchKnownUsersByNameOrHandleOrEmail(searchQuery, otherUserContainingSelfUserId)
             .arrange()
         // when
-        searchKnownUsersUseCase(searchQuery).test {
-            // then
-            val result = awaitItem()
-            awaitComplete()
-            assertIs<SearchUsersResult.Success>(result)
-            assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchKnownUsersUseCase(searchQuery).test {
+                // then
+                val result = awaitItem()
+                assertIs<SearchUsersResult.Success>(result)
+                assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 
     }
@@ -173,18 +179,20 @@ class SearchKnownUserUseCaseTest {
             .arrange()
 
         // when
-        searchKnownUsersUseCase(
-            searchQuery = searchQuery,
-            searchUsersOptions = searchUsersOptions
-        ).test {
-            // then
-            val result = awaitItem()
-            assertIs<SearchUsersResult.Success>(result)
-            awaitComplete()
-            verify(arrangement.searchUserRepository)
-                .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
-                .with(anything(), eq(searchUsersOptions))
-                .wasInvoked(exactly = once)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchKnownUsersUseCase(
+                searchQuery = searchQuery,
+                searchUsersOptions = searchUsersOptions
+            ).test {
+                // then
+                val result = awaitItem()
+                assertIs<SearchUsersResult.Success>(result)
+                verify(arrangement.searchUserRepository)
+                    .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
+                    .with(anything(), eq(searchUsersOptions))
+                    .wasInvoked(exactly = once)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 
     }
