@@ -39,7 +39,7 @@ internal class IncrementalSyncWorkerImpl(
             }
             // When events are all consumed, cancel the source job to complete the channelFlow
             sourceJob.cancel()
+            kaliumLogger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
         }
-        kaliumLogger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
     }
 }

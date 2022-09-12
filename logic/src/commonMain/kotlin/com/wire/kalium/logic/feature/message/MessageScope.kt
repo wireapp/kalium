@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -43,7 +42,6 @@ class MessageScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
-    private val kaliumFileSystem: KaliumFileSystem
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -88,6 +86,9 @@ class MessageScope internal constructor(
             slowSyncRepository,
             messageSender
         )
+
+    val getMessageById: GetMessageByIdUseCase
+        get() = GetMessageByIdUseCase(messageRepository)
 
     val sendAssetMessage: SendAssetMessageUseCase
         get() = SendAssetMessageUseCaseImpl(

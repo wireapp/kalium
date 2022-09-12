@@ -6,6 +6,7 @@ object Versions {
     const val kotlin = "1.6.10"
     const val activityCompose = "1.3.1"
     const val appCompat = "1.1.0"
+    const val androidPaging3 = "3.1.1"
     const val cliKt = "3.3.0"
     const val coroutines = "1.6.0-native-mt"
     const val compose = "1.1.0-rc01"
@@ -94,6 +95,7 @@ object Dependencies {
         const val composeTooling = "androidx.compose.ui:ui-tooling:${Versions.compose}"
         const val coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}"
         const val ktor = "io.ktor:ktor-client-android:${Versions.ktor}"
+        const val paging3 = "androidx.paging:paging-runtime:${Versions.androidPaging3}"
         const val securityCrypto = "androidx.security:security-crypto:${Versions.androidSecurity}"
         const val desugarJdkLibs = "com.android.tools:desugar_jdk_libs:${Versions.desugarJdk}"
     }
@@ -154,6 +156,7 @@ object Dependencies {
         const val runtime = "app.cash.sqldelight:runtime:${Versions.sqlDelight}"
         const val coroutinesExtension = "app.cash.sqldelight:coroutines-extensions:${Versions.sqlDelight}"
         const val androidDriver = "app.cash.sqldelight:android-driver:${Versions.sqlDelight}"
+        const val androidPaging = "app.cash.sqldelight:android-paging3-extensions:${Versions.sqlDelight}"
         const val nativeDriver = "app.cash.sqldelight:native-driver:${Versions.sqlDelight}"
         const val jvmDriver = "app.cash.sqldelight:sqlite-driver:${Versions.sqlDelight}"
         const val jsDriver = "app.cash.sqldelight:sqljs-driver:${Versions.sqlDelight}"
