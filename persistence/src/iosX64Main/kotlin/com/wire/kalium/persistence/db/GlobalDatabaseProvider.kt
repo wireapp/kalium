@@ -16,7 +16,8 @@ actual class GlobalDatabaseProvider(passphrase: String) {
     init {
         val driver = NativeSqliteDriver(GlobalDatabase.Schema, FileNameUtil.globalDBName())
         database = GlobalDatabase(
-            driver, ServerConfiguration.Adapter(
+            driver,
+            ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter
             )
         )

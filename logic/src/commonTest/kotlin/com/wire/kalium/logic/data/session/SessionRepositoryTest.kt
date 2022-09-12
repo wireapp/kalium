@@ -1,10 +1,7 @@
 package com.wire.kalium.logic.data.session
 
-import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.AccountInfo
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao_kalium_db.AccountInfoEntity
@@ -14,13 +11,6 @@ import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SessionRepositoryTest {
@@ -65,6 +55,7 @@ class SessionRepositoryTest {
 
      */
 
+    @Suppress("UnusedPrivateClass")
     private class Arrangement {
 
         val sessionMapper = MapperProvider.sessionMapper()

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
+@Suppress("TooManyFunctions")
 data class AccountInfoEntity(
     val userIDEntity: UserIDEntity,
     val logoutReason: LogoutReason?
@@ -106,7 +107,8 @@ class AccountsDAO(
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
 
 
-    fun currentAccount(): AccountInfoEntity? = currentAccountQueries.currentAccountInfo().executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
+    fun currentAccount(): AccountInfoEntity? =
+        currentAccountQueries.currentAccountInfo().executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
 
     fun observerCurrentAccount(): Flow<AccountInfoEntity?> = currentAccountQueries.currentAccountInfo()
         .asFlow()
