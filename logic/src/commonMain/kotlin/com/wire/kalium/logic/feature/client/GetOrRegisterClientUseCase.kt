@@ -22,7 +22,7 @@ class GetOrRegisterClientUseCaseImpl(
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
         val result: RegisterClientResult? = clientRepository.retainedClientId()
-            .flatMap { currentClientId -> clientRepository.selfListOfClients().map { currentClientId to it } }
+            .flatMap { retainedClientId -> clientRepository.selfListOfClients().map { retainedClientId to it } }
             .nullableFold(
                 {
                     if (it is CoreFailure.MissingClientRegistration) null
