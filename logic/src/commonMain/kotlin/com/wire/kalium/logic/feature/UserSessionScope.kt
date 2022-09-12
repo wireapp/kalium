@@ -557,7 +557,6 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             timeParser,
-            kaliumFileSystem
         )
     val users: UserScope
         get() = UserScope(
