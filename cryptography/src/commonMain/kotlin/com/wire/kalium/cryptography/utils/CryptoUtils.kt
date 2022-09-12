@@ -2,7 +2,6 @@ package com.wire.kalium.cryptography.utils
 
 import okio.Sink
 import okio.Source
-import kotlin.jvm.JvmInline
 
 /**
  * Method used to calculate the digested MD5 hash of a relatively small byte array
@@ -81,15 +80,3 @@ expect fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
  * @return the AES256 secret key encapsulated in a [AES256Key] object
  */
 expect fun generateRandomAES256Key(): AES256Key
-
-@JvmInline
-value class SHA256Key(val data: ByteArray)
-
-@JvmInline
-value class AES256Key(val data: ByteArray)
-
-@JvmInline
-value class EncryptedData(val data: ByteArray)
-
-@JvmInline
-value class PlainData(val data: ByteArray)

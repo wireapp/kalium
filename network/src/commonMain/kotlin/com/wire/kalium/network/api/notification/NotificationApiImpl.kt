@@ -12,7 +12,7 @@ import com.wire.kalium.network.utils.setWSSUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
-import io.ktor.client.plugins.websocket.webSocketSession
+import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.Url
@@ -81,13 +81,14 @@ class NotificationApiImpl internal constructor(
         //       before attempting to open the websocket
         lastNotification(clientId)
 
-        val session = authenticatedWebSocketClient
+        authenticatedWebSocketClient
             .createDisposableHttpClient()
-            .webSocketSession {
+            .webSocket({
                 setWSSUrl(Url(serverLinks.webSocket), PATH_AWAIT)
                 parameter(CLIENT_QUERY_KEY, clientId)
+            }) {
+                emitWebSocketEvents(this)
             }
-        emitWebSocketEvents(session)
     }
 
     private suspend fun FlowCollector<WebSocketEvent<EventResponse>>.emitWebSocketEvents(

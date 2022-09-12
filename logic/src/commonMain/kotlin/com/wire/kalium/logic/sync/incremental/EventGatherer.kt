@@ -109,7 +109,7 @@ internal class EventGathererImpl(
             is IOException ->
                 throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
             else ->
-                throw KaliumSyncException("Unknown Websocket error", CoreFailure.Unknown(cause))
+                throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
         }
 
     private suspend fun FlowCollector<Event>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Event>) {
