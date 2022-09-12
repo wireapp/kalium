@@ -1,6 +1,6 @@
 package com.wire.kalium.testservice.models
 
-data class SendImageRequest (
+data class SendImageRequest(
     val conversationDomain: String = "staging.zinfra.io",
     val conversationId: String = "",
     val data: String = "",

@@ -10,6 +10,7 @@ import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendImageRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendTextRequest
+import com.wire.kalium.testservice.models.SendTextResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.slf4j.LoggerFactory
@@ -56,7 +57,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                 instance,
                 ConversationId(conversationId, conversationDomain),
                 messageId,
-                false)
+                false
+            )
         }
     }
 
@@ -70,7 +72,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                 instance,
                 ConversationId(conversationId, conversationDomain),
                 messageId,
-                true)
+                true
+            )
         }
     }
 
@@ -167,7 +170,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @POST
     @Path("/instance/{id}/sendText")
     @ApiOperation(value = "Send a text message to a conversation (can include mentions, reply, buttons and link previews)")
-    fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest) {
+    fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
         // TODO: Implement mentions, reply and ephemeral messages for web-mls
         with(sendTextRequest) {
@@ -177,6 +180,7 @@ class ConversationResources(private val instanceService: InstanceService) {
                 text
             )
         }
+        return Response.status(Response.Status.OK).entity(SendTextResponse(id, "", "")).build()
     }
 
     // POST /api/v1/instance/{instanceId}/sendTyping
