@@ -63,9 +63,6 @@ class LogoutUseCaseTest {
         verify(arrangement.clearUserDataUseCase)
             .suspendFunction(arrangement.clearUserDataUseCase::invoke)
             .wasInvoked(exactly = once)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::clearCurrentClientId)
-            .wasInvoked(exactly = once)
         verify(arrangement.sessionRepository)
             .function(arrangement.sessionRepository::updateCurrentSession)
             .with(any())
@@ -77,7 +74,7 @@ class LogoutUseCaseTest {
     }
 
     @Test
-    fun givenSoftLogout_whenLoggingOut_thenDoNotExecuteClearingUserData() = runTest {
+    fun givenSoftLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
         val reason = LogoutReason.SELF_LOGOUT
         val isHardLogout = false
         val (arrangement, logoutUseCase) = Arrangement()
@@ -91,12 +88,33 @@ class LogoutUseCaseTest {
             .withUserSessionScopeGetResult(null)
             .arrange()
         logoutUseCase.invoke(reason, isHardLogout)
+        verify(arrangement.deregisterTokenUseCase)
+            .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
+            .wasInvoked(exactly = once)
+        verify(arrangement.logoutRepository)
+            .suspendFunction(arrangement.logoutRepository::logout)
+            .wasInvoked(exactly = once)
+        verify(arrangement.sessionRepository)
+            .function(arrangement.sessionRepository::logout)
+            .with(any(), eq(reason), eq(isHardLogout))
+            .wasInvoked(exactly = once)
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
             .wasNotInvoked()
         verify(arrangement.clearUserDataUseCase)
             .suspendFunction(arrangement.clearUserDataUseCase::invoke)
             .wasNotInvoked()
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::clearCurrentClientId)
+            .wasInvoked(exactly = once)
+        verify(arrangement.sessionRepository)
+            .function(arrangement.sessionRepository::updateCurrentSession)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.userSessionScopeProvider)
+            .function(arrangement.userSessionScopeProvider::delete)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
