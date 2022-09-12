@@ -31,12 +31,12 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         deregisterTokenUseCase()
         logoutRepository.logout()
         sessionRepository.logout(userId = userId, reason, isHardLogout)
+        clientRepository.clearCurrentClientId()
         if (isHardLogout) {
             clientRepository.clearRetainedClientId()
             clearClientDataUseCase()
             clearUserDataUseCase()
         }
-        clientRepository.clearCurrentClientId()
         sessionRepository.updateCurrentSession(userId)
         userSessionScopeProvider.get(userId)?.cancel()
         userSessionScopeProvider.delete(userId)
