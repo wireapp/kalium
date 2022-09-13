@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -34,7 +35,7 @@ internal class GetMessageAssetUseCaseImpl(
         messageId: String
     ): MessageAssetResult =
         messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).fold({
-            kaliumLogger.e("There was an error retrieving the asset message $messageId")
+            kaliumLogger.e("There was an error retrieving the asset message ${messageId.obfuscateId()}")
             MessageAssetResult.Failure(it)
         }, { message ->
             val assetMetadata = when (val content = message.content) {
@@ -57,7 +58,7 @@ internal class GetMessageAssetUseCaseImpl(
             }
             assetDataSource.fetchPrivateDecodedAsset(
                 assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
-                assetName= assetMetadata.assetName,
+                assetName = assetMetadata.assetName,
                 assetToken = assetMetadata.assetToken,
                 encryptionKey = assetMetadata.encryptionKey
             ).fold({

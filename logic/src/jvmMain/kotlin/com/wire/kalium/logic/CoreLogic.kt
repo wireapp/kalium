@@ -16,6 +16,7 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
+import kotlinx.coroutines.cancel
 import java.io.File
 
 actual class CoreLogic(
@@ -45,7 +46,12 @@ actual class CoreLogic(
     override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
-        userSessionScopeProvider.value.get(userId)
+        userSessionScopeProvider.value.getOrCreate(userId)
+
+    override fun deleteSessionScope(userId: UserId) {
+        userSessionScopeProvider.value.get(userId)?.cancel()
+        userSessionScopeProvider.value.delete(userId)
+    }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager()
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)

@@ -31,7 +31,8 @@ class AuthenticationScope(
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer(
             MapperProvider.serverConfigMapper().toDTO(backendLinks),
-            serverMetaDataManager = ServerMetaDataManagerImpl(globalScope.serverConfigRepository)
+            serverMetaDataManager = ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
+            developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )
     }
     private val loginRepository: LoginRepository get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)
@@ -50,7 +51,6 @@ class AuthenticationScope(
     val register: RegisterScope get() = RegisterScope(registerAccountRepository, backendLinks)
     val ssoLoginScope: SSOLoginScope get() = SSOLoginScope(ssoLoginRepository, backendLinks, globalScope.serverConfigRepository)
 }
-
 
 class ServerMetaDataManagerImpl internal constructor(
     private val serverConfigRepository: ServerConfigRepository,

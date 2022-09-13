@@ -56,4 +56,6 @@ interface MessageDAO {
         conversationId: QualifiedIDEntity,
         userId: UserIDEntity
     ): Flow<Long>
+
+    val platformExtensions: MessageExtensions
 }

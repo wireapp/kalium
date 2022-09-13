@@ -37,8 +37,11 @@ UPDATE Connection SET last_update = ? WHERE to_id = ?;
 updateNotificationFlag:
 UPDATE Connection SET should_notify = ? WHERE qualified_to = ?;
 
+getConnections:
+SELECT * FROM Connection;
+
 selectConnectionRequests:
-SELECT * FROM Connection WHERE status = 'SENT' OR status = 'PENDING';
+SELECT * FROM Connection WHERE status = 'SENT' OR status = 'PENDING' OR status = 'IGNORED';
 
 selectConnectionsForNotification:
 SELECT * FROM Connection WHERE status = 'PENDING' AND should_notify = 1;

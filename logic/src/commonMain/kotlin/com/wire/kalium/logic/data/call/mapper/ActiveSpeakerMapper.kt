@@ -14,14 +14,15 @@ class ActiveSpeakerMapperImpl : ActiveSpeakerMapper {
     override fun mapParticipantsActiveSpeaker(
         participants: List<Participant>,
         activeSpeakers: CallActiveSpeakers
-    ): List<Participant> = participants.map { participant ->
-        val isSpeaking = activeSpeakers.activeSpeakers.find {
-            it.userId == participant.id.toString() && it.clientId == participant.clientId
-        }?.let {
-            it.audioLevel > 0 && it.audioLevelNow > 0
-        } ?: run { false }
-        participant.copy(
-            isSpeaking = isSpeaking
-        )
+    ): List<Participant> = participants.toMutableList().apply {
+        activeSpeakers.activeSpeakers.forEach { activeSpeaker ->
+            find { participant ->
+                activeSpeaker.userId == participant.id.toString() && activeSpeaker.clientId == participant.clientId
+            }?.let {
+                this[indexOf(it)] = it.copy(
+                    isSpeaking = activeSpeaker.audioLevel > 0 && activeSpeaker.audioLevelNow > 0
+                )
+            }
+        }
     }
 }

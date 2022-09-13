@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -59,8 +60,10 @@ class ProtoContentMapperImpl(
                     conversationId = readableContent.unqualifiedConversationId
                 )
             )
+
             is MessageContent.Availability ->
                 GenericMessage.Content.Availability(availabilityMapper.fromModelAvailabilityToProto(readableContent.status))
+
             is MessageContent.LastRead -> {
                 GenericMessage.Content.LastRead(
                     LastRead(
@@ -94,9 +97,13 @@ class ProtoContentMapperImpl(
 
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
         val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
-
-        kaliumLogger.d("Received message $genericMessage")
         val protobufModel = genericMessage.content
+        protobufModel?.let {
+            kaliumLogger.d(
+                "Decoded message: {id:${genericMessage.messageId.obfuscateId()} ," +
+                        "content: ${it::class}}"
+            )
+        }
 
         return if (protobufModel is GenericMessage.Content.External) {
             val external = protobufModel.value
@@ -122,6 +129,7 @@ class ProtoContentMapperImpl(
             }
             is GenericMessage.Content.Availability ->
                 MessageContent.Availability(availabilityMapper.fromProtoAvailabilityToModel(protoContent.value))
+
             is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
             is GenericMessage.Content.Calling -> MessageContent.Calling(value = protoContent.value.content)
@@ -182,6 +190,7 @@ class ProtoContentMapperImpl(
                     time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
                 )
             }
+
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> MessageContent.Ignored
             else -> {
