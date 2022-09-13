@@ -19,7 +19,6 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -38,7 +37,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class TeamRepositoryTest {
 
     @Mock

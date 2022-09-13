@@ -22,7 +22,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.configure
@@ -297,7 +296,6 @@ class MessageSenderTest {
             .wasInvoked(exactly = once)
     }
 
-    @OptIn(ConfigurationApi::class)
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
