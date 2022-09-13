@@ -645,40 +645,78 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationDAO.insertConversation(conversation)
             userDAO.insertUser(user1.copy())
 
-            val messages = buildList {
-                repeat(10) {
-                    add(
-                        newRegularMessageEntity(
-                            id = it.toString(),
-                            content = MessageEntityContent.Asset(
-                                assetSizeInBytes = 0,
-                                assetName = null,
-                                assetMimeType = "",
-                                assetDownloadStatus = null,
-                                assetOtrKey = byteArrayOf(),
-                                assetSha256Key = byteArrayOf(),
-                                assetId = "",
-                                assetToken = null,
-                                assetDomain = null,
-                                assetEncryptionAlgorithm = null,
-                                assetWidth = null,
-                                assetHeight = null,
-                                assetDurationMs = null,
-                                assetNormalizedLoudness = null
-                            ),
-                            conversationId = conversation.id,
-                            senderUserId = user1.id,
-                        )
-                    )
-                }
-            }
+            val messages = listOf(
+                newRegularMessageEntity(
+                    id = 1.toString(),
+                    content = MessageEntityContent.Asset(
+                        assetSizeInBytes = 0,
+                        assetName = null,
+                        assetMimeType = "",
+                        assetDownloadStatus = null,
+                        assetOtrKey = byteArrayOf(),
+                        assetSha256Key = byteArrayOf(),
+                        assetId = "",
+                        assetToken = null,
+                        assetDomain = null,
+                        assetEncryptionAlgorithm = null,
+                        assetWidth = null,
+                        assetHeight = null,
+                        assetDurationMs = null,
+                        assetNormalizedLoudness = null
+                    ),
+                    conversationId = conversation.id,
+                    senderUserId = user1.id,
+                ),
+                newRegularMessageEntity(
+                    id = 2.toString(),
+                    content = MessageEntityContent.Asset(
+                        assetSizeInBytes = 0,
+                        assetName = null,
+                        assetMimeType = "",
+                        assetDownloadStatus = null,
+                        assetOtrKey = byteArrayOf(),
+                        assetSha256Key = byteArrayOf(),
+                        assetId = "",
+                        assetToken = null,
+                        assetDomain = null,
+                        assetEncryptionAlgorithm = null,
+                        assetWidth = null,
+                        assetHeight = null,
+                        assetDurationMs = null,
+                        assetNormalizedLoudness = null
+                    ),
+                    conversationId = conversation.id,
+                    senderUserId = user1.id,
+                ),
+                newRegularMessageEntity(
+                    id = 3.toString(),
+                    content = MessageEntityContent.Asset(
+                        assetSizeInBytes = 0,
+                        assetName = null,
+                        assetMimeType = "",
+                        assetDownloadStatus = null,
+                        assetOtrKey = byteArrayOf(),
+                        assetSha256Key = byteArrayOf(),
+                        assetId = "",
+                        assetToken = null,
+                        assetDomain = null,
+                        assetEncryptionAlgorithm = null,
+                        assetWidth = null,
+                        assetHeight = null,
+                        assetDurationMs = null,
+                        assetNormalizedLoudness = null
+                    ),
+                    conversationId = conversation.id,
+                    senderUserId = user1.id,
+                )
+            )
 
             messageDAO.insertMessages(messages)
             // when
             val result = messageDAO.getConversationMessagesByContentType(conversation.id, MessageEntity.ContentType.ASSET)
 
             // then
-            assertTrue(result.size == messages.size)
+            assertEquals(result.size, messages.size)
             result.forEach {
                 assertIs<MessageEntityContent.Asset>(it.content)
             }
