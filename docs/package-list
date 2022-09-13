@@ -188,7 +188,6 @@ com.wire.kalium.logic.data.logout
 com.wire.kalium.logic.data.message
 com.wire.kalium.logic.data.notification
 com.wire.kalium.logic.data.prekey
-com.wire.kalium.logic.data.prekey.remote
 com.wire.kalium.logic.data.publicuser
 com.wire.kalium.logic.data.publicuser.model
 com.wire.kalium.logic.data.register
