@@ -24,7 +24,7 @@ internal class ClientDAOImpl(private val clientsQueries: ClientsQueries) : Clien
         }
     }
 
-    override suspend fun qqgetClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
+    override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID)
             .asFlow()
             .mapToList()
