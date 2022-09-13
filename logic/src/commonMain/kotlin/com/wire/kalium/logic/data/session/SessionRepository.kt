@@ -89,7 +89,6 @@ internal class SessionDataSource(
         accountsDAO.observerValidAccountList()
             .map { it.map { AccountInfo.Valid(idMapper.fromDaoModel(it.userIDEntity)) } }
 
-
     override suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
         wrapStorageRequest { accountsDAO.doesAccountExists(idMapper.toDaoModel(userId)) }
 
@@ -105,7 +104,6 @@ internal class SessionDataSource(
                 val ssoId: SsoId? = sessionMapper.fromSsoIdEntity(it.ssoId)
                 Either.Right(Account(accountInfo, serverConfig, ssoId))
             }
-
 
     override suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo> =
         wrapStorageRequest { accountsDAO.accountInfo(idMapper.toDaoModel(userId)) }
@@ -125,7 +123,6 @@ internal class SessionDataSource(
                 sessionMapper.toLogoutReasonEntity(reason)
             )
         }
-
 
     override fun currentSession(): Either<StorageFailure, AccountInfo> =
         wrapStorageRequest { accountsDAO.currentAccount() }.map { sessionMapper.fromAccountInfoEntity(it) }

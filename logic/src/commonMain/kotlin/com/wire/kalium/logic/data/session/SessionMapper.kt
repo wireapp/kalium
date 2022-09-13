@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.session
 
-import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
@@ -62,7 +61,6 @@ internal class SessionMapperImpl(
                 toLogoutReason(it)
             )
         } ?: AccountInfo.Valid(idMapper.fromDaoModel(accountInfoEntity.userIDEntity))
-
 
     override fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity =
         when (reason) {

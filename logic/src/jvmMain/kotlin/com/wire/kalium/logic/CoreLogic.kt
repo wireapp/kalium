@@ -1,7 +1,5 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.data.session.SessionDataSource
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider

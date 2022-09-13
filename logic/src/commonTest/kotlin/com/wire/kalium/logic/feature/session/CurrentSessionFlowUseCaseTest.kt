@@ -63,7 +63,6 @@ class CurrentSessionFlowUseCaseTest {
         verify(sessionRepository).invocation { currentSessionFlow() }.wasInvoked(exactly = once)
     }
 
-
     private companion object {
         val TEST_ACCOUNT_INFO: AccountInfo = AccountInfo.Valid(
             userId = UserId("user_id", "domain")

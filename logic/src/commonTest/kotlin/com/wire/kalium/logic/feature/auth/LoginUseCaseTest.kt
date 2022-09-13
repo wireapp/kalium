@@ -149,7 +149,6 @@ class LoginUseCaseTest {
                 .whenInvokedWith(any())
                 .then { Either.Right(TEST_SERVER_CONFIG) }
 
-
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
             assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id))
@@ -211,7 +210,6 @@ class LoginUseCaseTest {
                 .function(serverConfigRepository::configByLinks)
                 .whenInvokedWith(any())
                 .then { Either.Right(TEST_SERVER_CONFIG) }
-
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 

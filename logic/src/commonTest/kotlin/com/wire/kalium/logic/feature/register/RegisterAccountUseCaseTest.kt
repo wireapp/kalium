@@ -96,14 +96,12 @@ class RegisterAccountUseCaseTest {
             .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
             .then { Either.Right(userServerConfig) }
 
-
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
         assertEquals(expected.first, actual.ssoID)
         assertEquals(expected.second, actual.authData)
         assertEquals(userServerConfig.id, actual.serverConfigId)
-
 
         verify(registerAccountRepository).coroutine {
             registerTeamWithEmail(

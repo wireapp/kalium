@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.db
 
-import android.accounts.Account
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
@@ -10,7 +9,6 @@ import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao_kalium_db.AccountsDAO
 import com.wire.kalium.persistence.dao_kalium_db.AccountsDAOImpl
 import com.wire.kalium.persistence.dao_kalium_db.LogoutReasonAdapter

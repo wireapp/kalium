@@ -97,7 +97,9 @@ class RegisterAccountRepositoryTest {
         val expected = TestNetworkException.generic
         val email = "user@domain.de"
         val code = "123456"
-        given(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }.then { NetworkResponse.Error(expected) }
+        given(registerApi)
+            .coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }
+            .then { NetworkResponse.Error(expected) }
 
         val actual = registerAccountRepository.verifyActivationCode(email, code)
 

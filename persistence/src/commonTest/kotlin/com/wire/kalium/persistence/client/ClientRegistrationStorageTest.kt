@@ -7,12 +7,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class ClientRegistrationStorageTest: BaseDatabaseTest() {
+class ClientRegistrationStorageTest : BaseDatabaseTest() {
 
     private lateinit var clientRegistrationStorage: ClientRegistrationStorageImpl
 
     @BeforeTest
-    fun setup(){
+    fun setup() {
         deleteDatabase()
         val database = createDatabase()
         clientRegistrationStorage = ClientRegistrationStorageImpl(database.metadataDAO)

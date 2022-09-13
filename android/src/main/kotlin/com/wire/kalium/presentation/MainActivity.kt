@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.PublicAssetResult
-import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.flow.first
@@ -93,13 +92,13 @@ class MainActivity : ComponentActivity() {
 
         coreLogic.globalScope {
             addAuthenticatedAccount(
-                serverConfigId = result.authData.third,
-                ssoId = result.authData.second,
-                authTokens = result.authData.first
+                serverConfigId = result.serverConfigId,
+                ssoId = result.ssoID,
+                authTokens = result.authData
             )
         }
 
-        return result.authData.first.userId
+        return result.authData.userId
     }
 }
 

@@ -55,7 +55,6 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository

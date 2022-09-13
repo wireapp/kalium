@@ -45,7 +45,6 @@ class AuthTokenStorage(
             newToken,
             AuthTokenEntity.serializer()
         )
-
         return newToken
     }
 
@@ -55,7 +54,6 @@ class AuthTokenStorage(
             AuthTokenEntity.serializer()
         )
     }
-
 
     private fun getTokenKey(userId: UserIDEntity): String {
         return "user_tokens_${userId.value}@${userId.domain}"

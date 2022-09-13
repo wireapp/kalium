@@ -85,7 +85,6 @@ internal class AccountsDAOImpl internal constructor(
                 accountInfo?.let { AccountInfoEntity(accountInfo) }
             }
 
-
     override suspend fun allAccountList(): List<AccountInfoEntity> =
         queries.allAccounts()
             .executeAsList()
@@ -118,7 +117,6 @@ internal class AccountsDAOImpl internal constructor(
                 accountInfoList.map { AccountInfoEntity(it) }
             }
 
-
     override fun isFederated(userIDEntity: UserIDEntity): Boolean? = queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
 
     override suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean =
@@ -126,7 +124,6 @@ internal class AccountsDAOImpl internal constructor(
 
     override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean =
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
-
 
     override fun currentAccount(): AccountInfoEntity? =
         currentAccountQueries.currentAccountInfo().executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }

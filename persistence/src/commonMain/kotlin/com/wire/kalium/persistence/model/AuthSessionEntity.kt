@@ -1,9 +1,5 @@
 package com.wire.kalium.persistence.model
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
 data class ServerConfigEntity(
     val id: String,
     val links: Links,

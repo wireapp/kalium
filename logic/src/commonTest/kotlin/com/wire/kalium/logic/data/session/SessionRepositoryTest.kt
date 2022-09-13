@@ -72,7 +72,6 @@ class SessionRepositoryTest {
 
         private val sessionRepository = SessionDataSource(accountsDAO, authTokenStorage, serverConfigRepository, sessionMapper, idMapper)
 
-
         val validAccountIndoEntity = AccountInfoEntity(userIDEntity = UserIDEntity("1", "domain"), null)
 
         val accountInfoValid = sessionMapper.fromAccountInfoEntity(validAccountIndoEntity)
