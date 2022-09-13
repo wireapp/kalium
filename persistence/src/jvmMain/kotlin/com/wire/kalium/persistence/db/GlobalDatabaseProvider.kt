@@ -3,10 +3,16 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.wire.kalium.persistence.Accounts
+import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
-import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
-import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
+import com.wire.kalium.persistence.dao.QualifiedIDAdapter
+import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
+import com.wire.kalium.persistence.daokaliumdb.LogoutReasonAdapter
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import java.io.File
 import java.util.Properties
@@ -15,7 +21,6 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
 
     private val dbName = FileNameUtil.globalDBName()
     private val database: GlobalDatabase
-
 
     init {
         val databasePath = storePath.resolve(dbName)
@@ -34,8 +39,15 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
 
         database = GlobalDatabase(
             driver,
-            ServerConfiguration.Adapter(
+            ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter
+            ),
+            AccountsAdapter = Accounts.Adapter(
+                idAdapter = QualifiedIDAdapter,
+                logout_reasonAdapter = LogoutReasonAdapter
+            ),
+            CurrentAccountAdapter = CurrentAccount.Adapter(
+                user_idAdapter = QualifiedIDAdapter
             )
         )
     }
@@ -43,6 +55,8 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
     actual val serverConfigurationDAO: ServerConfigurationDAO
         get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
 
+    actual val accountsDAO: AccountsDAO
+        get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries)
     actual fun nuke(): Boolean {
         return storePath.resolve(dbName).delete()
     }

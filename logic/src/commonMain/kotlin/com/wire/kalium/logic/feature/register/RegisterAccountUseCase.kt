@@ -1,11 +1,15 @@
 package com.wire.kalium.logic.feature.register
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBlackListedEmail
 import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
@@ -24,7 +28,11 @@ sealed class RegisterParam(
     val name: String = "$firstName $lastName"
 
     class PrivateAccount(
-        firstName: String, lastName: String, email: String, password: String, val emailActivationCode: String
+        firstName: String,
+        lastName: String,
+        email: String,
+        password: String,
+        val emailActivationCode: String
     ) : RegisterParam(firstName, lastName, email, password)
 
     @Suppress("LongParameterList")
@@ -39,8 +47,9 @@ sealed class RegisterParam(
     ) : RegisterParam(firstName, lastName, email, password)
 }
 
-class RegisterAccountUseCase(
+class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
+    private val serverConfigRepository: ServerConfigRepository,
     private val serverLinks: ServerConfig.Links
 ) {
     suspend operator fun invoke(
@@ -55,10 +64,18 @@ class RegisterAccountUseCase(
         is RegisterParam.Team -> {
             with(param) {
                 registerAccountRepository.registerTeamWithEmail(
-                    email, emailActivationCode, name, password, teamName, teamIcon
+                    email,
+                    emailActivationCode,
+                    name,
+                    password,
+                    teamName,
+                    teamIcon
                 )
             }
         }
+    }.flatMap { (ssoId, authTokens) ->
+        serverConfigRepository.configByLinks(serverLinks)
+            .map { serverConfig -> RegisterResult.Success(authTokens, ssoId, serverConfig.id) }
     }.fold({
         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
             handleSpecialErrors(it.kaliumException)
@@ -66,10 +83,7 @@ class RegisterAccountUseCase(
             RegisterResult.Failure.Generic(it)
         }
     }, {
-        RegisterResult.Success(
-            AuthSession(it.second, serverLinks),
-            it.first
-        )
+        it
     })
 
     private fun handleSpecialErrors(error: KaliumException.InvalidRequestError) = with(error) {
@@ -87,9 +101,10 @@ class RegisterAccountUseCase(
 }
 
 sealed class RegisterResult {
-    class Success(
-        val userSession: AuthSession,
-        val ssoId: SsoId?
+    data class Success(
+        val authData: AuthTokens,
+        val ssoID: SsoId?,
+        val serverConfigId: String
     ) : RegisterResult()
 
     sealed class Failure : RegisterResult() {
@@ -100,6 +115,6 @@ sealed class RegisterResult {
         object TeamMembersLimitReached : Failure()
         object BlackListed : Failure()
         object InvalidEmail : Failure()
-        class Generic(val failure: NetworkFailure) : Failure()
+        class Generic(val failure: CoreFailure) : Failure()
     }
 }

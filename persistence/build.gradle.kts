@@ -120,6 +120,7 @@ kotlin {
             dependencies {
                 implementation(Dependencies.Android.securityCrypto)
                 implementation(Dependencies.SqlDelight.androidDriver)
+                implementation(Dependencies.Android.paging3)
                 implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
                 implementation("androidx.sqlite:sqlite:2.0.1")
             }

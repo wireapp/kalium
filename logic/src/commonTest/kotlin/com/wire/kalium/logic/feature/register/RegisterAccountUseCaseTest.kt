@@ -2,18 +2,20 @@ package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -31,89 +33,87 @@ class RegisterAccountUseCaseTest {
     @Mock
     private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
 
+    @Mock
+    private val serverConfigRepository = mock(classOf<ServerConfigRepository>())
+
     private val serverLinks = TEST_SERVER_CONFIG.links
 
     private lateinit var registerAccountUseCase: RegisterAccountUseCase
 
     @BeforeTest
     fun setup() {
-        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverLinks)
+        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverConfigRepository, serverLinks)
     }
 
     @Test
     fun givenRepositoryCallIsSuccessful_whenRegisteringPersonalAccount_thenSuccessIsPropagated() = runTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val ssoId = TEST_SSO_ID
-        val validAuthSession = TEST_VALID_AUTH_SESSION
-        val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
+        val authTokens = TEST_AUTH_TOKENS
+        val userServerConfig = TEST_SERVER_CONFIG
+        val expected = Pair(ssoId, authTokens)
 
         given(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
-        }.then { Either.Right(Pair(ssoId, validAuthSession)) }
+        }.then { Either.Right(Pair(ssoId, authTokens)) }
+
+        given(serverConfigRepository)
+            .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
+            .then { Either.Right(userServerConfig) }
 
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
-        assertEquals(expected.first, actual.ssoId)
-        assertEquals(expected.second, actual.userSession)
+        assertEquals(expected.first, actual.ssoID)
+        assertEquals(expected.second, actual.authData)
+        assertEquals(userServerConfig.id, actual.serverConfigId)
 
         verify(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.wasInvoked(exactly = once)
+
+        verify(serverConfigRepository)
+            .function(serverConfigRepository::configByLinks)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryCallIsSuccessful_whenRegisteringTeamAccount_thenSuccessIsPropagated() = runTest {
         val param = TEST_TEAM_ACCOUNT_PARAM
         val ssoId = TEST_SSO_ID
-        val validAuthSession = TEST_VALID_AUTH_SESSION
-        val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
+        val authTokens = TEST_AUTH_TOKENS
+        val userServerConfig = TEST_SERVER_CONFIG
+        val expected = Pair(ssoId, authTokens)
 
         given(registerAccountRepository).coroutine {
             registerTeamWithEmail(
                 param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
             )
-        }.then { Either.Right(Pair(ssoId, validAuthSession)) }
+        }.then { Either.Right(Pair(ssoId, authTokens)) }
+
+        given(serverConfigRepository)
+            .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
+            .then { Either.Right(userServerConfig) }
 
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
-        assertEquals(expected.first, actual.ssoId)
-        assertEquals(expected.second, actual.userSession)
+        assertEquals(expected.first, actual.ssoID)
+        assertEquals(expected.second, actual.authData)
+        assertEquals(userServerConfig.id, actual.serverConfigId)
 
         verify(registerAccountRepository).coroutine {
             registerTeamWithEmail(
                 param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
             )
         }.wasInvoked(exactly = once)
+
+        verify(serverConfigRepository)
+            .function(serverConfigRepository::configByLinks)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
-
-    @Test
-    fun givenRepositoryCallIsSuccessful_shouldStoreSessionIsFalse_whenRegisteringPersonalAccount_thenDoNotStoreSessionAndReturnSuccess() =
-        runTest {
-            val param = TEST_PRIVATE_ACCOUNT_PARAM
-            val ssoId = TEST_SSO_ID
-            val validAuthSession = TEST_VALID_AUTH_SESSION
-            val expected = Pair(ssoId, AuthSession(validAuthSession, TEST_SERVER_CONFIG.links))
-
-            given(registerAccountRepository).coroutine {
-                registerPersonalAccountWithEmail(
-                    param.email, param.emailActivationCode, param.name, param.password
-                )
-            }.then { Either.Right(Pair(ssoId, validAuthSession)) }
-
-            val actual = registerAccountUseCase(param)
-
-            assertIs<RegisterResult.Success>(actual)
-            assertEquals(expected.first, actual.ssoId)
-            assertEquals(expected.second, actual.userSession)
-
-            verify(registerAccountRepository).coroutine {
-                registerPersonalAccountWithEmail(
-                    param.email, param.emailActivationCode, param.name, param.password
-                )
-            }.wasInvoked(exactly = once)
-        }
 
     @Test
     fun givenRepositoryCallFailWithGenericError_whenRegisteringPersonalAccount_thenErrorIsPropagated() = runTest {
@@ -133,6 +133,10 @@ class RegisterAccountUseCaseTest {
         verify(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.wasInvoked(exactly = once)
+
+        verify(serverConfigRepository)
+            .suspendFunction(serverConfigRepository::configForUser)
+            .with(any()).wasNotInvoked()
     }
 
     @Test
@@ -207,8 +211,12 @@ class RegisterAccountUseCaseTest {
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE
         )
-        val TEST_VALID_AUTH_SESSION =
-            AuthSession.Session.Valid(TEST_SELF_USER.id, "access_token", "refresh_token", "token_type")
+        val TEST_AUTH_TOKENS = AuthTokens(
+            accessToken = "access_token",
+            refreshToken = "refresh_token",
+            tokenType = "token_type",
+            userId = TEST_SELF_USER.id
+        )
         val TEST_SSO_ID = SsoId(null, null, null)
     }
 }

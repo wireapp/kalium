@@ -56,18 +56,18 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
         database = UserDatabase(
             driver,
             Call.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter(),
+                conversation_idAdapter = QualifiedIDAdapter,
                 statusAdapter = EnumColumnAdapter(),
                 conversation_typeAdapter = EnumColumnAdapter()
             ),
-            Client.Adapter(user_idAdapter = QualifiedIDAdapter()),
+            Client.Adapter(user_idAdapter = QualifiedIDAdapter),
             Connection.Adapter(
-                qualified_conversationAdapter = QualifiedIDAdapter(),
-                qualified_toAdapter = QualifiedIDAdapter(),
+                qualified_conversationAdapter = QualifiedIDAdapter,
+                qualified_toAdapter = QualifiedIDAdapter,
                 statusAdapter = EnumColumnAdapter()
             ),
             Conversation.Adapter(
-                qualified_idAdapter = QualifiedIDAdapter(),
+                qualified_idAdapter = QualifiedIDAdapter,
                 typeAdapter = EnumColumnAdapter(),
                 mls_group_stateAdapter = EnumColumnAdapter(),
                 protocolAdapter = EnumColumnAdapter(),
@@ -77,57 +77,57 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 mls_cipher_suiteAdapter = EnumColumnAdapter()
             ),
             Member.Adapter(
-                userAdapter = QualifiedIDAdapter(),
-                conversationAdapter = QualifiedIDAdapter(),
+                userAdapter = QualifiedIDAdapter,
+                conversationAdapter = QualifiedIDAdapter,
                 roleAdapter = MemberRoleAdapter()
             ),
             Message.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter(),
-                sender_user_idAdapter = QualifiedIDAdapter(),
+                conversation_idAdapter = QualifiedIDAdapter,
+                sender_user_idAdapter = QualifiedIDAdapter,
                 statusAdapter = EnumColumnAdapter(),
                 content_typeAdapter = ContentTypeAdapter(),
                 visibilityAdapter = EnumColumnAdapter(),
             ),
             MessageAssetContent.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter(),
+                conversation_idAdapter = QualifiedIDAdapter,
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
                 asset_download_statusAdapter = EnumColumnAdapter(),
             ),
             MessageFailedToDecryptContent.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter()
+                conversation_idAdapter = QualifiedIDAdapter
             ),
             MessageMemberChangeContent.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter(),
+                conversation_idAdapter = QualifiedIDAdapter,
                 member_change_listAdapter = QualifiedIDListAdapter(),
                 member_change_typeAdapter = EnumColumnAdapter()
             ),
             MessageMention.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter(),
-                user_idAdapter = QualifiedIDAdapter(),
+                conversation_idAdapter = QualifiedIDAdapter,
+                user_idAdapter = QualifiedIDAdapter,
                 startAdapter = IntColumnAdapter,
                 lengthAdapter = IntColumnAdapter
             ),
             MessageMissedCallContent.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter(),
-                caller_idAdapter = QualifiedIDAdapter()
+                conversation_idAdapter = QualifiedIDAdapter,
+                caller_idAdapter = QualifiedIDAdapter
             ),
             MessageRestrictedAssetContent.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter()
+                conversation_idAdapter = QualifiedIDAdapter
             ),
             MessageTextContent.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter()
+                conversation_idAdapter = QualifiedIDAdapter
             ),
             MessageUnknownContent.Adapter(
-                conversation_idAdapter = QualifiedIDAdapter()
+                conversation_idAdapter = QualifiedIDAdapter
             ),
             User.Adapter(
-                qualified_idAdapter = QualifiedIDAdapter(),
+                qualified_idAdapter = QualifiedIDAdapter,
                 accent_idAdapter = IntColumnAdapter,
                 connection_statusAdapter = EnumColumnAdapter(),
                 user_availability_statusAdapter = EnumColumnAdapter(),
-                preview_asset_idAdapter = QualifiedIDAdapter(),
-                complete_asset_idAdapter = QualifiedIDAdapter(),
+                preview_asset_idAdapter = QualifiedIDAdapter,
+                complete_asset_idAdapter = QualifiedIDAdapter,
                 user_typeAdapter = EnumColumnAdapter(),
                 bot_serviceAdapter = BotServiceAdapter()
             )
