@@ -129,7 +129,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     caller_id = message.senderUserId
                 )
 
-                is MessageEntityContent.Knock -> { /** NO-OP. No need to insert any content for Knock messages */ }
+                is MessageEntityContent.Knock -> {
+                    /** NO-OP. No need to insert any content for Knock messages */
+                }
             }
         }
     }
@@ -216,7 +218,9 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType
     ): List<MessageEntity> =
-        queries.getConversationMessagesByContentType(conversationId, contentType).executeAsList().map { it.toMessageEntity() }
+        queries.getConversationMessagesByContentType(conversationId, contentType)
+            .executeAsList()
+            .map { mapper.toMessageEntity(it) }
 
     override suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity) {
         queries.deleteAllConversationMessages(conversationId)
@@ -224,9 +228,11 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun observeLastUnreadMessage(
         conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?> = queries.getLastUnreadMessage(conversationID).asFlow().mapToOneOrNull().map { it?.let {
-        mapper.toMessageEntity(it)
-    } }.distinctUntilChanged()
+    ): Flow<MessageEntity?> = queries.getLastUnreadMessage(conversationID).asFlow().mapToOneOrNull().map {
+        it?.let {
+            mapper.toMessageEntity(it)
+        }
+    }.distinctUntilChanged()
 
     override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity): Flow<Long> =
         queries.getUnreadMessageCount(conversationId).asFlow().mapToOneOrDefault(0L)
