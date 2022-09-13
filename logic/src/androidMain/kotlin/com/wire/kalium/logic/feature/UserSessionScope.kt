@@ -5,9 +5,7 @@ import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -30,7 +28,8 @@ actual class UserSessionScope internal constructor(
     userSessionScopeProvider: UserSessionScopeProvider,
 ) : UserSessionScopeCommon(
     userId,
-    authenticatedDataSourceSet,,
+    authenticatedDataSourceSet,
+    globalScope,
     globalCallManager,
     globalPreferences,
     dataStoragePaths,
