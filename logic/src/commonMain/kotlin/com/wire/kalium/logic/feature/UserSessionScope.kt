@@ -1,11 +1,11 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
+import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -34,7 +34,6 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
@@ -48,13 +47,10 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
-import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -62,8 +58,11 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
+import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
@@ -162,15 +161,14 @@ expect class UserSessionScope : UserSessionScopeCommon
 
 @Suppress("LongParameterList")
 abstract class UserSessionScopeCommon internal constructor(
-    private val userId: QualifiedID,
+    private val userId: UserId,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
-    private val sessionRepository: SessionRepository,
+    private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val serverConfigRepository: Lazy<ServerConfigRepository>
 ) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
@@ -236,7 +234,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            sessionRepository
+            globalScope.sessionRepository
         )
 
     private val teamRepository: TeamRepository
@@ -438,8 +436,7 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = MapperProvider.federatedIdMapper(
             userId,
             qualifiedIdMapper,
-            sessionRepository,
-            serverConfigRepository.value
+            globalScope.sessionRepository
         )
 
     private val callManager: Lazy<CallManager> = lazy {
@@ -488,17 +485,16 @@ abstract class UserSessionScopeCommon internal constructor(
             connectionRepository,
             logout,
             clientRepository,
-            sessionRepository
+            userId
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs)
 
-    private val preKeyRemoteRepository: PreKeyRemoteRepository
-        get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
-            preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
+            authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
+            authenticatedDataSourceSet.proteusClient
         )
 
     private val keyPackageRepository: KeyPackageRepository
@@ -524,7 +520,8 @@ abstract class UserSessionScopeCommon internal constructor(
             keyPackageLimitsProvider,
             mlsClientProvider,
             notificationTokenRepository,
-            clientRemoteRepository
+            clientRemoteRepository,
+            authenticatedDataSourceSet.proteusClient
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -567,19 +564,21 @@ abstract class UserSessionScopeCommon internal constructor(
             teamRepository,
             connectionRepository,
             qualifiedIdMapper,
-            sessionRepository,
+            globalScope.sessionRepository,
+            globalScope.serverConfigRepository,
             userId,
-            userDatabaseProvider.metadataDAO
+            userDatabaseProvider.metadataDAO,
         )
+    private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(authenticatedDataSourceSet)
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,
-            sessionRepository,
-            userId,
-            authenticatedDataSourceSet,
+            globalScope.sessionRepository,
             clientRepository,
-            mlsClientProvider,
+            userId,
             client.deregisterNativePushToken,
+            client.clearClientData,
+            clearUserData,
             userSessionScopeProvider
         )
     private val featureConfigRepository: FeatureConfigRepository

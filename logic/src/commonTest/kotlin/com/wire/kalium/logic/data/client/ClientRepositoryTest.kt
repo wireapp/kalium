@@ -19,13 +19,12 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.OtherUserClientsItem
+import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -43,9 +42,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
+import com.wire.kalium.network.api.UserId as UserIdDTO
 
 @ExperimentalCoroutinesApi
-@ConfigurationApi
 class ClientRepositoryTest {
 
     @Mock
@@ -337,20 +336,22 @@ class ClientRepositoryTest {
     fun whenOtherUsersClientsSuccess_thenTheSuccessIsReturned() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
+        val userIdDto = UserIdDTO("123", "wire.com")
         val otherUsersClients = listOf(
-            OtherUserClientsItem(DeviceTypeDTO.Phone, "1111"), OtherUserClientsItem(DeviceTypeDTO.Desktop, "2222")
+            SimpleClientResponse(deviceClass = DeviceTypeDTO.Phone, id = "1111"),
+            SimpleClientResponse(deviceClass = DeviceTypeDTO.Desktop, id = "2222")
         )
 
-        val expectedSuccess = Either.Right(otherUsersClients)
-        val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(otherUsersClients).arrange()
+        val expectedSuccess = Either.Right(listOf(userId to otherUsersClients))
+        val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(mapOf(userIdDto to otherUsersClients)).arrange()
 
         // When
-        val result = clientRepository.fetchOtherUserClients(userId)
+        val result = clientRepository.fetchOtherUserClients(listOf(userId))
 
         // Then
         result.shouldSucceed { expectedSuccess.value }
         verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::otherUserClients).with(any())
+            .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
             .wasInvoked(once)
     }
 
@@ -363,13 +364,13 @@ class ClientRepositoryTest {
             .withErrorResponse(notFound).arrange()
 
         // When
-        val result = clientRepository.fetchOtherUserClients(userId)
+        val result = clientRepository.fetchOtherUserClients(listOf(userId))
 
         // Then
         result.shouldFail { Either.Left(notFound).value }
 
         verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::otherUserClients).with(any())
+            .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -383,9 +384,9 @@ class ClientRepositoryTest {
 
         var clientRepository = ClientRemoteDataSource(clientApi, clientConfigImpl)
 
-        fun withSuccessfulResponse(expectedResponse: List<OtherUserClientsItem>): Arrangement {
+        fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>): Arrangement {
             given(clientApi)
-                .suspendFunction(clientApi::otherUserClients).whenInvokedWith(any()).then {
+                .suspendFunction(clientApi::listClientsOfUsers).whenInvokedWith(any()).then {
                     NetworkResponse.Success(expectedResponse, mapOf(), 200)
                 }
             return this
@@ -393,7 +394,7 @@ class ClientRepositoryTest {
 
         fun withErrorResponse(kaliumException: KaliumException): Arrangement {
             given(clientApi)
-                .suspendFunction(clientApi::otherUserClients)
+                .suspendFunction(clientApi::listClientsOfUsers)
                 .whenInvokedWith(any())
                 .then {
                     NetworkResponse.Error(
