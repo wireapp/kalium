@@ -687,27 +687,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
                     ),
                     conversationId = conversation.id,
                     senderUserId = user1.id,
-                ),
-                newRegularMessageEntity(
-                    id = 3.toString(),
-                    content = MessageEntityContent.Asset(
-                        assetSizeInBytes = 0,
-                        assetName = null,
-                        assetMimeType = "",
-                        assetDownloadStatus = null,
-                        assetOtrKey = byteArrayOf(),
-                        assetSha256Key = byteArrayOf(),
-                        assetId = "",
-                        assetToken = null,
-                        assetDomain = null,
-                        assetEncryptionAlgorithm = null,
-                        assetWidth = null,
-                        assetHeight = null,
-                        assetDurationMs = null,
-                        assetNormalizedLoudness = null
-                    ),
-                    conversationId = conversation.id,
-                    senderUserId = user1.id,
                 )
             )
 
