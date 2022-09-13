@@ -18,7 +18,7 @@ internal class ConfirmationTypeMapperImpl : ConfirmationTypeMapper {
         }
 
     override fun fromModelConfirmationTypeToProto(type: Message.ConfirmationType): Confirmation.Type =
-        when(type) {
+        when (type) {
             Message.ConfirmationType.DELIVERED -> Confirmation.Type.DELIVERED
             Message.ConfirmationType.READ -> Confirmation.Type.READ
         }

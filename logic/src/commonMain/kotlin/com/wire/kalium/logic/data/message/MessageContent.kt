@@ -19,7 +19,7 @@ sealed class MessageContent {
     ) : Regular()
 
     data class Calling(val value: String) : Regular()
-    data class Confirmation(val type: Message.ConfirmationType, val firstMessageId: String, val moreMessageIds: List<String>): Regular()
+    data class Confirmation(val type: Message.ConfirmationType, val firstMessageId: String, val moreMessageIds: List<String>) : Regular()
     data class Asset(val value: AssetContent) : Regular()
     data class DeleteMessage(val messageId: String) : Regular()
     data class TextEdited(
