@@ -73,14 +73,12 @@ actual class UserSessionScopeProviderImpl(
         return UserSessionScope(
             userId,
             userDataSource,
+            globalScope,
             globalCallManager,
-            // TODO: make lazier
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
-            this,
-            lazy { globalScope.serverConfigRepository },
-            globalScope
+            this
         )
     }
 }
