@@ -5,7 +5,7 @@ import io.dropwizard.Configuration
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
 
 class TestserviceConfiguration(
-    private var template: String? = null,
+    private var saveToUserHomeDirectory: Boolean = true,
     private var instanceCreationTimeoutInSeconds: Long = 60
 ) : Configuration() {
 
@@ -13,13 +13,8 @@ class TestserviceConfiguration(
     var swaggerBundleConfiguration: SwaggerBundleConfiguration? = null
 
     @JsonProperty
-    fun getTemplate(): String? {
-        return template
-    }
-
-    @JsonProperty
-    fun setTemplate(template: String?) {
-        this.template = template
+    fun getSaveToUserHomeDirectory(): Boolean {
+        return saveToUserHomeDirectory
     }
 
     @JsonProperty

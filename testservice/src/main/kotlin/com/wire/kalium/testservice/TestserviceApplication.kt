@@ -59,7 +59,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         val clientResources = ClientResources()
         val conversationResources = ConversationResources(instanceService)
         val instanceLifecycle = InstanceLifecycle(instanceService, configuration)
-        environment.healthChecks().register("template", TestserviceHealthCheck())
+        environment.healthChecks().register("template", TestserviceHealthCheck(configuration))
         environment.jersey().register(clientResources)
         environment.jersey().register(conversationResources)
         environment.jersey().register(instanceLifecycle)

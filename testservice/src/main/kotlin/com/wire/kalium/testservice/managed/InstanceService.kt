@@ -104,33 +104,34 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         }
 
         log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.backend}")
-        val (loginResult, ssoId) = coreLogic.authenticationScope(serverConfig) {
+        val loginResult = coreLogic.authenticationScope(serverConfig) {
             runBlocking {
                 login(instanceRequest.email, instanceRequest.password, true).let {
                     if (it !is AuthenticationResult.Success) {
-                        throw WebApplicationException("Login failed, check your credentials")
+                        throw WebApplicationException("Instance $instanceId: Login failed, check your credentials")
                     } else {
-                        log.info(it.userSession.toString())
-                        it.userSession to it.ssoId
+                        it
                     }
                 }
             }
         }
 
         log.info("Instance $instanceId: Save Session")
-        coreLogic.globalScope {
-            val addAccountResult = addAuthenticatedAccount(loginResult, ssoId, true)
+        val userId = coreLogic.globalScope {
+            val addAccountResult = addAuthenticatedAccount(
+                loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, true
+            )
             if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                 throw WebApplicationException("Instance ${instanceId}: Failed to save session")
             }
-            loginResult.session.userId
+            loginResult.authData.userId
         }
 
         var clientId: String? = null
 
         log.info("Instance $instanceId: Register client device")
         runBlocking {
-            coreLogic.sessionScope(loginResult.session.userId) {
+            coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
                     when (val result = client.register(
                         RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList())
@@ -168,7 +169,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         instance.coreLogic?.globalScope {
             val result = session.currentSession()
             if (result is CurrentSessionResult.Success) {
-                instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                instance.coreLogic.sessionScope(result.accountInfo.userId) {
                     instance.clientId?.let {
                         runBlocking {
                             client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId)))

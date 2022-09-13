@@ -33,7 +33,7 @@ sealed class ConversationRepository {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Delete message everywhere")
                         runBlocking {
                             messages.deleteMessage(conversationId, messageId, deleteForEveryone)
@@ -47,7 +47,7 @@ sealed class ConversationRepository {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         text?.let {
                             log.info("Instance ${instance.instanceId}: Send text message '${text}'")
                             runBlocking {
@@ -68,7 +68,7 @@ sealed class ConversationRepository {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send ping")
                         runBlocking {
                             messages.sendKnock(conversationId, false)
@@ -82,7 +82,7 @@ sealed class ConversationRepository {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         val recentMessages = runBlocking {
                             log.info("Instance ${instance.instanceId}: Get recent messages...")
                             messages.getRecentMessages(conversationId).first()
@@ -102,7 +102,7 @@ sealed class ConversationRepository {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send file")
                         runBlocking {
                             log.info("Instance ${instance.instanceId}: Wait until alive")
@@ -159,7 +159,7 @@ sealed class ConversationRepository {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.authSession.session.userId) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send file")
                         runBlocking {
                             log.info("Instance ${instance.instanceId}: Wait until alive")

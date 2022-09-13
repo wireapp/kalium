@@ -1,4 +1,3 @@
-template: Hello, %s!
 instanceCreationTimeoutInSeconds: 60
 
 # the only required property is resourcePackage, for more config options see below

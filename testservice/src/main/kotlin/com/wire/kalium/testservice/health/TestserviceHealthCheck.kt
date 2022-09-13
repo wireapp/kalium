@@ -2,21 +2,27 @@ package com.wire.kalium.testservice.health
 
 import com.codahale.metrics.health.HealthCheck
 import com.wire.kalium.testservice.TestserviceConfiguration
+import java.io.File
 
-class TestserviceHealthCheck : HealthCheck() {
+class TestserviceHealthCheck(configuration: TestserviceConfiguration) : HealthCheck() {
 
-    var template: String? = null
+    var saveInUserHomeDirectory: Boolean = false
 
-    fun CallBackendsHealthCheck(configuration: TestserviceConfiguration) {
-        template = configuration.getTemplate()
+    init {
+        saveInUserHomeDirectory = configuration.getSaveToUserHomeDirectory()
     }
 
     @Throws(Exception::class)
     override fun check(): Result? {
-        val saying = String.format(template.toString(), "TEST")
-        return if (!saying.contains("TEST")) {
-            return Result.unhealthy("template doesn't include a name")
-        } else Result.healthy()
+        if (saveInUserHomeDirectory) {
+            val savePath = File("${System.getProperty("user.home")}/.testservice/")
+            if (savePath.exists() && savePath.isDirectory) {
+                return Result.healthy()
+            } else {
+                return Result.unhealthy("$savePath is not a directory or does not exist")
+            }
+        }
+        return Result.healthy()
     }
 
 }
