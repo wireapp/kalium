@@ -132,11 +132,13 @@ internal class SessionDataSource(
             .map { it?.let { sessionMapper.fromAccountInfoEntity(it) } }
             .wrapStorageRequest()
 
-    override suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit> =
-        wrapStorageRequest { accountsDAO.deleteAccount(idMapper.toDaoModel(userId)) }
+    override suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit> {
+        val idEntity = idMapper.toDaoModel(userId)
+        return wrapStorageRequest { accountsDAO.deleteAccount(idEntity) }
             .onSuccess {
-                TODO("delete account tokens")
+                wrapStorageRequest { authTokenStorage.deleteToken(idEntity) }
             }
+    }
 
     override suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?> =
         wrapStorageRequest { accountsDAO.ssoId(idMapper.toDaoModel(userId)) }

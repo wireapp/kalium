@@ -55,6 +55,10 @@ class AuthTokenStorage(
         )
     }
 
+    fun deleteToken(userId: UserIDEntity) {
+        kaliumPreferences.remove(getTokenKey(userId))
+    }
+
     private fun getTokenKey(userId: UserIDEntity): String {
         return "user_tokens_${userId.value}@${userId.domain}"
     }
