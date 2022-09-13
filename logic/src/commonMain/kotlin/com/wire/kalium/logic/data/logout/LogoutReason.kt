@@ -3,24 +3,32 @@ package com.wire.kalium.logic.data.logout
 /**
  * Describes a reason that led to a logout.
  */
-enum class LogoutReason {
-    /**
-     * User initiated the logout manually.
-     */
-    SELF_LOGOUT,
+@Suppress("ClassNaming")
+sealed class LogoutReason {
+    sealed class SelfInitiated: LogoutReason()
+    sealed class Automatic: LogoutReason()
+        /**
+         * User initiated the logout manually and opted to not delete user data.
+         */
+        object SELF_SOFT_LOGOUT: SelfInitiated()
 
-    /**
-     * User deleted this client from another client.
-     */
-    REMOVED_CLIENT,
+        /**
+         * User initiated the logout manually and opted to delete user data.
+         */
+        object SELF_HARD_LOGOUT: SelfInitiated()
 
-    /**
-     * User delete their account.
-     */
-    DELETED_ACCOUNT,
+        /**
+         * User deleted this client from another client.
+         */
+        object REMOVED_CLIENT: Automatic()
 
-    /**
-     * Session Expired.
-     */
-    SESSION_EXPIRED;
+        /**
+         * User delete their account.
+         */
+        object DELETED_ACCOUNT: Automatic()
+
+        /**
+         * Session Expired.
+         */
+        object SESSION_EXPIRED: Automatic()
 }

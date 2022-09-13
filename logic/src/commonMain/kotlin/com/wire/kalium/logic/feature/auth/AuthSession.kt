@@ -4,6 +4,10 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.isSuccessful
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 sealed class AccountInfo {
     abstract val userId: UserId
@@ -12,6 +16,15 @@ sealed class AccountInfo {
         override val userId: UserId,
         val logoutReason: LogoutReason
     ) : AccountInfo()
+
+    @OptIn(ExperimentalContracts::class)
+    fun isValid():Boolean {
+        contract {
+            returns(true) implies (this@AccountInfo is Valid)
+            returns(false) implies (this@AccountInfo is Invalid)
+        }
+        return this is Valid
+    }
 }
 
 data class Account(

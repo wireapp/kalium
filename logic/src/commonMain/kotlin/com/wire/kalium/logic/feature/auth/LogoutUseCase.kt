@@ -11,7 +11,7 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import kotlinx.coroutines.cancel
 
 interface LogoutUseCase {
-    suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT, isHardLogout: Boolean = false)
+    suspend operator fun invoke(reason: LogoutReason)
 }
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
@@ -27,11 +27,11 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
-    override suspend operator fun invoke(reason: LogoutReason, isHardLogout: Boolean) {
+    override suspend operator fun invoke(reason: LogoutReason) {
         deregisterTokenUseCase()
         logoutRepository.logout()
-        sessionRepository.logout(userId = userId, reason, isHardLogout)
-        if (isHardLogout) {
+        sessionRepository.logout(userId = userId, reason)
+        if (reason == LogoutReason.SELF_HARD_LOGOUT) {
             clearClientDataUseCase()
             clearUserDataUseCase() // this clears also current client id
         } else {
