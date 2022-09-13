@@ -23,6 +23,8 @@ import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
@@ -96,6 +98,7 @@ class MessageScope internal constructor(
     val sendAssetMessage: SendAssetMessageUseCase
         get() = SendAssetMessageUseCaseImpl(
             persistMessage,
+            updateAssetMessageUploadStatus,
             clientRepository,
             assetRepository,
             userRepository,
@@ -135,6 +138,11 @@ class MessageScope internal constructor(
         )
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
+
+    val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase
+        get() = UpdateAssetMessageUploadStatusUseCaseImpl(
+            messageRepository
+        )
 
     val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase
         get() = UpdateAssetMessageDownloadStatusUseCaseImpl(

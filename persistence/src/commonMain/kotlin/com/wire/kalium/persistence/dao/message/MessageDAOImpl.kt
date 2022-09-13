@@ -133,6 +133,12 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         }
     }
 
+    override suspend fun updateAssetUploadStatus(
+        uploadStatus: MessageEntity.UploadStatus,
+        id: String,
+        conversationId: QualifiedIDEntity
+    ) = queries.updateAssetUploadStatus(uploadStatus, id, conversationId)
+
     override suspend fun updateAssetDownloadStatus(
         downloadStatus: MessageEntity.DownloadStatus,
         id: String,
