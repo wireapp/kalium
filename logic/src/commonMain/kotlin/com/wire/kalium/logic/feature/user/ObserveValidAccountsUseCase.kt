@@ -21,9 +21,9 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(): Flow<List<Pair<SelfUser, Team?>>> =
-        sessionRepository.allValidSessionsFlow().flatMapLatest {
-            val flowsOfSelfUsers = it.map {
-                userSessionScopeProvider.get(it.token.userId).let {
+        sessionRepository.allValidSessionsFlow().flatMapLatest { accountList ->
+            val flowsOfSelfUsers = accountList.map {
+                userSessionScopeProvider.getOrCreate(it.userId).let {
                     combine(
                         it.users.getSelfUser(),
                         it.team.getSelfTeamUseCase()

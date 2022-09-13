@@ -1,72 +1,30 @@
 package com.wire.kalium.persistence.model
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
 data class ServerConfigEntity(
-    @SerialName("id") val id: String,
-    @SerialName("links") val links: Links,
-    @SerialName("metadata") val metaData: MetaData
+    val id: String,
+    val links: Links,
+    val metaData: MetaData
 ) {
-    @Serializable
     data class Links(
-        @SerialName("apiBaseUrl") val api: String,
-        @SerialName("accountsBaseUrl") val accounts: String,
-        @SerialName("webSocketBaseUrl") val webSocket: String,
-        @SerialName("blackListUrl") val blackList: String,
-        @SerialName("teamsUrl") val teams: String,
-        @SerialName("websiteUrl") val website: String,
-        @SerialName("title") val title: String,
-        @SerialName("is_on_premises") val isOnPremises: Boolean
+        val api: String,
+        val accounts: String,
+        val webSocket: String,
+        val blackList: String,
+        val teams: String,
+        val website: String,
+        val title: String,
+        val isOnPremises: Boolean
     )
 
-    @Serializable
     data class MetaData(
-        @SerialName("federation") val federation: Boolean,
-        @SerialName("commonApiVersion") val apiVersion: Int,
-        @SerialName("domain") val domain: String?
+        val federation: Boolean,
+        val apiVersion: Int,
+        val domain: String?
     )
 }
 
-@Serializable
 data class SsoIdEntity(
-    @SerialName("scim_external_id") val scimExternalId: String?,
-    @SerialName("subject") val subject: String?,
-    @SerialName("tenant") val tenant: String?
+    val scimExternalId: String?,
+    val subject: String?,
+    val tenant: String?
 )
-
-@Serializable
-sealed class AuthSessionEntity {
-    @SerialName("user_id") abstract val userId: QualifiedIDEntity
-    @SerialName("token_type") abstract val tokenType: String
-    @SerialName("access_token") abstract val accessToken: String
-    @SerialName("refresh_token") abstract val refreshToken: String
-    @SerialName("user_sso_id") abstract val ssoId: SsoIdEntity?
-    @SerialName("wire_server") abstract val serverLinks: ServerConfigEntity.Links
-
-    @Serializable
-    @SerialName("authsession.valid")
-    data class Valid(
-        override val userId: QualifiedIDEntity,
-        @SerialName("token_type") override val tokenType: String,
-        @SerialName("access_token") override val accessToken: String,
-        @SerialName("refresh_token") override val refreshToken: String,
-        override val serverLinks: ServerConfigEntity.Links,
-        override val ssoId: SsoIdEntity?
-    ) : AuthSessionEntity()
-
-    @Serializable
-    @SerialName("authsession.invalid")
-    data class Invalid(
-        override val userId: QualifiedIDEntity,
-        @SerialName("token_type") override val tokenType: String,
-        @SerialName("access_token") override val accessToken: String,
-        @SerialName("refresh_token") override val refreshToken: String,
-        override val serverLinks: ServerConfigEntity.Links,
-        @SerialName("reason") val reason: LogoutReason,
-        @SerialName("hardLogout") val hardLogout: Boolean,
-        override val ssoId: SsoIdEntity?
-    ) : AuthSessionEntity()
-}

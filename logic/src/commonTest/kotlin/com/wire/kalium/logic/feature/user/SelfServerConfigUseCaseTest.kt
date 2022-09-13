@@ -2,9 +2,8 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AuthSession
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
@@ -22,18 +21,18 @@ class SelfServerConfigUseCaseTest {
 
     @Test
     fun givenUserSession_whenGetSelfServerConfig_thenReturnSelfServerConfig() = runTest {
-        val expected = validAuthSessionWith(selfUserId)
+        val expected = TEST_SERVER_CONFIG
         val (arrangement, selfServerConfigUseCase) = Arrangement()
-            .withUserSessionReturnSuccess(expected)
+            .withServerConfigSuccessResponse(selfUserId, expected)
             .arrange()
 
         selfServerConfigUseCase().also { result ->
             assertIs<SelfServerConfigUseCase.Result.Success>(result)
-            assertEquals(expected.serverLinks, result.serverLinks)
+            assertEquals(expected, result.serverLinks)
         }
 
-        verify(arrangement.sessionRepository)
-            .function(arrangement.sessionRepository::userSession)
+        verify(arrangement.serverConfigRepository)
+            .suspendFunction(arrangement.serverConfigRepository::configForUser)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -41,7 +40,7 @@ class SelfServerConfigUseCaseTest {
     @Test
     fun givenError_whenGetSelfServerConfig_thenReturnError() = runTest {
         val (arrangement, selfServerConfigUseCase) = Arrangement()
-            .withUserSessionReturnError(StorageFailure.DataNotFound)
+            .withServerConfigErrorResponse(selfUserId, StorageFailure.DataNotFound)
             .arrange()
 
         selfServerConfigUseCase().also { result ->
@@ -49,8 +48,8 @@ class SelfServerConfigUseCaseTest {
             assertEquals(StorageFailure.DataNotFound, result.cause)
         }
 
-        verify(arrangement.sessionRepository)
-            .function(arrangement.sessionRepository::userSession)
+        verify(arrangement.serverConfigRepository)
+            .suspendFunction(arrangement.serverConfigRepository::configForUser)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -58,36 +57,27 @@ class SelfServerConfigUseCaseTest {
     private companion object {
         private val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
 
-        fun validAuthSessionWith(userId: UserId): AuthSession =
-            AuthSession(
-                AuthSession.Token.Valid(
-                    userId,
-                    "accessToken",
-                    "refreshToken",
-                    "token_type",
-                ),
-                TEST_SERVER_CONFIG.links
-            )
-
         val selfUserId = UserId("self_id", "self_domain")
     }
 
     private class Arrangement {
 
         @Mock
-        val sessionRepository = mock(SessionRepository::class)
+        val serverConfigRepository = mock(ServerConfigRepository::class)
 
-        val selfServerConfigUseCase = SelfServerConfigUseCase(sessionRepository, selfUserId)
-        fun withUserSessionReturnSuccess(session: AuthSession): Arrangement = apply {
-            given(sessionRepository)
-                .invocation { sessionRepository.userSession(selfUserId) }
-                .then { Either.Right(session) }
+        val selfServerConfigUseCase = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
+        suspend fun withServerConfigSuccessResponse(userId: UserId, serverConfig: ServerConfig): Arrangement = apply {
+            given(serverConfigRepository)
+                .coroutine { serverConfigRepository.configForUser(userId) }
+                .then { Either.Right(TEST_SERVER_CONFIG) }
         }
-        fun withUserSessionReturnError(storageFailure: StorageFailure): Arrangement = apply {
-            given(sessionRepository)
-                .invocation { sessionRepository.userSession(selfUserId) }
+
+        suspend fun withServerConfigErrorResponse(userId: UserId, storageFailure: StorageFailure): Arrangement = apply {
+            given(serverConfigRepository)
+                .coroutine { serverConfigRepository.configForUser(userId) }
                 .then { Either.Left(storageFailure) }
         }
+
         fun arrange() = this to selfServerConfigUseCase
     }
 }
