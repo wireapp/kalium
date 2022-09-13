@@ -24,6 +24,13 @@ internal class ClientDAOImpl(private val clientsQueries: ClientsQueries) : Clien
         }
     }
 
+    override suspend fun insertClientsAndRemoveOther(qualifiedID: QualifiedIDEntity, clients: List<Client>) = clientsQueries.transaction {
+        clients.forEach { client ->
+            clientsQueries.insertClient(client.userId, client.id, client.deviceType)
+        }
+        clientsQueries.deleteRedundantClientsForUser(qualifiedID, clients.map { it.id })
+    }
+
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID)
             .asFlow()

@@ -31,3 +31,6 @@ SELECT * FROM Client WHERE user_id = ?;
 
 selectAllClientsByConversation:
 SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation LIKE ('%' || :conversation_id || '%'));
+
+deleteRedundantClientsForUser:
+DELETE FROM Client WHERE user_id = :user_id AND id NOT IN :valid_ids;
