@@ -678,7 +678,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val result = messageDAO.getConversationMessagesByContentType(conversation.id, MessageEntity.ContentType.ASSET)
 
             // then
-            assertTrue(result.size == 10)
+            assertTrue(result.size == messages.size)
             result.forEach {
                 assertIs<MessageEntityContent.Asset>(it.content)
             }
