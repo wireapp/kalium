@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
-@Suppress("TooManyFunctions")
 data class AccountInfoEntity(
     val userIDEntity: UserIDEntity,
     val logoutReason: LogoutReason?
@@ -37,15 +36,37 @@ data class FullAccountEntity(
     val logoutReason: LogoutReason?
 )
 
-class AccountsDAO(
+@Suppress("TooManyFunctions")
+interface AccountsDAO {
+    suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity?
+    suspend fun insertOrReplace(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, serverConfigId: String)
+    suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?>
+    suspend fun allAccountList(): List<AccountInfoEntity>
+    suspend fun allValidAccountList(): List<AccountInfoEntity>
+    suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
+    suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
+    fun isFederated(userIDEntity: UserIDEntity): Boolean?
+    suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean
+    suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean
+    fun currentAccount(): AccountInfoEntity?
+    fun observerCurrentAccount(): Flow<AccountInfoEntity?>
+    suspend fun setCurrentAccount(userIDEntity: UserIDEntity?)
+    suspend fun updateSsoId(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?)
+    suspend fun deleteAccount(userIDEntity: UserIDEntity)
+    suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason)
+    suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity?
+    fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity?
+}
+@Suppress("TooManyFunctions")
+internal class AccountsDAOImpl internal constructor(
     private val queries: AccountsQueries,
     private val currentAccountQueries: CurrentAccountQueries
-) {
-    suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? = queries.ssoId(userIDEntity).executeAsOneOrNull()?.let {
+): AccountsDAO {
+    override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? = queries.ssoId(userIDEntity).executeAsOneOrNull()?.let {
         SsoIdEntity(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant)
     }
 
-    suspend fun insertOrReplace(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, serverConfigId: String) {
+    override suspend fun insertOrReplace(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, serverConfigId: String) {
         queries.insertOrReplace(
             scimExternalId = ssoIdEntity?.scimExternalId,
             subject = ssoIdEntity?.subject,
@@ -56,7 +77,7 @@ class AccountsDAO(
         )
     }
 
-    suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?> =
+    override suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?> =
         queries.accountInfo(userIDEntity)
             .asFlow()
             .mapToOneOrNull()
@@ -65,21 +86,21 @@ class AccountsDAO(
             }
 
 
-    suspend fun allAccountList(): List<AccountInfoEntity> =
+    override suspend fun allAccountList(): List<AccountInfoEntity> =
         queries.allAccounts()
             .executeAsList()
             .map { accountInfo ->
                 AccountInfoEntity(accountInfo)
             }
 
-    suspend fun allValidAccountList(): List<AccountInfoEntity> =
+    override suspend fun allValidAccountList(): List<AccountInfoEntity> =
         queries.allValidAccounts()
             .executeAsList()
             .map { validAccount ->
                 AccountInfoEntity(validAccount.id, validAccount.logoutReason)
             }
 
-    suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
+    override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allAccounts()
             .asFlow()
             .mapToList()
@@ -89,7 +110,7 @@ class AccountsDAO(
                 }
             }
 
-    suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>> =
+    override suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allAccounts()
             .asFlow()
             .mapToList()
@@ -98,29 +119,29 @@ class AccountsDAO(
             }
 
 
-    fun isFederated(userIDEntity: UserIDEntity) = queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
+    override fun isFederated(userIDEntity: UserIDEntity): Boolean? = queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
 
-    suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean =
+    override suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean =
         queries.doesAccountExist(userIDEntity).executeAsOne()
 
-    suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean =
+    override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean =
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
 
 
-    fun currentAccount(): AccountInfoEntity? =
+    override fun currentAccount(): AccountInfoEntity? =
         currentAccountQueries.currentAccountInfo().executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
 
-    fun observerCurrentAccount(): Flow<AccountInfoEntity?> = currentAccountQueries.currentAccountInfo()
+    override fun observerCurrentAccount(): Flow<AccountInfoEntity?> = currentAccountQueries.currentAccountInfo()
         .asFlow()
         .mapToOneOrNull()
         .map { it?.let { AccountInfoEntity(it.id, it.logoutReason) } }
         .distinctUntilChanged()
 
-    suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) {
+    override suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) {
         currentAccountQueries.update(userIDEntity)
     }
 
-    suspend fun updateSsoId(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?) {
+    override suspend fun updateSsoId(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?) {
         queries.updateSsoId(
             scimExternalId = ssoIdEntity?.scimExternalId,
             subject = ssoIdEntity?.subject,
@@ -129,18 +150,18 @@ class AccountsDAO(
         )
     }
 
-    suspend fun deleteAccount(userIDEntity: UserIDEntity) {
+    override suspend fun deleteAccount(userIDEntity: UserIDEntity) {
         queries.delete(userIDEntity)
     }
 
-    suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason) {
+    override suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason) {
         queries.markAccountAsLoggedOut(logoutReason, userIDEntity)
     }
 
-    suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? =
+    override suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? =
         queries.accountInfo(userIDEntity).executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
 
-    fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
+    override fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
         queries.fullAccountInfo(userIDEntity).executeAsOneOrNull()?.let {
             FullAccountEntity(
                 info = AccountInfoEntity(it.id, it.logoutReason),

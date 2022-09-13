@@ -12,6 +12,7 @@ import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao_kalium_db.AccountsDAO
+import com.wire.kalium.persistence.dao_kalium_db.AccountsDAOImpl
 import com.wire.kalium.persistence.dao_kalium_db.LogoutReasonAdapter
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
 import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
@@ -62,7 +63,7 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
         get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
 
     actual val accountsDAO: AccountsDAO
-        get() = AccountsDAO(database.accountsQueries, database.currentAccountQueries)
+        get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries)
 
     actual fun nuke(): Boolean {
         driver.close()
