@@ -1,9 +1,10 @@
-package com.wire.kalium.persistence.dao_kalium_db
+package com.wire.kalium.persistence.daokaliumdb
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.ServerConfigurationQueries
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -40,6 +41,7 @@ interface ServerConfigurationDAO {
     fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity?
     fun updateApiVersion(id: String, commonApiVersion: Int)
     fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
+    fun configForUser(userId: UserIDEntity): ServerConfigEntity?
     fun setFederationToTrue(id: String)
 
     data class InsertData(
@@ -96,6 +98,9 @@ class ServerConfigurationDAOImpl(private val queries: ServerConfigurationQueries
 
     override fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) =
         queries.updateApiVersionAndDomain(commonApiVersion, domain, id)
+
+    override fun configForUser(userId: UserIDEntity): ServerConfigEntity? =
+        queries.getByUser(userId).executeAsOneOrNull()?.let { mapper.toModel(it) }
 
     override fun setFederationToTrue(id: String) = queries.setFederationToTrue(id)
 
