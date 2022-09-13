@@ -61,11 +61,10 @@ class MessageEnvelopeCreatorImpl(
                 wrapCryptoRequest { proteusClient.encrypt(encodedContent.data, session) }
                     .map { EncryptedMessageBlob(it) }
                     .fold({
+                        // write comment here
                         if (it.proteusException.code == ProteusException.Code.SESSION_NOT_FOUND) {
-                            kaliumLogger.d("KBX SESSION NOT FOUND")
                             Either.Right(clientAccumulator)
                         } else {
-                            kaliumLogger.d("KBX error ${it.proteusException.code}")
                             Either.Left(it)
                         }
                     }, { encryptedContent ->
