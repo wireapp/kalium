@@ -6,7 +6,7 @@ import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration
 
 class TestserviceConfiguration(
     private var template: String? = null,
-    private var defaultName: String? = "Stranger"
+    private var instanceCreationTimeoutInSeconds: Long = 60
 ) : Configuration() {
 
     @JsonProperty("swagger")
@@ -23,13 +23,13 @@ class TestserviceConfiguration(
     }
 
     @JsonProperty
-    fun getDefaultName(): String? {
-        return defaultName
+    fun getInstanceCreationTimeoutInSeconds(): Long {
+        return instanceCreationTimeoutInSeconds
     }
 
     @JsonProperty
-    fun setDefaultName(name: String) {
-        defaultName = name
+    fun setInstanceCreationTimeoutInSeconds(timeout: Long) {
+        instanceCreationTimeoutInSeconds = timeout
     }
 
 }

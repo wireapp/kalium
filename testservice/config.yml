@@ -1,5 +1,5 @@
 template: Hello, %s!
-defaultName: Stranger
+instanceCreationTimeoutInSeconds: 60
 
 # the only required property is resourcePackage, for more config options see below
 swagger:

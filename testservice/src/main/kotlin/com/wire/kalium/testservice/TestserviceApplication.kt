@@ -27,7 +27,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
     }
 
     override fun getName(): String {
-        return "hello-world"
+        return "kalium-testservice"
     }
 
     override fun initialize(bootstrap: Bootstrap<TestserviceConfiguration?>?) {
@@ -59,7 +59,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         // resources
         val clientResources = ClientResources()
         val conversationResources = ConversationResources(instanceService)
-        val instanceLifecycle = InstanceLifecycle(instanceService)
+        val instanceLifecycle = InstanceLifecycle(instanceService, configuration)
         environment.healthChecks().register("template", TestserviceHealthCheck())
         environment.jersey().register(clientResources)
         environment.jersey().register(conversationResources)

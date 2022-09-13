@@ -1,5 +1,6 @@
 package com.wire.kalium.testservice.api.v1
 
+import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.InstanceRequest
@@ -26,10 +27,10 @@ import javax.ws.rs.core.MediaType
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
 @ApiOperation("Instance life cycle")
-class InstanceLifecycle(private val instanceService: InstanceService) {
+class InstanceLifecycle(private val instanceService: InstanceService,
+                        private val configuration: TestserviceConfiguration) {
 
     private val log = LoggerFactory.getLogger(InstanceLifecycle::class.java.name)
-    private val timeoutCreation: Long = 60 // TODO use configuration
 
     @GET
     @Path("/instances")
@@ -41,13 +42,15 @@ class InstanceLifecycle(private val instanceService: InstanceService) {
     @PUT
     @Path("/instance")
     @ApiOperation(value = "Create a new instance")
-    fun createInstance(@Valid instanceRequest: InstanceRequest, @Suspended ar: AsyncResponse): Unit {
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    fun createInstance(@Valid instanceRequest: InstanceRequest, @Suspended ar: AsyncResponse) {
         val instanceId = UUID.randomUUID().toString()
+        val timeout = configuration.getInstanceCreationTimeoutInSeconds()
 
         // handles unresponsive instances
-        ar.setTimeout(timeoutCreation, TimeUnit.SECONDS)
+        ar.setTimeout(timeout, TimeUnit.SECONDS)
         ar.setTimeoutHandler { asyncResponse: AsyncResponse ->
-            log.error("Async create instance request timed out after ${timeoutCreation} seconds")
+            log.error("Async create instance request timed out after $timeout seconds")
             asyncResponse.cancel()
             instanceService.deleteInstance(instanceId)
         }
@@ -55,19 +58,17 @@ class InstanceLifecycle(private val instanceService: InstanceService) {
         ar.register(ConnectionCallback { disconnected: AsyncResponse? ->
             log.error("Client disconnected from async create instance request")
             instanceService.deleteInstance(instanceId)
-        } as ConnectionCallback)
+        })
 
         val createdInstance = try {
             runBlocking {
                 instanceService.createInstance(instanceId, instanceRequest)
             }
+        } catch (we: WebApplicationException) {
+            throw we
         } catch (e: Exception) {
-            if (e !is WebApplicationException) {
-                e.printStackTrace()
-                throw WebApplicationException("Could not create instance: " + e.message)
-            } else {
-                throw e
-            }
+            log.error("Could not create instance: " + e.message, e)
+            throw WebApplicationException("Could not create instance: " + e.message)
         }
 
         ar.resume(createdInstance)
@@ -85,8 +86,7 @@ class InstanceLifecycle(private val instanceService: InstanceService) {
     @Path("/instance/{id}")
     @ApiOperation(value = "Delete an instance")
     fun deleteInstance(@PathParam("id") id: String) {
-        val instance = instanceService.getInstance(id)
-        if (instance == null) throw WebApplicationException("No instance found with id $id")
+        instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
         instanceService.deleteInstance(id)
     }
 
