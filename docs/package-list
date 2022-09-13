@@ -112,6 +112,7 @@ $dokka.location:com.wire.kalium.logic.sync/UserSessionWorkSchedulerImpl/schedule
 $dokka.location:com.wire.kalium.logic.sync/UserSessionWorkSchedulerImpl/userId/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-user-session-work-scheduler-impl/[jvm]user-id.html
 $dokka.location:com.wire.kalium.logic.util/PlatformView/view/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-platform-view/[jvm]view.html
 $dokka.location:com.wire.kalium.logic.util/SecureRandom/random/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-secure-random/[jvm]random.html
+$dokka.location:com.wire.kalium.logic/CoreLogic/deleteSessionScope/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]delete-session-scope.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getSessionRepo/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-repo.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/globalCallManager/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]global-call-manager.html
