@@ -25,7 +25,7 @@ actual class UserSessionScope internal constructor(
     globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
-    userSessionScopeProvider: UserSessionScopeProvider,
+    userSessionScopeProvider: UserSessionScopeProvider
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
@@ -34,7 +34,7 @@ actual class UserSessionScope internal constructor(
     globalPreferences,
     dataStoragePaths,
     kaliumConfigs,
-    userSessionScopeProvider,
+    userSessionScopeProvider
 ) {
 
     override val clientConfig: ClientConfig get() = ClientConfigImpl(applicationContext)

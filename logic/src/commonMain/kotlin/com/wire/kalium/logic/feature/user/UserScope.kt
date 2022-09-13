@@ -38,7 +38,7 @@ class UserScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val sessionRepository: SessionRepository,
-    private val serverConfigRepository: Lazy<ServerConfigRepository>,
+    private val serverConfigRepository: ServerConfigRepository,
     private val selfUserId: UserId,
     private val metadataDAO: MetadataDAO
 ) {
@@ -75,7 +75,7 @@ class UserScope internal constructor(
             selfUserId = selfUserId,
             sessionRepository = sessionRepository
         )
-    val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository.value)
+    val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
 
     val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
 }

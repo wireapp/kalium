@@ -15,23 +15,21 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 actual class UserSessionScope internal constructor(
     userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    globalScope: GlobalKaliumScope,
     globalCallManager: GlobalCallManager,
     globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
-    userSessionScopeProvider: UserSessionScopeProvider,
-    serverConfigRepository: Lazy<ServerConfigRepository>,
-    globalScope: GlobalKaliumScope
+    userSessionScopeProvider: UserSessionScopeProvider
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
+    globalScope,
     globalCallManager,
     globalPreferences,
     dataStoragePaths,
     kaliumConfigs,
-    userSessionScopeProvider,
-    serverConfigRepository,
-    globalScope
+    userSessionScopeProvider
 ) {
     override val clientConfig: ClientConfig get() = ClientConfigImpl()
 

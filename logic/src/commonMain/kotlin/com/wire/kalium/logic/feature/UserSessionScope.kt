@@ -62,6 +62,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
@@ -162,15 +163,14 @@ expect class UserSessionScope : UserSessionScopeCommon
 
 @Suppress("LongParameterList")
 abstract class UserSessionScopeCommon internal constructor(
-    private val userId: QualifiedID,
+    private val userId: UserId,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
+    private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val serverConfigRepository: Lazy<ServerConfigRepository>,
-    private val globalScope: GlobalKaliumScope
 ) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
@@ -567,7 +567,7 @@ abstract class UserSessionScopeCommon internal constructor(
             connectionRepository,
             qualifiedIdMapper,
             globalScope.sessionRepository,
-            serverConfigRepository,
+            globalScope.serverConfigRepository,
             userId,
             userDatabaseProvider.metadataDAO,
         )

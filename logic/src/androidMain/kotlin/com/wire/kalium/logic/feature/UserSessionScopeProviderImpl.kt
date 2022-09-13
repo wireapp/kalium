@@ -79,7 +79,6 @@ actual class UserSessionScopeProviderImpl(
             userId,
             userDataSource,
             globalScope,
-            globalScope.sessionRepository,
             globalCallManager,
             globalPreferences,
             dataStoragePaths,
