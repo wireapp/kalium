@@ -19,7 +19,7 @@ class MetadataDAOImpl(private val metadataQueries: MetadataQueries) : MetadataDA
         return metadataQueries.selectValueByKey(key).asFlow().mapToOneOrNull()
     }
 
-    override fun valueByKey(key: String): String =
-        metadataQueries.selectValueByKey(key).executeAsOne()
+    override fun valueByKey(key: String): String? =
+        metadataQueries.selectValueByKey(key).executeAsOneOrNull()
 
 }

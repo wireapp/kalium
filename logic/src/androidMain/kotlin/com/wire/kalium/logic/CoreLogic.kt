@@ -19,6 +19,7 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
+import kotlinx.coroutines.cancel
 
 /**
  * This class is only for platform specific variables,
@@ -55,7 +56,12 @@ actual class CoreLogic(
         }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
-        userSessionScopeProvider.value.get(userId)
+        userSessionScopeProvider.value.getOrCreate(userId)
+
+    override fun deleteSessionScope(userId: UserId) {
+        userSessionScopeProvider.value.get(userId)?.cancel()
+        userSessionScopeProvider.value.delete(userId)
+    }
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(
         appContext = appContext
