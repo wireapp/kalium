@@ -73,9 +73,9 @@ class RegisterAccountUseCase internal constructor(
                 )
             }
         }
-    }.flatMap { registerResult ->
+    }.flatMap { (ssoId, authTokens) ->
         serverConfigRepository.configByLinks(serverLinks)
-            .map { RegisterResult.Success(registerResult.second, registerResult.first, it.id) }
+            .map { serverConfig -> RegisterResult.Success(authTokens, ssoId, serverConfig.id) }
     }.fold({
         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
             handleSpecialErrors(it.kaliumException)

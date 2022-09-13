@@ -65,9 +65,9 @@ internal class LoginUseCaseImpl internal constructor(
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
-        }.flatMap { loginResult ->
+        }.flatMap { (authTokens, ssoId) ->
             serverConfigRepository.configByLinks(serverLinks)
-                .map { AuthenticationResult.Success(loginResult.first, loginResult.second, it.id) }
+                .map { serverConfig -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id) }
         }.fold({
             when (it) {
                 is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
