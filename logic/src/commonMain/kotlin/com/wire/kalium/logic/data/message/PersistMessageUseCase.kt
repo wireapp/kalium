@@ -38,6 +38,7 @@ internal class PersistMessageUseCaseImpl(
         when (this) {
             is MessageContent.MemberChange -> true
             is MessageContent.Text -> true
+            is MessageContent.Confirmation -> false
             is MessageContent.Calling -> true
             is MessageContent.Asset -> true
             is MessageContent.Knock -> true

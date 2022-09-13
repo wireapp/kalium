@@ -88,6 +88,10 @@ sealed class Message(
         PENDING, SENT, READ, FAILED
     }
 
+    enum class ConfirmationType {
+        DELIVERED, READ
+    }
+
     sealed class EditStatus {
         object NotEdited : EditStatus()
         data class Edited(val lastTimeStamp: String) : EditStatus()

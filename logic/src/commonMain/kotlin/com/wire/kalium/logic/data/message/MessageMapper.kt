@@ -171,6 +171,7 @@ class MessageMapperImpl(
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
         is MessageContent.Calling -> MessageEntityContent.Unknown()
+        is MessageContent.Confirmation -> MessageEntityContent.Unknown()
         is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
         is MessageContent.TextEdited -> MessageEntityContent.Unknown()
         is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()

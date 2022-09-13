@@ -36,6 +36,8 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.location.LocationMapper
+import com.wire.kalium.logic.data.message.ConfirmationTypeMapper
+import com.wire.kalium.logic.data.message.ConfirmationTypeMapperImpl
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
@@ -76,6 +78,7 @@ internal object MapperProvider {
     fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
     fun sessionMapper(): SessionMapper = SessionMapperImpl(serverConfigMapper(), idMapper())
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
+    fun confirmationTypeMapper(): ConfirmationTypeMapper = ConfirmationTypeMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
     fun userMapper(): UserMapper = UserMapperImpl(idMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()

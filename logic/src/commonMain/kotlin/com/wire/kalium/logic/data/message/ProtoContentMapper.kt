@@ -10,6 +10,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
+import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Knock
@@ -30,6 +31,7 @@ interface ProtoContentMapper {
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
+    private val confirmationTypeMapper: ConfirmationTypeMapper = MapperProvider.confirmationTypeMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(),
@@ -48,6 +50,13 @@ class ProtoContentMapperImpl(
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> GenericMessage.Content.Text(Text(content = readableContent.value))
+            is MessageContent.Confirmation -> GenericMessage.Content.Confirmation(
+                Confirmation(
+                    type = confirmationTypeMapper.fromModelConfirmationTypeToProto(readableContent.type),
+                    firstMessageId = readableContent.firstMessageId,
+                    // TODO: moreMessageIds
+                )
+            )
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
@@ -127,7 +136,11 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Cleared -> MessageContent.Ignored
             is GenericMessage.Content.ClientAction -> MessageContent.Ignored
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
-            is GenericMessage.Content.Confirmation -> MessageContent.Ignored
+            is GenericMessage.Content.Confirmation -> MessageContent.Confirmation(
+                confirmationTypeMapper.fromProtoConfirmationTypeToModel(protoContent.value.type),
+                protoContent.value.firstMessageId,
+                protoContent.value.moreMessageIds
+            )
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> {
