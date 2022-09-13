@@ -25,8 +25,8 @@ class SendConfirmationUseCase internal constructor(
 
     suspend operator fun invoke(
         conversationId: ConversationId,
-        messageId: String,
-        type: Message.ConfirmationType
+        type: Message.ConfirmationType,
+        firstMessageId: String
     ): Either<CoreFailure, Unit> {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -39,7 +39,8 @@ class SendConfirmationUseCase internal constructor(
         return clientRepository.currentClientId().flatMap { currentClientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Confirmation(type, messageId, listOf()),
+                // TODO: Always sends empty list on moreMessageIds in confirmation use case
+                content = MessageContent.Confirmation(type, firstMessageId, listOf()),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,

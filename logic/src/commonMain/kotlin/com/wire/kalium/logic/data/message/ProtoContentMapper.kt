@@ -54,7 +54,7 @@ class ProtoContentMapperImpl(
                 Confirmation(
                     type = confirmationTypeMapper.fromModelConfirmationTypeToProto(readableContent.type),
                     firstMessageId = readableContent.firstMessageId,
-                    // TODO: moreMessageIds
+                    moreMessageIds = readableContent.moreMessageIds
                 )
             )
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
