@@ -33,7 +33,6 @@ import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessRe
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO

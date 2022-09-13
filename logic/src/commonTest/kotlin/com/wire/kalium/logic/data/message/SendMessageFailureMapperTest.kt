@@ -56,7 +56,8 @@ class SendMessageFailureMapperTest {
                 )
         )
 
-        private fun userId(n: Int = 0) = "user_${n}_id"
+        @Suppress("StringTemplate")
         private fun clientId(userN: Int = 0, clientN: Int = 0) = "user_${userN}_client_id_${clientN}"
+        private fun userId(n: Int = 0) = "user_${n}_id"
     }
 }
