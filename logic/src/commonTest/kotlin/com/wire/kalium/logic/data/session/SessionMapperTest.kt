@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.session
 
-import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.SsoId
@@ -23,16 +22,13 @@ import com.wire.kalium.network.api.UserId as UserIdDTO
 class SessionMapperTest {
 
     @Mock
-    val serverConfigMapper: ServerConfigMapper = mock(classOf<ServerConfigMapper>())
-
-    @Mock
     val idMapper = mock(classOf<IdMapper>())
 
     private lateinit var sessionMapper: SessionMapper
 
     @BeforeTest
     fun setup() {
-        sessionMapper = SessionMapperImpl(serverConfigMapper, idMapper)
+        sessionMapper = SessionMapperImpl(idMapper)
     }
 
     @Test

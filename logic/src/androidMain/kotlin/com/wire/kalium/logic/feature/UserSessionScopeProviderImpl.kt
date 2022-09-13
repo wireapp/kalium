@@ -78,13 +78,13 @@ actual class UserSessionScopeProviderImpl(
             appContext,
             userId,
             userDataSource,
+            globalScope,
             globalScope.sessionRepository,
             globalCallManager,
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
             this,
-            lazy { globalScope.serverConfigRepository }
         )
     }
 

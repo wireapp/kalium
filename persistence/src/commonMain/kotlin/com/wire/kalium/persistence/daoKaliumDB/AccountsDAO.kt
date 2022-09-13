@@ -57,11 +57,12 @@ interface AccountsDAO {
     suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity?
     fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity?
 }
+
 @Suppress("TooManyFunctions")
 internal class AccountsDAOImpl internal constructor(
     private val queries: AccountsQueries,
     private val currentAccountQueries: CurrentAccountQueries
-): AccountsDAO {
+) : AccountsDAO {
     override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? = queries.ssoId(userIDEntity).executeAsOneOrNull()?.let {
         SsoIdEntity(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant)
     }

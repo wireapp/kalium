@@ -22,7 +22,6 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
     private val dbName = FileNameUtil.globalDBName()
     private val database: GlobalDatabase
 
-
     init {
         val databasePath = storePath.resolve(dbName)
         val databaseExists = databasePath.exists()
