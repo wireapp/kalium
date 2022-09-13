@@ -82,6 +82,7 @@ kotlin {
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
+                implementation(Dependencies.Android.paging3)
                 implementation(Dependencies.Android.work)
             }
         }
