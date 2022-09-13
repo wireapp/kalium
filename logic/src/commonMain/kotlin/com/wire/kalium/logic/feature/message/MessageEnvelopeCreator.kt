@@ -61,7 +61,10 @@ class MessageEnvelopeCreatorImpl(
                 wrapCryptoRequest { proteusClient.encrypt(encodedContent.data, session) }
                     .map { EncryptedMessageBlob(it) }
                     .fold({
-                        // write comment here
+                        // when encryption fails because of SESSION_NOT_FOUND, we just skip the client
+                        // the reason is that the client might be buggy from the backend side and have no preKey
+                        // in that case we just skip the client and send the message to the rest of the clients
+                        // the only valid way to fitch client pryKey if the server response that we are missing clients
                         if (it.proteusException.code == ProteusException.Code.SESSION_NOT_FOUND) {
                             Either.Right(clientAccumulator)
                         } else {
