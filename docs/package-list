@@ -106,14 +106,12 @@ $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/globa
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/idMapper/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope-provider-impl/[jvm]id-mapper.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/kaliumConfigs/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope-provider-impl/[jvm]kalium-configs.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/rootPath/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope-provider-impl/[jvm]root-path.html
-$dokka.location:com.wire.kalium.logic.feature/UserSessionScopeProviderImpl/sessionRepository/#/PointingToDeclaration/logic/com.wire.kalium.logic.feature/-user-session-scope-provider-impl/[jvm]session-repository.html
 $dokka.location:com.wire.kalium.logic.sync/GlobalWorkSchedulerImpl/schedulePeriodicApiVersionUpdate/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-global-work-scheduler-impl/[jvm]schedule-periodic-api-version-update.html
 $dokka.location:com.wire.kalium.logic.sync/UserSessionWorkSchedulerImpl/scheduleSendingOfPendingMessages/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-user-session-work-scheduler-impl/[jvm]schedule-sending-of-pending-messages.html
 $dokka.location:com.wire.kalium.logic.sync/UserSessionWorkSchedulerImpl/userId/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-user-session-work-scheduler-impl/[jvm]user-id.html
 $dokka.location:com.wire.kalium.logic.util/PlatformView/view/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-platform-view/[jvm]view.html
 $dokka.location:com.wire.kalium.logic.util/SecureRandom/random/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-secure-random/[jvm]random.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/deleteSessionScope/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]delete-session-scope.html
-$dokka.location:com.wire.kalium.logic/CoreLogic/getSessionRepo/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-repo.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/getSessionScope/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]get-session-scope.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/globalCallManager/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]global-call-manager.html
 $dokka.location:com.wire.kalium.logic/CoreLogic/globalDatabase/#/PointingToDeclaration/logic/com.wire.kalium.logic/-core-logic/[jvm]global-database.html
