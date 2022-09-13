@@ -58,80 +58,11 @@ internal class SessionDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
 
-    override fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit> =
-        wrapStorageRequest { sessionStorage.addOrReplaceSession(sessionMapper.toPersistenceSession(autSession, ssoId)) }
-
-    override fun updateTokens(
-        userId: UserId,
-        accessTokenDTO: AccessTokenDTO,
-        refreshTokenDTO: RefreshTokenDTO?
-    ): Either<StorageFailure, AuthSession?> =
-        wrapStorageRequest { sessionStorage.userSession(idMapper.toDaoModel(userId)) }.flatMap { oldSession ->
-            when (oldSession) {
-                is AuthSessionEntity.Invalid -> Either.Right(null)
-                is AuthSessionEntity.Valid -> {
-                    wrapStorageRequest {
-                        sessionStorage.addOrReplaceSession(
-                            AuthSessionEntity.Valid(
-                                userId = oldSession.userId,
-                                tokenType = accessTokenDTO.tokenType,
-                                accessToken = accessTokenDTO.value,
-                                refreshToken = refreshTokenDTO?.value ?: oldSession.refreshToken,
-                                oldSession.serverLinks,
-                                ssoId = oldSession.ssoId
-                            )
-                        )
-                    }.flatMap { userSession(userId) }
-                }
-            }
-        }
-
-    override fun allSessions(): Either<StorageFailure, List<AuthSession>> =
-        wrapStorageRequest { sessionStorage.allSessions()?.values?.toList()?.map { sessionMapper.fromPersistenceSession(it) } }
-
-    override fun allSessionsFlow(): Flow<List<AuthSession>> =
-        sessionStorage.allSessionsFlow()
-            .map { it.values.toList().map { sessionMapper.fromPersistenceSession(it) } }
-
-    override fun allValidSessions(): Either<StorageFailure, List<AuthSession>> =
-        wrapStorageRequest {
-            sessionStorage.allSessions()?.filter { it.value is AuthSessionEntity.Valid }?.values?.toList()
-                ?.map { sessionMapper.fromPersistenceSession(it) }
-        }
-
-    override fun allValidSessionsFlow(): Flow<List<AuthSession>> =
-        sessionStorage.allSessionsFlow()
-            .map {
-                it.values.filterIsInstance<AuthSessionEntity.Valid>().toList().map { sessionMapper.fromPersistenceSession(it) }
-            }
-
-    override fun userSession(userId: UserId): Either<StorageFailure, AuthSession> =
-        idMapper.toDaoModel(userId).let { userIdEntity ->
-            wrapStorageRequest { sessionStorage.userSession(userIdEntity) }
-                .map { sessionMapper.fromPersistenceSession(it) }
-        }
-
-    override fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean> = allSessions().fold(
-        {
-            when (it) {
-                StorageFailure.DataNotFound -> Either.Right(false)
-                is StorageFailure.Generic -> Either.Left(it)
-            }
-        }, { sessionsList ->
-            sessionsList.forEach {
-                if (it.session.userId == userId) {
-                    return@fold Either.Right(true)
-                }
-            }
-            Either.Right(false)
-        })
-
-    override fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit> =
-        idMapper.toDaoModel(userId).let { userIdEntity ->
-            wrapStorageRequest { sessionStorage.setCurrentSession(userIdEntity) }
-        }
-
-    override fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun storeSession(
+        serverConfigId: String,
+        ssoId: SsoId?,
+        authTokens: AuthTokens
+    ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
                 idMapper.toDaoModel(authTokens.userId),
