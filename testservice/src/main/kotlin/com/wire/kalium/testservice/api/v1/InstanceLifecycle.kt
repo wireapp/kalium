@@ -30,7 +30,7 @@ import javax.ws.rs.core.MediaType
 class InstanceLifecycle(
     private val instanceService: InstanceService,
     private val configuration: TestserviceConfiguration
-    ) {
+) {
 
     private val log = LoggerFactory.getLogger(InstanceLifecycle::class.java.name)
 

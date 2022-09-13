@@ -110,7 +110,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Path("/instance/{id}/sendFile")
     @ApiOperation(value = "Send a file to a conversation")
     fun sendFile(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
-        log.info("Instance ${id}: Send file with name ${sendFileRequest.fileName}")
+        log.info("Instance $id: Send file with name ${sendFileRequest.fileName}")
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendFileRequest) {
             ConversationRepository.sendFile(

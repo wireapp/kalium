@@ -80,7 +80,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
     suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance {
         val before = System.currentTimeMillis()
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
-        log.info("Instance ${instanceId}: Creating ${instancePath}")
+        log.info("Instance $instanceId: Creating $instancePath")
         val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
         CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
 
@@ -122,7 +122,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                 loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, true
             )
             if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
-                throw WebApplicationException("Instance ${instanceId}: Failed to save session")
+                throw WebApplicationException("Instance $instanceId: Failed to save session")
             }
             loginResult.authData.userId
         }
@@ -137,10 +137,10 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                         RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList())
                     )) {
                         is RegisterClientResult.Failure ->
-                            throw WebApplicationException("Instance ${instanceId}: Client registration failed")
+                            throw WebApplicationException("Instance $instanceId: Client registration failed")
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
-                            log.info("Instance ${instanceId}: Login with new device ${clientId} successful")
+                            log.info("Instance $instanceId: Login with new device $clientId successful")
                             syncManager.waitUntilLive()
                         }
                     }

@@ -16,9 +16,7 @@ class TestserviceHealthCheck(configuration: TestserviceConfiguration) : HealthCh
     override fun check(): Result? {
         if (saveInUserHomeDirectory) {
             val savePath = File("${System.getProperty("user.home")}/.testservice/")
-            if (savePath.exists() && savePath.isDirectory) {
-                return Result.healthy()
-            } else {
+            if (!savePath.exists() || !savePath.isDirectory) {
                 return Result.unhealthy("$savePath is not a directory or does not exist")
             }
         }

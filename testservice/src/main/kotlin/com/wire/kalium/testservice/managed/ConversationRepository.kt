@@ -49,7 +49,7 @@ sealed class ConversationRepository {
                 if (result is CurrentSessionResult.Success) {
                     instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         text?.let {
-                            log.info("Instance ${instance.instanceId}: Send text message '${text}'")
+                            log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             runBlocking {
                                 val sendResult = messages.sendTextMessage(conversationId, text)
                                 if (sendResult.isLeft()) {
@@ -131,7 +131,7 @@ sealed class ConversationRepository {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {
                                     val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
                                     throw WebApplicationException(
-                                        "Instance ${instance.instanceId}: Sending failed with ${rootCause}}"
+                                        "Instance ${instance.instanceId}: Sending failed with $rootCause"
                                     )
                                 } else {
                                     throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
@@ -188,7 +188,7 @@ sealed class ConversationRepository {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {
                                     val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
                                     throw WebApplicationException(
-                                        "Instance ${instance.instanceId}: Sending failed with ${rootCause}}"
+                                        "Instance ${instance.instanceId}: Sending failed with $rootCause"
                                     )
                                 } else {
                                     throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
