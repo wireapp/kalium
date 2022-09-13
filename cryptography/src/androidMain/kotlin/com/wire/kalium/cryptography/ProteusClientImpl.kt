@@ -15,6 +15,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         path = rootDir
     }
 
+    @Suppress("ComplexMethod")
     override fun clearLocalFiles(): Boolean {
         box.close()
         return File(path).deleteRecursively()
