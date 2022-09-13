@@ -13,9 +13,9 @@ class TestserviceHealthCheck : HealthCheck() {
 
     @Throws(Exception::class)
     override fun check(): Result? {
-        val saying = String.format(template.toString(), "TEST");
+        val saying = String.format(template.toString(), "TEST")
         return if (!saying.contains("TEST")) {
-            return Result.unhealthy("template doesn't include a name");
+            return Result.unhealthy("template doesn't include a name")
         } else Result.healthy()
     }
 

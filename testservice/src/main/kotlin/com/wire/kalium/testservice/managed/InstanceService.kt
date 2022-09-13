@@ -47,7 +47,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             Gauge {
                 instances.values
                     .filter { it.startupTime != 0L }
-                    .map { it.startupTime?.toDouble() ?: 0.0}
+                    .map { it.startupTime?.toDouble() ?: 0.0 }
                     .average()
             }
         )

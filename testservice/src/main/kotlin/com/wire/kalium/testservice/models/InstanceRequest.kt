@@ -12,4 +12,3 @@ data class InstanceRequest(
     val name: String = "",
     val password: String = ""
 )
-

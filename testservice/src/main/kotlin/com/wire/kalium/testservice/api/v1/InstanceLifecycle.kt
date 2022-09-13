@@ -27,8 +27,10 @@ import javax.ws.rs.core.MediaType
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
 @ApiOperation("Instance life cycle")
-class InstanceLifecycle(private val instanceService: InstanceService,
-                        private val configuration: TestserviceConfiguration) {
+class InstanceLifecycle(
+    private val instanceService: InstanceService,
+    private val configuration: TestserviceConfiguration
+    ) {
 
     private val log = LoggerFactory.getLogger(InstanceLifecycle::class.java.name)
 

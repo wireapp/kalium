@@ -17,7 +17,6 @@ import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.exporter.MetricsServlet
 import org.eclipse.jetty.servlet.ServletHolder
 
-
 class TestserviceApplication : Application<TestserviceConfiguration>() {
 
     companion object {

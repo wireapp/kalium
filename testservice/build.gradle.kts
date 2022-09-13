@@ -19,7 +19,7 @@ application {
     mainClass.set(mainFunctionClassName)
 }
 
-tasks.named("run", JavaExec::class){
+tasks.named("run", JavaExec::class) {
     jvmArgs = listOf("-Djava.library.path=/usr/local/lib/:../native/libs")
     args = listOf("server", "config.yml")
     isIgnoreExitValue = true
