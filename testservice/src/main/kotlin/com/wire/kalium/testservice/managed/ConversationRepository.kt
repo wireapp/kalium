@@ -1,6 +1,5 @@
 package com.wire.kalium.testservice.managed
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -20,12 +19,17 @@ import java.util.Base64
 import javax.ws.rs.WebApplicationException
 import okio.Path.Companion.toOkioPath
 
-class ConversationRepository {
+sealed class ConversationRepository {
 
     companion object {
         private val log = LoggerFactory.getLogger(ConversationRepository::class.java.name)
 
-        fun deleteConversation(instance: Instance, conversationId: ConversationId, messageId: String, deleteForEveryone: Boolean) {
+        fun deleteConversation(
+            instance: Instance,
+            conversationId: ConversationId,
+            messageId: String,
+            deleteForEveryone: Boolean
+        ) {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
@@ -49,7 +53,9 @@ class ConversationRepository {
                             runBlocking {
                                 val sendResult = messages.sendTextMessage(conversationId, text)
                                 if (sendResult.isLeft()) {
-                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${sendResult.value}")
+                                    throw WebApplicationException(
+                                        "Instance ${instance.instanceId}: Sending failed with ${sendResult.value}"
+                                    )
                                 }
                             }
                         }
@@ -104,7 +110,7 @@ class ConversationRepository {
                                 log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
                             }
                             syncManager.waitUntilLiveOrFailure().onFailure {
-                                log.info("Instance ${instance.instanceId}: Sync failed with ${it}")
+                                log.info("Instance ${instance.instanceId}: Sync failed with $it")
                             }
                             log.info("Instance ${instance.instanceId}: List conversations:")
                             val convos = conversations.getConversations()
@@ -123,7 +129,10 @@ class ConversationRepository {
                             )
                             if (sendResult is SendAssetMessageResult.Failure) {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {
-                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${(sendResult.coreFailure as StorageFailure.Generic).rootCause.message}")
+                                    val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
+                                    throw WebApplicationException(
+                                        "Instance ${instance.instanceId}: Sending failed with ${rootCause}}"
+                                    )
                                 } else {
                                     throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
                                 }
@@ -134,7 +143,15 @@ class ConversationRepository {
             }
         }
 
-        fun sendImage(instance: Instance, conversationId: ConversationId, data: String, type: String, width: Int, height: Int) {
+        @Suppress("LongParameterList")
+        fun sendImage(
+            instance: Instance,
+            conversationId: ConversationId,
+            data: String,
+            type: String,
+            width: Int,
+            height: Int
+        ) {
             val temp: File = Files.createTempFile("asset", ".data").toFile()
             val byteArray = Base64.getDecoder().decode(data)
             FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
@@ -150,7 +167,7 @@ class ConversationRepository {
                                 log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
                             }
                             syncManager.waitUntilLiveOrFailure().onFailure {
-                                log.info("Instance ${instance.instanceId}: Sync failed with ${it}")
+                                log.info("Instance ${instance.instanceId}: Sync failed with $it")
                             }
                             log.info("Instance ${instance.instanceId}: List conversations:")
                             val convos = conversations.getConversations()
@@ -169,7 +186,10 @@ class ConversationRepository {
                             )
                             if (sendResult is SendAssetMessageResult.Failure) {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {
-                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${(sendResult.coreFailure as StorageFailure.Generic).rootCause.message}")
+                                    val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
+                                    throw WebApplicationException(
+                                        "Instance ${instance.instanceId}: Sending failed with ${rootCause}}"
+                                    )
                                 } else {
                                     throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
                                 }

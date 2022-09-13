@@ -1,7 +1,6 @@
 package com.wire.kalium.testservice.models
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.data.id.QualifiedID
 
 data class Instance(
     val backend: String,

@@ -16,7 +16,7 @@ class ClientResources {
     @POST
     @Path("/instance/{id}/availability")
     fun availability(@PathParam("id") id: String): Instance {
-        throw WebApplicationException("Not yet implemented")
+        throw WebApplicationException("Instance ${id}: Not yet implemented")
     }
 
     // GET /api/v1/instance/{instanceId}/clients

@@ -71,11 +71,14 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
     }
 
     fun getInstanceOrThrow(id: String): Instance {
-        return instances.get(id) ?: throw WebApplicationException("Instance $id: Instance not found or already destroyed")
+        return instances.get(id) ?: throw WebApplicationException(
+            "Instance $id: Instance not found or already destroyed"
+        )
     }
 
-    suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance? {
-        var before = System.currentTimeMillis()
+    @Suppress("LongMethod", "ThrowsCount")
+    suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance {
+        val before = System.currentTimeMillis()
         val instancePath = "${System.getProperty("user.home")}/.testservice/$instanceId"
         log.info("Instance ${instanceId}: Creating ${instancePath}")
         val coreLogic = CoreLogic("Kalium Testservice", "$instancePath/accounts", kaliumConfigs = KaliumConfigs())
@@ -129,8 +132,11 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         runBlocking {
             coreLogic.sessionScope(loginResult.session.userId) {
                 if (client.needsToRegisterClient()) {
-                    when (val result = client.register(RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList()))) {
-                        is RegisterClientResult.Failure -> throw WebApplicationException("Instance ${instanceId}: Client registration failed")
+                    when (val result = client.register(
+                        RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList())
+                    )) {
+                        is RegisterClientResult.Failure ->
+                            throw WebApplicationException("Instance ${instanceId}: Client registration failed")
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
                             log.info("Instance ${instanceId}: Login with new device ${clientId} successful")
@@ -164,14 +170,16 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             if (result is CurrentSessionResult.Success) {
                 instance.coreLogic.sessionScope(result.authSession.session.userId) {
                     instance.clientId?.let {
-                        runBlocking { client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId))) }
+                        runBlocking {
+                            client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId)))
+                        }
                     }
                     log.info("Instance $id: Device ${instance.clientId} deleted")
                     runBlocking { logout() }
                 }
             }
             log.info("Instance $id: Delete sessions in preference file")
-            // TODO: Something like session.allSessions.deleteInvalidSession()
+            // TODO Something like session.allSessions.deleteInvalidSession()
         }
         log.info("Instance $id: Logged out")
         log.info("Instance $id: Delete locate files in ${instance.instancePath}")
@@ -187,7 +195,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                 // close the stream
                 files.close()
             } catch (e: IOException) {
-                log.warn("Instance $id: Could not delete directory: ${instance.instancePath}")
+                log.warn("Instance $id: Could not delete directory ${instance.instancePath}: ${e.message}")
             }
         }
         instances.remove(id)

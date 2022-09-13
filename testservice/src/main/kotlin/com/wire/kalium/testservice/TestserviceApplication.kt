@@ -22,16 +22,19 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
 
     companion object {
         @JvmStatic
+        @Suppress("SpreadOperator")
         fun main(args: Array<String>) = TestserviceApplication().run(*args)
     }
 
-    override fun getName(): String? {
+    override fun getName(): String {
         return "hello-world"
     }
 
     override fun initialize(bootstrap: Bootstrap<TestserviceConfiguration?>?) {
         bootstrap!!.addBundle(object : SwaggerBundle<TestserviceConfiguration>() {
-            override fun getSwaggerBundleConfiguration(configuration: TestserviceConfiguration): SwaggerBundleConfiguration? {
+            override fun getSwaggerBundleConfiguration(
+                configuration: TestserviceConfiguration
+            ): SwaggerBundleConfiguration? {
                 return configuration.swaggerBundleConfiguration
             }
         })
@@ -48,7 +51,10 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
 
         // metrics
         CollectorRegistry.defaultRegistry.register(DropwizardExports(metricRegistry))
-        environment.applicationContext.servletHandler.addServletWithMapping(ServletHolder(MetricsServlet()), "/prometheus")
+        environment.applicationContext.servletHandler.addServletWithMapping(
+            ServletHolder(MetricsServlet()),
+            "/prometheus"
+        )
 
         // resources
         val clientResources = ClientResources()

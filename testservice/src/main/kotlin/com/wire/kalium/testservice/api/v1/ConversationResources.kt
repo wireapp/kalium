@@ -110,6 +110,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Path("/instance/{id}/sendFile")
     @ApiOperation(value = "Send a file to a conversation")
     fun sendFile(@PathParam("id") id: String, @Valid sendFileRequest: SendFileRequest): Response {
+        log.info("Instance ${id}: Send file with name ${sendFileRequest.fileName}")
         val instance = instanceService.getInstanceOrThrow(id)
         with(sendFileRequest) {
             ConversationRepository.sendFile(
@@ -169,10 +170,12 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     @POST
     @Path("/instance/{id}/sendText")
-    @ApiOperation(value = "Send a text message to a conversation (can include mentions, reply, buttons and link previews)")
+    @ApiOperation(
+        value = "Send a text message to a conversation (can include mentions, reply, buttons and link previews)"
+    )
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO: Implement mentions, reply and ephemeral messages for web-mls
+        // TODO Implement mentions, reply and ephemeral messages here
         with(sendTextRequest) {
             ConversationRepository.sendTextMessage(
                 instance,
