@@ -27,6 +27,12 @@ class ConnectionDAOImpl(
 ) : ConnectionDAO {
 
     private val connectionMapper = ConnectionMapper()
+    override suspend fun getConnections(): Flow<List<ConnectionEntity>> {
+        return connectionsQueries.getConnections()
+            .asFlow()
+            .mapToList()
+            .map { it.map(connectionMapper::toModel) }
+    }
 
     override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionRequests()

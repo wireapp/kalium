@@ -93,6 +93,7 @@ interface MessageRepository {
         newMessageId: String
     ): Either<CoreFailure, Unit>
 
+    val extensions: MessageRepositoryExtensions
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -107,6 +108,8 @@ class MessageDataSource(
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(),
 ) : MessageRepository {
+
+    override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, idMapper, messageMapper)
 
     override suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
