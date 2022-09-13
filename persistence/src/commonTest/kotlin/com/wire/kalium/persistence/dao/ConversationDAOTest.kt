@@ -696,8 +696,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
             // then
             assertEquals(result.size, messages.size)
-            assertIs<MessageEntityContent.Asset>(result[0].content)
-            assertIs<MessageEntityContent.Asset>(result[1].content)
         }
 
     @Test
