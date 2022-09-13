@@ -102,9 +102,31 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, e.code.ordinal)
+            throw ProteusException(e.message, fromCryptoException(e))
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)
+        }
+    }
+
+    private fun fromCryptoException(e: CryptoException): ProteusException.Code {
+        return when (e.code) {
+            CryptoException.Code.SESSION_NOT_FOUND -> ProteusException.Code.SESSION_NOT_FOUND
+            CryptoException.Code.REMOTE_IDENTITY_CHANGED -> ProteusException.Code.REMOTE_IDENTITY_CHANGED
+            CryptoException.Code.INVALID_SIGNATURE -> ProteusException.Code.INVALID_SIGNATURE
+            CryptoException.Code.INVALID_MESSAGE -> ProteusException.Code.INVALID_MESSAGE
+            CryptoException.Code.DUPLICATE_MESSAGE -> ProteusException.Code.DUPLICATE_MESSAGE
+            CryptoException.Code.TOO_DISTANT_FUTURE -> ProteusException.Code.TOO_DISTANT_FUTURE
+            CryptoException.Code.OUTDATED_MESSAGE -> ProteusException.Code.OUTDATED_MESSAGE
+            CryptoException.Code.DECODE_ERROR -> ProteusException.Code.DECODE_ERROR
+            CryptoException.Code.STORAGE_ERROR -> ProteusException.Code.STORAGE_ERROR
+            CryptoException.Code.IDENTITY_ERROR -> ProteusException.Code.IDENTITY_ERROR
+            CryptoException.Code.PREKEY_NOT_FOUND -> ProteusException.Code.PREKEY_NOT_FOUND
+            CryptoException.Code.PANIC -> ProteusException.Code.PANIC
+            CryptoException.Code.INIT_ERROR -> ProteusException.Code.UNKNOWN_ERROR
+            CryptoException.Code.DEGENERATED_KEY -> ProteusException.Code.UNKNOWN_ERROR
+            CryptoException.Code.INVALID_STRING -> ProteusException.Code.UNKNOWN_ERROR
+            CryptoException.Code.UNKNOWN_ERROR -> ProteusException.Code.UNKNOWN_ERROR
+            else -> ProteusException.Code.UNKNOWN_ERROR
         }
     }
 
