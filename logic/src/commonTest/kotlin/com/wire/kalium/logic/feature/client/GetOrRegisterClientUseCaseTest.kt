@@ -1,4 +1,3 @@
-@file:OptIn(ConfigurationApi::class)
 
 package com.wire.kalium.logic.feature.client
 
@@ -10,7 +9,6 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.functional.Either
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf

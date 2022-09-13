@@ -9,7 +9,8 @@ interface PreKeyMapper {
 }
 
 class PreKeyMapperImpl : PreKeyMapper {
-    override fun fromPreKeyDTO(preyKeyDTO: PreKeyDTO): PreKeyCrypto = PreKeyCrypto(id = preyKeyDTO.id, encodedData = preyKeyDTO.key)
+    override fun fromPreKeyDTO(preyKeyDTO: PreKeyDTO): PreKeyCrypto =
+        PreKeyCrypto(id = preyKeyDTO.id, encodedData = preyKeyDTO.key)
 
     override fun toPreKeyDTO(preKey: PreKeyCrypto): PreKeyDTO = PreKeyDTO(id = preKey.id, key = preKey.encodedData)
 }
