@@ -17,9 +17,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserEventReceiverTest {
 
     @Test
@@ -34,7 +36,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(eq(LogoutReason.REMOVED_CLIENT))
+            .with(eq(LogoutReason.REMOVED_CLIENT), any())
             .wasInvoked(exactly = once)
     }
 
@@ -50,7 +52,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(any())
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -65,7 +67,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(eq(LogoutReason.DELETED_ACCOUNT))
+            .with(eq(LogoutReason.DELETED_ACCOUNT), any())
             .wasInvoked(exactly = once)
     }
 
@@ -90,7 +92,7 @@ class UserEventReceiverTest {
         }
 
         fun withLogoutUseCaseSucceed() = apply {
-            given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
+            given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any(), any()).thenReturn(Unit)
         }
 
         fun arrange() = this to userEventReceiver

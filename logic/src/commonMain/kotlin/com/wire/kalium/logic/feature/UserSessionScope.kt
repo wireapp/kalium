@@ -63,6 +63,8 @@ import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
+import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
@@ -521,7 +523,8 @@ abstract class UserSessionScopeCommon internal constructor(
             keyPackageLimitsProvider,
             mlsClientProvider,
             notificationTokenRepository,
-            clientRemoteRepository
+            clientRemoteRepository,
+            authenticatedDataSourceSet.proteusClient
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -569,15 +572,16 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             userDatabaseProvider.metadataDAO,
         )
+    private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(authenticatedDataSourceSet)
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,
             globalScope.sessionRepository,
-            userId,
-            authenticatedDataSourceSet,
             clientRepository,
-            mlsClientProvider,
+            userId,
             client.deregisterNativePushToken,
+            client.clearClientData,
+            clearUserData,
             userSessionScopeProvider
         )
     private val featureConfigRepository: FeatureConfigRepository

@@ -23,7 +23,7 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
     override suspend fun invoke(): Flow<List<Pair<SelfUser, Team?>>> =
         sessionRepository.allValidSessionsFlow().flatMapLatest { accountList ->
             val flowsOfSelfUsers = accountList.map {
-                userSessionScopeProvider.get(it.userId).let {
+                userSessionScopeProvider.getOrCreate(it.userId).let {
                     combine(
                         it.users.getSelfUser(),
                         it.team.getSelfTeamUseCase()
