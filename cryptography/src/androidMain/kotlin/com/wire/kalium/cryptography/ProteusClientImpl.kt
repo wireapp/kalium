@@ -15,7 +15,6 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         path = rootDir
     }
 
-    @Suppress("ComplexMethod")
     override fun clearLocalFiles(): Boolean {
         box.close()
         return File(path).deleteRecursively()
@@ -109,6 +108,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         }
     }
 
+    @Suppress("ComplexMethod")
     private fun fromCryptoException(e: CryptoException): ProteusException.Code {
         return when (e.code) {
             CryptoException.Code.SESSION_NOT_FOUND -> ProteusException.Code.SESSION_NOT_FOUND
