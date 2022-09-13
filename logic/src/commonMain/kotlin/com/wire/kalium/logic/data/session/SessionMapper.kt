@@ -7,7 +7,7 @@ import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
-import com.wire.kalium.persistence.dao_kalium_db.AccountInfoEntity
+import com.wire.kalium.persistence.daoKaliumDB.AccountInfoEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 

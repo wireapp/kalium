@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.dao_kalium_db
+package com.wire.kalium.persistence.daoKaliumDB
 
 import app.cash.sqldelight.ColumnAdapter
 import com.wire.kalium.persistence.model.LogoutReason

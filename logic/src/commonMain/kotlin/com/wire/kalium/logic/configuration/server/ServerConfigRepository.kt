@@ -15,7 +15,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.versioning.VersionApi
-import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
+import com.wire.kalium.persistence.daoKaliumDB.ServerConfigurationDAO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

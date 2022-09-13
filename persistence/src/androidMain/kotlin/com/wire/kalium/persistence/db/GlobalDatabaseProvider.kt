@@ -9,11 +9,11 @@ import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
-import com.wire.kalium.persistence.dao_kalium_db.AccountsDAO
-import com.wire.kalium.persistence.dao_kalium_db.AccountsDAOImpl
-import com.wire.kalium.persistence.dao_kalium_db.LogoutReasonAdapter
-import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
-import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOImpl
+import com.wire.kalium.persistence.daoKaliumDB.AccountsDAO
+import com.wire.kalium.persistence.daoKaliumDB.AccountsDAOImpl
+import com.wire.kalium.persistence.daoKaliumDB.LogoutReasonAdapter
+import com.wire.kalium.persistence.daoKaliumDB.ServerConfigurationDAO
+import com.wire.kalium.persistence.daoKaliumDB.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import net.sqlcipher.database.SupportFactory
 

@@ -179,7 +179,7 @@ class RegisterAccountRepositoryTest {
 
         val actual = registerAccountRepository.registerTeamWithEmail(email, code, name, password, teamName, teamIcon)
 
-        assertIs<Either.Right<Pair<SsoId?,AuthTokens>>>(actual)
+        assertIs<Either.Right<Pair<SsoId?, AuthTokens>>>(actual)
         assertEquals(expected, actual.value)
 
         verify(registerApi).coroutine {

@@ -18,7 +18,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.AuthTokenStorage
-import com.wire.kalium.persistence.dao_kalium_db.AccountsDAO
+import com.wire.kalium.persistence.daoKaliumDB.AccountsDAO
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

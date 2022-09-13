@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.db
 
-import com.wire.kalium.persistence.dao_kalium_db.AccountsDAO
-import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
+import com.wire.kalium.persistence.daoKaliumDB.AccountsDAO
+import com.wire.kalium.persistence.daoKaliumDB.ServerConfigurationDAO
 import kotlin.jvm.JvmInline
 
 @JvmInline
