@@ -82,8 +82,7 @@ internal class SendAssetMessageUseCaseImpl(
         // Generate the otr asymmetric key that will be used to encrypt the data
         val otrKey = generateRandomAES256Key()
         lateinit var message: Message.Regular
-        lateinit var res: SendAssetMessageResult
-        clientRepository.currentClientId().flatMap { currentClientId ->
+        return clientRepository.currentClientId().flatMap { currentClientId ->
             // Get my current user
             val selfUser = userRepository.observeSelfUser().first()
 
@@ -112,8 +111,7 @@ internal class SendAssetMessageUseCaseImpl(
                 editStatus = Message.EditStatus.NotEdited
             )
 
-             res = persistMessage(message).flatMap {
-
+            persistMessage(message).flatMap {
                 when (updateAssetMessageUploadStatusUseCase(Message.UploadStatus.IN_PROGRESS, conversationId, message.id)) {
                     is UpdateUploadStatusResult.Success -> {
                         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
@@ -150,11 +148,10 @@ internal class SendAssetMessageUseCaseImpl(
                         Either.Left(StorageFailure.Generic(IOException("Asset upload status could not be updated")))
                     }
                 }
-            }.fold({
-                SendAssetMessageResult.Failure(it)
-            }, { SendAssetMessageResult.Success })
-        }
-        return res
+            }
+        }.fold({
+            SendAssetMessageResult.Failure(it)
+        }, { SendAssetMessageResult.Success })
     }
 
     @Suppress("LongParameterList")
