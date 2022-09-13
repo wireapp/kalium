@@ -14,7 +14,7 @@ import com.wire.kalium.network.api.versioning.VersionApi
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import io.mockative.Mock
 import io.mockative.any

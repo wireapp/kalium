@@ -9,7 +9,6 @@ import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.ServerMetaDataManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -18,6 +17,7 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -29,7 +29,6 @@ import kotlinx.coroutines.runBlocking
 actual class UserSessionScopeProviderImpl(
     private val rootPath: String,
     private val appContext: Context,
-    private val sessionRepository: SessionRepository,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: KaliumPreferences,
@@ -44,7 +43,7 @@ actual class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         val networkContainer = AuthenticatedNetworkContainer(
-            SessionManagerImpl(sessionRepository, userId),
+            SessionManagerImpl(globalScope.sessionRepository, userId, AuthTokenStorage(globalPreferences)),
             ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )
@@ -79,13 +78,12 @@ actual class UserSessionScopeProviderImpl(
             appContext,
             userId,
             userDataSource,
-            sessionRepository,
+            globalScope,
             globalCallManager,
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
             this,
-            lazy { globalScope.serverConfigRepository }
         )
     }
 
