@@ -21,7 +21,7 @@ import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.DeleteClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
@@ -43,18 +43,18 @@ import java.io.File
 
 private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", kaliumConfigs = KaliumConfigs())
 
-fun restoreSession(): AuthSession? {
+fun restoreSession(): AccountInfo? {
     return coreLogic.globalScope {
         when (val currentSessionResult = session.currentSession()) {
-            is CurrentSessionResult.Success -> currentSessionResult.authSession
+            is CurrentSessionResult.Success -> currentSessionResult.accountInfo
             else -> null
         }
     }
 }
 
 fun currentUserSession(): UserSessionScope {
-    val authSession = restoreSession() ?: throw PrintMessage("no active session")
-    return coreLogic.getSessionScope(authSession.session.userId)
+    val accountInfo = restoreSession() ?: throw PrintMessage("no active session")
+    return coreLogic.getSessionScope(accountInfo.userId)
 }
 
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
@@ -182,19 +182,19 @@ class LoginCommand : CliktCommand(name = "login") {
     }
 
     override fun run() = runBlocking {
-        val (loginResult, ssoId) = coreLogic.authenticationScope(serverConfig()) {
+        val loginResult = coreLogic.authenticationScope(serverConfig()) {
             login(email, password, true).let {
                 if (it !is AuthenticationResult.Success) {
                     throw PrintMessage("Login failed, check your credentials")
                 } else {
-                    it.userSession to it.ssoId
+                    it
                 }
             }
         }
 
         val userId = coreLogic.globalScope {
-            addAuthenticatedAccount(loginResult, ssoId, true)
-            loginResult.session.userId
+            addAuthenticatedAccount(loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, true)
+            loginResult.authData.userId
         }
 
         coreLogic.sessionScope(userId) {

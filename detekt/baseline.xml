@@ -771,7 +771,7 @@
     <ID>NewLineAtEndOfFile:ServerConfigApiMock.kt$com.wire.kalium.network.api.configuration.ServerConfigApiMock.kt</ID>
     <ID>NewLineAtEndOfFile:ServerConfigMapperMock.kt$com.wire.kalium.logic.configuration.server.ServerConfigMapperMock.kt</ID>
     <ID>NewLineAtEndOfFile:ServerConfigRepositoryMock.kt$com.wire.kalium.logic.configuration.server.ServerConfigRepositoryMock.kt</ID>
-    <ID>NewLineAtEndOfFile:ServerConfigurationDAOMock.kt$com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOMock.kt</ID>
+    <ID>NewLineAtEndOfFile:ServerConfigurationDAOMock.kt$com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOMock.kt</ID>
     <ID>NewLineAtEndOfFile:SessionEstablisherMock.kt$com.wire.kalium.logic.feature.message.SessionEstablisherMock.kt</ID>
     <ID>NewLineAtEndOfFile:SessionMapperMock.kt$com.wire.kalium.logic.data.session.SessionMapperMock.kt</ID>
     <ID>NewLineAtEndOfFile:SessionRepositoryMock.kt$com.wire.kalium.logic.data.session.SessionRepositoryMock.kt</ID>
@@ -976,10 +976,10 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.MessageDAOTest.kt:216</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.UserDAOTest.kt:427</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.message.MessageDAOImpl.kt:58</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:153</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:70</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:84</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:98</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:153</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:70</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:84</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:98</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.db.GlobalDatabaseProvider.kt:19</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:34</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:55</ID>
@@ -1088,14 +1088,14 @@
     <ID>PackageName:com.wire.kalium.logic.test_util.TestKaliumDispatcher.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TestNetworkException.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TimeUtils.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAOTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:1</ID>
     <ID>PackageName:com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder.kt:1</ID>
     <ID>PackageName:com.wire.kalium.persistence.kmm_settings.KaliumPreferences.kt:1</ID>
     <ID>PackageName:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:1</ID>
     <ID>PackageNaming:EncryptedSettingsHolder.kt$package com.wire.kalium.persistence.kmm_settings</ID>
     <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmm_settings</ID>
-    <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.dao_kalium_db</ID>
+    <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.daokaliumdb</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:14</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:18</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:29</ID>
