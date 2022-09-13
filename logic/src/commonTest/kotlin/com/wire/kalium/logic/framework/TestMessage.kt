@@ -3,6 +3,8 @@ package com.wire.kalium.logic.framework
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
@@ -27,5 +29,17 @@ object TestMessage {
         date = "date",
         senderUserId = TEST_SENDER_USER_ID,
         status = Message.Status.PENDING,
+    )
+
+    val ENTITY = MessageEntity.Regular(
+        TEST_MESSAGE_ID,
+        TestConversation.ENTITY_ID,
+        date = "date",
+        senderUserId = TestUser.ENTITY_ID,
+        status = MessageEntity.Status.SENT,
+        visibility = MessageEntity.Visibility.VISIBLE,
+        content = MessageEntityContent.Text("Ciao!"),
+        senderClientId = "clientId",
+        editStatus = MessageEntity.EditStatus.NotEdited
     )
 }

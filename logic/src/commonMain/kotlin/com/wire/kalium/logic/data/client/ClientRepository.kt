@@ -21,11 +21,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
+@Suppress("TooManyFunctions")
 interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
+    suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
+    suspend fun retainedClientId(): Either<CoreFailure, ClientId>
+    suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
@@ -36,7 +40,7 @@ interface ClientRepository {
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
 }
-@Suppress("INAPPLICABLE_JVM_NAME")
+@Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME")
 class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
@@ -51,15 +55,21 @@ class ClientDataSource(
     override suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.setRegisteredClientId(clientId.value) }
 
-    override suspend fun currentClientId(): Either<CoreFailure, ClientId> = wrapStorageRequest {
-        clientRegistrationStorage.getRegisteredClientId()?.let { ClientId(it) }
-    }.mapLeft {
-        if (it is StorageFailure.DataNotFound) {
-            CoreFailure.MissingClientRegistration
-        } else {
-            it
-        }
-    }
+    override suspend fun clearCurrentClientId(): Either<CoreFailure, Unit> =
+        wrapStorageRequest { clientRegistrationStorage.clearRegisteredClientId() }
+
+    override suspend fun clearRetainedClientId(): Either<CoreFailure, Unit> =
+        wrapStorageRequest { clientRegistrationStorage.clearRetainedClientId() }
+
+    override suspend fun currentClientId(): Either<CoreFailure, ClientId> =
+        wrapStorageRequest { clientRegistrationStorage.getRegisteredClientId() }
+            .map { ClientId(it) }
+            .mapLeft { if (it is StorageFailure.DataNotFound) { CoreFailure.MissingClientRegistration } else { it } }
+
+    override suspend fun retainedClientId(): Either<CoreFailure, ClientId> =
+        wrapStorageRequest { clientRegistrationStorage.getRetainedClientId() }
+            .map { ClientId(it) }
+            .mapLeft { if (it is StorageFailure.DataNotFound) { CoreFailure.MissingClientRegistration } else { it } }
 
     override suspend fun observeCurrentClientId(): Flow<ClientId?> =
         clientRegistrationStorage.observeRegisteredClientId().map { rawClientId ->

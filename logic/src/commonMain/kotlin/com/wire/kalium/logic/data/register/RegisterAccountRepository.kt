@@ -5,13 +5,13 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.user.register.RegisterApi
 
-interface RegisterAccountRepository {
+internal interface RegisterAccountRepository {
     suspend fun requestEmailActivationCode(email: String): Either<NetworkFailure, Unit>
     suspend fun verifyActivationCode(
         email: String,
@@ -23,7 +23,7 @@ interface RegisterAccountRepository {
         code: String,
         name: String,
         password: String
-    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>>
+    ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>>
 
     @Suppress("LongParameterList")
     suspend fun registerTeamWithEmail(
@@ -33,10 +33,10 @@ interface RegisterAccountRepository {
         password: String,
         teamName: String,
         teamIcon: String
-    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>>
+    ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>>
 }
 
-class RegisterAccountDataSource(
+internal class RegisterAccountDataSource internal constructor(
     private val registerApi: RegisterApi,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
@@ -55,7 +55,7 @@ class RegisterAccountDataSource(
         code: String,
         name: String,
         password: String
-    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>> =
+    ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
         register(RegisterApi.RegisterParam.PersonalAccount(email, code, name, password))
 
     override suspend fun registerTeamWithEmail(
@@ -65,7 +65,7 @@ class RegisterAccountDataSource(
         password: String,
         teamName: String,
         teamIcon: String
-    ): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>> =
+    ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
         register(RegisterApi.RegisterParam.TeamAccount(email, code, name, password, teamName, teamIcon))
 
     private suspend fun requestActivation(
@@ -75,7 +75,7 @@ class RegisterAccountDataSource(
     private suspend fun activateUser(param: RegisterApi.ActivationParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { registerApi.activate(param) }
 
-    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SsoId?, AuthSession.Session.Valid>> =
+    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
         wrapApiRequest { registerApi.register(param) }.map {
             Pair(idMapper.toSsoId(it.first.ssoID), sessionMapper.fromSessionDTO(it.second))
         }

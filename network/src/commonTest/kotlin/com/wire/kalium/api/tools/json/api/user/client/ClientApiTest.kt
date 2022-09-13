@@ -2,7 +2,6 @@ package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.api.user.client.ClientApiImpl
 import com.wire.kalium.network.exceptions.KaliumException
@@ -117,55 +116,6 @@ class ClientApiTest : ApiTest {
         val actual = clientApi.deregisterToken(pid)
         assertIs<NetworkResponse.Success<Unit>>(actual)
         assertTrue(actual.isSuccessful())
-    }
-
-    @Test
-    fun givenValidRequest_WhenCallingTheOtherUsersClientsApi_SuccessResponseExpected() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val apiPath = "$PATH_USERS/${userId.domain}/${userId.value}$PATH_CLIENTS"
-        val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = OtherUsersClientsJson.otherUsersClientsResponse.rawJson,
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertNoQueryParams()
-                assertAuthorizationHeaderExist()
-                assertPathEqual(apiPath)
-            }
-        )
-
-        // When
-        val clientApi: ClientApi = ClientApiImpl(networkClient)
-        val response = clientApi.otherUserClients(userId)
-
-        // Then
-        assertTrue(response is NetworkResponse.Success)
-    }
-
-    @Test
-    fun givenInValidRequest_WhenCallingTheOtherUsersClientsApi_ErrorResponseExpected() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val apiPath = "$PATH_USERS/${userId.domain}/${userId.value}$PATH_CLIENTS"
-        val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = OtherUsersClientsJson.domainOrUserNotFoundErrorResponse.rawJson,
-            statusCode = HttpStatusCode.Forbidden,
-            assertion = {
-                assertGet()
-                assertNoQueryParams()
-                assertAuthorizationHeaderExist()
-                assertPathEqual(apiPath)
-            }
-        )
-
-        // When
-        val clientApi: ClientApi = ClientApiImpl(networkClient)
-        val response = clientApi.otherUserClients(userId)
-
-        // Then
-        assertTrue(response is NetworkResponse.Error)
-        assertTrue(response.kException is KaliumException.InvalidRequestError)
     }
 
     private companion object {
