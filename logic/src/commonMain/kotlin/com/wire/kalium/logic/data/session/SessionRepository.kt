@@ -1,168 +1,153 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.Account
+import com.wire.kalium.logic.feature.auth.AccountInfo
+import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.model.AccessTokenDTO
-import com.wire.kalium.network.api.model.RefreshTokenDTO
-import com.wire.kalium.persistence.client.SessionStorage
-import com.wire.kalium.persistence.model.AuthSessionEntity
+import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 interface SessionRepository {
-    fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit>
-    fun updateTokens(
-        userId: UserId,
-        accessTokenDTO: AccessTokenDTO,
-        refreshTokenDTO: RefreshTokenDTO?
-    ): Either<StorageFailure, AuthSession?>
+    suspend fun storeSession(
+        serverConfigId: String,
+        ssoId: SsoId?,
+        authTokens: AuthTokens
+    ): Either<StorageFailure, Unit>
 
-    // TODO(optimization): exposing all session is unnecessary since we only need the IDs
-    //                     of the users getAllSessions(): Either<SessionFailure, List<UserIDs>>
-    fun allSessions(): Either<StorageFailure, List<AuthSession>>
-    fun allSessionsFlow(): Flow<List<AuthSession>>
-    fun allValidSessions(): Either<StorageFailure, List<AuthSession>>
-    fun allValidSessionsFlow(): Flow<List<AuthSession>>
-    fun userSession(userId: UserId): Either<StorageFailure, AuthSession>
-    fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
-    fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit>
-    fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
-    fun currentSession(): Either<StorageFailure, AuthSession>
-    fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>>
-    fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
-    fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
-    fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit>
+    suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
+    suspend fun allSessionsFlow(): Flow<List<AccountInfo>>
+    suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>>
+    suspend fun allValidSessionsFlow(): Flow<List<AccountInfo>>
+    suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
+    fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
+    suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
+    suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
+    suspend fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
+    fun currentSession(): Either<StorageFailure, AccountInfo>
+    fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>>
+    suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
+    suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
+    suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit>
+    fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("TooManyFunctions")
 internal class SessionDataSource(
-    private val sessionStorage: SessionStorage,
+    private val accountsDAO: AccountsDAO,
+    private val authTokenStorage: AuthTokenStorage,
+    private val serverConfigRepository: ServerConfigRepository,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
 
-    override fun storeSession(autSession: AuthSession, ssoId: SsoId?): Either<StorageFailure, Unit> =
-        wrapStorageRequest { sessionStorage.addOrReplaceSession(sessionMapper.toPersistenceSession(autSession, ssoId)) }
+    override suspend fun storeSession(
+        serverConfigId: String,
+        ssoId: SsoId?,
+        authTokens: AuthTokens
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            accountsDAO.insertOrReplace(
+                idMapper.toDaoModel(authTokens.userId),
+                sessionMapper.toSsoIdEntity(ssoId),
+                serverConfigId
+            )
+        }.flatMap {
+            wrapStorageRequest { authTokenStorage.addOrReplace(sessionMapper.toAuthTokensEntity(authTokens)) }
+        }
 
-    override fun updateTokens(
+    override suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>> =
+        wrapStorageRequest { accountsDAO.allAccountList() }.map { it.map { sessionMapper.fromAccountInfoEntity(it) } }
+
+    override suspend fun allSessionsFlow(): Flow<List<AccountInfo>> =
+        accountsDAO.observeAllAccountList()
+            .map { it.map { sessionMapper.fromAccountInfoEntity(it) } }
+
+    override suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>> =
+        wrapStorageRequest { accountsDAO.allValidAccountList() }
+            .map { it.map { AccountInfo.Valid(idMapper.fromDaoModel(it.userIDEntity)) } }
+
+    // TODO: .wrapStorageRequest()
+    override suspend fun allValidSessionsFlow(): Flow<List<AccountInfo>> =
+        accountsDAO.observerValidAccountList()
+            .map { it.map { AccountInfo.Valid(idMapper.fromDaoModel(it.userIDEntity)) } }
+
+    override suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { accountsDAO.doesAccountExists(idMapper.toDaoModel(userId)) }
+
+    override suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { accountsDAO.doesValidAccountExists(idMapper.toDaoModel(userId)) }
+
+    override fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account> =
+        wrapStorageRequest { accountsDAO.fullAccountInfo(idMapper.toDaoModel(userId)) }
+            .flatMap {
+                val accountInfo = sessionMapper.fromAccountInfoEntity(it.info)
+                val serverConfig: ServerConfig =
+                    serverConfigRepository.configById(it.serverConfigId).fold({ return Either.Left(it) }, { it })
+                val ssoId: SsoId? = sessionMapper.fromSsoIdEntity(it.ssoId)
+                Either.Right(Account(accountInfo, serverConfig, ssoId))
+            }
+
+    override suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo> =
+        wrapStorageRequest { accountsDAO.accountInfo(idMapper.toDaoModel(userId)) }
+            .map { sessionMapper.fromAccountInfoEntity(it) }
+
+    override suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit> =
+        wrapStorageRequest { accountsDAO.setCurrentAccount(userId?.let { idMapper.toDaoModel(it) }) }
+
+    override suspend fun logout(
         userId: UserId,
-        accessTokenDTO: AccessTokenDTO,
-        refreshTokenDTO: RefreshTokenDTO?
-    ): Either<StorageFailure, AuthSession?> =
-        wrapStorageRequest { sessionStorage.userSession(idMapper.toDaoModel(userId)) }.flatMap { oldSession ->
-            when (oldSession) {
-                is AuthSessionEntity.Invalid -> Either.Right(null)
-                is AuthSessionEntity.Valid -> {
-                    wrapStorageRequest {
-                        sessionStorage.addOrReplaceSession(
-                            AuthSessionEntity.Valid(
-                                userId = oldSession.userId,
-                                tokenType = accessTokenDTO.tokenType,
-                                accessToken = accessTokenDTO.value,
-                                refreshToken = refreshTokenDTO?.value ?: oldSession.refreshToken,
-                                oldSession.serverLinks,
-                                ssoId = oldSession.ssoId
-                            )
-                        )
-                    }.flatMap { userSession(userId) }
-                }
-            }
-        }
-
-    override fun allSessions(): Either<StorageFailure, List<AuthSession>> =
-        wrapStorageRequest { sessionStorage.allSessions()?.values?.toList()?.map { sessionMapper.fromPersistenceSession(it) } }
-
-    override fun allSessionsFlow(): Flow<List<AuthSession>> =
-        sessionStorage.allSessionsFlow()
-            .map { it.values.toList().map { sessionMapper.fromPersistenceSession(it) } }
-
-    override fun allValidSessions(): Either<StorageFailure, List<AuthSession>> =
+        reason: LogoutReason,
+        isHardLogout: Boolean
+    ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            sessionStorage.allSessions()?.filter { it.value is AuthSessionEntity.Valid }?.values?.toList()
-                ?.map { sessionMapper.fromPersistenceSession(it) }
+            accountsDAO.markAccountAsInvalid(
+                idMapper.toDaoModel(userId),
+                sessionMapper.toLogoutReasonEntity(reason)
+            )
         }
 
-    override fun allValidSessionsFlow(): Flow<List<AuthSession>> =
-        sessionStorage.allSessionsFlow()
-            .map {
-                it.values.filterIsInstance<AuthSessionEntity.Valid>().toList().map { sessionMapper.fromPersistenceSession(it) }
-            }
+    override fun currentSession(): Either<StorageFailure, AccountInfo> =
+        wrapStorageRequest { accountsDAO.currentAccount() }.map { sessionMapper.fromAccountInfoEntity(it) }
 
-    override fun userSession(userId: UserId): Either<StorageFailure, AuthSession> =
-        idMapper.toDaoModel(userId).let { userIdEntity ->
-            wrapStorageRequest { sessionStorage.userSession(userIdEntity) }
-                .map { sessionMapper.fromPersistenceSession(it) }
-        }
-
-    override fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean> = allSessions().fold(
-        {
-            when (it) {
-                StorageFailure.DataNotFound -> Either.Right(false)
-                is StorageFailure.Generic -> Either.Left(it)
-            }
-        }, { sessionsList ->
-            sessionsList.forEach {
-                if (it.session.userId == userId) {
-                    return@fold Either.Right(true)
-                }
-            }
-            Either.Right(false)
-        })
-
-    override fun updateCurrentSession(userId: UserId): Either<StorageFailure, Unit> =
-        idMapper.toDaoModel(userId).let { userIdEntity ->
-            wrapStorageRequest { sessionStorage.setCurrentSession(userIdEntity) }
-        }
-
-    override fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            sessionStorage.userSession(idMapper.toDaoModel(userId))
-        }.flatMap { existSession ->
-            wrapStorageRequest {
-                sessionStorage.addOrReplaceSession(
-                    AuthSessionEntity.Invalid(
-                        idMapper.toDaoModel(userId),
-                        existSession.serverLinks,
-                        com.wire.kalium.persistence.model.LogoutReason.values()[reason.ordinal],
-                        isHardLogout,
-                        existSession.ssoId
-                    )
-                )
-            }
-        }
-
-    override fun currentSession(): Either<StorageFailure, AuthSession> =
-        wrapStorageRequest { sessionStorage.currentSession() }.map { sessionMapper.fromPersistenceSession(it) }
-
-    override fun currentSessionFlow(): Flow<Either<StorageFailure, AuthSession>> =
-        sessionStorage.currentSessionFlow()
+    override fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>> =
+        accountsDAO.observerCurrentAccount()
+            .map { it?.let { sessionMapper.fromAccountInfoEntity(it) } }
             .wrapStorageRequest()
-            .map { it.map { sessionMapper.fromPersistenceSession(it) } }
 
-    override fun deleteSession(userId: UserId): Either<StorageFailure, Unit> =
-        idMapper.toDaoModel(userId).let { userIdEntity ->
-            wrapStorageRequest { sessionStorage.deleteSession(userIdEntity) }
-        }
-
-    override fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?> =
-        wrapStorageRequest {
-            sessionStorage.userSession(idMapper.toDaoModel(userId))
-        }.map { it.ssoId }
-
-    override fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit> = wrapStorageRequest {
-        sessionStorage.updateSsoId(idMapper.toDaoModel(userId), idMapper.toSsoIdEntity(ssoId))
+    override suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit> {
+        val idEntity = idMapper.toDaoModel(userId)
+        return wrapStorageRequest { accountsDAO.deleteAccount(idEntity) }
+            .onSuccess {
+                wrapStorageRequest { authTokenStorage.deleteToken(idEntity) }
+            }
     }
 
+    override suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?> =
+        wrapStorageRequest { accountsDAO.ssoId(idMapper.toDaoModel(userId)) }
+
+    override suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit> = wrapStorageRequest {
+        accountsDAO.updateSsoId(idMapper.toDaoModel(userId), idMapper.toSsoIdEntity(ssoId))
+    }
+
+    override fun isFederated(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        accountsDAO.isFederated(idMapper.toDaoModel(userId))
+    }
 }

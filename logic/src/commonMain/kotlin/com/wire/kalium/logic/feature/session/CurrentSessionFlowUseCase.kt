@@ -14,8 +14,8 @@ class CurrentSessionFlowUseCase(private val sessionRepository: SessionRepository
                     StorageFailure.DataNotFound -> CurrentSessionResult.Failure.SessionNotFound
                     is StorageFailure.Generic -> CurrentSessionResult.Failure.Generic(it)
                 }
-            }, { authSession ->
-                CurrentSessionResult.Success(authSession)
+            }, {
+                 CurrentSessionResult.Success(it)
             })
         }
 }

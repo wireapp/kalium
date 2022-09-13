@@ -9,7 +9,7 @@ import com.wire.kalium.network.exceptions.isDomainBlockedForRegistration
 import com.wire.kalium.network.exceptions.isInvalidEmail
 import com.wire.kalium.network.exceptions.isKeyExists
 
-class RequestActivationCodeUseCase(
+class RequestActivationCodeUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
     suspend operator fun invoke(email: String): RequestActivationCodeResult {

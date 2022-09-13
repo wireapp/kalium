@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.ServerMetaDataManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -16,6 +15,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -27,7 +27,6 @@ import java.io.File
 @Suppress("LongParameterList")
 actual class UserSessionScopeProviderImpl(
     private val rootPath: String,
-    private val sessionRepository: SessionRepository,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: KaliumPreferences,
@@ -43,7 +42,7 @@ actual class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         val networkContainer = AuthenticatedNetworkContainer(
-            SessionManagerImpl(sessionRepository, userId),
+            SessionManagerImpl(globalScope.sessionRepository, userId, tokenStorage = AuthTokenStorage(globalPreferences)),
             ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )
@@ -74,14 +73,12 @@ actual class UserSessionScopeProviderImpl(
         return UserSessionScope(
             userId,
             userDataSource,
-            sessionRepository,
+            globalScope,
             globalCallManager,
-            // TODO: make lazier
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
-            this,
-            lazy { globalScope.serverConfigRepository }
+            this
         )
     }
 }
