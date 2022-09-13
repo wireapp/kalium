@@ -20,12 +20,12 @@ data class AccountInfoEntity(
 ) {
     internal constructor(accountInfo: AccountInfo) : this(
         userIDEntity = accountInfo.id,
-        logoutReason = accountInfo.logoutReason
+        logoutReason = accountInfo.logout_reason
     )
 
     internal constructor(allAccounts: AllAccounts) : this(
         userIDEntity = allAccounts.id,
-        logoutReason = allAccounts.logoutReason
+        logoutReason = allAccounts.logout_reason
     )
 }
 
@@ -64,7 +64,7 @@ internal class AccountsDAOImpl internal constructor(
     private val currentAccountQueries: CurrentAccountQueries
 ) : AccountsDAO {
     override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? = queries.ssoId(userIDEntity).executeAsOneOrNull()?.let {
-        SsoIdEntity(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant)
+        SsoIdEntity(scimExternalId = it.scim_external_id, subject = it.subject, tenant = it.tenant)
     }
 
     override suspend fun insertOrReplace(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, serverConfigId: String) {
@@ -97,7 +97,7 @@ internal class AccountsDAOImpl internal constructor(
         queries.allValidAccounts()
             .executeAsList()
             .map { validAccount ->
-                AccountInfoEntity(validAccount.id, validAccount.logoutReason)
+                AccountInfoEntity(validAccount.id, validAccount.logout_reason)
             }
 
     override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
@@ -127,12 +127,12 @@ internal class AccountsDAOImpl internal constructor(
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
 
     override fun currentAccount(): AccountInfoEntity? =
-        currentAccountQueries.currentAccountInfo().executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
+        currentAccountQueries.currentAccountInfo().executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logout_reason) }
 
     override fun observerCurrentAccount(): Flow<AccountInfoEntity?> = currentAccountQueries.currentAccountInfo()
         .asFlow()
         .mapToOneOrNull()
-        .map { it?.let { AccountInfoEntity(it.id, it.logoutReason) } }
+        .map { it?.let { AccountInfoEntity(it.id, it.logout_reason) } }
         .distinctUntilChanged()
 
     override suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) {
@@ -157,21 +157,21 @@ internal class AccountsDAOImpl internal constructor(
     }
 
     override suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? =
-        queries.accountInfo(userIDEntity).executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logoutReason) }
+        queries.accountInfo(userIDEntity).executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logout_reason) }
 
     override fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
         queries.fullAccountInfo(userIDEntity).executeAsOneOrNull()?.let {
             FullAccountEntity(
-                info = AccountInfoEntity(it.id, it.logoutReason),
-                serverConfigId = it.serverConfigId,
-                ssoId = it.scimExternalId?.let { scimExternalId ->
+                info = AccountInfoEntity(it.id, it.logout_reason),
+                serverConfigId = it.server_config_id,
+                ssoId = it.scim_external_id?.let { scimExternalId ->
                     SsoIdEntity(
                         scimExternalId = scimExternalId,
                         subject = it.subject,
                         tenant = it.tenant
                     )
                 },
-                logoutReason = it.logoutReason
+                logoutReason = it.logout_reason
             )
         }
 }

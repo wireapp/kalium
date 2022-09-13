@@ -44,7 +44,7 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
             ),
             AccountsAdapter = Accounts.Adapter(
                 idAdapter = QualifiedIDAdapter,
-                logoutReasonAdapter = LogoutReasonAdapter
+                logout_reasonAdapter = LogoutReasonAdapter
             ),
             CurrentAccountAdapter = CurrentAccount.Adapter(
                 user_idAdapter = QualifiedIDAdapter
