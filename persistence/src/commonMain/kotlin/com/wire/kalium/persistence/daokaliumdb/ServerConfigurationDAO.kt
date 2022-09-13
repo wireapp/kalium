@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.daoKaliumDB
+package com.wire.kalium.persistence.daokaliumdb
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList

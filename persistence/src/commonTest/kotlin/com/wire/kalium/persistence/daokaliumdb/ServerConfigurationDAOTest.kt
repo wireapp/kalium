@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.daoKaliumDB
+package com.wire.kalium.persistence.daokaliumdb
 
 import com.wire.kalium.persistence.GlobalDBBaseTest
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider

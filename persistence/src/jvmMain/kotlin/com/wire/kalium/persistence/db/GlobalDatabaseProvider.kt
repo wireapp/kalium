@@ -8,11 +8,11 @@ import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
-import com.wire.kalium.persistence.daoKaliumDB.AccountsDAO
-import com.wire.kalium.persistence.daoKaliumDB.AccountsDAOImpl
-import com.wire.kalium.persistence.daoKaliumDB.LogoutReasonAdapter
-import com.wire.kalium.persistence.daoKaliumDB.ServerConfigurationDAO
-import com.wire.kalium.persistence.daoKaliumDB.ServerConfigurationDAOImpl
+import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
+import com.wire.kalium.persistence.daokaliumdb.LogoutReasonAdapter
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import java.io.File
 import java.util.Properties

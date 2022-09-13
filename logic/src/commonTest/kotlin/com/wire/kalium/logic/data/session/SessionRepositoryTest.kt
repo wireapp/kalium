@@ -4,8 +4,8 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.daoKaliumDB.AccountInfoEntity
-import com.wire.kalium.persistence.daoKaliumDB.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
+import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import io.mockative.Mock
 import io.mockative.given
 import io.mockative.mock

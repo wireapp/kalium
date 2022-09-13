@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.db
 
-import com.wire.kalium.persistence.daoKaliumDB.AccountsDAO
-import com.wire.kalium.persistence.daoKaliumDB.ServerConfigurationDAO
+import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 
 actual class GlobalDatabaseProvider {
     actual val serverConfigurationDAO: ServerConfigurationDAO
