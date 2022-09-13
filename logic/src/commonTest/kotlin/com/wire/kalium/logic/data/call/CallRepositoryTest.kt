@@ -29,7 +29,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
 import io.ktor.util.reflect.instanceOf
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.any
@@ -51,7 +50,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @Suppress("LargeClass")
-@OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class CallRepositoryTest {
 
     @Mock

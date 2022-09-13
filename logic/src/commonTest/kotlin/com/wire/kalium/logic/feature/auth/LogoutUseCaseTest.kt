@@ -1,4 +1,3 @@
-@file:OptIn(ConfigurationApi::class)
 
 package com.wire.kalium.logic.feature.auth
 
@@ -14,7 +13,6 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.functional.Either
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
