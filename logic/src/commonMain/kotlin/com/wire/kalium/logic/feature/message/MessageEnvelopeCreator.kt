@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
@@ -22,6 +23,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
@@ -56,21 +58,32 @@ class MessageEnvelopeCreatorImpl(
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->
                 val session = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipient.id), CryptoClientId(client.value))
 
-                wrapCryptoRequest { EncryptedMessageBlob(proteusClient.encrypt(encodedContent.data, session)) }
-                    .map { encryptedContent ->
-                        clientAccumulator.also {
+                wrapCryptoRequest { proteusClient.encrypt(encodedContent.data, session) }
+                    .map { EncryptedMessageBlob(it) }
+                    .fold({
+                        if (it.proteusException.code == ProteusException.Code.SESSION_NOT_FOUND) {
+                            kaliumLogger.d("KBX SESSION NOT FOUND")
+                            Either.Right(clientAccumulator)
+                        } else {
+                            kaliumLogger.d("KBX error ${it.proteusException.code}")
+                            Either.Left(it)
+                        }
+                    }, { encryptedContent ->
+                        Either.Right(clientAccumulator.also {
                             it.add(ClientPayload(client, encryptedContent))
                             kaliumLogger.d("Encrypted message size: ${encryptedContent.data.size}")
-                        }
-                    }
-            }.map { clientEntries ->
-                recipientAccumulator.also {
-                    it.add(RecipientEntry(recipient.id, clientEntries))
-                }
+                        })
+                    })
             }
-        }.map { recipientEntries ->
-            MessageEnvelope(senderClientId, recipientEntries, externalDataBlob)
+                .map { clientEntries ->
+                    recipientAccumulator.also {
+                        it.add(RecipientEntry(recipient.id, clientEntries))
+                    }
+                }
         }
+            .map { recipientEntries ->
+                MessageEnvelope(senderClientId, recipientEntries, externalDataBlob)
+            }
     }
 
     private fun getContentAndExternalData(
