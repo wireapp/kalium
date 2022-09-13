@@ -13,8 +13,10 @@ interface KaliumPreferences {
     fun putString(key: String, value: () -> String?) = putString(key, value())
     fun getString(key: String): String?
 
-    fun <T> putSerializable(key: String, value: T?, kSerializer: KSerializer<T>)
-    fun <T> putSerializable(key: String, value: () -> T?, kSerializer: KSerializer<T>) = putSerializable(key, value(), kSerializer)
+    fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>)
+    fun <T> putSerializable(key: String, value: () -> T, kSerializer: KSerializer<T>) =
+        putSerializable(key, value(), kSerializer)
+
     fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?
 
     fun nuke()
@@ -50,9 +52,9 @@ class KaliumPreferencesSettings(
 
     override fun getString(key: String): String? = encryptedSettings[key]
 
-    override fun <T> putSerializable(key: String, value: T?, kSerializer: KSerializer<T>) {
+    override fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
         // TODO(refactor): try catch for Serialization exceptions
-        encryptedSettings[key] = value?.let { JsonSerializer().encodeToString(kSerializer, value) }
+        encryptedSettings[key] = JsonSerializer().encodeToString(kSerializer, value)
     }
 
     override fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T? {
