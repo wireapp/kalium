@@ -606,7 +606,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val conversation = conversationEntity1
 
             conversationDAO.insertConversation(conversation)
-            userDAO.insertUser(user1.copy())
+            userDAO.insertUser(user1)
 
             val messages = buildList {
                 repeat(10) {
@@ -643,7 +643,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val conversation = conversationEntity1
 
             conversationDAO.insertConversation(conversation)
-            userDAO.insertUser(user1.copy())
+            userDAO.insertUser(user1)
 
             val messages = listOf(
                 newRegularMessageEntity(
@@ -696,9 +696,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
             // then
             assertEquals(result.size, messages.size)
-            result.forEach {
-                assertIs<MessageEntityContent.Asset>(it.content)
-            }
+            assertIs<MessageEntityContent.Asset>(it[0].content)
+            assertIs<MessageEntityContent.Asset>(it[1].content)
         }
 
     @Test
