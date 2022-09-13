@@ -1,8 +1,6 @@
 package com.wire.kalium.logic
 
 import android.content.Context
-import com.wire.kalium.logic.data.session.SessionDataSource
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -12,8 +10,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
-import com.wire.kalium.persistence.client.SessionStorage
-import com.wire.kalium.persistence.client.SessionStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
@@ -32,10 +28,7 @@ actual class CoreLogic(
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(clientLabel, rootPath, kaliumConfigs = kaliumConfigs) {
 
-    override fun getSessionRepo(): SessionRepository {
-        val sessionStorage: SessionStorage = SessionStorageImpl(globalPreferences.value)
-        return SessionDataSource(sessionStorage)
-    }
+    // TODO: no need to have session repo as singleton any more
 
     override val globalPreferences: Lazy<KaliumPreferences> = lazy {
         KaliumPreferencesSettings(
@@ -72,15 +65,14 @@ actual class CoreLogic(
     )
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
-            UserSessionScopeProviderImpl(
-                rootPath,
-                appContext,
-                sessionRepository,
-                getGlobalScope(),
-                kaliumConfigs,
-                globalPreferences.value,
-                globalCallManager,
-                idMapper
-            )
-        }
+        UserSessionScopeProviderImpl(
+            rootPath,
+            appContext,
+            getGlobalScope(),
+            kaliumConfigs,
+            globalPreferences.value,
+            globalCallManager,
+            idMapper
+        )
+    }
 }

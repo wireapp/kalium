@@ -4,6 +4,8 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -13,7 +15,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.configuration.ServerConfigApi
 import com.wire.kalium.network.api.versioning.VersionApi
-import com.wire.kalium.persistence.dao_kalium_db.ServerConfigurationDAO
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -68,18 +70,24 @@ internal interface ServerConfigRepository {
      * update the api version of a locally stored config
      */
     suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit>
+
+    /**
+     * Return the server links and metadata for the given userId
+     */
+    suspend fun configForUser(userId: UserId): Either<CoreFailure, ServerConfig>
 }
 
 internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
     private val versionApi: VersionApi,
-    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ServerConfigRepository {
 
-    override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> = wrapApiRequest {
-        api.fetchServerConfig(serverConfigUrl)
-    }.map { serverConfigMapper.fromDTO(it) }
+    override suspend fun fetchRemoteConfig(serverConfigUrl: String): Either<NetworkFailure, ServerConfig.Links> =
+        wrapApiRequest { api.fetchServerConfig(serverConfigUrl) }
+            .map { serverConfigMapper.fromDTO(it) }
 
     override fun configList(): Either<StorageFailure, List<ServerConfig>> =
         wrapStorageRequest { dao.allConfig() }.map { it.map(serverConfigMapper::fromEntity) }
@@ -149,4 +157,8 @@ internal class ServerConfigDataSource(
     override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
         .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.links.api)) } }
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
+
+    override suspend fun configForUser(userId: UserId): Either<CoreFailure, ServerConfig> =
+        wrapStorageRequest { dao.configForUser(idMapper.toDaoModel(userId)) }
+            .map { serverConfigMapper.fromEntity(it) }
 }
