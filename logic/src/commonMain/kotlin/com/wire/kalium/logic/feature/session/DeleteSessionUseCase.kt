@@ -14,7 +14,7 @@ class DeleteSessionUseCase internal constructor(
     private val sessionRepository: SessionRepository,
     private val userSessionScopeProvider: UserSessionScopeProvider
 ) {
-    operator fun invoke(userId: UserId) = sessionRepository.deleteSession(userId)
+    suspend operator fun invoke(userId: UserId) = sessionRepository.deleteSession(userId)
         .onSuccess {
             userSessionScopeProvider.delete(userId)
         }.fold({
