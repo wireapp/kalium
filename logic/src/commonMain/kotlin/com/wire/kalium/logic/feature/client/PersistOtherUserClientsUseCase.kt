@@ -19,9 +19,11 @@ internal class PersistOtherUserClientsUseCaseImpl(
     private val clientRepository: ClientRepository
 ) : PersistOtherUserClientsUseCase {
     override suspend operator fun invoke(userId: UserId): Unit =
-        clientRemoteRepository.fetchOtherUserClients(userId).fold({
+        clientRemoteRepository.fetchOtherUserClients(listOf(userId)).fold({
             kaliumLogger.withFeatureId(CLIENTS).e("Failure while fetching other users clients $it")
-        }, { clientList ->
-            clientRepository.storeUserClientList(userId, clientList)
+        }, {
+            it.forEach { (userId, clientList) ->
+                clientRepository.storeUserClientList(userId, clientList)
+            }
         })
 }
