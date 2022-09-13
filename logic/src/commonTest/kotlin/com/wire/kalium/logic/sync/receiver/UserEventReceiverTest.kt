@@ -1,17 +1,14 @@
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -20,10 +17,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.random.Random
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserEventReceiverTest {
 
     @Test
@@ -38,7 +36,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(eq(LogoutReason.REMOVED_CLIENT))
+            .with(eq(LogoutReason.REMOVED_CLIENT), any())
             .wasInvoked(exactly = once)
     }
 
@@ -54,7 +52,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(any())
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -63,14 +61,13 @@ class UserEventReceiverTest {
         val event = TestEvent.userDelete(userId = USER_ID)
         val (arrangement, eventReceiver) = Arrangement()
             .withLogoutUseCaseSucceed()
-            .withCurrentSessionReturns(USER_ID)
             .arrange()
 
         eventReceiver.onEvent(event)
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(eq(LogoutReason.DELETED_ACCOUNT))
+            .with(eq(LogoutReason.DELETED_ACCOUNT), any())
             .wasInvoked(exactly = once)
     }
 
@@ -84,54 +81,29 @@ class UserEventReceiverTest {
         @Mock
         val logoutUseCase = mock(classOf<LogoutUseCase>())
 
-        @Mock
-        val sessionRepository: SessionRepository = mock(classOf<SessionRepository>())
-
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            connectionRepository, logoutUseCase, clientRepository, sessionRepository
-        )
+            connectionRepository, logoutUseCase, clientRepository, USER_ID)
 
         fun withCurrentClientIdIs(clientId: ClientId) = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(clientId))
-
         }
 
         fun withLogoutUseCaseSucceed() = apply {
-            given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
-        }
-
-        fun withCurrentSessionReturns(userId: UserId) = apply {
-            given(sessionRepository).function(sessionRepository::currentSession).whenInvoked().thenReturn(
-                Either.Right(
-                    validAuthSessionWith(userId)
-                )
-            )
+            given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any(), any()).thenReturn(Unit)
         }
 
         fun arrange() = this to userEventReceiver
     }
 
     companion object {
-        private val randomString get() = Random.nextBytes(64).decodeToString()
-        private val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-
         const val EVENT_ID = "1234"
         val USER_ID = UserId("alice", "wonderland")
         val CLIENT_ID1 = ClientId("clientId1")
         val CLIENT_ID2 = ClientId("clientId2")
 
-        fun validAuthSessionWith(userId: UserId): AuthSession =
-            AuthSession(
-                AuthSession.Token.Valid(
-                    userId,
-                    randomString,
-                    randomString,
-                    randomString
-                ),
-                TEST_SERVER_CONFIG.links
-            )
+        fun validAuthSessionWith(userId: UserId): AccountInfo.Valid = AccountInfo.Valid(userId)
     }
 }

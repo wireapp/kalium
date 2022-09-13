@@ -67,12 +67,15 @@ class OnParticipantListChanged(
                 conversationId = conversationIdWithDomain.toString(),
                 participants = participants
             )
-            calling.wcall_request_video_streams(
-                inst = handle,
-                conversationId = remoteConversationIdString,
-                mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
-                json = CallClientList(clients = clients).toJsonString()
-            )
+
+            if (participants.size >= MINIMUM_PARTICIPANTS_FOR_VIDEO_REQUEST) {
+                calling.wcall_request_video_streams(
+                    inst = handle,
+                    conversationId = remoteConversationIdString,
+                    mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
+                    json = CallClientList(clients = clients).toJsonString()
+                )
+            }
             callingLogger.i(
                 "[onParticipantsChanged] - Total Participants: ${participants.size}" +
                         " | ConversationId: ${remoteConversationIdString.obfuscateId()}"
@@ -88,5 +91,6 @@ class OnParticipantListChanged(
 
     private companion object {
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
+        private const val MINIMUM_PARTICIPANTS_FOR_VIDEO_REQUEST = 2
     }
 }

@@ -8,13 +8,13 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
 sealed class SSOLoginSessionResult {
-    data class Success(val userSession: AuthSession, val ssoId: SsoId?) : SSOLoginSessionResult()
+    data class Success(val authTokens: AuthTokens, val ssoId: SsoId?) : SSOLoginSessionResult()
 
     sealed class Failure : SSOLoginSessionResult() {
         object InvalidCookie : Failure()
@@ -42,8 +42,8 @@ internal class GetSSOLoginSessionUseCaseImpl(
             SSOLoginSessionResult.Failure.Generic(it)
         }, {
             SSOLoginSessionResult.Success(
-                AuthSession(sessionMapper.fromSessionDTO(it.sessionDTO), serverLinks),
-                idMapper.toSsoId(it.userDTO.ssoID)
+                authTokens = sessionMapper.fromSessionDTO(it.sessionDTO),
+                ssoId = idMapper.toSsoId(it.userDTO.ssoID)
             )
         })
 

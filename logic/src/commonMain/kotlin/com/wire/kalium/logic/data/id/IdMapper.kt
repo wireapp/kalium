@@ -8,11 +8,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.UserSsoIdDTO
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.dao.client.Client
+import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.QualifiedUserId
-import com.wire.kalium.network.api.UserId as NetworkUserId
+import com.wire.kalium.network.api.UserId as UserIdDTO
 
 internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
 internal typealias PersistenceQualifiedId = QualifiedIDEntity
@@ -27,6 +27,8 @@ interface IdMapper {
     fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId
     fun toStringDaoModel(qualifiedID: QualifiedID): String
     fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.QualifiedID): PersistenceQualifiedId
+    fun fromDaoToDto(qualifiedID: PersistenceQualifiedId): UserIdDTO
+
     fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID
     fun toCryptoModel(groupID: GroupID): MLSGroupId
     fun toGroupIDEntity(groupID: GroupID): String
@@ -42,7 +44,7 @@ interface IdMapper {
     fun toQualifiedAssetIdEntity(value: String, domain: String = ""): PersistenceQualifiedId
     fun toSsoId(userSsoIdDTO: UserSsoIdDTO?): SsoId?
     fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
-    fun toNetworkUserId(userId: UserId): NetworkUserId
+    fun toNetworkUserId(userId: UserId): UserIdDTO
 
 }
 
@@ -71,6 +73,10 @@ internal class IdMapperImpl : IdMapper {
 
     override fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.QualifiedID): PersistenceQualifiedId =
         PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
+
+    override fun fromDaoToDto(qualifiedID: PersistenceQualifiedId): UserIdDTO = with(qualifiedID) {
+        UserIdDTO(value = value, domain = domain)
+    }
 
     override fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID =
         CryptoQualifiedID(value = qualifiedID.value, domain = qualifiedID.domain)
@@ -111,7 +117,7 @@ internal class IdMapperImpl : IdMapper {
         )
     }
 
-    override fun toNetworkUserId(userId: UserId): NetworkUserId =
-        NetworkUserId(userId.value, userId.domain)
+    override fun toNetworkUserId(userId: UserId): UserIdDTO =
+        UserIdDTO(userId.value, userId.domain)
 
 }

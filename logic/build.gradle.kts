@@ -82,6 +82,7 @@ kotlin {
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
+                implementation(Dependencies.Android.paging3)
                 implementation(Dependencies.Android.work)
             }
         }
@@ -95,5 +96,13 @@ kotlin {
 }
 
 dependencies {
-    ksp(Dependencies.Test.mockativeProcessor)
+    configurations
+        .filter { it.name.startsWith("ksp") && it.name.contains("Test") }
+        .forEach {
+            add(it.name, Dependencies.Test.mockativeProcessor)
+        }
+}
+
+ksp {
+    arg("mockative.stubsUnitByDefault", "true")
 }

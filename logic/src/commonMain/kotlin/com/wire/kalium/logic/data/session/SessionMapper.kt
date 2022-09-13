@@ -1,27 +1,33 @@
 package com.wire.kalium.logic.data.session
 
-import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.feature.auth.AuthSession
+import com.wire.kalium.logic.feature.auth.AccountInfo
+import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.persistence.model.AuthSessionEntity
+import com.wire.kalium.persistence.client.AuthTokenEntity
+import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
+import com.wire.kalium.persistence.model.SsoIdEntity
+import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 
 interface SessionMapper {
-    fun toSessionDTO(authToken: AuthSession.Token): SessionDTO
-    fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Token.Valid
-
-    fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession
-    fun toPersistenceSession(authSession: AuthSession, ssoId: SsoId?): AuthSessionEntity
+    fun toSessionDTO(authSession: AuthTokens): SessionDTO
+    fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO
+    fun fromSessionDTO(sessionDTO: SessionDTO): AuthTokens
+    fun fromAccountInfoEntity(accountInfoEntity: AccountInfoEntity): AccountInfo
+    fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity
+    fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
+    fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity
+    fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
+    fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
 }
 
 internal class SessionMapperImpl(
-    private val serverConfigMapper: ServerConfigMapper,
     private val idMapper: IdMapper
 ) : SessionMapper {
 
-    override fun toSessionDTO(authToken: AuthSession.Token): SessionDTO = with(authToken) {
+    override fun toSessionDTO(authSession: AuthTokens): SessionDTO = with(authSession) {
         SessionDTO(
             userId = idMapper.toApiModel(userId),
             tokenType = tokenType,
@@ -30,61 +36,58 @@ internal class SessionMapperImpl(
         )
     }
 
-    override fun fromSessionDTO(sessionDTO: SessionDTO): AuthSession.Token.Valid = with(sessionDTO) {
-        AuthSession.Token.Valid(idMapper.fromApiModel(userId), accessToken, refreshToken, tokenType)
+    override fun fromEntityToSessionDTO(authTokenEntity: AuthTokenEntity): SessionDTO = with(authTokenEntity) {
+        SessionDTO(
+            userId = idMapper.fromDaoToDto(userId),
+            tokenType = tokenType,
+            accessToken = accessToken,
+            refreshToken = refreshToken
+        )
     }
 
-    override fun fromPersistenceSession(authSessionEntity: AuthSessionEntity): AuthSession =
-        when (authSessionEntity) {
-            is AuthSessionEntity.Valid -> AuthSession(
-                AuthSession.Token.Valid(
-                    userId = idMapper.fromDaoModel(authSessionEntity.userId),
-                    accessToken = authSessionEntity.accessToken,
-                    refreshToken = authSessionEntity.refreshToken,
-                    tokenType = authSessionEntity.tokenType,
-                ),
-                serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
+    override fun fromSessionDTO(sessionDTO: SessionDTO): AuthTokens = with(sessionDTO) {
+        AuthTokens(
+            userId = idMapper.fromApiModel(userId),
+            accessToken = accessToken,
+            refreshToken = refreshToken,
+            tokenType = tokenType
+        )
+    }
+
+    override fun fromAccountInfoEntity(accountInfoEntity: AccountInfoEntity): AccountInfo =
+        accountInfoEntity.logoutReason?.let {
+            AccountInfo.Invalid(
+                idMapper.fromDaoModel(accountInfoEntity.userIDEntity),
+                toLogoutReason(it)
             )
+        } ?: AccountInfo.Valid(idMapper.fromDaoModel(accountInfoEntity.userIDEntity))
 
-            is AuthSessionEntity.Invalid -> {
-                AuthSession(
-                    AuthSession.Token.Invalid(
-                        userId = idMapper.fromDaoModel(authSessionEntity.userId),
-                        reason = LogoutReason.values()[authSessionEntity.reason.ordinal],
-                        hardLogout = authSessionEntity.hardLogout,
-                        accessToken = authSessionEntity.accessToken,
-                        refreshToken = authSessionEntity.refreshToken,
-                        tokenType = authSessionEntity.tokenType,
-                    ),
-                    serverLinks = serverConfigMapper.fromEntity(authSessionEntity.serverLinks)
-                )
-            }
-
+    override fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity =
+        when (reason) {
+            LogoutReason.SELF_LOGOUT -> LogoutReasonEntity.SELF_LOGOUT
+            LogoutReason.REMOVED_CLIENT -> LogoutReasonEntity.REMOVED_CLIENT
+            LogoutReason.DELETED_ACCOUNT -> LogoutReasonEntity.DELETED_ACCOUNT
+            LogoutReason.SESSION_EXPIRED -> LogoutReasonEntity.SESSION_EXPIRED
         }
 
-    override fun toPersistenceSession(authSession: AuthSession, ssoId: SsoId?): AuthSessionEntity =
-        when (authSession.token) {
-            is AuthSession.Token.Valid -> AuthSessionEntity.Valid(
-                userId = idMapper.toDaoModel(authSession.token.userId),
-                accessToken = authSession.token.accessToken,
-                refreshToken = authSession.token.refreshToken,
-                tokenType = authSession.token.tokenType,
-                serverLinks = serverConfigMapper.toEntity(authSession.serverLinks),
-                ssoId = idMapper.toSsoIdEntity(ssoId)
+    override fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity? =
+        ssoId?.let { SsoIdEntity(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
 
-            )
+    override fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity = AuthTokenEntity(
+        userId = idMapper.toDaoModel(authSession.userId),
+        accessToken = authSession.accessToken,
+        refreshToken = authSession.refreshToken,
+        tokenType = authSession.tokenType
+    )
 
-            is AuthSession.Token.Invalid -> {
-                AuthSessionEntity.Invalid(
-                    userId = idMapper.toDaoModel(authSession.token.userId),
-                    serverLinks = serverConfigMapper.toEntity(authSession.serverLinks),
-                    reason = com.wire.kalium.persistence.model.LogoutReason.values()[authSession.token.reason.ordinal],
-                    hardLogout = authSession.token.hardLogout,
-                    ssoId = idMapper.toSsoIdEntity(ssoId),
-                    accessToken = authSession.token.accessToken,
-                    refreshToken = authSession.token.refreshToken,
-                    tokenType = authSession.token.tokenType,
-                )
-            }
+    override fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId? =
+        ssoIdEntity?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
+
+    override fun toLogoutReason(reason: com.wire.kalium.persistence.model.LogoutReason): LogoutReason =
+        when (reason) {
+            LogoutReasonEntity.SELF_LOGOUT -> LogoutReason.SELF_LOGOUT
+            LogoutReasonEntity.REMOVED_CLIENT -> LogoutReason.REMOVED_CLIENT
+            LogoutReasonEntity.DELETED_ACCOUNT -> LogoutReason.DELETED_ACCOUNT
+            LogoutReasonEntity.SESSION_EXPIRED -> LogoutReason.SESSION_EXPIRED
         }
 }

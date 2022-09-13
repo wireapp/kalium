@@ -6,6 +6,7 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.UnboundNetworkContainer
+import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.client.UserConfigStorage
@@ -53,7 +55,6 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 class GlobalKaliumScope(
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
     private val globalPreferences: Lazy<KaliumPreferences>,
-    private val sessionRepository: SessionRepository,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
 ) {
@@ -69,11 +70,19 @@ class GlobalKaliumScope(
             unboundNetworkContainer.remoteVersion,
         )
     private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences.value)
+
+    private val authTokenStorage: AuthTokenStorage get() = AuthTokenStorage(globalPreferences.value)
     private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences.value)
+
+    val sessionRepository: SessionRepository
+        get() =
+            SessionDataSource(globalDatabase.value.accountsDAO, authTokenStorage, serverConfigRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
-    val addAuthenticatedAccount: AddAuthenticatedUserUseCase get() = AddAuthenticatedUserUseCase(sessionRepository)
+    val addAuthenticatedAccount: AddAuthenticatedUserUseCase
+        get() =
+            AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)

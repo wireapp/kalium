@@ -17,9 +17,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@ExperimentalCoroutinesApi
 class PersistOtherUsersClientsUseCaseTest {
 
     @Test
@@ -74,12 +76,13 @@ class PersistOtherUsersClientsUseCaseTest {
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
 
-        val persistOtherUserClientsUseCase = PersistOtherUserClientsUseCaseImpl(clientRemoteRepository, clientRepository)
+        val persistOtherUserClientsUseCase =
+            PersistOtherUserClientsUseCaseImpl(clientRemoteRepository, clientRepository)
 
         suspend fun withSuccessfulResponse(userId: UserId, expectedResponse: List<OtherUserClient>): Arrangement {
             given(clientRemoteRepository)
                 .suspendFunction(clientRemoteRepository::fetchOtherUserClients).whenInvokedWith(any())
-                .thenReturn(Either.Right(expectedResponse))
+                .thenReturn(Either.Right(listOf(userId to expectedResponse)))
 
             given(clientRepository)
                 .coroutine { clientRepository.storeUserClientList(userId, expectedResponse) }

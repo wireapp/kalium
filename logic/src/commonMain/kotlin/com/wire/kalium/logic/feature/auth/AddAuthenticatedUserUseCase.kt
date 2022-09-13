@@ -1,13 +1,16 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onSuccess
 
-class AddAuthenticatedUserUseCase(
-    private val sessionRepository: SessionRepository
+class AddAuthenticatedUserUseCase internal constructor(
+    private val sessionRepository: SessionRepository,
+    private val serverConfigRepository: ServerConfigRepository
 ) {
     sealed class Result {
         data class Success(val userId: UserId) : Result()
@@ -17,39 +20,56 @@ class AddAuthenticatedUserUseCase(
         }
     }
 
-    operator fun invoke(authSession: AuthSession, ssoId: SsoId?, replace: Boolean = false): Result =
-        sessionRepository.doesSessionExist(authSession.token.userId).fold(
+    suspend operator fun invoke(
+        serverConfigId: String,
+        ssoId: SsoId?,
+        authTokens: AuthTokens,
+        replace: Boolean = false
+    ): Result =
+        sessionRepository.doesSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
-            }, {
-                when (it) {
-                    true -> {
-                        val forceReplace = sessionRepository.userSession(authSession.token.userId).fold(
-                            { replace },
-                            { existSession -> existSession.token is AuthSession.Token.Invalid || replace }
-                        )
-                        onUserExist(authSession, ssoId, forceReplace)
-                    }
-
-                    false -> storeUser(authSession, ssoId)
+            }, { doesValidSessionExist ->
+                when (doesValidSessionExist) {
+                    true -> onUserExist(serverConfigId, ssoId, authTokens, replace)
+                    false -> storeUser(serverConfigId, ssoId, authTokens)
                 }
             }
         )
 
-    private fun storeUser(authSession: AuthSession, ssoId: SsoId?): Result {
-        sessionRepository.storeSession(authSession, ssoId)
-        sessionRepository.updateCurrentSession(authSession.token.userId)
-        return Result.Success(authSession.token.userId)
-    }
+    private suspend fun storeUser(
+        serverConfigId: String,
+        ssoId: SsoId?,
+        authTokens: AuthTokens
+    ): Result =
+        sessionRepository.storeSession(serverConfigId, ssoId, authTokens)
+            .onSuccess {
+                sessionRepository.updateCurrentSession(authTokens.userId)
+            }.fold(
+                { Result.Failure.Generic(it) },
+                { Result.Success(authTokens.userId) }
+            )
 
-    private fun onUserExist(newSession: AuthSession, ssoId: SsoId?, replace: Boolean): Result =
+    private suspend fun onUserExist(
+        newServerConfigId: String,
+        ssoId: SsoId?,
+        newAuthTokens: AuthTokens,
+        replace: Boolean
+    ): Result =
         when (replace) {
             true -> {
-                sessionRepository.userSession(newSession.token.userId).fold(
+                sessionRepository.fullAccountInfo(newAuthTokens.userId).fold(
                     // in case of the new session have a different server configurations the new session should not be added
-                    { Result.Failure.Generic(it) }, { oldSession ->
-                        if (oldSession.serverLinks == newSession.serverLinks) {
-                            storeUser(newSession.copy(serverLinks = oldSession.serverLinks), ssoId)
+                    { Result.Failure.Generic(it) },
+                    { oldSession ->
+                        val newServerConfig =
+                            serverConfigRepository.configById(newServerConfigId).fold({ return Result.Failure.Generic(it) }, { it })
+                        if (oldSession.serverConfig.links == newServerConfig.links) {
+                            storeUser(
+                                serverConfigId = newServerConfigId,
+                                ssoId = ssoId,
+                                authTokens = newAuthTokens
+                            )
                         } else Result.Failure.UserAlreadyExists
                     }
                 )
