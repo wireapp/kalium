@@ -2,10 +2,8 @@ package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
@@ -24,17 +22,12 @@ class FederatedIdMapperImpl internal constructor(
     private val selfUserId: UserId,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val sessionRepository: SessionRepository,
-    private val serverConfigRepository: ServerConfigRepository,
 ) : FederatedIdMapper {
 
-    private fun isFederationEnabled() = when (val session = sessionRepository.userSession(selfUserId)) {
-        is Either.Left -> false
-        is Either.Right -> {
-            serverConfigRepository.configByLinks(session.value.serverLinks).fold({ false }, { config ->
-                config.metaData.federation
-            })
-        }
-    }
+    private fun isFederationEnabled() = sessionRepository.isFederated(selfUserId).fold(
+        { false },
+        { it }
+    )
 
     override suspend fun parseToFederatedId(qualifiedID: QualifiedID): String {
         kaliumLogger.v(

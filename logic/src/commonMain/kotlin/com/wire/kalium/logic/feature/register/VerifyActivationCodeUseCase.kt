@@ -6,7 +6,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCode
 
-class VerifyActivationCodeUseCase(
+class VerifyActivationCodeUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository
 ) {
     suspend operator fun invoke(email: String, code: String): VerifyActivationCodeResult =
