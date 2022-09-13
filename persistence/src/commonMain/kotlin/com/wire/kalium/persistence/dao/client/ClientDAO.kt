@@ -17,4 +17,5 @@ interface ClientDAO {
     suspend fun getClientsOfUsersByQualifiedIDs(ids: List<QualifiedIDEntity>): Map<QualifiedIDEntity, List<Client>>
     suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String)
+    suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
 }

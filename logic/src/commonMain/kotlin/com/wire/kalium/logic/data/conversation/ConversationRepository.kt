@@ -617,12 +617,11 @@ class ConversationDataSource(
      * Fetches a list of all recipients for a given conversation including this very client
      */
     override suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> =
-        getConversationMembers(conversationId)
-            .map { it.map(idMapper::toDaoModel) }
-            .flatMap {
-                wrapStorageRequest { clientDAO.getClientsOfUsersByQualifiedIDs(it) }
-                    .map { memberMapper.fromMapOfClientsEntityToRecipients(it) }
-            }
+        wrapStorageRequest {
+            memberMapper.fromMapOfClientsEntityToRecipients(
+                clientDAO.getClientsOfConversation(idMapper.toDaoModel(conversationId))
+            )
+        }
 
     override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {
         return wrapStorageRequest {

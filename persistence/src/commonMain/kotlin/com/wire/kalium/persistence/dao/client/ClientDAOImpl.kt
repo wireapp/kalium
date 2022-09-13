@@ -50,4 +50,10 @@ internal class ClientDAOImpl(private val clientsQueries: ClientsQueries) : Clien
         clientsQueries.deleteClientsOfUser(qualifiedID)
 
     override suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String) = clientsQueries.deleteClient(userId, clientId)
+
+    override suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
+        clientsQueries.selectAllClientsByConversation(id.value)
+            .executeAsList()
+            .map(mapper::toModel)
+            .groupBy { it.userId }
 }
