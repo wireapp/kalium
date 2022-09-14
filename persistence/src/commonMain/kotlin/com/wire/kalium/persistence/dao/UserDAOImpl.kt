@@ -188,16 +188,18 @@ class UserDAOImpl(
     override suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
         connectionStates: List<ConnectionEntity.State>
-    ) = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionStates)
-        .executeAsList()
-        .map(mapper::toModel)
+    ): Flow<List<UserEntity>> = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionStates)
+        .asFlow()
+        .mapToList()
+        .map { it.map(mapper::toModel) }
 
     override suspend fun getUserByHandleAndConnectionStates(
         handle: String,
         connectionStates: List<ConnectionEntity.State>
     ) = userQueries.selectByHandleAndConnectionState(handle, connectionStates)
-        .executeAsList()
-        .map(mapper::toModel)
+        .asFlow()
+        .mapToList()
+        .map { it.map(mapper::toModel) }
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
         userQueries.deleteUser(qualifiedID)
@@ -219,15 +221,17 @@ class UserDAOImpl(
     override suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String
-    ): List<UserEntity> =
+    ): Flow<List<UserEntity>> =
         userQueries.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, searchQuery)
-            .executeAsList()
-            .map(mapper::toModel)
+            .asFlow()
+            .mapToList()
+            .map { it.map(mapper::toModel) }
 
-    override suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): List<UserEntity> =
+    override suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>> =
         userQueries.getUsersNotInConversationByHandle(conversationId, handle)
-            .executeAsList()
-            .map(mapper::toModel)
+            .asFlow()
+            .mapToList()
+            .map { it.map(mapper::toModel) }
 
     override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) {
         userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)

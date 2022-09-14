@@ -34,11 +34,11 @@ import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -139,7 +139,7 @@ class ConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val messageDAO: MessageDAO,
-    private val clientApi: ClientApi,
+    private val clientDAO: ClientDAO,
     private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
@@ -630,8 +630,10 @@ class ConversationDataSource(
      * Fetches a list of all recipients for a given conversation including this very client
      */
     override suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> =
-        getConversationMembers(conversationId).map { it.map(idMapper::toApiModel) }.flatMap {
-            wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
+        wrapStorageRequest {
+            memberMapper.fromMapOfClientsEntityToRecipients(
+                clientDAO.getClientsOfConversation(idMapper.toDaoModel(conversationId))
+            )
         }
 
     override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {
