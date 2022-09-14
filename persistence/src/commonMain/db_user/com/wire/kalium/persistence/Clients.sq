@@ -28,3 +28,6 @@ SELECT * FROM Client;
 
 selectAllClientsByUserId:
 SELECT * FROM Client WHERE user_id = ?;
+
+selectAllClientsByConversation:
+SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id);
