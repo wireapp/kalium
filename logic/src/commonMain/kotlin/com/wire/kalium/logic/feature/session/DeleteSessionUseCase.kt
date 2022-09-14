@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onSuccess
+import kotlinx.coroutines.cancel
 
 /**
  * This class is responsible for deleting a user session and freeing up all the resources.
@@ -16,6 +17,7 @@ class DeleteSessionUseCase internal constructor(
 ) {
     suspend operator fun invoke(userId: UserId) = sessionRepository.deleteSession(userId)
         .onSuccess {
+            userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
         }.fold({
             Result.Failure(it)

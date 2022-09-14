@@ -82,7 +82,8 @@ internal class SyncCriteriaProviderImpl(
      */
     private fun handleLogoutReason(logoutReason: LogoutReason?): SyncCriteriaResolution.MissingRequirement? =
         when (logoutReason) {
-            LogoutReason.SELF_LOGOUT -> "Logout: SELF_LOGOUT"
+            LogoutReason.SELF_SOFT_LOGOUT -> "Logout: SELF_SOFT_LOGOUT"
+            LogoutReason.SELF_HARD_LOGOUT -> "Logout: SELF_HARD_LOGOUT"
             LogoutReason.SESSION_EXPIRED -> "Logout: SESSION_EXPIRED"
             LogoutReason.REMOVED_CLIENT -> "Logout: REMOVED_CLIENT"
             LogoutReason.DELETED_ACCOUNT -> "Logout: DELETED_ACCOUNT"
