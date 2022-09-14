@@ -41,4 +41,8 @@ class SessionManagerImpl(
     override suspend fun onClientRemoved() {
         sessionRepository.logout(userId, LogoutReason.REMOVED_CLIENT, false)
     }
+
+    override suspend fun proxyCredentials(): Pair<String, String>? {
+        TODO("Not yet implemented")
+    }
 }
