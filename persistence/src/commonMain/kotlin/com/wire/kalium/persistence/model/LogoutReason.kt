@@ -4,8 +4,9 @@ enum class LogoutReason {
     /**
      * User initiated the logout manually.
      */
-    SELF_LOGOUT,
+    SELF_HARD_LOGOUT,
 
+    SELF_SOFT_LOGOUT,
     /**
      * User deleted this client from another client.
      */
