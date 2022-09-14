@@ -324,8 +324,7 @@ class ConversationEventReceiverTest {
                 .wasInvoked(exactly = once)
         }
     }
-
-
+    
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
