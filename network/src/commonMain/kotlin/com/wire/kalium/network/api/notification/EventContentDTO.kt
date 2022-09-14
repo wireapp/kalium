@@ -150,8 +150,8 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
             @SerialName("from") val from: String,
-            @SerialName("data") val roleChange: ConversationRoleChange,
-            ) : Conversation()
+            @SerialName("data") val roleChange: ConversationRoleChange
+        ) : Conversation()
 
         @Serializable
         @SerialName("conversation.mls-welcome")

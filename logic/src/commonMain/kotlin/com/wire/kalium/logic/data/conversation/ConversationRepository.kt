@@ -434,7 +434,8 @@ class ConversationDataSource(
     }
 
     override suspend fun persistMembers(
-        members: List<Conversation.Member>, conversationID: ConversationId
+        members: List<Conversation.Member>,
+        conversationID: ConversationId
     ): Either<CoreFailure, Unit> =
         userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet()).flatMap {
             wrapStorageRequest {
@@ -569,7 +570,8 @@ class ConversationDataSource(
         }
 
     override suspend fun updateConversationNotificationDate(
-        qualifiedID: QualifiedID, date: String
+        qualifiedID: QualifiedID,
+        date: String
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.updateConversationNotificationDate(idMapper.toDaoModel(qualifiedID), date)
