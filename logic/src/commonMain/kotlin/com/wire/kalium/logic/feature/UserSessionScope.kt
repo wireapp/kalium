@@ -528,7 +528,9 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsClientProvider,
             notificationTokenRepository,
             clientRemoteRepository,
-            authenticatedDataSourceSet.proteusClient
+            authenticatedDataSourceSet.proteusClient,
+            globalScope.sessionRepository,
+            userId
         )
     val conversations: ConversationScope
         get() = ConversationScope(

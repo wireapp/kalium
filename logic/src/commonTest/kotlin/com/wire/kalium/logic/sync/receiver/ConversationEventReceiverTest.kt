@@ -16,7 +16,11 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -34,7 +38,6 @@ import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -288,11 +291,31 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenADeletedConversationEvent_whenHandlingItAndNotExists_thenShouldSkipTheDeletion() = runTest {
+        val event = TestEvent.deletedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withEphemeralNotificationEnqueue()
+            .withGetConversation(null)
+            .withGetUserAuthor(event.senderUserId)
+            .withDeletingConversationSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::deleteConversation)
+                .with(eq(TestConversation.ID))
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
     fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventReceiver) = Arrangement()
             .withEphemeralNotificationEnqueue()
-            .withGetConversation(event.conversationId)
+            .withGetConversation()
             .withGetUserAuthor(event.senderUserId)
             .withDeletingConversationSucceeding()
             .arrange()
@@ -491,11 +514,11 @@ class ConversationEventReceiverTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetConversation(conversationId: ConversationId = TestConversation.ID) = apply {
+        fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .suspendFunction(conversationRepository::getConversationById)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(Either.Right(TestConversationDetails.CONVERSATION_ONE_ONE)))
+                .thenReturn(conversation)
         }
 
         fun withGetUserAuthor(userId: UserId = TestUser.USER_ID) = apply {
