@@ -31,8 +31,7 @@ class LogoutUseCaseTest {
 
     @Test
     fun givenHardLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
-        val reason = LogoutReason.SELF_LOGOUT
-        val isHardLogout = true
+        val reason = LogoutReason.SELF_HARD_LOGOUT
         val (arrangement, logoutUseCase) = Arrangement()
             .withLogoutResult(Either.Right(Unit))
             .withSessionLogoutResult(Either.Right(Unit))
@@ -43,7 +42,7 @@ class LogoutUseCaseTest {
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
             .arrange()
-        logoutUseCase.invoke(reason, isHardLogout)
+        logoutUseCase.invoke(reason)
         verify(arrangement.deregisterTokenUseCase)
             .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
             .wasInvoked(exactly = once)
@@ -52,7 +51,7 @@ class LogoutUseCaseTest {
             .wasInvoked(exactly = once)
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::logout)
-            .with(any(), eq(reason), eq(isHardLogout))
+            .with(any(), eq(reason))
             .wasInvoked(exactly = once)
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -72,8 +71,7 @@ class LogoutUseCaseTest {
 
     @Test
     fun givenSoftLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
-        val reason = LogoutReason.SELF_LOGOUT
-        val isHardLogout = false
+        val reason = LogoutReason.SELF_SOFT_LOGOUT
         val (arrangement, logoutUseCase) = Arrangement()
             .withLogoutResult(Either.Right(Unit))
             .withSessionLogoutResult(Either.Right(Unit))
@@ -84,7 +82,7 @@ class LogoutUseCaseTest {
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
             .arrange()
-        logoutUseCase.invoke(reason, isHardLogout)
+        logoutUseCase.invoke(reason)
         verify(arrangement.deregisterTokenUseCase)
             .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
             .wasInvoked(exactly = once)
@@ -93,7 +91,7 @@ class LogoutUseCaseTest {
             .wasInvoked(exactly = once)
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::logout)
-            .with(any(), eq(reason), eq(isHardLogout))
+            .with(any(), eq(reason))
             .wasInvoked(exactly = once)
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -166,7 +164,7 @@ class LogoutUseCaseTest {
         fun withSessionLogoutResult(result: Either<StorageFailure, Unit>): Arrangement {
             given(sessionRepository)
                 .suspendFunction(sessionRepository::logout)
-                .whenInvokedWith(any(), any(), any())
+                .whenInvokedWith(any(), any())
                 .thenReturn(result)
             return this
         }

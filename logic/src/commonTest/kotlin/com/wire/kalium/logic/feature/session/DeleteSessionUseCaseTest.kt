@@ -14,14 +14,17 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DeleteSessionUseCaseTest {
 
     @Test
-    fun givenSuccess_WhenDeletingSessionLocally_thenSuccessAndResourcesAreFreed() {
+    fun givenSuccess_WhenDeletingSessionLocally_thenSuccessAndResourcesAreFreed() = runTest {
 
         val userId = UserId("userId", "domain")
         val (arrange, deleteSessionUseCase) = Arrangement()
@@ -44,7 +47,7 @@ class DeleteSessionUseCaseTest {
     }
 
     @Test
-    fun givenFailure_WhenDeletingSessionLocally_thenReturnFailureAndResourcesAreNotFreed() {
+    fun givenFailure_WhenDeletingSessionLocally_thenReturnFailureAndResourcesAreNotFreed() = runTest {
 
         val userId = UserId("userId", "domain")
         val error = StorageFailure.Generic(IOException("Failed to delete session"))
@@ -58,7 +61,7 @@ class DeleteSessionUseCaseTest {
         }
 
         verify(arrange.sessionRepository)
-            .function(arrange.sessionRepository::deleteSession)
+            .suspendFunction(arrange.sessionRepository::deleteSession)
             .with(any())
             .wasInvoked(exactly = once)
 

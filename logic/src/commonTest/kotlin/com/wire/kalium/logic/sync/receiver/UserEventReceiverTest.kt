@@ -36,7 +36,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(eq(LogoutReason.REMOVED_CLIENT), any())
+            .with(eq(LogoutReason.REMOVED_CLIENT))
             .wasInvoked(exactly = once)
     }
 
@@ -52,7 +52,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(any(), any())
+            .with(any())
             .wasNotInvoked()
     }
 
@@ -67,7 +67,7 @@ class UserEventReceiverTest {
 
         verify(arrangement.logoutUseCase)
             .suspendFunction(arrangement.logoutUseCase::invoke)
-            .with(eq(LogoutReason.DELETED_ACCOUNT), any())
+            .with(eq(LogoutReason.DELETED_ACCOUNT))
             .wasInvoked(exactly = once)
     }
 
@@ -92,7 +92,7 @@ class UserEventReceiverTest {
         }
 
         fun withLogoutUseCaseSucceed() = apply {
-            given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any(), any()).thenReturn(Unit)
+            given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
         }
 
         fun arrange() = this to userEventReceiver
