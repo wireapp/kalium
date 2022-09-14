@@ -29,7 +29,7 @@ class AssetApiTest : ApiTest {
         val fileSystem = FakeFileSystem()
         val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = "some-data".encodeToByteArray()
-        val encryptedDataSource = getDummyDataSource(fileSystem, encryptedData)
+        val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
         val networkClient = mockAuthenticatedNetworkClient(
             VALID_ASSET_UPLOAD_RESPONSE.rawJson,
             statusCode = HttpStatusCode.Created,
@@ -64,7 +64,7 @@ class AssetApiTest : ApiTest {
         val fileSystem = FakeFileSystem()
         val assetMetadata = AssetMetadataRequest("image/jpeg", true, AssetRetentionType.ETERNAL, "md5-hash")
         val encryptedData = "some-data".encodeToByteArray()
-        val encryptedDataSource = getDummyDataSource(fileSystem, encryptedData)
+        val encryptedDataSource = { getDummyDataSource(fileSystem, encryptedData) }
         val networkClient = mockAuthenticatedNetworkClient(
             INVALID_ASSET_UPLOAD_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest,
