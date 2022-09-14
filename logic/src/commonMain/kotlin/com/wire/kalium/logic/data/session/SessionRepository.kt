@@ -40,7 +40,7 @@ interface SessionRepository {
     fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
-    suspend fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
+    suspend fun logout(userId: UserId, reason: LogoutReason): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, AccountInfo>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>>
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
@@ -114,8 +114,7 @@ internal class SessionDataSource(
 
     override suspend fun logout(
         userId: UserId,
-        reason: LogoutReason,
-        isHardLogout: Boolean
+        reason: LogoutReason
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.markAccountAsInvalid(
