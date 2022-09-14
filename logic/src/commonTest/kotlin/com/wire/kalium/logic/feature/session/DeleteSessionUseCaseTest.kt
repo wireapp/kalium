@@ -24,8 +24,7 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeleteSessionUseCaseTest {
 
-    //TODO: re-enable when we have the ability to mock the UserSessionScopeProvider
-
+    // TODO: re-enable when we have the ability to mock the UserSessionScopeProvider
     @Ignore
     @Test
     fun givenSuccess_WhenDeletingSessionLocally_thenSuccessAndResourcesAreFreed() = runTest {
