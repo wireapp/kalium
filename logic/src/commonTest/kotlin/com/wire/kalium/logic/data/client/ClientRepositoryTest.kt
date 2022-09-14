@@ -25,7 +25,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -46,7 +45,6 @@ import kotlin.test.assertSame
 import com.wire.kalium.network.api.UserId as UserIdDTO
 
 @ExperimentalCoroutinesApi
-@ConfigurationApi
 class ClientRepositoryTest {
 
     @Mock

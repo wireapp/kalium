@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
@@ -21,7 +20,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@OptIn(ConfigurationApi::class)
 @ExperimentalCoroutinesApi
 class OnCloseCallTest {
 
