@@ -10,7 +10,7 @@ interface ClearClientDataUseCase {
     suspend operator fun invoke()
 }
 
-class ClearClientDataUseCaseImpl @Suppress("LongParameterList") constructor(
+internal class ClearClientDataUseCaseImpl internal constructor(
     private val clientRepository: ClientRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val proteusClient: ProteusClient

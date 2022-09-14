@@ -44,7 +44,7 @@ interface AssetApi {
      */
     suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
-        encryptedDataSource: Source,
+        encryptedDataSource: () -> Source,
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse>
 
@@ -106,7 +106,7 @@ class AssetApiImpl internal constructor(
 
     override suspend fun uploadAsset(
         metadata: AssetMetadataRequest,
-        encryptedDataSource: Source,
+        encryptedDataSource: () -> Source,
         encryptedDataSize: Long
     ): NetworkResponse<AssetResponse> =
         wrapKaliumResponse {
@@ -133,7 +133,7 @@ class AssetApiImpl internal constructor(
 class StreamAssetContent(
     private val metadata: AssetMetadataRequest,
     private val encryptedDataSize: Long,
-    private val fileContentStream: Source
+    private val fileContentStream: () -> Source,
 ) : OutgoingContent.WriteChannelContent() {
     private val openingData: String by lazy {
         val body = StringBuilder()
@@ -168,6 +168,7 @@ class StreamAssetContent(
     override suspend fun writeTo(channel: ByteWriteChannel) {
         channel.writeStringUtf8(openingData)
         val contentBuffer = Buffer()
+        val fileContentStream = fileContentStream()
         while (fileContentStream.read(contentBuffer, BUFFER_SIZE) != -1L) {
             contentBuffer.readByteArray().let { content ->
                 channel.writePacket(ByteReadPacket(content))

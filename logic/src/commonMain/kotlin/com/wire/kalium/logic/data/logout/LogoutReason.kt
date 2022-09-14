@@ -5,9 +5,15 @@ package com.wire.kalium.logic.data.logout
  */
 enum class LogoutReason {
     /**
-     * User initiated the logout manually.
+     * User initiated the logout manually and opted to not delete user data.
      */
-    SELF_LOGOUT,
+    SELF_SOFT_LOGOUT,
+
+    /**
+     * User initiated the logout manually and opted to delete user data.
+     */
+
+    SELF_HARD_LOGOUT,
 
     /**
      * User deleted this client from another client.
