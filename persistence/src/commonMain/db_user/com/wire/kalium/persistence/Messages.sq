@@ -253,13 +253,14 @@ message_id = excluded.message_id,
 asset_mime_type = excluded.asset_mime_type;
 
 insertMessageAssetContent:
-INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
 asset_size = excluded.asset_size,
 asset_name = excluded.asset_name,
 asset_mime_type = excluded.asset_mime_type,
+asset_upload_status = excluded.asset_upload_status,
 asset_download_status = excluded.asset_download_status,
 asset_otr_key = excluded.asset_otr_key,
 asset_sha256 = excluded.asset_sha256,

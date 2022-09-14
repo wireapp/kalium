@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.asset
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
@@ -22,9 +23,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
@@ -35,7 +34,7 @@ import okio.Path
 
 fun interface SendAssetMessageUseCase {
     /**
-     * Function that enables sending an asset message
+     * Function that enables sending an asset message to a given conversation
      *
      * @param conversationId the id of the conversation where the asset wants to be sent
      * @param assetDataPath the raw data of the asset to be uploaded to the backend and sent to the given conversation
@@ -65,7 +64,7 @@ internal class SendAssetMessageUseCaseImpl(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender
 ) : SendAssetMessageUseCase {
-
+    private lateinit var currentAssetMessageContent: AssetMessageMetadata
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
@@ -81,7 +80,20 @@ internal class SendAssetMessageUseCaseImpl(
 
         // Generate the otr asymmetric key that will be used to encrypt the data
         val otrKey = generateRandomAES256Key()
+        currentAssetMessageContent = AssetMessageMetadata(
+            conversationId = conversationId,
+            mimeType = assetMimeType,
+            assetDataPath = assetDataPath,
+            assetDataSize = assetDataSize,
+            assetName = assetName,
+            assetWidth = assetWidth,
+            assetHeight = assetHeight,
+            otrKey = otrKey,
+            sha256Key = SHA256Key(ByteArray(16)), // Sha256 will be replaced with right values after successful asset upload
+            assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after successful asset upload
+        )
         lateinit var message: Message.Regular
+
         return clientRepository.currentClientId().flatMap { currentClientId ->
             // Get my current user
             val selfUser = userRepository.observeSelfUser().first()
@@ -91,18 +103,7 @@ internal class SendAssetMessageUseCaseImpl(
 
             message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Asset(
-                    provideAssetMessageContent(
-                        dataSize = assetDataSize,
-                        assetName = assetName,
-                        mimeType = assetMimeType,
-                        sha256 = ByteArray(0), // Sha256 will be replaced with right values after successful asset upload
-                        otrKey = otrKey,
-                        assetId = UploadedAssetId(""), // Asset ID will be replaced with right value after successful asset upload
-                        assetWidth = assetWidth,
-                        assetHeight = assetHeight,
-                    )
-                ),
+                content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent)),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
@@ -111,37 +112,16 @@ internal class SendAssetMessageUseCaseImpl(
                 editStatus = Message.EditStatus.NotEdited
             )
 
+            // We persist the asset message right away so that it can be displayed on the conversation screen loading
             persistMessage(message).flatMap {
-                when (updateAssetMessageUploadStatusUseCase(Message.UploadStatus.IN_PROGRESS, conversationId, message.id)) {
+                Either.Right(Unit)
+            }.onFailure {
+                updateAssetMessageUploadStatusUseCase(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+                Either.Left(it)
+            }.flatMap {
+                when (updateAssetMessageUploadStatusUseCase(Message.UploadStatus.UPLOAD_IN_PROGRESS, conversationId, message.id)) {
                     is UpdateUploadStatusResult.Success -> {
-                        // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
-                        assetDataSource.uploadAndPersistPrivateAsset(
-                            assetMimeType,
-                            assetDataPath,
-                            otrKey,
-                            assetName.fileExtension()
-                        ).flatMap { (assetId, sha256) ->
-                            message = message.copy(
-                                content = MessageContent.Asset(
-                                    provideAssetMessageContent(
-                                        dataSize = assetDataSize,
-                                        assetName = assetName,
-                                        mimeType = assetMimeType,
-                                        sha256 = sha256.data,
-                                        otrKey = otrKey,
-                                        assetId = assetId,
-                                        assetWidth = assetWidth,
-                                        assetHeight = assetHeight,
-                                    )
-                                )
-                            )
-
-                            // Try to send the Asset Message
-                            prepareAndSendAssetMessage(
-                                message,
-                                conversationId
-                            )
-                        }
+                        uploadAssetAndUpdateMessage(message, conversationId)
                     }
                     is UpdateUploadStatusResult.Failure -> {
                         kaliumLogger.e("Asset upload status could not be updated")
@@ -154,6 +134,35 @@ internal class SendAssetMessageUseCaseImpl(
         }, { SendAssetMessageResult.Success })
     }
 
+    private suspend fun uploadAssetAndUpdateMessage(message: Message.Regular, conversationId: ConversationId): Either<CoreFailure, Unit> =
+        // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
+        assetDataSource.uploadAndPersistPrivateAsset(
+            currentAssetMessageContent.mimeType,
+            currentAssetMessageContent.assetDataPath,
+            currentAssetMessageContent.otrKey,
+            currentAssetMessageContent.assetName.fileExtension()
+        ).flatMap { (assetId, sha256) ->
+            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist and
+            // update the message on the DB layer to display the changes on the Conversation screen
+            currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
+            val updatedMessage = message.copy(
+                content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent))
+            )
+            persistMessage(updatedMessage)
+
+            // Finally we try to send the Asset Message to the recipients of the given conversation
+            prepareAndSendAssetMessage(
+                message,
+                conversationId
+            )
+        }.flatMap {
+            updateAssetMessageUploadStatusUseCase(Message.UploadStatus.UPLOADED, conversationId, message.id)
+            Either.Right(Unit)
+        }.onFailure {
+            updateAssetMessageUploadStatusUseCase(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+            Either.Left(it)
+        }
+
     @Suppress("LongParameterList")
     private suspend fun prepareAndSendAssetMessage(
         message: Message,
@@ -164,41 +173,48 @@ internal class SendAssetMessageUseCaseImpl(
         }
 
     @Suppress("LongParameterList")
-    private fun provideAssetMessageContent(
-        dataSize: Long,
-        assetName: String?,
-        sha256: ByteArray,
-        otrKey: AES256Key,
-        assetId: UploadedAssetId,
-        mimeType: String,
-        assetWidth: Int?,
-        assetHeight: Int?
-    ): AssetContent = AssetContent(
-        sizeInBytes = dataSize,
-        name = assetName,
-        mimeType = mimeType,
-        metadata = when {
-            isValidImage(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
-                AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
-            }
-            else -> null
-        },
-        remoteData = AssetContent.RemoteData(
-            otrKey = otrKey.data,
-            sha256 = sha256,
-            assetId = assetId.key,
-            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
-            assetDomain = assetId.domain,
-            assetToken = assetId.assetToken
-        ),
-        uploadStatus = Message.UploadStatus.IN_PROGRESS,
-        // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
-        // will only be treated as "SAVED_INTERNALLY"
-        downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY
-    )
+    private fun provideAssetMessageContent(assetMessageMetadata: AssetMessageMetadata): AssetContent {
+        with(assetMessageMetadata) {
+            return AssetContent(
+                sizeInBytes = assetDataSize,
+                name = assetName,
+                mimeType = mimeType,
+                metadata = when {
+                    isValidImage(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
+                        AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
+                    }
+                    else -> null
+                },
+                remoteData = AssetContent.RemoteData(
+                    otrKey = otrKey.data,
+                    sha256 = sha256Key.data,
+                    assetId = assetId.key,
+                    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
+                    assetDomain = assetId.domain,
+                    assetToken = assetId.assetToken
+                ),
+                // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
+                // will only be treated as "SAVED_INTERNALLY"
+                downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY
+            )
+        }
+    }
 }
 
 sealed class SendAssetMessageResult {
     object Success : SendAssetMessageResult()
     class Failure(val coreFailure: CoreFailure) : SendAssetMessageResult()
 }
+
+private data class AssetMessageMetadata(
+    val conversationId: ConversationId,
+    val mimeType: String,
+    val assetId: UploadedAssetId,
+    val assetDataPath: Path,
+    val assetDataSize: Long,
+    val assetName: String,
+    val assetWidth: Int?,
+    val assetHeight: Int?,
+    val otrKey: AES256Key,
+    val sha256Key: SHA256Key
+)

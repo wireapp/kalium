@@ -116,7 +116,7 @@ sealed class Message(
          * The asset is currently being uploaded and will be saved internally after a successful upload
          * @see UPLOADED
          */
-        IN_PROGRESS,
+        UPLOAD_IN_PROGRESS,
 
         /**
          * The asset was uploaded and saved in the internal storage, that should be only readable by this Kalium client.
@@ -126,7 +126,7 @@ sealed class Message(
         /**
          * The last attempt at uploading and saving this asset's data failed.
          */
-        FAILED
+        FAILED_UPLOAD
     }
 
     enum class DownloadStatus {
@@ -139,7 +139,7 @@ sealed class Message(
          * The asset is currently being downloaded and will be saved internally after a successful download
          * @see SAVED_INTERNALLY
          */
-        IN_PROGRESS,
+        DOWNLOAD_IN_PROGRESS,
 
         /**
          * The asset was downloaded and saved in the internal storage, that should be only readable by this Kalium client.
@@ -157,7 +157,7 @@ sealed class Message(
         /**
          * The last attempt at fetching and saving this asset's data failed.
          */
-        FAILED
+        FAILED_DOWNLOAD
     }
 
     enum class Visibility {
