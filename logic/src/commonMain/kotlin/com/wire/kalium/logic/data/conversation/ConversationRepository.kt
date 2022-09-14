@@ -34,11 +34,11 @@ import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -61,6 +62,7 @@ interface ConversationRepository {
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
+    suspend fun getConversationById(conversationId: ConversationId): Conversation?
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
@@ -131,7 +133,7 @@ class ConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val messageDAO: MessageDAO,
-    private val clientApi: ClientApi,
+    private val clientDAO: ClientDAO,
     private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
@@ -405,6 +407,12 @@ class ConversationDataSource(
             .map(conversationMapper::fromDaoModel)
             .wrapStorageRequest()
 
+    override suspend fun getConversationById(conversationId: ConversationId): Conversation? =
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId))
+            .map { conversationEntity ->
+                conversationEntity?.let { conversationMapper.fromDaoModel(it) }
+            }.firstOrNull()
+
     override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
         conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
             conversationMapper.fromDaoModel(it)
@@ -652,8 +660,10 @@ class ConversationDataSource(
      * Fetches a list of all recipients for a given conversation including this very client
      */
     override suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> =
-        getConversationMembers(conversationId).map { it.map(idMapper::toApiModel) }.flatMap {
-            wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
+        wrapStorageRequest {
+            memberMapper.fromMapOfClientsEntityToRecipients(
+                clientDAO.getClientsOfConversation(idMapper.toDaoModel(conversationId))
+            )
         }
 
     override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {

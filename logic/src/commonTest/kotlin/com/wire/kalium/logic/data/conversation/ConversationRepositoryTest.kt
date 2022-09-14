@@ -33,13 +33,13 @@ import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessRe
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -69,6 +69,8 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.ConversationId as ConversationIdDTO
 import com.wire.kalium.persistence.dao.Member as MemberEntity
@@ -93,7 +95,7 @@ class ConversationRepositoryTest {
     private val conversationApi = mock(ConversationApi::class)
 
     @Mock
-    private val clientApi = mock(ClientApi::class)
+    private val clientDao = mock(ClientDAO::class)
 
     @Mock
     private val timeParser: TimeParser = mock(TimeParser::class)
@@ -108,7 +110,7 @@ class ConversationRepositoryTest {
             conversationDAO,
             conversationApi,
             messageDAO,
-            clientApi,
+            clientDao,
             timeParser
         )
     }
@@ -941,112 +943,6 @@ class ConversationRepositoryTest {
         }
     }
 
-//     private class Arrangement {
-//         @Mock
-//         val userRepository: UserRepository = mock(UserRepository::class)
-//
-//         @Mock
-//         val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
-//
-//         @Mock
-//         val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
-//
-//         @Mock
-//         val conversationApi: ConversationApi = mock(ConversationApi::class)
-//
-//         @Mock
-//         val clientApi: ClientApi = mock(ClientApi::class)
-//
-//         @Mock
-//         val timeParser: TimeParser = mock(TimeParser::class)
-//
-//         val conversationRepository =
-//             ConversationDataSource(userRepository, mlsConversationRepository, conversationDAO, conversationApi, clientApi, timeParser)
-//
-//         fun withApiUpdateAccessRoleReturns(response: NetworkResponse<UpdateConversationAccessResponse>) = apply {
-//             given(conversationApi)
-//                 .suspendFunction(conversationApi::updateAccessRole)
-//                 .whenInvokedWith(any(), any())
-//                 .thenReturn(response)
-//         }
-//
-//         fun withDaoUpdateAccessSuccess() = apply {
-//             given(conversationDAO)
-//                 .suspendFunction(conversationDAO::updateAccess)
-//                 .whenInvokedWith(any(), any(), any())
-//                 .thenReturn(Unit)
-//         }
-//
-//         fun withDaoUpdateAccessThrows(exception: Exception) = apply {
-//             given(conversationDAO)
-//                 .suspendFunction(conversationDAO::updateAccess)
-//                 .whenInvokedWith(any(), any(), any())
-//                 .thenThrow(exception)
-//         }
-//
-//         fun withApiUpdateConversationMemberRoleReturns(response: NetworkResponse<Unit>) = apply {
-//             given(conversationApi)
-//                 .suspendFunction(conversationApi::updateConversationMemberRole)
-//                 .whenInvokedWith(any(), any(), any())
-//                 .thenReturn(response)
-//         }
-//
-//         fun withDaoUpdateConversationMemberRoleSuccess() = apply {
-//             given(conversationDAO)
-//                 .suspendFunction(conversationDAO::updateConversationMemberRole)
-//                 .whenInvokedWith(any(), any(), any())
-//                 .thenReturn(Unit)
-//         }
-//
-//         fun withConversationProtocolIs(protocolInfo: ConversationEntity.ProtocolInfo) = apply {
-//             given(conversationDAO)
-//                 .suspendFunction(conversationDAO::getConversationByQualifiedID)
-//                 .whenInvokedWith(any())
-//                 .thenReturn(TestConversation.GROUP_ENTITY(protocolInfo))
-//         }
-//
-//         fun withDeleteMemberAPISucceed() = apply {
-//             given(conversationApi)
-//                 .suspendFunction(conversationApi::removeMember)
-//                 .whenInvokedWith(any(), any())
-//                 .thenReturn(
-//                     NetworkResponse.Success(
-//                         TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
-//                         mapOf(),
-//                         HttpStatusCode.OK.value
-//                     )
-//                 )
-//         }
-//
-//         fun withDeleteMemberAPIFailed() = apply {
-//             given(conversationApi)
-//                 .suspendFunction(conversationApi::removeMember)
-//                 .whenInvokedWith(any(), any())
-//                 .thenReturn(
-//                     NetworkResponse.Error(
-//                         KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-//                     )
-//                 )
-//
-//         }
-//
-//         fun withDeleteMemberDaoSucceed() = apply {
-//             given(conversationDAO)
-//                 .suspendFunction(conversationDAO::deleteMemberByQualifiedID)
-//                 .whenInvokedWith(any(), any())
-//                 .thenReturn(Unit)
-//         }
-//
-//         fun withDaoDeleteSucceded() = apply {
-//             given(conversationDAO)
-//                 .suspendFunction(conversationDAO::deleteConversationByQualifiedID)
-//                 .whenInvokedWith(any())
-//                 .thenReturn(Unit)
-//         }
-//
-//         fun arrange() = this to conversationRepository
-//     }
-
     @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
@@ -1372,6 +1268,24 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversationId_WhenTheConversationDoesNotExists_ShouldReturnANullConversation() = runTest {
+        val conversationId = ConversationId("conv_id", "conv_domain")
+        val (_, conversationRepository) = Arrangement().withExpectedConversation().arrange()
+
+        val result = conversationRepository.getConversationById(conversationId)
+        assertNull(result)
+    }
+
+    @Test
+    fun givenAConversationId_WhenTheConversationExists_ShouldReturnAConversationInstance() = runTest {
+        val conversationId = ConversationId("conv_id", "conv_domain")
+        val (_, conversationRepository) = Arrangement().withExpectedConversation(TestConversation.ENTITY).arrange()
+
+        val result = conversationRepository.getConversationById(conversationId)
+        assertNotNull(result)
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -1386,7 +1300,7 @@ class ConversationRepositoryTest {
         val conversationApi: ConversationApi = mock(ConversationApi::class)
 
         @Mock
-        val clientApi: ClientApi = mock(ClientApi::class)
+        val clientDao: ClientDAO = mock(ClientDAO::class)
 
         @Mock
         private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
@@ -1401,7 +1315,7 @@ class ConversationRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 messageDAO,
-                clientApi,
+                clientDao,
                 timeParser,
             )
 
@@ -1523,6 +1437,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::observeIsUserMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(expectedIsUserMember)
+        }
+
+        fun withExpectedConversation(conversationEntity: ConversationEntity? = null) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(conversationEntity))
         }
 
         fun withWhoDeletedMe(deletionAuthor: UserId?) = apply {

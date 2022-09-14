@@ -1,0 +1,5 @@
+instanceCreationTimeoutInSeconds: 60
+
+# the only required property is resourcePackage, for more config options see below
+swagger:
+    resourcePackage: com.wire.kalium.testservice.api.v1
