@@ -404,9 +404,8 @@ class ConversationDataSource(
 
     override suspend fun getConversationById(conversationId: ConversationId): Conversation? =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId))
-            .map {
-                if (it != null) conversationMapper.fromDaoModel(it)
-                else null
+            .map { conversationEntity ->
+                conversationEntity?.let { conversationMapper.fromDaoModel(it) }
             }.firstOrNull()
 
     override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
