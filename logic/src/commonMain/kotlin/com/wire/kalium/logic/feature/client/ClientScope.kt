@@ -42,9 +42,12 @@ class ClientScope(
         )
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
-    val needsToRegisterClient: NeedsToRegisterClientUseCase get() = NeedsToRegisterClientUseCaseImpl(clientRepository, sessionRepository, selfUserId)
-    val registerPushToken: RegisterTokenUseCase get() = RegisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
-    val deregisterNativePushToken: DeregisterTokenUseCase get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
+    val needsToRegisterClient: NeedsToRegisterClientUseCase
+        get() = NeedsToRegisterClientUseCaseImpl(clientRepository, sessionRepository, selfUserId)
+    val registerPushToken: RegisterTokenUseCase
+        get() = RegisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
+    val deregisterNativePushToken: DeregisterTokenUseCase
+        get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
         get() = MLSKeyPackageCountUseCaseImpl(keyPackageRepository, clientRepository, keyPackageLimitsProvider)
     val refillKeyPackages: RefillKeyPackagesUseCase
@@ -63,7 +66,8 @@ class ClientScope(
             clientRepository
         )
 
-    val observeCurrentClientId: ObserveCurrentClientIdUseCase get() = ObserveCurrentClientIdUseCaseImpl(clientRepository)
+    val observeCurrentClientId: ObserveCurrentClientIdUseCase
+        get() = ObserveCurrentClientIdUseCaseImpl(clientRepository)
 
     val clearClientData: ClearClientDataUseCase
         get() = ClearClientDataUseCaseImpl(clientRepository, mlsClientProvider, proteusClient)

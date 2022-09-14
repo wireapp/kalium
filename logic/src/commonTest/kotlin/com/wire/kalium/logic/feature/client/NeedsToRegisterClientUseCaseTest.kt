@@ -99,10 +99,8 @@ class NeedsToRegisterClientUseCaseTest {
         @Mock
         val sessionRepository = mock(SessionRepository::class)
 
-
         private var needsToRegisterClientUseCase: NeedsToRegisterClientUseCase =
             NeedsToRegisterClientUseCaseImpl(clientRepository, sessionRepository, selfUserId)
-
 
         fun withCurrentClientId(result: Either<StorageFailure, ClientId>) = apply {
             given(clientRepository)
