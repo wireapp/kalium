@@ -34,7 +34,7 @@ interface ClientRepository {
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
-    suspend fun storeUserClientListAndRemoveOther(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit>
+    suspend fun storeUserClientListAndRemoveRedundantClients(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit>
     suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
@@ -98,17 +98,16 @@ class ClientDataSource(
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
         }
-    override suspend fun storeUserClientListAndRemoveOther(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit> {
-//TODO remove logs
-        println("cyka 0 ${clientDAO.getClientsOfUserByQualifiedID(userMapper.toUserIdPersistence(userId))}")
-        val let = userMapper.toUserIdPersistence(userId).let { userEntity ->
+
+    override suspend fun storeUserClientListAndRemoveRedundantClients(
+        userId: UserId,
+        clients: List<OtherUserClient>
+    ): Either<StorageFailure, Unit> =
+        userMapper.toUserIdPersistence(userId).let { userEntity ->
             clients.map { ClientEntity(userEntity, it.id, it.deviceType.name) }.let { clientEntityList ->
-                wrapStorageRequest { clientDAO.insertClientsAndRemoveOther(userEntity, clientEntityList) }
+                wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(userEntity, clientEntityList) }
             }
         }
-        println("cyka 1 ${clientDAO.getClientsOfUserByQualifiedID(userMapper.toUserIdPersistence(userId))}")
-        return let
-    }
 
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
     override suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit> = clientRemoteRepository.deregisterToken(token)

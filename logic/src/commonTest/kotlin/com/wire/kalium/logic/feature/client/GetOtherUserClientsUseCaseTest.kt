@@ -73,7 +73,7 @@ class GetOtherUserClientsUseCaseTest {
                 .thenReturn(Either.Right(expectedResponse))
 
             given(clientRepository)
-                .suspendFunction(clientRepository::storeUserClientListAndRemoveOther)
+                .suspendFunction(clientRepository::storeUserClientListAndRemoveRedundantClients)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
             return this

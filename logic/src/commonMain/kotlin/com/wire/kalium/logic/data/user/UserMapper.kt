@@ -21,8 +21,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 import com.wire.kalium.persistence.dao.client.Client
+import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
@@ -222,6 +222,7 @@ internal class UserMapperImpl(
 
     override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClient(DeviceType.valueOf(it.deviceType ?: ""), it.id)
+            val deviceType = it.deviceType?.let { device -> DeviceType.valueOf(device) } ?: DeviceType.Unknown
+            OtherUserClient(deviceType, it.id)
         }
 }
