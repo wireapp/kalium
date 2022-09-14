@@ -36,7 +36,6 @@ class LogoutUseCaseTest {
             .withLogoutResult(Either.Right(Unit))
             .withSessionLogoutResult(Either.Right(Unit))
             .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
-            .withUpdateCurrentSessionResult(Either.Right(Unit))
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
             .withClearCurrentClientIdResult(Either.Right(Unit))
             .withClearRetainedClientIdResult(Either.Right(Unit))
@@ -62,7 +61,7 @@ class LogoutUseCaseTest {
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
             .with(any())
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
         verify(arrangement.userSessionScopeProvider)
             .function(arrangement.userSessionScopeProvider::delete)
             .with(any())
@@ -76,7 +75,6 @@ class LogoutUseCaseTest {
             .withLogoutResult(Either.Right(Unit))
             .withSessionLogoutResult(Either.Right(Unit))
             .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
-            .withUpdateCurrentSessionResult(Either.Right(Unit))
             .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
             .withClearCurrentClientIdResult(Either.Right(Unit))
             .withClearRetainedClientIdResult(Either.Right(Unit))
@@ -105,7 +103,7 @@ class LogoutUseCaseTest {
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
             .with(any())
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
         verify(arrangement.userSessionScopeProvider)
             .function(arrangement.userSessionScopeProvider::delete)
             .with(any())
@@ -165,14 +163,6 @@ class LogoutUseCaseTest {
             given(sessionRepository)
                 .suspendFunction(sessionRepository::logout)
                 .whenInvokedWith(any(), any())
-                .thenReturn(result)
-            return this
-        }
-
-        fun withUpdateCurrentSessionResult(result: Either<StorageFailure, Unit>): Arrangement {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::updateCurrentSession)
-                .whenInvokedWith(any())
                 .thenReturn(result)
             return this
         }
