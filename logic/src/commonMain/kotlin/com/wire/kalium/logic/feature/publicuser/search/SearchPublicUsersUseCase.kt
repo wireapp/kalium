@@ -8,8 +8,11 @@ import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 interface SearchPublicUsersUseCase {
@@ -17,20 +20,21 @@ interface SearchPublicUsersUseCase {
         searchQuery: String,
         maxResultSize: Int? = null,
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Flow<Result>
+    ): Flow<SearchUsersResult>
 }
 
 internal class SearchPublicUsersUseCaseImpl(
     private val searchUserRepository: SearchUserRepository,
     private val connectionRepository: ConnectionRepository,
-    private val qualifiedIdMapper: QualifiedIdMapper
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SearchPublicUsersUseCase {
 
     override suspend operator fun invoke(
         searchQuery: String,
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
-    ): Flow<Result> {
+    ): Flow<SearchUsersResult> {
         val qualifiedID = qualifiedIdMapper.fromStringToQualifiedID(searchQuery)
 
         return connectionRepository.observeConnectionList()
@@ -43,12 +47,12 @@ internal class SearchPublicUsersUseCaseImpl(
                 ).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         when (it.kaliumException.errorResponse.code) {
-                            HttpStatusCode.BadRequest.value -> Result.Failure.InvalidRequest
-                            HttpStatusCode.NotFound.value -> Result.Failure.InvalidQuery
-                            else -> Result.Failure.Generic(it)
+                            HttpStatusCode.BadRequest.value -> SearchUsersResult.Failure.InvalidRequest
+                            HttpStatusCode.NotFound.value -> SearchUsersResult.Failure.InvalidQuery
+                            else -> SearchUsersResult.Failure.Generic(it)
                         }
                     } else {
-                        Result.Failure.Generic(it)
+                        SearchUsersResult.Failure.Generic(it)
                     }
                 }, { response ->
                     val usersWithConnectionStatus = response.copy(result = response.result
@@ -64,9 +68,9 @@ internal class SearchPublicUsersUseCaseImpl(
                         .filter { it.connectionStatus != ConnectionState.ACCEPTED }
                     )
 
-                    Result.Success(usersWithConnectionStatus)
+                    SearchUsersResult.Success(usersWithConnectionStatus)
                 })
             }
-
+            .flowOn(dispatcher.io)
     }
 }

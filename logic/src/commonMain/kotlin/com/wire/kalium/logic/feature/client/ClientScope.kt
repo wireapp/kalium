@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -24,7 +25,8 @@ class ClientScope(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val notificationTokenRepository: NotificationTokenRepository,
-    private val clientRemoteRepository: ClientRemoteRepository
+    private val clientRemoteRepository: ClientRemoteRepository,
+    private val proteusClient: ProteusClient
 ) {
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
@@ -57,5 +59,11 @@ class ClientScope(
             clientRepository
         )
 
-    val observeCurrentClientId: ObserveCurrentClientIdUseCase get() = ObserveCurrentClientIdUseCase(clientRepository)
+    val observeCurrentClientId: ObserveCurrentClientIdUseCase get() = ObserveCurrentClientIdUseCaseImpl(clientRepository)
+
+    val clearClientData: ClearClientDataUseCase
+        get() = ClearClientDataUseCaseImpl(clientRepository, mlsClientProvider, proteusClient)
+
+    val getOrRegister: GetOrRegisterClientUseCase
+        get() = GetOrRegisterClientUseCaseImpl(clientRepository, register, clearClientData, proteusClient)
 }

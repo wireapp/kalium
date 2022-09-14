@@ -4,7 +4,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.functional.Either
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
@@ -16,7 +15,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class NeedsToRegisterClientUseCaseTest {
 
     @Mock
