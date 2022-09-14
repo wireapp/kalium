@@ -13,10 +13,11 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -29,14 +30,15 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
@@ -286,11 +288,31 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenADeletedConversationEvent_whenHandlingItAndNotExists_thenShouldSkipTheDeletion() = runTest {
+        val event = TestEvent.deletedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withEphemeralNotificationEnqueue()
+            .withGetConversation(null)
+            .withGetUserAuthor(event.senderUserId)
+            .withDeletingConversationSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::deleteConversation)
+                .with(eq(TestConversation.ID))
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
     fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventReceiver) = Arrangement()
             .withEphemeralNotificationEnqueue()
-            .withGetConversation(event.conversationId)
+            .withGetConversation()
             .withGetUserAuthor(event.senderUserId)
             .withDeletingConversationSucceeding()
             .arrange()
@@ -304,6 +326,7 @@ class ConversationEventReceiverTest {
                 .wasInvoked(exactly = once)
         }
     }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -342,20 +365,27 @@ class ConversationEventReceiverTest {
         val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
-            proteusClient,
-            persistMessage,
-            messageRepository,
-            assetRepository,
-            conversationRepository,
-            mlsConversationRepository,
-            userRepository,
-            lazyOf(callManager),
-            MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userRepository),
-            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
-            userConfigRepository,
-            ephemeralNotifications,
-            pendingProposalScheduler,
+            proteusClient = proteusClient,
+            persistMessage = persistMessage,
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            userRepository = userRepository,
+            callManagerImpl = lazyOf(callManager),
+            editTextHandler = MessageTextEditHandler(messageRepository),
+            lastReadContentHandler = LastReadContentHandler(conversationRepository, userRepository),
+            clearConversationContentHandler = ClearConversationContentHandler(
+                conversationRepository = conversationRepository,
+                userRepository = userRepository,
+                clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository)
+            ),
+            deleteForMeHandler = DeleteForMeHandler(
+                conversationRepository = conversationRepository, messageRepository = messageRepository, userRepository = userRepository
+            ),
+            userConfigRepository = userConfigRepository,
+            ephemeralNotificationsManager = ephemeralNotifications,
+            pendingProposalScheduler = pendingProposalScheduler,
             protoContentMapper = protoContentMapper,
         )
 
@@ -481,11 +511,11 @@ class ConversationEventReceiverTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetConversation(conversationId: ConversationId = TestConversation.ID) = apply {
+        fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .suspendFunction(conversationRepository::getConversationById)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(Either.Right(TestConversationDetails.CONVERSATION_ONE_ONE)))
+                .thenReturn(conversation)
         }
 
         fun withGetUserAuthor(userId: UserId = TestUser.USER_ID) = apply {

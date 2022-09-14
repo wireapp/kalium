@@ -42,6 +42,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
@@ -70,6 +71,7 @@ internal class ConversationEventReceiverImpl(
     private val callManagerImpl: Lazy<CallManager>,
     private val editTextHandler: MessageTextEditHandler,
     private val lastReadContentHandler: LastReadContentHandler,
+    private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
     private val userConfigRepository: UserConfigRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
@@ -115,6 +117,7 @@ internal class ConversationEventReceiverImpl(
                     is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                     is MessageContent.LastRead -> Message.Visibility.HIDDEN
+                    is MessageContent.Cleared -> Message.Visibility.HIDDEN
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -345,20 +348,19 @@ internal class ConversationEventReceiverImpl(
             }
 
     private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation) {
-        when (val conversation = conversationRepository.observeConversationDetailsById(event.conversationId).firstOrNull()) {
-            is Either.Right -> {
-                conversationRepository.deleteConversation(event.conversationId)
-                    .onFailure { coreFailure ->
-                        kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
-                    }.onSuccess {
-                        val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
-                        val dataNotification = EphemeralConversationNotification(event, conversation.value.conversation, senderUser)
-                        ephemeralNotificationsManager.scheduleNotification(dataNotification)
-                        kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
-                    }
-            }
-
-            else -> kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation")
+        val conversation = conversationRepository.getConversationById(event.conversationId)
+        if (conversation != null) {
+            conversationRepository.deleteConversation(event.conversationId)
+                .onFailure { coreFailure ->
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
+                }.onSuccess {
+                    val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
+                    val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
+                    ephemeralNotificationsManager.scheduleNotification(dataNotification)
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
+                }
+        } else {
+            kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Skipping conversation delete event already handled")
         }
     }
 
@@ -425,7 +427,7 @@ internal class ConversationEventReceiverImpl(
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Unknown Message received: $message")
                     persistMessage(message)
                 }
-
+                is MessageContent.Cleared -> clearConversationContentHandler.handle(message, content)
                 is MessageContent.Empty -> TODO()
             }
 
