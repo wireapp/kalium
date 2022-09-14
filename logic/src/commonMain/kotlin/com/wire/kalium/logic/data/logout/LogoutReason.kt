@@ -3,7 +3,6 @@ package com.wire.kalium.logic.data.logout
 /**
  * Describes a reason that led to a logout.
  */
-@Suppress("ClassNaming")
 enum class LogoutReason {
     /**
      * User initiated the logout manually and opted to not delete user data.
@@ -29,5 +28,5 @@ enum class LogoutReason {
     /**
      * Session Expired.
      */
-    SESSION_EXPIRED
+    SESSION_EXPIRED;
 }
