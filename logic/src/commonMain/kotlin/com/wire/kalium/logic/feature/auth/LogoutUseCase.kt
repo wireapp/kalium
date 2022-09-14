@@ -37,7 +37,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         } else {
             clientRepository.clearCurrentClientId()
         }
-        sessionRepository.updateCurrentSession(userId)
+        //sessionRepository.updateCurrentSession(userId)
         userSessionScopeProvider.get(userId)?.cancel()
         userSessionScopeProvider.delete(userId)
     }
