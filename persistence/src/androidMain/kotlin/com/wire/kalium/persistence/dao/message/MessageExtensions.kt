@@ -25,16 +25,23 @@ actual class MessageExtensionsImpl actual constructor(
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig
     ): KaliumPager<Message, MessageEntity> {
-        val pagingSource = QueryPagingSource(
-            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
-            transacter = messagesQueries,
-            queryProvider = { limit, offset ->
-                messagesQueries.selectByConversationIdAndVisibility(conversationId, visibilities, limit, offset)
-            }
-        )
         // We could return a Flow directly, but having the PagingSource is the only way to test this
-        return KaliumPager(Pager(pagingConfig) { pagingSource }, pagingSource) { message ->
+        return KaliumPager(
+            Pager(pagingConfig) { getPagingSource(conversationId, visibilities) },
+            getPagingSource(conversationId, visibilities)
+        ) { message ->
             messageMapper.toMessageEntity(message)
         }
     }
+
+    private fun getPagingSource(
+        conversationId: ConversationIDEntity,
+        visibilities: Collection<MessageEntity.Visibility>
+    ) = QueryPagingSource(
+        countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
+        transacter = messagesQueries,
+        queryProvider = { limit, offset ->
+            messagesQueries.selectByConversationIdAndVisibility(conversationId, visibilities, limit, offset)
+        }
+    )
 }

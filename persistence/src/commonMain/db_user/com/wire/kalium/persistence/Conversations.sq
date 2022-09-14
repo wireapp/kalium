@@ -102,8 +102,7 @@ WHERE qualified_id = ?;
 getUnreadConversationCount:
 SELECT COUNT() FROM Conversation AS conversation
  WHERE DateTime(conversation.last_modified_date) > DateTime(conversation.last_read_date)
- AND conversation.type IS NOT "SELF";
-
+AND conversation.type IS NOT "SELF";
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 

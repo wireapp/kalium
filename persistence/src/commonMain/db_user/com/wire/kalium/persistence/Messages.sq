@@ -311,6 +311,14 @@ SELECT * FROM MessageFailedToDecryptContent WHERE message_id = ? AND conversatio
 selectMessageMissedCallContent:
 SELECT * FROM MessageMissedCallContent WHERE message_id = ? AND conversation_id = ?;
 
+getConversationMessagesByContentType:
+SELECT * FROM Message
+WHERE conversation_id IS :conversation_id AND content_type IS :content_type;
+
+deleteAllConversationMessages:
+DELETE FROM Message
+WHERE conversation_id IS :conversation_id;
+
 getLastUnreadMessage:
 SELECT * FROM Message AS message
 WHERE message.conversation_id
