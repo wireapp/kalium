@@ -286,7 +286,7 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
+    fun givenADeletedConversationEvent_whenHandlingItAndNotExists_thenShouldSkipTheDeletion() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventReceiver) = Arrangement()
             .withEphemeralNotificationEnqueue()
@@ -306,7 +306,7 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenADeletedConversationEvent_whenHandlingItAndNotExists_thenShouldSkipTheDeletion() = runTest {
+    fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventReceiver) = Arrangement()
             .withEphemeralNotificationEnqueue()
