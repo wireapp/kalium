@@ -18,6 +18,6 @@ actual class ClientConfigImpl : ClientConfig {
     }
 
     override fun clientType(): ClientType {
-        return ClientType.Permanent
+        return ClientType.Temporary
     }
 }
