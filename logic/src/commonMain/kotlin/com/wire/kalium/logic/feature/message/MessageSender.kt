@@ -71,7 +71,7 @@ interface MessageSender {
     suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
 
-class MessageSenderImpl(
+internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val syncManager: SyncManager,

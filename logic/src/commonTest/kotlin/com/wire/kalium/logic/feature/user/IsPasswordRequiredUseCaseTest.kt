@@ -35,7 +35,7 @@ class IsPasswordRequiredUseCaseTest {
         }
 
         verify(arrangement.sessionRepository)
-            .invocation { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
+            .coroutine { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
             .wasInvoked(exactly = once)
     }
 
@@ -50,7 +50,7 @@ class IsPasswordRequiredUseCaseTest {
         }
 
         verify(arrangement.sessionRepository)
-            .invocation { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
+            .coroutine { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
             .wasInvoked(exactly = once)
     }
 
@@ -65,7 +65,7 @@ class IsPasswordRequiredUseCaseTest {
         }
 
         verify(arrangement.sessionRepository)
-            .invocation { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
+            .coroutine { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
             .wasInvoked(exactly = once)
     }
 
@@ -82,7 +82,7 @@ class IsPasswordRequiredUseCaseTest {
         }
 
         verify(arrangement.sessionRepository)
-            .invocation { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
+            .coroutine { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
             .wasInvoked(exactly = once)
     }
 
@@ -96,7 +96,7 @@ class IsPasswordRequiredUseCaseTest {
         val isPasswordRequired = IsPasswordRequiredUseCase(selfUserId, sessionRepository)
 
         fun withSelfSsoId(ssoId: Either<StorageFailure, SsoIdEntity?>) = apply {
-            given(sessionRepository).function(sessionRepository::ssoId).whenInvokedWith(any()).then { ssoId }
+            given(sessionRepository).suspendFunction(sessionRepository::ssoId).whenInvokedWith(any()).then { ssoId }
         }
 
         fun arrange(): Pair<Arrangement, IsPasswordRequiredUseCase> = this to isPasswordRequired

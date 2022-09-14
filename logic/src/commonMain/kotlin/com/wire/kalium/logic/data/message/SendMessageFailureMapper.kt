@@ -26,7 +26,7 @@ class SendMessageFailureMapperImpl : SendMessageFailureMapper {
             val userEntries = domainEntry.value
             userEntries.map { userEntry ->
                 val clients = userEntry.value.map { ClientId(it) }
-                val userId = UserId(domain, userEntry.key)
+                val userId = UserId(value = userEntry.key, domain = domain)
                 userId to clients
             }
         }.toMap()

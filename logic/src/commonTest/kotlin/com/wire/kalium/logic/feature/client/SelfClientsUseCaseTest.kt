@@ -9,7 +9,6 @@ import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
@@ -21,7 +20,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ConfigurationApi::class)
 class SelfClientsUseCaseTest {
 
     @Mock

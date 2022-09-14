@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.user
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -15,9 +16,9 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.publicuser.search.Result
-import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.search.SearchUsersUseCaseImpl
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersResult
+import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCase
+import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -29,12 +30,18 @@ import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@ExperimentalCoroutinesApi
 class SearchUserUseCaseTest {
 
     @Mock
@@ -46,16 +53,21 @@ class SearchUserUseCaseTest {
     @Mock
     private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
-    private lateinit var searchUsersUseCase: SearchUsersUseCase
+    private lateinit var searchPublicUsersUseCase: SearchPublicUsersUseCase
 
     @BeforeTest
     fun setUp() {
-        searchUsersUseCase = SearchUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
+        searchPublicUsersUseCase = SearchPublicUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
 
         given(connectionRepository)
             .suspendFunction(connectionRepository::getConnectionRequests)
             .whenInvoked()
             .thenReturn(listOf())
+
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::observeConnectionList)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf()))
 
         given(qualifiedIdMapper)
             .function(qualifiedIdMapper::fromStringToQualifiedID)
@@ -79,10 +91,15 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         // when
-        val actual = searchUsersUseCase(TEST_QUERY)
-        // then
-        assertIs<Result.Success>(actual)
-        assertEquals(expected.value, actual.userSearchResult)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY).test {
+                // then
+                val actual = awaitItem()
+                assertIs<SearchUsersResult.Success>(actual)
+                assertContentEquals(expected.value.result, actual.userSearchResult.result)
+                awaitComplete()
+            }
+        }
     }
 
     @Test
@@ -91,22 +108,28 @@ class SearchUserUseCaseTest {
         val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
 
         given(connectionRepository)
-            .suspendFunction(connectionRepository::getConnectionRequests)
+            .suspendFunction(connectionRepository::observeConnectionList)
             .whenInvoked()
-            .thenReturn(listOf(PENDING_CONNECTION))
+            .thenReturn(flowOf(listOf(PENDING_CONNECTION)))
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
             .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(expected)
         // when
-        val actual = searchUsersUseCase(TEST_QUERY)
-        // then
-        assertIs<Result.Success>(actual)
-        assertEquals(
-            actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
-            ConnectionState.PENDING
-        )
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY).test {
+                // then
+                val actual = awaitItem()
+                assertIs<SearchUsersResult.Success>(actual)
+                assertEquals(
+                    actual.userSearchResult.result.first { it.id == PENDING_CONNECTION.qualifiedToId }.connectionStatus,
+                    ConnectionState.PENDING
+                )
+                awaitComplete()
+            }
+        }
+
     }
 
     @Test
@@ -119,10 +142,16 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(eq("testQuery"), eq("wire.com"), anything(), anything())
             .thenReturn(expected)
         // when
-        val actual = searchUsersUseCase(TEST_QUERY_FEDERATED)
-        // then
-        assertIs<Result.Success>(actual)
-        assertEquals(expected.value, actual.userSearchResult)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY_FEDERATED).test {
+                // then
+                val actual = awaitItem()
+                assertIs<SearchUsersResult.Success>(actual)
+                assertEquals(expected.value, actual.userSearchResult)
+                awaitComplete()
+            }
+        }
+
     }
 
     @Test
@@ -135,10 +164,13 @@ class SearchUserUseCaseTest {
             .whenInvokedWith(eq("testQuery"), eq(""), anything(), anything())
             .thenReturn(expected)
         // when
-        val actual = searchUsersUseCase(TEST_QUERY)
-
-        // then
-        assertIs<Result.Failure.InvalidQuery>(actual)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY).test {
+                // then
+                assertIs<SearchUsersResult.Failure.InvalidQuery>(awaitItem())
+                awaitComplete()
+            }
+        }
     }
 
     @Test
@@ -150,13 +182,17 @@ class SearchUserUseCaseTest {
             .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
 
         // when
-        searchUsersUseCase(TEST_QUERY)
-
-        // then
-        verify(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
-            .with(anything(), anything(), anything(), eq(SearchUsersOptions.Default))
-            .wasInvoked(Times(1))
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(TEST_QUERY).test {
+                // then
+                awaitItem()
+                verify(searchUserRepository)
+                    .suspendFunction(searchUserRepository::searchUserDirectory)
+                    .with(anything(), anything(), anything(), eq(SearchUsersOptions.Default))
+                    .wasInvoked(Times(1))
+                awaitComplete()
+            }
+        }
     }
 
     @Test
@@ -183,13 +219,17 @@ class SearchUserUseCaseTest {
             .thenReturn(Either.Right(VALID_SEARCH_PUBLIC_RESULT))
 
         // when
-        searchUsersUseCase(searchQuery = TEST_QUERY, searchUsersOptions = givenSearchUsersOptions)
-
-        // then
-        verify(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserDirectory)
-            .with(anything(), anything(), anything(), eq(givenSearchUsersOptions))
-            .wasInvoked(Times(1))
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchPublicUsersUseCase(searchQuery = TEST_QUERY, searchUsersOptions = givenSearchUsersOptions).test {
+                // then
+                awaitItem()
+                verify(searchUserRepository)
+                    .suspendFunction(searchUserRepository::searchUserDirectory)
+                    .with(anything(), anything(), anything(), eq(givenSearchUsersOptions))
+                    .wasInvoked(Times(1))
+                awaitComplete()
+            }
+        }
     }
 
     private companion object {
@@ -221,7 +261,7 @@ class SearchUserUseCaseTest {
                     phone = null,
                     accentId = it,
                     teamId = null,
-                    connectionStatus = ConnectionState.ACCEPTED,
+                    connectionStatus = ConnectionState.NOT_CONNECTED,
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.NONE,
