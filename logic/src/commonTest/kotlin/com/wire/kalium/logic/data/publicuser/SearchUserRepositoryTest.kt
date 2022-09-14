@@ -260,6 +260,17 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { SELF_USER }
 
+        given(domainUserTypeMapper)
+            .invocation {
+                domainUserTypeMapper.fromTeamAndDomain(
+                    "domain",
+                    null,
+                    "team",
+                    "someId",
+                    false
+                )
+            }.then { UserType.FEDERATED }
+
         // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
@@ -301,9 +312,15 @@ class SearchUserRepositoryTest {
                 .then { SELF_USER }
 
             given(domainUserTypeMapper)
-                .function(domainUserTypeMapper::fromTeamAndDomain)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .then { _, _, _, _, _ -> UserType.FEDERATED }
+                .invocation {
+                    domainUserTypeMapper.fromTeamAndDomain(
+                        "domain",
+                        null,
+                        "team",
+                        "someId",
+                        false
+                    )
+                }.then { UserType.FEDERATED }
 
             val expectedResult = UserSearchResult(
                 result = listOf(PUBLIC_USER)

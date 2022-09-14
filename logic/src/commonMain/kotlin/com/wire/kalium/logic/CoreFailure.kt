@@ -53,7 +53,6 @@ sealed class NetworkFailure : CoreFailure() {
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure() {
-    constructor(cause: Throwable) : this(ProteusException("Unknown error caught from logic", code = ProteusException.Code.UNKNOWN_ERROR))
 
     val rootCause: Throwable get() = proteusException
 }
@@ -87,7 +86,7 @@ internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<
         Either.Left(ProteusFailure(e))
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(ProteusFailure(e))
+        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)))
     }
 }
 

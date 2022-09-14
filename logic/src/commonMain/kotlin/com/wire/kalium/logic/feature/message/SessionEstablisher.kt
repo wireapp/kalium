@@ -20,7 +20,7 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapCryptoRequest
 
-interface SessionEstablisher {
+internal interface SessionEstablisher {
 
     /**
      * Verifies if this client can send messages to all the client recipients.
@@ -31,11 +31,11 @@ interface SessionEstablisher {
     ): Either<CoreFailure, Unit>
 }
 
-class SessionEstablisherImpl(
+internal class SessionEstablisherImpl internal constructor(
     private val proteusClient: ProteusClient,
     private val preKeyRepository: PreKeyRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper()
-) : SessionEstablisher {
+) : SessionEstablisher, CryptoSessionMapper by CryptoSessionMapperImpl() {
     override suspend fun prepareRecipientsForNewOutgoingMessage(
         recipients: List<Recipient>
     ): Either<CoreFailure, Unit> =
@@ -56,23 +56,9 @@ class SessionEstablisherImpl(
     private suspend fun establishSessions(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Either<ProteusFailure, Unit> =
         wrapCryptoRequest {
             proteusClient.createSessions(
-                getMapOfSessionIdsToPreKeys(preKeyInfoList)
+                getMapOfSessionIdsToPreKeysAndIgnoreNull(preKeyInfoList)
             )
         }
-
-
-    private fun getMapOfSessionIdsToPreKeys(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Map<String, Map<String, Map<String, PreKeyCrypto>>> {
-        val acc = mutableMapOf<String, Map<String, Map<String, PreKeyCrypto>>>()
-        preKeyInfoList.forEach {
-            val userToClientsToPreKeyMap = preKeyInfoList.associate { userInfo ->
-                userInfo.userId.value to userInfo.clientsInfo.associate { clientInfo ->
-                    clientInfo.clientId to clientInfo.preKey
-                }
-            }
-            acc[it.userId.domain] = userToClientsToPreKeyMap
-        }
-        return acc
-    }
 
     private suspend fun getAllMissingClients(
         detailedContacts: List<Recipient>
@@ -106,4 +92,28 @@ class SessionEstablisherImpl(
             val cryptoSessionID = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipientUserId), CryptoClientId(client.value))
             proteusClient.doesSessionExist(cryptoSessionID)
         }
+}
+
+internal interface CryptoSessionMapper {
+    fun getMapOfSessionIdsToPreKeysAndIgnoreNull(
+        preKeyInfoList: List<QualifiedUserPreKeyInfo>
+    ): Map<String, Map<String, Map<String, PreKeyCrypto>>>
+}
+
+internal class CryptoSessionMapperImpl internal constructor() : CryptoSessionMapper {
+    override fun getMapOfSessionIdsToPreKeysAndIgnoreNull(
+        preKeyInfoList: List<QualifiedUserPreKeyInfo>
+    ): Map<String, Map<String, Map<String, PreKeyCrypto>>> {
+        val acc = mutableMapOf<String, Map<String, Map<String, PreKeyCrypto>>>()
+        preKeyInfoList.forEach {
+            val userToClientsToPreKeyMap: Map<String, Map<String, PreKeyCrypto>> = preKeyInfoList.associate { userInfo ->
+                userInfo.userId.value to userInfo.clientsInfo
+                    .mapNotNull { clientPreKeyInfo ->
+                        clientPreKeyInfo.preKey?.let { preKey -> clientPreKeyInfo.clientId to preKey }
+                    }.toMap()
+            }
+            acc[it.userId.domain] = userToClientsToPreKeyMap
+        }
+        return acc
+    }
 }

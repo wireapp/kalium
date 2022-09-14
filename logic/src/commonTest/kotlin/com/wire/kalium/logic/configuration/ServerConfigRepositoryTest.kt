@@ -16,7 +16,6 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -34,7 +33,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ConfigurationApi::class)
 @ExperimentalCoroutinesApi
 class ServerConfigRepositoryTest {
 
