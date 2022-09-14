@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.user
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -12,7 +13,7 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.publicuser.search.Result
+import com.wire.kalium.logic.feature.publicuser.search.SearchUsersResult
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.framework.TestUser
@@ -25,11 +26,16 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SearchKnownUserUseCaseTest {
 
     @Test
@@ -137,10 +143,16 @@ class SearchKnownUserUseCaseTest {
             .withSearchKnownUsersByNameOrHandleOrEmail(searchQuery, otherUserContainingSelfUserId)
             .arrange()
         // when
-        val result = searchKnownUsersUseCase(searchQuery)
-        // then
-        assertIs<Result.Success>(result)
-        assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchKnownUsersUseCase(searchQuery).test {
+                // then
+                val result = awaitItem()
+                assertIs<SearchUsersResult.Success>(result)
+                assertFalse(result.userSearchResult.result.contains(otherUserContainingSelfUserId))
+                awaitComplete()
+            }
+        }
+
     }
 
     @Test
@@ -167,17 +179,22 @@ class SearchKnownUserUseCaseTest {
             .arrange()
 
         // when
-        val result = searchKnownUsersUseCase(
-            searchQuery = searchQuery,
-            searchUsersOptions = searchUsersOptions
-        )
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchKnownUsersUseCase(
+                searchQuery = searchQuery,
+                searchUsersOptions = searchUsersOptions
+            ).test {
+                // then
+                val result = awaitItem()
+                assertIs<SearchUsersResult.Success>(result)
+                verify(arrangement.searchUserRepository)
+                    .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
+                    .with(anything(), eq(searchUsersOptions))
+                    .wasInvoked(exactly = once)
+                awaitComplete()
+            }
+        }
 
-        // then
-        assertIs<Result.Success>(result)
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
-            .with(anything(), eq(searchUsersOptions))
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -203,17 +220,22 @@ class SearchKnownUserUseCaseTest {
             .arrange()
 
         // when
-        val result = searchKnownUsersUseCase(
-            searchQuery = searchQuery,
-            searchUsersOptions = searchUsersOptions
-        )
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            searchKnownUsersUseCase(
+                searchQuery = searchQuery,
+                searchUsersOptions = searchUsersOptions
+            ).test {
+                // then
+                val result = awaitItem()
+                assertIs<SearchUsersResult.Success>(result)
+                awaitComplete()
+                verify(arrangement.searchUserRepository)
+                    .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+                    .with(anything(), eq(searchUsersOptions))
+                    .wasInvoked(exactly = once)
+            }
+        }
 
-        // then
-        assertIs<Result.Success>(result)
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-            .with(anything(), eq(searchUsersOptions))
-            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -261,26 +283,28 @@ class SearchKnownUserUseCaseTest {
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(
-                    UserSearchResult(
-                        listOf(
-                            OtherUser(
-                                id = QualifiedID(
-                                    value = "someValue",
-                                    domain = "someDomain",
-                                ),
-                                name = null,
-                                handle = null,
-                                email = null,
-                                phone = null,
-                                accentId = 0,
-                                teamId = null,
-                                connectionStatus = ConnectionState.ACCEPTED,
-                                previewPicture = null,
-                                completePicture = null,
-                                availabilityStatus = UserAvailabilityStatus.NONE,
-                                userType = UserType.EXTERNAL,
-                                botService = null,
-                                deleted = false
+                    flowOf(
+                        UserSearchResult(
+                            listOf(
+                                OtherUser(
+                                    id = QualifiedID(
+                                        value = "someValue",
+                                        domain = "someDomain",
+                                    ),
+                                    name = null,
+                                    handle = null,
+                                    email = null,
+                                    phone = null,
+                                    accentId = 0,
+                                    teamId = null,
+                                    connectionStatus = ConnectionState.ACCEPTED,
+                                    previewPicture = null,
+                                    completePicture = null,
+                                    availabilityStatus = UserAvailabilityStatus.NONE,
+                                    userType = UserType.EXTERNAL,
+                                    botService = null,
+                                    deleted = false
+                                )
                             )
                         )
                     )
@@ -326,11 +350,7 @@ class SearchKnownUserUseCaseTest {
                     if (searchQuery == null) any() else eq(searchQuery),
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
-                .thenReturn(
-                    UserSearchResult(
-                        otherUsers
-                    )
-                )
+                .thenReturn(flowOf(UserSearchResult(otherUsers)))
 
             return this
         }

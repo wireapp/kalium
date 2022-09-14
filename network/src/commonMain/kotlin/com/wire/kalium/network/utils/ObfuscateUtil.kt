@@ -55,9 +55,14 @@ fun obfuscatePath(url: Url): String {
             requestToLog += "/${it.obfuscateUrlPath()}"
         }
     }
+
+    if (url.parameters.entries().isNotEmpty()) {
+        requestToLog += "?"
+    }
+
     url.parameters.entries().map {
         if (it.value.isNotEmpty()) {
-            requestToLog += "/${it.key} = ${it.value[0].obfuscateUrlPath()}"
+            requestToLog += "${it.key}=${it.value[0].obfuscateUrlPath()}&"
         }
     }
     return requestToLog
