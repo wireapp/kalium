@@ -43,7 +43,7 @@ class PersistOtherUsersClientsUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::storeUserClientListAndRemoveRedundantClients, fun2<UserId, List<OtherUserClient>>())
+            .suspendFunction(arrangement.clientRepository::storeUserClientListAndRemoveRedundantClients, fun2())
             .with(any(), any())
             .wasInvoked(exactly = once)
 
