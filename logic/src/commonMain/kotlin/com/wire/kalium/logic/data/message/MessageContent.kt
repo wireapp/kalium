@@ -50,6 +50,13 @@ sealed class MessageContent {
 
     object Empty : Regular()
 
+    data class Cleared(
+        @Deprecated("Use qualified id instead", ReplaceWith("conversationId"))
+        val unqualifiedConversationId: String,
+        val conversationId: ConversationId?,
+        val time: Instant
+    ) : Regular()
+
     // server message content types
     // TODO: rename members to userList
     sealed class MemberChange(open val members: List<UserId>) : System() {
