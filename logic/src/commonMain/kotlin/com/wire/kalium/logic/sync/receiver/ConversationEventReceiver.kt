@@ -345,20 +345,19 @@ internal class ConversationEventReceiverImpl(
             }
 
     private suspend fun handleDeletedConversation(event: Event.Conversation.DeletedConversation) {
-        when (val conversation = conversationRepository.observeConversationDetailsById(event.conversationId).firstOrNull()) {
-            is Either.Right -> {
-                conversationRepository.deleteConversation(event.conversationId)
-                    .onFailure { coreFailure ->
-                        kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
-                    }.onSuccess {
-                        val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
-                        val dataNotification = EphemeralConversationNotification(event, conversation.value.conversation, senderUser)
-                        ephemeralNotificationsManager.scheduleNotification(dataNotification)
-                        kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
-                    }
-            }
-
-            else -> kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation")
+        val conversation = conversationRepository.getConversationById(event.conversationId)
+        if (conversation != null) {
+            conversationRepository.deleteConversation(event.conversationId)
+                .onFailure { coreFailure ->
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - Error deleting the contents of a conversation $coreFailure")
+                }.onSuccess {
+                    val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
+                    val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
+                    ephemeralNotificationsManager.scheduleNotification(dataNotification)
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Deleted the conversation ${event.conversationId}")
+                }
+        } else {
+            kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Skipping conversation delete event already handled")
         }
     }
 
