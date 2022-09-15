@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.Connection
@@ -15,6 +16,13 @@ object TestEvent {
         TestUser.USER_ID,
         members,
         "2022-03-30T15:36:00.000Z"
+    )
+
+    fun memberChange(eventId: String = "eventId", member: Member) = Event.Conversation.MemberChanged(
+        eventId,
+        TestConversation.ID,
+        "2022-03-30T15:36:00.000Z",
+        member
     )
 
     fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(eventId, clientId)

@@ -61,7 +61,8 @@ class EventRepositoryTest {
                 ConnectionStatusMapperImpl(),
                 PublicUserMapperImpl(IdMapperImpl(), AvailabilityStatusMapperImpl(), ConnectionStateMapperImpl())
             ),
-            FeatureConfigMapperImpl()
+            FeatureConfigMapperImpl(),
+            ConversationRoleMapperImpl()
         )
 
     private lateinit var eventRepository: EventRepository

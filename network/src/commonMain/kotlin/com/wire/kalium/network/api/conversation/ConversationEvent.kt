@@ -16,3 +16,10 @@ data class ConversationUsers(
     @SerialName("user_ids") val userIds: List<String>,
     @SerialName("qualified_user_ids") val qualifiedUserIds: List<UserId>
 )
+
+@Serializable
+data class ConversationRoleChange(
+    @SerialName("target") val user: String,
+    @SerialName("qualified_target") val qualifiedUserId: UserId,
+    @SerialName("conversation_role") val role: String,
+)
