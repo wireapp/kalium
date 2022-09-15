@@ -140,6 +140,16 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_ThenMemberCanBeUpdated() = runTest {
+        val updatedMember = member1.copy(role = Member.Role.Member)
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.updateMember(updatedMember, conversationEntity1.id)
+
+        assertEquals(listOf(updatedMember), conversationDAO.getAllMembers(conversationEntity1.id).first())
+    }
+
+    @Test
     fun givenExistingConversation_ThenAllMembersCanBeRetrieved() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity1.id)
