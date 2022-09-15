@@ -45,7 +45,6 @@ interface AccountsDAO {
     suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
     fun isFederated(userIDEntity: UserIDEntity): Boolean?
-    suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean
     suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean
     fun currentAccount(): AccountInfoEntity?
     fun observerCurrentAccount(): Flow<AccountInfoEntity?>
@@ -118,9 +117,6 @@ internal class AccountsDAOImpl internal constructor(
             }
 
     override fun isFederated(userIDEntity: UserIDEntity): Boolean? = queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
-
-    override suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean =
-        queries.doesAccountExist(userIDEntity).executeAsOne()
 
     override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean =
         queries.doesValidAccountExist(userIDEntity).executeAsOne()

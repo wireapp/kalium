@@ -111,7 +111,16 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun givenAccountNotInserted_whenCallindDoesAccountExists_thenFalseIsReturned() = runTest {
         val account = VALID_ACCOUNT
-        val exists = db.accountsDAO.doesAccountExists(account.info.userIDEntity)
+        val exists = db.accountsDAO.doesValidAccountExists(account.info.userIDEntity)
+        assertEquals(false, exists)
+    }
+
+    @Test
+    fun givenInvalidSession_whenCallindDoesValidAccountExists_thenFalseIsReturned() = runTest {
+        val account = INVALID_ACCOUNT
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId)
+        db.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, account.info.logoutReason!!)
+        val exists = db.accountsDAO.doesValidAccountExists(account.info.userIDEntity)
         assertEquals(false, exists)
     }
 
