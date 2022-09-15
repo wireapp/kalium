@@ -79,6 +79,11 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
+    suspend fun updateMember(
+        member: Conversation.Member,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit>
+
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -441,7 +446,10 @@ class ConversationDataSource(
         conversationDAO.getAllMembers(idMapper.toDaoModel(conversationId)).first().map { idMapper.fromDaoModel(it.user) }
     }
 
-    override suspend fun persistMembers(members: List<Conversation.Member>, conversationID: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun persistMembers(
+        members: List<Conversation.Member>,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit> =
         userRepository.fetchUsersIfUnknownByIds(members.map { it.id }.toSet()).flatMap {
             wrapStorageRequest {
                 conversationDAO.insertMembersWithQualifiedId(
@@ -450,7 +458,15 @@ class ConversationDataSource(
             }
         }
 
-    override suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> = wrapApiRequest {
+    override suspend fun updateMember(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateMember(memberMapper.toDaoModel(member), idMapper.toDaoModel(conversationID))
+        }
+
+    override suspend fun addMembers(
+        userIdList: List<UserId>,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit> = wrapApiRequest {
         val users = userIdList.map {
             idMapper.toApiModel(it)
         }
@@ -503,9 +519,15 @@ class ConversationDataSource(
             }
         })
 
-    override suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun deleteMembers(
+        userIDList: List<UserId>,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.deleteMembersByQualifiedID(userIDList.map { idMapper.toDaoModel(it) }, idMapper.toDaoModel(conversationID))
+            conversationDAO.deleteMembersByQualifiedID(
+                userIDList.map { idMapper.toDaoModel(it) },
+                idMapper.toDaoModel(conversationID)
+            )
         }
 
     override suspend fun createGroupConversation(
@@ -548,7 +570,9 @@ class ConversationDataSource(
     }
 
     override suspend fun getConversationsForNotifications(): Flow<List<Conversation>> =
-        conversationDAO.getConversationsForNotifications().filterNotNull().map { it.map(conversationMapper::fromDaoModel) }
+        conversationDAO.getConversationsForNotifications()
+            .filterNotNull()
+            .map { it.map(conversationMapper::fromDaoModel) }
 
     override suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
@@ -558,13 +582,21 @@ class ConversationDataSource(
                 .map(conversationMapper::fromDaoModel)
         }
 
-    override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
-        wrapStorageRequest { conversationDAO.updateConversationNotificationDate(idMapper.toDaoModel(qualifiedID), date) }
+    override suspend fun updateConversationNotificationDate(
+        qualifiedID: QualifiedID,
+        date: String
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateConversationNotificationDate(idMapper.toDaoModel(qualifiedID), date)
+        }
 
     override suspend fun updateAllConversationsNotificationDate(date: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateAllConversationsNotificationDate(date) }
 
-    override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: String): Either<StorageFailure, Unit> =
+    override suspend fun updateConversationModifiedDate(
+        qualifiedID: QualifiedID,
+        date: String
+    ): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationModifiedDate(idMapper.toDaoModel(qualifiedID), date) }
 
     override suspend fun updateAccessInfo(
@@ -607,10 +639,15 @@ class ConversationDataSource(
     override suspend fun getUnreadConversationCount(): Either<StorageFailure, Long> =
         wrapStorageRequest { conversationDAO.getUnreadConversationCount() }
 
-    private suspend fun persistMembersFromConversationResponse(conversationResponse: ConversationResponse): Either<CoreFailure, Unit> {
+    private suspend fun persistMembersFromConversationResponse(
+        conversationResponse: ConversationResponse
+    ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
-            conversationDAO.insertMembersWithQualifiedId(memberMapper.fromApiModelToDaoModel(conversationResponse.members), conversationId)
+            conversationDAO.insertMembersWithQualifiedId(
+                memberMapper.fromApiModelToDaoModel(conversationResponse.members),
+                conversationId
+            )
         }
     }
 
