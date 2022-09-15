@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.client.DeviceType
+import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
@@ -21,8 +21,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 import com.wire.kalium.persistence.dao.client.Client
+import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
@@ -65,6 +65,7 @@ interface UserMapper {
 
 internal class UserMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
     private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
@@ -222,6 +223,6 @@ internal class UserMapperImpl(
 
     override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClient(DeviceType.valueOf(it.deviceType ?: ""), it.id)
+            OtherUserClient(clientMapper.fromDeviceTypeEntity(it.deviceType), it.id)
         }
 }

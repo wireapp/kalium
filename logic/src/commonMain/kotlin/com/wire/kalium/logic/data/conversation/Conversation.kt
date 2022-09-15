@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
@@ -111,6 +113,10 @@ data class Conversation(
             object Member : Role()
             object Admin : Role()
             data class Unknown(val name: String) : Role()
+        }
+
+        override fun toString(): String {
+            return "id: ${id.value.obfuscateId()}@${id.domain.obfuscateDomain()} role: $role"
         }
     }
 
