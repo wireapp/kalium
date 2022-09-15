@@ -101,7 +101,7 @@ internal class AccountsDAOImpl internal constructor(
             }
 
     override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
-        queries.allAccounts()
+        queries.allValidAccounts()
             .asFlow()
             .mapToList()
             .map { accountInfoList ->
