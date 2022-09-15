@@ -22,7 +22,7 @@ class ClientMapper(
         lastKey = preyKeyMapper.toPreKeyDTO(param.lastKey),
         label = clientConfig.deviceName(),
         deviceType = toDeviceTypeDTO(clientConfig.deviceType()),
-        type = toClientTypeDTO(clientConfig.clientType()),
+        type = param.clientType?.let { toClientTypeDTO(param.clientType) } ?: toClientTypeDTO(clientConfig.clientType()),
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } } ?: run { null },
         model = clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },

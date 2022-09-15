@@ -40,12 +40,14 @@ import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -61,6 +63,7 @@ interface ConversationRepository {
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
+    suspend fun getConversationById(conversationId: ConversationId): Conversation?
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
@@ -115,6 +118,18 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+
+    /**
+     * Gets all of the conversation messages that are assets
+     */
+    suspend fun getAssetMessages(
+        conversationId: ConversationId,
+    ): Either<CoreFailure, List<Message>>
+
+    /**
+     * Deletes all conversation messages
+     */
+    suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
 }
@@ -400,6 +415,12 @@ class ConversationDataSource(
             .map(conversationMapper::fromDaoModel)
             .wrapStorageRequest()
 
+    override suspend fun getConversationById(conversationId: ConversationId): Conversation? =
+        conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId))
+            .map { conversationEntity ->
+                conversationEntity?.let { conversationMapper.fromDaoModel(it) }
+            }.firstOrNull()
+
     override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
         conversationDAO.getConversationByQualifiedID(idMapper.toDaoModel(conversationId))?.let {
             conversationMapper.fromDaoModel(it)
@@ -680,6 +701,21 @@ class ConversationDataSource(
     override suspend fun deleteConversation(conversationId: ConversationId) = wrapStorageRequest {
         conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
+
+    override suspend fun getAssetMessages(
+        conversationId: ConversationId,
+    ): Either<StorageFailure, List<Message>> =
+        wrapStorageRequest {
+            messageDAO.getConversationMessagesByContentType(
+                idMapper.toDaoModel(conversationId),
+                MessageEntity.ContentType.ASSET
+            ).map(messageMapper::fromEntityToMessage)
+        }
+
+    override suspend fun deleteAllMessages(conversationId: ConversationId): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.deleteAllConversationMessages(idMapper.toDaoModel(conversationId))
+        }
 
     override suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>> =
         conversationDAO.observeIsUserMember(idMapper.toDaoModel(conversationId), idMapper.toDaoModel(userId))

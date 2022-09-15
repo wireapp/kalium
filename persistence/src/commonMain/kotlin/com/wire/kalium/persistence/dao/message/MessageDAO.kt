@@ -37,6 +37,12 @@ interface MessageDAO {
         messageId: String,
         newTextContent: MessageEntityContent.Text
     )
+    suspend fun getConversationMessagesByContentType(
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType
+    ): List<MessageEntity>
+
+    suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity)
 
     suspend fun observeLastUnreadMessage(
         conversationID: QualifiedIDEntity

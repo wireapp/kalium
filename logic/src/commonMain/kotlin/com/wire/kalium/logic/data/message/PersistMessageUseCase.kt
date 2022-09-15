@@ -53,5 +53,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Empty -> false
             is MessageContent.Ignored -> false
             is MessageContent.LastRead -> false
+            is MessageContent.Cleared -> false
         }
 }

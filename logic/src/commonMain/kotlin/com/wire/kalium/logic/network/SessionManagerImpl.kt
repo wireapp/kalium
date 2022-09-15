@@ -54,10 +54,10 @@ class SessionManagerImpl(
         })
 
     override suspend fun onSessionExpired() {
-        sessionRepository.logout(userId, LogoutReason.SESSION_EXPIRED, false)
+        sessionRepository.logout(userId, LogoutReason.SESSION_EXPIRED)
     }
 
     override suspend fun onClientRemoved() {
-        sessionRepository.logout(userId, LogoutReason.REMOVED_CLIENT, false)
+        sessionRepository.logout(userId, LogoutReason.REMOVED_CLIENT)
     }
 }
