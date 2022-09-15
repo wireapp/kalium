@@ -16,28 +16,22 @@ interface LogoutUseCase {
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
-    private val sessionRepository: SessionRepository,
     private val clientRepository: ClientRepository,
-    private val userId: QualifiedID,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val clearClientDataUseCase: ClearClientDataUseCase,
     private val clearUserDataUseCase: ClearUserDataUseCase,
-    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
     override suspend operator fun invoke(reason: LogoutReason) {
         deregisterTokenUseCase()
-        logoutRepository.logout()
-        sessionRepository.logout(userId = userId, reason)
+        logoutRepository.logout(reason)
         if (reason == LogoutReason.SELF_HARD_LOGOUT) {
             clearClientDataUseCase()
             clearUserDataUseCase() // this clears also current client id
         } else {
             clientRepository.clearCurrentClientId()
         }
-        userSessionScopeProvider.get(userId)?.cancel()
-        userSessionScopeProvider.delete(userId)
     }
 }
