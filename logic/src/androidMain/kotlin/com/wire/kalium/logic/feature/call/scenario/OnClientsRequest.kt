@@ -28,7 +28,7 @@ internal class OnClientsRequest(
         callingScope.launch {
             callingLogger.d("[OnClientsRequest] -> ConversationId: $conversationIdString")
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
-            val conversationRecipients = conversationRepository.getConversationRecipients(
+            val conversationRecipients = conversationRepository.getConversationRecipientsForCalling(
                 conversationId = conversationIdWithDomain
             )
 
