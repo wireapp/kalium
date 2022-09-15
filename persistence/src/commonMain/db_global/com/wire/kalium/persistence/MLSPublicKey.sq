@@ -1,0 +1,19 @@
+import com.wire.kalium.persistence.dao.ConversationEntity;
+import com.wire.kalium.persistence.model.KeyType;
+
+CREATE TABLE MLSPublicKey(
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
+    key TEXT NOT NULL,
+    key_type TEXT AS KeyType NOT NULL,
+    server_id TEXT NOT NULL,
+    FOREIGN KEY (server_id) REFERENCES ServerConfiguration(id) ON DELETE CASCADE
+);
+
+insert:
+INSERT OR IGNORE INTO MLSPublicKey(cipher_suite, key, key_type, server_id)
+VALUES(?, ?, ?, ?);
+
+getByUserId:
+SELECT * FROM MLSPublicKey WHERE server_id = (SELECT server_config_id FROM Accounts WHERE id = :userId);
+

@@ -1,9 +1,9 @@
-package com.wire.kalium.logic.feature.conversation.keyingmaterials
+package com.wire.kalium.logic.feature.server.publickeys
 
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
-import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK
+import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -17,22 +17,20 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
 
-// The duration in hours after which we should re-check keying materials.
-internal val KEYING_MATERIAL_CHECK_DURATION = 24.hours
+// The duration in hours after which we should re-check public keys.
+internal val PUBLIC_KEYS_CHECK_DURATION = 24.hours
 
 /**
- * Observes MLS conversations last keying material update
- * if a conversation's LastKeyingMaterialUpdate surpassed the threshold then
- * it'll send a new UpdateCommit for that conversation.
+ * Observes public keys last update
  */
-internal interface KeyingMaterialsManager
+internal interface MLSPublicKeysManager
 
-internal class KeyingMaterialsManagerImpl(
+internal class MLSPublicKeysManagerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val updateKeyingMaterialsUseCase: Lazy<UpdateKeyingMaterialsUseCase>,
+    private val fetchMLSPublicKeysUseCase: Lazy<FetchMLSPublicKeysUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : KeyingMaterialsManager {
+) : MLSPublicKeysManager {
     /**
      * A dispatcher with limited parallelism of 1.
      * This means using this dispatcher only a single coroutine will be processed at a time.
@@ -40,36 +38,37 @@ internal class KeyingMaterialsManagerImpl(
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
-    private val updateKeyingMaterialsScope = CoroutineScope(dispatcher)
+    private val fetchMLSPublicKeysScope = CoroutineScope(dispatcher)
 
-    private var updateKeyingMaterialsJob: Job? = null
+    private var fetchMLSPublicKeysJob: Job? = null
 
     init {
-        updateKeyingMaterialsJob = updateKeyingMaterialsScope.launch {
+        fetchMLSPublicKeysJob = fetchMLSPublicKeysScope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
                 if (syncState is IncrementalSyncStatus.Live) {
-                    updateKeyingMaterialIfNeeded()
+                    fetchPublicKeysIfNeeded()
                 }
             }
         }
     }
 
-    private suspend fun updateKeyingMaterialIfNeeded() =
-        timestampKeyRepository.value.hasPassed(LAST_KEYING_MATERIAL_UPDATE_CHECK, KEYING_MATERIAL_CHECK_DURATION)
+    private suspend fun fetchPublicKeysIfNeeded() =
+        timestampKeyRepository.value.hasPassed(TimestampKeys.LAST_PUBLIC_KEYS_CHECK, PUBLIC_KEYS_CHECK_DURATION)
             .flatMap { exceeded ->
                 if (exceeded) {
-                    updateKeyingMaterialsUseCase.value().let { result ->
+                    fetchMLSPublicKeysUseCase.value().let { result ->
                         when (result) {
-                            is UpdateKeyingMaterialsResult.Failure ->
-                                kaliumLogger.w("Error while updating keying materials: ${result.failure}")
+                            is FetchMLSPublicKeysResult.Failure ->
+                                kaliumLogger.w("Error while fetching/updating public keys: $result")
 
-                            is UpdateKeyingMaterialsResult.Success ->
-                                timestampKeyRepository.value.reset(LAST_KEYING_MATERIAL_UPDATE_CHECK)
+                            is FetchMLSPublicKeysResult.Success ->
+                                timestampKeyRepository.value.reset(TimestampKeys.LAST_PUBLIC_KEYS_CHECK)
+
                         }
                     }
                 }
                 Either.Right(Unit)
-            }.onFailure { kaliumLogger.w("Error while updating keying materials:: $it") }
+            }.onFailure { kaliumLogger.w("Error while fetching/updating public keys:: $it") }
 
 }

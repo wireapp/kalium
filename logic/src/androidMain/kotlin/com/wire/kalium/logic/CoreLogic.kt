@@ -72,7 +72,8 @@ actual class CoreLogic(
             kaliumConfigs,
             globalPreferences.value,
             globalCallManager,
-            idMapper
+            idMapper,
+            globalDatabase.value
         )
     }
 }

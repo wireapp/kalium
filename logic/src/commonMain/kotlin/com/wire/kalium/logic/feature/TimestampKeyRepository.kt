@@ -37,5 +37,6 @@ class TimestampKeyRepositoryImpl(
 
 enum class TimestampKeys {
     LAST_KEYING_MATERIAL_UPDATE_CHECK,
-    LAST_KEY_PACKAGE_COUNT_CHECK
+    LAST_KEY_PACKAGE_COUNT_CHECK,
+    LAST_PUBLIC_KEYS_CHECK
 }

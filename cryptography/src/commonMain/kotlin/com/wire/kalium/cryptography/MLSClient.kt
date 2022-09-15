@@ -7,6 +7,7 @@ typealias HandshakeMessage = ByteArray
 typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
+typealias CoreCryptoKey = String
 
 open class CommitBundle(
     val commit: ByteArray,
@@ -25,6 +26,14 @@ class DecryptedMessageBundle(
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?
 )
+
+class MLSPublicKey(
+    val cipherSuiteName: String,
+    val key: CoreCryptoKey,
+    val keyType: KeyType
+)
+
+enum class KeyType { REMOVAL }
 
 @Suppress("TooManyFunctions")
 interface MLSClient {
@@ -102,7 +111,8 @@ interface MLSClient {
      * @param groupId MLS group ID provided by BE
      */
     fun createConversation(
-        groupId: MLSGroupId
+        groupId: MLSGroupId,
+        externalSenders: List<MLSPublicKey> = emptyList()
     )
 
     fun wipeConversation(groupId: MLSGroupId)

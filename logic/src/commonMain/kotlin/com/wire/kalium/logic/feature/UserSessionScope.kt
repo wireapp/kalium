@@ -45,6 +45,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -99,6 +101,10 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.server.publickeys.FetchMLSPublicKeysUseCase
+import com.wire.kalium.logic.feature.server.publickeys.FetchMLSPublicKeysUseCaseImpl
+import com.wire.kalium.logic.feature.server.publickeys.MLSPublicKeysManager
+import com.wire.kalium.logic.feature.server.publickeys.MLSPublicKeysManagerImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -147,6 +153,7 @@ import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.client.UserConfigStorage
 import com.wire.kalium.persistence.client.UserConfigStorageImpl
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
@@ -171,6 +178,7 @@ abstract class UserSessionScopeCommon internal constructor(
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val globalDatabase: GlobalDatabaseProvider
 ) : CoroutineScope {
     // we made this lazy, so it will have a single instance for the storage
     private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
@@ -206,7 +214,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            syncManager
+            syncManager,
+            mlsPublicKeysRepository
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
@@ -421,6 +430,28 @@ abstract class UserSessionScopeCommon internal constructor(
         KeyingMaterialsManagerImpl(
             incrementalSyncRepository,
             lazy { conversations.updateMLSGroupsKeyingMaterials },
+            lazy { users.timestampKeyRepository }
+        )
+
+    internal val mlsPublicKeysRepository: MLSPublicKeysRepository
+        get() = MLSPublicKeysRepositoryImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsPublicKeyApi,
+            globalDatabase.mlsPublicKeysDAO,
+            userId
+        )
+
+    val fetchMLSPublicKeys: FetchMLSPublicKeysUseCase
+        get() = FetchMLSPublicKeysUseCaseImpl(
+            mlsPublicKeysRepository,
+            userId,
+            globalScope.serverConfigRepository
+        )
+
+
+    internal val mlsPublicKeysManager: MLSPublicKeysManager =
+        MLSPublicKeysManagerImpl(
+            incrementalSyncRepository,
+            lazy { fetchMLSPublicKeys },
             lazy { users.timestampKeyRepository }
         )
 

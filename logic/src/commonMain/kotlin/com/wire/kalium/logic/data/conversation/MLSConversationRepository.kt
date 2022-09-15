@@ -12,11 +12,15 @@ import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapperImpl
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -93,8 +97,10 @@ class MLSConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
     private val syncManager: SyncManager,
+    private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
+    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MLSPublicKeysMapperImpl()
 ) : MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(
@@ -293,8 +299,12 @@ class MLSConversationDataSource(
                             it.keyPackage.decodeBase64Bytes()
                         )
                     }
+                val externalSenders = mlsPublicKeysRepository.getKeys().fold(
+                    { emptyList() },
+                    { keys -> keys.map { mlsPublicKeysMapper.toCrypto(it) } }
+                )
 
-                client.createConversation(idMapper.toCryptoModel(groupID))
+                client.createConversation(idMapper.toCryptoModel(groupID), externalSenders)
 
                 retryOnCommitFailure(groupID) {
                     client.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)?.let { bundle ->
