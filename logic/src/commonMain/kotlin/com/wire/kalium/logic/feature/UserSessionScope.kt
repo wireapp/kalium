@@ -159,7 +159,7 @@ import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
 
-expect class    UserSessionScope : UserSessionScopeCommon
+expect class UserSessionScope : UserSessionScopeCommon
 
 @Suppress("LongParameterList")
 abstract class UserSessionScopeCommon internal constructor(
