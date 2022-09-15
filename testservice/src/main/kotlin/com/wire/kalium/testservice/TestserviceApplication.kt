@@ -8,6 +8,7 @@ import com.wire.kalium.testservice.api.v1.InstanceLifecycle
 import com.wire.kalium.testservice.health.TestserviceHealthCheck
 import com.wire.kalium.testservice.managed.InstanceService
 import io.dropwizard.Application
+import io.dropwizard.jersey.jackson.JsonProcessingExceptionMapper
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import io.federecio.dropwizard.swagger.SwaggerBundle
@@ -60,6 +61,8 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         val conversationResources = ConversationResources(instanceService)
         val instanceLifecycle = InstanceLifecycle(instanceService, configuration)
         environment.healthChecks().register("template", TestserviceHealthCheck(configuration))
+        // returns better error messages on JSON issues
+        environment.jersey().register(JsonProcessingExceptionMapper(true))
         environment.jersey().register(clientResources)
         environment.jersey().register(conversationResources)
         environment.jersey().register(instanceLifecycle)
