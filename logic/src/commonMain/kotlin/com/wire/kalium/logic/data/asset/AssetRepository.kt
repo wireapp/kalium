@@ -150,7 +150,9 @@ internal class AssetDataSource(
     ): Either<CoreFailure, UploadedAssetId> =
         assetMapper.toMetadataApiModel(uploadAssetData, kaliumFileSystem).let { metaData ->
             wrapApiRequest {
-                val dataSource = kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
+                val dataSource = {
+                    kaliumFileSystem.source(uploadAssetData.tempEncryptedDataPath)
+                }
 
                 // we should also consider for avatar images, the compression for preview vs complete picture
                 assetApi.uploadAsset(metaData, dataSource, uploadAssetData.dataSize)

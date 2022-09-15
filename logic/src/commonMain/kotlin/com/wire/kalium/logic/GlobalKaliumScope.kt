@@ -17,6 +17,7 @@ import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
+import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
@@ -105,4 +106,5 @@ class GlobalKaliumScope(
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
             userConfigRepository
         )
+    val deleteSession: DeleteSessionUseCase get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
 }

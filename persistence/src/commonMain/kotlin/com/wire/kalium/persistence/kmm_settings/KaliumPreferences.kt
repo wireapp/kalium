@@ -14,7 +14,9 @@ interface KaliumPreferences {
     fun getString(key: String): String?
 
     fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>)
-    fun <T> putSerializable(key: String, value: () -> T, kSerializer: KSerializer<T>) = putSerializable(key, value(), kSerializer)
+    fun <T> putSerializable(key: String, value: () -> T, kSerializer: KSerializer<T>) =
+        putSerializable(key, value(), kSerializer)
+
     fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?
 
     fun nuke()

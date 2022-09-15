@@ -40,6 +40,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -122,6 +123,18 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
+
+    /**
+     * Gets all of the conversation messages that are assets
+     */
+    suspend fun getAssetMessages(
+        conversationId: ConversationId,
+    ): Either<CoreFailure, List<Message>>
+
+    /**
+     * Deletes all conversation messages
+     */
+    suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
 }
@@ -725,6 +738,21 @@ class ConversationDataSource(
     override suspend fun deleteConversation(conversationId: ConversationId) = wrapStorageRequest {
         conversationDAO.deleteConversationByQualifiedID(idMapper.toDaoModel(conversationId))
     }
+
+    override suspend fun getAssetMessages(
+        conversationId: ConversationId,
+    ): Either<StorageFailure, List<Message>> =
+        wrapStorageRequest {
+            messageDAO.getConversationMessagesByContentType(
+                idMapper.toDaoModel(conversationId),
+                MessageEntity.ContentType.ASSET
+            ).map(messageMapper::fromEntityToMessage)
+        }
+
+    override suspend fun deleteAllMessages(conversationId: ConversationId): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.deleteAllConversationMessages(idMapper.toDaoModel(conversationId))
+        }
 
     override suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>> =
         conversationDAO.observeIsUserMember(idMapper.toDaoModel(conversationId), idMapper.toDaoModel(userId))
