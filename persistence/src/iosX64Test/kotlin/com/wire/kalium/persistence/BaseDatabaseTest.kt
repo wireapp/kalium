@@ -15,5 +15,4 @@ actual open class BaseDatabaseTest actual constructor() {
     actual fun createDatabase(): UserDatabaseProvider {
         return UserDatabaseProvider(userId, "123456789")
     }
-
 }

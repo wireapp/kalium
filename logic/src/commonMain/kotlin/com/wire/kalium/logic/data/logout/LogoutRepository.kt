@@ -41,9 +41,9 @@ interface LogoutRepository {
 internal class LogoutDataSource(
     private val logoutApi: LogoutApi,
     private val accountsDAO: AccountsDAO,
+    private val selfUserId: UserId,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
-    private val selfUserId: UserId
 ) : LogoutRepository {
 
     private val logoutEventsChannel = Channel<LogoutReason>(capacity = Channel.CONFLATED)

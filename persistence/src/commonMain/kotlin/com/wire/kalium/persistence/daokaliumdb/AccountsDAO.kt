@@ -32,8 +32,7 @@ data class AccountInfoEntity(
 data class FullAccountEntity(
     val info: AccountInfoEntity,
     val serverConfigId: String,
-    val ssoId: SsoIdEntity?,
-    val logoutReason: LogoutReason?
+    val ssoId: SsoIdEntity?
 )
 
 @Suppress("TooManyFunctions")
@@ -170,8 +169,7 @@ internal class AccountsDAOImpl internal constructor(
                         subject = it.subject,
                         tenant = it.tenant
                     )
-                },
-                logoutReason = it.logout_reason
+                }
             )
         }
 }
