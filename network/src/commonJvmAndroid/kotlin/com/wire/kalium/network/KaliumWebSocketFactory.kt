@@ -40,7 +40,10 @@ class KaliumWebSocketFactory(private val okHttpClient: OkHttpClient) : WebSocket
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             super.onFailure(webSocket, t, response)
-            kaliumLogger.v("WEBSOCKET: onFailure($t, $response)")
+            kaliumLogger.v(
+                "WEBSOCKET: onFailure($t, protocol:${response?.protocol} " +
+                        "                        code:${response?.code} message:${response?.message})"
+            )
             wrappedListener.onFailure(webSocket, t, response)
         }
 
@@ -59,8 +62,8 @@ class KaliumWebSocketFactory(private val okHttpClient: OkHttpClient) : WebSocket
         override fun onOpen(webSocket: WebSocket, response: Response) {
             super.onOpen(webSocket, response)
             kaliumLogger.v(
-                "WEBSOCKET: onOpen(protocol:${response.protocol}) " +
-                        "code:${response.code} message:${response.message} url:${obfuscatePath(response.request.url as Url)}"
+                "WEBSOCKET: onOpen(protocol:${response.protocol} " +
+                        "code:${response.code} message:${response.message} "
             )
             wrappedListener.onOpen(webSocket, response)
         }

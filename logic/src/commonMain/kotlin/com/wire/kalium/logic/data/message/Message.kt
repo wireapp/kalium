@@ -31,7 +31,7 @@ sealed class Message(
         override fun toString(): String {
             val contentString: String
             when (content) {
-                is MessageContent.Text, is MessageContent.TextEdited, is MessageContent.Calling -> {
+                is MessageContent.Text, is MessageContent.TextEdited, is MessageContent.Calling, is MessageContent.DeleteMessage -> {
                     contentString = ""
                 }
 
@@ -78,8 +78,20 @@ sealed class Message(
         override val visibility: Visibility = Visibility.VISIBLE
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
+            var contentString = ""
+            when (content) {
+                is MessageContent.MemberChange -> {
+                    content.members.map {
+                        contentString += "${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}"
+                    }
+                }
+                else -> {
+                    contentString = content.toString()
+                }
+            }
+
             return "id:${id.obfuscateId()} " +
-                    "content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
+                    "content:$contentString conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
                     "date:$date  senderUserId:${senderUserId.value.obfuscateId()}  status:$status  visibility:$visibility"
         }
     }
