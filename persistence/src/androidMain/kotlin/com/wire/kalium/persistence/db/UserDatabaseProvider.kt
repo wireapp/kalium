@@ -92,7 +92,8 @@ actual class UserDatabaseProvider(
                 statusAdapter = EnumColumnAdapter(),
                 conversation_typeAdapter = EnumColumnAdapter()
             ),
-            Client.Adapter(user_idAdapter = QualifiedIDAdapter),
+            Client.Adapter(user_idAdapter = QualifiedIDAdapter,
+                device_typeAdapter = EnumColumnAdapter()),
             Connection.Adapter(
                 qualified_conversationAdapter = QualifiedIDAdapter,
                 qualified_toAdapter = QualifiedIDAdapter,

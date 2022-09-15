@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.di
 
-import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.server.ApiVersionMapper
 import com.wire.kalium.logic.configuration.server.ApiVersionMapperImpl
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
@@ -79,7 +78,11 @@ internal object MapperProvider {
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun confirmationTypeMapper(): ConfirmationTypeMapper = ConfirmationTypeMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
-    fun userMapper(): UserMapper = UserMapperImpl(idMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper())
+    fun userMapper(): UserMapper = UserMapperImpl(
+        idMapper(),
+        clientMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper()
+    )
+
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
@@ -98,12 +101,13 @@ internal object MapperProvider {
         featureConfigMapper(),
         conversationRoleMapper()
     )
+
     fun messageMentionMapper(): MessageMentionMapper = MessageMentionMapperImpl(idMapper())
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
-    fun clientMapper(clientConfig: ClientConfig): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper(), clientConfig)
+    fun clientMapper(): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper())
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl(idMapper())
     fun protoContentMapper(): ProtoContentMapper = ProtoContentMapperImpl()
     fun callMapper(): CallMapper = CallMapperImpl()

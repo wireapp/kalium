@@ -33,6 +33,7 @@ import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessRe
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.notification.EventContentDTO
+import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -98,6 +99,9 @@ class ConversationRepositoryTest {
     private val clientDao = mock(ClientDAO::class)
 
     @Mock
+    private val clientApi = mock(ClientApi::class)
+
+    @Mock
     private val timeParser: TimeParser = mock(TimeParser::class)
 
     private lateinit var conversationRepository: ConversationRepository
@@ -111,6 +115,7 @@ class ConversationRepositoryTest {
             conversationApi,
             messageDAO,
             clientDao,
+            clientApi,
             timeParser
         )
     }
@@ -1303,6 +1308,9 @@ class ConversationRepositoryTest {
         val clientDao: ClientDAO = mock(ClientDAO::class)
 
         @Mock
+        private val clientApi = mock(ClientApi::class)
+
+        @Mock
         private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
         @Mock
@@ -1316,6 +1324,7 @@ class ConversationRepositoryTest {
                 conversationApi,
                 messageDAO,
                 clientDao,
+                clientApi,
                 timeParser,
             )
 

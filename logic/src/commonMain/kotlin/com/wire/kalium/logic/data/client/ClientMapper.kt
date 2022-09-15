@@ -10,14 +10,17 @@ import com.wire.kalium.network.api.user.client.ClientTypeDTO
 import com.wire.kalium.network.api.user.client.DeviceTypeDTO
 import com.wire.kalium.network.api.user.client.RegisterClientRequest
 import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 
 class ClientMapper(
     private val preyKeyMapper: PreKeyMapper,
-    private val locationMapper: LocationMapper,
-    private val clientConfig: ClientConfig
+    private val locationMapper: LocationMapper
 ) {
 
-    fun toRegisterClientRequest(param: RegisterClientParam): RegisterClientRequest = RegisterClientRequest(
+    fun toRegisterClientRequest(
+        clientConfig: ClientConfig,
+        param: RegisterClientParam
+    ): RegisterClientRequest = RegisterClientRequest(
         password = param.password,
         lastKey = preyKeyMapper.toPreKeyDTO(param.lastKey),
         label = clientConfig.deviceName(),
@@ -83,5 +86,21 @@ class ClientMapper(
         DeviceTypeDTO.Desktop -> DeviceType.Desktop
         DeviceTypeDTO.LegalHold -> DeviceType.LegalHold
         DeviceTypeDTO.Unknown -> DeviceType.Unknown
+    }
+
+    fun fromDeviceTypeEntity(deviceTypeEntity: DeviceTypeEntity?): DeviceType = when (deviceTypeEntity) {
+        DeviceTypeEntity.Phone -> DeviceType.Phone
+        DeviceTypeEntity.Tablet -> DeviceType.Tablet
+        DeviceTypeEntity.Desktop -> DeviceType.Desktop
+        DeviceTypeEntity.LegalHold -> DeviceType.LegalHold
+        DeviceTypeEntity.Unknown, null -> DeviceType.Unknown
+    }
+
+    fun toDeviceTypeEntity(deviceTypeEntity: DeviceType): DeviceTypeEntity = when (deviceTypeEntity) {
+        DeviceType.Phone -> DeviceTypeEntity.Phone
+        DeviceType.Tablet -> DeviceTypeEntity.Tablet
+        DeviceType.Desktop -> DeviceTypeEntity.Desktop
+        DeviceType.LegalHold -> DeviceTypeEntity.LegalHold
+        DeviceType.Unknown -> DeviceTypeEntity.Unknown
     }
 }
