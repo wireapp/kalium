@@ -2,7 +2,6 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
-import co.touchlab.sqliter.DatabaseFileContext
 import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
@@ -35,7 +34,6 @@ actual class GlobalDatabaseProvider(passphrase: String) {
 
     actual val serverConfigurationDAO: ServerConfigurationDAO
         get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
-
 
     actual val accountsDAO: AccountsDAO
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries)
