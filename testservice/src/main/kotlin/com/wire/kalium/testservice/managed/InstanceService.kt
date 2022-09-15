@@ -6,6 +6,7 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
@@ -134,7 +135,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
                     when (val result = client.register(
-                        RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList())
+                        RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList(), ClientType.Permanent)
                     )) {
                         is RegisterClientResult.Failure ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed")

@@ -200,6 +200,10 @@ class ConversationDAOImpl(
         }
     }
 
+    override suspend fun updateMember(member: Member, conversationID: QualifiedIDEntity) {
+      memberQueries.updateMemberRole(member.role, member.user, conversationID)
+    }
+
     override suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) {
         memberQueries.transaction {
             for (member: Member in memberList) {

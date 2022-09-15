@@ -55,6 +55,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logger.obfuscateDomain
 
 @Suppress("LongParameterList", "TooManyFunctions")
 actual class CallManagerImpl(
@@ -91,7 +93,7 @@ actual class CallManagerImpl(
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
         userRepository.observeSelfUser().first().id.also {
-            callingLogger.d("$TAG - userId $it")
+            callingLogger.d("$TAG - userId ${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}")
         }
     }
 
@@ -326,11 +328,8 @@ actual class CallManagerImpl(
     private fun initClientsHandler() {
         scope.launch {
             withCalling {
-                val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
-
                 val onClientsRequest = OnClientsRequest(
                     calling = calling,
-                    selfUserId = selfUserId,
                     conversationRepository = conversationRepository,
                     federatedIdMapper = federatedIdMapper,
                     qualifiedIdMapper = qualifiedIdMapper,

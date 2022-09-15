@@ -288,6 +288,66 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenMemberChangeEvent_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
+        val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = updatedMember)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withSelfUserIdReturning(TestUser.USER_ID)
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateMemberSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
+            .with(eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberChangeEvent_whenHandlingIt_thenShouldUpdateMembers() = runTest {
+        val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = updatedMember)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withSelfUserIdReturning(TestUser.USER_ID)
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateMemberSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateMember)
+            .with(eq(updatedMember), eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberChangeEventAndFetchConversationFails_whenHandlingIt_thenShouldAttemptUpdateMembersAnyway() = runTest {
+        val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = updatedMember)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withSelfUserIdReturning(TestUser.USER_ID)
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withUpdateMemberSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateMember)
+            .with(eq(updatedMember), eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenADeletedConversationEvent_whenHandlingItAndNotExists_thenShouldSkipTheDeletion() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventReceiver) = Arrangement()
@@ -455,6 +515,13 @@ class ConversationEventReceiverTest {
         fun withPersistMembersSucceeding() = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::persistMembers)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withUpdateMemberSucceeding() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
