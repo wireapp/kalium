@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 @Suppress("LongParameterList")
@@ -19,13 +20,15 @@ actual class UserSessionScope internal constructor(
     globalPreferences: KaliumPreferences,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
-    userSessionScopeProvider: UserSessionScopeProvider
+    userSessionScopeProvider: UserSessionScopeProvider,
+    globalDatabaseProvider: GlobalDatabaseProvider
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
     globalScope,
     globalCallManager,
     globalPreferences,
+    globalDatabaseProvider,
     dataStoragePaths,
     kaliumConfigs,
     userSessionScopeProvider

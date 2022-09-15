@@ -592,16 +592,14 @@ abstract class UserSessionScopeCommon internal constructor(
             clientRepository,
             client.deregisterNativePushToken,
             client.clearClientData,
-            clearUserData
+            clearUserData,
+            userSessionScopeProvider
         )
 
     private val featureConfigRepository: FeatureConfigRepository
-        get() = FeatureConfigDataSource(
-            featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi
-        )
+        get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
-    val observeFileSharingStatus: ObserveFileSharingStatusUseCase
-        get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
+    val observeFileSharingStatus: ObserveFileSharingStatusUseCase get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(userConfigRepository)
 
     internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
