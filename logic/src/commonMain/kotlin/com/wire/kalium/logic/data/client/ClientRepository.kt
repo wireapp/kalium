@@ -12,6 +12,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.user.pushToken.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -68,8 +69,10 @@ class ClientDataSource(
             .map { ClientId(it) }
             .mapLeft {
                 if (it is StorageFailure.DataNotFound) {
+                    kaliumLogger.e("Data Not Found for Registered Client Id")
                     CoreFailure.MissingClientRegistration
                 } else {
+                    kaliumLogger.e("Failure when getting Registered Client Id")
                     it
                 }
             }
@@ -79,8 +82,10 @@ class ClientDataSource(
             .map { ClientId(it) }
             .mapLeft {
                 if (it is StorageFailure.DataNotFound) {
+                    kaliumLogger.e("Data Not Found for Retained Client Id")
                     CoreFailure.MissingClientRegistration
                 } else {
+                    kaliumLogger.e("Failure when getting Retained Client Id")
                     it
                 }
             }
