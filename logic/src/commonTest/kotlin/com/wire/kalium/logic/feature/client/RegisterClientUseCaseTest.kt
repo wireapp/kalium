@@ -446,7 +446,8 @@ class RegisterClientUseCaseTest {
             capabilities = TEST_CAPABILITIES,
             deviceType = null,
             label = null,
-            model = null
+            model = null,
+            clientType = null
         )
         val CLIENT = TestClient.CLIENT
 

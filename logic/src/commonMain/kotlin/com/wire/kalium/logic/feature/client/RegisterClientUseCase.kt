@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
@@ -48,7 +49,8 @@ interface RegisterClientUseCase {
     data class RegisterClientParam(
         val password: String?,
         val capabilities: List<ClientCapability>?,
-        val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
+        val clientType: ClientType? = null,
+        val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT,
     )
 
     companion object {
@@ -67,7 +69,7 @@ class RegisterClientUseCaseImpl(
 
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
         with(registerClientParam) {
-            generateProteusPreKeys(preKeysToSend, password, capabilities).fold({
+            generateProteusPreKeys(preKeysToSend, password, capabilities, clientType).fold({
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam).flatMap { client ->
@@ -100,7 +102,8 @@ class RegisterClientUseCaseImpl(
     private suspend fun generateProteusPreKeys(
         preKeysToSend: Int,
         password: String?,
-        capabilities: List<ClientCapability>?
+        capabilities: List<ClientCapability>?,
+        clientType: ClientType? = null
     ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
         preKeyRepository.generateNewLastKey().flatMap { lastKey ->
             Either.Right(
@@ -111,7 +114,8 @@ class RegisterClientUseCaseImpl(
                     lastKey = lastKey,
                     deviceType = null,
                     label = null,
-                    model = null
+                    model = null,
+                    clientType = clientType
                 )
             )
         }
