@@ -169,7 +169,6 @@ abstract class UserSessionScopeCommon internal constructor(
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: KaliumPreferences,
-    private val globalDataBase: GlobalDatabaseProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
@@ -513,11 +512,7 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsClientProvider
         )
 
-    private val logoutRepository: LogoutRepository = LogoutDataSource(
-        authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi,
-        globalDataBase.accountsDAO,
-        userId
-    )
+    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
@@ -589,7 +584,9 @@ abstract class UserSessionScopeCommon internal constructor(
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,
+            globalScope.sessionRepository,
             clientRepository,
+            userId,
             client.deregisterNativePushToken,
             client.clearClientData,
             clearUserData,

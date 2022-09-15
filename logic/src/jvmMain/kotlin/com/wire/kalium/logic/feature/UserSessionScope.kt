@@ -21,14 +21,12 @@ actual class UserSessionScope internal constructor(
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
     userSessionScopeProvider: UserSessionScopeProvider,
-    globalDatabaseProvider: GlobalDatabaseProvider
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
     globalScope,
     globalCallManager,
     globalPreferences,
-    globalDatabaseProvider,
     dataStoragePaths,
     kaliumConfigs,
     userSessionScopeProvider
