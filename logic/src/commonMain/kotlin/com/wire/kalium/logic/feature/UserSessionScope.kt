@@ -147,7 +147,6 @@ import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.client.UserConfigStorage
 import com.wire.kalium.persistence.client.UserConfigStorageImpl
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.event.EventInfoStorage
 import com.wire.kalium.persistence.event.EventInfoStorageImpl
@@ -160,7 +159,7 @@ import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
 
-expect class UserSessionScope : UserSessionScopeCommon
+expect class    UserSessionScope : UserSessionScopeCommon
 
 @Suppress("LongParameterList")
 abstract class UserSessionScopeCommon internal constructor(
