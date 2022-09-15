@@ -4,6 +4,7 @@ import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
 import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.network.api.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.conversation.ConversationUsers
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
@@ -140,6 +141,16 @@ sealed class EventContentDTO {
             // TODO: rename members to something else since the name is confusing (it's only userIDs)
             @SerialName("data") val members: ConversationUsers,
             @SerialName("from") val from: String
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.member-update")
+        data class MemberUpdateDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            val time: String,
+            @SerialName("from") val from: String,
+            @SerialName("data") val roleChange: ConversationRoleChange
         ) : Conversation()
 
         @Serializable

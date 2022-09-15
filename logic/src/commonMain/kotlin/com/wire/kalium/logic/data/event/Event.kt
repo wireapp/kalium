@@ -66,6 +66,13 @@ sealed class Event(open val id: String) {
             val timestampIso: String
         ) : Conversation(id, conversationId)
 
+        data class MemberChanged(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val timestampIso: String,
+            val member: Member,
+        ) : Conversation(id, conversationId)
+
         data class MLSWelcome(
             override val id: String,
             override val conversationId: ConversationId,

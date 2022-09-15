@@ -91,7 +91,13 @@ internal object MapperProvider {
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
-    fun eventMapper(): EventMapper = EventMapper(idMapper(), memberMapper(), connectionMapper(), featureConfigMapper())
+    fun eventMapper(): EventMapper = EventMapper(
+        idMapper(),
+        memberMapper(),
+        connectionMapper(),
+        featureConfigMapper(),
+        conversationRoleMapper()
+    )
     fun messageMentionMapper(): MessageMentionMapper = MessageMentionMapperImpl(idMapper())
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
