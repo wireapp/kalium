@@ -34,7 +34,6 @@ class MLSPublicKeysRepositoryImpl(
         wrapApiRequest {
             mlsPublicKeyApi.getMLSPublicKeys()
         }.map {
-            // TODO: getserver key here
             val publicKeys = mapper.fromDTO(it)
             storeKeys(publicKeys, serverConfigId)
             publicKeys
