@@ -48,6 +48,7 @@ class ProtoContentMapperImpl(
         return PlainMessageBlob(message.encodeToByteArray())
     }
 
+    @Suppress("ComplexMethod")
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> GenericMessage.Content.Text(Text(content = readableContent.value))
