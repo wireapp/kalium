@@ -21,8 +21,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 import com.wire.kalium.persistence.dao.client.Client
+import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
     fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
@@ -220,8 +220,16 @@ internal class UserMapperImpl(
             deleted = false
         )
 
+    private fun fromDeviceTypeString(deviceType: String): DeviceType = when (deviceType) {
+        "phone" -> DeviceType.Phone
+        "tablet" -> DeviceType.Tablet
+        "desktop" -> DeviceType.Desktop
+        "legalHold" -> DeviceType.LegalHold
+        else -> DeviceType.Unknown
+    }
+
     override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClient(DeviceType.valueOf(it.deviceType ?: ""), it.id)
+            OtherUserClient(fromDeviceTypeString(it.deviceType?.lowercase() ?: ""), it.id)
         }
 }
