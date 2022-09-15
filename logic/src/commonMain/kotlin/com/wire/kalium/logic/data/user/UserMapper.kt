@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.client.DeviceType
+import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
@@ -65,6 +65,7 @@ interface UserMapper {
 
 internal class UserMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
     private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
@@ -220,16 +221,8 @@ internal class UserMapperImpl(
             deleted = false
         )
 
-    private fun fromDeviceTypeString(deviceType: String): DeviceType = when (deviceType) {
-        "phone" -> DeviceType.Phone
-        "tablet" -> DeviceType.Tablet
-        "desktop" -> DeviceType.Desktop
-        "legalHold" -> DeviceType.LegalHold
-        else -> DeviceType.Unknown
-    }
-
     override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClient(fromDeviceTypeString(it.deviceType?.lowercase() ?: ""), it.id)
+            OtherUserClient(clientMapper.fromDeviceTypeEntity(it.deviceType), it.id)
         }
 }

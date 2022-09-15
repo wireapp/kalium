@@ -40,13 +40,15 @@ interface ClientRepository {
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
 }
+
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME")
 class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
@@ -64,12 +66,24 @@ class ClientDataSource(
     override suspend fun currentClientId(): Either<CoreFailure, ClientId> =
         wrapStorageRequest { clientRegistrationStorage.getRegisteredClientId() }
             .map { ClientId(it) }
-            .mapLeft { if (it is StorageFailure.DataNotFound) { CoreFailure.MissingClientRegistration } else { it } }
+            .mapLeft {
+                if (it is StorageFailure.DataNotFound) {
+                    CoreFailure.MissingClientRegistration
+                } else {
+                    it
+                }
+            }
 
     override suspend fun retainedClientId(): Either<CoreFailure, ClientId> =
         wrapStorageRequest { clientRegistrationStorage.getRetainedClientId() }
             .map { ClientId(it) }
-            .mapLeft { if (it is StorageFailure.DataNotFound) { CoreFailure.MissingClientRegistration } else { it } }
+            .mapLeft {
+                if (it is StorageFailure.DataNotFound) {
+                    CoreFailure.MissingClientRegistration
+                } else {
+                    it
+                }
+            }
 
     override suspend fun observeCurrentClientId(): Flow<ClientId?> =
         clientRegistrationStorage.observeRegisteredClientId().map { rawClientId ->
@@ -98,9 +112,10 @@ class ClientDataSource(
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
         }
+
     override suspend fun storeUserClientList(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
-            clients.map { ClientEntity(userEntity, it.id, it.deviceType.name) }.let { clientEntityList ->
+            clients.map { ClientEntity(userEntity, it.id, clientMapper.toDeviceTypeEntity(it.deviceType)) }.let { clientEntityList ->
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
         }
