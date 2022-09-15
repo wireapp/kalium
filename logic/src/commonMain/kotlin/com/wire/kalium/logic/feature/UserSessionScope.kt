@@ -72,6 +72,7 @@ import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
@@ -134,6 +135,7 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
@@ -463,20 +465,25 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
-            authenticatedDataSourceSet.proteusClient,
-            persistMessage,
-            messageRepository,
-            assetRepository,
-            conversationRepository,
-            mlsConversationRepository,
-            userRepository,
-            callManager,
-            MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userRepository),
-            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
-            userConfigRepository,
-            EphemeralNotificationsManager,
-            pendingProposalScheduler
+            proteusClient = authenticatedDataSourceSet.proteusClient,
+            persistMessage = persistMessage,
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            userRepository = userRepository,
+            callManagerImpl = callManager,
+            editTextHandler = MessageTextEditHandler(messageRepository),
+            lastReadContentHandler = LastReadContentHandler(conversationRepository, userRepository),
+            clearConversationContentHandler = ClearConversationContentHandler(
+                conversationRepository,
+                userRepository,
+                ClearConversationContentImpl(conversationRepository, assetRepository)
+            ),
+            deleteForMeHandler = DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
+            userConfigRepository = userConfigRepository,
+            ephemeralNotificationsManager = EphemeralNotificationsManager,
+            pendingProposalScheduler = pendingProposalScheduler
         )
     }
 
@@ -534,6 +541,7 @@ abstract class UserSessionScopeCommon internal constructor(
             syncManager,
             mlsConversationRepository,
             clientRepository,
+            assetRepository,
             messageSender,
             teamRepository,
             userId,
@@ -583,6 +591,7 @@ abstract class UserSessionScopeCommon internal constructor(
             clearUserData,
             userSessionScopeProvider
         )
+
     private val featureConfigRepository: FeatureConfigRepository
         get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)

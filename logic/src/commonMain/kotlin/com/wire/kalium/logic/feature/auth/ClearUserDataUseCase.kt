@@ -6,7 +6,7 @@ interface ClearUserDataUseCase {
     suspend operator fun invoke()
 }
 
-class ClearUserDataUseCaseImpl @Suppress("LongParameterList") constructor(
+internal class ClearUserDataUseCaseImpl internal constructor(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
 ) : ClearUserDataUseCase {
 
