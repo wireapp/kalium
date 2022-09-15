@@ -24,10 +24,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import okio.IOException
 import okio.Path
@@ -57,7 +59,7 @@ fun interface SendAssetMessageUseCase {
 
 internal class SendAssetMessageUseCaseImpl(
     private val persistMessage: PersistMessageUseCase,
-    private val updateAssetMessageUploadStatusUseCase: UpdateAssetMessageUploadStatusUseCase,
+    private val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase,
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
@@ -96,14 +98,24 @@ internal class SendAssetMessageUseCaseImpl(
 
         return clientRepository.currentClientId().flatMap { currentClientId ->
             // Get my current user
-            val selfUser = userRepository.observeSelfUser().first()
+            val selfUser = userRepository.observeSelfUser().firstOrNull()
+
+            if (selfUser == null) {
+                kaliumLogger.e("There was an error obtaining the self user object :(")
+                return@flatMap Either.Left(StorageFailure.DataNotFound)
+            }
 
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
 
             message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent)),
+                content = MessageContent.Asset(
+                    provideAssetMessageContent(
+                        currentAssetMessageContent,
+                        Message.UploadStatus.UPLOAD_IN_PROGRESS // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
+                    )
+                ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
@@ -116,18 +128,11 @@ internal class SendAssetMessageUseCaseImpl(
             persistMessage(message).flatMap {
                 Either.Right(Unit)
             }.onFailure {
-                updateAssetMessageUploadStatusUseCase(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+                kaliumLogger.e("Asset persist method failed")
+                updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
                 Either.Left(it)
             }.flatMap {
-                when (updateAssetMessageUploadStatusUseCase(Message.UploadStatus.UPLOAD_IN_PROGRESS, conversationId, message.id)) {
-                    is UpdateUploadStatusResult.Success -> {
-                        uploadAssetAndUpdateMessage(message, conversationId)
-                    }
-                    is UpdateUploadStatusResult.Failure -> {
-                        kaliumLogger.e("Asset upload status could not be updated")
-                        Either.Left(StorageFailure.Generic(IOException("Asset upload status could not be updated")))
-                    }
-                }
+                uploadAssetAndUpdateMessage(message, conversationId)
             }
         }.fold({
             SendAssetMessageResult.Failure(it)
@@ -146,20 +151,23 @@ internal class SendAssetMessageUseCaseImpl(
             // update the message on the DB layer to display the changes on the Conversation screen
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
             val updatedMessage = message.copy(
-                content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent))
+                // We update the upload status to UPLOADED as the upload succeeded
+                content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED))
             )
-            persistMessage(updatedMessage)
-
-            // Finally we try to send the Asset Message to the recipients of the given conversation
-            prepareAndSendAssetMessage(
-                message,
-                conversationId
-            )
+            persistMessage(updatedMessage).onFailure {
+                // TODO: Should we fail the whole message sending if the updated message persistance fails? Check when implementing AR-2408
+                kaliumLogger.e(
+                    "There was an error when trying to persist the updated asset message with the information returned by the backend "
+                )
+            }.onSuccess {
+                // Finally we try to send the Asset Message to the recipients of the given conversation
+                prepareAndSendAssetMessage(message, conversationId)
+            }
         }.flatMap {
-            updateAssetMessageUploadStatusUseCase(Message.UploadStatus.UPLOADED, conversationId, message.id)
             Either.Right(Unit)
         }.onFailure {
-            updateAssetMessageUploadStatusUseCase(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+            // TODO: Should we update the upload status as FAILED_UPLOAD even if the upload succeeded? Decide when implementing AR-2408
+            updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
             Either.Left(it)
         }
 
@@ -173,7 +181,7 @@ internal class SendAssetMessageUseCaseImpl(
         }
 
     @Suppress("LongParameterList")
-    private fun provideAssetMessageContent(assetMessageMetadata: AssetMessageMetadata): AssetContent {
+    private fun provideAssetMessageContent(assetMessageMetadata: AssetMessageMetadata, uploadStatus: Message.UploadStatus): AssetContent {
         with(assetMessageMetadata) {
             return AssetContent(
                 sizeInBytes = assetDataSize,
@@ -195,7 +203,8 @@ internal class SendAssetMessageUseCaseImpl(
                 ),
                 // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
                 // will only be treated as "SAVED_INTERNALLY"
-                downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY
+                downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
+                uploadStatus = uploadStatus
             )
         }
     }

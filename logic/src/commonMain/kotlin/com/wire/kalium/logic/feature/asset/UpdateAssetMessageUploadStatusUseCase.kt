@@ -23,7 +23,7 @@ interface UpdateAssetMessageUploadStatusUseCase {
     ): UpdateUploadStatusResult
 }
 
-class UpdateAssetMessageUploadStatusUseCaseImpl(
+internal class UpdateAssetMessageUploadStatusUseCaseImpl(
     private val messageRepository: MessageRepository
 ) : UpdateAssetMessageUploadStatusUseCase {
 
