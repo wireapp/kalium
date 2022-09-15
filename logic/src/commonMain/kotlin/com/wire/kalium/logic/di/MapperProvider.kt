@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.di
 
-import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.server.ApiVersionMapper
 import com.wire.kalium.logic.configuration.server.ApiVersionMapperImpl
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
