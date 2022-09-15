@@ -1,7 +1,5 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.utils.obfuscatePath
-import io.ktor.http.Url
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response

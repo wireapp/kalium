@@ -91,7 +91,8 @@ sealed class Message(
             }
 
             return "id:${id.obfuscateId()} " +
-                    "content:$contentString conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
+                    "content:$contentString " +
+                    "conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
                     "date:$date  senderUserId:${senderUserId.value.obfuscateId()}  status:$status  visibility:$visibility"
         }
     }

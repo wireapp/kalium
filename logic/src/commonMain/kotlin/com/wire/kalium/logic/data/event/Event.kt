@@ -27,7 +27,8 @@ sealed class Event(open val id: String) {
             val qualifiedFrom: UserId,
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
                         "qualifiedFrom: ${qualifiedFrom.value.obfuscateId()}@${qualifiedFrom.domain.obfuscateDomain()} "
             }
         }
@@ -42,8 +43,10 @@ sealed class Event(open val id: String) {
             val encryptedExternalContent: EncryptedData?
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
-                        "senderUserId: ${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()} senderClientId:${senderClientId.value.obfuscateId()} " +
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "senderUserId: ${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()} " +
+                        "senderClientId:${senderClientId.value.obfuscateId()} " +
                         "timestampIso: $timestampIso"
             }
         }
@@ -56,7 +59,8 @@ sealed class Event(open val id: String) {
             val content: String
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
                         "senderUserId: ${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()} " +
                         "timestampIso: $timestampIso"
             }
@@ -69,7 +73,8 @@ sealed class Event(open val id: String) {
             val conversation: ConversationResponse
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
                         "timestampIso: $timestampIso"
             }
         }
@@ -82,7 +87,8 @@ sealed class Event(open val id: String) {
             val timestampIso: String
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
                         "addedBy: ${addedBy.value.obfuscateId()}@${addedBy.domain.obfuscateDomain()} members:$members " +
                         "timestampIso: $timestampIso"
             }
@@ -96,7 +102,8 @@ sealed class Event(open val id: String) {
             val timestampIso: String
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
                         "removedBy: ${removedBy.value.obfuscateId()}@${removedBy.domain.obfuscateDomain()}" +
                         "timestampIso: $timestampIso"
             }
@@ -109,7 +116,8 @@ sealed class Event(open val id: String) {
             val member: Member,
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
                         "member: $member timestampIso: $timestampIso"
             }
         }
@@ -122,8 +130,10 @@ sealed class Event(open val id: String) {
             val timestampIso: String = Clock.System.now().toString()
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
-                        "timestampIso: $timestampIso senderUserId:${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "timestampIso: $timestampIso " +
+                        "senderUserId:${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
             }
         }
 
@@ -134,8 +144,10 @@ sealed class Event(open val id: String) {
             val timestampIso: String,
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
-                        "timestampIso: $timestampIso senderUserId:${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "timestampIso: $timestampIso " +
+                        "senderUserId:${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
             }
         }
     }
