@@ -1,5 +1,7 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.network.utils.obfuscatePath
+import io.ktor.http.Url
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -56,7 +58,10 @@ class KaliumWebSocketFactory(private val okHttpClient: OkHttpClient) : WebSocket
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
             super.onOpen(webSocket, response)
-            kaliumLogger.v("WEBSOCKET: onOpen($response)")
+            kaliumLogger.v(
+                "WEBSOCKET: onOpen(protocol:${response.protocol}) " +
+                        "code:${response.code} message:${response.message} url:${obfuscatePath(response.request.url as Url)}"
+            )
             wrappedListener.onOpen(webSocket, response)
         }
     }

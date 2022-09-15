@@ -31,13 +31,13 @@ sealed class Message(
         override fun toString(): String {
             val contentString: String
             when (content) {
-                is MessageContent.Text, is MessageContent.TextEdited -> {
+                is MessageContent.Text, is MessageContent.TextEdited, is MessageContent.Calling -> {
                     contentString = ""
                 }
 
                 is MessageContent.Asset -> {
-                    contentString = "content:{sizeInBytes:${content.value.sizeInBytes}," + "mimeType:${content.value.mimeType}," +
-                            "metaData : ${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}}"
+                    contentString = "content:{sizeInBytes:${content.value.sizeInBytes}," + "mimeType:${content.value.mimeType}, " +
+                            "metaData :${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}}"
                 }
 
                 is MessageContent.RestrictedAsset -> {
@@ -62,9 +62,9 @@ sealed class Message(
                 }
             }
             return "id: ${id.obfuscateId()} " +
-                    "$contentString conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}" +
-                    "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
-                    "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
+                    "$contentString  conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
+                    "date:$date  senderUserId:${senderUserId.value.obfuscateId()}  status:$status visibility:$visibility " +
+                    "senderClientId${senderClientId.value.obfuscateId()}  editStatus:$editStatus"
         }
     }
 
@@ -79,8 +79,8 @@ sealed class Message(
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
             return "id:${id.obfuscateId()} " +
-                    "content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}" +
-                    "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility"
+                    "content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
+                    "date:$date  senderUserId:${senderUserId.value.obfuscateId()}  status:$status  visibility:$visibility"
         }
     }
 

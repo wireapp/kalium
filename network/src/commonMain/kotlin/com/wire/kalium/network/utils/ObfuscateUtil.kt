@@ -1,4 +1,5 @@
 @file:Suppress("TooGenericExceptionCaught")
+
 package com.wire.kalium.network.utils
 
 import com.wire.kalium.logger.obfuscateId
@@ -90,7 +91,17 @@ fun deleteSensitiveItemsFromJson(text: String): String {
     }
 }
 
-val sensitiveJsonKeys by lazy { listOf("password", "authorization", "set-cookie", "location", "x-amz-meta-user") }
+val sensitiveJsonKeys by lazy {
+    listOf(
+        "password",
+        "authorization",
+        "set-cookie",
+        "location",
+        "x-amz-meta-user",
+        "Sec-WebSocket-Key",
+        "sec-websocket-accept"
+    )
+}
 private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
 private val sensitiveJsonObjects by lazy { listOf("qualified_id") }
 private val notSensitiveJsonKeys by lazy { listOf("type", "time") }
