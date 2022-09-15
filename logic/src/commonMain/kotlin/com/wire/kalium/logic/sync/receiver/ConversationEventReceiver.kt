@@ -89,6 +89,7 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MemberLeave -> handleMemberLeave(event)
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
             is Event.Conversation.NewMLSMessage -> handleNewMLSMessage(event)
+            is Event.Conversation.MemberChanged -> handleMemberChange(event)
         }
     }
 
@@ -310,6 +311,22 @@ internal class ConversationEventReceiverImpl(
             processMessage(message)
         }
         .onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member leave event: $it") }
+
+    private suspend fun handleMemberChange(event: Event.Conversation.MemberChanged) =
+        // Attempt to fetch conversation details if needed, as this might be an unknown conversation
+        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+            .run {
+                onSuccess {
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                        .v("Succeeded fetching conversation details on MemberChange Event: $event")
+                }
+                onFailure {
+                    kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                        .w("Failure fetching conversation details on MemberChange Event: $event")
+                }
+                // Even if unable to fetch conversation details, at least attempt updating the member
+                conversationRepository.updateMember(event.member, event.conversationId)
+            }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member update event: $it") }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
         mlsConversationRepository.establishMLSGroupFromWelcome(event)
