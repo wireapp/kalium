@@ -31,13 +31,13 @@ sealed class Message(
         override fun toString(): String {
             val contentString: String
             when (content) {
-                is MessageContent.Text, is MessageContent.TextEdited -> {
+                is MessageContent.Text, is MessageContent.TextEdited, is MessageContent.Calling, is MessageContent.DeleteMessage -> {
                     contentString = ""
                 }
 
                 is MessageContent.Asset -> {
-                    contentString = "content:{sizeInBytes:${content.value.sizeInBytes}," + "mimeType:${content.value.mimeType}," +
-                            "metaData : ${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}}"
+                    contentString = "content:{sizeInBytes:${content.value.sizeInBytes}," + "mimeType:${content.value.mimeType}, " +
+                            "metaData :${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}}"
                 }
 
                 is MessageContent.RestrictedAsset -> {
@@ -62,9 +62,9 @@ sealed class Message(
                 }
             }
             return "id: ${id.obfuscateId()} " +
-                    "$contentString conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}" +
-                    "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility " +
-                    "senderClientId${senderClientId.value.obfuscateId()} editStatus:$editStatus"
+                    "$contentString  conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
+                    "date:$date  senderUserId:${senderUserId.value.obfuscateId()}  status:$status visibility:$visibility " +
+                    "senderClientId${senderClientId.value.obfuscateId()}  editStatus:$editStatus"
         }
     }
 
@@ -78,9 +78,22 @@ sealed class Message(
         override val visibility: Visibility = Visibility.VISIBLE
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
+            var contentString = ""
+            when (content) {
+                is MessageContent.MemberChange -> {
+                    content.members.map {
+                        contentString += "${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}"
+                    }
+                }
+                else -> {
+                    contentString = content.toString()
+                }
+            }
+
             return "id:${id.obfuscateId()} " +
-                    "content:$content conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}" +
-                    "date:$date senderUserId:${senderUserId.value.obfuscateId()} status:$status visibility:$visibility"
+                    "content:$contentString " +
+                    "conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
+                    "date:$date  senderUserId:${senderUserId.value.obfuscateId()}  status:$status  visibility:$visibility"
         }
     }
 

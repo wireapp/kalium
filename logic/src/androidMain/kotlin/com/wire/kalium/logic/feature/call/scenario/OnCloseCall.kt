@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import com.wire.kalium.logger.obfuscateId
 
 @Suppress("LongParameterList")
 class OnCloseCall(
@@ -26,7 +27,8 @@ class OnCloseCall(
         clientId: String?,
         arg: Pointer?
     ) {
-        callingLogger.i("[OnCloseCall] -> ConversationId: $conversationId | UserId: $userId | Reason: $reason")
+        callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} |" +
+                " UserId: ${userId.obfuscateId()} | Reason: $reason")
 
         val avsReason = CallClosedReason.fromInt(value = reason)
         val callStatus = if (avsReason === STILL_ONGOING) CallStatus.STILL_ONGOING else CallStatus.CLOSED
@@ -36,7 +38,7 @@ class OnCloseCall(
                 conversationIdString = conversationIdWithDomain.toString(),
                 status = callStatus
             )
-            callingLogger.i("[OnCloseCall] -> ConversationId: $conversationId | callStatus: $callStatus")
+            callingLogger.i("[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} | callStatus: $callStatus")
         }
     }
 }

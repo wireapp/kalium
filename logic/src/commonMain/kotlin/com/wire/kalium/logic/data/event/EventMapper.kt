@@ -3,6 +3,8 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
@@ -18,6 +20,7 @@ class EventMapper(
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper,
     private val featureConfigMapper: FeatureConfigMapper,
+    private val roleMapper: ConversationRoleMapper,
 ) {
     @Suppress("ComplexMethod")
     fun fromDTO(eventResponse: EventResponse): List<Event> {
@@ -29,6 +32,7 @@ class EventMapper(
                 is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO)
                 is EventContentDTO.Conversation.MemberJoinDTO -> memberJoin(id, eventContentDTO)
                 is EventContentDTO.Conversation.MemberLeaveDTO -> memberLeave(id, eventContentDTO)
+                is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO)
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
                 is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
@@ -124,6 +128,19 @@ class EventMapper(
         removedBy = idMapper.fromApiModel(eventContentDTO.qualifiedFrom),
         removedList = eventContentDTO.members.qualifiedUserIds.map { idMapper.fromApiModel(it) },
         timestampIso = eventContentDTO.time
+    )
+
+    private fun memberUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO
+    ) = Event.Conversation.MemberChanged(
+        id = id,
+        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+        timestampIso = eventContentDTO.time,
+        member = Conversation.Member(
+            id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
+            role = roleMapper.fromApi(eventContentDTO.roleChange.role)
+        ),
     )
 
     private fun featureConfig(

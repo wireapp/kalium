@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.cryptography.utils.EncryptedData
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
@@ -23,7 +25,13 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val data: ConversationResponse,
             val qualifiedFrom: UserId,
-        ) : Conversation(id, conversationId)
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "qualifiedFrom: ${qualifiedFrom.value.obfuscateId()}@${qualifiedFrom.domain.obfuscateDomain()} "
+            }
+        }
 
         data class NewMessage(
             override val id: String,
@@ -33,7 +41,15 @@ sealed class Event(open val id: String) {
             val timestampIso: String,
             val content: String,
             val encryptedExternalContent: EncryptedData?
-        ) : Conversation(id, conversationId)
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "senderUserId: ${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()} " +
+                        "senderClientId:${senderClientId.value.obfuscateId()} " +
+                        "timestampIso: $timestampIso"
+            }
+        }
 
         data class NewMLSMessage(
             override val id: String,
@@ -41,14 +57,27 @@ sealed class Event(open val id: String) {
             val senderUserId: UserId,
             val timestampIso: String,
             val content: String
-        ) : Conversation(id, conversationId)
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "senderUserId: ${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()} " +
+                        "timestampIso: $timestampIso"
+            }
+        }
 
         data class NewConversation(
             override val id: String,
             override val conversationId: ConversationId,
             val timestampIso: String,
             val conversation: ConversationResponse
-        ) : Conversation(id, conversationId)
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "timestampIso: $timestampIso"
+            }
+        }
 
         data class MemberJoin(
             override val id: String,
@@ -56,7 +85,14 @@ sealed class Event(open val id: String) {
             val addedBy: UserId,
             val members: List<Member>,
             val timestampIso: String
-        ) : Conversation(id, conversationId)
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "addedBy: ${addedBy.value.obfuscateId()}@${addedBy.domain.obfuscateDomain()} members:$members " +
+                        "timestampIso: $timestampIso"
+            }
+        }
 
         data class MemberLeave(
             override val id: String,
@@ -64,7 +100,27 @@ sealed class Event(open val id: String) {
             val removedBy: UserId,
             val removedList: List<UserId>,
             val timestampIso: String
-        ) : Conversation(id, conversationId)
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "removedBy: ${removedBy.value.obfuscateId()}@${removedBy.domain.obfuscateDomain()}" +
+                        "timestampIso: $timestampIso"
+            }
+        }
+
+        data class MemberChanged(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val timestampIso: String,
+            val member: Member,
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "member: $member timestampIso: $timestampIso"
+            }
+        }
 
         data class MLSWelcome(
             override val id: String,
@@ -72,14 +128,28 @@ sealed class Event(open val id: String) {
             val senderUserId: UserId,
             val message: String,
             val timestampIso: String = Clock.System.now().toString()
-        ) : Conversation(id, conversationId)
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "timestampIso: $timestampIso " +
+                        "senderUserId:${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
+            }
+        }
 
         data class DeletedConversation(
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
             val timestampIso: String,
-        ) : Conversation(id, conversationId)
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "timestampIso: $timestampIso " +
+                        "senderUserId:${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
+            }
+        }
     }
 
     sealed class FeatureConfig(
@@ -112,10 +182,23 @@ sealed class Event(open val id: String) {
         data class NewConnection(
             override val id: String,
             val connection: Connection
-        ) : User(id)
+        ) : User(id) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()}"
+            }
+        }
 
-        data class ClientRemove(override val id: String, val clientId: ClientId) : User(id)
-        data class UserDelete(override val id: String, val userId: UserId) : User(id)
+        data class ClientRemove(override val id: String, val clientId: ClientId) : User(id) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} clientId: ${clientId.value.obfuscateId()} "
+            }
+        }
+
+        data class UserDelete(override val id: String, val userId: UserId) : User(id) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} userId: ${userId.value.obfuscateId()}@${userId.domain.obfuscateDomain()} "
+            }
+        }
     }
 
     data class Unknown(override val id: String) : Event(id)
