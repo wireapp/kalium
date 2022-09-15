@@ -104,7 +104,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientWithDeviceIsStored_whenInsertingTheSameClientWithNullType_thenTypeIsNotOverwritten() = runTest {
-        val insertClientWithType = Client(user.id, "id1", deviceType = "Tablet")
+        val insertClientWithType = Client(user.id, "id1", deviceType = DeviceTypeEntity.Tablet)
         val insertClientWithNullType = insertClientWithType.copy(deviceType = null)
         userDAO.insertUser(user)
         clientDAO.insertClients(listOf(insertClientWithType))

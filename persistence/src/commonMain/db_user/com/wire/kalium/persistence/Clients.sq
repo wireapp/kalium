@@ -1,9 +1,10 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
 
 CREATE TABLE Client (
     user_id TEXT AS QualifiedIDEntity NOT NULL,
     id TEXT NOT NULL,
-    device_type TEXT,
+    device_type TEXT AS DeviceTypeEntity,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, id)
 );
