@@ -328,11 +328,8 @@ actual class CallManagerImpl(
     private fun initClientsHandler() {
         scope.launch {
             withCalling {
-                val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
-
                 val onClientsRequest = OnClientsRequest(
                     calling = calling,
-                    selfUserId = selfUserId,
                     conversationRepository = conversationRepository,
                     federatedIdMapper = federatedIdMapper,
                     qualifiedIdMapper = qualifiedIdMapper,
