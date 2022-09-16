@@ -2,7 +2,6 @@ package com.wire.kalium.persistence.dao.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.paging.QueryPagingSource
