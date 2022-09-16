@@ -159,7 +159,7 @@ class AssetMapperImpl(
                     }
                 } ?: defaultRemoteData,
                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
-                uploadStatus = Message.UploadStatus.UPLOADED
+                uploadStatus = Message.UploadStatus.NOT_UPLOADED
             )
         }
     }

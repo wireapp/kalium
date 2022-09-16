@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -170,10 +171,17 @@ class SendAssetMessageUseCaseTest {
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
                 val content = it.content
-                content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.FAILED_UPLOAD
+                content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOAD_IN_PROGRESS
             })
             .wasInvoked(exactly = once)
+        verify(arrangement.updateUploadStatus)
+            .suspendFunction(arrangement.updateUploadStatus::invoke)
+            .with(matching {
+                it == Message.UploadStatus.FAILED_UPLOAD
+            }, any(), any())
+            .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsUploaded() = runTest {
         // Given
@@ -224,7 +232,7 @@ class SendAssetMessageUseCaseTest {
         private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
 
         @Mock
-        private val updateUploadStatus = mock(classOf<UpdateAssetMessageUploadStatusUseCase>())
+        val updateUploadStatus = mock(classOf<UpdateAssetMessageUploadStatusUseCase>())
 
         val someClientId = ClientId("some-client-id")
 
@@ -252,7 +260,7 @@ class SendAssetMessageUseCaseTest {
             return this
         }
 
-        fun withSuccessfulResponse(expectedAssetId: UploadedAssetId, assetSHA256Key: SHA256Key): Arrangement {
+        fun withSuccessfulResponse(expectedAssetId: UploadedAssetId, assetSHA256Key: SHA256Key): Arrangement = apply {
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any(), any(), any())
@@ -277,10 +285,13 @@ class SendAssetMessageUseCaseTest {
                 .suspendFunction(messageSender::sendPendingMessage)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
-            return this
+            given(updateUploadStatus)
+                .suspendFunction(updateUploadStatus::invoke)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(UpdateUploadStatusResult.Success)
         }
 
-        fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement {
+        fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement = apply {
             given(userRepository)
                 .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
@@ -293,11 +304,18 @@ class SendAssetMessageUseCaseTest {
                 .suspendFunction(clientRepository::currentClientId)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
             given(assetDataSource)
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any(), any(), any())
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
-            return this
+            given(updateUploadStatus)
+                .suspendFunction(updateUploadStatus::invoke)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
         fun withPersistErrorResponse() = apply {
@@ -317,6 +335,10 @@ class SendAssetMessageUseCaseTest {
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(StorageFailure.Generic(IOException("Some error"))))
+            given(updateUploadStatus)
+                .suspendFunction(updateUploadStatus::invoke)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
         fun arrange() = this to SendAssetMessageUseCaseImpl(
