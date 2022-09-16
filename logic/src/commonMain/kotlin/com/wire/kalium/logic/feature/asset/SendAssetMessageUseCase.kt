@@ -31,7 +31,6 @@ import com.wire.kalium.logic.util.isGreaterThan
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
-import okio.IOException
 import okio.Path
 
 fun interface SendAssetMessageUseCase {
@@ -91,7 +90,7 @@ internal class SendAssetMessageUseCaseImpl(
             assetWidth = assetWidth,
             assetHeight = assetHeight,
             otrKey = otrKey,
-            sha256Key = SHA256Key(ByteArray(16)), // Sha256 will be replaced with right values after successful asset upload
+            sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)), // Sha256 will be replaced with right values after successful asset upload
             assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after successful asset upload
         )
         lateinit var message: Message.Regular
@@ -207,6 +206,9 @@ internal class SendAssetMessageUseCaseImpl(
                 uploadStatus = uploadStatus
             )
         }
+    }
+    private companion object {
+        const val DEFAULT_BYTE_ARRAY_SIZE = 16
     }
 }
 
