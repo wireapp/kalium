@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlin.system.measureTimeMillis
 
 @Suppress("LongParameterList")
 class OnParticipantListChanged(
@@ -44,24 +45,24 @@ class OnParticipantListChanged(
             val clients = mutableListOf<CallClient>()
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
 
-            val memberList: List<Conversation.Member> = conversationRepository
-                .observeConversationMembers(conversationIdWithDomain)
-                .first()
+            val time = measureTimeMillis {
 
-            participantsChange.members.map { member ->
-                val participant = participantMapper.fromCallMemberToParticipant(member)
-                val userId = mapQualifiedMemberId(memberList, member)
-                userRepository.getKnownUser(userId).first {
-                    val updatedParticipant = participant.copy(
-                        name = it?.name!!,
-                        avatarAssetId = it.completePicture,
-                        userType = it.userType
-                    )
-                    participants.add(updatedParticipant)
+                participantsChange.members.map { member ->
+                    val participant = participantMapper.fromCallMemberToParticipant(member)
+                    val userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId)
+                    userRepository.getKnownUserMinimized(userId).also {
+                        val updatedParticipant = participant.copy(
+                            name = it?.name!!,
+                            avatarAssetId = it.completePicture,
+                            userType = it.userType
+                        )
+                        participants.add(updatedParticipant)
+                    }
+
+                    clients.add(participantMapper.fromCallMemberToCallClient(member))
                 }
-
-                clients.add(participantMapper.fromCallMemberToCallClient(member))
             }
+            callingLogger.i("finished in $time")
 
             callRepository.updateCallParticipants(
                 conversationId = conversationIdWithDomain.toString(),
@@ -82,12 +83,6 @@ class OnParticipantListChanged(
             )
         }
     }
-
-    private fun mapQualifiedMemberId(memberList: List<Conversation.Member>, member: CallMember) =
-        memberList.first {
-            val userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId)
-            it.id.value == userId.value
-        }.id
 
     private companion object {
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0

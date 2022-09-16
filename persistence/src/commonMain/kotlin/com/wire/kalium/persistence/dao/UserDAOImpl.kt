@@ -179,6 +179,18 @@ class UserDAOImpl(
             .map { it?.let { mapper.toModel(it) } }
     }
 
+    override fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
+        userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)).executeAsOneOrNull().let {
+            it?.let { user ->
+                UserEntityMinimized(
+                    user.qualified_id,
+                    user.name,
+                    user.complete_asset_id,
+                    user.user_type
+                )
+            }
+        }
+
     override suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity> {
         return userQueries.selectByQualifiedId(qualifiedIDList)
             .executeAsList()
