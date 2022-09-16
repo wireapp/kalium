@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("TooManyFunctions")
 class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
-    private val mapper = MessageMapper(queries)
+    private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
