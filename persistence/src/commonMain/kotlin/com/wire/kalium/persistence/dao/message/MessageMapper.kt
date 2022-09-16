@@ -6,6 +6,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
+@Suppress("LongParameterList")
 object MessageMapper {
 
     private fun createMessageEntity(
@@ -46,7 +47,6 @@ object MessageMapper {
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 
-
     fun toEntityMessageFromView(
         id: String,
         conversationId: QualifiedIDEntity,
@@ -59,7 +59,7 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         senderName: String?,
         senderHandle: String?,
-        senderHandle_: String?,
+        senderEmail: String?,
         senderPhone: String?,
         senderAccentId: Int?,
         senderTeamId: String?,

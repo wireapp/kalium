@@ -3,7 +3,6 @@ package com.wire.kalium.persistence.dao.message
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
