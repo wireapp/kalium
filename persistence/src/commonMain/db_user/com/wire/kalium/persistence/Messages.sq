@@ -21,6 +21,9 @@ CREATE TABLE Message (
       PRIMARY KEY (id, conversation_id)
 );
 
+-- Allows optimized querying of messages sorting by date.
+CREATE INDEX message_date_index ON Message(date);
+
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
@@ -124,17 +127,31 @@ CREATE TABLE MessageMissedCallContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE VIEW IF NOT EXISTS MessageDetailsView
+AS SELECT
+        Message.conversation_id AS conversationId,
+        FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+        * FROM Message
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
+LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
+LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id;
+
 deleteAllMessages:
 DELETE FROM Message;
 
 deleteMessage:
-DELETE FROM Message WHERE  id = ? AND conversation_id = ?;
+DELETE FROM Message WHERE id = ? AND conversation_id = ?;
 
 deleteMessageMentions:
 DELETE FROM MessageMention WHERE  message_id = ? AND conversation_id = ?;
 
 deleteMessageById:
-DELETE FROM Message WHERE  id = ?;
+DELETE FROM Message WHERE id = ?;
 
 markMessageAsDeleted {
    UPDATE Message
@@ -273,55 +290,31 @@ selectAllMessages:
 SELECT * FROM Message ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 
 selectById:
-SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
+SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
 countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC;
 
 selectByConversationIdAndVisibility:
-SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? ORDER BY Datetime(date) DESC LIMIT ? OFFSET ?;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
-SELECT * FROM Message WHERE conversation_id = ? AND visibility IN ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
+SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND Datetime(date) > Datetime(?) ORDER BY Datetime(date) DESC;
 
 selectMessagesFromUserByStatus:
-SELECT * FROM Message WHERE sender_user_id = ? AND status = ?;
-
-selectMessageMentions:
-SELECT * FROM MessageMention WHERE message_id = ? AND conversation_id = ?;
-
-selectMessageTextContent:
-SELECT * FROM MessageTextContent WHERE message_id = ? AND conversation_id = ?;
-
-selectMessageRestrictedAssetContent:
-SELECT * FROM MessageRestrictedAssetContent WHERE message_id = ? AND conversation_id = ?;
-
-selectMessageAssetContent:
-SELECT * FROM MessageAssetContent WHERE message_id = ? AND conversation_id = ?;
-
-selectMessageMemberChangeContent:
-SELECT * FROM MessageMemberChangeContent WHERE message_id = ? AND conversation_id = ?;
-
-selectMessageUnknownContent:
-SELECT * FROM MessageUnknownContent WHERE message_id = ? AND conversation_id = ?;
-
-selectFailedDecryptionMessageContent:
-SELECT * FROM MessageFailedToDecryptContent WHERE message_id = ? AND conversation_id = ?;
-
-selectMessageMissedCallContent:
-SELECT * FROM MessageMissedCallContent WHERE message_id = ? AND conversation_id = ?;
+SELECT * FROM MessageDetailsView WHERE sender_user_id = ? AND status = ?;
 
 getConversationMessagesByContentType:
-SELECT * FROM Message
-WHERE conversation_id IS :conversation_id AND content_type IS :content_type;
+SELECT * FROM MessageDetailsView
+WHERE MessageDetailsView.conversationId = :conversation_id AND content_type = :content_type;
 
 deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
 getLastUnreadMessage:
-SELECT * FROM Message AS message
-WHERE message.conversation_id
+SELECT * FROM MessageDetailsView AS message
+WHERE message.conversationId
 IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 ORDER BY message.date ASC
 LIMIT  1;

@@ -1,62 +1,51 @@
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.sqldelight.Query
-import com.squareup.sqldelight.runtime.coroutines.asFlow
-import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
-import com.wire.kalium.persistence.MessageMemberChangeContent
-import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
-import com.wire.kalium.persistence.MessageTextContent
-import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.dao.BotEntity
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 
 class MessageMapper(private val queries: MessagesQueries) {
 
-    private val defaultMessageEntityContent = MessageEntityContent.Text("")
-
-    private fun toModel(msg: Message, content: MessageEntityContent): MessageEntity = when (content) {
+    private fun createMessageEntity(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        date: String,
+        senderUserId: QualifiedIDEntity,
+        senderClientId: String?,
+        status: MessageEntity.Status,
+        lastEditTimestamp: String?,
+        visibility: MessageEntity.Visibility,
+        content: MessageEntityContent
+    ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
-            id = msg.id,
-            conversationId = msg.conversation_id,
-            date = msg.date,
-            senderUserId = msg.sender_user_id,
-            senderClientId = msg.sender_client_id!!,
-            status = msg.status,
-            editStatus = mapEditStatus(msg.last_edit_timestamp),
-            visibility = msg.visibility
+            id = id,
+            conversationId = conversationId,
+            date = date,
+            senderUserId = senderUserId,
+            senderClientId = senderClientId!!,
+            status = status,
+            editStatus = mapEditStatus(lastEditTimestamp),
+            visibility = visibility
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
             content = content,
-            id = msg.id,
-            conversationId = msg.conversation_id,
-            date = msg.date,
-            senderUserId = msg.sender_user_id,
-            status = msg.status,
-            visibility = msg.visibility
+            id = id,
+            conversationId = conversationId,
+            date = date,
+            senderUserId = senderUserId,
+            status = status,
+            visibility = visibility
         )
     }
-
-    private fun toModel(content: MessageTextContent, mentions: List<MessageMention>) = MessageEntityContent.Text(
-        messageBody = content.text_body ?: "",
-        mentions = mentions.map {
-            MessageEntity.Mention(
-                start = it.start,
-                length = it.length,
-                userId = it.user_id
-            )
-        }
-    )
 
     private fun toModel(content: MessageRestrictedAssetContent) = MessageEntityContent.RestrictedAsset(
         content.asset_mime_type, content.asset_size, content.asset_name
@@ -79,17 +68,7 @@ class MessageMapper(private val queries: MessagesQueries) {
         assetNormalizedLoudness = content.asset_normalized_loudness,
     )
 
-    private fun toModel(content: MessageMemberChangeContent) = MessageEntityContent.MemberChange(
-        memberUserIdList = content.member_change_list,
-        memberChangeType = content.member_change_type
-    )
-
-    private fun toModel(content: MessageUnknownContent) = MessageEntityContent.Unknown(
-        typeName = content.unknown_type_name,
-        encodedData = content.unknown_encoded_data
-    )
-
-    private fun toModel(content: MessageFailedToDecryptContent) = MessageEntityContent.FailedDecryption(
+    fun toModel(content: MessageFailedToDecryptContent) = MessageEntityContent.FailedDecryption(
         encodedData = content.unknown_encoded_data
     )
 
@@ -97,62 +76,130 @@ class MessageMapper(private val queries: MessagesQueries) {
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 
-    private fun <T : Any> Message.queryOneOrDefault(
-        query: (String, QualifiedIDEntity) -> Query<T>,
-        mapper: (T) -> MessageEntityContent,
-        default: MessageEntityContent = defaultMessageEntityContent,
-    ): MessageEntityContent =
-        query(this.id, this.conversation_id).executeAsOneOrNull()?.let(mapper) ?: default
 
-    private fun <T : Any> Message.queryOneOrDefaultFlow(
-        query: (String, QualifiedIDEntity) -> Query<T>,
-        mapper: (T) -> MessageEntityContent,
-        default: MessageEntityContent = defaultMessageEntityContent,
-    ): Flow<MessageEntityContent> =
-        query(this.id, this.conversation_id).asFlow().mapToOneOrNull().map { it?.let(mapper) ?: default }
+    fun toEntityMessageFromView(
+        conversationId: QualifiedIDEntity,
+        failedToDecryptData: ByteArray?,
+        id: String,
+        contentType: MessageEntity.ContentType,
+        conversationId_______: QualifiedIDEntity,
+        date: String,
+        senderUserId: QualifiedIDEntity,
+        senderClientId: String?,
+        status: MessageEntity.Status,
+        lastEditTimestamp: String?,
+        visibility: MessageEntity.Visibility,
+        userId: QualifiedIDEntity?,
+        name: String?,
+        handle: String?,
+        email: String?,
+        phone: String?,
+        accentId: Int?,
+        team: String?,
+        connectionStatus: ConnectionEntity.State?,
+        previewAssetId: QualifiedIDEntity?,
+        completeAssetId: QualifiedIDEntity?,
+        userAvailabilityStatus: UserAvailabilityStatusEntity?,
+        userType: UserTypeEntity?,
+        botService: BotEntity?,
+        deleted: Boolean?,
+        messageId: String?,
+        conversationId_: QualifiedIDEntity?,
+        textBody: String?,
+        messageId_: String?,
+        conversationId__: QualifiedIDEntity?,
+        assetSize: Long?,
+        assetName: String?,
+        assetMimeType: String?,
+        assetDownloadStatus: MessageEntity.DownloadStatus?,
+        assetOtrKey: ByteArray?,
+        assetSha256: ByteArray?,
+        assetId: String?,
+        assetToken: String?,
+        assetDomain: String?,
+        assetEncryptionAlgorithm: String?,
+        assetWidth: Int?,
+        assetHeight: Int?,
+        assetDurationMs: Long?,
+        assetNormalizedLoudness: ByteArray?,
+        messageId__: String?,
+        conversationId___: QualifiedIDEntity?,
+        callerId: QualifiedIDEntity?,
+        messageId___: String?,
+        conversationId____: QualifiedIDEntity?,
+        memberChangeList: List<QualifiedIDEntity>?,
+        memberChangeType: MessageEntity.MemberChangeType?,
+        messageId____: String?,
+        conversationId_____: QualifiedIDEntity?,
+        unknownTypeName: String?,
+        unknownEncodedData: ByteArray?,
+        messageId_____: String?,
+        conversationId______: QualifiedIDEntity?,
+        assetMimeType_: String?,
+        assetSize_: Long?,
+        assetName_: String?,
+        message_id______: String?,
+        conversation_id_______: QualifiedIDEntity?,
+        unknown_encoded_data_: ByteArray?,
+    ) = when (contentType) {
+            MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
+                messageBody = textBody ?: "",
+                mentions = listOf()
+            )
 
-    fun toMessageEntityFlow(message: Message) = message.run {
-        when (this.content_type) {
-            MessageEntity.ContentType.TEXT -> queries.selectMessageTextContent(this.id, this.conversation_id).asFlow().mapToOneOrNull()
-                .combine(queries.selectMessageMentions(this.id, this.conversation_id).asFlow().mapToList()) { content, mentions ->
-                    content?.let { toModel(content, mentions) } ?: defaultMessageEntityContent
-                }
-            MessageEntity.ContentType.ASSET -> this.queryOneOrDefaultFlow(queries::selectMessageAssetContent, ::toModel)
-            MessageEntity.ContentType.KNOCK -> flowOf(MessageEntityContent.Knock(false))
-            MessageEntity.ContentType.MEMBER_CHANGE -> this.queryOneOrDefaultFlow(queries::selectMessageMemberChangeContent, ::toModel)
-            MessageEntity.ContentType.MISSED_CALL -> this.queryOneOrDefaultFlow(
-                queries::selectMessageMissedCallContent,
-                { MessageEntityContent.MissedCall }
+            MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
+                assetSizeInBytes = assetSize.requireField("asset_size"),
+                assetName = assetName,
+                assetMimeType = assetMimeType.requireField("asset_mime_type"),
+                assetDownloadStatus = assetDownloadStatus,
+                assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
+                assetSha256Key = assetSha256.requireField("asset_sha256"),
+                assetId = assetId.requireField("asset_id"),
+                assetToken = assetToken,
+                assetDomain = assetDomain,
+                assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+                assetWidth = assetWidth,
+                assetHeight = assetHeight,
+                assetDurationMs = assetDurationMs,
+                assetNormalizedLoudness = assetNormalizedLoudness,
             )
-            MessageEntity.ContentType.UNKNOWN -> this.queryOneOrDefaultFlow(queries::selectMessageUnknownContent, ::toModel)
-            MessageEntity.ContentType.FAILED_DECRYPTION -> this.queryOneOrDefaultFlow(
-                queries::selectFailedDecryptionMessageContent,
-                ::toModel
-            )
-            MessageEntity.ContentType.RESTRICTED_ASSET -> this.queryOneOrDefaultFlow(
-                queries::selectMessageRestrictedAssetContent,
-                ::toModel
-            )
-        }.map { toModel(this, it) }
-    }
 
-    fun toMessageEntity(message: Message) = message.run {
-        when (this.content_type) {
-            MessageEntity.ContentType.TEXT -> fetchTextContent()
-            MessageEntity.ContentType.ASSET -> this.queryOneOrDefault(queries::selectMessageAssetContent, ::toModel)
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
-            MessageEntity.ContentType.MEMBER_CHANGE -> this.queryOneOrDefault(queries::selectMessageMemberChangeContent, ::toModel)
-            MessageEntity.ContentType.MISSED_CALL -> this.queryOneOrDefault(queries::selectMessageMissedCallContent, {
-                MessageEntityContent.MissedCall
-            })
-            MessageEntity.ContentType.UNKNOWN -> this.queryOneOrDefault(queries::selectMessageUnknownContent, ::toModel)
-            MessageEntity.ContentType.FAILED_DECRYPTION -> this.queryOneOrDefault(queries::selectFailedDecryptionMessageContent, ::toModel)
-            MessageEntity.ContentType.RESTRICTED_ASSET -> this.queryOneOrDefault(queries::selectMessageRestrictedAssetContent, ::toModel)
-        }.let { toModel(this, it) }
-    }
+            MessageEntity.ContentType.MEMBER_CHANGE -> MessageEntityContent.MemberChange(
+                memberUserIdList = memberChangeList.requireField("memberChangeList"),
+                memberChangeType = memberChangeType.requireField("memberChangeType")
+            )
 
-    private fun Message.fetchTextContent(): MessageEntityContent.Text =
-        queries.selectMessageTextContent(this.id, this.conversation_id).executeAsOneOrNull()
-            .let { it to queries.selectMessageMentions(this.id, this.conversation_id).executeAsList() }
-            .let { (content, mentions) -> content?.let { toModel(content, mentions) } ?: defaultMessageEntityContent }
+            MessageEntity.ContentType.MISSED_CALL -> MessageEntityContent.MissedCall
+            MessageEntity.ContentType.UNKNOWN -> MessageEntityContent.Unknown(
+                typeName = unknownTypeName,
+                encodedData = unknownEncodedData
+            )
+
+            MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
+                failedToDecryptData
+            )
+
+            MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(
+                assetMimeType.requireField("assetMimeType"),
+                assetSize.requireField("assetSize"),
+                assetName.requireField("assetName")
+            )
+        }.let {
+            createMessageEntity(
+                id,
+                conversationId,
+                date,
+                senderUserId,
+                senderClientId,
+                status,
+                lastEditTimestamp,
+                visibility,
+                it
+            )
+        }
+
+    private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
+        "Fild $fieldName null when unpacking message content"
+    }
 }

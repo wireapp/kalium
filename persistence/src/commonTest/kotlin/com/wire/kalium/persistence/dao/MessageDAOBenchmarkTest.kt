@@ -70,21 +70,23 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
 
     @OptIn(ExperimentalTime::class)
     @Test
-    fun queryTextMessages() = runTest {
+    fun queryTextMessagesNormal() = runTest {
         setupData()
         val totalMessageCount = MESSAGE_COUNT
         val messagesToInsert = generateRandomMessages(totalMessageCount)
         messageDAO.insertMessages(messagesToInsert)
-
-        val duration = measureTime {
-            messageDAO.getMessagesByConversationAndVisibility(
-                conversationEntity1.id,
-                totalMessageCount,
-                0,
-                MessageEntity.Visibility.values().toList()
-            ).first()
+        repeat(4) {
+            measureTime {
+                messageDAO.getMessagesByConversationAndVisibility(
+                    conversationEntity1.id,
+                    totalMessageCount,
+                    0,
+                    MessageEntity.Visibility.values().toList()
+                ).first()
+            }.also {
+                println("Took $it to query $totalMessageCount messages")
+            }
         }
-        println("Took $duration to query $totalMessageCount messages")
     }
 
     private suspend fun setupData() {
@@ -94,6 +96,6 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
     }
 
     private companion object {
-        const val MESSAGE_COUNT = 100
+        const val MESSAGE_COUNT = 1000
     }
 }

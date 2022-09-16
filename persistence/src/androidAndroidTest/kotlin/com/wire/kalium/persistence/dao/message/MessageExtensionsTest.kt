@@ -3,7 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.Message
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -48,7 +48,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, Message>>(result)
+        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
         // Assuming the first page was fetched, itemsAfter should be the remaining ones
         assertEquals(MESSAGE_COUNT - PAGE_SIZE, result.itemsAfter)
         // No items before the first page
@@ -61,7 +61,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, Message>>(result)
+        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
 
         result.data.forEachIndexed { index, message ->
             assertEquals(index.toString(), message.id)
@@ -74,7 +74,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, Message>>(result)
+        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
         // First page fetched, second page starts at the end of the first one
         assertEquals(PAGE_SIZE.toLong(), result.nextKey)
     }
@@ -86,24 +86,24 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         val pagingSource = getPager().pagingSource
         val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE.toLong())
 
-        assertIs<PagingSource.LoadResult.Page<Long, Message>>(secondPageResult)
+        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(secondPageResult)
 
         secondPageResult.data.forEachIndexed { index, message ->
             assertEquals((index + PAGE_SIZE).toString(), message.id)
         }
     }
 
-    private suspend fun getPager(): KaliumPager<Message, MessageEntity> = messageExtensions.getPagerForConversation(
+    private suspend fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
             conversationId = CONVERSATION_ID,
             visibilities = MessageEntity.Visibility.values().toList(),
             pagingConfig = PagingConfig(PAGE_SIZE)
         )
 
-    private suspend fun PagingSource<Long, Message>.refresh() = load(
+    private suspend fun PagingSource<Long, MessageEntity>.refresh() = load(
         PagingSource.LoadParams.Refresh(null, PAGE_SIZE, true)
     )
 
-    private suspend fun PagingSource<Long, Message>.nextPageForOffset(key: Long) = load(
+    private suspend fun PagingSource<Long, MessageEntity>.nextPageForOffset(key: Long) = load(
         PagingSource.LoadParams.Append(key, PAGE_SIZE, true)
     )
 
