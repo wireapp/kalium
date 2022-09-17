@@ -33,101 +33,103 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: MessageEntity) = insertInDB(message)
+    override suspend fun insertMessage(message: MessageEntity) = queries.transaction { insertInDB(message) }
 
     override suspend fun insertMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { insertInDB(it) }
         }
 
+    /**
+     * Be careful and run this operation in ONE wrapping transaction.
+     */
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
-        queries.transaction {
-            queries.insertMessage(
-                id = message.id,
-                conversation_id = message.conversationId,
-                date = message.date,
-                sender_user_id = message.senderUserId,
-                sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
-                visibility = message.visibility,
-                status = message.status,
-                content_type = contentTypeOf(message.content)
-            )
-            when (val content = message.content) {
-                is MessageEntityContent.Text -> queries.transaction {
-                    queries.insertMessageTextContent(
+        queries.insertMessage(
+            id = message.id,
+            conversation_id = message.conversationId,
+            date = message.date,
+            sender_user_id = message.senderUserId,
+            sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
+            visibility = message.visibility,
+            status = message.status,
+            content_type = contentTypeOf(message.content)
+        )
+        when (val content = message.content) {
+            is MessageEntityContent.Text -> {
+                queries.insertMessageTextContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    text_body = content.messageBody
+                )
+                content.mentions.forEach {
+                    queries.insertMessageMention(
                         message_id = message.id,
                         conversation_id = message.conversationId,
-                        text_body = content.messageBody
+                        start = it.start,
+                        length = it.length,
+                        user_id = it.userId
                     )
-                    content.mentions.forEach {
-                        queries.insertMessageMention(
-                            message_id = message.id,
-                            conversation_id = message.conversationId,
-                            start = it.start,
-                            length = it.length,
-                            user_id = it.userId
-                        )
-                    }
-                }
-
-                is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    asset_mime_type = content.mimeType,
-                    asset_size = content.assetSizeInBytes,
-                    asset_name = content.assetName
-                )
-
-                is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    asset_size = content.assetSizeInBytes,
-                    asset_name = content.assetName,
-                    asset_mime_type = content.assetMimeType,
-                    asset_download_status = content.assetDownloadStatus,
-                    asset_otr_key = content.assetOtrKey,
-                    asset_sha256 = content.assetSha256Key,
-                    asset_id = content.assetId,
-                    asset_token = content.assetToken,
-                    asset_domain = content.assetDomain,
-                    asset_encryption_algorithm = content.assetEncryptionAlgorithm,
-                    asset_width = content.assetWidth,
-                    asset_height = content.assetHeight,
-                    asset_duration_ms = content.assetDurationMs,
-                    asset_normalized_loudness = content.assetNormalizedLoudness
-                )
-
-                is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData,
-                    unknown_type_name = content.typeName
-                )
-
-                is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    unknown_encoded_data = content.encodedData,
-                )
-
-                is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    member_change_list = content.memberUserIdList,
-                    member_change_type = content.memberChangeType
-                )
-
-                is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    caller_id = message.senderUserId
-                )
-
-                is MessageEntityContent.Knock -> {
-                    /** NO-OP. No need to insert any content for Knock messages */
                 }
             }
+
+            is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                asset_mime_type = content.mimeType,
+                asset_size = content.assetSizeInBytes,
+                asset_name = content.assetName
+            )
+
+            is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                asset_size = content.assetSizeInBytes,
+                asset_name = content.assetName,
+                asset_mime_type = content.assetMimeType,
+                asset_download_status = content.assetDownloadStatus,
+                asset_otr_key = content.assetOtrKey,
+                asset_sha256 = content.assetSha256Key,
+                asset_id = content.assetId,
+                asset_token = content.assetToken,
+                asset_domain = content.assetDomain,
+                asset_encryption_algorithm = content.assetEncryptionAlgorithm,
+                asset_width = content.assetWidth,
+                asset_height = content.assetHeight,
+                asset_duration_ms = content.assetDurationMs,
+                asset_normalized_loudness = content.assetNormalizedLoudness
+            )
+
+            is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                unknown_encoded_data = content.encodedData,
+                unknown_type_name = content.typeName
+            )
+
+            is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                unknown_encoded_data = content.encodedData,
+            )
+
+            is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                member_change_list = content.memberUserIdList,
+                member_change_type = content.memberChangeType
+            )
+
+            is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                caller_id = message.senderUserId
+            )
+
+            is MessageEntityContent.Knock -> {
+                /** NO-OP. No need to insert any content for Knock messages */
+            }
+
         }
     }
 
