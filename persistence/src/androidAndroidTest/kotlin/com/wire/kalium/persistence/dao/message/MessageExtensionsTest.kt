@@ -33,7 +33,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
-        messageExtensions = MessageExtensionsImpl(messagesQueries, MessageMapper(messagesQueries))
+        messageExtensions = MessageExtensionsImpl(messagesQueries, MessageMapper)
     }
 
     @After
