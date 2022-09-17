@@ -33,13 +33,16 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: MessageEntity) = insertInDB(message)
+    override suspend fun insertMessage(message: MessageEntity) = queries.transaction { insertInDB(message) }
 
     override suspend fun insertMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { insertInDB(it) }
         }
 
+    /**
+     * Be careful and run this operation in ONE wrapping transaction.
+     */
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
         queries.insertMessage(
