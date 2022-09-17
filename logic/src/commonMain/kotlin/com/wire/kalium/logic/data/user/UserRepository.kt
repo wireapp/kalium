@@ -56,7 +56,7 @@ interface UserRepository {
     suspend fun updateLocalSelfUserHandle(handle: String)
     suspend fun getAllKnownUsers(): Either<StorageFailure, List<OtherUser>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
-    fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
+    suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
@@ -233,7 +233,7 @@ internal class UserDataSource(
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
-    override fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
+    override suspend fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
         qualifiedID = idMapper.toDaoModel(userId)
     )?.let {
         publicUserMapper.fromDaoModelToPublicUserMinimized(it)
