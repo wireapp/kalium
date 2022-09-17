@@ -233,7 +233,9 @@ internal class UserDataSource(
         userDAO.getUserByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))
             .map { userEntity -> userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) } }
 
-    override fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(qualifiedID = idMapper.toDaoModel(userId))?.let {
+    override fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
+        qualifiedID = idMapper.toDaoModel(userId)
+    )?.let {
         publicUserMapper.fromDaoModelToPublicUserMinimized(it)
     }
 
