@@ -91,6 +91,3 @@ SET status = 'CLOSED'
 WHERE
     status != 'CLOSED'
     AND status != 'MISSED';
-
-callerIdByConversarionId:
-SELECT caller_id FROM Call WHERE conversation_id = :conversationId LIMIT 1;
