@@ -21,6 +21,7 @@ import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -48,13 +49,18 @@ import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import net.sqlcipher.database.SupportFactory
 
 actual class UserDatabaseProvider(
     private val context: Context,
     userId: UserIDEntity,
     passphrase: UserDBSecret,
-    encrypt: Boolean = true
+    encrypt: Boolean = true,
+    dispatcher: CoroutineDispatcher
 ) {
     private val dbName = FileNameUtil.userDBName(userId)
     private val driver: AndroidSqliteDriver
@@ -92,8 +98,10 @@ actual class UserDatabaseProvider(
                 statusAdapter = EnumColumnAdapter(),
                 conversation_typeAdapter = EnumColumnAdapter()
             ),
-            Client.Adapter(user_idAdapter = QualifiedIDAdapter,
-                device_typeAdapter = EnumColumnAdapter()),
+            Client.Adapter(
+                user_idAdapter = QualifiedIDAdapter,
+                device_typeAdapter = EnumColumnAdapter()
+            ),
             Connection.Adapter(
                 qualified_conversationAdapter = QualifiedIDAdapter,
                 qualified_toAdapter = QualifiedIDAdapter,
@@ -167,8 +175,10 @@ actual class UserDatabaseProvider(
         )
     }
 
+    private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
+
     actual val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries)
+        get() = UserDAOImpl(database.usersQueries, LRUCache(USER_CACHE_SIZE), databaseScope)
 
     actual val connectionDAO: ConnectionDAO
         get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
@@ -195,6 +205,7 @@ actual class UserDatabaseProvider(
         get() = TeamDAOImpl(database.teamsQueries)
 
     actual fun nuke(): Boolean {
+        databaseScope.cancel()
         driver.close()
         return context.deleteDatabase(dbName)
     }
