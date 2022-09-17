@@ -8,6 +8,7 @@ import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.LogoutReasonAdapter
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
@@ -34,10 +35,11 @@ actual class GlobalDatabaseProvider(passphrase: String) {
     actual val serverConfigurationDAO: ServerConfigurationDAO
         get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries)
 
+    actual val accountsDAO: AccountsDAO
+        get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries)
+
     actual fun nuke(): Boolean {
         TODO("Not yet implemented")
     }
 
-    actual val accountsDAO: AccountsDAO
-        get() = TODO("Not yet implemented")
 }

@@ -32,8 +32,7 @@ data class AccountInfoEntity(
 data class FullAccountEntity(
     val info: AccountInfoEntity,
     val serverConfigId: String,
-    val ssoId: SsoIdEntity?,
-    val logoutReason: LogoutReason?
+    val ssoId: SsoIdEntity?
 )
 
 @Suppress("TooManyFunctions")
@@ -46,7 +45,6 @@ interface AccountsDAO {
     suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
     fun isFederated(userIDEntity: UserIDEntity): Boolean?
-    suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean
     suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean
     fun currentAccount(): AccountInfoEntity?
     fun observerCurrentAccount(): Flow<AccountInfoEntity?>
@@ -101,7 +99,7 @@ internal class AccountsDAOImpl internal constructor(
             }
 
     override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
-        queries.allAccounts()
+        queries.allValidAccounts()
             .asFlow()
             .mapToList()
             .map { accountInfoList ->
@@ -119,9 +117,6 @@ internal class AccountsDAOImpl internal constructor(
             }
 
     override fun isFederated(userIDEntity: UserIDEntity): Boolean? = queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
-
-    override suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean =
-        queries.doesAccountExist(userIDEntity).executeAsOne()
 
     override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean =
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
@@ -170,8 +165,7 @@ internal class AccountsDAOImpl internal constructor(
                         subject = it.subject,
                         tenant = it.tenant
                     )
-                },
-                logoutReason = it.logout_reason
+                }
             )
         }
 }

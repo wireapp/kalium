@@ -27,7 +27,7 @@ class AddAuthenticatedUserUseCaseTest {
         val tokens = TEST_AUTH_TOKENS
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesSessionExistResult(tokens.userId, Either.Right(false))
+            .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
             .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, Either.Right(Unit))
             .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
             .arrange()
@@ -45,13 +45,17 @@ class AddAuthenticatedUserUseCaseTest {
             .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
             .with(any())
             .wasInvoked(exactly = once)
+        verify(arrangement.sessionRepository)
+            .suspendFunction(arrangement.sessionRepository::doesValidSessionExist)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenUserWithAlreadyStoredSession_whenInvoked_thenUserAlreadyExistsIsReturned() = runTest {
         val tokens = TEST_AUTH_TOKENS
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesSessionExistResult(tokens.userId, Either.Right(true))
+            .withDoesValidSessionExistResult(tokens.userId, Either.Right(true))
             .arrange()
 
         val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, false)
@@ -67,6 +71,10 @@ class AddAuthenticatedUserUseCaseTest {
             .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
             .with(any())
             .wasNotInvoked()
+        verify(arrangement.sessionRepository)
+            .suspendFunction(arrangement.sessionRepository::doesValidSessionExist)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -77,7 +85,7 @@ class AddAuthenticatedUserUseCaseTest {
         val newSession = TEST_AUTH_TOKENS.copy(accessToken = "newAccessToken", refreshToken = "newRefreshToken")
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesSessionExistResult(newSession.userId, Either.Right(true))
+            .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, Either.Right(Unit))
             .withUpdateCurrentSessionResult(newSession.userId, Either.Right(Unit))
             .withFullAccountInfoResult(newSession.userId, Either.Right(oldSessionFullInfo))
@@ -107,6 +115,10 @@ class AddAuthenticatedUserUseCaseTest {
             .function(arrangement.sessionRepository::fullAccountInfo)
             .with(any())
             .wasInvoked(exactly = once)
+        verify(arrangement.sessionRepository)
+            .suspendFunction(arrangement.sessionRepository::doesValidSessionExist)
+            .with(any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -118,7 +130,7 @@ class AddAuthenticatedUserUseCaseTest {
         val newSessionServer = newServerConfig(id = 22)
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
-            .withDoesSessionExistResult(newSession.userId, Either.Right(true))
+            .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withConfigForUserIdResult(oldSession.userId, Either.Right(oldSessionServer))
             .withConfigByIdResult(newSessionServer.id, Either.Right(newSessionServer))
             .withFullAccountInfoResult(
@@ -131,6 +143,10 @@ class AddAuthenticatedUserUseCaseTest {
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
+        verify(arrangement.sessionRepository)
+            .suspendFunction(arrangement.sessionRepository::doesValidSessionExist)
+            .with(any())
+            .wasInvoked(exactly = once)
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::storeSession)
             .with(any(), any(), any())
@@ -172,11 +188,11 @@ class AddAuthenticatedUserUseCaseTest {
 
         private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
 
-        suspend fun withDoesSessionExistResult(
+        suspend fun withDoesValidSessionExistResult(
             userId: UserId,
             result: Either<StorageFailure, Boolean>
         ) = apply {
-            given(sessionRepository).coroutine { doesSessionExist(userId) }.then { result }
+            given(sessionRepository).coroutine { doesValidSessionExist(userId) }.then { result }
         }
 
         suspend fun withConfigForUserIdResult(

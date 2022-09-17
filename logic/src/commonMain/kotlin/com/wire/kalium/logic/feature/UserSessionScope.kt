@@ -512,7 +512,8 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsClientProvider
         )
 
-    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
+    private val logoutRepository: LogoutRepository =
+        LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
