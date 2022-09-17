@@ -62,6 +62,7 @@ internal class IncrementalSyncManager(
     private val eventProcessingDispatcher = kaliumDispatcher.default.limitedParallelism(1)
 
     private val coroutineExceptionHandler = SyncExceptionHandler({
+        kaliumLogger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
         incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
     }, {
         kaliumLogger.i("$TAG ExceptionHandler error $it")
