@@ -4,24 +4,30 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.AssetsQueries
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.Asset as SQLDelightAsset
 
-class AssetMapper {
-    fun toModel(asset: SQLDelightAsset): AssetEntity {
+internal object AssetMapper {
+    @Suppress("FunctionParameterNaming")
+    fun fromAssets(
+        key: String,
+        domain: String,
+        data_path: String,
+        data_size: Long,
+        downloaded_date: Long?
+    ): AssetEntity {
         return AssetEntity(
-            key = asset.key,
-            domain = asset.domain,
-            dataPath = asset.data_path,
-            dataSize = asset.data_size,
-            downloadedDate = asset.downloaded_date
+            key = key,
+            domain = domain,
+            dataPath = data_path,
+            dataSize = data_size,
+            downloadedDate = downloaded_date
         )
     }
 }
 
-class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
-
-    val mapper by lazy { AssetMapper() }
+class AssetDAOImpl internal constructor(
+    private val queries: AssetsQueries,
+    private val mapper: AssetMapper = AssetMapper
+) : AssetDAO {
 
     override suspend fun insertAsset(assetEntity: AssetEntity) {
         queries.insertAsset(
@@ -48,14 +54,9 @@ class AssetDAOImpl(private val queries: AssetsQueries) : AssetDAO {
     }
 
     override suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
-        return queries.selectByKey(assetKey)
+        return queries.selectByKey(assetKey, mapper::fromAssets)
             .asFlow()
             .mapToOneOrNull()
-            .map {
-                it?.let {
-                    return@map mapper.toModel(it)
-                }
-            }
     }
 
     override suspend fun updateAsset(assetEntity: AssetEntity) {
