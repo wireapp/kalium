@@ -1,8 +1,6 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
