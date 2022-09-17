@@ -23,7 +23,6 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import com.wire.kalium.persistence.Message as PersistenceMessage
 
 class MessageRepositoryExtensionsTest {
 
