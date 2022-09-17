@@ -4,8 +4,12 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.cache.Cache
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted.Companion.Lazily
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import com.wire.kalium.persistence.User as SQLDelightUser
 
 class UserMapper {
@@ -42,8 +46,10 @@ class UserMapper {
 }
 
 @Suppress("TooManyFunctions")
-class UserDAOImpl(
-    private val userQueries: UsersQueries
+class UserDAOImpl internal constructor(
+    private val userQueries: UsersQueries,
+    private val userCache: Cache<UserIDEntity, Flow<UserEntity?>>,
+    private val databaseScope: CoroutineScope
 ) : UserDAO {
 
     val mapper = UserMapper()
@@ -184,11 +190,12 @@ class UserDAOImpl(
         .mapToList()
         .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> {
-        return userQueries.selectByQualifiedId(listOf(qualifiedID))
+    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> = userCache.get(qualifiedID) {
+        userQueries.selectByQualifiedId(listOf(qualifiedID))
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { mapper.toModel(it) } }
+            .shareIn(databaseScope, Lazily, 1)
     }
 
     override fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
