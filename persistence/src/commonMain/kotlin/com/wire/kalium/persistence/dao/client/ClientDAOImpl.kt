@@ -52,7 +52,8 @@ internal class ClientDAOImpl internal constructor(
         clientsQueries.deleteClientsOfUser(qualifiedID)
 
     override suspend fun deleteClient(
-        userId: QualifiedIDEntity, clientId: String
+        userId: QualifiedIDEntity,
+        clientId: String
     ) = clientsQueries.deleteClient(userId, clientId)
 
     override suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =

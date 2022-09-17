@@ -27,7 +27,7 @@ internal object AssetMapper {
 class AssetDAOImpl internal constructor(
     private val queries: AssetsQueries,
     private val mapper: AssetMapper = AssetMapper
-    ) : AssetDAO {
+) : AssetDAO {
 
     override suspend fun insertAsset(assetEntity: AssetEntity) {
         queries.insertAsset(
