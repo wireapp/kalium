@@ -39,7 +39,7 @@ class MessageRepositoryExtensionsTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
 
-        val kaliumPager = KaliumPager<PersistenceMessage, MessageEntity>(pager, fakePagingSource) { MESSAGE_ENTITY }
+        val kaliumPager = KaliumPager<MessageEntity>(pager, fakePagingSource)
         val (arrangement, messageRepositoryExtensions) = Arrangement()
             .withMessageExtensionsReturningPager(kaliumPager)
             .arrange()
@@ -91,7 +91,7 @@ class MessageRepositoryExtensionsTest {
                 .thenReturn(messageDaoExtensions)
         }
 
-        fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<PersistenceMessage, MessageEntity>) = apply {
+        fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>) = apply {
             given(messageDaoExtensions)
                 .function(messageDaoExtensions::getPagerForConversation)
                 .whenInvokedWith(any(), any(), any())
