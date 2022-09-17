@@ -31,6 +31,18 @@ class UserMapper {
             deleted = user.deleted
         )
     }
+
+    fun toModelMinimized(
+        userId: QualifiedIDEntity,
+        name: String?,
+        assetId: QualifiedIDEntity?,
+        userTypeEntity: UserTypeEntity
+    ) = UserEntityMinimized(
+        userId,
+        name,
+        assetId,
+        userTypeEntity
+    )
 }
 
 @Suppress("TooManyFunctions")
@@ -185,6 +197,11 @@ class UserDAOImpl internal constructor(
             .map { it?.let { mapper.toModel(it) } }
             .shareIn(databaseScope, Lazily, 1)
     }
+
+    override fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
+        userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
+            mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+        }.executeAsOneOrNull()
 
     override suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity> {
         return userQueries.selectByQualifiedId(qualifiedIDList)

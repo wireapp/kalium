@@ -2,19 +2,15 @@ package com.wire.kalium.persistence.dao.call
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOne
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.CallsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.Call as SQLDelightCall
 
-internal class CallMapper {
+internal object CallMapper {
     fun toModel(dbEntry: SQLDelightCall) = CallEntity(
         conversationId = dbEntry.conversation_id,
         id = dbEntry.id,
@@ -22,10 +18,28 @@ internal class CallMapper {
         callerId = dbEntry.caller_id,
         conversationType = dbEntry.conversation_type
     )
+
+    @Suppress("FunctionParameterNaming", "LongParameterList")
+    fun fromCalls(
+        conversation_id: QualifiedIDEntity,
+        id: String,
+        status: CallEntity.Status,
+        caller_id: String,
+        conversation_type: ConversationEntity.Type,
+        created_at: String,
+    ): CallEntity = CallEntity(
+        conversationId = conversation_id,
+        id = id,
+        status = status,
+        callerId = caller_id,
+        conversationType = conversation_type
+    )
 }
 
-internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
-    val mapper = CallMapper()
+internal class CallDAOImpl(
+    private val callsQueries: CallsQueries,
+    private val mapper: CallMapper = CallMapper
+) : CallDAO {
 
     override suspend fun insertCall(call: CallEntity) {
         val createdTime: Long = Clock.System.now().toEpochMilliseconds()
@@ -41,28 +55,24 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
     }
 
     override suspend fun observeCalls(): Flow<List<CallEntity>> =
-        callsQueries.selectAllCalls()
+        callsQueries.selectAllCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
-            .map { calls -> calls.map(mapper::toModel) }
 
     override suspend fun observeIncomingCalls(): Flow<List<CallEntity>> =
-        callsQueries.selectIncomingCalls()
+        callsQueries.selectIncomingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
-            .map { calls -> calls.map(mapper::toModel) }
 
     override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
-        callsQueries.selectEstablishedCalls()
+        callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
-            .map { calls -> calls.map(mapper::toModel) }
 
     override suspend fun observeOngoingCalls(): Flow<List<CallEntity>> =
-        callsQueries.selectOngoingCalls()
+        callsQueries.selectOngoingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
-            .map { calls -> calls.map(mapper::toModel) }
 
     override suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity) {
         callsQueries.updateLastCallStatusByConversationId(
@@ -72,37 +82,23 @@ internal class CallDAOImpl(private val callsQueries: CallsQueries) : CallDAO {
     }
 
     override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String =
-        callsQueries.selectLastCallByConversationId(conversationId)
-            .asFlow()
-            .mapToOne()
-            .map { it.caller_id }
-            .first()
+        callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOne()
 
     override suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status? =
-        callsQueries.selectLastCallByConversationId(conversationId)
-            .asFlow()
-            .mapToOneOrNull()
-            .map { call ->
-                call?.let {
-                    mapper.toModel(dbEntry = it).status
-                }
-            }.firstOrNull()
+        callsQueries.lastCallStatusByConversationId(conversationId).executeAsOneOrNull()
 
     override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
-        callsQueries.selectLastClosedCallByConversationId(conversationId)
+        callsQueries.selectLastCallCreationTimeConversationId(conversationId)
             .asFlow()
             .mapToOneOrNull()
-            .map { it?.created_at }
 
-    override suspend fun getLastCallConversationTypeByConversationId(conversationId: QualifiedIDEntity): ConversationEntity.Type? =
-        callsQueries.selectLastCallByConversationId(conversationId)
-            .asFlow()
-            .mapToOneOrNull()
-            .map { call ->
-                call?.conversation_type
-            }.firstOrNull()
+    override suspend fun getLastCallConversationTypeByConversationId(
+        conversationId: QualifiedIDEntity
+    ): ConversationEntity.Type? =
+        callsQueries.selectLastCallConversionTypeByConversationId(conversationId)
+            .executeAsOneOrNull()
 
     override suspend fun updateOpenCallsToClosedStatus() {
-         callsQueries.updateOpenCallsToClosedStatus()
+        callsQueries.updateOpenCallsToClosedStatus()
     }
 }
