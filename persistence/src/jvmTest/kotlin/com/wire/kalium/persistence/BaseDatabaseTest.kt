@@ -9,7 +9,7 @@ actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
-    private val databaseFile  = Files.createTempDirectory("test-storage").toFile().resolve("test.db")
+    private val databaseFile = Files.createTempDirectory("test-storage").toFile().resolve("test.db")
 
     actual fun deleteDatabase() {
         databaseFile.delete()
