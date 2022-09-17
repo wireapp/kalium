@@ -30,7 +30,7 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
     ): Flow<PagingData<Message>> {
-        val pager: KaliumPager<com.wire.kalium.persistence.Message, MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
+        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
             idMapper.toDaoModel(conversationId),
             visibility.map { it.toEntityVisibility() },
             pagingConfig
