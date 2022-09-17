@@ -2,15 +2,11 @@ package com.wire.kalium.persistence.dao.call
 
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOne
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.CallsQueries
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.Call as SQLDelightCall
 
@@ -23,6 +19,7 @@ internal object CallMapper {
         conversationType = dbEntry.conversation_type
     )
 
+    @Suppress("FunctionParameterNaming", "LongParameterList")
     fun fromCalls(
         conversation_id: QualifiedIDEntity,
         id: String,
@@ -43,7 +40,6 @@ internal class CallDAOImpl(
     private val callsQueries: CallsQueries,
     private val mapper: CallMapper = CallMapper
 ) : CallDAO {
-
 
     override suspend fun insertCall(call: CallEntity) {
         val createdTime: Long = Clock.System.now().toEpochMilliseconds()

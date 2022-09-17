@@ -4,8 +4,6 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.AssetsQueries
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.Asset as SQLDelightAsset
 
 internal object AssetMapper {
     @Suppress("FunctionParameterNaming")

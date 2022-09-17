@@ -5,7 +5,6 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import com.wire.kalium.persistence.Client as SQLDelightClient
 
 internal object ClientMapper {
