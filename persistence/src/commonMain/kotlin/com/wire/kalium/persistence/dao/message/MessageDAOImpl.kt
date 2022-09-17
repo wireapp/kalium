@@ -4,6 +4,7 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrDefault
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -19,7 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("TooManyFunctions")
-class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
+class MessageDAOImpl(private val queries: MessagesQueries, private val conversationsQueries: ConversationsQueries) : MessageDAO {
     private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
@@ -33,8 +34,21 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: MessageEntity) = queries.transaction { insertInDB(message) }
+    override suspend fun insertMessage(message: MessageEntity, shouldUpdateConversationOrder: Boolean) {
+        queries.transaction {
+            val selfUserId = QualifiedIDEntity("9371383d-a161-4428-a748-a87e8d0f00c7", "wire.com")
+            val isMessageComingFromOtherClient = message.senderUserId == selfUserId
+            if (isMessageComingFromOtherClient)
+                conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
+            insertInDB(message)
+            if (shouldUpdateConversationOrder)
+                conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
+            if (isMessageComingFromOtherClient)
+                conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
+        }
+    }
 
+    @Deprecated("For test only!")
     override suspend fun insertMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { insertInDB(it) }

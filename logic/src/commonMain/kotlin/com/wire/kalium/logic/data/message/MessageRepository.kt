@@ -38,7 +38,7 @@ interface MessageRepository {
         message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",
         replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
     )
-    suspend fun persistMessage(message: Message): Either<CoreFailure, Unit>
+    suspend fun persistMessage(message: Message, shouldUpdateConversationOrder: Boolean = false): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun markMessageAsEdited(messageUuid: String, conversationId: ConversationId, timeStamp: String): Either<StorageFailure, Unit>
@@ -124,8 +124,8 @@ class MessageDataSource(
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
-    override suspend fun persistMessage(message: Message): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.insertMessage(messageMapper.fromMessageToEntity(message))
+    override suspend fun persistMessage(message: Message, shouldUpdateConversationOrder: Boolean): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.insertMessage(messageMapper.fromMessageToEntity(message), shouldUpdateConversationOrder)
     }
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =

@@ -16,20 +16,13 @@ interface PersistMessageUseCase {
 }
 
 internal class PersistMessageUseCaseImpl(
-    private val messageRepository: MessageRepository,
-    private val conversationRepository: ConversationRepository,
-    private val userId: QualifiedID,
+    private val messageRepository: MessageRepository
 ) : PersistMessageUseCase {
 
     override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> {
         @OptIn(DelicateKaliumApi::class)
-        return messageRepository.persistMessage(message)
+        return messageRepository.persistMessage(message,message.content.shouldUpdateConversationOrder() )
             .onSuccess {
-                if (message.content.shouldUpdateConversationOrder())
-                    conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
-
-                if (userId == message.senderUserId)
-                    conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
             }
     }
 
