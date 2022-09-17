@@ -6,9 +6,13 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 
 actual open class BaseDatabaseTest actual constructor() {
     private val userId = UserIDEntity("78dd6502-ab84-40f7-a8b3-1e7e1eb4cc8c", "user_12_domain")
+
+    protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
     actual fun deleteDatabase() {
         val context: Context = ApplicationProvider.getApplicationContext()
@@ -19,7 +23,8 @@ actual open class BaseDatabaseTest actual constructor() {
         return UserDatabaseProvider(
             ApplicationProvider.getApplicationContext(),
             userId,
-            UserDBSecret("db_secret".toByteArray())
+            UserDBSecret("db_secret".toByteArray()),
+            dispatcher = dispatcher
         )
     }
 }

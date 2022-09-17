@@ -15,17 +15,12 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.Message as SQLDelightMessage
 
+@Suppress("TooManyFunctions")
 class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
-    private val mapper = MessageMapper(queries)
+    private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
@@ -155,18 +150,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
         queries.updateMessagesAddMillisToDate(millis, conversationId, status)
 
-    override suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>> =
-        queries.selectAllMessages(limit.toLong(), offset.toLong())
-            .asFlow()
-            .mapToList()
-            .toMessageEntityListFlow()
-
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
-        queries.selectById(id, conversationId)
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
             .asFlow()
             .mapToOneOrNull()
-            .flatMapLatest { it?.let { mapper.toMessageEntityFlow(it) } ?: flowOf(null) }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
@@ -174,25 +161,32 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         offset: Int,
         visibility: List<MessageEntity.Visibility>
     ): Flow<List<MessageEntity>> =
-        queries.selectByConversationIdAndVisibility(conversationId, visibility, limit.toLong(), offset.toLong())
-            .asFlow()
-            .mapToList()
-            .toMessageEntityListFlow()
+        queries.selectByConversationIdAndVisibility(
+            conversationId,
+            visibility,
+            limit.toLong(),
+            offset.toLong(),
+            mapper::toEntityMessageFromView
+        ).asFlow().mapToList()
 
     override suspend fun getMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility>
     ): Flow<List<MessageEntity>> =
-        queries.selectMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date)
+        queries.selectMessagesByConversationIdAndVisibilityAfterDate(
+            conversationId, visibility, date,
+            mapper::toEntityMessageFromView
+        )
             .asFlow()
             .mapToList()
-            .toMessageEntityListFlow()
 
     override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> =
-        queries.selectMessagesFromUserByStatus(userId, MessageEntity.Status.PENDING)
+        queries.selectMessagesFromUserByStatus(
+            userId, MessageEntity.Status.PENDING,
+            mapper::toEntityMessageFromView
+        )
             .executeAsList()
-            .map(mapper::toMessageEntity)
 
     override suspend fun updateTextMessageContent(
         conversationId: QualifiedIDEntity,
@@ -218,9 +212,8 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType
     ): List<MessageEntity> =
-        queries.getConversationMessagesByContentType(conversationId, contentType)
+        queries.getConversationMessagesByContentType(conversationId, contentType, mapper::toEntityMessageFromView)
             .executeAsList()
-            .map { mapper.toMessageEntity(it) }
 
     override suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity) {
         queries.deleteAllConversationMessages(conversationId)
@@ -228,11 +221,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun observeLastUnreadMessage(
         conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?> = queries.getLastUnreadMessage(conversationID).asFlow().mapToOneOrNull().map {
-        it?.let {
-            mapper.toMessageEntity(it)
-        }
-    }.distinctUntilChanged()
+    ): Flow<MessageEntity?> = queries.getLastUnreadMessage(
+        conversationID,
+        mapper::toEntityMessageFromView
+    ).asFlow().mapToOneOrNull()
 
     override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity): Flow<Long> =
         queries.getUnreadMessageCount(conversationId).asFlow().mapToOneOrDefault(0L)
@@ -251,12 +243,6 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is MessageEntityContent.Unknown -> UNKNOWN
         is MessageEntityContent.FailedDecryption -> FAILED_DECRYPTION
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun Flow<List<SQLDelightMessage>>.toMessageEntityListFlow(): Flow<List<MessageEntity>> = this.flatMapLatest {
-        if (it.isEmpty()) flowOf(listOf())
-        else combine(it.map { message -> mapper.toMessageEntityFlow(message) }) { it.asList() }
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)

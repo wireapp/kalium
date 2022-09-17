@@ -19,6 +19,7 @@ import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -46,8 +47,15 @@ import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 
-actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
+actual class UserDatabaseProvider(
+    userId: UserIDEntity,
+    passphrase: String,
+    dispatcher: CoroutineDispatcher
+) {
 
     val database: UserDatabase
 
@@ -60,7 +68,10 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
                 statusAdapter = EnumColumnAdapter(),
                 conversation_typeAdapter = EnumColumnAdapter()
             ),
-            Client.Adapter(user_idAdapter = QualifiedIDAdapter),
+            Client.Adapter(
+                user_idAdapter = QualifiedIDAdapter,
+                device_typeAdapter = EnumColumnAdapter()
+            ),
             Connection.Adapter(
                 qualified_conversationAdapter = QualifiedIDAdapter,
                 qualified_toAdapter = QualifiedIDAdapter,
@@ -135,8 +146,9 @@ actual class UserDatabaseProvider(userId: UserIDEntity, passphrase: String) {
         driver.execute(null, "PRAGMA foreign_keys=ON", 0)
     }
 
+    private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
     actual val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries)
+        get() = UserDAOImpl(database.usersQueries, LRUCache(USER_CACHE_SIZE), databaseScope)
 
     actual val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)
