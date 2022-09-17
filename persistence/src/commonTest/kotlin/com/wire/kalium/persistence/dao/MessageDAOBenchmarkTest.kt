@@ -10,10 +10,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.random.Random
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
+// Ignore to avoid running unnecessarily on CI. Can be easily re-enabled by developers when needed.
+@Ignore
 class MessageDAOBenchmarkTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
