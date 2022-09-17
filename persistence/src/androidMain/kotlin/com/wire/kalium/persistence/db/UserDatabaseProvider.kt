@@ -178,7 +178,7 @@ actual class UserDatabaseProvider(
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
 
     actual val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries, LRUCache(100), databaseScope)
+        get() = UserDAOImpl(database.usersQueries, LRUCache(USER_CACHE_SIZE), databaseScope)
 
     actual val connectionDAO: ConnectionDAO
         get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
