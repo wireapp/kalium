@@ -19,7 +19,7 @@ interface MessageSendFailureHandler {
     suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit>
 }
 
-class MessageSendFailureHandlerImpl(
+class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository
 ) : MessageSendFailureHandler {

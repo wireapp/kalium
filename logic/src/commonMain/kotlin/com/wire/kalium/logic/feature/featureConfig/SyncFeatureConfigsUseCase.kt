@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -29,9 +30,9 @@ internal interface SyncFeatureConfigsUseCase {
 internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
-    private val userRepository: UserRepository,
     private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val selfUserId: UserId
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap {
@@ -75,7 +76,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
 
     private fun checkMLSStatus(featureConfig: MLSModel) {
         val mlsEnabled = featureConfig.status == Status.ENABLED
-        val selfUserIsWhitelisted = featureConfig.allowedUsers.contains(userRepository.getSelfUserId().toPlainID())
+        val selfUserIsWhitelisted = featureConfig.allowedUsers.contains(selfUserId.toPlainID())
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
     }
 }

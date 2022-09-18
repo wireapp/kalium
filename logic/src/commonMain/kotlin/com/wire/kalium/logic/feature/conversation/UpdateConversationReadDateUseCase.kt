@@ -6,17 +6,18 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.flatMap
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-class UpdateConversationReadDateUseCase(
+class UpdateConversationReadDateUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository,
     private val messageSender: MessageSender,
-    private val clientRepository: ClientRepository
+    private val clientRepository: ClientRepository,
+    private val selfUserId: UserId,
 ) {
 
     suspend operator fun invoke(conversationId: QualifiedID, time: Instant) {
@@ -38,7 +39,7 @@ class UpdateConversationReadDateUseCase(
                 ),
                 conversationId = conversationRepository.getSelfConversationId(),
                 date = Clock.System.now().toString(),
-                senderUserId = userRepository.getSelfUserId(),
+                senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,

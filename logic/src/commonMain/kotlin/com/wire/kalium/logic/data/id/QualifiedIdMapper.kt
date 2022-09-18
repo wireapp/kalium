@@ -1,13 +1,15 @@
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.logic.data.user.User
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 
 interface QualifiedIdMapper {
     fun fromStringToQualifiedID(id: String): QualifiedID
 }
 
-class QualifiedIdMapperImpl(
-    private val userRepository: UserRepository?
+class QualifiedIdMapperImpl internal constructor(
+    private val selfId: UserId?
 ) : QualifiedIdMapper {
     override fun fromStringToQualifiedID(id: String): QualifiedID {
         val components = id.split(VALUE_DOMAIN_SEPARATOR).filter { it.isNotBlank() }
@@ -30,7 +32,7 @@ class QualifiedIdMapperImpl(
         }
     }
 
-    private fun selfUserDomain(): String = userRepository?.getSelfUserId()?.domain ?: ""
+    private fun selfUserDomain(): String = selfId?.domain ?: ""
 }
 
 fun String.toQualifiedID(mapper: QualifiedIdMapper): QualifiedID = mapper.fromStringToQualifiedID(this)

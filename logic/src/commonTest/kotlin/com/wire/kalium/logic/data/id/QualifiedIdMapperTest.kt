@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import io.mockative.Mock
 import io.mockative.classOf
@@ -14,11 +15,13 @@ class QualifiedIdMapperTest {
     @Mock
     private val userRepository = mock(classOf<UserRepository>())
 
+    private val selfUserId = UserId("selfUserId", "selfDomain")
+
     private lateinit var qualifiedIdMapper: QualifiedIdMapper
 
     @BeforeTest
     fun setUp() {
-        qualifiedIdMapper = QualifiedIdMapperImpl(userRepository)
+        qualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
     }
 
     @Test
@@ -27,10 +30,6 @@ class QualifiedIdMapperTest {
         val mockQualifiedIdValue = "mocked-value"
         val mockQualifiedIdDomain = "mocked.domain"
         val correctQualifiedIdString = "$mockQualifiedIdValue@$mockQualifiedIdDomain"
-        given(userRepository)
-            .function(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(QualifiedID(mockQualifiedIdValue, mockQualifiedIdDomain))
 
         // When
         val correctQualifiedId = qualifiedIdMapper.fromStringToQualifiedID(correctQualifiedIdString)
@@ -43,12 +42,8 @@ class QualifiedIdMapperTest {
     @Test
     fun givenAStringWithoutDomain_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() {
         // Given
-        val fallbackDomain = "wire.com"
+        val fallbackDomain = selfUserId.domain
         val conversationId = "conversationId"
-
-        given(userRepository)
-            .invocation { getSelfUserId() }
-            .thenReturn(QualifiedID(conversationId, fallbackDomain))
 
         // When
         val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
@@ -63,12 +58,8 @@ class QualifiedIdMapperTest {
     @Test
     fun givenAStringWithoutDomainThatEndsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() {
         // Given
-        val fallbackDomain = "wire.com"
+        val fallbackDomain = selfUserId.domain
         val conversationId = "conversationId@"
-
-        given(userRepository)
-            .invocation { getSelfUserId() }
-            .thenReturn(QualifiedID(conversationId, fallbackDomain))
 
         // When
         val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
@@ -83,12 +74,8 @@ class QualifiedIdMapperTest {
     @Test
     fun givenAValidStringThatStartsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() {
         // Given
-        val fallbackDomain = "wire.com"
+        val fallbackDomain = selfUserId.domain
         val conversationId = "@conversationId"
-
-        given(userRepository)
-            .invocation { getSelfUserId() }
-            .thenReturn(QualifiedID(conversationId, fallbackDomain))
 
         // When
         val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
@@ -103,12 +90,8 @@ class QualifiedIdMapperTest {
     @Test
     fun givenAValidStringThatStartsAndEndsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() {
         // Given
-        val fallbackDomain = "wire.com"
+        val fallbackDomain = selfUserId.domain
         val conversationId = "@conversationId@"
-
-        given(userRepository)
-            .invocation { getSelfUserId() }
-            .thenReturn(QualifiedID(conversationId, fallbackDomain))
 
         // When
         val result = qualifiedIdMapper.fromStringToQualifiedID(conversationId)

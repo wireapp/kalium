@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.AssetId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
@@ -60,8 +61,8 @@ internal class ClearConversationContentUseCaseImpl(
     private val clearConversationContent: ClearConversationContent,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val selfUserId: UserId,
 ) : ClearConversationContentUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result =
@@ -76,7 +77,7 @@ internal class ClearConversationContentUseCaseImpl(
                     ),
                     conversationId = conversationRepository.getSelfConversationId(),
                     date = Clock.System.now().toString(),
-                    senderUserId = userRepository.getSelfUserId(),
+                    senderUserId = selfUserId,
                     senderClientId = currentClientId,
                     status = Message.Status.PENDING,
                     editStatus = Message.EditStatus.NotEdited,
