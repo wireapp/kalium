@@ -14,7 +14,6 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.serverypublickey.MLSPublicKeyApi
 import com.wire.kalium.persistence.daokaliumdb.MLSPublicKeysDAO
 
-
 interface MLSPublicKeysRepository {
     suspend fun fetchMLSPublicKeysAndStore(serverConfigId: String): Either<CoreFailure, List<MLSPublicKey>>
     suspend fun storeKeys(keys: List<MLSPublicKey>, serverConfigId: String): Either<StorageFailure, Unit>
@@ -56,7 +55,6 @@ class MLSPublicKeysRepositoryImpl(
         mlsPublicKeysDAO.getKeys(idMapper.toDaoModel(userId)).map(mapper::fromEntity)
     }
 
-
     override suspend fun getKeys(cipherSuite: Conversation.CipherSuite) =
         wrapStorageRequest {
             getKeys().fold({
@@ -65,5 +63,4 @@ class MLSPublicKeysRepositoryImpl(
                 it.filter { cipherSuite == cipherSuite }
             })
         }
-
 }

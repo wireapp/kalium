@@ -32,4 +32,3 @@ class MLSPublicKeysDAOImpl(private val queries: MLSPublicKeyQueries, private val
         queries.getByUserId(userId).executeAsList().map(mapper::toModel)
 
 }
-

@@ -6,11 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MLSPublicKeysDTO(
     @SerialName("removal")
-    val removal: List<MLSPublicKeyItemDTO>?
-)
-
-@Serializable
-data class MLSPublicKeyItemDTO(
-    val cipherSuite: String,
-    val key: String
+    val removal: Map<String, String>?
 )

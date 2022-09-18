@@ -448,7 +448,6 @@ abstract class UserSessionScopeCommon internal constructor(
             globalScope.serverConfigRepository
         )
 
-
     internal val mlsPublicKeysManager: MLSPublicKeysManager =
         MLSPublicKeysManagerImpl(
             incrementalSyncRepository,

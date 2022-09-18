@@ -18,7 +18,7 @@ internal class FetchMLSPublicKeysUseCaseImpl(
     private val serverConfigRepository: ServerConfigRepository
 ) : FetchMLSPublicKeysUseCase {
     override suspend fun invoke(): FetchMLSPublicKeysResult = serverConfigRepository.configForUser(userId).flatMap {
-        //delete old keys?
+        // delete old keys?
         mlsPublicKeysRepository.fetchMLSPublicKeysAndStore(it.id)
     }.fold({
         FetchMLSPublicKeysResult.Failure.Generic(it)

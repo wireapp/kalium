@@ -1,14 +1,12 @@
 package com.wire.kalium.logic.data.mlspublickeys
 
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.network.api.serverypublickey.MLSPublicKeyItemDTO
 import com.wire.kalium.network.api.serverypublickey.MLSPublicKeysDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.model.MLSPublicKeyEntity
 
 interface MLSPublicKeysMapper {
     fun fromDTO(publicKeys: MLSPublicKeysDTO): List<MLSPublicKey>
-    fun fromDTO(publicKeyItem: MLSPublicKeyItemDTO, keyType: KeyType): MLSPublicKey
     fun toCrypto(publicKey: MLSPublicKey): com.wire.kalium.cryptography.MLSPublicKey
     fun toCrypto(keyType: KeyType): com.wire.kalium.cryptography.KeyType
     fun toEntity(publicKey: MLSPublicKey): MLSPublicKeyEntity
@@ -19,19 +17,14 @@ interface MLSPublicKeysMapper {
 
 class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
     override fun fromDTO(publicKeys: MLSPublicKeysDTO) = with(publicKeys) {
-        removal?.map {
-            fromDTO(it, KeyType.REMOVAL)
+        removal?.entries?.map{
+            MLSPublicKey(
+                cipherSuite = Conversation.CipherSuite.fromShortName(it.key),
+                Key(it.value),
+                KeyType.REMOVAL
+            )
         } ?: emptyList()
     }
-
-    override fun fromDTO(publicKeyItem: MLSPublicKeyItemDTO, keyType: KeyType) =
-        with(publicKeyItem) {
-            MLSPublicKey(
-                cipherSuite = Conversation.CipherSuite.fromShortName(cipherSuite),
-                Key(key),
-                keyType
-            )
-        }
 
     override fun toCrypto(publicKey: MLSPublicKey) = with(publicKey) {
         com.wire.kalium.cryptography.MLSPublicKey(cipherSuite.name, key.value, toCrypto(keyType))
