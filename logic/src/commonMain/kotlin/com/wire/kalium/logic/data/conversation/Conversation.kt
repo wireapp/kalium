@@ -70,7 +70,7 @@ data class Conversation(
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int, val shortName: String) {
         UNKNOWN(0, ""),
-        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1, TODO()),
+        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1, "ed25519"),
         MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2, TODO()),
         MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3, TODO()),
         MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4, TODO()),
