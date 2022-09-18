@@ -17,7 +17,7 @@ interface MLSPublicKeysMapper {
 
 class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
     override fun fromDTO(publicKeys: MLSPublicKeysDTO) = with(publicKeys) {
-        removal?.entries?.map{
+        removal?.entries?.map {
             MLSPublicKey(
                 cipherSuite = Conversation.CipherSuite.fromShortName(it.key),
                 Key(it.value),
