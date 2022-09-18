@@ -71,8 +71,8 @@ internal class IncrementalSyncManager(
             kaliumLogger.i("$TAG Triggering delay")
             delay(RETRY_DELAY)
             kaliumLogger.i("$TAG Delay finished")
+            startMonitoringForSync()
         }
-        startMonitoringForSync()
     })
 
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
