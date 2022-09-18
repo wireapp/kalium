@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.runBlocking
 
 @Suppress("LongParameterList")
@@ -65,7 +66,8 @@ actual class UserSessionScopeProviderImpl(
                 appContext,
                 userIDEntity,
                 SecurityHelper(globalPreferences).userDBSecret(userId),
-                kaliumConfigs.shouldEncryptData
+                kaliumConfigs.shouldEncryptData,
+                KaliumDispatcherImpl.io
             )
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,

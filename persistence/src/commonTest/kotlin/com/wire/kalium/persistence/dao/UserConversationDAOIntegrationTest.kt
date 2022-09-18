@@ -36,7 +36,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUserExists_whenInsertingMember_thenOriginalUserDetailsAreKept() = runTest {
+    fun givenUserExists_whenInsertingMember_thenOriginalUserDetailsAreKept() = runTest(dispatcher) {
         userDAO.insertUser(user1)
 
         conversationDAO.insertConversation(conversationEntity1)

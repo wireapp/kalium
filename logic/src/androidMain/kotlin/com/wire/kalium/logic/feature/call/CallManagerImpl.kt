@@ -294,7 +294,6 @@ actual class CallManagerImpl(
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
-                    conversationRepository = conversationRepository,
                     callingScope = scope
                 ).keepingStrongReference()
 
