@@ -435,7 +435,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
 
-    private val federatedIdMapper: FederatedIdMapper
+    val federatedIdMapper: FederatedIdMapper
         get() = MapperProvider.federatedIdMapper(
             userId,
             qualifiedIdMapper,
