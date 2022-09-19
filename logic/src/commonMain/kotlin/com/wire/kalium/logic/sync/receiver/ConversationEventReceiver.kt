@@ -411,7 +411,7 @@ internal class ConversationEventReceiverImpl(
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {
-                //Persist Messages - > lists
+                // Persist Messages - > lists
                 is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
                 is MessageContent.Asset -> handleAssetMessage(message)
                 is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)

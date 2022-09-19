@@ -49,6 +49,7 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         println("Took $duration to insert $count text messages")
     }
 
+    @Suppress("LongMethod")
     private fun generateRandomMessages(count: Int): List<MessageEntity> {
         val conversations = listOf(conversationEntity1)
         val users = listOf(userEntity1, userEntity2)
