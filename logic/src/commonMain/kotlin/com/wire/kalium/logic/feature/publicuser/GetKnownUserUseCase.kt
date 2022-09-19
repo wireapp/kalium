@@ -17,4 +17,3 @@ internal class GetKnownUserUseCaseImpl internal constructor(
     override suspend fun invoke(userId: UserId): Flow<OtherUser?> = userRepository.getKnownUser(userId)
 
 }
-

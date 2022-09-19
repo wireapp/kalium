@@ -1,8 +1,6 @@
 package com.wire.kalium.logic.data.id
 
-import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 
 interface QualifiedIdMapper {
     fun fromStringToQualifiedID(id: String): QualifiedID

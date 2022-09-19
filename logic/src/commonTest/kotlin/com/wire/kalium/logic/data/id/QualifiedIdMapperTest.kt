@@ -4,7 +4,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
 import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test

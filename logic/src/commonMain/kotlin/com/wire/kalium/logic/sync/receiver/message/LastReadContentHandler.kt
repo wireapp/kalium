@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 
 // This class handles the messages that arrive when some client has read the conversation.
 internal class LastReadContentHandler internal constructor(
