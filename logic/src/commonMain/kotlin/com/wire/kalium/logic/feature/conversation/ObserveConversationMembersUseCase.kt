@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
-class ObserveConversationMembersUseCase(
+class ObserveConversationMembersUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository
 ) {

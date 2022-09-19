@@ -216,7 +216,8 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.messageDAO,
             userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            timeParser
+            timeParser,
+            userId
         )
 
     private val messageRepository: MessageRepository
@@ -233,7 +234,8 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            globalScope.sessionRepository
+            globalScope.sessionRepository,
+            userId
         )
 
     private val teamRepository: TeamRepository
@@ -473,16 +475,18 @@ abstract class UserSessionScopeCommon internal constructor(
             userRepository = userRepository,
             callManagerImpl = callManager,
             editTextHandler = MessageTextEditHandler(messageRepository),
-            lastReadContentHandler = LastReadContentHandler(conversationRepository, userRepository),
+            lastReadContentHandler = LastReadContentHandler(conversationRepository, userId),
             clearConversationContentHandler = ClearConversationContentHandler(
                 conversationRepository,
                 userRepository,
-                ClearConversationContentImpl(conversationRepository, assetRepository)
+                ClearConversationContentImpl(conversationRepository, assetRepository),
+                userId
             ),
-            deleteForMeHandler = DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
+            deleteForMeHandler = DeleteForMeHandler(conversationRepository, messageRepository, userId),
             userConfigRepository = userConfigRepository,
             ephemeralNotificationsManager = EphemeralNotificationsManager,
-            pendingProposalScheduler = pendingProposalScheduler
+            pendingProposalScheduler = pendingProposalScheduler,
+            userId
         )
     }
 
@@ -495,7 +499,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs)
+        get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)
 
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
@@ -602,9 +606,9 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = SyncFeatureConfigsUseCaseImpl(
             userConfigRepository,
             featureConfigRepository,
-            userRepository,
             isFileSharingEnabled,
-            kaliumConfigs
+            kaliumConfigs,
+            userId
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository)

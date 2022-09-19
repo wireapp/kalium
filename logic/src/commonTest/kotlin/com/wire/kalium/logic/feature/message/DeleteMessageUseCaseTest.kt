@@ -183,7 +183,7 @@ class DeleteMessageUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-    class Arrangement {
+    private class Arrangement {
 
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)

@@ -10,7 +10,9 @@ interface GetAllContactsUseCase {
     suspend operator fun invoke(): GetAllContactsResult
 }
 
-class GetAllContactsUseCaseImpl(private val userRepository: UserRepository) : GetAllContactsUseCase {
+internal class GetAllContactsUseCaseImpl internal constructor(
+    private val userRepository: UserRepository
+) : GetAllContactsUseCase {
 
     override suspend fun invoke(): GetAllContactsResult =
         userRepository.getAllKnownUsers()
