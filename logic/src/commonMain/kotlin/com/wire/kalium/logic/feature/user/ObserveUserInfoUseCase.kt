@@ -79,7 +79,7 @@ internal class ObserveUserInfoUseCaseImpl(
      * @see [UserType]
      */
     private suspend fun observeOtherUserTeam(otherUser: OtherUser): Flow<Either<CoreFailure, Team?>> {
-        return if (otherUser.teamId != null && otherUser.userType == UserType.INTERNAL) {
+        return if (otherUser.teamId != null && (otherUser.userType == UserType.INTERNAL || otherUser.userType == UserType.OWNER)) {
             teamRepository.getTeam(otherUser.teamId).map { localTeam ->
                 if (localTeam == null) {
                     teamRepository.fetchTeamById(otherUser.teamId)
