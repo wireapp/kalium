@@ -30,7 +30,6 @@ class ClearConversationContentUseCaseTest {
             .withMessageSending(true)
             .withCurrentClientId((true))
             .withGetSelfConversationId()
-            .withGetSelfUserId()
             .arrange()
 
         // when
@@ -63,7 +62,6 @@ class ClearConversationContentUseCaseTest {
             .withCurrentClientId(false)
             .withMessageSending(true)
             .withGetSelfConversationId()
-            .withGetSelfUserId()
             .arrange()
 
         // when
@@ -97,7 +95,6 @@ class ClearConversationContentUseCaseTest {
             .withCurrentClientId(true)
             .withMessageSending(false)
             .withGetSelfConversationId()
-            .withGetSelfUserId()
             .arrange()
 
         // when
@@ -131,7 +128,6 @@ class ClearConversationContentUseCaseTest {
             .withCurrentClientId(true)
             .withMessageSending(true)
             .withGetSelfConversationId()
-            .withGetSelfUserId()
             .arrange()
 
         // when
@@ -204,15 +200,6 @@ class ClearConversationContentUseCaseTest {
             return this
         }
 
-        fun withGetSelfUserId(): Arrangement {
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
-                .whenInvoked()
-                .thenReturn(UserId("someValue", "someDomain"))
-
-            return this
-        }
-
         fun withMessageSending(isSuccessFull: Boolean): Arrangement {
             given(messageSender)
                 .suspendFunction(messageSender::sendMessage)
@@ -226,8 +213,8 @@ class ClearConversationContentUseCaseTest {
             clearConversationContent,
             clientRepository,
             conversationRepository,
-            userRepository,
-            messageSender
+            messageSender,
+            UserId("someValue", "someDomain")
         )
     }
 
