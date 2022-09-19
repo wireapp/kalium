@@ -206,7 +206,7 @@ class ClearConversationContentUseCaseTest {
 
         fun withGetSelfUserId(): Arrangement {
             given(userRepository)
-                .function(userRepository::getSelfUserId)
+                .suspendFunction(userRepository::getSelfUserId)
                 .whenInvoked()
                 .thenReturn(UserId("someValue", "someDomain"))
 

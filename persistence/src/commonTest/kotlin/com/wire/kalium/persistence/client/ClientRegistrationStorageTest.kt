@@ -21,12 +21,12 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNoClientIdWasSaved_whenGettingTheCurrentClientId_thenResultShouldBeNull() = runTest {
+    fun givenNoClientIdWasSaved_whenGettingTheCurrentClientId_thenResultShouldBeNull() = runTest(dispatcher) {
         assertNull(clientRegistrationStorage.getRegisteredClientId())
     }
 
     @Test
-    fun givenAnClientIdWasSaved_whenGettingTheCurrentClientId_thenTheSavedIdShouldBeReturned() = runTest {
+    fun givenAnClientIdWasSaved_whenGettingTheCurrentClientId_thenTheSavedIdShouldBeReturned() = runTest(dispatcher) {
         val testId = "😎ClientId"
         clientRegistrationStorage.setRegisteredClientId(testId)
 
@@ -36,7 +36,7 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenTheLastIdWasUpdatedMultipleTimes_whenGettingTheCurrentClientId_thenTheLatestIdShouldBeReturned() = runTest {
+    fun givenTheLastIdWasUpdatedMultipleTimes_whenGettingTheCurrentClientId_thenTheLatestIdShouldBeReturned() = runTest(dispatcher) {
         val latestId = "sold"
         clientRegistrationStorage.setRegisteredClientId("give it once")
         clientRegistrationStorage.setRegisteredClientId("give it twice")
@@ -48,7 +48,7 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenTheCurrentIdExisted_andWasCleared_whenGettingTheCurrentClientId_thenNullShouldBeReturned() = runTest {
+    fun givenTheCurrentIdExisted_andWasCleared_whenGettingTheCurrentClientId_thenNullShouldBeReturned() = runTest(dispatcher) {
         clientRegistrationStorage.setRegisteredClientId("give it once")
         clientRegistrationStorage.clearRegisteredClientId()
 
@@ -58,12 +58,12 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNoClientIdWasSaved_whenGettingTheRetainedClientId_thenResultShouldBeNull() = runTest {
+    fun givenNoClientIdWasSaved_whenGettingTheRetainedClientId_thenResultShouldBeNull() = runTest(dispatcher) {
         assertNull(clientRegistrationStorage.getRetainedClientId())
     }
 
     @Test
-    fun givenAnClientIdWasSaved_whenGettingTheRetainedClientId_thenTheSavedIdShouldBeReturned() = runTest {
+    fun givenAnClientIdWasSaved_whenGettingTheRetainedClientId_thenTheSavedIdShouldBeReturned() = runTest(dispatcher) {
         val testId = "😎ClientId"
         clientRegistrationStorage.setRegisteredClientId(testId)
 
@@ -73,7 +73,7 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenTheLastIdWasUpdatedMultipleTimes_whenGettingTheRetainedClientId_thenTheLatestIdShouldBeReturned() = runTest {
+    fun givenTheLastIdWasUpdatedMultipleTimes_whenGettingTheRetainedClientId_thenTheLatestIdShouldBeReturned() = runTest(dispatcher) {
         val latestId = "sold"
         clientRegistrationStorage.setRegisteredClientId("give it once")
         clientRegistrationStorage.setRegisteredClientId("give it twice")
@@ -85,7 +85,7 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenTheCurrentIdExisted_andWasCleared_whenGettingTheRetainedClientId_thenTheLatestIdShouldBeReturned() = runTest {
+    fun givenTheCurrentIdExisted_andWasCleared_whenGettingTheRetainedClientId_thenTheLatestIdShouldBeReturned() = runTest(dispatcher) {
         val testId = "😎ClientId"
         clientRegistrationStorage.setRegisteredClientId(testId)
         clientRegistrationStorage.clearRegisteredClientId()
@@ -96,7 +96,7 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenTheRetainedIdExisted_andWasCleared_whenGettingTheRetainedClientId_thenNullShouldBeReturned() = runTest {
+    fun givenTheRetainedIdExisted_andWasCleared_whenGettingTheRetainedClientId_thenNullShouldBeReturned() = runTest(dispatcher) {
         val testId = "😎ClientId"
         clientRegistrationStorage.setRegisteredClientId(testId)
         clientRegistrationStorage.clearRetainedClientId()

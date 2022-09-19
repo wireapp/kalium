@@ -78,6 +78,7 @@ import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
+// TODO: Refactor using Arrangement pattern
 class ConversationRepositoryTest {
 
     @Mock
@@ -510,7 +511,7 @@ class ConversationRepositoryTest {
             .then { flowOf(TestUser.SELF) }
 
         given(userRepository)
-            .function(userRepository::getSelfUserId)
+            .suspendFunction(userRepository::getSelfUserId)
             .whenInvoked()
             .thenReturn(TestUser.SELF.id)
 
@@ -1337,7 +1338,7 @@ class ConversationRepositoryTest {
 
         fun withSelfUser(selfUser: QualifiedID) = apply {
             given(userRepository)
-                .function(userRepository::getSelfUserId)
+                .suspendFunction(userRepository::getSelfUserId)
                 .whenInvoked()
                 .thenReturn(selfUser)
         }

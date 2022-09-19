@@ -49,7 +49,10 @@ interface UserRepository {
     suspend fun fetchUsersByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
-    fun getSelfUserId(): QualifiedID
+
+    @Deprecated("SelfUserID should be injected in the constructor, as it's available in UserSessionScope")
+    suspend fun getSelfUserId(): QualifiedID
+
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
@@ -83,11 +86,12 @@ internal class UserDataSource(
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
-    override fun getSelfUserId(): QualifiedID {
+    @Deprecated("SelfUserID should be injected in the constructor, as it's available in UserSessionScope")
+    override suspend fun getSelfUserId(): QualifiedID {
         return idMapper.fromDaoModel(getSelfUserIDEntity())
     }
 
-    private fun getSelfUserIDEntity(): QualifiedIDEntity {
+    private suspend fun getSelfUserIDEntity(): QualifiedIDEntity {
         val encodedValue = metadataDAO.valueByKey(SELF_USER_ID_KEY)
         return encodedValue?.let { Json.decodeFromString<QualifiedIDEntity>(it) }
             ?: run { throw IllegalStateException() }
