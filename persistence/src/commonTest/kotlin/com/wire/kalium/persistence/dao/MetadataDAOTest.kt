@@ -1,7 +1,6 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.db.UserDatabaseProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -9,7 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class MetadataDAOTest: BaseDatabaseTest() {
+class MetadataDAOTest : BaseDatabaseTest() {
 
     private val value1 = "value1"
     private val value2 = "value2"
