@@ -795,8 +795,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user1)
         userDAO.insertUser(user2)
         userDAO.insertUser(user3)
-        messageDAO.insertMessage(message1, mySelfId)
-        messageDAO.insertMessage(message2, mySelfId)
+        messageDAO.insertMessage(message1)
+        messageDAO.insertMessage(message2)
 
         // When
         val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
@@ -830,7 +830,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = Clock.System.now().toString(),
             conversationId = conversationEntity1.id
         )
-        messageDAO.insertMessage(removalMessage, mySelfId)
+        messageDAO.insertMessage(removalMessage)
         // When
         val whoDeletedMe = conversationDAO.whoDeletedMeInConversation(
             conversationEntity1.id, "${mySelfId.value}@${mySelfId.domain}"
