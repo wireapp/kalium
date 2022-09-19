@@ -479,7 +479,7 @@ class GetNotificationsUseCaseTest {
 
         fun withSelfUserId(id: QualifiedID = MY_ID): Arrangement {
             given(userRepository)
-                .function(userRepository::getSelfUserId)
+                .suspendFunction(userRepository::getSelfUserId)
                 .whenInvoked()
                 .then { id }
 
