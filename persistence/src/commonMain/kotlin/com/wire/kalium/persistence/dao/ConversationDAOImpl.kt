@@ -25,17 +25,14 @@ private class ConversationMapper {
             name,
             type,
             team_id,
-            protocolInfo = when (protocol) {
-                ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
-                    mls_group_id ?: "",
-                    mls_group_state,
-                    mls_epoch.toULong(),
-                    Instant.fromEpochSeconds(mls_last_keying_material_update),
-                    mls_cipher_suite
-                )
-
-                ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
-            },
+            protocolInfo = mapProtocolInfo(
+                protocol,
+                mls_group_id,
+                mls_group_state,
+                mls_epoch,
+                mls_last_keying_material_update,
+                mls_cipher_suite
+            ),
             mutedStatus = muted_status,
             mutedTime = muted_time,
             creatorId = creator_id,
@@ -54,17 +51,14 @@ private class ConversationMapper {
                 name,
                 type,
                 team_id,
-                protocolInfo = when (protocol) {
-                    ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
-                        mls_group_id ?: "",
-                        mls_group_state,
-                        mls_epoch.toULong(),
-                        Instant.fromEpochSeconds(mls_last_keying_material_update),
-                        mls_cipher_suite
-                    )
-
-                    ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
-                },
+                protocolInfo = mapProtocolInfo(
+                    protocol,
+                    mls_group_id,
+                    mls_group_state,
+                    mls_epoch,
+                    mls_last_keying_material_update,
+                    mls_cipher_suite
+                ),
                 mutedStatus = muted_status,
                 mutedTime = muted_time,
                 creatorId = creator_id,
@@ -74,6 +68,27 @@ private class ConversationMapper {
                 access = access_list,
                 accessRole = access_role_list
             )
+        }
+    }
+
+    private fun mapProtocolInfo(
+        protocol: ConversationEntity.Protocol,
+        mlsGroupId: String?,
+        mlsGroupState: ConversationEntity.GroupState,
+        mlsEpoch: Long,
+        mlsLastKeyingMaterialUpdate: Long,
+        mlsCipherSuite: ConversationEntity.CipherSuite,
+    ): ConversationEntity.ProtocolInfo {
+        return when (protocol) {
+            ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
+                mlsGroupId ?: "",
+                mlsGroupState,
+                mlsEpoch.toULong(),
+                Instant.fromEpochSeconds(mlsLastKeyingMaterialUpdate),
+                mlsCipherSuite
+            )
+
+            ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
         }
     }
 }
