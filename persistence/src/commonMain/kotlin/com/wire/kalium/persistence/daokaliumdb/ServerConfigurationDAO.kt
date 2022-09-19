@@ -6,7 +6,6 @@ import com.wire.kalium.persistence.ServerConfigurationQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 @Suppress("FunctionParameterNaming", "LongParameterList")
 internal object ServerConfigMapper {
@@ -102,12 +101,15 @@ internal class ServerConfigurationDAOImpl internal constructor(
     override fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
         queries.storedConfig(mapper = mapper::fromServerConfiguration).asFlow().mapToList()
 
-    override fun allConfig(): List<ServerConfigEntity> = queries.storedConfig(mapper = mapper::fromServerConfiguration).executeAsList()
+    override fun allConfig(): List<ServerConfigEntity> =
+        queries.storedConfig(mapper = mapper::fromServerConfiguration).executeAsList()
 
-    override fun configById(id: String): ServerConfigEntity? = queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
+    override fun configById(id: String): ServerConfigEntity? =
+        queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
 
     override fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity? =
-        queries.getByLinks(title, apiBaseUrl, webSocketBaseUrl, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
+        queries.getByLinks(title, apiBaseUrl, webSocketBaseUrl, mapper = mapper::fromServerConfiguration)
+            .executeAsOneOrNull()
 
     override fun updateApiVersion(id: String, commonApiVersion: Int) = queries.updateApiVersion(commonApiVersion, id)
 
