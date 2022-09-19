@@ -88,9 +88,9 @@ class MessageRepositoryTest {
     @Test
     fun givenAMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
         val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
+        val selfUserId = TEST_QUALIFIED_ID_ENTITY
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
-
         val (arrangement, messageRepository) = Arrangement()
             .withMappedId(mappedId)
             .withMappedMessageEntity(mappedEntity)
@@ -106,7 +106,7 @@ class MessageRepositoryTest {
 
             verify(messageDAO)
                 .suspendFunction(messageDAO::insertMessage)
-                .with(eq(mappedEntity))
+                .with(eq(mappedEntity), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
     }
