@@ -554,9 +554,9 @@ class ConversationRepositoryTest {
         runTest {
             // given
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getAllConversationWithOtherUser)
+                .suspendFunction(conversationDAO::getConversationWithOtherUser)
                 .whenInvokedWith(anything())
-                .then { listOf(CONVERSATION_ENTITY) }
+                .then { CONVERSATION_ENTITY }
 
             given(userRepository)
                 .coroutine { userRepository.observeSelfUser() }
