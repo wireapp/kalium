@@ -163,7 +163,7 @@ actual class UserDatabaseProvider(
         get() = CallDAOImpl(database.callsQueries)
 
     actual val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries)
 
     actual val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)
