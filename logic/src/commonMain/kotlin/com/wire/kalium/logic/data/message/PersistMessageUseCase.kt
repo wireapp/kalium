@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
 
 /**
@@ -21,14 +20,9 @@ internal class PersistMessageUseCaseImpl(
     private val selfUser: UserId,
     private val idMapper: IdMapper = IdMapperImpl()
 ) : PersistMessageUseCase {
-
-    override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> {
-        @OptIn(DelicateKaliumApi::class)
-        return messageRepository
-            .persistMessage(message, idMapper.toDaoModel(selfUser), message.content.shouldUpdateConversationOrder())
-            .onSuccess {
-            }
-    }
+    @OptIn(DelicateKaliumApi::class)
+    override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> = messageRepository
+        .persistMessage(message, idMapper.toDaoModel(selfUser), message.content.shouldUpdateConversationOrder())
 
     @Suppress("ComplexMethod")
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
