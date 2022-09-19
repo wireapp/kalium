@@ -167,7 +167,7 @@ class GetFeatureConfigsStatusUseCaseTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
             given(userRepository)
-                .function(userRepository::getSelfUserId)
+                .suspendFunction(userRepository::getSelfUserId)
                 .whenInvoked()
                 .thenReturn(TestUser.SELF.id)
             given(featureConfigRepository)
