@@ -4,19 +4,19 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.UserId
 
 // This class handles the messages that arrive when some client has read the conversation.
-class LastReadContentHandler(
+internal class LastReadContentHandler internal constructor(
     private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository
+    private val selfUserId: UserId
 ) {
 
     suspend fun handle(
         message: Message,
         messageContent: MessageContent.LastRead
     ) {
-        val isMessageComingFromOtherClient = message.senderUserId == userRepository.getSelfUserId()
+        val isMessageComingFromOtherClient = message.senderUserId == selfUserId
         val isMessageDestinedForSelfConversation = conversationRepository.getSelfConversationId() == message.conversationId
 
         if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
@@ -24,7 +24,7 @@ class LastReadContentHandler(
             // the conversation on the other device and we can update the read date locally
             // to synchronize the state across the clients.
             val conversationId = messageContent.conversationId
-                ?: ConversationId(messageContent.unqualifiedConversationId, userRepository.getSelfUserId().domain)
+                ?: ConversationId(messageContent.unqualifiedConversationId, selfUserId.domain)
 
             conversationRepository.updateConversationReadDate(
                 qualifiedID = conversationId,

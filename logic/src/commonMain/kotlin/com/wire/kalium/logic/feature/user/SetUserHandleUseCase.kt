@@ -21,7 +21,7 @@ sealed class SetUserHandleResult {
     }
 }
 
-class SetUserHandleUseCase(
+class SetUserHandleUseCase internal constructor(
     private val userRepository: UserRepository,
     private val validateUserHandle: ValidateUserHandleUseCase,
     private val syncManager: SyncManager

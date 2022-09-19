@@ -15,7 +15,7 @@ interface NetworkQualityChangedHandler : Callback {
     fun onNetworkQualityChanged(
         conversationId: String,
         userId: String?,
-        clientId: String,
+        clientId: String?,
         quality: Int,
         roundTripTimeInMilliseconds: Int,
         upstreamPacketLossPercentage: Int,
