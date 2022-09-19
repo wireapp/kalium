@@ -5,6 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
+import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -44,6 +45,36 @@ private class ConversationMapper {
             access = access_list,
             accessRole = access_role_list
         )
+    }
+
+    fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationEntity? {
+        return conversation?.run {
+            ConversationEntity(
+                qualified_id,
+                name,
+                type,
+                team_id,
+                protocolInfo = when (protocol) {
+                    ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
+                        mls_group_id ?: "",
+                        mls_group_state,
+                        mls_epoch.toULong(),
+                        Instant.fromEpochSeconds(mls_last_keying_material_update),
+                        mls_cipher_suite
+                    )
+
+                    ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
+                },
+                mutedStatus = muted_status,
+                mutedTime = muted_time,
+                creatorId = creator_id,
+                lastNotificationDate = last_notified_message_date,
+                lastModifiedDate = last_modified_date,
+                lastReadDate = conversation.last_read_date,
+                access = access_list,
+                accessRole = access_role_list
+            )
+        }
     }
 }
 
@@ -167,11 +198,10 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun getAllConversationWithOtherUser(userId: UserIDEntity): List<ConversationEntity> {
-        val allMemberConversations = memberQueries.selectAllConversationsByMember(userId)
-            .executeAsList()
-
-        return allMemberConversations.map { getConversationByQualifiedID(it.conversation) }
+    override suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationEntity? {
+        return memberQueries.selectConversationByMember(userId).executeAsOneOrNull().let {
+            conversationMapper.fromOneToOneToModel(it)
+        }
     }
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?> {
@@ -201,7 +231,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun updateMember(member: Member, conversationID: QualifiedIDEntity) {
-      memberQueries.updateMemberRole(member.role, member.user, conversationID)
+        memberQueries.updateMemberRole(member.role, member.user, conversationID)
     }
 
     override suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) {

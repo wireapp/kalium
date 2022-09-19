@@ -697,10 +697,8 @@ internal class ConversationDataSource internal constructor (
 
     override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {
         return wrapStorageRequest {
-            conversationDAO.getAllConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
-                .firstOrNull { it.type == ConversationEntity.Type.ONE_ON_ONE }?.let { conversationEntity ->
-                    conversationMapper.fromDaoModel(conversationEntity)
-                }
+            val conversationEntity = conversationDAO.getConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
+            conversationEntity?.let { conversationMapper.fromDaoModel(it) }
         }
     }
 
