@@ -73,7 +73,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
         }
     }
 
-    private fun checkMLSStatus(featureConfig: MLSModel) {
+    private suspend fun checkMLSStatus(featureConfig: MLSModel) {
         val mlsEnabled = featureConfig.status == Status.ENABLED
         val selfUserIsWhitelisted = featureConfig.allowedUsers.contains(selfUserId.toPlainID())
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)

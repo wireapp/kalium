@@ -21,7 +21,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         handleFeatureConfigEvent(event)
     }
 
-    private fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
+    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> {
                 if (kaliumConfigs.fileRestrictionEnabled) {

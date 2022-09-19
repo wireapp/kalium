@@ -134,7 +134,7 @@ class UserRepositoryTest {
 
         fun withGetSelfUserId(): Arrangement {
             given(metadataDAO)
-                .function(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKey)
                 .whenInvokedWith(any())
                 .thenReturn(
                     """

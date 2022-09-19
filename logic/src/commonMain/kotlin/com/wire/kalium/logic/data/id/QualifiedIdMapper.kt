@@ -6,8 +6,8 @@ interface QualifiedIdMapper {
     fun fromStringToQualifiedID(id: String): QualifiedID
 }
 
-class QualifiedIdMapperImpl internal constructor(
-    private val selfId: UserId?
+class QualifiedIdMapperImpl(
+    private val selfUserId: UserId?
 ) : QualifiedIdMapper {
     override fun fromStringToQualifiedID(id: String): QualifiedID {
         val components = id.split(VALUE_DOMAIN_SEPARATOR).filter { it.isNotBlank() }
@@ -30,7 +30,7 @@ class QualifiedIdMapperImpl internal constructor(
         }
     }
 
-    private fun selfUserDomain(): String = selfId?.domain ?: ""
+    private fun selfUserDomain(): String = selfUserId?.domain ?: ""
 }
 
 fun String.toQualifiedID(mapper: QualifiedIdMapper): QualifiedID = mapper.fromStringToQualifiedID(this)

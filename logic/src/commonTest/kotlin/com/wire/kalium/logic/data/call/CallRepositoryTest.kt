@@ -51,6 +51,7 @@ import kotlin.test.assertTrue
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
+// TODO: Refactor using Arrangement pattern
 class CallRepositoryTest {
 
     @Mock

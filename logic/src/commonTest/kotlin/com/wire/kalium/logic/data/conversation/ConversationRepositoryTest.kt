@@ -77,6 +77,7 @@ import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
+// TODO: Refactor using Arrangement pattern
 class ConversationRepositoryTest {
 
     @Mock
