@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.globalDB
 
-import com.wire.kalium.persistence.AccountInfo
 import com.wire.kalium.persistence.GlobalDBBaseTest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
