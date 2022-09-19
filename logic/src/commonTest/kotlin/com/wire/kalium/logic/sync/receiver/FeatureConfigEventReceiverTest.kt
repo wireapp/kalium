@@ -121,7 +121,7 @@ class FeatureConfigEventReceiverTest {
 
         fun withSelfUserIdReturning(selfUserId: UserId) = apply {
             given(userRepository)
-                .function(userRepository::getSelfUserId)
+                .suspendFunction(userRepository::getSelfUserId)
                 .whenInvoked()
                 .thenReturn(selfUserId)
         }
