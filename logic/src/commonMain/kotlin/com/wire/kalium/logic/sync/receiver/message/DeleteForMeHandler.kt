@@ -6,13 +6,13 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.kaliumLogger
 
-class DeleteForMeHandler(
+internal class DeleteForMeHandler internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
-    private val userRepository: UserRepository
+    private val selfUserId: UserId
 ) {
 
     suspend fun handle(
@@ -22,7 +22,7 @@ class DeleteForMeHandler(
         // The conversationId comes with the hidden message[content] only carries the conversationId VALUE,
         // we need to get the DOMAIN from the self conversationId[here is the message.conversationId]
         val conversationId = messageContent.conversationId
-            ?: ConversationId(messageContent.unqualifiedConversationId, userRepository.getSelfUserId().domain)
+            ?: ConversationId(messageContent.unqualifiedConversationId, selfUserId.domain)
 
         if (message.conversationId == conversationRepository.getSelfConversationId())
             messageRepository.deleteMessage(

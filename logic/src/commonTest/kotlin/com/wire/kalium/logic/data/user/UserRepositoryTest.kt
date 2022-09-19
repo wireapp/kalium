@@ -103,7 +103,7 @@ class UserRepositoryTest {
         val sessionRepository = mock(SessionRepository::class)
 
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, TestUser.SELF.id)
         }
 
         init {
@@ -134,7 +134,7 @@ class UserRepositoryTest {
 
         fun withGetSelfUserId(): Arrangement {
             given(metadataDAO)
-                .function(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKey)
                 .whenInvokedWith(any())
                 .thenReturn(
                     """

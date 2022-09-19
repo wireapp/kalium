@@ -143,9 +143,9 @@ class GetFeatureConfigsStatusUseCaseTest {
             SyncFeatureConfigsUseCaseImpl(
                 userConfigRepository,
                 featureConfigRepository,
-                userRepository,
                 isFileSharingEnabledUseCase,
-                kaliumConfigs
+                kaliumConfigs,
+                TestUser.SELF.id
             )
 
         fun withSuccessfulResponse(expectedFileSharingModel: FeatureConfigModel): Arrangement {
@@ -166,10 +166,6 @@ class GetFeatureConfigsStatusUseCaseTest {
                 .function(userConfigRepository::setClassifiedDomainsStatus)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
-            given(userRepository)
-                .function(userRepository::getSelfUserId)
-                .whenInvoked()
-                .thenReturn(TestUser.SELF.id)
             given(featureConfigRepository)
                 .suspendFunction(featureConfigRepository::getFeatureConfigs).whenInvoked()
                 .thenReturn(Either.Right(expectedFileSharingModel))
