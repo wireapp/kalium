@@ -99,6 +99,15 @@ internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Eith
     }
 }
 
+internal inline fun <T : Any> wrapStorageNullableRequest(storageRequest: () -> T?): Either<StorageFailure, T?> {
+    return try {
+        storageRequest().let { data -> Either.Right(data) }
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        Either.Left(StorageFailure.Generic(e))
+    }
+}
+
 internal fun <T : Any> Flow<T?>.wrapStorageRequest(): Flow<Either<StorageFailure, T>> =
     this.map { it?.let { data -> Either.Right(data) } ?: Either.Left<StorageFailure>(StorageFailure.DataNotFound) }
         .catch { e ->
