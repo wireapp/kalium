@@ -44,11 +44,12 @@ WHERE
         LIMIT 1
     );
 
-selectLastCallCreationTimeConversationId:
+selectLastClosedCallCreationTimeConversationId:
 SELECT created_at
 FROM Call
 WHERE
     conversation_id = :conversationId
+    AND status = 'CLOSED'
 ORDER BY created_at DESC
 LIMIT 1;
 
