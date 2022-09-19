@@ -76,6 +76,7 @@ internal class ConversationEventReceiverImpl(
     private val userConfigRepository: UserConfigRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val pendingProposalScheduler: PendingProposalScheduler,
+    private val selfUserId: UserId,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
 ) : ConversationEventReceiver {
@@ -412,7 +413,7 @@ internal class ConversationEventReceiverImpl(
         when (message) {
             is Message.Regular -> when (val content = message.content) {
                 is MessageContent.Text, is MessageContent.FailedDecryption -> {
-                    val isMessageComingFromOtherClient = message.senderUserId == userRepository.getSelfUserId()
+                    val isMessageComingFromOtherClient = message.senderUserId == selfUserId
 
                     if (isMessageComingFromOtherClient) {
                         // if the message is coming from other client it means
