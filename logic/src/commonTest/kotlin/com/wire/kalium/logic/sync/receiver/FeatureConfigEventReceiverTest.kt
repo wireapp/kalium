@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
@@ -27,7 +26,6 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenMLSUpdatedEventGrantingAccessForSelfUser_whenProcessingEvent_ThenSetMLSEnabledToTrue() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.SELF.id)
             .withSettingMLSEnabledSuccessful()
             .arrange()
 
@@ -43,7 +41,6 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenMLSUpdatedEventRemovingAccessForSelfUser_whenProcessingEvent_ThenSetMLSEnabledToFalse() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.SELF.id)
             .withSettingMLSEnabledSuccessful()
             .arrange()
 
@@ -58,7 +55,6 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenMLSUpdatedEventGrantingAccessForSelfUserButStatusIsDisabled_whenProcessingEvent_ThenSetMLSEnabledToFalse() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.SELF.id)
             .withSettingMLSEnabledSuccessful()
             .arrange()
 
@@ -74,7 +70,6 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenFileSharingUpdatedEventWithStatusEnabled_whenProcessingEvent_ThenSetFileSharingStatusToTrue() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.SELF.id)
             .withSettingFileSharingEnabledSuccessful()
             .arrange()
 
@@ -90,7 +85,6 @@ class FeatureConfigEventReceiverTest {
     @Test
     fun givenFileSharingUpdatedEventWithStatusDisabled_whenProcessingEvent_ThenSetFileSharingStatusToFalse() = runTest {
         val (arrangment, featureConfigEventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.SELF.id)
             .withSettingFileSharingEnabledSuccessful()
             .arrange()
 
@@ -117,14 +111,8 @@ class FeatureConfigEventReceiverTest {
             userConfigRepository,
             userRepository,
             kaliumConfigs,
+            TestUser.SELF.id
         )
-
-        fun withSelfUserIdReturning(selfUserId: UserId) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
-                .whenInvoked()
-                .thenReturn(selfUserId)
-        }
 
         fun withSettingMLSEnabledSuccessful() = apply {
             given(userConfigRepository)

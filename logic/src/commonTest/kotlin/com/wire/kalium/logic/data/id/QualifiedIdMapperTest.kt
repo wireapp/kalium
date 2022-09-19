@@ -7,7 +7,9 @@ import kotlin.test.assertEquals
 
 class QualifiedIdMapperTest {
 
-    private fun createMapper(selfUserId: QualifiedID = TestUser.USER_ID): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
+    private val selfUserId = TestUser.USER_ID
+
+    private fun createMapper(selfUserId: QualifiedID = this.selfUserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
 
     @Test
     fun givenAValidString_whenMappingToQualifiedId_thenCreatesAQualifiedIdWithACorrectValues() = runTest {
@@ -29,7 +31,7 @@ class QualifiedIdMapperTest {
     @Test
     fun givenAStringWithoutDomain_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() = runTest {
         // Given
-        val fallbackDomain = "wire.com"
+        val fallbackDomain = selfUserId.domain
         val conversationId = "conversationId"
 
         val qualifiedIdMapper = createMapper(QualifiedID(conversationId, fallbackDomain))
@@ -47,7 +49,7 @@ class QualifiedIdMapperTest {
     @Test
     fun givenAStringWithoutDomainThatEndsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() = runTest {
         // Given
-        val fallbackDomain = "wire.com"
+        val fallbackDomain = selfUserId.domain
         val conversationId = "conversationId@"
 
         val qualifiedIdMapper = createMapper(QualifiedID(conversationId, fallbackDomain))
@@ -65,7 +67,7 @@ class QualifiedIdMapperTest {
     @Test
     fun givenAValidStringThatStartsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() = runTest {
         // Given
-        val fallbackDomain = "wire.com"
+        val fallbackDomain = selfUserId.domain
         val conversationId = "@conversationId"
 
         val qualifiedIdMapper = createMapper(QualifiedID(conversationId, fallbackDomain))
@@ -84,7 +86,7 @@ class QualifiedIdMapperTest {
     fun givenAValidStringThatStartsAndEndsWithAtSign_whenMappingToQualifiedId_thenReturnsACorrectQualifiedIDWithAFallbackDomain() =
         runTest {
             // Given
-            val fallbackDomain = "wire.com"
+            val fallbackDomain = selfUserId.domain
             val conversationId = "@conversationId@"
 
             val qualifiedIdMapper = createMapper(QualifiedID(conversationId, fallbackDomain))

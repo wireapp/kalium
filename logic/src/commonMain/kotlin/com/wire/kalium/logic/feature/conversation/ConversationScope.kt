@@ -95,9 +95,9 @@ class ConversationScope internal constructor(
     val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
         get() = UpdateConversationReadDateUseCase(
             conversationRepository,
-            userRepository,
             messageSender,
-            clientRepository
+            clientRepository,
+            selfUserId
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
@@ -117,8 +117,8 @@ class ConversationScope internal constructor(
             clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
             clientRepository,
             conversationRepository,
-            userRepository,
-            messageSender
+            messageSender,
+            selfUserId
         )
 
 }

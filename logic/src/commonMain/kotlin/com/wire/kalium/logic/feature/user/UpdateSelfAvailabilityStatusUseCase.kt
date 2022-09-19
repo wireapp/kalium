@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 
-class UpdateSelfAvailabilityStatusUseCase(
+class UpdateSelfAvailabilityStatusUseCase internal constructor(
     private val userRepository: UserRepository,
 ) {
     suspend operator fun invoke(status: UserAvailabilityStatus) {

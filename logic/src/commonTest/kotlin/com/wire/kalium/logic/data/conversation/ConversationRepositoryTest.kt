@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
@@ -117,7 +116,8 @@ class ConversationRepositoryTest {
             messageDAO,
             clientDao,
             clientApi,
-            timeParser
+            timeParser,
+            TestUser.SELF.id
         )
     }
 
@@ -510,11 +510,6 @@ class ConversationRepositoryTest {
             .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(TestUser.SELF) }
 
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.SELF.id)
-
         given(conversationDAO)
             .suspendFunction(conversationDAO::insertConversation)
             .whenInvokedWith(anything())
@@ -776,7 +771,6 @@ class ConversationRepositoryTest {
             .withDeleteMemberAPISucceed()
             .withSuccessfulMemberDeletion()
             .withSuccessfulLeaveMLSGroup()
-            .withSelfUser(TestUser.SELF.id)
             .arrange()
 
         conversationRepository.deleteMember(TestUser.SELF.id, TestConversation.ID)
@@ -802,7 +796,6 @@ class ConversationRepositoryTest {
             .withConversationProtocolIs(MLS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceed()
             .withSuccessfulMemberDeletion()
-            .withSelfUser(TestUser.SELF.id)
             .withSuccessfulRemoveMemberFromMLSGroup()
             .arrange()
 
@@ -1327,6 +1320,7 @@ class ConversationRepositoryTest {
                 clientDao,
                 clientApi,
                 timeParser,
+                TestUser.SELF.id
             )
 
         fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {
@@ -1334,13 +1328,6 @@ class ConversationRepositoryTest {
                 .suspendFunction(userRepository::observeSelfUser)
                 .whenInvoked()
                 .thenReturn(selfUserFlow)
-        }
-
-        fun withSelfUser(selfUser: QualifiedID) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
-                .whenInvoked()
-                .thenReturn(selfUser)
         }
 
         fun withInsertConversations() = apply {

@@ -29,10 +29,10 @@ import kotlin.test.assertEquals
 class MessageSendFailureHandlerTest {
 
     @Mock
-    val clientRepository = mock(classOf<ClientRepository>())
+    private val clientRepository = mock(classOf<ClientRepository>())
 
     @Mock
-    val userRepository = mock(classOf<UserRepository>())
+    private val userRepository = mock(classOf<UserRepository>())
 
     private lateinit var messageSendFailureHandler: MessageSendFailureHandler
 

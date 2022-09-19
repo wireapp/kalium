@@ -74,7 +74,6 @@ class ConversationEventReceiverTest {
     @Test
     fun givenNewMessageEvent_whenHandling_shouldAskProteusClientForDecryption() = runTest {
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
             .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown()))
             .withPersistingMessageReturning(Either.Right(Unit))
@@ -117,7 +116,6 @@ class ConversationEventReceiverTest {
         val emptyArray = byteArrayOf()
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withConversationUpdateConversationReadDate(Either.Right(Unit))
@@ -209,7 +207,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
@@ -230,7 +227,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
@@ -251,7 +247,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
@@ -271,7 +266,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
@@ -293,7 +287,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberChange(member = updatedMember)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withFetchConversationIfUnknownSucceeding()
             .withUpdateMemberSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
@@ -313,7 +306,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberChange(member = updatedMember)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withFetchConversationIfUnknownSucceeding()
             .withUpdateMemberSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
@@ -333,7 +325,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberChange(member = updatedMember)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withUpdateMemberSucceeding()
@@ -434,19 +425,23 @@ class ConversationEventReceiverTest {
             userRepository = userRepository,
             callManagerImpl = lazyOf(callManager),
             editTextHandler = MessageTextEditHandler(messageRepository),
-            lastReadContentHandler = LastReadContentHandler(conversationRepository, userRepository),
+            lastReadContentHandler = LastReadContentHandler(
+                conversationRepository, TestUser.USER_ID
+            ),
             clearConversationContentHandler = ClearConversationContentHandler(
                 conversationRepository = conversationRepository,
                 userRepository = userRepository,
-                clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository)
+                clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
+                TestUser.USER_ID
             ),
             deleteForMeHandler = DeleteForMeHandler(
-                conversationRepository = conversationRepository, messageRepository = messageRepository, userRepository = userRepository
+                conversationRepository = conversationRepository, messageRepository = messageRepository, selfUserId = TestUser.USER_ID
             ),
             userConfigRepository = userConfigRepository,
             ephemeralNotificationsManager = ephemeralNotifications,
             pendingProposalScheduler = pendingProposalScheduler,
             protoContentMapper = protoContentMapper,
+            selfUserId = TestUser.USER_ID
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
@@ -461,13 +456,6 @@ class ConversationEventReceiverTest {
                 .function(protoContentMapper::decodeFromProtobuf)
                 .whenInvokedWith(plainBlobMatcher)
                 .thenReturn(protoContent)
-        }
-
-        fun withSelfUserIdReturning(selfUserId: UserId) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUserId)
-                .whenInvoked()
-                .thenReturn(selfUserId)
         }
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
