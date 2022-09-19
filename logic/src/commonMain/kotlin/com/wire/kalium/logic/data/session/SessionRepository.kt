@@ -16,6 +16,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
@@ -136,7 +137,7 @@ internal class SessionDataSource(
     }
 
     override suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?> =
-        wrapStorageRequest { accountsDAO.ssoId(idMapper.toDaoModel(userId)) }
+        wrapStorageNullableRequest { accountsDAO.ssoId(idMapper.toDaoModel(userId)) }
 
     override suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit> = wrapStorageRequest {
         accountsDAO.updateSsoId(idMapper.toDaoModel(userId), idMapper.toSsoIdEntity(ssoId))
