@@ -19,7 +19,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import kotlinx.coroutines.Dispatchers
 
 actual class GlobalCallManager(
-    private val appContext: Context
+    appContext: Context
 ) {
 
     private val callManagerHolder = hashMapOf<QualifiedID, CallManager>()
@@ -39,7 +39,7 @@ actual class GlobalCallManager(
      * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.
      */
     @Suppress("LongParameterList")
-    actual fun getCallManagerForClient(
+    internal actual fun getCallManagerForClient(
         userId: QualifiedID,
         callRepository: CallRepository,
         userRepository: UserRepository,

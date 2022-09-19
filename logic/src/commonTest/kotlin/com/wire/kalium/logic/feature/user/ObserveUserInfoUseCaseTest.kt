@@ -227,7 +227,7 @@ class ObserveUserInfoUseCaseTest {
         }
     }
 
-    class ObserveUserInfoUseCaseTestArrangement {
+    private class ObserveUserInfoUseCaseTestArrangement {
 
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)

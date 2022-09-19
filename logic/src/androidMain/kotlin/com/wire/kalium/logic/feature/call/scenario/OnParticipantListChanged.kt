@@ -20,7 +20,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 @Suppress("LongParameterList")
-class OnParticipantListChanged(
+class OnParticipantListChanged internal constructor(
     private val handle: Handle,
     private val calling: Calling,
     private val callRepository: CallRepository,

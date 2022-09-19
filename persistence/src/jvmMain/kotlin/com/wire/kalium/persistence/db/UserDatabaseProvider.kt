@@ -166,7 +166,7 @@ actual class UserDatabaseProvider(private val storePath: File, dispatcher: Corou
         get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)
 
     actual val metadataDAO: MetadataDAO
-        get() = MetadataDAOImpl(database.metadataQueries)
+        get() = MetadataDAOImpl(database.metadataQueries, LRUCache(METADATA_CACHE_SIZE), databaseScope)
 
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)

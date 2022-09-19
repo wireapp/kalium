@@ -76,6 +76,7 @@ internal class ConversationEventReceiverImpl(
     private val userConfigRepository: UserConfigRepository,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val pendingProposalScheduler: PendingProposalScheduler,
+    private val selfUserId: UserId,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
 ) : ConversationEventReceiver {
