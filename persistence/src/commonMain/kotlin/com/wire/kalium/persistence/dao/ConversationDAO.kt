@@ -93,7 +93,7 @@ interface ConversationDAO {
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
-    suspend fun getAllConversationWithOtherUser(userId: UserIDEntity): List<ConversationEntity>
+    suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationEntity?
     suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
