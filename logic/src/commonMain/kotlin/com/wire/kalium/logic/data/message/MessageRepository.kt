@@ -41,8 +41,8 @@ interface MessageRepository {
     )
     suspend fun persistMessage(
         message: Message,
-        selfUserId: UserIDEntity,
-        shouldUpdateConversationOrder: Boolean = false
+        isMyMessage: Boolean = false,
+        updateConversationModifiedDate: Boolean = false
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -132,10 +132,10 @@ class MessageDataSource(
 
     override suspend fun persistMessage(
         message: Message,
-        selfUserId: UserIDEntity,
-        shouldUpdateConversationOrder: Boolean
+        isMyMessage: Boolean,
+        updateConversationModifiedDate: Boolean
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.insertMessage(messageMapper.fromMessageToEntity(message), selfUserId, shouldUpdateConversationOrder)
+        messageDAO.insertMessage(messageMapper.fromMessageToEntity(message), isMyMessage, updateConversationModifiedDate)
     }
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =

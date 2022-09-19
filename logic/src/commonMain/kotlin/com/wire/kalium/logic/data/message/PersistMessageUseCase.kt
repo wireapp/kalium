@@ -17,12 +17,15 @@ interface PersistMessageUseCase {
 
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val selfUser: UserId,
-    private val idMapper: IdMapper = IdMapperImpl()
+    private val selfUser: UserId
 ) : PersistMessageUseCase {
     @OptIn(DelicateKaliumApi::class)
     override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> = messageRepository
-        .persistMessage(message, idMapper.toDaoModel(selfUser), message.content.shouldUpdateConversationOrder())
+        .persistMessage(
+            message,
+            isMyMessage = message.senderUserId == selfUser,
+            updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
+        )
 
     @Suppress("ComplexMethod")
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
