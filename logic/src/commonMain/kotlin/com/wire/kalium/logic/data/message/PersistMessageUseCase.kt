@@ -1,6 +1,10 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
@@ -14,12 +18,15 @@ interface PersistMessageUseCase {
 }
 
 internal class PersistMessageUseCaseImpl(
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val selfUser: UserId,
+    private val idMapper: IdMapper = IdMapperImpl()
 ) : PersistMessageUseCase {
 
     override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> {
         @OptIn(DelicateKaliumApi::class)
-        return messageRepository.persistMessage(message,message.content.shouldUpdateConversationOrder() )
+        return messageRepository
+            .persistMessage(message, idMapper.toDaoModel(selfUser), message.content.shouldUpdateConversationOrder())
             .onSuccess {
             }
     }

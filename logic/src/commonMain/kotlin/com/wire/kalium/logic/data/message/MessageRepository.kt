@@ -20,6 +20,7 @@ import com.wire.kalium.network.api.message.MLSMessageApi
 import com.wire.kalium.network.api.message.MessageApi
 import com.wire.kalium.network.api.message.MessagePriority
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -38,7 +39,7 @@ interface MessageRepository {
         message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",
         replaceWith = ReplaceWith("com.wire.kalium.logic.data.message.PersistMessageUseCase")
     )
-    suspend fun persistMessage(message: Message, shouldUpdateConversationOrder: Boolean = false): Either<CoreFailure, Unit>
+    suspend fun persistMessage(message: Message, selfUserId: UserIDEntity, shouldUpdateConversationOrder: Boolean = false): Either<CoreFailure, Unit>
     suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit>
     suspend fun markMessageAsEdited(messageUuid: String, conversationId: ConversationId, timeStamp: String): Either<StorageFailure, Unit>
@@ -124,8 +125,8 @@ class MessageDataSource(
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
-    override suspend fun persistMessage(message: Message, shouldUpdateConversationOrder: Boolean): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.insertMessage(messageMapper.fromMessageToEntity(message), shouldUpdateConversationOrder)
+    override suspend fun persistMessage(message: Message, selfUserId: UserIDEntity, shouldUpdateConversationOrder: Boolean): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.insertMessage(messageMapper.fromMessageToEntity(message), selfUserId, shouldUpdateConversationOrder)
     }
 
     override suspend fun deleteMessage(messageUuid: String, conversationId: ConversationId): Either<CoreFailure, Unit> =

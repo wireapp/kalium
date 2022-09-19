@@ -81,7 +81,7 @@ class MessageScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(

@@ -34,9 +34,8 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: MessageEntity, shouldUpdateConversationOrder: Boolean) {
+    override suspend fun insertMessage(message: MessageEntity, selfUserId: UserIDEntity, shouldUpdateConversationOrder: Boolean) {
         queries.transaction {
-            val selfUserId = QualifiedIDEntity("9371383d-a161-4428-a748-a87e8d0f00c7", "wire.com")
             val isMessageComingFromOtherClient = message.senderUserId == selfUserId
             if (isMessageComingFromOtherClient)
                 conversationsQueries.updateConversationReadDate(message.date, message.conversationId)

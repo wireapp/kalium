@@ -126,7 +126,6 @@ class PersistMessageUseCaseTest {
 
         private val persistMessage = PersistMessageUseCaseImpl(
             messageRepository,
-            conversationRepository,
             userId
         )
 
@@ -144,7 +143,7 @@ class PersistMessageUseCaseTest {
         fun withPersistMessageResult(result: Either<CoreFailure, Unit>) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::persistMessage)
-                .whenInvokedWith(any())
+                .whenInvokedWith(any(), any(), any())
                 .thenReturn(result)
         }
 
