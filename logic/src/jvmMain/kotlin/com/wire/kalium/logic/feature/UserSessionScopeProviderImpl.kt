@@ -21,6 +21,7 @@ import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
@@ -59,7 +60,7 @@ actual class UserSessionScopeProviderImpl(
             )
         )
         val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
-        val userDatabase = UserDatabaseProvider(File(rootStoragePath))
+        val userDatabase = UserDatabaseProvider(File(rootStoragePath), KaliumDispatcherImpl.io)
 
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,

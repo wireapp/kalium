@@ -3,14 +3,17 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.user.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.logic.data.user.UserId as LogicUserId
 import com.wire.kalium.persistence.dao.Member as PersistedMember
+import com.wire.kalium.network.api.UserId
 
 interface MemberMapper {
     fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Conversation.Member
     fun fromApiModel(conversationMembersResponse: ConversationMembersResponse): MembersInfo
+    fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient>
     fun fromMapOfClientsEntityToRecipients(qualifiedMap: Map<QualifiedIDEntity, List<Client>>): List<Recipient>
     fun fromMapOfClientsToRecipients(qualifiedMap: Map<LogicUserId, List<Client>>): List<Recipient>
     fun fromApiModelToDaoModel(conversationMembersResponse: ConversationMembersResponse): List<PersistedMember>
@@ -46,6 +49,13 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
     override fun toDaoModel(member: Conversation.Member): PersistedMember = with(member) {
         PersistedMember(idMapper.toDaoModel(id), roleMapper.toDAO(role))
     }
+
+    override fun fromMapOfClientsResponseToRecipients(qualifiedMap: Map<UserId, List<SimpleClientResponse>>): List<Recipient> =
+        qualifiedMap.entries.map { entry ->
+            val id = idMapper.fromApiModel(entry.key)
+            val clients = entry.value.map(idMapper::fromSimpleClientResponse)
+            Recipient(id, clients)
+        }
 
     override fun fromMapOfClientsEntityToRecipients(qualifiedMap: Map<QualifiedIDEntity, List<Client>>): List<Recipient> =
         qualifiedMap.entries.map { entry ->

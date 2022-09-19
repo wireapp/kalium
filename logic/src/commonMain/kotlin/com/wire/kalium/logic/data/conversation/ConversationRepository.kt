@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.user.client.ClientApi
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
@@ -66,6 +67,7 @@ interface ConversationRepository {
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
+    suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
     suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
@@ -147,6 +149,7 @@ class ConversationDataSource(
     private val conversationApi: ConversationApi,
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
+    private val clientApi: ClientApi,
     private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
@@ -679,6 +682,14 @@ class ConversationDataSource(
             memberMapper.fromMapOfClientsEntityToRecipients(
                 clientDAO.getClientsOfConversation(idMapper.toDaoModel(conversationId))
             )
+        }
+
+    /**
+     * Fetches a list of all recipients for a given conversation including this very client
+     */
+    override suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> =
+        getConversationMembers(conversationId).map { it.map(idMapper::toApiModel) }.flatMap {
+            wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
         }
 
     override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {

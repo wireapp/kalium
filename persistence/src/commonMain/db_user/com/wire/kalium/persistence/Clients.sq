@@ -1,9 +1,10 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
 
 CREATE TABLE Client (
     user_id TEXT AS QualifiedIDEntity NOT NULL,
     id TEXT NOT NULL,
-    device_type TEXT,
+    device_type TEXT AS DeviceTypeEntity,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, id)
 );
@@ -28,6 +29,9 @@ SELECT * FROM Client;
 
 selectAllClientsByUserId:
 SELECT * FROM Client WHERE user_id = ?;
+
+selectAllClientsByUserIdList:
+SELECT * FROM Client WHERE user_id IN :userIds GROUP BY user_id;
 
 selectAllClientsByConversation:
 SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id);

@@ -6,8 +6,16 @@ import kotlinx.coroutines.flow.Flow
 data class Client(
     val userId: QualifiedIDEntity,
     val id: String,
-    val deviceType: String?
+    val deviceType: DeviceTypeEntity?
 )
+
+enum class DeviceTypeEntity {
+    Phone,
+    Tablet,
+    Desktop,
+    LegalHold,
+    Unknown;
+}
 
 interface ClientDAO {
     suspend fun insertClient(client: Client)

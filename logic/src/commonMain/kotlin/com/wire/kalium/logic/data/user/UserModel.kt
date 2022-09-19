@@ -86,6 +86,13 @@ data class SelfUser(
     override val availabilityStatus: UserAvailabilityStatus
 ) : User()
 
+data class OtherUserMinimized(
+    val id: UserId,
+    val name: String?,
+    val completePicture: UserAssetId?,
+    val userType: UserType,
+)
+
 data class OtherUser(
     override val id: UserId,
     override val name: String?,

@@ -36,6 +36,13 @@ data class UserEntity(
     val deleted: Boolean
 )
 
+data class UserEntityMinimized(
+    val id: QualifiedIDEntity,
+    val name: String?,
+    val completeAssetId: UserAssetIdEntity?,
+    val userType: UserTypeEntity,
+)
+
 data class BotEntity(
     val id: String,
     val provider: String
@@ -126,6 +133,7 @@ interface UserDAO {
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
+    fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
     suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
