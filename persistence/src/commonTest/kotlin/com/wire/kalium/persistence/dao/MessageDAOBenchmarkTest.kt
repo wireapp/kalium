@@ -49,11 +49,12 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         println("Took $duration to insert $count text messages")
     }
 
+    @Suppress("LongMethod")
     private fun generateRandomMessages(count: Int): List<MessageEntity> {
         val conversations = listOf(conversationEntity1)
         val users = listOf(userEntity1, userEntity2)
         return buildList {
-            repeat(count) {
+            repeat(count / 4) {
                 add(
                     MessageEntity.Regular(
                         id = it.toString(),
@@ -63,6 +64,67 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                         status = MessageEntity.Status.values().random(),
                         visibility = MessageEntity.Visibility.values().random(),
                         content = MessageEntityContent.Text("Text content for message $it"),
+                        senderClientId = Random.nextLong(2_000).toString(),
+                        editStatus = MessageEntity.EditStatus.NotEdited
+                    )
+                )
+
+                add(
+                    MessageEntity.System(
+                        id = it.toString(),
+                        conversationId = conversations.random().id,
+                        date = it.toString(),
+                        senderUserId = users.random().id,
+                        status = MessageEntity.Status.values().random(),
+                        visibility = MessageEntity.Visibility.values().random(),
+                        content = MessageEntityContent.MemberChange(
+                            listOf(UserIDEntity("value", "domain")),
+                            MessageEntity.MemberChangeType.REMOVED
+                        )
+                    )
+                )
+
+                add(
+                    MessageEntity.Regular(
+                        id = it.toString(),
+                        conversationId = conversations.random().id,
+                        date = it.toString(),
+                        senderUserId = users.random().id,
+                        status = MessageEntity.Status.values().random(),
+                        visibility = MessageEntity.Visibility.values().random(),
+                        content = MessageEntityContent.Asset(
+                            1000,
+                            assetName = "test name",
+                            assetMimeType = "MP4",
+                            assetDownloadStatus = null,
+                            assetOtrKey = byteArrayOf(1),
+                            assetSha256Key = byteArrayOf(1),
+                            assetId = "assetId",
+                            assetToken = "",
+                            assetDomain = "domain",
+                            assetEncryptionAlgorithm = "",
+                            assetWidth = 111,
+                            assetHeight = 111,
+                            assetDurationMs = 10,
+                            assetNormalizedLoudness = byteArrayOf(1),
+                        ),
+                        senderClientId = Random.nextLong(2_000).toString(),
+                        editStatus = MessageEntity.EditStatus.NotEdited
+                    )
+                )
+
+                add(
+                    MessageEntity.Regular(
+                        id = it.toString(),
+                        conversationId = conversations.random().id,
+                        date = it.toString(),
+                        senderUserId = users.random().id,
+                        status = MessageEntity.Status.values().random(),
+                        visibility = MessageEntity.Visibility.values().random(),
+                        content = MessageEntityContent.Unknown(
+                            typeName = null,
+                            Random.nextBytes(100000)
+                        ),
                         senderClientId = Random.nextLong(2_000).toString(),
                         editStatus = MessageEntity.EditStatus.NotEdited
                     )
