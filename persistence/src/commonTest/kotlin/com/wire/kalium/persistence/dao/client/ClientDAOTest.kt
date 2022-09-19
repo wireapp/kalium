@@ -119,6 +119,35 @@ class ClientDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenClientIsInsertedAndRemoveRedundant_whenFetchingClientsByUserId_thenTheRelevantClientsAreReturned() = runTest {
+        val insertedClient = Client(user.id, "id0", deviceType = null)
+        val insertedClient1 = Client(user.id, "id1", deviceType = null)
+        userDAO.insertUser(user)
+        clientDAO.insertClientsAndRemoveRedundant(user.id, listOf(insertedClient, insertedClient1))
+
+        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
+
+        assertEquals(2, result.size)
+        assertEquals(listOf(insertedClient, insertedClient1), result)
+    }
+
+    @Test
+    fun givenClientIsInsertedAndRemoveRedundant_whenFetchingClientsByUserId_thenTheRedundantClientsAreNotReturned() = runTest {
+        val insertedClient = Client(user.id, "id0", deviceType = null)
+        val insertedClient1 = Client(user.id, "id1", deviceType = null)
+        val insertedClient2 = Client(user.id, "id1", deviceType = null)
+        userDAO.insertUser(user)
+        clientDAO.insertClientsAndRemoveRedundant(user.id, listOf(insertedClient, insertedClient1))
+        // this supposes to remove insertedClient1
+        clientDAO.insertClientsAndRemoveRedundant(user.id, listOf(insertedClient, insertedClient2))
+
+        val result = clientDAO.getClientsOfUserByQualifiedID(userId)
+
+        assertEquals(2, result.size)
+        assertEquals(listOf(insertedClient, insertedClient2), result)
+    }
+
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
