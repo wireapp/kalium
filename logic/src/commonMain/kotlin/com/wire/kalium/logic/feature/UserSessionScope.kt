@@ -433,9 +433,9 @@ abstract class UserSessionScopeCommon internal constructor(
             lazy { mlsConversationRepository }
         )
 
-    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
+    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
 
-    val federatedIdMapper: FederatedIdMapper
+    private val federatedIdMapper: FederatedIdMapper
         get() = MapperProvider.federatedIdMapper(
             userId,
             qualifiedIdMapper,
