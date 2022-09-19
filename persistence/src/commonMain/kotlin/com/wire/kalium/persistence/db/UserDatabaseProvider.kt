@@ -12,6 +12,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlin.jvm.JvmInline
 
 internal const val USER_CACHE_SIZE = 125
+internal const val METADATA_CACHE_SIZE = 30
 @JvmInline
 value class UserDBSecret(val value: ByteArray)
 
