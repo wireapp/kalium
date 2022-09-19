@@ -6,6 +6,7 @@ interface QualifiedIdMapper {
     fun fromStringToQualifiedID(id: String): QualifiedID
 }
 
+@Deprecated("Mapper should not be public and visible to consumer apps")
 class QualifiedIdMapperImpl(
     private val selfUserId: UserId?
 ) : QualifiedIdMapper {
