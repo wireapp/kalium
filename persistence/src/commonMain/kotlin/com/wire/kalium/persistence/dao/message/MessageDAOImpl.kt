@@ -36,16 +36,17 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
 
     override suspend fun insertMessage(
         message: MessageEntity,
-        isMyMessage: Boolean,
-        updateConversationModifiedDate: Boolean
+        updateConversationReadDate: Boolean,
+        updateConversationModifiedDate: Boolean,
+        updateConversationNotificationsDate: Boolean
     ) {
         queries.transaction {
-            if (isMyMessage)
+            if (updateConversationReadDate)
                 conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
             insertInDB(message)
             if (updateConversationModifiedDate)
                 conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
-            if (isMyMessage)
+            if (updateConversationNotificationsDate)
                 conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
         }
     }

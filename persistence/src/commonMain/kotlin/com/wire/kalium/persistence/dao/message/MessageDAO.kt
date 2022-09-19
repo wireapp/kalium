@@ -13,8 +13,9 @@ interface MessageDAO {
     suspend fun deleteAllMessages()
     suspend fun insertMessage(
         message: MessageEntity,
-        isMyMessage: Boolean = false,
-        updateConversationModifiedDate: Boolean = false
+        updateConversationReadDate: Boolean = false,
+        updateConversationModifiedDate: Boolean = false,
+        updateConversationNotificationsDate: Boolean = false
     )
 
     suspend fun insertMessages(messages: List<MessageEntity>)

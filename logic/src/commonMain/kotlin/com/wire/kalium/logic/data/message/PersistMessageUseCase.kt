@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DelicateKaliumApi
+import io.ktor.util.debug.useContextElementInDebugMode
 
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
@@ -19,13 +20,17 @@ internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val selfUser: UserId
 ) : PersistMessageUseCase {
-    @OptIn(DelicateKaliumApi::class)
-    override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> = messageRepository
-        .persistMessage(
-            message,
-            isMyMessage = message.senderUserId == selfUser,
-            updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
-        )
+    override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> {
+        val isMyMessage = message.senderUserId == selfUser
+        @OptIn(DelicateKaliumApi::class)
+        return messageRepository
+            .persistMessage(
+                message,
+                updateConversationReadDate = isMyMessage,
+                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
+                updateConversationNotificationsDate = isMyMessage
+            )
+    }
 
     @Suppress("ComplexMethod")
     private fun MessageContent.shouldUpdateConversationOrder(): Boolean =
