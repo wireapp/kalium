@@ -111,7 +111,7 @@ class EventDataSource(
     }
 
     override suspend fun updateLastProcessedEventId(eventId: String) {
-        wrapStorageRequest { metadataDAO.insertValue(LAST_PROCESSED_EVENT_ID_KEY, eventId) }
+        wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_PROCESSED_EVENT_ID_KEY) }
     }
 
     private suspend fun getNextPendingEventsPage(
