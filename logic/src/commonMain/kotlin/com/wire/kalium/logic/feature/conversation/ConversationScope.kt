@@ -53,6 +53,9 @@ class ConversationScope internal constructor(
     val getConversationDetails: GetConversationUseCase
         get() = GetConversationUseCase(conversationRepository)
 
+    val getOneToOneConversation: GetOneToOneConversationUseCase
+        get() = GetOneToOneConversationUseCase(conversationRepository)
+
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository, observeIsSelfUserMemberUseCase)
 
@@ -95,9 +98,9 @@ class ConversationScope internal constructor(
     val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
         get() = UpdateConversationReadDateUseCase(
             conversationRepository,
-            userRepository,
             messageSender,
-            clientRepository
+            clientRepository,
+            selfUserId
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
@@ -117,8 +120,8 @@ class ConversationScope internal constructor(
             clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
             clientRepository,
             conversationRepository,
-            userRepository,
-            messageSender
+            messageSender,
+            selfUserId
         )
 
 }

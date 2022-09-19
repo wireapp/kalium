@@ -20,6 +20,7 @@ import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
+import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.BotServiceAdapter
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
@@ -45,10 +46,13 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import java.io.File
 import java.util.Properties
 
-actual class UserDatabaseProvider(private val storePath: File) {
+actual class UserDatabaseProvider(private val storePath: File, dispatcher: CoroutineDispatcher) {
 
     private val database: UserDatabase
 
@@ -74,8 +78,10 @@ actual class UserDatabaseProvider(private val storePath: File) {
                 statusAdapter = EnumColumnAdapter(),
                 conversation_typeAdapter = EnumColumnAdapter()
             ),
-            Client.Adapter(user_idAdapter = QualifiedIDAdapter,
-                device_typeAdapter = EnumColumnAdapter()),
+            Client.Adapter(
+                user_idAdapter = QualifiedIDAdapter,
+                device_typeAdapter = EnumColumnAdapter()
+            ),
             Connection.Adapter(
                 qualified_conversationAdapter = QualifiedIDAdapter,
                 qualified_toAdapter = QualifiedIDAdapter,
@@ -149,8 +155,9 @@ actual class UserDatabaseProvider(private val storePath: File) {
         )
     }
 
+    private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
     actual val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries)
+        get() = UserDAOImpl(database.usersQueries, LRUCache(USER_CACHE_SIZE), databaseScope)
 
     actual val connectionDAO: ConnectionDAO
         get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries)
@@ -159,7 +166,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
         get() = ConversationDAOImpl(database.conversationsQueries, database.usersQueries, database.membersQueries)
 
     actual val metadataDAO: MetadataDAO
-        get() = MetadataDAOImpl(database.metadataQueries)
+        get() = MetadataDAOImpl(database.metadataQueries, LRUCache(METADATA_CACHE_SIZE), databaseScope)
 
     actual val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries)
@@ -168,7 +175,7 @@ actual class UserDatabaseProvider(private val storePath: File) {
         get() = CallDAOImpl(database.callsQueries)
 
     actual val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries)
 
     actual val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)

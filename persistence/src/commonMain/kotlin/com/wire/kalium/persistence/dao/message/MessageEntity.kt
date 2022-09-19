@@ -111,6 +111,9 @@ sealed class MessageEntityContent {
 
     data class Asset(
         val assetSizeInBytes: Long,
+        // TODO: Make it not-nullable, fallback to
+        //       message ID or something else if it comes
+        //       without a name from the protobuf models
         val assetName: String? = null,
         val assetMimeType: String,
         val assetDownloadStatus: MessageEntity.DownloadStatus? = null,

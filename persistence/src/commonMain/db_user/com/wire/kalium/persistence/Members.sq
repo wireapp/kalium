@@ -20,8 +20,11 @@ DELETE FROM Member WHERE conversation = ? AND user = ?;
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation LIKE ('%' || :searchQuery || '%');
 
-selectAllConversationsByMember:
-SELECT * FROM Member WHERE user = ?;
+selectConversationByMember:
+SELECT * FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Conversation.type = 'ONE_ON_ONE' AND Member.user = ?
+LIMIT  1;
 
 updateMemberRole:
 UPDATE Member

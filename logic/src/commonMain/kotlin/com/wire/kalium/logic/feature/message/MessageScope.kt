@@ -17,6 +17,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCase
@@ -32,6 +33,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 class MessageScope internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val userId: QualifiedID,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val clientRepository: ClientRepository,
@@ -79,7 +81,7 @@ class MessageScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, conversationRepository, userId)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
     val confirmMessage: SendConfirmationUseCase
         get() = SendConfirmationUseCase(
@@ -92,8 +94,8 @@ class MessageScope internal constructor(
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
             persistMessage,
-            userRepository,
-            clientRepository,
+            userId,
+            currentClientIdProvider,
             slowSyncRepository,
             messageSender
         )

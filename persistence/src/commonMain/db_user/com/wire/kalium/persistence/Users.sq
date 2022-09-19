@@ -86,6 +86,9 @@ SELECT * FROM User WHERE connection_status = ?;
 selectByQualifiedId:
 SELECT * FROM User WHERE qualified_id IN ?;
 
+selectMinimizedByQualifiedId:
+SELECT qualified_id, name, complete_asset_id, user_type FROM User WHERE qualified_id IN ?;
+
 selectByNameOrHandleOrEmailAndConnectionState:
 SELECT * FROM User
 WHERE (name LIKE ('%' || :searchQuery || '%')

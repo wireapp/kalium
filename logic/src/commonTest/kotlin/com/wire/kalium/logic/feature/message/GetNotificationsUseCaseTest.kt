@@ -57,7 +57,6 @@ class GetNotificationsUseCaseTest {
                 )
             )
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf())
             .arrange()
@@ -86,7 +85,6 @@ class GetNotificationsUseCaseTest {
                 )
             )
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation()))
             .withMessagesByConversationAfterDate { listOf() }
@@ -113,7 +111,6 @@ class GetNotificationsUseCaseTest {
         val (_, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation()))
             .withMessagesByConversationAfterDate { conversationId ->
@@ -138,7 +135,6 @@ class GetNotificationsUseCaseTest {
         val (_, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(listOf(entityConversation()))
@@ -173,7 +169,6 @@ class GetNotificationsUseCaseTest {
     fun givenFewConversationWithMessageLists_thenListOfFewNotifications() = runTest {
         val (_, getNotifications) = Arrangement()
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(
@@ -220,7 +215,6 @@ class GetNotificationsUseCaseTest {
         val (arrange, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(
@@ -250,7 +244,6 @@ class GetNotificationsUseCaseTest {
         val (arrange, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus(UserAvailabilityStatus.AWAY))
             .withKnownUser()
             .withConversationsForNotifications(listOf(entityConversation()))
@@ -282,7 +275,6 @@ class GetNotificationsUseCaseTest {
         val (arrange, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus(UserAvailabilityStatus.BUSY))
             .withKnownUser()
             .withConversationsForNotifications(listOf(entityConversation()))
@@ -318,7 +310,6 @@ class GetNotificationsUseCaseTest {
     fun givenMutedConversation_whenNewMessageCome_thenNoNotificationsAndNotificationDateUpdated() = runTest {
         val (arrange, getNotifications) = Arrangement()
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.AllMuted)))
             .withMessagesByConversationAfterDate { conversationId ->
@@ -352,7 +343,6 @@ class GetNotificationsUseCaseTest {
         val (arrange, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(listOf())
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withConversationsForNotifications(listOf(entityConversation(mutedStatus = MutedConversationStatus.OnlyMentionsAllowed)))
             .withMessagesByConversationAfterDate { conversationId ->
@@ -389,7 +379,6 @@ class GetNotificationsUseCaseTest {
         val (_, getNotifications) = Arrangement()
             .withEphemeralNotification()
             .withConnectionList(null)
-            .withSelfUserId(MY_ID)
             .withSelfUser(selfUserWithStatus())
             .withKnownUser()
             .withConversationsForNotifications(listOf(entityConversation()))
@@ -419,7 +408,6 @@ class GetNotificationsUseCaseTest {
         val (_, getNotifications) = Arrangement()
             .withConnectionList(listOf(connectionRequest()))
             .withSelfUser(selfUserWithStatus())
-            .withSelfUserId(MY_ID)
             .withKnownUser()
             .withConversationsForNotifications(null)
             .withEphemeralNotification()
@@ -475,15 +463,6 @@ class GetNotificationsUseCaseTest {
                 .suspendFunction(conversationRepository::updateAllConversationsNotificationDate)
                 .whenInvokedWith(any())
                 .then { Either.Right(Unit) }
-        }
-
-        fun withSelfUserId(id: QualifiedID = MY_ID): Arrangement {
-            given(userRepository)
-                .function(userRepository::getSelfUserId)
-                .whenInvoked()
-                .then { id }
-
-            return this
         }
 
         fun withSelfUser(user: SelfUser = selfUserWithStatus()): Arrangement {

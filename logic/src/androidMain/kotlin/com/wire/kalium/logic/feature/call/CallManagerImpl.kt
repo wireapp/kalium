@@ -59,7 +59,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logger.obfuscateDomain
 
 @Suppress("LongParameterList", "TooManyFunctions")
-actual class CallManagerImpl(
+actual class CallManagerImpl internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
@@ -294,7 +294,6 @@ actual class CallManagerImpl(
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
-                    conversationRepository = conversationRepository,
                     callingScope = scope
                 ).keepingStrongReference()
 

@@ -142,7 +142,7 @@ interface ConversationRepository {
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-class ConversationDataSource(
+internal class ConversationDataSource internal constructor (
     private val userRepository: UserRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
@@ -151,6 +151,7 @@ class ConversationDataSource(
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
     private val timeParser: TimeParser,
+    private val selfUserId: UserId,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -185,6 +186,8 @@ class ConversationDataSource(
     }
 
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, Unit> {
+        // TODO: mo: I would suggest to use the same approach as in the selfUserId
+
         val selfUserTeamId = userRepository.observeSelfUser().first().teamId
         var hasMore = true
         var lastPagingState: String? = null
@@ -496,7 +499,7 @@ class ConversationDataSource(
                     deleteMemberFromCloudAndStorage(userId, conversationId)
 
                 is Conversation.ProtocolInfo.MLS -> {
-                    if (userId == userRepository.getSelfUserId()) {
+                    if (userId == selfUserId) {
                         deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
                             mlsConversationRepository.leaveGroup(conversation.protocol.groupId)
                         }
@@ -664,7 +667,7 @@ class ConversationDataSource(
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             val conversationId = idMapper.fromApiToDao(conversationResponse.id)
-            val selfUserId = userRepository.getSelfUserId()
+            val selfUserId = selfUserId
             // TODO(IMPORTANT!): having an initial value is not the correct approach, the
             //  only valid source for members role is the backend
             //  ---> at the moment the backend doesn't tell us anything about the member role! till then we are setting them as Member
@@ -694,10 +697,8 @@ class ConversationDataSource(
 
     override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {
         return wrapStorageRequest {
-            conversationDAO.getAllConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
-                .firstOrNull { it.type == ConversationEntity.Type.ONE_ON_ONE }?.let { conversationEntity ->
-                    conversationMapper.fromDaoModel(conversationEntity)
-                }
+            val conversationEntity = conversationDAO.getConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
+            conversationEntity?.let { conversationMapper.fromDaoModel(it) }
         }
     }
 

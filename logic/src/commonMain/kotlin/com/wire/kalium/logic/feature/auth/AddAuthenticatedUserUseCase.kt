@@ -26,7 +26,7 @@ class AddAuthenticatedUserUseCase internal constructor(
         authTokens: AuthTokens,
         replace: Boolean = false
     ): Result =
-        sessionRepository.doesSessionExist(authTokens.userId).fold(
+        sessionRepository.doesValidSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
             }, { doesValidSessionExist ->
