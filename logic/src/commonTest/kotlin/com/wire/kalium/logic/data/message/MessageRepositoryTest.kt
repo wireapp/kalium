@@ -96,7 +96,7 @@ class MessageRepositoryTest {
             .withMappedMessageEntity(mappedEntity)
             .arrange()
 
-        messageRepository.persistMessage(message, selfUserId)
+        messageRepository.persistMessage(message)
 
         with(arrangement) {
             verify(messageMapper)
@@ -106,7 +106,7 @@ class MessageRepositoryTest {
 
             verify(messageDAO)
                 .suspendFunction(messageDAO::insertMessage)
-                .with(eq(mappedEntity), eq(selfUserId), anything())
+                .with(eq(mappedEntity), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
     }
