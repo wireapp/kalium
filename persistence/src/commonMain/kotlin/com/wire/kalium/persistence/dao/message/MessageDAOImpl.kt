@@ -41,13 +41,18 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
         updateConversationNotificationsDate: Boolean
     ) {
         queries.transaction {
-            if (updateConversationReadDate)
+            if (updateConversationReadDate) {
                 conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
+            }
+
             insertInDB(message)
-            if (updateConversationModifiedDate)
+
+            if (updateConversationModifiedDate) {
                 conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
-            if (updateConversationNotificationsDate)
+            }
+            if (updateConversationNotificationsDate) {
                 conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
+            }
         }
     }
 
