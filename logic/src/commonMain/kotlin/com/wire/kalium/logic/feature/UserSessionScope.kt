@@ -152,8 +152,6 @@ import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.client.UserConfigStorage
 import com.wire.kalium.persistence.client.UserConfigStorageImpl
 import com.wire.kalium.persistence.db.UserDatabaseProvider
-import com.wire.kalium.persistence.event.EventInfoStorage
-import com.wire.kalium.persistence.event.EventInfoStorageImpl
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import kotlinx.coroutines.CoroutineScope
@@ -196,8 +194,6 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
     private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
-    private val eventInfoStorage: EventInfoStorage
-        get() = EventInfoStorageImpl(userPreferencesSettings)
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
@@ -427,7 +423,9 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val eventRepository: EventRepository
         get() = EventDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
+            authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi,
+            userDatabaseProvider.metadataDAO,
+            clientRepository
         )
 
     internal val keyPackageManager: KeyPackageManager =
