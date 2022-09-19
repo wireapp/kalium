@@ -209,10 +209,6 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
@@ -277,10 +273,6 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
@@ -339,10 +331,6 @@ class CallRepositoryTest {
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
-
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
@@ -412,10 +400,6 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
@@ -470,10 +454,6 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
@@ -520,10 +500,6 @@ class CallRepositoryTest {
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
-
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
@@ -578,10 +554,6 @@ class CallRepositoryTest {
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
-
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
@@ -640,10 +612,6 @@ class CallRepositoryTest {
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
-
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
@@ -707,10 +675,6 @@ class CallRepositoryTest {
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
 
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
-
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
             .thenReturn(flowOf(Team("team1", "team_1")))
@@ -763,10 +727,6 @@ class CallRepositoryTest {
         given(userRepository).suspendFunction(userRepository::getKnownUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(TestUser.OTHER))
-
-        given(userRepository).suspendFunction(userRepository::getSelfUserId)
-            .whenInvoked()
-            .thenReturn(TestUser.USER_ID)
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())

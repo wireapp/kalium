@@ -9,10 +9,11 @@ interface GetKnownUserUseCase {
     suspend operator fun invoke(userId: UserId): Flow<OtherUser?>
 }
 
-class GetKnownUserUseCaseImpl(private val userRepository: UserRepository) : GetKnownUserUseCase {
+internal class GetKnownUserUseCaseImpl internal constructor(
+    private val userRepository: UserRepository
+) : GetKnownUserUseCase {
 
-    //TODO(qol): Better handle nullable OtherUser?
+    // TODO(qol): Better handle nullable OtherUser?
     override suspend fun invoke(userId: UserId): Flow<OtherUser?> = userRepository.getKnownUser(userId)
 
 }
-

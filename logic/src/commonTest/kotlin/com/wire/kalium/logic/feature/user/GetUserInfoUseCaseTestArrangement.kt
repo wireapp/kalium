@@ -13,7 +13,7 @@ import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 
-class GetUserInfoUseCaseTestArrangement {
+internal class GetUserInfoUseCaseTestArrangement {
 
     @Mock
     val userRepository: UserRepository = mock(UserRepository::class)

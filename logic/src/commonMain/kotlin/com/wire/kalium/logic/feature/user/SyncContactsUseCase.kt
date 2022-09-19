@@ -8,7 +8,9 @@ interface SyncContactsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
-class SyncContactsUseCaseImpl(private val userDataSource: UserRepository) : SyncContactsUseCase {
+class SyncContactsUseCaseImpl internal constructor(
+    private val userDataSource: UserRepository
+) : SyncContactsUseCase {
 
     override suspend operator fun invoke(): Either<CoreFailure, Unit> {
         return userDataSource.fetchKnownUsers()
