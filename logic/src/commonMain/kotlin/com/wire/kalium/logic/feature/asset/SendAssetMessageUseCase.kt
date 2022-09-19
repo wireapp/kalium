@@ -56,6 +56,7 @@ fun interface SendAssetMessageUseCase {
     ): SendAssetMessageResult
 }
 
+@Suppress("LongParameterList")
 internal class SendAssetMessageUseCaseImpl(
     private val persistMessage: PersistMessageUseCase,
     private val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase,
@@ -90,8 +91,8 @@ internal class SendAssetMessageUseCaseImpl(
             assetWidth = assetWidth,
             assetHeight = assetHeight,
             otrKey = otrKey,
-            sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)), // Sha256 will be replaced with right values after successful asset upload
-            assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after successful asset upload
+            sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)), // Sha256 will be replaced with right values after asset upload
+            assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after asset upload
         )
         lateinit var message: Message.Regular
 
@@ -207,6 +208,7 @@ internal class SendAssetMessageUseCaseImpl(
             )
         }
     }
+
     private companion object {
         const val DEFAULT_BYTE_ARRAY_SIZE = 16
     }

@@ -87,6 +87,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 asset_size = content.assetSizeInBytes,
                 asset_name = content.assetName,
                 asset_mime_type = content.assetMimeType,
+                asset_upload_status = content.assetUploadStatus,
                 asset_download_status = content.assetDownloadStatus,
                 asset_otr_key = content.assetOtrKey,
                 asset_sha256 = content.assetSha256Key,
