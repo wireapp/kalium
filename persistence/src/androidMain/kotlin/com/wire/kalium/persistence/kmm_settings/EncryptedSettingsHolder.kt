@@ -17,6 +17,7 @@ actual class EncryptedSettingsHolder(
             .setRequestStrongBoxBacked(true)
             .build()
 
+    @get:Synchronized
     actual val encryptedSettings: Settings = AndroidSettings(
         if (options.shouldEncryptData) {
             EncryptedSharedPreferences.create(
