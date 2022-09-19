@@ -88,7 +88,7 @@ internal class CallDAOImpl(
         callsQueries.lastCallStatusByConversationId(conversationId).executeAsOneOrNull()
 
     override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
-        callsQueries.selectLastCallCreationTimeConversationId(conversationId)
+        callsQueries.selectLastClosedCallCreationTimeConversationId(conversationId)
             .asFlow()
             .mapToOneOrNull()
 
