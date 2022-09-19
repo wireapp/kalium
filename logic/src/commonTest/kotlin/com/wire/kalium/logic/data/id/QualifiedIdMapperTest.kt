@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.logic.framework.TestUser
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -7,7 +9,7 @@ class QualifiedIdMapperTest {
 
     private val selfUserId = TestUser.USER_ID
 
-    private fun createMapper(selfUserId: QualifiedID = selfUserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
+    private fun createMapper(selfUserId: QualifiedID = this.selfUserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
 
     @Test
     fun givenAValidString_whenMappingToQualifiedId_thenCreatesAQualifiedIdWithACorrectValues() = runTest {
