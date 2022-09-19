@@ -28,7 +28,7 @@ import kotlin.coroutines.CoroutineContext
 
 interface SessionManager {
     fun session(): Pair<SessionDTO, ServerConfigDTO.Links>
-    fun updateLoginSession(
+    suspend fun updateLoginSession(
         newAccessTokenDTO: AccessTokenDTO,
         newRefreshTokenDTO: RefreshTokenDTO?
     ): SessionDTO

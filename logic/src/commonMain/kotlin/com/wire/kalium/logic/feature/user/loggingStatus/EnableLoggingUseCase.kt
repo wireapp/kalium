@@ -5,11 +5,11 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 
 interface EnableLoggingUseCase {
-    operator fun invoke(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend operator fun invoke(enabled: Boolean): Either<StorageFailure, Unit>
 }
 
 class EnableLoggingUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : EnableLoggingUseCase {
-    override operator fun invoke(enabled: Boolean) = userConfigRepository.persistEnableLogging(enabled)
+    override suspend operator fun invoke(enabled: Boolean) = userConfigRepository.persistEnableLogging(enabled)
 }

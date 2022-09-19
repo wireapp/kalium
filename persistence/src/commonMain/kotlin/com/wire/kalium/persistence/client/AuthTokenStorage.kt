@@ -2,8 +2,10 @@ package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.coroutines.CoroutineContext
 
 @Serializable
 data class AuthTokenEntity(
@@ -13,10 +15,11 @@ data class AuthTokenEntity(
     @SerialName("token_type") val tokenType: String
 )
 
-class AuthTokenStorage(
-    private val kaliumPreferences: KaliumPreferences
+class AuthTokenStorage internal constructor(
+    private val kaliumPreferences: KaliumPreferences,
+    private val coroutineContext: CoroutineContext
 ) {
-    fun addOrReplace(authTokenEntity: AuthTokenEntity) {
+    suspend fun addOrReplace(authTokenEntity: AuthTokenEntity) = withContext(coroutineContext) {
         kaliumPreferences.putSerializable(
             getTokenKey(authTokenEntity.userId),
             authTokenEntity,
@@ -24,12 +27,12 @@ class AuthTokenStorage(
         )
     }
 
-    fun updateToken(
+    suspend fun updateToken(
         userId: UserIDEntity,
         accessToken: String,
         tokenType: String,
         refreshToken: String?,
-    ): AuthTokenEntity {
+    ): AuthTokenEntity = withContext(coroutineContext) {
         val key = getTokenKey(userId)
         val newToken: AuthTokenEntity = (refreshToken?.let {
             AuthTokenEntity(userId, accessToken, refreshToken, tokenType)
@@ -38,24 +41,24 @@ class AuthTokenStorage(
                 accessToken = accessToken,
                 tokenType = tokenType
             )
-        }) ?: throw IllegalStateException("No token found for user")
+        }) ?: throw error("No token found for user")
 
         kaliumPreferences.putSerializable(
             key,
             newToken,
             AuthTokenEntity.serializer()
         )
-        return newToken
+        newToken
     }
 
-    fun getToken(userId: UserIDEntity): AuthTokenEntity? {
-        return kaliumPreferences.getSerializable(
+    // TODO: make suspendable
+    fun getToken(userId: UserIDEntity): AuthTokenEntity? =
+        kaliumPreferences.getSerializable(
             getTokenKey(userId),
             AuthTokenEntity.serializer()
         )
-    }
 
-    fun deleteToken(userId: UserIDEntity) {
+    suspend fun deleteToken(userId: UserIDEntity) = withContext(coroutineContext) {
         kaliumPreferences.remove(getTokenKey(userId))
     }
 

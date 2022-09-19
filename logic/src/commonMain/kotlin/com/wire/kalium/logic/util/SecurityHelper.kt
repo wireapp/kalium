@@ -4,7 +4,7 @@ import com.wire.kalium.cryptography.MlsDBSecret
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 
@@ -13,23 +13,26 @@ internal expect class SecureRandom constructor() {
     fun nextInt(bound: Int): Int
 }
 
-internal class SecurityHelper(private val kaliumPreferences: KaliumPreferences) {
+internal class SecurityHelper(private val passphraseStorage: PassphraseStorage) {
 
-    fun globalDBSecret(): GlobalDatabaseSecret =
+    suspend fun globalDBSecret(): GlobalDatabaseSecret =
         GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
 
-    fun userDBSecret(userId: UserId): UserDBSecret =
+    suspend fun userDBSecret(userId: UserId): UserDBSecret =
         UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
 
-    fun mlsDBSecret(userId: UserId): MlsDBSecret = MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId"))
+    suspend fun mlsDBSecret(userId: UserId): MlsDBSecret =
+        MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId"))
 
-    private fun getOrGeneratePassPhrase(alias: String): String = getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
+    private suspend fun getOrGeneratePassPhrase(alias: String): String =
+        getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
 
-    private fun getStoredDbPassword(passwordAlias: String): String? = kaliumPreferences.getString(passwordAlias)
+    private suspend fun getStoredDbPassword(passwordAlias: String): String? =
+        passphraseStorage.getPassphrase(passwordAlias)
 
-    private fun storeDbPassword(alias: String, keyBytes: ByteArray): String {
+    private suspend fun storeDbPassword(alias: String, keyBytes: ByteArray): String {
         val key = keyBytes.toPreservedString
-        kaliumPreferences.putString(alias, key)
+        passphraseStorage.setPassphrase(alias, key)
         return key
     }
 

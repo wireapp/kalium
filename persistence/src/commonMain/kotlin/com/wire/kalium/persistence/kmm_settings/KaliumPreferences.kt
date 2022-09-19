@@ -6,6 +6,7 @@ import com.russhwolf.settings.set
 import com.wire.kalium.persistence.util.JsonSerializer
 import kotlinx.serialization.KSerializer
 
+@Suppress("TooManyFunctions")
 interface KaliumPreferences {
     fun remove(key: String)
     fun hasValue(key: String): Boolean

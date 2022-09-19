@@ -7,35 +7,38 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.coroutines.CoroutineContext
 
+@Suppress("TooManyFunctions")
 interface UserConfigStorage {
 
     /**
      * save flag from the user settings to enable and disable MLS
      */
-    fun enableMLS(enabled: Boolean)
+    suspend fun enableMLS(enabled: Boolean)
 
     /**
      * get the saved flag to know if MLS enabled or not
      */
-    fun isMLSEnabled(): Boolean
+    suspend fun isMLSEnabled(): Boolean
 
     /**
      * save flag from the user settings to enable and disable the logging
      */
-    fun enableLogging(enabled: Boolean)
+    suspend fun enableLogging(enabled: Boolean)
 
     /**
      * get the saved flag to know if the logging enabled or not
      */
-    fun isLoggingEnables(): Boolean
+    suspend fun isLoggingEnables(): Boolean
 
     /**
      * save flag from the user settings to enable and disable the persistent webSocket connection
      */
-    fun persistPersistentWebSocketConnectionStatus(enabled: Boolean)
+    suspend fun persistPersistentWebSocketConnectionStatus(enabled: Boolean)
 
     /**
      * get the saved flag to know if the persistent webSocket connection enabled or not
@@ -45,13 +48,13 @@ interface UserConfigStorage {
     /**
      * save flag from the file sharing api, and if the status changes
      */
-    fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?)
+    suspend fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?)
 
     /**
      * get the saved flag that been saved to know if the file sharing is enabled or not with the flag
      * to know if there was a status change
      */
-    fun isFileSharingEnabled(): IsFileSharingEnabledEntity?
+    suspend fun isFileSharingEnabled(): IsFileSharingEnabledEntity?
 
     /**
      * returns the Flow of file sharing status
@@ -66,7 +69,7 @@ interface UserConfigStorage {
     /**
      * save the flag and list of trusted domains
      */
-    fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
+    suspend fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
 }
 
 @Serializable
@@ -81,39 +84,54 @@ data class ClassifiedDomainsEntity(
     @SerialName("trustedDomains") val trustedDomains: List<String>,
 )
 
-class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : UserConfigStorage {
+@Suppress("TooManyFunctions")
+internal class UserConfigStorageImpl internal constructor(
+    private val kaliumPreferences: KaliumPreferences,
+    private val coroutineContext: CoroutineContext
+) : UserConfigStorage {
 
-    private val isFileSharingEnabledFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val isFileSharingEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private val isPersistentWebSocketConnectionEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private val isClassifiedDomainsEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    override fun enableMLS(enabled: Boolean) {
+    override suspend fun enableMLS(enabled: Boolean) = withContext(coroutineContext) {
         kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
     }
 
-    override fun isMLSEnabled(): Boolean =
+    override suspend fun isMLSEnabled(): Boolean = withContext(coroutineContext) {
         kaliumPreferences.getBoolean(ENABLE_MLS, false)
+    }
 
-    override fun enableLogging(enabled: Boolean) {
+    override suspend fun enableLogging(enabled: Boolean) = withContext(coroutineContext) {
         kaliumPreferences.putBoolean(ENABLE_LOGGING, enabled)
     }
 
-    override fun isLoggingEnables(): Boolean =
+    override suspend fun isLoggingEnables(): Boolean = withContext(coroutineContext) {
         kaliumPreferences.getBoolean(ENABLE_LOGGING, true)
+    }
 
-    override fun persistPersistentWebSocketConnectionStatus(enabled: Boolean) {
-        kaliumPreferences.putBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, enabled)
+    override suspend fun persistPersistentWebSocketConnectionStatus(enabled: Boolean) {
+        withContext(coroutineContext) { kaliumPreferences.putBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, enabled) }
             .also { isPersistentWebSocketConnectionEnabledFlow.tryEmit(Unit) }
     }
 
-    override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Boolean> = isPersistentWebSocketConnectionEnabledFlow
-        .map { kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false) }
-        .onStart { emit(kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false)) }
-        .distinctUntilChanged()
+    override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Boolean> =
+        isPersistentWebSocketConnectionEnabledFlow
+            .map {
+                withContext(coroutineContext) { kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false) }
+            }.onStart {
+                withContext(coroutineContext) {
+                    emit(kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false))
+                }
+            }.distinctUntilChanged()
 
-    override fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?) {
+    override suspend fun persistFileSharingStatus(
+        status: Boolean,
+        isStatusChanged: Boolean?
+    ) = withContext(coroutineContext) {
         kaliumPreferences.putSerializable(
             FILE_SHARING,
             IsFileSharingEnabledEntity(status, isStatusChanged),
@@ -123,8 +141,9 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
         )
     }
 
-    override fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
+    override suspend fun isFileSharingEnabled(): IsFileSharingEnabledEntity? = withContext(coroutineContext) {
         kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
+    }
 
     override fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?> = isFileSharingEnabledFlow
         .map { isFileSharingEnabled() }
@@ -133,18 +152,32 @@ class UserConfigStorageImpl(private val kaliumPreferences: KaliumPreferences) : 
 
     override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity> {
         return isClassifiedDomainsEnabledFlow
-            .map { kaliumPreferences.getSerializable(ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsEntity.serializer())!! }
-            .onStart { emit(kaliumPreferences.getSerializable(ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsEntity.serializer())!!) }
-            .distinctUntilChanged()
+            .map {
+                withContext(coroutineContext) {
+                    kaliumPreferences.getSerializable(ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsEntity.serializer())!!
+                }
+            }.onStart {
+                withContext(coroutineContext) {
+                    emit(
+                        kaliumPreferences.getSerializable(
+                            ENABLE_CLASSIFIED_DOMAINS,
+                            ClassifiedDomainsEntity.serializer()
+                        )!!
+                    )
+                }
+            }.distinctUntilChanged()
     }
 
-    override fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>) {
-        kaliumPreferences.putSerializable(
-            ENABLE_CLASSIFIED_DOMAINS,
-            ClassifiedDomainsEntity(status, classifiedDomains),
-            ClassifiedDomainsEntity.serializer().also {
-                isClassifiedDomainsEnabledFlow.tryEmit(Unit)
-            })
+    override suspend fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>) {
+        withContext(coroutineContext) {
+            kaliumPreferences.putSerializable(
+                ENABLE_CLASSIFIED_DOMAINS,
+                ClassifiedDomainsEntity(status, classifiedDomains),
+                ClassifiedDomainsEntity.serializer()
+            )
+        }.also {
+            isClassifiedDomainsEnabledFlow.tryEmit(Unit)
+        }
     }
 
     private companion object {

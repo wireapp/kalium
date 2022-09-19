@@ -5,7 +5,7 @@ import com.wire.kalium.logic.functional.fold
 
 interface IsMLSEnabledUseCase {
 
-    operator fun invoke(): Boolean
+    suspend operator fun invoke(): Boolean
 
 }
 
@@ -13,7 +13,7 @@ class IsMLSEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsMLSEnabledUseCase {
 
-    override operator fun invoke(): Boolean =
+    override suspend operator fun invoke(): Boolean =
         userConfigRepository.isMLSEnabled().fold({
             false
         }, {

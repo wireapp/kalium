@@ -1,8 +1,10 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.coroutines.CoroutineContext
 
 interface TokenStorage {
     /**
@@ -10,12 +12,12 @@ interface TokenStorage {
      * ex: firebase token
      * the transport here is the type of the token ("GCM,APNS")
      */
-    fun saveToken(token: String, transport: String)
+    suspend fun saveToken(token: String, transport: String)
 
     /**
      * get the saved token with it's type
      */
-    fun getToken(): NotificationTokenEntity?
+    suspend fun getToken(): NotificationTokenEntity?
 }
 
 @Serializable
@@ -25,9 +27,12 @@ data class NotificationTokenEntity(
 )
 
 
-class TokenStorageImpl(private val kaliumPreferences: KaliumPreferences) : TokenStorage {
+internal class TokenStorageImpl internal constructor(
+    private val kaliumPreferences: KaliumPreferences,
+    private val coroutineContext: CoroutineContext
+) : TokenStorage {
 
-    override fun saveToken(token: String, transport: String) {
+    override suspend fun saveToken(token: String, transport: String) = withContext(coroutineContext) {
         kaliumPreferences.putSerializable(
             NOTIFICATION_TOKEN,
             NotificationTokenEntity(token, transport),
@@ -35,8 +40,9 @@ class TokenStorageImpl(private val kaliumPreferences: KaliumPreferences) : Token
         )
     }
 
-    override fun getToken(): NotificationTokenEntity? =
+    override suspend fun getToken(): NotificationTokenEntity? = withContext(coroutineContext) {
         kaliumPreferences.getSerializable(NOTIFICATION_TOKEN, NotificationTokenEntity.serializer())
+    }
 
     private companion object {
         const val NOTIFICATION_TOKEN = "notification_token"

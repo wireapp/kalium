@@ -9,7 +9,7 @@ class SaveNotificationTokenUseCase(
     private val notificationTokenRepository: NotificationTokenRepository
 ) {
 
-    operator fun invoke(token: String, type: String): Result =
+    suspend operator fun invoke(token: String, type: String): Result =
         notificationTokenRepository.persistNotificationToken(token, type).fold({
             Result.Failure.Generic(it)
         }, {

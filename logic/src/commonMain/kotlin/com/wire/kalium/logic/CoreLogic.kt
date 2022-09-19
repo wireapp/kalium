@@ -12,7 +12,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmm_settings.GlobalPrefProvider
 
 expect class CoreLogic : CoreLogicCommon
 
@@ -23,7 +23,7 @@ abstract class CoreLogicCommon(
     protected val kaliumConfigs: KaliumConfigs,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
-    protected abstract val globalPreferences: Lazy<KaliumPreferences>
+    protected abstract val globalPreferences: Lazy<GlobalPrefProvider>
     protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
 

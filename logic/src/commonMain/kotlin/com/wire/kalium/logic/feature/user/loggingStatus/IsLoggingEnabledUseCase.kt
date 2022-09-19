@@ -4,14 +4,13 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 
 interface IsLoggingEnabledUseCase {
-    operator fun invoke(): Boolean
+    suspend operator fun invoke(): Boolean
 }
 
 class IsLoggingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsLoggingEnabledUseCase {
-
-    override operator fun invoke(): Boolean =
+    override suspend operator fun invoke(): Boolean =
         userConfigRepository.isLoggingEnabled().fold({
             false
         }, {

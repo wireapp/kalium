@@ -9,16 +9,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface UserConfigRepository {
-    fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit>
-    fun isLoggingEnabled(): Either<StorageFailure, Boolean>
+    suspend fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isLoggingEnabled(): Either<StorageFailure, Boolean>
     fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Either<StorageFailure, Boolean>>
-    fun persistPersistentWebSocketConnectionStatus(status: Boolean): Either<StorageFailure, Unit>
-    fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
-    fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
+    suspend fun persistPersistentWebSocketConnectionStatus(status: Boolean): Either<StorageFailure, Unit>
+    suspend fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
+    suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
-    fun isMLSEnabled(): Either<StorageFailure, Boolean>
-    fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit>
+    suspend fun isMLSEnabled(): Either<StorageFailure, Boolean>
+    suspend fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit>
     fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
 }
 
@@ -26,21 +26,21 @@ class UserConfigDataSource(
     private val userConfigStorage: UserConfigStorage
 ) : UserConfigRepository {
 
-    override fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableLogging(enabled) }
 
-    override fun isLoggingEnabled(): Either<StorageFailure, Boolean> = wrapStorageRequest { userConfigStorage.isLoggingEnables() }
+    override suspend fun isLoggingEnabled(): Either<StorageFailure, Boolean> = wrapStorageRequest { userConfigStorage.isLoggingEnables() }
 
     override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isPersistentWebSocketConnectionEnabledFlow().wrapStorageRequest()
 
-    override fun persistPersistentWebSocketConnectionStatus(status: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun persistPersistentWebSocketConnectionStatus(status: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistPersistentWebSocketConnectionStatus(status) }
 
-    override fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
+    override suspend fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistFileSharingStatus(status, isStatusChanged) }
 
-    override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> =
+    override suspend fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> =
         wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }.map {
             with(it) { FileSharingStatus(status, isStatusChanged) }
         }
@@ -57,13 +57,13 @@ class UserConfigDataSource(
                 }
             }
 
-    override fun isMLSEnabled(): Either<StorageFailure, Boolean> =
+    override suspend fun isMLSEnabled(): Either<StorageFailure, Boolean> =
         wrapStorageRequest { userConfigStorage.isMLSEnabled() }
 
-    override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+    override suspend fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
 
-    override fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
+    override suspend fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
         wrapStorageRequest { userConfigStorage.persistClassifiedDomainsStatus(enabled, domains) }
 
     override fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>> =

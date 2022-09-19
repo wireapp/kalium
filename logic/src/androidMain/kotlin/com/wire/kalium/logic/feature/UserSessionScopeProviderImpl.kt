@@ -20,6 +20,7 @@ import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmm_settings.GlobalPrefProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
@@ -32,7 +33,7 @@ actual class UserSessionScopeProviderImpl(
     private val appContext: Context,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs,
-    private val globalPreferences: KaliumPreferences,
+    private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
     private val idMapper: IdMapper
 ) : UserSessionScopeProviderCommon() {
@@ -44,7 +45,7 @@ actual class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         val networkContainer = AuthenticatedNetworkContainer(
-            SessionManagerImpl(globalScope.sessionRepository, userId, AuthTokenStorage(globalPreferences)),
+            SessionManagerImpl(globalScope.sessionRepository, userId, globalPreferences.authTokenStorage),
             ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled
         )
@@ -63,7 +64,7 @@ actual class UserSessionScopeProviderImpl(
             UserDatabaseProvider(
                 appContext,
                 userIDEntity,
-                SecurityHelper(globalPreferences).userDBSecret(userId),
+                runBlocking { SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId) },
                 kaliumConfigs.shouldEncryptData,
                 KaliumDispatcherImpl.io
             )

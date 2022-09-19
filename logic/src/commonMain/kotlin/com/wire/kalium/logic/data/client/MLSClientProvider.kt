@@ -11,6 +11,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.persistence.kmm_settings.GlobalPrefProvider
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.util.FileUtil
 
@@ -22,7 +24,7 @@ class MLSClientProviderImpl(
     private val rootKeyStorePath: String,
     private val userId: UserId,
     private val clientRepository: ClientRepository,
-    private val kaliumPreferences: KaliumPreferences
+    private val passphraseStorage: PassphraseStorage
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
@@ -43,7 +45,7 @@ class MLSClientProviderImpl(
                 cryptoUserId,
                 currentClientId,
                 location,
-                SecurityHelper(kaliumPreferences).mlsDBSecret(userId)
+                SecurityHelper(passphraseStorage).mlsDBSecret(userId)
             )
             mlsClient = newClient
             Either.Right(newClient)

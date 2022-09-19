@@ -55,12 +55,12 @@ internal class SyncFeatureConfigsUseCaseImpl(
             }
         }
 
-    private fun checkClassifiedDomainsStatus(model: ClassifiedDomainsModel) {
+    private suspend fun checkClassifiedDomainsStatus(model: ClassifiedDomainsModel) {
         val classifiedDomainsEnabled = model.status == Status.ENABLED
         userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, model.config.domains)
     }
 
-    private fun checkFileSharingStatus(model: ConfigsStatusModel) {
+    private suspend fun checkFileSharingStatus(model: ConfigsStatusModel) {
         if (kaliumConfigs.fileRestrictionEnabled) {
             userConfigRepository.setFileSharingStatus(false, null)
         } else {
