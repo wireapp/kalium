@@ -6,8 +6,9 @@ interface QualifiedIdMapper {
     fun fromStringToQualifiedID(id: String): QualifiedID
 }
 
+@Deprecated("Mapper should not be public and visible to consumer apps")
 class QualifiedIdMapperImpl(
-    private val selfUserId: UserId
+    private val selfUserId: UserId?
 ) : QualifiedIdMapper {
     override fun fromStringToQualifiedID(id: String): QualifiedID {
         val components = id.split(VALUE_DOMAIN_SEPARATOR).filter { it.isNotBlank() }
@@ -30,7 +31,7 @@ class QualifiedIdMapperImpl(
         }
     }
 
-    private fun selfUserDomain(): String = selfUserId.domain
+    private fun selfUserDomain(): String = selfUserId?.domain ?: ""
 }
 
 fun String.toQualifiedID(mapper: QualifiedIdMapper): QualifiedID = mapper.fromStringToQualifiedID(this)
