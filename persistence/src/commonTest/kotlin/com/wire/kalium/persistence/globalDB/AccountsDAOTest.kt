@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.globalDB
 
+import com.wire.kalium.persistence.AccountInfo
 import com.wire.kalium.persistence.GlobalDBBaseTest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
@@ -8,11 +9,13 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountsDAOTest : GlobalDBBaseTest() {
@@ -41,6 +44,34 @@ class AccountsDAOTest : GlobalDBBaseTest() {
                     commonApiVersion = metaData.apiVersion
                 )
             )
+        }
+    }
+
+    @Test
+    fun givenNullSsoIdFields_thenReturnNull() = runTest {
+        val accountWithNullSsoId =
+            VALID_ACCOUNT.copy(info = AccountInfoEntity(UserIDEntity("user_null_sso", "domain"), null), ssoId = null)
+        val accountWithSsoId = VALID_ACCOUNT.copy(
+            info = AccountInfoEntity(UserIDEntity("user_sso", "domain"), null),
+            ssoId = SsoIdEntity("sso_id", null, null)
+        )
+
+        db.accountsDAO.insertOrReplace(
+            accountWithNullSsoId.info.userIDEntity,
+            accountWithNullSsoId.ssoId,
+            accountWithNullSsoId.serverConfigId
+        )
+        db.accountsDAO.insertOrReplace(
+            accountWithSsoId.info.userIDEntity,
+            accountWithSsoId.ssoId,
+            accountWithSsoId.serverConfigId
+        )
+
+        db.accountsDAO.ssoId(accountWithNullSsoId.info.userIDEntity).also {
+            assertNull(it)
+        }
+        db.accountsDAO.ssoId(accountWithSsoId.info.userIDEntity).also {
+            assertEquals(accountWithSsoId.ssoId, it)
         }
     }
 

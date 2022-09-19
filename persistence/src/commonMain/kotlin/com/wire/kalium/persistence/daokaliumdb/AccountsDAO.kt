@@ -49,11 +49,11 @@ internal object AccountMapper {
         scim_external_id: String?,
         subject: String?,
         tenant: String?
-    ): SsoIdEntity = SsoIdEntity(
-        scimExternalId = scim_external_id,
-        subject = subject,
-        tenant = tenant
-    )
+    ): SsoIdEntity? = if (scim_external_id == null && subject == null && tenant == null) {
+        null
+    } else {
+        SsoIdEntity(scim_external_id, subject, tenant)
+    }
 }
 
 @Suppress("TooManyFunctions")
@@ -84,7 +84,8 @@ internal class AccountsDAOImpl internal constructor(
     private val mapper: AccountMapper = AccountMapper
 ) : AccountsDAO {
     override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? =
-        queries.ssoId(userIDEntity, mapper = mapper::toSsoIdEntity).executeAsOneOrNull()
+        queries.ssoId(userIDEntity).executeAsOneOrNull()
+            ?.let { mapper.toSsoIdEntity(scim_external_id = it.scim_external_id, subject = it.subject, tenant = it.tenant) }
 
     override suspend fun insertOrReplace(
         userIDEntity: UserIDEntity,
