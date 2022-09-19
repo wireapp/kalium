@@ -71,6 +71,7 @@ private class ConversationMapper {
         }
     }
 
+    @Suppress("LongParameterList")
     private fun mapProtocolInfo(
         protocol: ConversationEntity.Protocol,
         mlsGroupId: String?,
