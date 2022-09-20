@@ -43,7 +43,7 @@ class PersistOtherUsersClientsUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::storeUserClientList, fun2<UserId, List<OtherUserClient>>())
+            .suspendFunction(arrangement.clientRepository::storeUserClientListAndRemoveRedundantClients, fun2())
             .with(any(), any())
             .wasInvoked(exactly = once)
 
@@ -85,7 +85,7 @@ class PersistOtherUsersClientsUseCaseTest {
                 .thenReturn(Either.Right(listOf(userId to expectedResponse)))
 
             given(clientRepository)
-                .coroutine { clientRepository.storeUserClientList(userId, expectedResponse) }
+                .coroutine { clientRepository.storeUserClientListAndRemoveRedundantClients(userId, expectedResponse) }
                 .thenReturn(Either.Right(Unit))
 
             return this
