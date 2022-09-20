@@ -176,7 +176,7 @@ actual class UserDatabaseProvider(private val storePath: File, dispatcher: Corou
         get() = CallDAOImpl(database.callsQueries)
 
     actual val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries)
 
     actual val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)
