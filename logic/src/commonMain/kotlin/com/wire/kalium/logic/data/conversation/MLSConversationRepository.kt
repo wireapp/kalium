@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.cryptography.AddMemberCommitBundle
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
