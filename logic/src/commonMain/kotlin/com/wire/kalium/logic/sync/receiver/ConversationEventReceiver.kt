@@ -412,22 +412,8 @@ internal class ConversationEventReceiverImpl(
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {
-                is MessageContent.Text, is MessageContent.FailedDecryption -> {
-                    val isMessageComingFromOtherClient = message.senderUserId == selfUserId
-
-                    if (isMessageComingFromOtherClient) {
-                        // if the message is coming from other client it means
-                        // that at that time the user has read the conversation
-                        // so we want to update it with date that the message
-                        // has been sent
-                        conversationRepository.updateConversationReadDate(
-                            qualifiedID = message.conversationId,
-                            date = message.date
-                        )
-                    }
-                    persistMessage(message)
-                }
-
+                // Persist Messages - > lists
+                is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
                 is MessageContent.Asset -> handleAssetMessage(message)
                 is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
                 is MessageContent.DeleteForMe -> deleteForMeHandler.handle(message, content)
