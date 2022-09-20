@@ -14,7 +14,7 @@ import java.util.Properties
  */
 
 @OptIn(ExperimentalSettingsImplementation::class)
-actual class EncryptedSettingsHolder(
+internal actual class EncryptedSettingsHolder(
     rootPath: String,
     options: SettingOptions
 ) {

@@ -14,7 +14,7 @@ interface LastRetrievedNotificationEventStorage {
     fun getLastEventId(): String?
 }
 
-class LastRetrievedNotificationEventStorageImpl(
+internal class LastRetrievedNotificationEventStorageImpl internal constructor(
     private val kaliumPreferences: KaliumPreferences
     ): LastRetrievedNotificationEventStorage {
 

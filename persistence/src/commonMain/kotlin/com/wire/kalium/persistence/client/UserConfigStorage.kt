@@ -43,30 +43,35 @@ interface UserConfigStorage {
      */
     fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Boolean>
 
-    /**
-     * save flag from the file sharing api, and if the status changes
-     */
+    @Deprecated("must be moved to the user specific storage")
+            /**
+             * save flag from the file sharing api, and if the status changes
+             */
     fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?)
 
-    /**
-     * get the saved flag that been saved to know if the file sharing is enabled or not with the flag
-     * to know if there was a status change
-     */
+    @Deprecated("must be moved to the user specific storage")
+            /**
+             * get the saved flag that been saved to know if the file sharing is enabled or not with the flag
+             * to know if there was a status change
+             */
     fun isFileSharingEnabled(): IsFileSharingEnabledEntity?
 
-    /**
-     * returns the Flow of file sharing status
-     */
+    @Deprecated("must be moved to the user specific storage")
+            /**
+             * returns the Flow of file sharing status
+             */
     fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?>
 
-    /**
-     * returns a Flow containing the status and list of classified domains
-     */
+    @Deprecated("must be moved to the user specific storage")
+            /**
+             * returns a Flow containing the status and list of classified domains
+             */
     fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity>
 
-    /**
-     * save the flag and list of trusted domains
-     */
+    @Deprecated("must be moved to the user specific storage")
+            /**
+             * save the flag and list of trusted domains
+             */
     fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
 }
 
@@ -132,14 +137,17 @@ internal class UserConfigStorageImpl internal constructor(
         )
     }
 
+    @Deprecated("must be moved to the user specific storage")
     override fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
         kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
 
+    @Deprecated("must be moved to the user specific storage")
     override fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?> = isFileSharingEnabledFlow
         .map { isFileSharingEnabled() }
         .onStart { emit(isFileSharingEnabled()) }
         .distinctUntilChanged()
 
+    @Deprecated("must be moved to the user specific storage")
     override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity> {
         return isClassifiedDomainsEnabledFlow
             .map {
@@ -154,6 +162,7 @@ internal class UserConfigStorageImpl internal constructor(
             }.distinctUntilChanged()
     }
 
+    @Deprecated("must be moved to the user specific storage")
     override fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>) {
         kaliumPreferences.putSerializable(
             ENABLE_CLASSIFIED_DOMAINS,

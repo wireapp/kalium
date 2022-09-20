@@ -5,7 +5,7 @@ import com.russhwolf.settings.KeychainSettings
 import com.russhwolf.settings.Settings
 
 @OptIn(ExperimentalSettingsImplementation::class)
-actual class EncryptedSettingsHolder(
+internal actual class EncryptedSettingsHolder(
     serviceName: String
 ) {
     actual val encryptedSettings: Settings = KeychainSettings(serviceName)
