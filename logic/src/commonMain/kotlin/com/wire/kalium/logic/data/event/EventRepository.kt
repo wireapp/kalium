@@ -10,13 +10,12 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.api.notification.WebSocketEvent
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
-import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.event.EventInfoStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
@@ -41,7 +40,7 @@ interface EventRepository {
 
 class EventDataSource(
     private val notificationApi: NotificationApi,
-    private val metadataDAO: MetadataDAO,
+    private val eventInfoStorage: EventInfoStorage,
     private val clientRepository: ClientRepository,
     private val eventMapper: EventMapper = MapperProvider.eventMapper()
 ) : EventRepository {
@@ -80,7 +79,7 @@ class EventDataSource(
     ) = flow<Either<CoreFailure, Event>> {
 
         var hasMore = true
-        var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+        var lastFetchedNotificationId = eventInfoStorage.lastProcessedId
 
         while (coroutineContext.isActive && hasMore) {
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
@@ -102,7 +101,7 @@ class EventDataSource(
         }
     }
 
-    override suspend fun lastEventId(): Either<CoreFailure, String> = metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)?.let {
+    override suspend fun lastEventId(): Either<CoreFailure, String> = eventInfoStorage.lastProcessedId?.let {
         Either.Right(it)
     } ?: run {
         clientRepository.currentClientId().flatMap { clientId ->
@@ -111,7 +110,7 @@ class EventDataSource(
     }
 
     override suspend fun updateLastProcessedEventId(eventId: String) {
-        wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_PROCESSED_EVENT_ID_KEY) }
+        eventInfoStorage.lastProcessedId = eventId
     }
 
     private suspend fun getNextPendingEventsPage(
@@ -123,6 +122,5 @@ class EventDataSource(
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
-        const val LAST_PROCESSED_EVENT_ID_KEY = "last_processed_event_id"
     }
 }

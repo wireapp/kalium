@@ -22,10 +22,11 @@ import com.wire.kalium.network.api.notification.NotificationApi
 import com.wire.kalium.network.api.notification.NotificationResponse
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.event.EventInfoStorage
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -43,7 +44,9 @@ class EventRepositoryTest {
     private val notificationApi: NotificationApi = mock(classOf<NotificationApi>())
 
     @Mock
-    val metaDAO = mock(classOf<MetadataDAO>())
+    private val eventInfoStorage: EventInfoStorage = configure(mock(classOf<EventInfoStorage>())) {
+        stubsUnitByDefault = true
+    }
 
     @Mock
     private val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
@@ -66,7 +69,7 @@ class EventRepositoryTest {
 
     @BeforeTest
     fun setup() {
-        eventRepository = EventDataSource(notificationApi, metaDAO, clientRepository, eventMapper)
+        eventRepository = EventDataSource(notificationApi, eventInfoStorage, clientRepository, eventMapper)
     }
 
     @Test
@@ -80,8 +83,9 @@ class EventRepositoryTest {
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
         val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
 
-        given(metaDAO)
-            .suspendFunction(metaDAO::valueByKey).whenInvokedWith(any())
+        given(eventInfoStorage)
+            .getter(eventInfoStorage::lastProcessedId)
+            .whenInvoked()
             .thenReturn("someNotificationId")
 
         given(notificationApi)
@@ -105,8 +109,9 @@ class EventRepositoryTest {
 
     @Test
     fun givenNoSavedLastProcessedId_whenGettingLastProcessedEventId_thenShouldAskFromAPI() = runTest {
-        given(metaDAO)
-            .suspendFunction(metaDAO::valueByKey).whenInvokedWith(any())
+        given(eventInfoStorage)
+            .getter(eventInfoStorage::lastProcessedId)
+            .whenInvoked()
             .thenReturn(null)
 
         val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
@@ -140,8 +145,9 @@ class EventRepositoryTest {
     @Test
     fun givenASavedLastProcessedId_whenGettingLastEventId_thenShouldReturnIt() = runTest {
         val eventId = "dh817h2e"
-        given(metaDAO)
-            .suspendFunction(metaDAO::valueByKey).whenInvokedWith(any())
+        given(eventInfoStorage)
+            .getter(eventInfoStorage::lastProcessedId)
+            .whenInvoked()
             .thenReturn(eventId)
 
         val result = eventRepository.lastEventId()
