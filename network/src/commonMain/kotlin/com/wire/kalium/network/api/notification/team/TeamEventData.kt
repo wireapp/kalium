@@ -18,6 +18,6 @@ data class TeamMemberIdData(
 
 @Serializable
 data class PermissionsData(
-    val permissions: TeamsApi.Permissions,
+    @SerialName("permissions") val permissions: TeamsApi.Permissions,
     @SerialName("user") val nonQualifiedUserId: NonQualifiedUserId
 )

@@ -18,7 +18,6 @@ import com.wire.kalium.network.api.notification.team.TeamUpdateData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
 import com.wire.kalium.network.api.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.notification.user.UserUpdateEventData
-import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
