@@ -16,10 +16,8 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.network.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.db.UserDatabaseProvider
-import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
-import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.kmmSettings.SettingOptions
+import com.wire.kalium.persistence.kmmSettings.UserPrefProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -51,14 +49,11 @@ actual class UserSessionScopeProviderImpl(
         runBlocking { proteusClient.open() }
 
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(userId)
-        val encryptedSettingsHolder = EncryptedSettingsHolder(
+        val userPrefProvider = UserPrefProvider(
+            idMapper.toDaoModel(userId),
             rootPath,
-            SettingOptions.UserSettings(
-                shouldEncryptData = kaliumConfigs.shouldEncryptData,
-                idMapper.toDaoModel(userId)
-            )
+            kaliumConfigs.shouldEncryptData
         )
-        val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
         val userDatabase = UserDatabaseProvider(File(rootStoragePath), KaliumDispatcherImpl.io)
 
         val userDataSource = AuthenticatedDataSourceSet(
@@ -67,8 +62,7 @@ actual class UserSessionScopeProviderImpl(
             proteusClient,
             userSessionWorkScheduler,
             userDatabase,
-            userPreferencesSettings,
-            encryptedSettingsHolder
+            userPrefProvider
         )
         return UserSessionScope(
             userId,

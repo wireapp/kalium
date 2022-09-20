@@ -16,5 +16,4 @@ actual class GlobalPrefProvider {
     @Deprecated("must be moved to user specific storage")
     actual val userConfigStorage: UserConfigStorage
         get() = TODO("Not yet implemented")
-
 }
