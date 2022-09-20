@@ -8,7 +8,7 @@ interface PassphraseStorage {
     fun clearPassphrase(key: String)
 }
 
-class PassphraseStorageImpl internal constructor(
+internal class PassphraseStorageImpl internal constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : PassphraseStorage {
     override fun getPassphrase(key: String): String? = kaliumPreferences.getString(key)
