@@ -9,10 +9,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder
-import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
-import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.kmmSettings.SettingOptions
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
 import java.io.File
 
@@ -24,18 +21,17 @@ actual class CoreLogic(
     clientLabel = clientLabel, rootPath = rootPath, kaliumConfigs = kaliumConfigs
 ) {
 
-    override val globalPreferences: Lazy<KaliumPreferences> = lazy {
-        KaliumPreferencesSettings(
-            EncryptedSettingsHolder(
-                rootPath,
-                SettingOptions.AppSettings(
-                    shouldEncryptData = kaliumConfigs.shouldEncryptData
-                )
-            ).encryptedSettings
+    override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
+        GlobalPrefProvider(
+            rootPath = rootPath,
+            shouldEncryptData = kaliumConfigs.shouldEncryptData
+
         )
     }
 
-    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy { GlobalDatabaseProvider(File("$rootPath/global-storage")) }
+    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy {
+        GlobalDatabaseProvider(File("$rootPath/global-storage"))
+    }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
@@ -49,13 +45,13 @@ actual class CoreLogic(
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
-            UserSessionScopeProviderImpl(
-                rootPath,
-                getGlobalScope(),
-                kaliumConfigs,
-                globalPreferences.value,
-                globalCallManager,
-                idMapper
-            )
-        }
+        UserSessionScopeProviderImpl(
+            rootPath,
+            getGlobalScope(),
+            kaliumConfigs,
+            globalPreferences.value,
+            globalCallManager,
+            idMapper
+        )
+    }
 }
