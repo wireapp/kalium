@@ -40,7 +40,7 @@ class TestSessionManager : SessionManager {
     private var session = testCredentials
 
     override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfig.links)
-    override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
+    override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
         SessionDTO(
             session.userId,
             newAccessTokenDTO.tokenType,

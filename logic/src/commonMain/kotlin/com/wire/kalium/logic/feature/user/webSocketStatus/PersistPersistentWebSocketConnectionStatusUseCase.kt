@@ -1,19 +1,19 @@
 package com.wire.kalium.logic.feature.user.webSocketStatus
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
 
 interface PersistPersistentWebSocketConnectionStatusUseCase {
-    suspend operator fun invoke(enabled: Boolean): Unit
+    operator fun invoke(enabled: Boolean): Unit
 }
 
 internal class PersistPersistentWebSocketConnectionStatusUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : PersistPersistentWebSocketConnectionStatusUseCase {
-    override suspend operator fun invoke(enabled: Boolean): Unit =
+    override operator fun invoke(enabled: Boolean): Unit =
         userConfigRepository.persistPersistentWebSocketConnectionStatus(enabled).let {
             it.fold({ storageFailure ->
                 when (storageFailure) {

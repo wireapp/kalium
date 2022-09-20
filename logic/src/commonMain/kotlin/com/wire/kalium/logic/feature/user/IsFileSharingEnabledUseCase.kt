@@ -12,14 +12,14 @@ import com.wire.kalium.logic.kaliumLogger
  */
 
 interface IsFileSharingEnabledUseCase {
-    suspend operator fun invoke(): FileSharingStatus
+    operator fun invoke(): FileSharingStatus
 }
 
 class IsFileSharingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsFileSharingEnabledUseCase {
 
-    override suspend operator fun invoke(): FileSharingStatus =
+    override operator fun invoke(): FileSharingStatus =
         userConfigRepository.isFileSharingEnabled().fold({
             when (it) {
                 StorageFailure.DataNotFound -> {
