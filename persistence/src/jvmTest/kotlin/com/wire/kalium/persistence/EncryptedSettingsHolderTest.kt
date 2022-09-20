@@ -1,8 +1,8 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
-import com.wire.kalium.persistence.kmm_settings.SettingOptions
+import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmmSettings.SettingOptions
 import org.junit.Test
 import java.io.FileInputStream
 import java.nio.file.Files

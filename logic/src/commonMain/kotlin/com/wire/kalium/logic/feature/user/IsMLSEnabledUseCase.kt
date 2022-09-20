@@ -4,9 +4,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 
 interface IsMLSEnabledUseCase {
-
     operator fun invoke(): Boolean
-
 }
 
 class IsMLSEnabledUseCaseImpl(

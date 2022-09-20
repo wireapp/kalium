@@ -147,13 +147,9 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.client.TokenStorage
-import com.wire.kalium.persistence.client.TokenStorageImpl
-import com.wire.kalium.persistence.client.UserConfigStorage
-import com.wire.kalium.persistence.client.UserConfigStorageImpl
 import com.wire.kalium.persistence.db.UserDatabaseProvider
-import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -172,13 +168,11 @@ abstract class UserSessionScopeCommon internal constructor(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
-    private val globalPreferences: KaliumPreferences,
+    private val globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
 ) : CoroutineScope {
-    // we made this lazy, so it will have a single instance for the storage
-    private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
 
     private var _clientId: ClientId? = null
     private suspend fun clientId(): Either<CoreFailure, ClientId> =
@@ -190,7 +184,8 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
 
-    private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
+    private val userConfigRepository: UserConfigRepository
+        get() = UserConfigDataSource(globalPreferences.userConfigStorage)
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
     private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
@@ -208,7 +203,7 @@ abstract class UserSessionScopeCommon internal constructor(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
-            authenticatedDataSourceSet.kaliumPreferencesSettings
+            globalPreferences.passphraseStorage
         )
     }
 
@@ -222,7 +217,7 @@ abstract class UserSessionScopeCommon internal constructor(
             syncManager
         )
 
-    private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
+    private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -304,9 +299,6 @@ abstract class UserSessionScopeCommon internal constructor(
     }
 
     protected abstract val clientConfig: ClientConfig
-
-    private val tokenStorage: TokenStorage
-        get() = TokenStorageImpl(globalPreferences)
 
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
@@ -615,9 +607,12 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     private val featureConfigRepository: FeatureConfigRepository
-        get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
+        get() = FeatureConfigDataSource(
+            featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi
+        )
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
-    val observeFileSharingStatus: ObserveFileSharingStatusUseCase get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
+    val observeFileSharingStatus: ObserveFileSharingStatusUseCase
+        get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(userConfigRepository)
 
     internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
