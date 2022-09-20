@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.kmm_settings
+package com.wire.kalium.persistence.kmmSettings
 
 import com.russhwolf.settings.JsSettings
 import com.russhwolf.settings.Settings

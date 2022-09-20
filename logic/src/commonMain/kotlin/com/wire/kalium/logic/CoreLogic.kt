@@ -12,7 +12,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.kmm_settings.GlobalPrefProvider
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 expect class CoreLogic : CoreLogicCommon
 

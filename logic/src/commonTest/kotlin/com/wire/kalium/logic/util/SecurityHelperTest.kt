@@ -1,10 +1,10 @@
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import kotlin.test.BeforeTest
 import com.russhwolf.settings.MockSettings
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

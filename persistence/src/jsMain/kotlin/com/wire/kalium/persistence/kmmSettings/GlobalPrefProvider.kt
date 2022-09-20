@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.kmm_settings
+package com.wire.kalium.persistence.kmmSettings
 
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.TokenStorage

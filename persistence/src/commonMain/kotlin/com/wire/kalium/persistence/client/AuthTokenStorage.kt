@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

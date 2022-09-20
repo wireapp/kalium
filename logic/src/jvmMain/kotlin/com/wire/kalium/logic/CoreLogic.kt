@@ -9,10 +9,10 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.kmm_settings.SettingOptions
+import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
+import com.wire.kalium.persistence.kmmSettings.SettingOptions
 import kotlinx.coroutines.cancel
 import java.io.File
 

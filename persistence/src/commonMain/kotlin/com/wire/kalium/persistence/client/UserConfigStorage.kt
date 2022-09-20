@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.client
 
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -134,7 +134,6 @@ internal class UserConfigStorageImpl internal constructor(
 
     override fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
         kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
-
 
     override fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?> = isFileSharingEnabledFlow
         .map { isFileSharingEnabled() }

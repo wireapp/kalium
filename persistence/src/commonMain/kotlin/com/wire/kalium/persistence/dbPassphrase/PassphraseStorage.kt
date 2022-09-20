@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.dbPassphrase
 
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 
 interface PassphraseStorage {
     fun getPassphrase(key: String): String?

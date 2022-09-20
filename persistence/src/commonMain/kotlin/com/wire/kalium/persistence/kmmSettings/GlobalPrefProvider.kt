@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.kmm_settings
+package com.wire.kalium.persistence.kmmSettings
 
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.TokenStorage
@@ -11,5 +11,6 @@ expect class GlobalPrefProvider {
     val tokenStorage: TokenStorage
 
     // TODO: Remove this fpr proper user config storage
+    @Deprecated("must be moved to user specific storage")
     val userConfigStorage: UserConfigStorage
 }

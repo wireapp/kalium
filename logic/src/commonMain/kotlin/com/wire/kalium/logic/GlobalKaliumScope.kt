@@ -35,7 +35,7 @@ import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.UnboundNetworkContainer
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.kmm_settings.GlobalPrefProvider
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 /**
  * Scope that exposes all operations that are user and backend agnostic, like
