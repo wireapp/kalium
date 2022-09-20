@@ -95,16 +95,7 @@ internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<
     }
 }
 
-internal inline fun <T : Any> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
-    return try {
-        Either.Right(mlsRequest())
-    } catch (e: Exception) {
-        kaliumLogger.e(e.stackTraceToString())
-        Either.Left(MLSFailure(e))
-    }
-}
-
-internal inline fun <T : Any> wrapMLSNullableRequest(mlsRequest: () -> T?): Either<MLSFailure, T?> {
+internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     return try {
         Either.Right(mlsRequest())
     } catch (e: Exception) {

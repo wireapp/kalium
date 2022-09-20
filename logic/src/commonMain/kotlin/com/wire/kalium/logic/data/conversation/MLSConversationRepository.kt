@@ -22,7 +22,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapMLSNullableRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.message.MLSMessageApi
@@ -257,7 +256,7 @@ class MLSConversationDataSource(
                             )
                         }
 
-                    wrapMLSNullableRequest {
+                    wrapMLSRequest {
                         mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                     }.flatMap { commitBundle ->
                         commitBundle?.let {
@@ -323,7 +322,7 @@ class MLSConversationDataSource(
                     mlsClient.createConversation(idMapper.toCryptoModel(groupID))
                 }.flatMap {
                     retryOnCommitFailure(groupID) {
-                        wrapMLSNullableRequest {
+                        wrapMLSRequest {
                             mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                         }.flatMap { commitBundle ->
                             commitBundle?.let {
