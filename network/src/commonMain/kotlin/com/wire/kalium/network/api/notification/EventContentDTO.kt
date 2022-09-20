@@ -1,8 +1,10 @@
 package com.wire.kalium.network.api.notification
 
 import com.wire.kalium.network.api.ConversationId
+import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConversationMembers
+import com.wire.kalium.network.api.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.conversation.ConversationUsers
@@ -10,8 +12,13 @@ import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.notification.team.PermissionsData
+import com.wire.kalium.network.api.notification.team.TeamMemberIdData
+import com.wire.kalium.network.api.notification.team.TeamUpdateData
 import com.wire.kalium.network.api.notification.user.NewClientEventData
 import com.wire.kalium.network.api.notification.user.RemoveClientEventData
+import com.wire.kalium.network.api.notification.user.UserUpdateEventData
+import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.network.api.user.connection.ConnectionDTO
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -97,14 +104,6 @@ sealed class EventContentDTO {
     sealed class Conversation : EventContentDTO() {
 
         @Serializable
-        @SerialName("conversation.access-update")
-        data class AccessUpdate(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("data") val data: ConversationAccessInfoDTO,
-            @SerialName("qualified_from") val qualifiedFrom: UserId,
-        ) : Conversation()
-
-        @Serializable
         @SerialName("conversation.create")
         data class NewConversationDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
@@ -114,12 +113,21 @@ sealed class EventContentDTO {
         ) : Conversation()
 
         @Serializable
-        @SerialName("conversation.otr-message-add")
-        data class NewMessageDTO(
+        @SerialName("conversation.delete")
+        data class DeletedConversationDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            val time: String
+        ) : Conversation()
+
+        // TODO handle
+        @Serializable
+        @SerialName("conversation.rename")
+        data class ConversationRenameDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             val time: String,
-            @SerialName("data") val data: MessageEventData,
+            @SerialName("data") val updateNameData: ConversationNameUpdateEvent,
         ) : Conversation()
 
         @Serializable
@@ -153,14 +161,32 @@ sealed class EventContentDTO {
             @SerialName("data") val roleChange: ConversationRoleChange
         ) : Conversation()
 
+        // TODO conversation.typing
+
         @Serializable
-        @SerialName("conversation.mls-welcome")
-        data class MLSWelcomeDTO(
+        @SerialName("conversation.otr-message-add")
+        data class NewMessageDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            @SerialName("data") val message: String,
-            @SerialName("from") val from: String
+            val time: String,
+            @SerialName("data") val data: MessageEventData,
         ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.access-update")
+        data class AccessUpdate(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ConversationAccessInfoDTO,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+        ) : Conversation()
+
+        // TODO conversation.code-update
+
+        // TODO conversation.code-delete
+
+        // TODO conversation.receipt-mode-update
+
+        // TODO conversation.message-timer-update
 
         @Serializable
         @SerialName("conversation.mls-message-add")
@@ -172,21 +198,51 @@ sealed class EventContentDTO {
         ) : Conversation()
 
         @Serializable
-        @SerialName("conversation.delete")
-        data class DeletedConversationDTO(
+        @SerialName("conversation.mls-welcome")
+        data class MLSWelcomeDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String
+            @SerialName("data") val message: String,
+            @SerialName("from") val from: String
         ) : Conversation()
+
     }
 
+    // TODO handle
     @Serializable
-    sealed class FeatureConfig : EventContentDTO() {
-        @Serializable(with = JsonCorrectingSerializer::class)
-        @SerialName("feature-config.update")
-        data class FeatureConfigUpdatedDTO(
-            @SerialName("data") val data: FeatureConfigData,
-        ) : FeatureConfig()
+    sealed class Team : EventContentDTO() {
+        @Serializable
+        @SerialName("team.update")
+        data class Update(
+            @SerialName("data") val teamUpdate: TeamUpdateData,
+            @SerialName("team") val teamId: TeamId,
+            val time: String,
+        ) : Team()
+
+        @Serializable
+        @SerialName("team.member-join")
+        data class MemberJoin(
+            @SerialName("data") val teamMember: TeamMemberIdData,
+            @SerialName("team") val teamId: TeamId,
+            val time: String,
+        ) : Team()
+
+        @Serializable
+        @SerialName("team.member-leave")
+        data class MemberLeave(
+            @SerialName("data") val teamMember: TeamMemberIdData,
+            @SerialName("team") val teamId: TeamId,
+            val time: String,
+        ) : Team()
+
+        @Serializable
+        @SerialName("team.member-update")
+        data class MemberUpdate(
+            @SerialName("data") val permissionsResponse: PermissionsData,
+            @SerialName("team") val teamId: TeamId,
+            val time: String,
+        ) : Team()
+
     }
 
     @Serializable
@@ -204,11 +260,26 @@ sealed class EventContentDTO {
             @SerialName("client") val client: RemoveClientEventData,
         ) : User()
 
+        // TODO user.properties-set
+
+        // TODO user.properties-delete
+
+        // TODO handle
+        @Serializable
+        @SerialName("user.update")
+        data class UpdateDTO(
+            @SerialName("user") val userData: UserUpdateEventData,
+        ) : User()
+
+        // TODO user.identity-remove
+
         @Serializable
         @SerialName("user.connection")
         data class NewConnectionDTO(
             @SerialName("connection") val connection: ConnectionDTO,
         ) : User()
+
+        // TODO user.push-remove
 
         @Serializable
         @SerialName("user.delete")
@@ -216,6 +287,15 @@ sealed class EventContentDTO {
             @SerialName("id") val id: String,
             @SerialName("qualified_id") val userId: UserId
         ) : User()
+    }
+
+    @Serializable
+    sealed class FeatureConfig : EventContentDTO() {
+        @Serializable(with = JsonCorrectingSerializer::class)
+        @SerialName("feature-config.update")
+        data class FeatureConfigUpdatedDTO(
+            @SerialName("data") val data: FeatureConfigData,
+        ) : FeatureConfig()
     }
 
     @Serializable
