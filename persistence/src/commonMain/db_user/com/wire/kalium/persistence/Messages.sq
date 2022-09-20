@@ -65,6 +65,7 @@ CREATE TABLE MessageAssetContent (
       asset_size INTEGER NOT NULL,
       asset_name TEXT,
       asset_mime_type TEXT NOT NULL,
+      asset_upload_status TEXT AS MessageEntity.UploadStatus,
       asset_download_status TEXT AS MessageEntity.DownloadStatus,
 
       -- remote data fields
@@ -155,6 +156,7 @@ TextContent.text_body AS text,
 AssetContent.asset_size AS assetSize,
 AssetContent.asset_name AS assetName,
 AssetContent.asset_mime_type AS assetMimeType,
+AssetContent.asset_upload_status AS assetUploadStatus,
 AssetContent.asset_download_status AS assetDownloadStatus,
 AssetContent.asset_otr_key AS assetOtrKey,
 AssetContent.asset_sha256 AS assetSha256,
@@ -252,13 +254,14 @@ message_id = excluded.message_id,
 asset_mime_type = excluded.asset_mime_type;
 
 insertMessageAssetContent:
-INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
 asset_size = excluded.asset_size,
 asset_name = excluded.asset_name,
 asset_mime_type = excluded.asset_mime_type,
+asset_upload_status = excluded.asset_upload_status,
 asset_download_status = excluded.asset_download_status,
 asset_otr_key = excluded.asset_otr_key,
 asset_sha256 = excluded.asset_sha256,
@@ -304,6 +307,11 @@ updateMessageStatus:
 UPDATE Message
 SET status = ?
 WHERE id = ? AND conversation_id = ?;
+
+updateAssetUploadStatus:
+UPDATE MessageAssetContent
+SET asset_upload_status = ?
+WHERE message_id = ? AND conversation_id = ?;
 
 updateAssetDownloadStatus:
 UPDATE MessageAssetContent

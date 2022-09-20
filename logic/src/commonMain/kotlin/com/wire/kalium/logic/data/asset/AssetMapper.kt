@@ -32,6 +32,8 @@ interface AssetMapper {
     fun fromAssetContentToProtoAssetMessage(assetContent: AssetContent): Asset
     fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
     fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
+    fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus
+    fun fromUploadStatusEntityToLogicModel(uploadStatus: MessageEntity.UploadStatus?): Message.UploadStatus
 }
 
 class AssetMapperImpl(
@@ -90,6 +92,7 @@ class AssetMapperImpl(
                         else -> AES_CBC
                     }
                 ),
+                uploadStatus = fromUploadStatusEntityToLogicModel(assetUploadStatus),
                 downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus)
             )
         }
@@ -155,7 +158,8 @@ class AssetMapperImpl(
                         is Asset.Status.NotUploaded -> defaultRemoteData
                     }
                 } ?: defaultRemoteData,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
+                uploadStatus = Message.UploadStatus.NOT_UPLOADED
             )
         }
     }
@@ -189,23 +193,42 @@ class AssetMapperImpl(
         )
     }
 
+    override fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus {
+        return when (uploadStatus) {
+            Message.UploadStatus.NOT_UPLOADED -> MessageEntity.UploadStatus.NOT_UPLOADED
+            Message.UploadStatus.UPLOAD_IN_PROGRESS -> MessageEntity.UploadStatus.IN_PROGRESS
+            Message.UploadStatus.UPLOADED -> MessageEntity.UploadStatus.UPLOADED
+            Message.UploadStatus.FAILED_UPLOAD -> MessageEntity.UploadStatus.FAILED
+        }
+    }
+
+    override fun fromUploadStatusEntityToLogicModel(uploadStatus: MessageEntity.UploadStatus?): Message.UploadStatus {
+        return when (uploadStatus) {
+            MessageEntity.UploadStatus.NOT_UPLOADED -> Message.UploadStatus.NOT_UPLOADED
+            MessageEntity.UploadStatus.IN_PROGRESS -> Message.UploadStatus.UPLOAD_IN_PROGRESS
+            MessageEntity.UploadStatus.UPLOADED -> Message.UploadStatus.UPLOADED
+            MessageEntity.UploadStatus.FAILED -> Message.UploadStatus.FAILED_UPLOAD
+            null -> Message.UploadStatus.NOT_UPLOADED
+        }
+    }
+
     override fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus {
         return when (downloadStatus) {
             Message.DownloadStatus.NOT_DOWNLOADED -> MessageEntity.DownloadStatus.NOT_DOWNLOADED
-            Message.DownloadStatus.IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
+            Message.DownloadStatus.DOWNLOAD_IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
             Message.DownloadStatus.SAVED_INTERNALLY -> MessageEntity.DownloadStatus.SAVED_INTERNALLY
             Message.DownloadStatus.SAVED_EXTERNALLY -> MessageEntity.DownloadStatus.SAVED_EXTERNALLY
-            Message.DownloadStatus.FAILED -> MessageEntity.DownloadStatus.FAILED
+            Message.DownloadStatus.FAILED_DOWNLOAD -> MessageEntity.DownloadStatus.FAILED
         }
     }
 
     override fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus {
         return when (downloadStatus) {
             MessageEntity.DownloadStatus.NOT_DOWNLOADED -> Message.DownloadStatus.NOT_DOWNLOADED
-            MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.IN_PROGRESS
+            MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
             MessageEntity.DownloadStatus.SAVED_INTERNALLY -> Message.DownloadStatus.SAVED_INTERNALLY
             MessageEntity.DownloadStatus.SAVED_EXTERNALLY -> Message.DownloadStatus.SAVED_EXTERNALLY
-            MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED
+            MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED_DOWNLOAD
             null -> Message.DownloadStatus.NOT_DOWNLOADED
         }
     }
