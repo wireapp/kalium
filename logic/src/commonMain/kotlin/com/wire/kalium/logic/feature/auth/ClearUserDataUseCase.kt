@@ -17,6 +17,5 @@ internal class ClearUserDataUseCaseImpl internal constructor(
     private fun clearUserStorage() {
         authenticatedDataSourceSet.userDatabaseProvider.nuke()
         // exclude clientId clear from this step
-        authenticatedDataSourceSet.kaliumPreferencesSettings.nuke()
     }
 }

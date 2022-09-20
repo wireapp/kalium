@@ -19,7 +19,6 @@ import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.runBlocking
@@ -59,7 +58,6 @@ actual class UserSessionScopeProviderImpl(
                 idMapper.toDaoModel(userId)
             )
         )
-        val userPreferencesSettings = KaliumPreferencesSettings(encryptedSettingsHolder.encryptedSettings)
         val userDatabase = UserDatabaseProvider(File(rootStoragePath), KaliumDispatcherImpl.io)
 
         val userDataSource = AuthenticatedDataSourceSet(
@@ -68,7 +66,6 @@ actual class UserSessionScopeProviderImpl(
             proteusClient,
             userSessionWorkScheduler,
             userDatabase,
-            userPreferencesSettings,
             encryptedSettingsHolder
         )
         return UserSessionScope(

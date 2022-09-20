@@ -193,7 +193,6 @@ abstract class UserSessionScopeCommon internal constructor(
     private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
 
     private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
-    private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
@@ -208,7 +207,7 @@ abstract class UserSessionScopeCommon internal constructor(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
-            authenticatedDataSourceSet.kaliumPreferencesSettings
+            globalPreferences
         )
     }
 
