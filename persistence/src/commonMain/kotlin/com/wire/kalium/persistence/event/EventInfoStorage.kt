@@ -1,12 +1,15 @@
 package com.wire.kalium.persistence.event
 
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
+
 
 interface EventInfoStorage {
     var lastProcessedId: String?
 }
 
-class EventInfoStorageImpl(private val kaliumPreferences: KaliumPreferences) : EventInfoStorage {
+internal class EventInfoStorageImpl internal constructor(
+    private val kaliumPreferences: KaliumPreferences
+) : EventInfoStorage {
 
     override var lastProcessedId: String?
         get() = kaliumPreferences.getString(LAST_PROCESSED_EVENT_ID_KEY)

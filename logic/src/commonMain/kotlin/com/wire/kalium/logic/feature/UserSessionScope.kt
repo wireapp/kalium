@@ -412,7 +412,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val eventRepository: EventRepository
         get() = EventDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi,
-            userDatabaseProvider.metadataDAO,
+            authenticatedDataSourceSet.userPrefProvider.eventInfoStorage,
             clientRepository
         )
 
