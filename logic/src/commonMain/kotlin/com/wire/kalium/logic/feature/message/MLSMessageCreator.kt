@@ -24,7 +24,7 @@ interface MLSMessageCreator {
 class MLSMessageCreatorImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
-): MLSMessageCreator {
+) : MLSMessageCreator {
 
     override suspend fun createOutgoingMLSMessage(groupId: String, message: Message.Regular): Either<CoreFailure, MLSMessageApi.Message> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->

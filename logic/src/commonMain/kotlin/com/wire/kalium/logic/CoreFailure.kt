@@ -52,7 +52,7 @@ sealed class NetworkFailure : CoreFailure() {
     }
 }
 
-class MLSFailure(internal val exception: Exception): CoreFailure() {
+class MLSFailure(internal val exception: Exception) : CoreFailure() {
 
     val rootCause: Throwable get() = exception
 }
