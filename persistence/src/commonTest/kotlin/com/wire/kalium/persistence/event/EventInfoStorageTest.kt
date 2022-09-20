@@ -2,7 +2,7 @@ package com.wire.kalium.persistence.event
 
 import com.russhwolf.settings.MockSettings
 import com.russhwolf.settings.Settings
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

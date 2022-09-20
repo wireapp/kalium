@@ -20,7 +20,6 @@ actual class UserPrefProvider(
     actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage
         get() = LastRetrievedNotificationEventStorageImpl(kaliumPref)
 
-
     actual val eventInfoStorage: EventInfoStorage
         get() = EventInfoStorageImpl(kaliumPref)
 

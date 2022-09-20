@@ -2,7 +2,6 @@ package com.wire.kalium.persistence.event
 
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 
-
 interface EventInfoStorage {
     var lastProcessedId: String?
 }
