@@ -209,7 +209,9 @@ class MLSConversationDataSource(
     private suspend fun internalCommitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient()
             .flatMap { mlsClient ->
-                sendCommitBundle(groupID, mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))).flatMap {
+                (mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))?.let {
+                    sendCommitBundle(groupID, it)
+                } ?: Either.Right(Unit)).flatMap {
                     wrapStorageRequest {
                         conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
                     }
