@@ -52,6 +52,11 @@ sealed class NetworkFailure : CoreFailure() {
     }
 }
 
+class MLSFailure(internal val exception: Exception): CoreFailure() {
+
+    val rootCause: Throwable get() = exception
+}
+
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure() {
 
     val rootCause: Throwable get() = proteusException
@@ -87,6 +92,24 @@ internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)))
+    }
+}
+
+internal inline fun <T : Any> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
+    return try {
+        Either.Right(mlsRequest())
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        Either.Left(MLSFailure(e))
+    }
+}
+
+internal inline fun <T : Any> wrapMLSNullableRequest(mlsRequest: () -> T?): Either<MLSFailure, T?> {
+    return try {
+        Either.Right(mlsRequest())
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        Either.Left(MLSFailure(e))
     }
 }
 
