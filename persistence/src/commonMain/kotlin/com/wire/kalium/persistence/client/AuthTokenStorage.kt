@@ -2,10 +2,8 @@ package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.coroutines.CoroutineContext
 
 @Serializable
 data class AuthTokenEntity(
@@ -16,10 +14,9 @@ data class AuthTokenEntity(
 )
 
 class AuthTokenStorage internal constructor(
-    private val kaliumPreferences: KaliumPreferences,
-    private val coroutineContext: CoroutineContext
+    private val kaliumPreferences: KaliumPreferences
 ) {
-    suspend fun addOrReplace(authTokenEntity: AuthTokenEntity) = withContext(coroutineContext) {
+    fun addOrReplace(authTokenEntity: AuthTokenEntity) {
         kaliumPreferences.putSerializable(
             getTokenKey(authTokenEntity.userId),
             authTokenEntity,
@@ -27,12 +24,12 @@ class AuthTokenStorage internal constructor(
         )
     }
 
-    suspend fun updateToken(
+    fun updateToken(
         userId: UserIDEntity,
         accessToken: String,
         tokenType: String,
         refreshToken: String?,
-    ): AuthTokenEntity = withContext(coroutineContext) {
+    ): AuthTokenEntity {
         val key = getTokenKey(userId)
         val newToken: AuthTokenEntity = (refreshToken?.let {
             AuthTokenEntity(userId, accessToken, refreshToken, tokenType)
@@ -48,7 +45,7 @@ class AuthTokenStorage internal constructor(
             newToken,
             AuthTokenEntity.serializer()
         )
-        newToken
+        return newToken
     }
 
     // TODO: make suspendable
@@ -58,7 +55,7 @@ class AuthTokenStorage internal constructor(
             AuthTokenEntity.serializer()
         )
 
-    suspend fun deleteToken(userId: UserIDEntity) = withContext(coroutineContext) {
+    fun deleteToken(userId: UserIDEntity) {
         kaliumPreferences.remove(getTokenKey(userId))
     }
 

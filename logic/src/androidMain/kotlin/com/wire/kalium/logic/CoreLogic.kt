@@ -13,7 +13,6 @@ import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.runBlocking
 
 /**
  * This class is only for platform specific variables,
@@ -36,7 +35,7 @@ actual class CoreLogic(
         lazy {
             GlobalDatabaseProvider(
                 appContext,
-                runBlocking { SecurityHelper(globalPreferences.value.passphraseStorage).globalDBSecret() },
+                SecurityHelper(globalPreferences.value.passphraseStorage).globalDBSecret(),
                 kaliumConfigs.shouldEncryptData
             )
         }

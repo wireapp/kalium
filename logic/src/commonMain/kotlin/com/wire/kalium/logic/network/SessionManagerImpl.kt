@@ -39,7 +39,7 @@ class SessionManagerImpl(
         session to links
     })
 
-    override suspend fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
+    override fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         wrapStorageRequest {
             tokenStorage.updateToken(
                 userId = idMapper.toDaoModel(userId),

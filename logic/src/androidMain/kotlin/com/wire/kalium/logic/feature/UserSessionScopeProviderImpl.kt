@@ -17,11 +17,9 @@ import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.AuthenticatedNetworkContainer
-import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmm_settings.GlobalPrefProvider
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmm_settings.SettingOptions
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -64,7 +62,7 @@ actual class UserSessionScopeProviderImpl(
             UserDatabaseProvider(
                 appContext,
                 userIDEntity,
-                runBlocking { SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId) },
+                SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
                 kaliumConfigs.shouldEncryptData,
                 KaliumDispatcherImpl.io
             )

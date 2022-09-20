@@ -15,22 +15,22 @@ internal expect class SecureRandom constructor() {
 
 internal class SecurityHelper(private val passphraseStorage: PassphraseStorage) {
 
-    suspend fun globalDBSecret(): GlobalDatabaseSecret =
+    fun globalDBSecret(): GlobalDatabaseSecret =
         GlobalDatabaseSecret(getOrGeneratePassPhrase(GLOBAL_DB_PASSPHRASE_ALIAS).toPreservedByteArray)
 
-    suspend fun userDBSecret(userId: UserId): UserDBSecret =
+    fun userDBSecret(userId: UserId): UserDBSecret =
         UserDBSecret(getOrGeneratePassPhrase("${USER_DB_PASSPHRASE_PREFIX}_$userId").toPreservedByteArray)
 
-    suspend fun mlsDBSecret(userId: UserId): MlsDBSecret =
+    fun mlsDBSecret(userId: UserId): MlsDBSecret =
         MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId"))
 
-    private suspend fun getOrGeneratePassPhrase(alias: String): String =
+    private fun getOrGeneratePassPhrase(alias: String): String =
         getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
 
-    private suspend fun getStoredDbPassword(passwordAlias: String): String? =
+    private fun getStoredDbPassword(passwordAlias: String): String? =
         passphraseStorage.getPassphrase(passwordAlias)
 
-    private suspend fun storeDbPassword(alias: String, keyBytes: ByteArray): String {
+    private fun storeDbPassword(alias: String, keyBytes: ByteArray): String {
         val key = keyBytes.toPreservedString
         passphraseStorage.setPassphrase(alias, key)
         return key

@@ -23,7 +23,7 @@ interface KaliumPreferences {
     fun nuke()
 
     fun putBoolean(key: String, value: Boolean)
-    fun getBoolean(key: String, defaultValue: Boolean = false): Boolean
+    fun getBoolean(key: String, defaultValue: Boolean): Boolean
     fun getBoolean(key: String): Boolean?
 
 }

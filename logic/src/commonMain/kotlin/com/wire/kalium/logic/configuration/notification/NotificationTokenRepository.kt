@@ -10,18 +10,18 @@ data class NotificationToken(val token: String, val transport: String)
 
 interface NotificationTokenRepository {
 
-    suspend fun persistNotificationToken(token: String, transport: String): Either<StorageFailure, Unit>
-    suspend fun getNotificationToken(): Either<StorageFailure, NotificationToken>
+    fun persistNotificationToken(token: String, transport: String): Either<StorageFailure, Unit>
+    fun getNotificationToken(): Either<StorageFailure, NotificationToken>
 }
 
 class NotificationTokenDataSource(
     private val tokenStorage: TokenStorage
 ) : NotificationTokenRepository {
 
-    override suspend fun persistNotificationToken(token: String, transport: String): Either<StorageFailure, Unit> =
+    override fun persistNotificationToken(token: String, transport: String): Either<StorageFailure, Unit> =
         wrapStorageRequest { tokenStorage.saveToken(token, transport) }
 
-    override suspend fun getNotificationToken(): Either<StorageFailure, NotificationToken> = wrapStorageRequest { tokenStorage.getToken() }.map {
+    override fun getNotificationToken(): Either<StorageFailure, NotificationToken> = wrapStorageRequest { tokenStorage.getToken() }.map {
         with(it) { NotificationToken(token, transport) }
     }
 }

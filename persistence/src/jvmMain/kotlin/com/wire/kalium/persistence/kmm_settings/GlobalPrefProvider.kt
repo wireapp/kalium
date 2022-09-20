@@ -7,8 +7,6 @@ import com.wire.kalium.persistence.client.UserConfigStorage
 import com.wire.kalium.persistence.client.UserConfigStorageImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 actual class GlobalPrefProvider(
     rootPath: String,
@@ -16,16 +14,13 @@ actual class GlobalPrefProvider(
 ) {
     private val kaliumPref =
         KaliumPreferencesSettings(EncryptedSettingsHolder(rootPath, SettingOptions.AppSettings(shouldEncryptData)).encryptedSettings)
-    
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val coroutineContext = Dispatchers.IO.limitedParallelism(1)
 
     actual val authTokenStorage: AuthTokenStorage
-        get() = AuthTokenStorage(kaliumPref, coroutineContext)
+        get() = AuthTokenStorage(kaliumPref)
     actual val passphraseStorage: PassphraseStorage
-        get() = PassphraseStorageImpl(kaliumPref, coroutineContext)
+        get() = PassphraseStorageImpl(kaliumPref)
     actual val tokenStorage: TokenStorage
-        get() = TokenStorageImpl(kaliumPref, coroutineContext)
+        get() = TokenStorageImpl(kaliumPref)
     actual val userConfigStorage: UserConfigStorage
-        get() = UserConfigStorageImpl(kaliumPref, coroutineContext)
+        get() = UserConfigStorageImpl(kaliumPref)
 }
