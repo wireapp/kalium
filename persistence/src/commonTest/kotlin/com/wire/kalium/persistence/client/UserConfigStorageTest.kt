@@ -2,6 +2,10 @@ package com.wire.kalium.persistence.client
 
 import com.russhwolf.settings.MockSettings
 import com.russhwolf.settings.Settings
+import com.wire.kalium.persistence.config.ClassifiedDomainsEntity
+import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
+import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.persistence.config.UserConfigStorageImpl
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 import kotlinx.coroutines.flow.first

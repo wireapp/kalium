@@ -1,7 +1,7 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.UserConfigDataSource
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.GlobalConfigDataSource
+import com.wire.kalium.logic.configuration.GlobalConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
@@ -76,9 +76,9 @@ class GlobalKaliumScope(
     private val notificationTokenRepository: NotificationTokenRepository
         get() =
             NotificationTokenDataSource(globalPreferences.value.tokenStorage)
-    private val userConfigRepository: UserConfigRepository
+    private val globalConfigRepository: GlobalConfigRepository
         get() =
-            UserConfigDataSource(globalPreferences.value.userConfigStorage)
+            GlobalConfigDataSource(globalPreferences.value.globalAppConfigStorage)
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
@@ -94,16 +94,16 @@ class GlobalKaliumScope(
 
     val saveNotificationToken: SaveNotificationTokenUseCase
         get() = SaveNotificationTokenUseCase(notificationTokenRepository)
-    val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
-    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
+    val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(globalConfigRepository)
+    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(globalConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(
-            userConfigRepository
+            globalConfigRepository
         )
     val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
-            userConfigRepository
+            globalConfigRepository
         )
     val deleteSession: DeleteSessionUseCase
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
