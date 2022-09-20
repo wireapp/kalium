@@ -21,6 +21,5 @@ actual class GlobalPrefProvider(
         get() = PassphraseStorageImpl(kaliumPref)
     actual val tokenStorage: TokenStorage
         get() = TokenStorageImpl(kaliumPref)
-    actual val userConfigStorage: UserConfigStorage
-        get() = UserConfigStorageImpl(kaliumPref)
+    actual val userConfigStorage: UserConfigStorage = UserConfigStorageImpl(kaliumPref)
 }

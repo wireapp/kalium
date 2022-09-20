@@ -25,7 +25,5 @@ actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean = t
         get() = PassphraseStorageImpl(encryptedSettingsHolder)
     actual val tokenStorage: TokenStorage
         get() = TokenStorageImpl(encryptedSettingsHolder)
-    actual val userConfigStorage: UserConfigStorage
-        get() = UserConfigStorageImpl(encryptedSettingsHolder)
-
+    actual val userConfigStorage: UserConfigStorage = UserConfigStorageImpl(encryptedSettingsHolder)
 }
