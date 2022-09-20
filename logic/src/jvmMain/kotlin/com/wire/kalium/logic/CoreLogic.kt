@@ -25,7 +25,6 @@ actual class CoreLogic(
         GlobalPrefProvider(
             rootPath = rootPath,
             shouldEncryptData = kaliumConfigs.shouldEncryptData
-
         )
     }
 

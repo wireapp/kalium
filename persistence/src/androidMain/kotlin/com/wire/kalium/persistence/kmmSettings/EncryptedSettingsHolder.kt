@@ -7,22 +7,16 @@ import com.russhwolf.settings.AndroidSettings
 import com.russhwolf.settings.Settings
 
 actual class EncryptedSettingsHolder(
-    private val applicationContext: Context,
+    applicationContext: Context,
     options: SettingOptions
 ) {
-    private fun getOrCreateMasterKey(): MasterKey =
-        MasterKey
-            .Builder(applicationContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .setRequestStrongBoxBacked(true)
-            .build()
-
+    @get:Synchronized
     actual val encryptedSettings: Settings = AndroidSettings(
         if (options.shouldEncryptData) {
             EncryptedSharedPreferences.create(
                 applicationContext,
                 options.fileName,
-                getOrCreateMasterKey(),
+                EncryptedSharedPrefUtil.getOrCreateMasterKey(applicationContext),
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
@@ -30,4 +24,15 @@ actual class EncryptedSettingsHolder(
             applicationContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
         }, false
     )
+}
+
+private object EncryptedSharedPrefUtil {
+    @Synchronized
+    fun getOrCreateMasterKey(context: Context): MasterKey =
+        MasterKey
+            .Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .setRequestStrongBoxBacked(true)
+            .build()
+
 }
