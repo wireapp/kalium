@@ -29,7 +29,8 @@ class UserConfigDataSource(
     override fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableLogging(enabled) }
 
-    override fun isLoggingEnabled(): Either<StorageFailure, Boolean> = wrapStorageRequest { userConfigStorage.isLoggingEnables() }
+    override fun isLoggingEnabled(): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { userConfigStorage.isLoggingEnables() }
 
     override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isPersistentWebSocketConnectionEnabledFlow().wrapStorageRequest()
@@ -72,5 +73,4 @@ class UserConfigDataSource(
                 ClassifiedDomainsStatus(classifiedDomain.status, classifiedDomain.trustedDomains)
             }
         }
-
 }
