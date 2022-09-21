@@ -184,7 +184,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(globalPreferences.userConfigStorage)
+        get() = UserConfigDataSource(authenticatedDataSourceSet.userPrefProvider.userConfigStorage)
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
