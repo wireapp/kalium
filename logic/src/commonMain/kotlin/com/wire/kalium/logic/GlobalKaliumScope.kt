@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
+import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
@@ -48,8 +49,8 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
  * - Updating client or device metadata (like push notification token)
  * - Getting back-end information from a deeplink
  *
- * @see AuthenticationScope
- * @see UserSessionScope
+ * @see [com.wire.kalium.logic.feature.auth.AuthenticationScope]
+ * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
 
 class GlobalKaliumScope(
@@ -94,7 +95,7 @@ class GlobalKaliumScope(
     val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
 
     val saveNotificationToken: SaveNotificationTokenUseCase
-        get() = SaveNotificationTokenUseCase(notificationTokenRepository)
+        get() = SaveNotificationTokenUseCaseImpl(notificationTokenRepository, observeValidAccounts, userSessionScopeProvider.value)
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)

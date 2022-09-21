@@ -62,6 +62,8 @@ internal interface UserRepository {
     suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
     suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
     suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
+    suspend fun observeUpdateFirebaseTokenFlag(): Flow<Boolean>
+    suspend fun setUpdateFirebaseTokenFlag(shouldUpdate: Boolean): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -291,7 +293,18 @@ internal class UserDataSource internal constructor(
             }
             .map(memberMapper::fromMapOfClientsToRecipients)
 
+    override suspend fun setUpdateFirebaseTokenFlag(shouldUpdate: Boolean) =
+        wrapStorageRequest { metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPDATE_FIREBASE_TOKEN_KEY) }
+
+    override suspend fun observeUpdateFirebaseTokenFlag() = metadataDAO.valueByKeyFlow(SHOULD_UPDATE_FIREBASE_TOKEN_KEY)
+        .map {
+            // if the flag is absent (null, or empty) it means it's a new user
+            // so we need to register Firebase token for such a user too
+            it == null || it.isEmpty() || it.toBoolean()
+        }
+
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
+        const val SHOULD_UPDATE_FIREBASE_TOKEN_KEY = "shouldUpdateFirebaseCloudToken"
     }
 }

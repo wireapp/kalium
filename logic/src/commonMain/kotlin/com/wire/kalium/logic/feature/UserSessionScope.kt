@@ -101,6 +101,8 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.notificationToken.ObserveNotificationTokenUpdating
+import com.wire.kalium.logic.feature.notificationToken.ObserveNotificationTokenUpdatingImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -244,7 +246,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.messageDAO
         )
 
-    private val userRepository: UserRepository
+    internal val userRepository: UserRepository
         get() = UserDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
@@ -657,6 +659,13 @@ abstract class UserSessionScopeCommon internal constructor(
         }
     }
 
+    private val observeNotificationTokenUpdating: ObserveNotificationTokenUpdating
+        get() = ObserveNotificationTokenUpdatingImpl(
+            clientRepository,
+            notificationTokenRepository,
+            userRepository
+        )
+
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     fun onInit() {
@@ -666,6 +675,8 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
+
+            observeNotificationTokenUpdating()
         }
     }
 
