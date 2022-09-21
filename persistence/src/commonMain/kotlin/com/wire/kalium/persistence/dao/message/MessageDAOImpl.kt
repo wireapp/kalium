@@ -154,6 +154,7 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
                 /** NO-OP. No need to insert any content for Knock messages */
             }
 
+            // TODO map later when perf issues addressed MessageEntityContent.ConversationRenamed
         }
     }
 

@@ -96,65 +96,65 @@ object MessageMapper {
         restrictedAssetName: String?,
         failedToDecryptData: ByteArray?
     ) = when (contentType) {
-            MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
-                messageBody = text ?: "",
-                mentions = listOf()
-            )
+        MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
+            messageBody = text ?: "",
+            mentions = listOf()
+        )
 
-            MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
-                assetSizeInBytes = assetSize.requireField("asset_size"),
-                assetName = assetName,
-                assetMimeType = assetMimeType.requireField("asset_mime_type"),
-                assetUploadStatus = assetUploadStatus,
-                assetDownloadStatus = assetDownloadStatus,
-                assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
-                assetSha256Key = assetSha256.requireField("asset_sha256"),
-                assetId = assetId.requireField("asset_id"),
-                assetToken = assetToken,
-                assetDomain = assetDomain,
-                assetEncryptionAlgorithm = assetEncryptionAlgorithm,
-                assetWidth = assetWidth,
-                assetHeight = assetHeight,
-                assetDurationMs = assetDuration,
-                assetNormalizedLoudness = assetNormalizedLoudness,
-            )
+        MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
+            assetSizeInBytes = assetSize.requireField("asset_size"),
+            assetName = assetName,
+            assetMimeType = assetMimeType.requireField("asset_mime_type"),
+            assetUploadStatus = assetUploadStatus,
+            assetDownloadStatus = assetDownloadStatus,
+            assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
+            assetSha256Key = assetSha256.requireField("asset_sha256"),
+            assetId = assetId.requireField("asset_id"),
+            assetToken = assetToken,
+            assetDomain = assetDomain,
+            assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+            assetWidth = assetWidth,
+            assetHeight = assetHeight,
+            assetDurationMs = assetDuration,
+            assetNormalizedLoudness = assetNormalizedLoudness,
+        )
 
-            MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
-            MessageEntity.ContentType.MEMBER_CHANGE -> MessageEntityContent.MemberChange(
-                memberUserIdList = memberChangeList.requireField("memberChangeList"),
-                memberChangeType = memberChangeType.requireField("memberChangeType")
-            )
+        MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
+        MessageEntity.ContentType.MEMBER_CHANGE -> MessageEntityContent.MemberChange(
+            memberUserIdList = memberChangeList.requireField("memberChangeList"),
+            memberChangeType = memberChangeType.requireField("memberChangeType")
+        )
 
-            MessageEntity.ContentType.MISSED_CALL -> MessageEntityContent.MissedCall
-            MessageEntity.ContentType.UNKNOWN -> MessageEntityContent.Unknown(
-                typeName = unknownContentTypeName,
-                encodedData = unknownContentData
-            )
+        MessageEntity.ContentType.MISSED_CALL -> MessageEntityContent.MissedCall
+        MessageEntity.ContentType.UNKNOWN -> MessageEntityContent.Unknown(
+            typeName = unknownContentTypeName,
+            encodedData = unknownContentData
+        )
 
-            MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
-                failedToDecryptData
-            )
+        MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
+            failedToDecryptData
+        )
 
-            MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(
-                restrictedAssetMimeType.requireField("assetMimeType"),
-                restrictedAssetSize.requireField("assetSize"),
-                restrictedAssetName.requireField("assetName")
-            )
+        MessageEntity.ContentType.RESTRICTED_ASSET -> MessageEntityContent.RestrictedAsset(
+            restrictedAssetMimeType.requireField("assetMimeType"),
+            restrictedAssetSize.requireField("assetSize"),
+            restrictedAssetName.requireField("assetName")
+        )
 
-        MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(text ?: "someDefaultVAAAAAA")
+        MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed("") // TODO map later when perf issues addressed
     }.let {
-            createMessageEntity(
-                id,
-                conversationId,
-                date,
-                senderUserId,
-                senderClientId,
-                status,
-                lastEditTimestamp,
-                visibility,
-                it
-            )
-        }
+        createMessageEntity(
+            id,
+            conversationId,
+            date,
+            senderUserId,
+            senderClientId,
+            status,
+            lastEditTimestamp,
+            visibility,
+            it
+        )
+    }
 
     private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
         "Fild $fieldName null when unpacking message content"
