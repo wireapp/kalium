@@ -91,8 +91,8 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
             is Event.Conversation.NewMLSMessage -> handleNewMLSMessage(event)
             is Event.Conversation.MemberChanged -> handleMemberChange(event)
+            is Event.Conversation.RenamedConversation -> handleRenamedConversation(event)
             is Event.Conversation.AccessUpdate -> TODO()
-            is Event.Conversation.RenamedConversation -> TODO()
         }
     }
 
@@ -382,6 +382,15 @@ internal class ConversationEventReceiverImpl(
         } else {
             kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - Skipping conversation delete event already handled")
         }
+    }
+
+    private suspend fun handleRenamedConversation(event: Event.Conversation.RenamedConversation) {
+        conversationRepository.updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
+            .onSuccess { kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - The Conversation was renamed: ${event.conversationName}") }
+            .onFailure { coreFailure ->
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .e("$TAG - Error renaming the conversation [${event.conversationName}] $coreFailure")
+            }
     }
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {

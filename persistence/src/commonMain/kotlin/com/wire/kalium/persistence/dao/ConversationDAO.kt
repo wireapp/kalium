@@ -117,12 +117,14 @@ interface ConversationDAO {
         mutedStatus: ConversationEntity.MutedStatus,
         mutedStatusTimestamp: Long
     )
+
     suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
         accessRoleList: List<ConversationEntity.AccessRole>
     )
+
     suspend fun getUnreadConversationCount(): Long
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: Member.Role)
     suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant)
@@ -132,4 +134,5 @@ interface ConversationDAO {
     suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>>
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
+    suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
 }

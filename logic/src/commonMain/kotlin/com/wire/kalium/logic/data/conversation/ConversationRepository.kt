@@ -139,10 +139,15 @@ interface ConversationRepository {
     suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
+    suspend fun updateConversationName(
+        conversationId: ConversationId,
+        conversationName: String,
+        timestamp: String
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-internal class ConversationDataSource internal constructor (
+internal class ConversationDataSource internal constructor(
     private val userRepository: UserRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
@@ -778,6 +783,10 @@ internal class ConversationDataSource internal constructor (
             idMapper.toStringDaoModel(selfUserId)
         )?.let { idMapper.fromDaoModel(it) }
     }
+
+    override suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
+        wrapStorageRequest { conversationDAO.updateConversationName(idMapper.toDaoModel(conversationId), conversationName, timestamp) }
+
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
