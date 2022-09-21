@@ -3894,6 +3894,9 @@ $dokka.location:com.wire.kalium.logic/GlobalKaliumScope/saveNotificationToken/#/
 $dokka.location:com.wire.kalium.logic/GlobalKaliumScope/session/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-global-kalium-scope/session.html
 $dokka.location:com.wire.kalium.logic/GlobalKaliumScope/sessionRepository/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-global-kalium-scope/session-repository.html
 $dokka.location:com.wire.kalium.logic/GlobalKaliumScope/updateApiVersions/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-global-kalium-scope/update-api-versions.html
+$dokka.location:com.wire.kalium.logic/MLSFailure///PointingToDeclaration/logic/logic/com.wire.kalium.logic/-m-l-s-failure/index.html
+$dokka.location:com.wire.kalium.logic/MLSFailure/MLSFailure/#kotlin.Exception/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-m-l-s-failure/-m-l-s-failure.html
+$dokka.location:com.wire.kalium.logic/MLSFailure/rootCause/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-m-l-s-failure/root-cause.html
 $dokka.location:com.wire.kalium.logic/NetworkFailure.NoNetworkConnection///PointingToDeclaration/logic/logic/com.wire.kalium.logic/-network-failure/-no-network-connection/index.html
 $dokka.location:com.wire.kalium.logic/NetworkFailure.NoNetworkConnection/NoNetworkConnection/#kotlin.Throwable?/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-network-failure/-no-network-connection/-no-network-connection.html
 $dokka.location:com.wire.kalium.logic/NetworkFailure.NoNetworkConnection/cause/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-network-failure/-no-network-connection/cause.html
