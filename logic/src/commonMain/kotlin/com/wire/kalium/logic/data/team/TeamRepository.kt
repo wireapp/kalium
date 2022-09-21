@@ -3,7 +3,9 @@ package com.wire.kalium.logic.data.team
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -21,14 +23,20 @@ interface TeamRepository {
     suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: String): Either<CoreFailure, Unit>
+    suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit>
+    suspend fun fetchTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
+    suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
+    suspend fun updateTeam(team: Team): Either<CoreFailure, Unit>
+
 }
 
 internal class TeamDataSource(
     private val userDAO: UserDAO,
     private val teamDAO: TeamDAO,
     private val teamsApi: TeamsApi,
+    private val selfUserId: UserId,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val teamMapper: TeamMapper = MapperProvider.teamMapper()
+    private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
@@ -56,9 +64,9 @@ internal class TeamDataSource(
             teamMemberList.members.map { teamMember ->
                 userMapper.fromTeamMemberToDaoModel(
                     teamId = teamId,
-                    teamMemberDTO = teamMember,
+                    nonQualifiedUserId = teamMember.nonQualifiedUserId,
+                    permissionCode = teamMember.permissions?.own,
                     userDomain = userDomain,
-                    permissionsCode = teamMember.permissions?.copy
                 )
             }
         } else {
@@ -82,5 +90,44 @@ internal class TeamDataSource(
         return wrapApiRequest {
             teamsApi.deleteConversation(conversationId.value, teamId)
         }
+    }
+
+    override suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            val user = userMapper.fromTeamMemberToDaoModel(
+                teamId = TeamId(teamId),
+                nonQualifiedUserId = userId,
+                userDomain = selfUserId.domain,
+                permissionCode = permissionCode
+            )
+            userDAO.upsertTeamMembersTypes(listOf(user))
+        }
+    }
+
+    override suspend fun fetchTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            teamsApi.getTeamMember(
+                teamId = teamId,
+                userId = userId,
+            )
+        }.flatMap {
+            wrapStorageRequest {
+                val user = userMapper.fromTeamMemberToDaoModel(
+                    teamId = TeamId(teamId),
+                    nonQualifiedUserId = userId,
+                    userDomain = selfUserId.domain,
+                    permissionCode = it.permissions?.own
+                )
+                userDAO.upsertTeamMembersTypes(listOf(user))
+            }
+        }
+    }
+
+    override suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun updateTeam(team: Team): Either<CoreFailure, Unit> {
+        TODO("Not yet implemented")
     }
 }

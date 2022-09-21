@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.model.AssetSizeDTO
 import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.network.api.model.UserAssetTypeDTO
@@ -55,9 +56,9 @@ interface UserMapper {
     fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
         teamId: TeamId,
-        teamMemberDTO: TeamsApi.TeamMemberDTO,
+        nonQualifiedUserId: NonQualifiedUserId,
+        permissionCode: Int?,
         userDomain: String,
-        permissionsCode: Int?,
     ): UserEntity
 
     fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient>
@@ -197,13 +198,13 @@ internal class UserMapperImpl(
      */
     override fun fromTeamMemberToDaoModel(
         teamId: TeamId,
-        teamMemberDTO: TeamsApi.TeamMemberDTO,
+        nonQualifiedUserId: NonQualifiedUserId,
+        permissionCode: Int?,
         userDomain: String,
-        permissionsCode: Int?,
     ): UserEntity =
         UserEntity(
             id = QualifiedIDEntity(
-                value = teamMemberDTO.nonQualifiedUserId,
+                value = nonQualifiedUserId,
                 domain = userDomain
             ),
             name = null,
@@ -216,7 +217,7 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode),
+            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
             deleted = false
         )

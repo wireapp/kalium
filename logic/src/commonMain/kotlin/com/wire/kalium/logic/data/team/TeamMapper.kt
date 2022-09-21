@@ -11,8 +11,8 @@ interface TeamMapper {
 internal class TeamMapperImpl : TeamMapper {
 
     override fun fromDtoToEntity(teamDTO: TeamDTO): TeamEntity =
-        TeamEntity(teamDTO.id, teamDTO.name)
+        TeamEntity(teamDTO.id, teamDTO.name, teamDTO.icon)
 
     override fun fromDaoModelToTeam(teamEntity: TeamEntity): Team =
-        Team(teamEntity.id, teamEntity.name)
+        Team(teamEntity.id, teamEntity.name, teamEntity.icon)
 }

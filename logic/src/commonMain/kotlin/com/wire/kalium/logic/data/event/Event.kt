@@ -213,12 +213,12 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val teamId: String,
             val memberId: String,
-            val userType: UserType,
+            val permissionCode: Int?,
         ) : Team(id, teamId) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
                         "teamId: $teamId " +
-                        "userType: $userType " +
+                        "permissionCode: $permissionCode " +
                         "memberId: $memberId"
             }
         }
