@@ -10,7 +10,6 @@ interface IsLoggingEnabledUseCase {
 class IsLoggingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsLoggingEnabledUseCase {
-
     override operator fun invoke(): Boolean =
         userConfigRepository.isLoggingEnabled().fold({
             false

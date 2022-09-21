@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.kmm_settings
+package com.wire.kalium.persistence.kmmSettings
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -6,7 +6,7 @@ import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.AndroidSettings
 import com.russhwolf.settings.Settings
 
-actual class EncryptedSettingsHolder(
+internal actual class EncryptedSettingsHolder internal constructor(
     applicationContext: Context,
     options: SettingOptions
 ) {

@@ -241,7 +241,7 @@
     <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:445</ID>
     <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:448</ID>
     <ID>CommentSpacing:com.wire.kalium.persistence.dao.UserDAOTest.kt:451</ID>
-    <ID>CommentSpacing:com.wire.kalium.persistence.kmm_settings.KaliumPreferences.kt:53</ID>
+    <ID>CommentSpacing:com.wire.kalium.persistence.kmmSettings.KaliumPreferences.kt:53</ID>
     <ID>ComplexMethod:messages.kt$@Suppress("UNCHECKED_CAST") private fun GenericMessage.Companion.decodeWithImpl(u: pbandk.MessageDecoder): GenericMessage</ID>
     <ID>ComplexMethod:messages.kt$@Suppress("UNCHECKED_CAST") private fun ImageAsset.Companion.decodeWithImpl(u: pbandk.MessageDecoder): ImageAsset</ID>
     <ID>ComplexMethod:messages.kt$private fun Ephemeral.protoMergeImpl(plus: pbandk.Message?): Ephemeral</ID>
@@ -729,7 +729,7 @@
     <ID>NewLineAtEndOfFile:FederatedIdMapperMock.kt$com.wire.kalium.logic.data.id.FederatedIdMapperMock.kt</ID>
     <ID>NewLineAtEndOfFile:IdMapperMock.kt$com.wire.kalium.logic.data.id.IdMapperMock.kt</ID>
     <ID>NewLineAtEndOfFile:IsFileSharingEnabledUseCaseMock.kt$com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseMock.kt</ID>
-    <ID>NewLineAtEndOfFile:KaliumPreferencesMock.kt$com.wire.kalium.persistence.kmm_settings.KaliumPreferencesMock.kt</ID>
+    <ID>NewLineAtEndOfFile:KaliumPreferencesMock.kt$com.wire.kalium.persistence.kmmSettings.KaliumPreferencesMock.kt</ID>
     <ID>NewLineAtEndOfFile:KeyPackageApiMock.kt$com.wire.kalium.network.api.keypackage.KeyPackageApiMock.kt</ID>
     <ID>NewLineAtEndOfFile:KeyPackageRepositoryMock.kt$com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryMock.kt</ID>
     <ID>NewLineAtEndOfFile:LoginApiMock.kt$com.wire.kalium.network.api.user.login.LoginApiMock.kt</ID>
@@ -981,8 +981,8 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:84</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:98</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.db.GlobalDatabaseProvider.kt:19</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:34</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:55</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmmSettings.KaliumPreferencesTest.kt:34</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.kmmSettings.KaliumPreferencesTest.kt:55</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.util.KaliumDispatcher.kt:13</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.util.KaliumDispatcher.kt:5</ID>
     <ID>NoMultipleSpaces:com.wire.kalium.logic.configuration.server.ServerConfigTest.kt:19</ID>
@@ -1090,11 +1090,11 @@
     <ID>PackageName:com.wire.kalium.logic.test_util.TimeUtils.kt:1</ID>
     <ID>PackageName:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO.kt:1</ID>
     <ID>PackageName:com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.persistence.kmm_settings.KaliumPreferences.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.persistence.kmm_settings.KaliumPreferencesTest.kt:1</ID>
-    <ID>PackageNaming:EncryptedSettingsHolder.kt$package com.wire.kalium.persistence.kmm_settings</ID>
-    <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmm_settings</ID>
+    <ID>PackageName:com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.kmmSettings.KaliumPreferences.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.persistence.kmmSettings.KaliumPreferencesTest.kt:1</ID>
+    <ID>PackageNaming:EncryptedSettingsHolder.kt$package com.wire.kalium.persistence.kmmSettings</ID>
+    <ID>PackageNaming:KaliumPreferences.kt$package com.wire.kalium.persistence.kmmSettings</ID>
     <ID>PackageNaming:ServerConfigurationDAO.kt$package com.wire.kalium.persistence.daokaliumdb</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:14</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.data.auth.login.LoginRepository.kt:18</ID>
@@ -1169,8 +1169,8 @@
     <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.MetadataDAOTest.kt:12</ID>
     <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.QualifiedIDAdapter.kt:5</ID>
     <ID>SpacingAroundColon:com.wire.kalium.persistence.dao.UserDAOImpl.kt:160</ID>
-    <ID>SpacingAroundColon:com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder.kt:12</ID>
-    <ID>SpacingAroundColon:com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder.kt:9</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder.kt:12</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder.kt:9</ID>
     <ID>SpacingAroundColon:com.wire.kalium.persistence.utils.stubs.MessageStubs.kt:15</ID>
     <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.notification.NotificationEventsResponseJson.kt:88</ID>
     <ID>SpacingAroundComma:com.wire.kalium.api.tools.json.api.user.details.ListUsersRequestJson.kt:24</ID>
