@@ -154,9 +154,11 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
                 /** NO-OP. No need to insert any content for Knock messages */
             }
 
-            is MessageEntityContent.ConversationRenamed -> {
-                // Map conversation to new table
-            }
+            is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                conversation_name = content.conversationName
+            )
         }
     }
 
