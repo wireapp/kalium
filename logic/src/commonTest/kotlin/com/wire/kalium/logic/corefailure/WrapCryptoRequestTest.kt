@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.core_failure
+package com.wire.kalium.logic.corefailure
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.exceptions.ProteusException
@@ -13,7 +13,7 @@ class WrapCryptoRequestTest {
 
     @Test
     fun whenACryptoRequestReturnValue_thenSuccessIsPropagated() {
-        val expected = listOf<PreKeyCrypto>(PreKeyCrypto(1, "key 1"), PreKeyCrypto(2, "key 2"))
+        val expected = listOf(PreKeyCrypto(1, "key 1"), PreKeyCrypto(2, "key 2"))
         val actual = wrapCryptoRequest { expected }
 
         assertIs<Either.Right<List<PreKeyCrypto>>>(actual)
