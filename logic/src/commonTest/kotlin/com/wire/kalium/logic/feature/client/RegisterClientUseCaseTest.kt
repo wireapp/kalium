@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -37,6 +38,8 @@ import kotlin.test.assertSame
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterClientUseCaseTest {
 
+    private var kaliumConfigs = KaliumConfigs()
+
     @Mock
     private val clientRepository = mock(classOf<ClientRepository>())
 
@@ -56,7 +59,9 @@ class RegisterClientUseCaseTest {
 
     @BeforeTest
     fun setup() {
+        kaliumConfigs = KaliumConfigs()
         registerClient = RegisterClientUseCaseImpl(
+            kaliumConfigs,
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
@@ -427,6 +432,32 @@ class RegisterClientUseCaseTest {
         verify(preKeyRepository)
             .function(preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMLsSupportIsDisabled_whenRegistering_thenMLSClientIsNotRegistered() = runTest {
+        kaliumConfigs.isMLSSupportEnabled = false
+
+        val registeredClient = CLIENT
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerClient)
+            .whenInvokedWith(anything())
+            .then { Either.Right(CLIENT) }
+
+        given(clientRepository)
+            .suspendFunction(clientRepository::persistClientId)
+            .whenInvokedWith(anything())
+            .then { Either.Right(Unit) }
+
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+
+        verify(clientRepository)
+            .suspendFunction(clientRepository::registerMLSClient)
+            .with(any(), any())
+            .wasNotInvoked()
+
+        assertIs<RegisterClientResult.Success>(result)
+        assertEquals(registeredClient, result.client)
     }
 
     private companion object {
