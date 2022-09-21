@@ -72,6 +72,8 @@ sealed class MessageContent {
         val time: Instant
     ) : Regular()
 
+    data class ConversationRenamed(val conversationName: String) : System()
+
     object MissedCall : System()
 
     data class Availability(val status: UserAvailabilityStatus) : Signaling()

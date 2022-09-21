@@ -386,7 +386,18 @@ internal class ConversationEventReceiverImpl(
 
     private suspend fun handleRenamedConversation(event: Event.Conversation.RenamedConversation) {
         conversationRepository.updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
-            .onSuccess { kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - The Conversation was renamed: ${event.conversationName}") }
+            .onSuccess {
+                kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - The Conversation was renamed: ${event.conversationName}")
+                val message = Message.System(
+                    id = event.id,
+                    content = MessageContent.ConversationRenamed(event.conversationName),
+                    conversationId = event.conversationId,
+                    date = event.timestampIso,
+                    senderUserId = event.senderUserId,
+                    status = Message.Status.SENT,
+                )
+                persistMessage(message)
+            }
             .onFailure { coreFailure ->
                 kaliumLogger.withFeatureId(EVENT_RECEIVER)
                     .e("$TAG - Error renaming the conversation [${event.conversationName}] $coreFailure")
@@ -442,6 +453,7 @@ internal class ConversationEventReceiverImpl(
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Unknown Message received: $message")
                     persistMessage(message)
                 }
+
                 is MessageContent.Cleared -> clearConversationContentHandler.handle(message, content)
                 is MessageContent.Empty -> TODO()
             }
