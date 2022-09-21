@@ -969,7 +969,7 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.SessionStorage.kt:127</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.SessionStorage.kt:94</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.TokenStorage.kt:27</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.UserConfigStorageTest.kt:29</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.config.UserConfigStorageTest.kt:29</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:250</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:266</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:284</ID>
