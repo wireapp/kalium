@@ -57,7 +57,6 @@ internal class GlobalAppConfigStorageImpl(
                 emit(kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false))
             }.distinctUntilChanged()
 
-
     private companion object {
         const val ENABLE_LOGGING = "enable_logging"
         const val PERSISTENT_WEB_SOCKET_CONNECTION = "persistent_web_socket_connection"

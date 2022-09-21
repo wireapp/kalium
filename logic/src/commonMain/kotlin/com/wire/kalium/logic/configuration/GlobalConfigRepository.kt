@@ -15,7 +15,7 @@ interface GlobalConfigRepository {
 
 internal class GlobalConfigDataSource internal constructor(
     private val globalAppConfigStorage: GlobalAppConfigStorage
-): GlobalConfigRepository {
+) : GlobalConfigRepository {
 
     override fun persistEnableLogging(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { globalAppConfigStorage.enableLogging(enabled) }

@@ -123,7 +123,6 @@ internal class UserConfigStorageImpl internal constructor(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
-
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
