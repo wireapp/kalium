@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 @Suppress("TooManyFunctions")
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
+    suspend fun updateAssetUploadStatus(uploadStatus: MessageEntity.UploadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String)

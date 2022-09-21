@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.kmm_settings
+package com.wire.kalium.persistence.kmmSettings
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -6,7 +6,7 @@ import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.AndroidSettings
 import com.russhwolf.settings.Settings
 
-actual class EncryptedSettingsHolder(
+internal actual class EncryptedSettingsHolder internal constructor(
     applicationContext: Context,
     options: SettingOptions
 ) {
@@ -16,7 +16,7 @@ actual class EncryptedSettingsHolder(
             EncryptedSharedPreferences.create(
                 applicationContext,
                 options.fileName,
-                EncryptedSharedPrefUtil.getOrCreateMasterKey(applicationContext),
+                EncryptedSharedPrefUtil.getOrCreateMasterKey(applicationContext, options.keyAlias()),
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
@@ -26,13 +26,17 @@ actual class EncryptedSettingsHolder(
     )
 }
 
+private fun SettingOptions.keyAlias(): String = when (this) {
+    is SettingOptions.AppSettings -> "_app_settings_master_key_"
+    is SettingOptions.UserSettings -> "_${this.fileName}_master_key_"
+}
+
 private object EncryptedSharedPrefUtil {
     @Synchronized
-    fun getOrCreateMasterKey(context: Context): MasterKey =
+    fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS): MasterKey =
         MasterKey
-            .Builder(context)
+            .Builder(context, keyAlias)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .setRequestStrongBoxBacked(true)
             .build()
-
 }
