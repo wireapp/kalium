@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -83,8 +84,17 @@ class EventProcessorTest {
         @Mock
         val userEventReceiver = configure(mock(UserEventReceiver::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val teamEventReceiver = configure(mock(TeamEventReceiver::class)) { stubsUnitByDefault = true }
+
         val eventProcessor: EventProcessor =
-            EventProcessorImpl(eventRepository, conversationEventReceiver, userEventReceiver, featureConfigEventReceiver)
+            EventProcessorImpl(
+                eventRepository,
+                conversationEventReceiver,
+                userEventReceiver,
+                teamEventReceiver,
+                featureConfigEventReceiver
+            )
 
         fun arrange() = this to eventProcessor
     }
