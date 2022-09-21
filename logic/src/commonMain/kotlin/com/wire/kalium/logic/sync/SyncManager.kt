@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -7,6 +9,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.flow.first
 
@@ -40,12 +43,16 @@ internal class SyncManagerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
 ) : SyncManager {
 
+    private val logger
+        get() = kaliumLogger.withFeatureId(SYNC)
+
     override suspend fun waitUntilLive() {
         incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
     }
 
     override suspend fun waitUntilLiveOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit> = slowSyncRepository.slowSyncStatus
         .combineTransform(incrementalSyncRepository.incrementalSyncState) { slowSyncState, incrementalSyncState ->
+            logger.d("Waiting until or failure. Current status: slowSync: $slowSyncState; incrementalSync: $incrementalSyncState")
             val didSlowSyncFail = slowSyncState is SlowSyncStatus.Pending || slowSyncState is SlowSyncStatus.Failed
             val didIncrementalSyncFail = incrementalSyncState is IncrementalSyncStatus.Failed
             val didSyncFail = didSlowSyncFail || didIncrementalSyncFail
@@ -55,8 +62,10 @@ internal class SyncManagerImpl(
             if (isSyncComplete) { emit(true) }
         }.first().let { didWaitingSucceed ->
             if (didWaitingSucceed) {
+                logger.d("Waiting until live or failure succeeded")
                 Either.Right(Unit)
             } else {
+                logger.d("Waiting until live or failure failed")
                 Either.Left(NetworkFailure.NoNetworkConnection(null))
             }
         }
