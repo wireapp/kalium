@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
@@ -56,10 +55,14 @@ internal class SyncManagerImpl(
             val didSlowSyncFail = slowSyncState is SlowSyncStatus.Pending || slowSyncState is SlowSyncStatus.Failed
             val didIncrementalSyncFail = incrementalSyncState is IncrementalSyncStatus.Failed
             val didSyncFail = didSlowSyncFail || didIncrementalSyncFail
-            if (didSyncFail) { emit(false) }
+            if (didSyncFail) {
+                emit(false)
+            }
 
             val isSyncComplete = incrementalSyncState is IncrementalSyncStatus.Live
-            if (isSyncComplete) { emit(true) }
+            if (isSyncComplete) {
+                emit(true)
+            }
         }.first().let { didWaitingSucceed ->
             if (didWaitingSucceed) {
                 logger.d("Waiting until live or failure succeeded")
