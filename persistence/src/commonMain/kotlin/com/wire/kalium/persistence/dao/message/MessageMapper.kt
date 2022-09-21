@@ -94,7 +94,8 @@ object MessageMapper {
         restrictedAssetMimeType: String?,
         restrictedAssetSize: Long?,
         restrictedAssetName: String?,
-        failedToDecryptData: ByteArray?
+        failedToDecryptData: ByteArray?,
+        conversationName: String?,
     ) = when (contentType) {
         MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
             messageBody = text ?: "",
@@ -141,7 +142,7 @@ object MessageMapper {
             restrictedAssetName.requireField("assetName")
         )
 
-        MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed("") // TODO map later when perf issues addressed
+        MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
     }.let {
         createMessageEntity(
             id,
