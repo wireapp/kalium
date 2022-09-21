@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.kmm_settings
+package com.wire.kalium.persistence.kmmSettings
 
 import com.russhwolf.settings.ExperimentalSettingsImplementation
 import com.russhwolf.settings.JvmPropertiesSettings
@@ -14,7 +14,7 @@ import java.util.Properties
  */
 
 @OptIn(ExperimentalSettingsImplementation::class)
-actual class EncryptedSettingsHolder(
+internal actual class EncryptedSettingsHolder(
     rootPath: String,
     options: SettingOptions
 ) {

@@ -17,7 +17,7 @@ class UpdateAssetMessageDownloadStatusUseCaseTest {
     @Test
     fun givenAValidDownloadStatusUpdateRequest_whenInvoked_thenResultSuccessIsReturned() = runTest {
         // Given
-        val newDownloadStatus = Message.DownloadStatus.IN_PROGRESS
+        val newDownloadStatus = Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
         val dummyConvId = ConversationId("dummy-value", "dummy.domain")
         val dummyMessageId = "dummy-message-id"
         val (arrangement, useCase) = Arrangement().withSuccessfulResponse().arrange()

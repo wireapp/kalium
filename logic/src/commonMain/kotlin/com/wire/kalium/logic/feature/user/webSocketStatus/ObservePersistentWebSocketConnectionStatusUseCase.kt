@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.user.webSocketStatus
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.GlobalConfigRepository
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -10,11 +10,11 @@ interface ObservePersistentWebSocketConnectionStatusUseCase {
 }
 
 internal class ObservePersistentWebSocketConnectionStatusUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository
+    private val globalConfigRepository: GlobalConfigRepository
 ) : ObservePersistentWebSocketConnectionStatusUseCase {
 
     override operator fun invoke(): Flow<Boolean> =
-        userConfigRepository.isPersistentWebSocketConnectionEnabledFlow().map { isPersistetWebSocketEnabledFlow ->
+        globalConfigRepository.isPersistentWebSocketConnectionEnabledFlow().map { isPersistetWebSocketEnabledFlow ->
             isPersistetWebSocketEnabledFlow.fold({
                 false
             }, {
