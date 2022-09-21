@@ -787,7 +787,6 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
         wrapStorageRequest { conversationDAO.updateConversationName(idMapper.toDaoModel(conversationId), conversationName, timestamp) }
 
-
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
     }
