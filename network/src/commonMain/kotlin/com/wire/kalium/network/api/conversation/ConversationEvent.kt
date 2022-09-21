@@ -23,3 +23,8 @@ data class ConversationRoleChange(
     @SerialName("qualified_target") val qualifiedUserId: UserId,
     @SerialName("conversation_role") val role: String,
 )
+
+@Serializable
+data class ConversationNameUpdateEvent(
+    @SerialName("name") val conversationName: String,
+)

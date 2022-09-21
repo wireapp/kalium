@@ -24,6 +24,7 @@ class UserEventReceiverImpl(
             is Event.User.NewConnection -> handleNewConnection(event)
             is Event.User.ClientRemove -> handleClientRemove(event)
             is Event.User.UserDelete -> handleUserDelete(event)
+            is Event.User.Update -> TODO()
         }
     }
 

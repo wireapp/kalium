@@ -4,6 +4,7 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrDefault
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -19,7 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("TooManyFunctions")
-class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
+class MessageDAOImpl(private val queries: MessagesQueries, private val conversationsQueries: ConversationsQueries) : MessageDAO {
     private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
@@ -33,8 +34,29 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: MessageEntity) = queries.transaction { insertInDB(message) }
+    override suspend fun insertMessage(
+        message: MessageEntity,
+        updateConversationReadDate: Boolean,
+        updateConversationModifiedDate: Boolean,
+        updateConversationNotificationsDate: Boolean
+    ) {
+        queries.transaction {
+            if (updateConversationReadDate) {
+                conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
+            }
 
+            insertInDB(message)
+
+            if (updateConversationModifiedDate) {
+                conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
+            }
+            if (updateConversationNotificationsDate) {
+                conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
+            }
+        }
+    }
+
+    @Deprecated("For test only!")
     override suspend fun insertMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { insertInDB(it) }
@@ -87,6 +109,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 asset_size = content.assetSizeInBytes,
                 asset_name = content.assetName,
                 asset_mime_type = content.assetMimeType,
+                asset_upload_status = content.assetUploadStatus,
                 asset_download_status = content.assetDownloadStatus,
                 asset_otr_key = content.assetOtrKey,
                 asset_sha256 = content.assetSha256Key,
@@ -132,6 +155,12 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
         }
     }
+
+    override suspend fun updateAssetUploadStatus(
+        uploadStatus: MessageEntity.UploadStatus,
+        id: String,
+        conversationId: QualifiedIDEntity
+    ) = queries.updateAssetUploadStatus(uploadStatus, id, conversationId)
 
     override suspend fun updateAssetDownloadStatus(
         downloadStatus: MessageEntity.DownloadStatus,

@@ -146,6 +146,7 @@ class MessageMapperImpl(
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,
+                assetUploadStatus = assetMapper.fromUploadStatusToDaoModel(uploadStatus),
                 assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,

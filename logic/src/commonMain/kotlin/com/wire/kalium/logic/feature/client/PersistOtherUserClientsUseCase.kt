@@ -23,7 +23,7 @@ internal class PersistOtherUserClientsUseCaseImpl(
             kaliumLogger.withFeatureId(CLIENTS).e("Failure while fetching other users clients $it")
         }, {
             it.forEach { (userId, clientList) ->
-                clientRepository.storeUserClientList(userId, clientList)
+                clientRepository.storeUserClientListAndRemoveRedundantClients(userId, clientList)
             }
         })
 }

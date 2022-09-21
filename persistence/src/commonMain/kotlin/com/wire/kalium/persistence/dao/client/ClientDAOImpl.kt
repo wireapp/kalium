@@ -32,6 +32,14 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
+    override suspend fun insertClientsAndRemoveRedundant(qualifiedID: QualifiedIDEntity, clients: List<Client>) =
+        clientsQueries.transaction {
+            clients.forEach { client ->
+                clientsQueries.insertClient(client.userId, client.id, client.deviceType)
+            }
+            clientsQueries.deleteClientsOfUserExcept(qualifiedID, clients.map { it.id })
+        }
+
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
             .asFlow()
