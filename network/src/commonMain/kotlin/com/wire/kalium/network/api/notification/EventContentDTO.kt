@@ -119,7 +119,6 @@ sealed class EventContentDTO {
             val time: String
         ) : Conversation()
 
-        // TODO handle
         @Serializable
         @SerialName("conversation.rename")
         data class ConversationRenameDTO(
@@ -207,7 +206,6 @@ sealed class EventContentDTO {
 
     }
 
-    // TODO handle
     @Serializable
     sealed class Team : EventContentDTO() {
         @Serializable
@@ -263,7 +261,6 @@ sealed class EventContentDTO {
 
         // TODO user.properties-delete
 
-        // TODO handle
         @Serializable
         @SerialName("user.update")
         data class UpdateDTO(
