@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
@@ -274,6 +275,7 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
         is MessageEntityContent.Unknown -> UNKNOWN
         is MessageEntityContent.FailedDecryption -> FAILED_DECRYPTION
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
+        is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)

@@ -140,7 +140,9 @@ object MessageMapper {
                 restrictedAssetSize.requireField("assetSize"),
                 restrictedAssetName.requireField("assetName")
             )
-        }.let {
+
+        MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(text ?: "someDefaultVAAAAAA")
+    }.let {
             createMessageEntity(
                 id,
                 conversationId,
