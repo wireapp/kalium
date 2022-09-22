@@ -31,7 +31,7 @@ actual class UserSessionScopeProviderImpl(
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
     private val idMapper: IdMapper
-) : UserSessionScopeProviderCommon() {
+) : UserSessionScopeProviderCommon(globalCallManager) {
 
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
