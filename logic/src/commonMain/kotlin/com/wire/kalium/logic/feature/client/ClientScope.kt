@@ -18,6 +18,7 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.RegisterTokenUseCase
 import com.wire.kalium.logic.feature.session.RegisterTokenUseCaseImpl
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 @Suppress("LongParameterList")
 class ClientScope(
@@ -30,10 +31,12 @@ class ClientScope(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val proteusClient: ProteusClient,
     private val sessionRepository: SessionRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val kaliumConfigs: KaliumConfigs,
 ) {
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
+            kaliumConfigs,
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
