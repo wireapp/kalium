@@ -8,6 +8,7 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -387,7 +388,8 @@ internal class ConversationEventReceiverImpl(
     private suspend fun handleRenamedConversation(event: Event.Conversation.RenamedConversation) {
         conversationRepository.updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
             .onSuccess {
-                kaliumLogger.withFeatureId(EVENT_RECEIVER).d("$TAG - The Conversation was renamed: ${event.conversationName}")
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .d("$TAG - The Conversation was renamed: ${event.conversationId.toString().obfuscateId()}")
                 val message = Message.System(
                     id = event.id,
                     content = MessageContent.ConversationRenamed(event.conversationName),
@@ -400,7 +402,7 @@ internal class ConversationEventReceiverImpl(
             }
             .onFailure { coreFailure ->
                 kaliumLogger.withFeatureId(EVENT_RECEIVER)
-                    .e("$TAG - Error renaming the conversation [${event.conversationName}] $coreFailure")
+                    .e("$TAG - Error renaming the conversation [${event.conversationId.toString().obfuscateId()}] $coreFailure")
             }
     }
 
