@@ -878,6 +878,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(false, isMember)
     }
 
+    @Test
+    fun givenAConversation_whenChangingTheName_itReturnsTheUpdatedName() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        conversationDAO.updateConversationName(conversationEntity1.id, "NEW-NAME", "2023-11-22T15:36:00.000Z")
+        val updatedConversation = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+
+        // then
+        assertEquals("NEW-NAME", updatedConversation!!.name)
+    }
+
     private companion object {
         val user1 = newUserEntity(id = "1")
         val user2 = newUserEntity(id = "2")
