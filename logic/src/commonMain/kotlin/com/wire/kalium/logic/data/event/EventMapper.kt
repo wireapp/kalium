@@ -190,8 +190,9 @@ class EventMapper(
     ) = Event.Conversation.RenamedConversation(
         id = id,
         conversationId = idMapper.fromApiModel(event.qualifiedConversation),
+        senderUserId = idMapper.fromApiModel(event.qualifiedFrom),
         conversationName = event.updateNameData.conversationName,
-        timestampIso = event.time
+        timestampIso = event.time,
     )
 
     private fun teamMemberJoined(

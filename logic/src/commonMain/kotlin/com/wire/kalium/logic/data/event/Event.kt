@@ -156,11 +156,13 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val conversationId: ConversationId,
             val conversationName: String,
+            val senderUserId: UserId,
             val timestampIso: String,
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
                         "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "senderUserId: ${senderUserId.toString().obfuscateId()} " +
                         "timestampIso: $timestampIso " +
                         "conversationName: $conversationName}"
             }
