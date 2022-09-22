@@ -16,7 +16,8 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.network.ServerMetaDataManager
-import com.wire.kalium.network.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.tools.ServerConfigDTO
 
 class AuthenticationScope(
@@ -27,7 +28,7 @@ class AuthenticationScope(
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
-        UnauthenticatedNetworkContainer(
+        UnauthenticatedNetworkContainerV0(
             MapperProvider.serverConfigMapper().toDTO(backendLinks),
             serverMetaDataManager = ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled
