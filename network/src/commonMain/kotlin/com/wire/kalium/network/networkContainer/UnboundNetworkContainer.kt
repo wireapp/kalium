@@ -13,7 +13,6 @@ interface UnboundNetworkContainer {
     val remoteVersion: VersionApi
 }
 
-
 private interface UnboundNetworkClientProvider {
     val unboundNetworkClient: UnboundNetworkClient
 }
@@ -21,8 +20,8 @@ private interface UnboundNetworkClientProvider {
 internal class UnboundNetworkClientProviderImpl(
     val developmentApiEnabled: Boolean,
     engine: HttpClientEngine = defaultHttpEngine()
-): UnboundNetworkClientProvider {
-     override val unboundNetworkClient by lazy {
+) : UnboundNetworkClientProvider {
+    override val unboundNetworkClient by lazy {
         UnboundNetworkClient(engine)
     }
 }
