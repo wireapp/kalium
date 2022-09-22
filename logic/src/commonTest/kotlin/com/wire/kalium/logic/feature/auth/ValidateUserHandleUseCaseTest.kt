@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.auth
 
 import kotlin.test.Test
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ValidateUserHandleUseCaseTest {
@@ -34,7 +35,7 @@ class ValidateUserHandleUseCaseTest {
             "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" +
                     "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" +
                     "123456789012345678901234567890123456789012345678901234567890"
-        )  is ValidateUserHandleResult.Invalid.TooLong }
+        ) is ValidateUserHandleResult.Invalid.TooLong }
     }
 
     @Test
@@ -47,6 +48,22 @@ class ValidateUserHandleUseCaseTest {
     fun givenAValidUserHandleUseCaseIsInvoked_whenHandleIsTooShortAndHasInvaledChar_thenReturnHandleWithoutInvalidChars() {
         val result = validateUserHandleUseCase("$")
         assertTrue { result is ValidateUserHandleResult.Invalid.InvalidCharacters && result.handle == "" }
+    }
+
+    @Test
+    fun givenUserHandleContainsDots_whenValidating_thenReturnProperValues() {
+        val handleWithDot = "user.name"
+        val result = validateUserHandleUseCase(handleWithDot)
+        assertFalse { result.isValid }
+        assertTrue { result.isValidAllowingDots }
+    }
+
+    @Test
+    fun givenUserHandleContainsInvalidCharacters_whenValidating_thenReturnListOfInvalidCharacters() {
+        val handleWithDot = "user.name!with?invalid,characters"
+        val result = validateUserHandleUseCase(handleWithDot)
+        assertIs<ValidateUserHandleResult.Invalid.InvalidCharacters>(result)
+        assertTrue { result.invalidCharactersUsed.toSet() == listOf('.', '!', '?', ',').toSet() }
     }
 
     private companion object {

@@ -137,6 +137,8 @@ import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
@@ -148,7 +150,6 @@ import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.UserDatabaseProvider
-import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -185,10 +186,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(globalPreferences.userConfigStorage)
-
-    private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
-    private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
+        get() = UserConfigDataSource(authenticatedDataSourceSet.userPrefProvider.userConfigStorage)
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
@@ -354,7 +352,10 @@ abstract class UserSessionScopeCommon internal constructor(
     private val eventProcessor: EventProcessor
         get() = EventProcessorImpl(
             eventRepository,
-            conversationEventReceiver, userEventReceiver, featureConfigEventReceiver
+            conversationEventReceiver,
+            userEventReceiver,
+            teamEventReceiver,
+            featureConfigEventReceiver
         )
 
     private val syncCriteriaProvider: SyncCriteriaProvider
@@ -506,6 +507,9 @@ abstract class UserSessionScopeCommon internal constructor(
             clientRepository,
             userId
         )
+
+    private val teamEventReceiver: TeamEventReceiver
+        get() = TeamEventReceiverImpl(teamRepository)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)

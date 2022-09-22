@@ -654,7 +654,7 @@
     <ID>MaximumLineLength:com.wire.kalium.api.tools.TestCredentials.kt:10</ID>
     <ID>MaximumLineLength:com.wire.kalium.api.tools.TestCredentials.kt:9</ID>
     <ID>MaximumLineLength:com.wire.kalium.api.tools.json.api.notification.NotificationEventsResponseJson.kt:90</ID>
-    <ID>MaximumLineLength:com.wire.kalium.logic.core_failure.WrapApiRequestTest.kt:27</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.corefailure.WrapApiRequestTest.kt:27</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.data.client.ClientMapper.kt:38</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.data.notification.LocalNotification.kt:21</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.data.prekey.PreKeyListMapper.kt:22</ID>
@@ -969,7 +969,7 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.SessionStorage.kt:127</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.SessionStorage.kt:94</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.TokenStorage.kt:27</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.client.UserConfigStorageTest.kt:29</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.config.UserConfigStorageTest.kt:29</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:250</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:266</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.persistence.dao.ConversationDAOTest.kt:284</ID>
@@ -1083,8 +1083,8 @@
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
     <ID>PackageName:com.wire.kalium.api.tools.json.api.api_version.VersionApiTest.kt:1</ID>
     <ID>PackageName:com.wire.kalium.api.tools.json.api.api_version.VersionInfoDTOJson.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.logic.core_failure.WrapApiRequestTest.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.logic.core_failure.WrapCryptoRequestTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.corefailure.WrapApiRequestTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.corefailure.WrapCryptoRequestTest.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TestKaliumDispatcher.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TestNetworkException.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TimeUtils.kt:1</ID>

@@ -6,7 +6,7 @@ import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.AndroidSettings
 import com.russhwolf.settings.Settings
 
-actual class EncryptedSettingsHolder(
+internal actual class EncryptedSettingsHolder internal constructor(
     applicationContext: Context,
     options: SettingOptions
 ) {

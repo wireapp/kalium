@@ -1,19 +1,20 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.GlobalConfigRepository
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class IsPersistentWebSocketConnectionEnabledUseCaseTest {
 
     @Test
@@ -26,7 +27,7 @@ class IsPersistentWebSocketConnectionEnabledUseCaseTest {
 
         isPersistentWebSocketConnectionEnabledUseCase()
 
-        verify(arrangement.userConfigRepository).invocation { isPersistentWebSocketConnectionEnabledFlow() }
+        verify(arrangement.globalConfigRepository).invocation { isPersistentWebSocketConnectionEnabledFlow() }
             .wasInvoked(exactly = once)
     }
 
@@ -41,20 +42,21 @@ class IsPersistentWebSocketConnectionEnabledUseCaseTest {
         // When
         isPersistentWebSocketConnectionEnabledUseCase()
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isPersistentWebSocketConnectionEnabledFlow)
+        verify(arrangement.globalConfigRepository)
+            .function(arrangement.globalConfigRepository::isPersistentWebSocketConnectionEnabledFlow)
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val userConfigRepository: UserConfigRepository = mock(classOf<UserConfigRepository>())
+        val globalConfigRepository: GlobalConfigRepository = mock(GlobalConfigRepository::class)
 
-        val isPersistentWebSocketConnectionEnabledUseCase = ObservePersistentWebSocketConnectionStatusUseCaseImpl(userConfigRepository)
+        val isPersistentWebSocketConnectionEnabledUseCase =
+            ObservePersistentWebSocketConnectionStatusUseCaseImpl(globalConfigRepository)
 
         fun withSuccessfulResponse(expectedValue: Boolean): Arrangement {
-            given(userConfigRepository)
-                .function(userConfigRepository::isPersistentWebSocketConnectionEnabledFlow)
+            given(globalConfigRepository)
+                .function(globalConfigRepository::isPersistentWebSocketConnectionEnabledFlow)
                 .whenInvoked()
                 .thenReturn(flow { Either.Right(expectedValue) })
 
@@ -62,8 +64,8 @@ class IsPersistentWebSocketConnectionEnabledUseCaseTest {
         }
 
         fun withIsWebSocketEnabledErrorResponse(storageFailure: StorageFailure): Arrangement {
-            given(userConfigRepository)
-                .function(userConfigRepository::isPersistentWebSocketConnectionEnabledFlow)
+            given(globalConfigRepository)
+                .function(globalConfigRepository::isPersistentWebSocketConnectionEnabledFlow)
                 .whenInvoked()
                 .thenReturn(flow { Either.Left(storageFailure) })
             return this

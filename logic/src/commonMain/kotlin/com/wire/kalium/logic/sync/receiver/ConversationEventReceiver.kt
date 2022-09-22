@@ -93,6 +93,8 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
             is Event.Conversation.NewMLSMessage -> handleNewMLSMessage(event)
             is Event.Conversation.MemberChanged -> handleMemberChange(event)
+            is Event.Conversation.AccessUpdate -> TODO()
+            is Event.Conversation.RenamedConversation -> TODO()
         }
     }
 

@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.client
+package com.wire.kalium.persistence.config
 
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import kotlinx.coroutines.channels.BufferOverflow
@@ -10,38 +10,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-@Suppress("TooManyFunctions")
 interface UserConfigStorage {
-
-    /**
-     * save flag from the user settings to enable and disable MLS
-     */
-    fun enableMLS(enabled: Boolean)
-
-    /**
-     * get the saved flag to know if MLS enabled or not
-     */
-    fun isMLSEnabled(): Boolean
-
-    /**
-     * save flag from the user settings to enable and disable the logging
-     */
-    fun enableLogging(enabled: Boolean)
-
-    /**
-     * get the saved flag to know if the logging enabled or not
-     */
-    fun isLoggingEnables(): Boolean
-
-    /**
-     * save flag from the user settings to enable and disable the persistent webSocket connection
-     */
-    fun persistPersistentWebSocketConnectionStatus(enabled: Boolean)
-
-    /**
-     * get the saved flag to know if the persistent webSocket connection enabled or not
-     */
-    fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Boolean>
 
     /**
      * save flag from the file sharing api, and if the status changes
@@ -68,6 +37,16 @@ interface UserConfigStorage {
      * save the flag and list of trusted domains
      */
     fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
+
+    /**
+     * save flag from the user settings to enable and disable MLS
+     */
+    fun enableMLS(enabled: Boolean)
+
+    /**
+     * get the saved flag to know if MLS enabled or not
+     */
+    fun isMLSEnabled(): Boolean
 }
 
 @Serializable
@@ -89,35 +68,9 @@ internal class UserConfigStorageImpl internal constructor(
 
     private val isFileSharingEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    private val isPersistentWebSocketConnectionEnabledFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
     private val isClassifiedDomainsEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
-    override fun enableMLS(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
-    }
-
-    override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
-
-    override fun enableLogging(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_LOGGING, enabled)
-    }
-
-    override fun isLoggingEnables(): Boolean = kaliumPreferences.getBoolean(ENABLE_LOGGING, true)
-
-    override fun persistPersistentWebSocketConnectionStatus(enabled: Boolean) {
-        kaliumPreferences.putBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, enabled)
-            .also { isPersistentWebSocketConnectionEnabledFlow.tryEmit(Unit) }
-    }
-
-    override fun isPersistentWebSocketConnectionEnabledFlow(): Flow<Boolean> =
-        isPersistentWebSocketConnectionEnabledFlow
-            .map {
-                kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false)
-            }.onStart {
-                emit(kaliumPreferences.getBoolean(PERSISTENT_WEB_SOCKET_CONNECTION, false))
-            }.distinctUntilChanged()
 
     override fun persistFileSharingStatus(
         status: Boolean,
@@ -164,11 +117,15 @@ internal class UserConfigStorageImpl internal constructor(
         }
     }
 
+    override fun enableMLS(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
+    }
+
+    override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
+
     private companion object {
-        const val ENABLE_LOGGING = "enable_logging"
         const val FILE_SHARING = "file_sharing"
-        const val ENABLE_MLS = "enable_mls"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
-        const val PERSISTENT_WEB_SOCKET_CONNECTION = "persistent_web_socket_connection"
+        const val ENABLE_MLS = "enable_mls"
     }
 }

@@ -95,7 +95,8 @@ internal object MapperProvider {
         memberMapper(),
         connectionMapper(),
         featureConfigMapper(),
-        conversationRoleMapper()
+        conversationRoleMapper(),
+        userTypeMapper(),
     )
 
     fun messageMentionMapper(): MessageMentionMapper = MessageMentionMapperImpl(idMapper())
