@@ -11,6 +11,7 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -106,10 +107,13 @@ class ConversationEventReceiverTest {
                 ), Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
+        val coreFailure = StorageFailure.DataNotFound
         val (arrangement, eventReceiver) = Arrangement()
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
             .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", validImageContent))
             .withPersistingMessageReturning(Either.Right(Unit))
+            .withFileSharingEnabled()
+            .withErrorGetMessageById(coreFailure)
             .arrange()
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
@@ -493,6 +497,27 @@ class ConversationEventReceiverTest {
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
+        }
+
+        fun withFileSharingEnabled() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::isFileSharingEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(FileSharingStatus(true, false)))
+        }
+
+        fun withGetMessageById(expectedMessage: Message.Regular) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(expectedMessage))
+        }
+
+        fun withErrorGetMessageById(coreFailure: CoreFailure) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(coreFailure))
         }
 
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
