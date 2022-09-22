@@ -11,6 +11,8 @@ import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
+import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainerV0
+import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -98,7 +100,7 @@ internal interface ApiTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/json")
             )
         }
-        return AuthenticatedNetworkContainer(
+        return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
             sessionManager = TEST_SESSION_NAMAGER,
             serverMetaDataManager = TestServerMetaDataManager()
@@ -109,7 +111,7 @@ internal interface ApiTest {
         val mockEngine = MockEngine {
             TODO("It's not yet possible to mock WebSockets from the client side")
         }
-        return AuthenticatedNetworkContainer(
+        return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
             sessionManager = TEST_SESSION_NAMAGER,
             serverMetaDataManager = TestServerMetaDataManager()
@@ -153,7 +155,7 @@ internal interface ApiTest {
 
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
 
-        return UnauthenticatedNetworkContainer(
+        return UnauthenticatedNetworkContainerV0(
             backendLinks = TEST_BACKEND.links,
             engine = mockEngine,
             serverMetaDataManager = TestServerMetaDataManager()
@@ -188,7 +190,7 @@ internal interface ApiTest {
             }
             fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
         }
-        return UnauthenticatedNetworkContainer(
+        return UnauthenticatedNetworkContainerV0(
             backendLinks = TEST_BACKEND.links,
             engine = mockEngine,
             serverMetaDataManager = TestServerMetaDataManager()
@@ -214,7 +216,7 @@ internal interface ApiTest {
             assertion,
             headers
         )
-        return AuthenticatedNetworkContainer(
+        return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
             sessionManager = TEST_SESSION_NAMAGER,
             serverMetaDataManager = TestServerMetaDataManager()

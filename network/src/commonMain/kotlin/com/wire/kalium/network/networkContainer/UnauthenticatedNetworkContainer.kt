@@ -36,12 +36,14 @@ internal class UnauthenticatedNetworkClientProviderImpl(
 class UnauthenticatedNetworkContainerV0 constructor(
     backendLinks: ServerConfigDTO.Links,
     serverMetaDataManager: ServerMetaDataManager,
-    developmentApiEnabled: Boolean = false
+    developmentApiEnabled: Boolean = false,
+    engine: HttpClientEngine = defaultHttpEngine(),
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
         backendLinks,
         serverMetaDataManager,
-        developmentApiEnabled
+        developmentApiEnabled,
+        engine
     ) {
     override val loginApi: LoginApi get() = LoginApiImpl(unauthenticatedNetworkClient)
     override val registerApi: RegisterApi get() = RegisterApiImpl(unauthenticatedNetworkClient)
