@@ -99,7 +99,7 @@ sealed class MessageEntity(
     }
 
     enum class ContentType {
-        TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET, UNKNOWN, FAILED_DECRYPTION
+        TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET, CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION
     }
 
     enum class MemberChangeType {
@@ -174,4 +174,5 @@ sealed class MessageEntityContent {
     ) : Regular()
 
     object MissedCall : System()
+    data class ConversationRenamed(val conversationName: String) : System()
 }

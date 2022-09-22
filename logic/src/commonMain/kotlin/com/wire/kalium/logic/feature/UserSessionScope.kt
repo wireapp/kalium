@@ -429,6 +429,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     internal val keyPackageManager: KeyPackageManager =
         KeyPackageManagerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { client.refillKeyPackages },
             lazy { client.mlsKeyPackageCountUseCase },
@@ -436,6 +437,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository }
@@ -445,6 +447,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val pendingProposalScheduler: PendingProposalScheduler =
         PendingProposalSchedulerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { mlsConversationRepository }
         )
@@ -553,7 +556,8 @@ abstract class UserSessionScopeCommon internal constructor(
             clientRemoteRepository,
             authenticatedDataSourceSet.proteusClient,
             globalScope.sessionRepository,
-            userId
+            userId,
+            kaliumConfigs
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -623,7 +627,7 @@ abstract class UserSessionScopeCommon internal constructor(
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
-    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(userConfigRepository)
+    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(kaliumConfigs, userConfigRepository)
 
     internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(

@@ -126,3 +126,8 @@ SELECT user FROM Member WHERE conversation = ? AND user = ?;
 
 whoDeletedMeInConversation:
 SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = "REMOVED" AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY DateTime(date) DESC LIMIT 1;
+
+updateConversationName:
+UPDATE Conversation
+SET name = ?, last_modified_date = ?
+WHERE qualified_id = ?;

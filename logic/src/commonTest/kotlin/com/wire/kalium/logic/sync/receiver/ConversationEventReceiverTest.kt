@@ -378,6 +378,56 @@ class ConversationEventReceiverTest {
         }
     }
 
+    @Test
+    fun givenAConversationEventRenamed_whenHandlingIt_thenShouldRenameTheConversation() = runTest {
+        val event = TestEvent.renamedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withGetConversation()
+            .withGetUserAuthor(event.senderUserId)
+            .withRenamingConversationReturning()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .with(eq(TestConversation.ID), any(), any())
+                .wasInvoked(exactly = once)
+
+            verify(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAConversationEventRenamed_whenHandlingItFails_thenShouldNotUpdateTheConversation() = runTest {
+        val event = TestEvent.renamedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withGetConversation()
+            .withGetUserAuthor(event.senderUserId)
+            .withRenamingConversationReturning(Either.Left(StorageFailure.DataNotFound))
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .with(eq(TestConversation.ID), any(), any())
+                .wasInvoked(exactly = once)
+
+            verify(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .with(any())
+                .wasNotInvoked()
+        }
+    }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -564,6 +614,13 @@ class ConversationEventReceiverTest {
                 .suspendFunction(conversationRepository::deleteConversation)
                 .whenInvokedWith((eq(conversationId)))
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withRenamingConversationReturning(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .whenInvokedWith(eq(TestConversation.ID), eq("newName"), any())
+                .thenReturn(result)
         }
 
         fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION) = apply {
