@@ -679,7 +679,6 @@ abstract class UserSessionScopeCommon internal constructor(
             callRepository.updateOpenCallsToClosedStatus()
         }
 
-        println("cyka userSessionScope init $userId")
         launch {
             val pushTokenUpdater = createPushTokenUpdater()
             pushTokenUpdater.monitorTokenChanges()

@@ -32,7 +32,6 @@ class SaveNotificationTokenUseCaseImpl(
             Result.Success
         })
 
-
 }
 
 sealed class Result {

@@ -25,7 +25,6 @@ data class NotificationTokenEntity(
     @SerialName("applicationId") val applicationId: String,
 )
 
-
 internal class TokenStorageImpl internal constructor(
     private val kaliumPreferences: KaliumPreferences
 ) : TokenStorage {
