@@ -156,11 +156,13 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val conversationId: ConversationId,
             val conversationName: String,
+            val senderUserId: UserId,
             val timestampIso: String,
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
                         "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "senderUserId: ${senderUserId.toString().obfuscateId()} " +
                         "timestampIso: $timestampIso " +
                         "conversationName: $conversationName}"
             }
@@ -254,15 +256,16 @@ sealed class Event(open val id: String) {
 
         data class Update(
             override val id: String,
-            val userId: String,
+            val userId: String?,
             val accentId: Int?,
-            val ssoIdDeleted: Boolean
+            val ssoIdDeleted: Boolean?,
+            val name: String?,
+            val handle: String?,
+            val email: String?,
         ) : User(id) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
-                        "userId: $userId " +
-                        "accentId: $accentId " +
-                        "ssoIdDeleted: $ssoIdDeleted"
+                        "userId: ${userId.orEmpty().obfuscateId()} "
             }
         }
 

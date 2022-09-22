@@ -256,6 +256,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
         is MessageContent.Ignored -> false
         is MessageContent.LastRead -> false
         is MessageContent.Cleared -> false
+        is MessageContent.ConversationRenamed -> false
     }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =
