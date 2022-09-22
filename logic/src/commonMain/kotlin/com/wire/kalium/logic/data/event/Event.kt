@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import kotlinx.datetime.Clock
 
@@ -150,6 +151,78 @@ sealed class Event(open val id: String) {
                         "senderUserId:${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}"
             }
         }
+
+        data class RenamedConversation(
+            override val id: String,
+            override val conversationId: ConversationId,
+            val conversationName: String,
+            val timestampIso: String,
+        ) : Conversation(id, conversationId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                        "timestampIso: $timestampIso " +
+                        "conversationName: $conversationName}"
+            }
+        }
+    }
+
+    sealed class Team(
+        id: String,
+        open val teamId: String
+    ) : Event(id) {
+        data class Update(
+            override val id: String,
+            override val teamId: String,
+            val icon: String,
+            val name: String,
+        ) : Team(id, teamId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "teamId: $teamId " +
+                        "icon: $icon " +
+                        "name: $name"
+            }
+        }
+
+        data class MemberJoin(
+            override val id: String,
+            override val teamId: String,
+            val memberId: String,
+        ) : Team(id, teamId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "teamId: $teamId " +
+                        "memberId: $memberId"
+            }
+        }
+
+        data class MemberLeave(
+            override val id: String,
+            override val teamId: String,
+            val memberId: String,
+        ) : Team(id, teamId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "teamId: $teamId " +
+                        "memberId: $memberId"
+            }
+        }
+
+        data class MemberUpdate(
+            override val id: String,
+            override val teamId: String,
+            val memberId: String,
+            val userType: UserType,
+        ) : Team(id, teamId) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "teamId: $teamId " +
+                        "userType: $userType " +
+                        "memberId: $memberId"
+            }
+        }
+
     }
 
     sealed class FeatureConfig(
@@ -178,6 +251,20 @@ sealed class Event(open val id: String) {
     sealed class User(
         id: String,
     ) : Event(id) {
+
+        data class Update(
+            override val id: String,
+            val userId: String,
+            val accentId: Int,
+            val ssoIdDeleted: Boolean
+        ) : User(id) {
+            override fun toString(): String {
+                return "id: ${id.obfuscateId()} " +
+                        "userId: $userId " +
+                        "accentId: $accentId " +
+                        "ssoIdDeleted: $ssoIdDeleted"
+            }
+        }
 
         data class NewConnection(
             override val id: String,

@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.client
 
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -26,7 +26,9 @@ data class NotificationTokenEntity(
 )
 
 
-class TokenStorageImpl(private val kaliumPreferences: KaliumPreferences) : TokenStorage {
+internal class TokenStorageImpl internal constructor(
+    private val kaliumPreferences: KaliumPreferences
+) : TokenStorage {
 
     override fun saveToken(token: String, transport: String, applicationId: String) {
         kaliumPreferences.putSerializable(

@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.core_failure
+package com.wire.kalium.logic.corefailure
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
@@ -24,7 +24,14 @@ class WrapApiRequestTest {
 
     @Test
     fun whenApiRequestReturnAnError_thenCorrectErrorIsPropagated() {
-        val expected = NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "have you tried turning it off and on again?", "server_crash")))
+        val expected = NetworkResponse.Error(
+            KaliumException.ServerError(
+                ErrorResponse(
+                    500,
+                    "have you tried turning it off and on again?", "server_crash"
+                )
+            )
+        )
         val actual = wrapApiRequest { expected }
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)

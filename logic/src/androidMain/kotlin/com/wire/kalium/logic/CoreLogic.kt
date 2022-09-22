@@ -11,10 +11,7 @@ import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
-import com.wire.kalium.persistence.kmm_settings.SettingOptions
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
 
 /**
@@ -30,20 +27,15 @@ actual class CoreLogic(
 
     // TODO: no need to have session repo as singleton any more
 
-    override val globalPreferences: Lazy<KaliumPreferences> = lazy {
-        KaliumPreferencesSettings(
-            EncryptedSettingsHolder(
-                appContext,
-                SettingOptions.AppSettings(shouldEncryptData = kaliumConfigs.shouldEncryptData)
-            ).encryptedSettings
-        )
+    override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
+        GlobalPrefProvider(appContext)
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
         lazy {
             GlobalDatabaseProvider(
                 appContext,
-                SecurityHelper(globalPreferences.value).globalDBSecret(),
+                SecurityHelper(globalPreferences.value.passphraseStorage).globalDBSecret(),
                 kaliumConfigs.shouldEncryptData
             )
         }

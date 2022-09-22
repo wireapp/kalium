@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.kmm_settings
+package com.wire.kalium.persistence.kmmSettings
 
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.get
@@ -6,7 +6,8 @@ import com.russhwolf.settings.set
 import com.wire.kalium.persistence.util.JsonSerializer
 import kotlinx.serialization.KSerializer
 
-interface KaliumPreferences {
+@Suppress("TooManyFunctions")
+internal interface KaliumPreferences {
     fun remove(key: String)
     fun hasValue(key: String): Boolean
     fun putString(key: String, value: String?)
@@ -22,12 +23,12 @@ interface KaliumPreferences {
     fun nuke()
 
     fun putBoolean(key: String, value: Boolean)
-    fun getBoolean(key: String, defaultValue: Boolean = false): Boolean
+    fun getBoolean(key: String, defaultValue: Boolean): Boolean
     fun getBoolean(key: String): Boolean?
 
 }
 
-class KaliumPreferencesSettings(
+internal class KaliumPreferencesSettings internal constructor(
     private val encryptedSettings: Settings
 ) : KaliumPreferences {
 

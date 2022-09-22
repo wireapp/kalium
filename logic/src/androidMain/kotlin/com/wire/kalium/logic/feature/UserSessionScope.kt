@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 /**
  * This class is only for platform specific variables,
@@ -22,7 +22,7 @@ actual class UserSessionScope internal constructor(
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     globalScope: GlobalKaliumScope,
     globalCallManager: GlobalCallManager,
-    globalPreferences: KaliumPreferences,
+    globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
     userSessionScopeProvider: UserSessionScopeProvider

@@ -1,7 +1,7 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.UserConfigDataSource
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.GlobalConfigDataSource
+import com.wire.kalium.logic.configuration.GlobalConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
@@ -35,13 +35,8 @@ import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.UnboundNetworkContainer
-import com.wire.kalium.persistence.client.AuthTokenStorage
-import com.wire.kalium.persistence.client.TokenStorage
-import com.wire.kalium.persistence.client.TokenStorageImpl
-import com.wire.kalium.persistence.client.UserConfigStorage
-import com.wire.kalium.persistence.client.UserConfigStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 /**
  * Scope that exposes all operations that are user and backend agnostic, like
@@ -55,7 +50,7 @@ import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 
 class GlobalKaliumScope(
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
-    private val globalPreferences: Lazy<KaliumPreferences>,
+    private val globalPreferences: Lazy<GlobalPrefProvider>,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
 ) {
@@ -70,17 +65,21 @@ class GlobalKaliumScope(
             globalDatabase.value.serverConfigurationDAO,
             unboundNetworkContainer.remoteVersion,
         )
-    private val tokenStorage: TokenStorage get() = TokenStorageImpl(globalPreferences.value)
-
-    private val authTokenStorage: AuthTokenStorage get() = AuthTokenStorage(globalPreferences.value)
-    private val userConfigStorage: UserConfigStorage get() = UserConfigStorageImpl(globalPreferences.value)
 
     val sessionRepository: SessionRepository
         get() =
-            SessionDataSource(globalDatabase.value.accountsDAO, authTokenStorage, serverConfigRepository)
+            SessionDataSource(
+                globalDatabase.value.accountsDAO,
+                globalPreferences.value.authTokenStorage,
+                serverConfigRepository
+            )
 
-    private val notificationTokenRepository: NotificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
-    private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
+    private val notificationTokenRepository: NotificationTokenRepository
+        get() =
+            NotificationTokenDataSource(globalPreferences.value.tokenStorage)
+    private val globalConfigRepository: GlobalConfigRepository
+        get() =
+            GlobalConfigDataSource(globalPreferences.value.globalAppConfigStorage)
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
@@ -96,16 +95,17 @@ class GlobalKaliumScope(
 
     val saveNotificationToken: SaveNotificationTokenUseCase
         get() = SaveNotificationTokenUseCaseImpl(notificationTokenRepository, observeValidAccounts, userSessionScopeProvider.value)
-    val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(userConfigRepository)
-    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(userConfigRepository)
+    val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(globalConfigRepository)
+    val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(globalConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(
-            userConfigRepository
+            globalConfigRepository
         )
     val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
-            userConfigRepository
+            globalConfigRepository
         )
-    val deleteSession: DeleteSessionUseCase get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
+    val deleteSession: DeleteSessionUseCase
+        get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
 }

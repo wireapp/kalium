@@ -1,9 +1,9 @@
-package com.wire.kalium.persistence.client
+package com.wire.kalium.persistence.config
 
 import com.russhwolf.settings.MockSettings
 import com.russhwolf.settings.Settings
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferencesSettings
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
@@ -25,24 +25,6 @@ class UserConfigStorageTest {
     @AfterTest
     fun clear() {
         settings.clear()
-    }
-
-    @Test
-    fun givenEnableLogging_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
-        userConfigStorage.enableLogging(true)
-        assertEquals(true, userConfigStorage.isLoggingEnables())
-
-        userConfigStorage.enableLogging(false)
-        assertEquals(false, userConfigStorage.isLoggingEnables())
-    }
-
-    @Test
-    fun givenPersistWebSocketStatus_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
-        userConfigStorage.persistPersistentWebSocketConnectionStatus(true)
-        assertEquals(true, userConfigStorage.isPersistentWebSocketConnectionEnabledFlow().first())
-
-        userConfigStorage.persistPersistentWebSocketConnectionStatus(false)
-        assertEquals(false, userConfigStorage.isPersistentWebSocketConnectionEnabledFlow().first())
     }
 
     @Test

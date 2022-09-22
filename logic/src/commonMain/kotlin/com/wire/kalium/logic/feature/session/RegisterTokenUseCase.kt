@@ -11,46 +11,46 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCode
 import com.wire.kalium.network.exceptions.isNotFound
 
-// interface RegisterTokenUseCase {
-//     suspend operator fun invoke(clientId: ClientId): RegisterTokenResult
-// }
-//
-// class RegisterTokenUseCaseImpl(
-//     private val clientRemoteRepository: ClientRepository,
-//     private val notificationTokenRepository: NotificationTokenRepository
-// ) : RegisterTokenUseCase {
-//     override suspend operator fun invoke(clientId: ClientId): RegisterTokenResult =
-//         notificationTokenRepository.getNotificationToken().fold({
-//             RegisterTokenResult.Failure.NotificationTokenNotFound(it)
-//         }, { notificationToken ->
-//             clientRemoteRepository.registerToken(
-//                 body = PushTokenBody(
-//                     senderId = notificationToken.senderId, client = clientId.value, token = notificationToken.token, transport = notificationToken.transport
-//                 )
-//             ).fold({ failure ->
-//                 RegisterTokenResult.Success
-//                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
-//                     when {
-//                         failure.kaliumException.isInvalidCode() -> RegisterTokenResult.Failure.AppNotFound
-//                         failure.kaliumException.isNotFound() -> RegisterTokenResult.Failure.PushTokenRegister
-//                         else -> RegisterTokenResult.Failure.Generic(failure)
-//                     }
-//                 else {
-//                     RegisterTokenResult.Failure.Generic(failure)
-//                 }
-//             }, {
-//                 RegisterTokenResult.Success
-//             })
-//         })
-// }
-//
-//
-// sealed class RegisterTokenResult {
-//     object Success : RegisterTokenResult()
-//     sealed class Failure : RegisterTokenResult() {
-//         object AppNotFound : Failure()
-//         object PushTokenRegister : Failure()
-//         class NotificationTokenNotFound(val failure: StorageFailure) : Failure()
-//         class Generic(val failure: NetworkFailure) : Failure()
-//     }
-// }
+interface RegisterTokenUseCase {
+    suspend operator fun invoke(clientId: ClientId): RegisterTokenResult
+}
+
+class RegisterTokenUseCaseImpl(
+    private val clientRemoteRepository: ClientRepository,
+    private val notificationTokenRepository: NotificationTokenRepository
+) : RegisterTokenUseCase {
+    override suspend operator fun invoke(clientId: ClientId): RegisterTokenResult =
+        notificationTokenRepository.getNotificationToken().fold({
+            RegisterTokenResult.Failure.NotificationTokenNotFound(it)
+        }, { notificationToken ->
+            clientRemoteRepository.registerToken(
+                body = PushTokenBody(
+                    senderId = notificationToken.applicationId, client = clientId.value, token = notificationToken.token, transport = notificationToken.transport
+                )
+            ).fold({ failure ->
+                RegisterTokenResult.Success
+                if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
+                    when {
+                        failure.kaliumException.isInvalidCode() -> RegisterTokenResult.Failure.AppNotFound
+                        failure.kaliumException.isNotFound() -> RegisterTokenResult.Failure.PushTokenRegister
+                        else -> RegisterTokenResult.Failure.Generic(failure)
+                    }
+                else {
+                    RegisterTokenResult.Failure.Generic(failure)
+                }
+            }, {
+                RegisterTokenResult.Success
+            })
+        })
+}
+
+
+sealed class RegisterTokenResult {
+    object Success : RegisterTokenResult()
+    sealed class Failure : RegisterTokenResult() {
+        object AppNotFound : Failure()
+        object PushTokenRegister : Failure()
+        class NotificationTokenNotFound(val failure: StorageFailure) : Failure()
+        class Generic(val failure: NetworkFailure) : Failure()
+    }
+}

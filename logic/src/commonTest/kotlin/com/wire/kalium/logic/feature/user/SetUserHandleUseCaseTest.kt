@@ -147,7 +147,7 @@ class SetUserHandleUseCaseTest {
         given(validateHandleUseCase)
             .function(validateHandleUseCase::invoke)
             .whenInvokedWith(any())
-            .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
+            .then { ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf()) }
         given(syncManager)
             .coroutine { syncManager.isSlowSyncOngoing() }
             .then { false }
