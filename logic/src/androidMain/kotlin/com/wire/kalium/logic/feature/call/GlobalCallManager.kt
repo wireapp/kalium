@@ -6,23 +6,27 @@ import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
+import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.Dispatchers
 
 actual class GlobalCallManager(
     appContext: Context
 ) {
 
-    private val callManagerHolder = hashMapOf<QualifiedID, CallManager>()
+    private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
+        ConcurrentMap()
+    }
 
     private val calling by lazy {
         Calling.INSTANCE.apply {
@@ -65,6 +69,10 @@ actual class GlobalCallManager(
         ).also {
             callManagerHolder[userId] = it
         }
+    }
+
+    actual fun removeInMemoryCallingManagerForUser(userId: UserId) {
+        callManagerHolder.remove(userId)
     }
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
