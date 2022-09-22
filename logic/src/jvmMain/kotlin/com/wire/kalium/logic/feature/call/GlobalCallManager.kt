@@ -28,7 +28,9 @@ actual class GlobalCallManager {
         videoStateChecker: VideoStateChecker
     ): CallManager = CallManagerImpl()
 
-    actual fun removeInMemoryCallingManagerForUser(userId: UserId) {} // todo how to delete it in JVM ?
+    actual fun removeInMemoryCallingManagerForUser(userId: UserId) {
+        // todo how to delete it in JVM ?
+    }
     actual fun getFlowManager(): FlowManagerService = FlowManagerServiceImpl()
     actual fun getMediaManager(): MediaManagerService = MediaManagerServiceImpl()
 }
