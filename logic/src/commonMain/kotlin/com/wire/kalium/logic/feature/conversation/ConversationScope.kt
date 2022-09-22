@@ -29,7 +29,6 @@ class ConversationScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
-    private val callRepository: CallRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,

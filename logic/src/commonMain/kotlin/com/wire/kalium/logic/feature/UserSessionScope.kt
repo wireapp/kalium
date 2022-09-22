@@ -580,7 +580,6 @@ abstract class UserSessionScopeCommon internal constructor(
             conversationRepository,
             connectionRepository,
             userRepository,
-            callRepository,
             syncManager,
             mlsConversationRepository,
             clientRepository,
