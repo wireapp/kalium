@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsOnceUseCase
+import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsOnceUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
@@ -45,6 +47,13 @@ class CallsScope internal constructor(
 
     val getIncomingCalls: GetIncomingCallsUseCase
         get() = GetIncomingCallsUseCaseImpl(
+            callRepository = callRepository,
+            conversationRepository = conversationRepository,
+            userRepository = userRepository
+        )
+
+    val getIncomingCallsOnce: GetIncomingCallsOnceUseCase
+        get() = GetIncomingCallsOnceUseCaseImpl(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
             userRepository = userRepository

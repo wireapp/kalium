@@ -64,6 +64,10 @@ internal class CallDAOImpl(
             .asFlow()
             .mapToList()
 
+    override suspend fun getIncomingCalls(): List<CallEntity> =
+        callsQueries.selectIncomingCalls(mapper = mapper::fromCalls)
+            .executeAsList()
+
     override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls)
             .asFlow()

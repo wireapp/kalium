@@ -14,7 +14,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
 class SendTextMessageUseCase internal constructor(
@@ -22,7 +25,8 @@ class SendTextMessageUseCase internal constructor(
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> {

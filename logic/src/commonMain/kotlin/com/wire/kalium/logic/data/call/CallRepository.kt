@@ -43,6 +43,7 @@ interface CallRepository {
     fun getCallMetadataProfile(): CallMetadataProfile
     suspend fun callsFlow(): Flow<List<Call>>
     suspend fun incomingCallsFlow(): Flow<List<Call>>
+    suspend fun getIncomingCalls(): List<Call>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
@@ -89,6 +90,8 @@ internal class CallDataSource(
     override suspend fun callsFlow(): Flow<List<Call>> = callDAO.observeCalls().combineWithCallsMetadata()
 
     override suspend fun incomingCallsFlow(): Flow<List<Call>> = callDAO.observeIncomingCalls().combineWithCallsMetadata()
+
+    override suspend fun getIncomingCalls(): List<Call> = callDAO.getIncomingCalls().combineWithCallsMetadata()
 
     override suspend fun ongoingCallsFlow(): Flow<List<Call>> = callDAO.observeOngoingCalls().combineWithCallsMetadata()
 
@@ -374,5 +377,16 @@ internal class CallDataSource(
                     callEntity = call, metadata = metadata.data[conversationId.toString()]
                 )
             }
+        }
+
+    private fun List<CallEntity>.combineWithCallsMetadata(): List<Call> =
+        this.map { call ->
+            val conversationId = ConversationId(
+                value = call.conversationId.value, domain = call.conversationId.domain
+            )
+
+            callMapper.toCall(
+                callEntity = call, metadata = _callMetadataProfile.value.data[conversationId.toString()]
+            )
         }
 }
