@@ -2237,9 +2237,13 @@ $dokka.location:com.wire.kalium.logic.data.sync/ConnectionPolicy///PointingToDec
 $dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.Failed///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-failed/index.html
 $dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.Failed/Failed/#com.wire.kalium.logic.CoreFailure/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-failed/-failed.html
 $dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.Failed/failure/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-failed/failure.html
+$dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.Failed/toString/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-failed/to-string.html
 $dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.FetchingPendingEvents///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-fetching-pending-events/index.html
+$dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.FetchingPendingEvents/toString/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-fetching-pending-events/to-string.html
 $dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.Live///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-live/index.html
+$dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.Live/toString/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-live/to-string.html
 $dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.Pending///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-pending/index.html
+$dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus.Pending/toString/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/-pending/to-string.html
 $dokka.location:com.wire.kalium.logic.data.sync/IncrementalSyncStatus///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-incremental-sync-status/index.html
 $dokka.location:com.wire.kalium.logic.data.sync/SlowSyncStatus.Complete///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-slow-sync-status/-complete/index.html
 $dokka.location:com.wire.kalium.logic.data.sync/SlowSyncStatus.Failed///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.sync/-slow-sync-status/-failed/index.html
