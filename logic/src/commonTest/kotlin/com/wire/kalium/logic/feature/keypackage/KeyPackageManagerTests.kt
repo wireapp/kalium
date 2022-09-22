@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -34,6 +35,29 @@ class KeyPackageManagerTests {
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
+
+            verify(arrangement.refillKeyPackagesUseCase)
+                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenMLSSupportIsDisabled_whenObservingSyncFinishes_refillKeyPackagesIsNotPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withLastKeyPackageCountCheck(true)
+                .withRefillKeyPackagesUseCaseSuccessful()
+                .withKeyPackageCountFailed()
+                .withUpdateLastKeyPackageCountCheckSuccessful()
+                .arrange()
+
+            arrangement.kaliumConfigs.isMLSSupportEnabled = false
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            verify(arrangement.refillKeyPackagesUseCase)
+                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
+                .wasNotInvoked()
         }
 
     @Test
@@ -83,6 +107,8 @@ class KeyPackageManagerTests {
         }
 
     private class Arrangement {
+
+        val kaliumConfigs = KaliumConfigs()
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
@@ -136,6 +162,7 @@ class KeyPackageManagerTests {
         }
 
         fun arrange() = this to KeyPackageManagerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { refillKeyPackagesUseCase },
             lazy { keyPackageCountUseCase },
