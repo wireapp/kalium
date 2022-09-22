@@ -56,11 +56,8 @@ class ConversationScope internal constructor(
     val getOneToOneConversation: GetOneToOneConversationUseCase
         get() = GetOneToOneConversationUseCase(conversationRepository)
 
-    val observeConversationListDetails: ObserveConversationListDetailsUseCase
-        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository, observeIsSelfUserMemberUseCase)
-
-    val observeConversationsAndConnectionListUseCase: ObserveConversationsAndConnectionsUseCase
-        get() = ObserveConversationsAndConnectionsUseCaseImpl(observeConversationListDetails, observeConnectionList)
+    val observeConversationView: ObserveConversationViewUseCase
+        get() = ObserveConversationViewUseCaseImpl(conversationRepository)
 
     val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCase(conversationRepository, userRepository)
@@ -111,6 +108,9 @@ class ConversationScope internal constructor(
 
     val removeMemberFromConversation: RemoveMemberFromConversationUseCase
         get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
+
+    val leaveConversation: LeaveConversationUseCase
+        get() = LeaveConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)

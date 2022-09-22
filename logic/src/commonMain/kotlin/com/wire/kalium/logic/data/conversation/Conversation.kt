@@ -5,14 +5,19 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
+
 import kotlinx.datetime.Instant
 
 data class Conversation(
@@ -28,7 +33,9 @@ data class Conversation(
     val lastModifiedDate: String?,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>
+    val accessRole: List<AccessRole>,
+    val isSelfUserMember: Boolean = true,
+    val isCreator: Boolean = false
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
@@ -142,7 +149,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadMessagesCount: Long = 0L,
         val unreadMentionsCount: Long = 0L,
         val lastUnreadMessage: Message?,
-        val isSelfUserMember: Boolean = true
+        val isSelfUserMember: Boolean = true,
+        val isSelfCreated: Boolean = false
     ) : ConversationDetails(conversation)
 
     data class Connection(
@@ -168,7 +176,9 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             lastModifiedDate = lastModifiedDate,
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
-            accessRole = accessRole
+            accessRole = accessRole,
+            isSelfUserMember = false,
+            isCreator = false
         )
     )
 }
@@ -180,3 +190,31 @@ data class MemberDetails(val user: User, val role: Conversation.Member.Role)
 typealias ClientId = PlainId
 
 data class Recipient(val id: UserId, val clients: List<ClientId>)
+
+data class ConversationView(
+    val id: ConversationId,
+    val name: String?,
+    val type: Conversation.Type,
+    val callStatus: CallStatus?,
+    val previewAssetId: QualifiedID?,
+    val mutedStatus: MutedConversationStatus,
+    val teamId: TeamId?,
+    val lastModifiedDate: String?,
+    val lastReadDate: String,
+    val userAvailabilityStatus: UserAvailabilityStatus?,
+    val botService: BotService?,
+    val userDeleted: Boolean?,
+    val userType: UserType,
+    val connectionStatus: ConnectionState,
+    val otherUserId: QualifiedID?,
+    val lastNotificationDate: String?,
+    val isCreator: Boolean = false,
+    val unreadConversationsCount: Long = 0L,
+    val missedCallsCount: Long = 0L,
+    val mentionsCount: Long = 0L,
+    val legalHoldStatus: LegalHoldStatus = LegalHoldStatus.DISABLED,
+    val isMember: Boolean = false
+) {
+    val isUnavailableUser
+        get() = type == Conversation.Type.ONE_ON_ONE && !(userDeleted ?: false) && name.orEmpty().isEmpty()
+}

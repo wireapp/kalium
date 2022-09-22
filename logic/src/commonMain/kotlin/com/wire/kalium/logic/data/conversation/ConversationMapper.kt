@@ -1,12 +1,17 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.call.mapper.CallMapper
+import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
 import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvTeamInfo
@@ -19,6 +24,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import com.wire.kalium.persistence.dao.ConversationViewEntity
 import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
 import kotlinx.datetime.Instant
@@ -27,6 +33,7 @@ interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
+    fun fromDaoViewToModelView(daoModel: ConversationViewEntity): ConversationView
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -36,6 +43,7 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+
     @Suppress("LongParameterList")
     fun toConversationDetailsOneToOne(
         conversation: Conversation,
@@ -51,7 +59,11 @@ interface ConversationMapper {
 internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
-    private val protocolInfoMapper: ProtocolInfoMapper
+    private val protocolInfoMapper: ProtocolInfoMapper,
+    private val callMapper: CallMapper,
+    private val userAvailabilityStatusMapper: AvailabilityStatusMapper,
+    private val domainUserTypeMapper: DomainUserTypeMapper,
+    private val connectionStatusMapper: ConnectionStatusMapper
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
@@ -95,6 +107,32 @@ internal class ConversationMapperImpl(
         access = daoModel.access.map { it.toDAO() },
         accessRole = daoModel.accessRole.map { it.toDAO() }
     )
+
+    override fun fromDaoViewToModelView(daoModel: ConversationViewEntity): ConversationView = with(daoModel) {
+        ConversationView(
+            id = idMapper.fromDaoModel(id),
+            name = name,
+            type = type.fromDaoModelToType(),
+            callStatus = callMapper.toCallStatus(callStatus),
+            previewAssetId = previewAssetId?.let { idMapper.fromDaoModel(it) },
+            mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+            teamId = teamId?.let { TeamId(it) },
+            lastModifiedDate = lastModifiedDate,
+            lastReadDate = lastReadDate,
+            userAvailabilityStatus = userAvailabilityStatus?.let {
+                userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(it)
+            },
+            botService = botService?.let { BotService(it.id, it.provider) },
+            userDeleted = type != ConversationEntity.Type.GROUP && otherUserId != null,
+            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
+            isCreator = isCreator == 1L,
+            lastNotificationDate = lastNotificationDate,
+            otherUserId = otherUserId?.let { idMapper.fromDaoModel(it) },
+            unreadConversationsCount = unreadMessageCount,
+            isMember = isMember == 1L
+        )
+    }
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
         ProposalTimer(idMapper.fromGroupIDEntity(daoModel.groupID), daoModel.firingDate)

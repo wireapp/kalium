@@ -44,7 +44,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
     override val none: UserType
         get() = UserType.NONE
 
-    override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserType {
+    override fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserType {
         return when (userTypeEntity) {
             UserTypeEntity.STANDARD -> standard
             UserTypeEntity.EXTERNAL -> external
@@ -54,6 +54,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
             UserTypeEntity.OWNER -> owner
             UserTypeEntity.ADMIN -> admin
             UserTypeEntity.SERVICE -> service
+            else -> none
         }
     }
 
@@ -62,7 +63,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
 interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity>
 
 interface DomainUserTypeMapper : UserTypeMapper<UserType> {
-    fun fromUserTypeEntity(userTypeEntity: UserTypeEntity): UserType
+    fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserType
 }
 
 interface UserTypeMapper<T> {
