@@ -11,6 +11,7 @@ import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
@@ -115,6 +116,9 @@ actual class UserDatabaseProvider(private val storePath: File, dispatcher: Corou
                 asset_heightAdapter = IntColumnAdapter,
                 asset_upload_statusAdapter = EnumColumnAdapter(),
                 asset_download_statusAdapter = EnumColumnAdapter()
+            ),
+            MessageConversationChangedContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter
             ),
             MessageFailedToDecryptContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter
