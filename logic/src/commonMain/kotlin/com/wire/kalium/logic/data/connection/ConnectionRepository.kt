@@ -19,13 +19,11 @@ import com.wire.kalium.logic.data.user.ConnectionState.MISSING_LEGALHOLD_CONSENT
 import com.wire.kalium.logic.data.user.ConnectionState.NOT_CONNECTED
 import com.wire.kalium.logic.data.user.ConnectionState.PENDING
 import com.wire.kalium.logic.data.user.ConnectionState.SENT
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isRight
@@ -42,17 +40,9 @@ import com.wire.kalium.network.api.user.details.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.Member
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
@@ -62,7 +52,6 @@ interface ConnectionRepository {
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<Connection>>
     suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails>>
-    suspend fun getConnectionRequests(): List<Connection>
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
@@ -75,9 +64,9 @@ internal class ConnectionDataSource(
     private val connectionApi: ConnectionApi,
     private val userDetailsApi: UserDetailsApi,
     private val userDAO: UserDAO,
-    private val metadataDAO: MetadataDAO,
+    private val selfUser: UserId,
+    private val selfUserTeamId: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
@@ -155,25 +144,17 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequests().map { connections ->
             connections
                 .map { connection ->
-                    val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                    connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
+                    connectionMapper.fromDaoToConnectionDetails(connection)
                 }
         }
     }
 
-    override suspend fun getConnectionRequests(): List<Connection> {
-        return connectionDAO.getConnectionRequests().first().map { connection ->
-            val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-            connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
-        }
-    }
 
     override suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequestsForNotification()
             .map {
                 it.map { connection ->
-                    val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                    connectionMapper.fromDaoToConnectionDetails(connection, otherUser.firstOrNull())
+                    connectionMapper.fromDaoToConnectionDetails(connection)
                 }
             }
     }
@@ -192,8 +173,7 @@ internal class ConnectionDataSource(
     override suspend fun observeConnectionList(): Flow<List<Connection>> {
         return connectionDAO.getConnections().map { connections ->
             connections.map { connection ->
-                val otherUser = userDAO.getUserByQualifiedID(connection.qualifiedToId)
-                connectionMapper.fromDaoToModel(connection, otherUser.firstOrNull())
+                connectionMapper.fromDaoToModel(connection)
             }
         }
     }
@@ -205,47 +185,33 @@ internal class ConnectionDataSource(
     ) = wrapStorageRequest {
         connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
     }.flatMap {
-        // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
-        wrapApiRequest {
-            userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
-        }.flatMap { userProfileDTO ->
-            wrapStorageRequest {
-                val selfUser = getSelfUser()
-                val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
-                    userDetailResponse = userProfileDTO,
-                    connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
-                    userTypeEntity = userTypeEntityTypeMapper.fromTeamAndDomain(
-                        otherUserDomain = userProfileDTO.id.domain,
-                        selfUserTeamId = selfUser.teamId?.value,
-                        otherUserTeamId = userProfileDTO.teamId,
-                        selfUserDomain = selfUser.id.domain,
-                        isService = userProfileDTO.service != null
+        selfUserTeamId.invoke().flatMap { teamId ->
+            // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
+            wrapApiRequest {
+                userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
+            }.flatMap { userProfileDTO ->
+                wrapStorageRequest {
+                    val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
+                        userDetailResponse = userProfileDTO,
+                        connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
+                        userTypeEntity = userTypeEntityTypeMapper.fromTeamAndDomain(
+                            otherUserDomain = userProfileDTO.id.domain,
+                            selfUserTeamId = teamId?.value,
+                            otherUserTeamId = userProfileDTO.teamId,
+                            selfUserDomain = selfUser.domain,
+                            isService = userProfileDTO.service != null
+                        )
                     )
-                )
-
-                userDAO.insertUser(userEntity)
-                connectionDAO.updateConnectionLastUpdatedTime(connection.lastUpdate, connection.toId)
+                    userDAO.insertUser(userEntity)
+                    // todo: ask if we need to insert the conversation here when the connection is sent!
+                    connectionDAO.updateConnectionLastUpdatedTime(connection.lastUpdate, connection.toId)
+                }
             }
         }
     }
 
     private suspend fun deleteCancelledConnection(conversationId: ConversationId) = wrapStorageRequest {
         connectionDAO.deleteConnectionDataAndConversation(idMapper.toDaoModel(conversationId))
-    }
-
-    // TODO: code duplication here for getting self user, the same is done inside
-    // UserRepository, what would be best ?
-    // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
-    private suspend fun getSelfUser(): SelfUser {
-        return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
-            .filterNotNull()
-            .flatMapMerge { encodedValue ->
-                val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-
-                userDAO.getUserByQualifiedID(selfUserID)
-                    .filterNotNull()
-                    .map(userMapper::fromDaoModelToSelfUser)
-            }.firstOrNull() ?: throw IllegalStateException()
     }
 
     private suspend fun updateConversationMemberFromConnection(connection: Connection) =

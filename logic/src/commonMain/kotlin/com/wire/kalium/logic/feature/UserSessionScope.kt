@@ -185,6 +185,19 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
 
+    // TODO: make atomic
+    // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
+    private var _teamId: Either<CoreFailure, TeamId?> = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
+
+    private suspend fun teamId(): Either<CoreFailure, TeamId?> =
+        if (_teamId.isRight()) _teamId else {
+            userRepository.userById(userId).map {
+                _teamId = Either.Right(it.teamId)
+                it.teamId
+            }
+        }
+    private val selfTeamId = SelfTeamIdProvider { teamId() }
+
     private val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(authenticatedDataSourceSet.userPrefProvider.userConfigStorage)
 
