@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
@@ -116,6 +117,8 @@ import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
@@ -162,6 +165,11 @@ expect class UserSessionScope : UserSessionScopeCommon
 fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
 }
+
+fun interface SelfTeamIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
+}
+
 
 @Suppress("LongParameterList")
 abstract class UserSessionScopeCommon internal constructor(
@@ -275,7 +283,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userDatabaseProvider.userDAO,
-            userDatabaseProvider.metadataDAO
+            userId,
+            selfTeamId
         )
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
