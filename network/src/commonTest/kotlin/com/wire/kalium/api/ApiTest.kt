@@ -2,11 +2,11 @@ package com.wire.kalium.api
 
 import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.SessionDTO
 import com.wire.kalium.network.api.model.AccessTokenDTO

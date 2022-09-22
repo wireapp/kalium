@@ -934,7 +934,7 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.FlowTest.kt:13</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.util.stubs.ServerConfigStubs.kt:82</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.ServerMetaDataManager.kt:3</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.UnauthenticatedNetworkContainer.kt:28</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer.kt:28</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.conversation.AddParticipantRequest.kt:16</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.conversation.CreateConversationRequest.kt:16</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:50</ID>
@@ -1116,7 +1116,7 @@
     <ID>ParameterListWrapping:com.wire.kalium.logic.feature.register.RegisterAccountUseCase.kt:27</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.feature.user.GetSelfUserUseCase.kt:8</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.feature.user.GetSelfUserUseCase.kt:9</ID>
-    <ID>ParameterListWrapping:com.wire.kalium.network.UnauthenticatedNetworkContainer.kt:17</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer.kt:17</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.keypackage.KeyPackageDTO.kt:16</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.teams.TeamsApi.kt:40</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.user.login.LoginApi.kt:10</ID>
