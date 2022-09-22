@@ -265,12 +265,7 @@ sealed class Event(open val id: String) {
         ) : User(id) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
-                        "userId: $userId " +
-                        "accentId: $accentId " +
-                        "ssoIdDeleted: $ssoIdDeleted " +
-                        "name: $name" +
-                        "handle: $handle" +
-                        "email: $email"
+                        "userId: ${userId.orEmpty().obfuscateId()} "
             }
         }
 
