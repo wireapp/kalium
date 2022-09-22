@@ -370,4 +370,8 @@ class ConversationDAOImpl(
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
         conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
 
+    override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String) {
+        conversationQueries.updateConversationName(conversationName, timestamp, conversationId)
+    }
+
 }

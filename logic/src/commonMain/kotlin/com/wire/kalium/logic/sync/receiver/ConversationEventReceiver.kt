@@ -8,6 +8,7 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -91,8 +92,8 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
             is Event.Conversation.NewMLSMessage -> handleNewMLSMessage(event)
             is Event.Conversation.MemberChanged -> handleMemberChange(event)
+            is Event.Conversation.RenamedConversation -> handleRenamedConversation(event)
             is Event.Conversation.AccessUpdate -> TODO()
-            is Event.Conversation.RenamedConversation -> TODO()
         }
     }
 
@@ -384,6 +385,27 @@ internal class ConversationEventReceiverImpl(
         }
     }
 
+    private suspend fun handleRenamedConversation(event: Event.Conversation.RenamedConversation) {
+        conversationRepository.updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
+            .onSuccess {
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .d("$TAG - The Conversation was renamed: ${event.conversationId.toString().obfuscateId()}")
+                val message = Message.System(
+                    id = event.id,
+                    content = MessageContent.ConversationRenamed(event.conversationName),
+                    conversationId = event.conversationId,
+                    date = event.timestampIso,
+                    senderUserId = event.senderUserId,
+                    status = Message.Status.SENT,
+                )
+                persistMessage(message)
+            }
+            .onFailure { coreFailure ->
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .e("$TAG - Error renaming the conversation [${event.conversationId.toString().obfuscateId()}] $coreFailure")
+            }
+    }
+
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
         kaliumLogger.withFeatureId(EVENT_RECEIVER).d("Received MLS proposal, scheduling commit in $commitDelay seconds")
         pendingProposalScheduler.scheduleCommit(
@@ -433,6 +455,7 @@ internal class ConversationEventReceiverImpl(
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Unknown Message received: $message")
                     persistMessage(message)
                 }
+
                 is MessageContent.Cleared -> clearConversationContentHandler.handle(message, content)
                 is MessageContent.Empty -> TODO()
             }
