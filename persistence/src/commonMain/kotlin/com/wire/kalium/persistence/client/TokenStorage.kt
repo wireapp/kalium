@@ -10,7 +10,7 @@ interface TokenStorage {
      * ex: firebase token
      * the transport here is the type of the token ("GCM,APNS")
      */
-    fun saveToken(token: String, transport: String, senderId: String)
+    fun saveToken(token: String, transport: String, applicationId: String)
 
     /**
      * get the saved token with it's type
@@ -22,16 +22,16 @@ interface TokenStorage {
 data class NotificationTokenEntity(
     @SerialName("token") val token: String,
     @SerialName("transport") val transport: String,
-    @SerialName("sender") val sender: String,
+    @SerialName("applicationId") val applicationId: String,
 )
 
 
 class TokenStorageImpl(private val kaliumPreferences: KaliumPreferences) : TokenStorage {
 
-    override fun saveToken(token: String, transport: String, senderId: String) {
+    override fun saveToken(token: String, transport: String, applicationId: String) {
         kaliumPreferences.putSerializable(
             NOTIFICATION_TOKEN,
-            NotificationTokenEntity(token, transport, senderId),
+            NotificationTokenEntity(token, transport, applicationId),
             NotificationTokenEntity.serializer()
         )
     }

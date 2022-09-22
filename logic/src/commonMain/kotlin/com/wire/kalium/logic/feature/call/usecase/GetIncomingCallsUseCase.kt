@@ -47,6 +47,8 @@ internal class GetIncomingCallsUseCaseImpl internal constructor(
                 // if user is AWAY we don't show any IncomingCalls
                 if (it.availabilityStatus == UserAvailabilityStatus.AWAY) flowOf(listOf())
                 else callRepository.incomingCallsFlow().distinctUntilChanged { old, new ->
+                    // FIXME that looks like a bug: what if user really receives 2 calls in line in the same conversation?
+                    // BTW why do we compare only first conversation? It could be muted
                     old.firstOrNull()?.conversationId == new.firstOrNull()?.conversationId
                 }
             }

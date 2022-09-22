@@ -47,6 +47,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.notification.PushTokenDataSource
+import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -101,8 +103,7 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
-import com.wire.kalium.logic.feature.notificationToken.ObserveNotificationTokenUpdating
-import com.wire.kalium.logic.feature.notificationToken.ObserveNotificationTokenUpdatingImpl
+import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -246,7 +247,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.messageDAO
         )
 
-    internal val userRepository: UserRepository
+    private val userRepository: UserRepository
         get() = UserDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.metadataDAO,
@@ -256,6 +257,9 @@ abstract class UserSessionScopeCommon internal constructor(
             globalScope.sessionRepository,
             userId
         )
+
+    internal val pushTokenRepository: PushTokenRepository
+        get() = PushTokenDataSource(userDatabaseProvider.metadataDAO)
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
@@ -659,12 +663,11 @@ abstract class UserSessionScopeCommon internal constructor(
         }
     }
 
-    private val observeNotificationTokenUpdating: ObserveNotificationTokenUpdating
-        get() = ObserveNotificationTokenUpdatingImpl(
-            clientRepository,
-            notificationTokenRepository,
-            userRepository
-        )
+    private fun createPushTokenUpdater() = PushTokenUpdater(
+        clientRepository,
+        notificationTokenRepository,
+        pushTokenRepository
+    )
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -675,8 +678,12 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
+        }
 
-            observeNotificationTokenUpdating()
+        println("cyka userSessionScope init $userId")
+        launch {
+            val pushTokenUpdater = createPushTokenUpdater()
+            pushTokenUpdater.monitorTokenChanges()
         }
     }
 
