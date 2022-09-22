@@ -24,7 +24,7 @@ class UserEventReceiverImpl(
             is Event.User.NewConnection -> handleNewConnection(event)
             is Event.User.ClientRemove -> handleClientRemove(event)
             is Event.User.UserDelete -> handleUserDelete(event)
-            is Event.User.Update -> TODO()
+            is Event.User.Update -> kaliumLogger.w("Not handled yet, WIP: $event")
         }
     }
 
@@ -40,13 +40,13 @@ class UserEventReceiverImpl(
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
-            if (selfUserId == event.userId) {
-                logoutUseCase(LogoutReason.DELETED_ACCOUNT)
-            } else {
-                /* TODO: handle a connection delete their account:
-                    update connection, conversations[member left, 1:1 show as the connection is deleted and... */
-            }
+        if (selfUserId == event.userId) {
+            logoutUseCase(LogoutReason.DELETED_ACCOUNT)
+        } else {
+            /* TODO: handle a connection delete their account:
+                update connection, conversations[member left, 1:1 show as the connection is deleted and... */
         }
+    }
 
     private companion object {
         const val TAG = "UserEventReceiver"
