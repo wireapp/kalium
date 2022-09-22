@@ -471,7 +471,17 @@ internal class ConversationEventReceiverImpl(
         messageRepository.getMessageById(message.conversationId, message.id)
             .onFailure {
                 // No asset message was received previously, so just persist the preview asset message
-                persistMessage(message)
+                val isValidImage = (message.content as MessageContent.Asset).value.metadata?.let {
+                    it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
+                } ?: false
+                val previewMessage = message.copy(
+                    content = message.content.copy(
+                        value = message.content.value.copy(
+                            downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
+                        )
+                    )
+                )
+                persistMessage(previewMessage)
             }
             .onSuccess { persistedMessage ->
                 val messageContent = persistedMessage.content
