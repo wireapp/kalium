@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParserImpl
@@ -211,7 +212,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -275,7 +276,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -334,7 +335,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -402,7 +403,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -456,7 +457,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -503,7 +504,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -557,7 +558,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(persistMessage).suspendFunction(persistMessage::invoke)
             .whenInvokedWith(any())
@@ -615,7 +616,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)
@@ -677,7 +678,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(persistMessage).suspendFunction(persistMessage::invoke)
             .whenInvokedWith(any())
@@ -730,7 +731,7 @@ class CallRepositoryTest {
 
         given(teamRepository).suspendFunction(teamRepository::getTeam)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(Team("team1", "team_1")))
+            .thenReturn(flowOf(TestTeam.TEAM))
 
         given(callDAO)
             .suspendFunction(callDAO::getCallStatusByConversationId)

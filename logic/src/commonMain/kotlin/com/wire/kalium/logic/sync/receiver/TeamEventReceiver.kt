@@ -51,7 +51,7 @@ class TeamEventReceiverImpl(
                 icon = event.icon
             )
         )
-            .onFailure { kaliumLogger.e("$TAG - failure on member update event: $it") }
+            .onFailure { kaliumLogger.e("$TAG - failure on team update event: $it") }
 
     private companion object {
         const val TAG = "TeamEventReceiver"

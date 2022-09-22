@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -71,7 +72,7 @@ internal class GetUserInfoUseCaseTestArrangement {
             .thenReturn(
                 flowOf(
                     if (!localTeamPresent) null
-                    else team
+                    else TestTeam.TEAM
                 )
             )
 
@@ -79,7 +80,7 @@ internal class GetUserInfoUseCaseTestArrangement {
             given(teamRepository)
                 .suspendFunction(teamRepository::fetchTeamById)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(team))
+                .thenReturn(Either.Right(TestTeam.TEAM))
         }
 
         return this
@@ -107,7 +108,4 @@ internal class GetUserInfoUseCaseTestArrangement {
         return this to GetUserInfoUseCaseImpl(userRepository, teamRepository)
     }
 
-    private companion object {
-        val team = Team("teamId", "teamName")
-    }
 }

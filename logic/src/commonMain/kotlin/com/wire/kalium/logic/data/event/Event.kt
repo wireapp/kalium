@@ -255,7 +255,7 @@ sealed class Event(open val id: String) {
         data class Update(
             override val id: String,
             val userId: String,
-            val accentId: Int,
+            val accentId: Int?,
             val ssoIdDeleted: Boolean
         ) : User(id) {
             override fun toString(): String {

@@ -2,17 +2,20 @@ package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.teams.TeamsApi
+import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
@@ -30,13 +33,16 @@ interface TeamRepository {
 
 }
 
+@Suppress("LongParameterList")
 internal class TeamDataSource(
     private val userDAO: UserDAO,
     private val teamDAO: TeamDAO,
     private val teamsApi: TeamsApi,
+    private val userDetailsApi: UserDetailsApi,
     private val selfUserId: UserId,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
@@ -110,24 +116,31 @@ internal class TeamDataSource(
                 teamId = teamId,
                 userId = userId,
             )
-        }.flatMap {
-            wrapStorageRequest {
-                val user = userMapper.fromTeamMemberToDaoModel(
-                    teamId = TeamId(teamId),
-                    nonQualifiedUserId = userId,
-                    userDomain = selfUserId.domain,
-                    permissionCode = it.permissions?.own
-                )
-                userDAO.upsertTeamMembersTypes(listOf(user))
-            }
+        }.flatMap { member ->
+            wrapApiRequest { userDetailsApi.getUserInfo(userId = QualifiedID(userId, selfUserId.domain)) }
+                .flatMap { userProfile ->
+                    wrapStorageRequest {
+                        val user = userMapper.apiToEntity(
+                            user = userProfile,
+                            member = member,
+                            teamId = teamId,
+                            selfUser = idMapper.toApiModel(selfUserId)
+                        )
+                        userDAO.insertUser(user)
+                    }
+                }
         }
     }
 
     override suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit> {
-        TODO("Not yet implemented")
+        return wrapStorageRequest {
+            userDAO.markUserAsDeleted(QualifiedIDEntity(userId, selfUserId.domain))
+        }
     }
 
     override suspend fun updateTeam(team: Team): Either<CoreFailure, Unit> {
-        TODO("Not yet implemented")
+        return wrapStorageRequest {
+            teamDAO.updateTeam(teamMapper.fromModelToEntity(team))
+        }
     }
 }

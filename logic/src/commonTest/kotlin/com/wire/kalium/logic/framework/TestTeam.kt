@@ -10,7 +10,7 @@ import com.wire.kalium.network.api.TeamId as TeamIdDTO
 
 @Suppress("LongParameterList")
 object TestTeam {
-    val TEAM: Team = Team("Some-Team", "Some-name")
+    val TEAM: Team = Team("Some-Team", "Some-name", icon = "icon")
     val TEAM_ID = TeamId("Some-Team")
 
     fun dto(

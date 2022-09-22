@@ -253,6 +253,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.teamDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userId,
         )
 
