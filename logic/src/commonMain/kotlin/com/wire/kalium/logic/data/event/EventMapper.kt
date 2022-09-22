@@ -240,7 +240,10 @@ class EventMapper(
         id = id,
         userId = event.userData.nonQualifiedUserId,
         accentId = event.userData.accentId,
-        ssoIdDeleted = event.userData.ssoIdDeleted
+        ssoIdDeleted = event.userData.ssoIdDeleted,
+        name = event.userData.name,
+        handle = event.userData.handle,
+        email = event.userData.email,
     )
 
 }
