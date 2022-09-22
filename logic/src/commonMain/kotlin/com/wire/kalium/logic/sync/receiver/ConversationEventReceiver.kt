@@ -21,6 +21,8 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.NOT_DOWNLOADED
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -237,17 +239,22 @@ internal class ConversationEventReceiverImpl(
         }
     }
 
-    private fun updateAssetMessage(persistedMessage: Message.Regular, newMessageRemoteData: AssetContent.RemoteData): Message? =
+    private fun updateAssetMessage(message: Message.Regular, newMessageRemoteData: AssetContent.RemoteData): Message {
+        val assetMessageContent = message.content as MessageContent.Asset
+        val isValidImage = assetMessageContent.value.metadata?.let {
+            it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
+        } ?: false
+
         // The message was previously received with just metadata info, so let's update it with the raw data info
-        if (persistedMessage.content is MessageContent.Asset) {
-            persistedMessage.copy(
-                content = persistedMessage.content.copy(
-                    value = persistedMessage.content.value.copy(
-                        remoteData = newMessageRemoteData
-                    )
+        return message.copy(
+            content = assetMessageContent.copy(
+                value = assetMessageContent.value.copy(
+                    remoteData = newMessageRemoteData,
+                    downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
                 )
             )
-        } else null
+        )
+    }
 
     private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
         var verified = false
@@ -467,16 +474,15 @@ internal class ConversationEventReceiverImpl(
                 persistMessage(message)
             }
             .onSuccess { persistedMessage ->
+                val messageContent = persistedMessage.content
                 // Check the second asset message is from the same original sender
                 if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
                     persistedMessage is Message.Regular &&
-                    persistedMessage.content is MessageContent.Asset
+                    messageContent is MessageContent.Asset
                 ) {
                     // The asset message received contains the asset decryption keys,
                     // so update the preview message persisted previously
-                    updateAssetMessage(persistedMessage, (message.content as MessageContent.Asset).value.remoteData)?.let { assetMessage ->
-                        persistMessage(assetMessage)
-                    }
+                    persistMessage(updateAssetMessage(message, (message.content as MessageContent.Asset).value.remoteData))
                 }
             }
     }
