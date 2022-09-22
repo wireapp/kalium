@@ -267,6 +267,7 @@ sealed class Event(open val id: String) {
                 return "id: ${id.obfuscateId()} " +
                         "userId: $userId " +
                         "accentId: $accentId " +
+                        "ssoIdDeleted: $ssoIdDeleted " +
                         "name: $name" +
                         "handle: $handle" +
                         "email: $email"
