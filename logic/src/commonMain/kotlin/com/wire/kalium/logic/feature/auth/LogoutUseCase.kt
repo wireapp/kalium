@@ -34,7 +34,8 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         logoutRepository.logout()
         sessionRepository.logout(userId = userId, reason)
         if (reason == LogoutReason.SELF_HARD_LOGOUT) {
-            delay(CLEAR_DATA_DELAY) // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
+            // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
+            delay(CLEAR_DATA_DELAY)
             clearClientDataUseCase()
             clearUserDataUseCase() // this clears also current client id
         } else {
