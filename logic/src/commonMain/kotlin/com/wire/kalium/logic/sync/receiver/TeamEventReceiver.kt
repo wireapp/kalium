@@ -29,7 +29,7 @@ class TeamEventReceiverImpl(
             .onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Team.MemberLeave) =
-        teamRepository.fetchTeamMember(
+        teamRepository.removeTeamMember(
             teamId = event.teamId,
             userId = event.memberId,
         )
