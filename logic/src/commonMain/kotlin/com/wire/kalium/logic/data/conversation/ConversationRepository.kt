@@ -431,6 +431,7 @@ internal class ConversationDataSource internal constructor(
             .map(conversationMapper::fromDaoModel)
             .wrapStorageRequest()
 
+    // TODO: refactor. 3 Ways different ways to return conversation details?!
     override suspend fun getConversationById(conversationId: ConversationId): Conversation? =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId))
             .map { conversationEntity ->
