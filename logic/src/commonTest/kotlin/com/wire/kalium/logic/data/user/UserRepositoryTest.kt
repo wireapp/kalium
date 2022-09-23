@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
@@ -102,8 +103,11 @@ class UserRepositoryTest {
         @Mock
         val sessionRepository = mock(SessionRepository::class)
 
+        @Mock
+        private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, TestUser.SELF.id)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, TestUser.SELF.id, qualifiedIdMapper)
         }
 
         init {

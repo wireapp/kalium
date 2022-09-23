@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestEvent
@@ -80,6 +81,9 @@ class UserEventReceiverTest {
 
         @Mock
         val logoutUseCase = mock(classOf<LogoutUseCase>())
+
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             connectionRepository, logoutUseCase, clientRepository, userRepository, USER_ID
