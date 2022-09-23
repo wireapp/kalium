@@ -173,7 +173,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateSelfUser(user: UserEntity) {
+    override suspend fun updateUser(user: UserEntity) {
         userQueries.updateSelfUser(
             user.name,
             user.handle,
