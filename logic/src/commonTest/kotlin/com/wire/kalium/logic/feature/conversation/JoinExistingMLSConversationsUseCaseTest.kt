@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -29,6 +30,23 @@ import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class JoinExistingMLSConversationsUseCaseTest {
+
+    @Test
+    fun givenMLSSupportIsDisabled_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withGetConversationsByGroupStateSuccessful()
+                .withRequestToJoinMLSGroupSuccessful()
+                .arrange()
+
+            arrangement.kaliumConfigs.isMLSSupportEnabled = false
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.conversationRepository)
+                .suspendFunction(arrangement.conversationRepository::requestToJoinMLSGroup)
+                .with(eq(Arrangement.MLS_CONVERSATION1))
+                .wasNotInvoked()
+        }
 
     @Test
     fun givenExistingConversations_whenInvokingUseCase_ThenRequestToJoinConversationIsCalledForAllConversations() =
@@ -86,11 +104,15 @@ class JoinExistingMLSConversationsUseCaseTest {
     }
 
     private class Arrangement {
+
+        val kaliumConfigs = KaliumConfigs()
+
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
-        fun arrange() = this to JoinExistingMLSConversationsUseCase(conversationRepository)
+        fun arrange() = this to JoinExistingMLSConversationsUseCase(kaliumConfigs, conversationRepository)
 
+        @Suppress("MaxLineLength")
         fun withGetConversationsByGroupStateSuccessful(conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) =
             apply {
                 given(conversationRepository)

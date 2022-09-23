@@ -254,7 +254,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -328,7 +328,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -385,7 +385,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -964,7 +964,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -1013,7 +1013,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
@@ -1077,7 +1077,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
@@ -1124,7 +1124,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
