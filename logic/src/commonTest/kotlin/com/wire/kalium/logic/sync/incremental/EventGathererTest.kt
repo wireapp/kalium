@@ -169,6 +169,31 @@ class EventGathererTest {
     }
 
     @Test
+    fun givenWebSocketOpensAndCloses_whenGathering_thenSyncSourceShouldBeResetToPending() = runTest {
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
+
+        val (_, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(emptyFlow())
+            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            // Open Websocket should trigger fetching pending events
+            eventGatherer.currentSource.test {
+                liveEventsChannel.send(WebSocketEvent.Open())
+                advanceUntilIdle()
+                assertEquals(EventSource.PENDING, awaitItem())
+                assertEquals(EventSource.LIVE, awaitItem())
+                assertEquals(EventSource.PENDING, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun givenWebSocketOpensAndFetchingPendingEventsFail_whenGathering_thenGatheringShouldFailWithSyncException() = runTest {
         val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
 
