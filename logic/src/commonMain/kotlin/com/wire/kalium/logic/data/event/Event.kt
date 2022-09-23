@@ -256,15 +256,16 @@ sealed class Event(open val id: String) {
 
         data class Update(
             override val id: String,
-            val userId: String,
-            val accentId: Int,
-            val ssoIdDeleted: Boolean
+            val userId: String?,
+            val accentId: Int?,
+            val ssoIdDeleted: Boolean?,
+            val name: String?,
+            val handle: String?,
+            val email: String?,
         ) : User(id) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
-                        "userId: $userId " +
-                        "accentId: $accentId " +
-                        "ssoIdDeleted: $ssoIdDeleted"
+                        "userId: ${userId.orEmpty().obfuscateId()} "
             }
         }
 

@@ -22,6 +22,9 @@ data class RemoveClientEventData(
 @Serializable
 data class UserUpdateEventData(
     @SerialName("id") val nonQualifiedUserId: NonQualifiedUserId,
-    @SerialName("accent_id") val accentId: Int,
-    @SerialName("sso_id_deleted") val ssoIdDeleted: Boolean
+    @SerialName("accent_id") val accentId: Int?,
+    @SerialName("name") val name: String?,
+    @SerialName("handle") val handle: String?,
+    @SerialName("email") val email: String?,
+    @SerialName("sso_id_deleted") val ssoIdDeleted: Boolean?
 )

@@ -76,6 +76,8 @@ internal class EventGathererImpl(
             // throw so it is handled by coroutineExceptionHandler
             throw KaliumSyncException("Failure when gathering events", it)
         }
+        // When it ends, reset source back to PENDING
+        _currentSource.value = EventSource.PENDING
     }
 
     private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
@@ -108,6 +110,7 @@ internal class EventGathererImpl(
             null -> logger.i("Websocket closed normally")
             is IOException ->
                 throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
+
             else ->
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
         }
