@@ -21,7 +21,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("TooManyFunctions")
-class MessageDAOImpl(private val queries: MessagesQueries, private val conversationsQueries: ConversationsQueries) : MessageDAO {
+class MessageDAOImpl(
+    private val queries: MessagesQueries,
+    private val conversationsQueries: ConversationsQueries,
+    private val selfUserId: UserIDEntity
+    ) : MessageDAO {
     private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
@@ -172,8 +176,10 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
         adding another one.
          */
         (message.content as? MessageEntityContent.MemberChange)
-            ?.let { if (it.memberChangeType == MessageEntity.MemberChangeType.REMOVED) it else null }
-            ?.let { memberRemovedContent ->
+            ?.let {
+                if (it.memberChangeType == MessageEntity.MemberChangeType.REMOVED && message.senderUserId == selfUserId) it
+                else null
+            }?.let { memberRemovedContent ->
                 // Check if the message with given time and type already exists in the local DB.
                 queries.selectByConversationIdAndSenderIdAndTimeAndType(
                     message.conversationId,
@@ -293,13 +299,14 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
         mapper::toEntityMessageFromView
     ).asFlow().mapToOneOrNull()
 
-    override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity, selfUserId: UserIDEntity): Flow<Long> =
+    override suspend fun observeUnreadMessageCount(
+        conversationId: QualifiedIDEntity
+    ): Flow<Long> =
         queries.getUnreadMessageCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
 
     override suspend fun observeUnreadMentionsCount(
-        conversationId: QualifiedIDEntity,
-        selfUserId: UserIDEntity
+        conversationId: QualifiedIDEntity
     ): Flow<Long> =
         queries.getUnreadMentionsCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()

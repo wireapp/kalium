@@ -254,12 +254,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -328,12 +328,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -385,12 +385,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -981,12 +981,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -1030,12 +1030,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
@@ -1094,12 +1094,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
@@ -1141,12 +1141,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(userRepository)

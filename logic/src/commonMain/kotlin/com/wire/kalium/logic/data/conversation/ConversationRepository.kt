@@ -387,7 +387,7 @@ internal class ConversationDataSource internal constructor(
 
     private suspend fun observeUnreadMessageCount(conversation: Conversation): Flow<Long> {
         return if (conversation.supportsUnreadMessageCount) {
-            messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id), idMapper.toDaoModel(selfUserId))
+            messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id))
         } else {
             flowOf(0L)
         }
@@ -395,10 +395,7 @@ internal class ConversationDataSource internal constructor(
 
     private suspend fun observeUnreadMentionsCount(conversation: Conversation, selfUserId: UserId): Flow<Long> {
         return if (conversation.supportsUnreadMessageCount) {
-            messageDAO.observeUnreadMentionsCount(
-                idMapper.toDaoModel(conversation.id),
-                idMapper.toDaoModel(selfUserId)
-            )
+            messageDAO.observeUnreadMentionsCount(idMapper.toDaoModel(conversation.id))
         } else {
             flowOf(0L)
         }

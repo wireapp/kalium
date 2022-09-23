@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
 import com.wire.kalium.persistence.dao.call.CallDAO
@@ -53,7 +54,11 @@ import kotlinx.coroutines.SupervisorJob
 import java.io.File
 import java.util.Properties
 
-actual class UserDatabaseProvider(private val storePath: File, dispatcher: CoroutineDispatcher) {
+actual class UserDatabaseProvider(
+    private val userId: UserIDEntity,
+    private val storePath: File,
+    dispatcher: CoroutineDispatcher
+) {
 
     private val database: UserDatabase
 
@@ -180,7 +185,7 @@ actual class UserDatabaseProvider(private val storePath: File, dispatcher: Corou
         get() = CallDAOImpl(database.callsQueries)
 
     actual val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId)
 
     actual val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)
