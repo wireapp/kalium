@@ -1,7 +1,10 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.network.api.ConversationId
 import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.conversation.ConvProtocol
@@ -35,11 +38,27 @@ class ConversationMapperTest {
     @Mock
     val conversationStatusMapper = mock(classOf<ConversationStatusMapper>())
 
+    @Mock
+    val userAvailabilityStatusMapper = mock(classOf<AvailabilityStatusMapper>())
+
+    @Mock
+    val domainUserTypeMapper = mock(classOf<DomainUserTypeMapper>())
+
+    @Mock
+    val connectionStatusMapper = mock(classOf<ConnectionStatusMapper>())
+
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
     fun setup() {
-        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper, protocolInfoMapper)
+        conversationMapper = ConversationMapperImpl(
+            idMapper,
+            conversationStatusMapper,
+            protocolInfoMapper,
+            userAvailabilityStatusMapper,
+            domainUserTypeMapper,
+            connectionStatusMapper
+        )
     }
 
     @Test

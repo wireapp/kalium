@@ -4,19 +4,20 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.protobuf.messages.Availability
 
 interface AvailabilityStatusMapper {
-    fun fromDaoAvailabilityStatusToModel(status: UserAvailabilityStatusEntity): UserAvailabilityStatus
+    fun fromDaoAvailabilityStatusToModel(status: UserAvailabilityStatusEntity?): UserAvailabilityStatus
     fun fromModelAvailabilityStatusToDao(status: UserAvailabilityStatus): UserAvailabilityStatusEntity
     fun fromProtoAvailabilityToModel(status: Availability): UserAvailabilityStatus
     fun fromModelAvailabilityToProto(status: UserAvailabilityStatus): Availability
 }
 
 internal class AvailabilityStatusMapperImpl : AvailabilityStatusMapper {
-    override fun fromDaoAvailabilityStatusToModel(status: UserAvailabilityStatusEntity): UserAvailabilityStatus =
+    override fun fromDaoAvailabilityStatusToModel(status: UserAvailabilityStatusEntity?): UserAvailabilityStatus =
         when (status) {
             UserAvailabilityStatusEntity.AVAILABLE -> UserAvailabilityStatus.AVAILABLE
             UserAvailabilityStatusEntity.BUSY -> UserAvailabilityStatus.BUSY
             UserAvailabilityStatusEntity.AWAY -> UserAvailabilityStatus.AWAY
             UserAvailabilityStatusEntity.NONE -> UserAvailabilityStatus.NONE
+            else -> UserAvailabilityStatus.NONE
         }
 
     override fun fromModelAvailabilityStatusToDao(status: UserAvailabilityStatus): UserAvailabilityStatusEntity =

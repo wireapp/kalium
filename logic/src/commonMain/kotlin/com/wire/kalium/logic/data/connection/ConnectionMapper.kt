@@ -14,7 +14,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 interface ConnectionMapper {
     fun fromApiToDao(state: ConnectionDTO): ConnectionEntity
     fun fromDaoToModel(connection: ConnectionEntity): Connection
-    fun fromDaoToConnectionDetails(connection: ConnectionEntity): ConversationDetails
+    fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails
     fun fromApiToModel(state: ConnectionDTO): Connection
     fun modelToDao(state: Connection): ConnectionEntity
 }
@@ -48,7 +48,7 @@ internal class ConnectionMapperImpl(
         )
     }
 
-    override fun fromDaoToConnectionDetails(connection: ConnectionEntity): ConversationDetails = with(connection) {
+    override fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails = with(connection) {
         ConversationDetails.Connection(
             conversationId = idMapper.fromDaoModel(qualifiedConversationId),
             otherUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) },

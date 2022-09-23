@@ -144,7 +144,7 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequests().map { connections ->
             connections
                 .map { connection ->
-                    connectionMapper.fromDaoToConnectionDetails(connection)
+                    connectionMapper.fromDaoToConversationDetails(connection)
                 }
         }
     }
@@ -153,7 +153,7 @@ internal class ConnectionDataSource(
         return connectionDAO.getConnectionRequestsForNotification()
             .map {
                 it.map { connection ->
-                    connectionMapper.fromDaoToConnectionDetails(connection)
+                    connectionMapper.fromDaoToConversationDetails(connection)
                 }
             }
     }
