@@ -17,22 +17,22 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.conversation.ConvProtocol.MLS
-import com.wire.kalium.network.api.conversation.ConversationApi
-import com.wire.kalium.network.api.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationPagingResponse
-import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.ConversationResponseDTO
-import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -72,7 +72,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.ConversationId as ConversationIdDTO
+import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
 import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
@@ -840,7 +840,7 @@ class ConversationRepositoryTest {
             EventContentDTO.Conversation.AccessUpdate(
                 conversationIdDTO,
                 data = newAccessIndoDTO,
-                qualifiedFrom = com.wire.kalium.network.api.UserId("from_id", "from_domain")
+                qualifiedFrom = com.wire.kalium.network.api.base.model.UserId("from_id", "from_domain")
             )
         )
 

@@ -1,8 +1,8 @@
 package com.wire.kalium.api.tools.json.api.teams
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.teams.TeamsApi
-import com.wire.kalium.network.api.teams.TeamsApiImpl
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.v0.authenticated.TeamsApiV0
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -26,7 +26,7 @@ class TeamsApiTest: ApiTest {
                     assertPathEqual("/$PATH_TEAMS")
                 }
             )
-            val teamsApi: TeamsApi = TeamsApiImpl(networkClient)
+            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
             teamsApi.getTeams(size = 10, option = TeamsApi.GetTeamsOption.LimitTo(LIST_OF_TEAM_IDS))
         }
 
@@ -44,7 +44,7 @@ class TeamsApiTest: ApiTest {
                     assertPathEqual("/$PATH_TEAMS")
                 }
             )
-            val teamsApi: TeamsApi = TeamsApiImpl(networkClient)
+            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
             teamsApi.getTeams(size = 10, option = TeamsApi.GetTeamsOption.StartFrom(DUMMY_TEAM_ID))
         }
 
@@ -61,7 +61,7 @@ class TeamsApiTest: ApiTest {
                     assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_MEMBERS")
                 }
             )
-            val teamsApi: TeamsApi = TeamsApiImpl(networkClient)
+            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
             teamsApi.getTeamMembers(DUMMY_TEAM_ID, limitTo = 10)
         }
 
@@ -77,7 +77,7 @@ class TeamsApiTest: ApiTest {
                     assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_CONVERSATIONS/$conversationId")
                 }
             )
-            val teamsApi: TeamsApi = TeamsApiImpl(networkClient)
+            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
             teamsApi.deleteConversation(conversationId, teamId = DUMMY_TEAM_ID)
         }
 

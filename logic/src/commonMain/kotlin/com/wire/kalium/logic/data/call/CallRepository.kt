@@ -25,7 +25,7 @@ import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.call.CallApi
+import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity

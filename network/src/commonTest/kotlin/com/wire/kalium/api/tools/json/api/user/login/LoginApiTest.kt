@@ -3,12 +3,12 @@ package com.wire.kalium.api.tools.json.api.user.login
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.api.user.register.UserDTOJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.model.AccessTokenDTO
-import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.user.login.LoginApi
-import com.wire.kalium.network.api.user.login.LoginApiImpl
+import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.base.unauthenticated.LoginApi
+import com.wire.kalium.network.api.v0.unauthenticated.LoginApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -57,7 +57,7 @@ class LoginApiTest : ApiTest {
                 refreshToken = refreshToken
             ) to userDTO
         }
-        val loginApi: LoginApi = LoginApiImpl(networkClient)
+        val loginApi: LoginApi = LoginApiV0(networkClient)
 
         val response = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertTrue(response.isSuccessful(), message = response.toString())
@@ -70,7 +70,7 @@ class LoginApiTest : ApiTest {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val loginApi: LoginApi = LoginApiImpl(networkClient)
+        val loginApi: LoginApi = LoginApiV0(networkClient)
 
         val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertFalse(errorResponse.isSuccessful())
@@ -94,7 +94,7 @@ class LoginApiTest : ApiTest {
         val networkClient = mockUnauthenticatedNetworkClient(
             listOf(expectedLoginRequest, expectedSelfResponse)
         )
-        val loginApi: LoginApi = LoginApiImpl(networkClient)
+        val loginApi: LoginApi = LoginApiV0(networkClient)
 
         val errorResponse = loginApi.login(LOGIN_WITH_EMAIL_REQUEST.serializableData, false)
         assertFalse(errorResponse.isSuccessful())

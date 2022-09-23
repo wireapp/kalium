@@ -10,7 +10,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.network.api.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 
 interface MLSMessageCreator {
 

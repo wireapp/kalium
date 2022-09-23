@@ -2,7 +2,7 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.network.ServerMetaDataManager
-import com.wire.kalium.network.api.versioning.VersionApiImpl
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.provideBaseHttpClient

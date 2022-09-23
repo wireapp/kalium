@@ -14,9 +14,9 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.network.api.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.keypackage.KeyPackageCountDTO
-import com.wire.kalium.network.api.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import io.ktor.util.encodeBase64
 
 interface KeyPackageRepository {

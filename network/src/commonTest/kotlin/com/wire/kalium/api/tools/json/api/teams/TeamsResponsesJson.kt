@@ -1,7 +1,7 @@
 package com.wire.kalium.api.tools.json.api.teams
 
 import com.wire.kalium.api.tools.json.AnyResponseProvider
-import com.wire.kalium.network.api.teams.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 
 object TeamsResponsesJson {
 

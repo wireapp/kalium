@@ -6,11 +6,11 @@ import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
-import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.model.AccessTokenDTO
-import com.wire.kalium.network.api.model.RefreshTokenDTO
-import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainerV0
-import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainerV0
+import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.RefreshTokenDTO
+import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
+import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO

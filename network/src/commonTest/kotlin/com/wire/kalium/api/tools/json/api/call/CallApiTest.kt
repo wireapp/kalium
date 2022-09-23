@@ -2,8 +2,8 @@ package com.wire.kalium.api.tools.json.api.call
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.AnyResponseProvider
-import com.wire.kalium.network.api.call.CallApi
-import com.wire.kalium.network.api.call.CallApiImpl
+import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.api.v0.authenticated.CallApiV0
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -23,7 +23,7 @@ class CallApiTest : ApiTest {
             }
         )
 
-        val callApi: CallApi = CallApiImpl(networkClient)
+        val callApi: CallApi = CallApiV0(networkClient)
         callApi.getCallConfig(limit = null)
     }
 
@@ -40,7 +40,7 @@ class CallApiTest : ApiTest {
             }
         )
 
-        val callApi: CallApi = CallApiImpl(networkClient)
+        val callApi: CallApi = CallApiV0(networkClient)
         callApi.getCallConfig(limit = 7)
     }
 
@@ -64,7 +64,7 @@ class CallApiTest : ApiTest {
             }
         )
 
-        val callApi: CallApi = CallApiImpl(networkClient)
+        val callApi: CallApi = CallApiV0(networkClient)
         callApi.connectToSFT(
             url = sftConnectionURL,
             data = sftConnectionData
