@@ -229,7 +229,7 @@ internal class UserMapperImpl(
         }
 
     override fun toUpdateDaoFromEvent(event: Event.User.Update, userEntity: UserEntity): UserEntity {
-        return userEntity.also { persistedEntity ->
+        return userEntity.let { persistedEntity ->
             persistedEntity.copy(
                 email = event.email ?: persistedEntity.email,
                 name = event.name ?: persistedEntity.name,
