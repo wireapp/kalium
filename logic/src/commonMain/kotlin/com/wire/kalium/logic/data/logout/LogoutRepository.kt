@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.logout
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.user.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow

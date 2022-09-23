@@ -2,11 +2,11 @@ package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.FaultyJsonProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.prekey.PreKeyDTO
-import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.user.client.ClientTypeDTO
-import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.RegisterClientRequest
+import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject

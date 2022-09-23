@@ -1,7 +1,7 @@
 package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.pushToken.PushTokenBody
+import com.wire.kalium.network.api.base.model.PushTokenBody
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 

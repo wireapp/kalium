@@ -242,20 +242,21 @@ internal class ConversationEventReceiverImpl(
         }
     }
 
-    private fun updateAssetMessage(message: Message.Regular, newMessageRemoteData: AssetContent.RemoteData): Message {
-        val assetMessageContent = message.content as MessageContent.Asset
+    private fun updateAssetMessageWithDecryptionKeys(persistedMessage: Message.Regular, remoteData: AssetContent.RemoteData): Message {
+        val assetMessageContent = persistedMessage.content as MessageContent.Asset
         val isValidImage = assetMessageContent.value.metadata?.let {
             it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
         } ?: false
 
         // The message was previously received with just metadata info, so let's update it with the raw data info
-        return message.copy(
+        return persistedMessage.copy(
             content = assetMessageContent.copy(
                 value = assetMessageContent.value.copy(
-                    remoteData = newMessageRemoteData,
+                    remoteData = remoteData,
                     downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
                 )
-            )
+            ),
+            visibility = Message.Visibility.VISIBLE
         )
     }
 
@@ -495,7 +496,7 @@ internal class ConversationEventReceiverImpl(
     private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
         messageRepository.getMessageById(message.conversationId, message.id)
             .onFailure {
-                // No asset message was received previously, so just persist the preview asset message
+                // No asset message was received previously, so just persist the preview of the asset message
                 val isValidImage = (message.content as MessageContent.Asset).value.metadata?.let {
                     it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
                 } ?: false
@@ -504,7 +505,10 @@ internal class ConversationEventReceiverImpl(
                         value = message.content.value.copy(
                             downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
                         )
-                    )
+                    ),
+                    // We restrict the generic asset message to be displayed/interacted with until the second message with the final remote
+                    // data arrives. For images, we just show a placeholder with a loading bar.
+                    visibility = if (isValidImage) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
                 )
                 persistMessage(previewMessage)
             }
@@ -517,7 +521,12 @@ internal class ConversationEventReceiverImpl(
                 ) {
                     // The asset message received contains the asset decryption keys,
                     // so update the preview message persisted previously
-                    persistMessage(updateAssetMessage(message, (message.content as MessageContent.Asset).value.remoteData))
+                    persistMessage(
+                        updateAssetMessageWithDecryptionKeys(
+                            persistedMessage,
+                            (message.content as MessageContent.Asset).value.remoteData
+                        )
+                    )
                 }
             }
     }

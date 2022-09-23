@@ -35,10 +35,10 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.user.connection.ConnectionApi
-import com.wire.kalium.network.api.user.connection.ConnectionDTO
-import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
-import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.Member

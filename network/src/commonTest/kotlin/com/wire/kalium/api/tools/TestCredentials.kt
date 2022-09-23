@@ -1,7 +1,7 @@
 package com.wire.kalium.api.tools
 
-import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.SessionDTO
+import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SessionDTO
 
 val testCredentials = SessionDTO(
     userId = QualifiedID(value = "d0d92ba6-ab9e-4db2-b94f-475951ef219a", domain = "domain.de"),
