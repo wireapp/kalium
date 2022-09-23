@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.conversation.ConvProtocol
 import com.wire.kalium.network.api.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.conversation.ConversationApi
 import com.wire.kalium.network.api.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.conversation.ConversationPagingResponse
 import com.wire.kalium.network.api.conversation.ConversationResponse
@@ -731,15 +732,32 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPISucceeds_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
+    fun givenAConversationAndAPISucceedsWithChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceed()
+            .withDeleteMemberAPISucceedChanged()
             .withSuccessfulMemberDeletion()
             .arrange()
 
         conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
-            .shouldSucceed()
+            .shouldSucceed { it is MemberChangeResult.Changed }
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
+            .with(anything(), anything())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationAndAPISucceedsWithoutChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
+            .withDeleteMemberAPISucceedUnchanged()
+            .withSuccessfulMemberDeletion()
+            .arrange()
+
+        conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+            .shouldSucceed { it is MemberChangeResult.Unchanged }
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
@@ -768,13 +786,13 @@ class ConversationRepositoryTest {
     fun givenAnMLSConversationAndAPISucceeds_whenRemovingLeavingConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withConversationProtocolIs(MLS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceed()
+            .withDeleteMemberAPISucceedChanged()
             .withSuccessfulMemberDeletion()
             .withSuccessfulLeaveMLSGroup()
             .arrange()
 
         conversationRepository.deleteMember(TestUser.SELF.id, TestConversation.ID)
-            .shouldSucceed()
+            .shouldSucceed { it is MemberChangeResult.Changed }
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
@@ -794,13 +812,13 @@ class ConversationRepositoryTest {
     fun givenAnMLSConversationAndAPISucceeds_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withConversationProtocolIs(MLS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceed()
+            .withDeleteMemberAPISucceedChanged()
             .withSuccessfulMemberDeletion()
             .withSuccessfulRemoveMemberFromMLSGroup()
             .arrange()
 
         conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
-            .shouldSucceed()
+            .shouldSucceed { it is MemberChangeResult.Changed }
 
         // this function called in the mlsRepo
         verify(arrangement.conversationDAO)
@@ -1391,13 +1409,26 @@ class ConversationRepositoryTest {
                 .thenReturn(TestConversation.GROUP_ENTITY(protocolInfo))
         }
 
-        fun withDeleteMemberAPISucceed() = apply {
+        fun withDeleteMemberAPISucceedChanged() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::removeMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(
                     NetworkResponse.Success(
                         TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withDeleteMemberAPISucceedUnchanged() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::removeMember)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        ConversationMemberRemovedDTO.Unchanged,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )

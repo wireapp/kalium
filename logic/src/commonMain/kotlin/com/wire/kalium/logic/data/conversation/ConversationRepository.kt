@@ -30,6 +30,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.conversation.ConversationApi
+import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
@@ -52,6 +53,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlin.coroutines.cancellation.CancellationException
 
 interface ConversationRepository {
@@ -81,14 +83,14 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateMember(
+    suspend fun updateMemberFromEvent(
         member: Conversation.Member,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
     suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun deleteMembers(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, MemberChangeResult>
+    suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
     suspend fun createGroupConversation(
         name: String? = null,
@@ -470,7 +472,7 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
-    override suspend fun updateMember(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun updateMemberFromEvent(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             conversationDAO.updateMember(memberMapper.toDaoModel(member), idMapper.toDaoModel(conversationID))
         }
@@ -498,7 +500,7 @@ internal class ConversationDataSource internal constructor(
     override suspend fun deleteMember(
         userId: UserId,
         conversationId: ConversationId
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, MemberChangeResult> =
         detailsById(conversationId).flatMap { conversation ->
             when (conversation.protocol) {
                 is Conversation.ProtocolInfo.Proteus ->
@@ -506,12 +508,14 @@ internal class ConversationDataSource internal constructor(
 
                 is Conversation.ProtocolInfo.MLS -> {
                     if (userId == selfUserId) {
-                        deleteMemberFromCloudAndStorage(userId, conversationId).flatMap {
+                        deleteMemberFromCloudAndStorage(userId, conversationId).flatMap { result ->
                             mlsConversationRepository.leaveGroup(conversation.protocol.groupId)
+                                .map { result }
                         }
                     } else {
                         // when removing a member from an MLS group, don't need to call the api
                         mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userId))
+                            .map { MemberChangeResult.Changed(Clock.System.now().toString()) }
                     }
                 }
             }
@@ -522,16 +526,21 @@ internal class ConversationDataSource internal constructor(
             conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
         }.fold({
             Either.Left(it)
-        }, {
+        }, { response ->
             wrapStorageRequest {
                 conversationDAO.deleteMemberByQualifiedID(
                     idMapper.toDaoModel(userId),
                     idMapper.toDaoModel(conversationId)
                 )
+            }.map {
+                when(response) {
+                    is ConversationMemberRemovedDTO.Changed -> MemberChangeResult.Changed(response.time)
+                    ConversationMemberRemovedDTO.Unchanged -> MemberChangeResult.Unchanged
+                }
             }
         })
 
-    override suspend fun deleteMembers(
+    override suspend fun deleteMembersFromEvent(
         userIDList: List<UserId>,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> =
