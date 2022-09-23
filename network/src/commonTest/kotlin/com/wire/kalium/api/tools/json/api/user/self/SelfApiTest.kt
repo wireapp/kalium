@@ -3,7 +3,7 @@ package com.wire.kalium.api.tools.json.api.user.self
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.api.user.register.UserDTOJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.user.self.SelfApiV0
+import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode

@@ -1,7 +1,5 @@
-package com.wire.kalium.network.api.message
+package com.wire.kalium.network.api.base.authenticated.message
 
-import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapper
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserEntry

@@ -1,8 +1,8 @@
 package com.wire.kalium.api.tools.json.api.asset
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.model.AssetId
-import com.wire.kalium.network.api.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.network.api.v0.authenticated.AssetApiImplV0

@@ -4,7 +4,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
-import com.wire.kalium.network.api.user.connection.ConnectionApiV0
+import com.wire.kalium.network.api.v0.authenticated.ConnectionApiV0
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest

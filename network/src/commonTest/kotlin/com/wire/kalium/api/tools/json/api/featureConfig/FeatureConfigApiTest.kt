@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.api.featureConfig
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigApiV0
+import com.wire.kalium.network.api.v0.authenticated.FeatureConfigApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode

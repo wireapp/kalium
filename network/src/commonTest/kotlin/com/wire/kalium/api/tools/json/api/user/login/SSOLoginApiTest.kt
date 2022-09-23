@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND
-import com.wire.kalium.network.api.v0.unauthenticated.SSOLogin
+import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
@@ -21,7 +21,7 @@ class SSOLoginApiTest : ApiTest {
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithNoRedirect_thenRequestConfiguredCorrectly() = runTest {
         val uuid = "uuid"
-        val param = SSOLogin.InitiateParam.WithoutRedirect(uuid)
+        val param = SSOLoginApi.InitiateParam.WithoutRedirect(uuid)
         val expectedPath = "$PATH_SSO_INITIATE/$uuid"
         val networkClient = mockUnauthenticatedNetworkClient(
             "",
@@ -32,7 +32,7 @@ class SSOLoginApiTest : ApiTest {
                 assertPathEqual(expectedPath)
             }
         )
-        val ssoApi: SSOLogin = SSOLoginApiV0(networkClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
         val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
@@ -44,7 +44,7 @@ class SSOLoginApiTest : ApiTest {
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithRedirect_thenRequestConfiguredCorrectly() = runTest {
         val uuid = "uuid"
         val param =
-            SSOLogin.InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
+            SSOLoginApi.InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
         val expectedPathAndQuery =
             "$PATH_SSO_INITIATE/$uuid?success_redirect=wire%3A%2F%2Fsuccess&error_redirect=wire%3A%2F%2Ferror"
         val networkClient = mockUnauthenticatedNetworkClient(
@@ -55,7 +55,7 @@ class SSOLoginApiTest : ApiTest {
                 assertPathAndQueryEqual(expectedPathAndQuery)
             }
         )
-        val ssoApi: SSOLogin = SSOLoginApiV0(networkClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
         val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
@@ -75,7 +75,7 @@ class SSOLoginApiTest : ApiTest {
                 assertPathEqual(PATH_SSO_FINALIZE)
             }
         )
-        val ssoApi: SSOLogin = SSOLoginApiV0(networkClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
         val actual = ssoApi.finalize(cookie)
 
         assertIs<NetworkResponse.Success<String>>(actual)

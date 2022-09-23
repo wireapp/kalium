@@ -3,7 +3,7 @@ package com.wire.kalium.api.tools.json.api.user.client
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.user.client.ClientApiV0
+import com.wire.kalium.network.api.v0.authenticated.ClientApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful

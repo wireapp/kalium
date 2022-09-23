@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.message
+package com.wire.kalium.network.api.base.authenticated.message
 
 import com.wire.kalium.protobuf.otr.ClientId
 import java.math.BigInteger
