@@ -374,4 +374,12 @@ class ConversationDAOImpl(
         conversationQueries.updateConversationName(conversationName, timestamp, conversationId)
     }
 
+    override suspend fun deleteUserFromConversations(userId: UserIDEntity) {
+        memberQueries.deleteUserFromConversations(userId)
+    }
+
+    override suspend fun revokeOneOnOneConversationsWithDeletedUser(conversationID: QualifiedIDEntity) {
+        conversationQueries.revokeOneOnOneConversationWithDeletedUser(ConversationEntity.Type.GROUP, conversationID)
+    }
+
 }
