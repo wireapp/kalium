@@ -16,13 +16,12 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-import com.wire.kalium.network.api.UserId as UserIdDTO
-import com.wire.kalium.network.api.contact.search.ContactDTO
-import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
-import com.wire.kalium.network.api.contact.search.UserSearchResponse
-import com.wire.kalium.network.api.user.LegalHoldStatusResponse
-import com.wire.kalium.network.api.user.details.UserDetailsApi
-import com.wire.kalium.network.api.user.details.UserProfileDTO
+import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
+import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
+import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -47,6 +46,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 // TODO: refactor to arrangement pattern
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -454,7 +454,10 @@ class SearchUserRepositoryTest {
                         handle = "handle$i",
                         id = "id$i",
                         name = "name$i",
-                        qualifiedID = com.wire.kalium.network.api.UserId(value = "value$i", domain = "domain$i"),
+                        qualifiedID = com.wire.kalium.network.api.base.model.UserId(
+                            value = "value$i",
+                            domain = "domain$i"
+                        ),
                         team = "team$i"
                     )
                 )

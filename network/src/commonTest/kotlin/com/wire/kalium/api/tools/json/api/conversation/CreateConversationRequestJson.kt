@@ -2,12 +2,12 @@ package com.wire.kalium.api.tools.json.api.conversation
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
 import com.wire.kalium.api.tools.json.model.QualifiedIDSamples
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.conversation.ConvTeamInfo
-import com.wire.kalium.network.api.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.conversation.ReceiptMode
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 
 object CreateConversationRequestJson {
 

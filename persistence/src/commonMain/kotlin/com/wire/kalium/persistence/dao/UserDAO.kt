@@ -120,7 +120,7 @@ interface UserDAO {
     suspend fun upsertTeamMembers(users: List<UserEntity>)
 
     /**
-     * This will update a user record corresponding to the Self User,
+     * This will update a user record corresponding to the User,
      * The Fields to update are:
      * [UserEntity.name]
      * [UserEntity.handle]
@@ -129,7 +129,7 @@ interface UserDAO {
      * [UserEntity.previewAssetId]
      * [UserEntity.completeAssetId]
      */
-    suspend fun updateSelfUser(user: UserEntity)
+    suspend fun updateUser(user: UserEntity)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
@@ -146,6 +146,7 @@ interface UserDAO {
     ): Flow<List<UserEntity>>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
+    suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity): List<UserEntity>

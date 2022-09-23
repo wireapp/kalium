@@ -1,7 +1,7 @@
 package com.wire.kalium.api.tools.json.api.user.client
 
-import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.decodeFromString

@@ -28,6 +28,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -35,10 +36,10 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.user.connection.ConnectionApi
-import com.wire.kalium.network.api.user.connection.ConnectionDTO
-import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
-import com.wire.kalium.network.api.user.details.UserDetailsApi
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.Member
@@ -202,13 +203,16 @@ internal class ConnectionDataSource(
     // This way, the UseCases can tie the different Repos together, calling these functions.
     private suspend fun persistConnection(
         connection: Connection,
-    ) = wrapStorageRequest {
-        connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
-    }.flatMap {
+    ) =
         // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
         wrapApiRequest {
             userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
-        }.flatMap { userProfileDTO ->
+        }.fold({
+            wrapStorageRequest {
+                connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
+            }
+        }, { userProfileDTO ->
+
             wrapStorageRequest {
                 val selfUser = getSelfUser()
                 val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
@@ -224,10 +228,9 @@ internal class ConnectionDataSource(
                 )
 
                 userDAO.insertUser(userEntity)
-                connectionDAO.updateConnectionLastUpdatedTime(connection.lastUpdate, connection.toId)
+                connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
             }
-        }
-    }
+        })
 
     private suspend fun deleteCancelledConnection(conversationId: ConversationId) = wrapStorageRequest {
         connectionDAO.deleteConnectionDataAndConversation(idMapper.toDaoModel(conversationId))

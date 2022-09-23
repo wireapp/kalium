@@ -16,7 +16,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.network.api.notification.WebSocketEvent
+import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -76,6 +76,8 @@ internal class EventGathererImpl(
             // throw so it is handled by coroutineExceptionHandler
             throw KaliumSyncException("Failure when gathering events", it)
         }
+        // When it ends, reset source back to PENDING
+        _currentSource.value = EventSource.PENDING
     }
 
     private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
@@ -108,6 +110,7 @@ internal class EventGathererImpl(
             null -> logger.i("Websocket closed normally")
             is IOException ->
                 throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
+
             else ->
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
         }

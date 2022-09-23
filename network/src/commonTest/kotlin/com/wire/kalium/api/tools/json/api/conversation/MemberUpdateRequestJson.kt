@@ -1,8 +1,8 @@
 package com.wire.kalium.api.tools.json.api.conversation
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.conversation.MemberUpdateDTO
-import com.wire.kalium.network.api.conversation.MutedStatus
+import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
 
 object MemberUpdateRequestJson {
 

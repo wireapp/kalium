@@ -94,8 +94,6 @@ import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
-import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
@@ -183,6 +181,15 @@ abstract class UserSessionScopeCommon internal constructor(
             }
         }
 
+    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
+
+    val federatedIdMapper: FederatedIdMapper
+        get() = MapperProvider.federatedIdMapper(
+            userId,
+            qualifiedIdMapper,
+            globalScope.sessionRepository
+        )
+
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
 
     private val userConfigRepository: UserConfigRepository
@@ -245,14 +252,17 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             globalScope.sessionRepository,
-            userId
+            userId,
+            qualifiedIdMapper
         )
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.teamDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            userId,
         )
 
     private val connectionRepository: ConnectionRepository
@@ -322,20 +332,6 @@ abstract class UserSessionScopeCommon internal constructor(
     private val messageSendingScheduler: MessageSendingScheduler
         get() = authenticatedDataSourceSet.userSessionWorkScheduler
 
-    // TODO(optimization) code duplication, can't we get the MessageSender from the message scope?
-    private val messageSender: MessageSender
-        get() = MessageSenderImpl(
-            messageRepository,
-            conversationRepository,
-            syncManager,
-            messageSendFailureHandler,
-            sessionEstablisher,
-            messageEnvelopeCreator,
-            mlsMessageCreator,
-            messageSendingScheduler,
-            timeParser
-        )
-
     private val assetRepository: AssetRepository
         get() = AssetDataSource(
             assetApi = authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi,
@@ -386,7 +382,10 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(conversationRepository)
+        get() = JoinExistingMLSConversationsUseCase(
+            kaliumConfigs,
+            conversationRepository
+        )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
@@ -446,15 +445,6 @@ abstract class UserSessionScopeCommon internal constructor(
             lazy { mlsConversationRepository }
         )
 
-    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
-
-    val federatedIdMapper: FederatedIdMapper
-        get() = MapperProvider.federatedIdMapper(
-            userId,
-            qualifiedIdMapper,
-            globalScope.sessionRepository
-        )
-
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
@@ -462,7 +452,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userRepository = userRepository,
             clientRepository = clientRepository,
             conversationRepository = conversationRepository,
-            messageSender = messageSender,
+            messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
             videoStateChecker = videoStateChecker
@@ -508,6 +498,7 @@ abstract class UserSessionScopeCommon internal constructor(
             connectionRepository,
             logout,
             clientRepository,
+            userRepository,
             userId
         )
 
@@ -563,7 +554,7 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsConversationRepository,
             clientRepository,
             assetRepository,
-            messageSender,
+            messages.messageSender,
             teamRepository,
             userId,
             persistMessage,
@@ -586,6 +577,7 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             timeParser,
+            this
         )
     val users: UserScope
         get() = UserScope(

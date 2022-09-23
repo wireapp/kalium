@@ -1,9 +1,9 @@
 package com.wire.kalium.api.tools.json.api.keypackage
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.keypackage.KeyPackageApiImpl
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.v0.authenticated.KeyPackageApiV0
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -23,7 +23,7 @@ class KeyPackageApiTest: ApiTest {
                 assertPathEqual(KEY_PACKAGE_COUNT_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(networkClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiV0(networkClient)
 
         val response = keyPackageApi.getAvailableKeyPackageCount(VALID_CLIENT_ID)
         assertTrue(response.isSuccessful())
@@ -41,7 +41,7 @@ class KeyPackageApiTest: ApiTest {
                 assertPathEqual(KEY_PACKAGE_UPLOAD_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(networkClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiV0(networkClient)
 
         val response = keyPackageApi.uploadKeyPackages(VALID_CLIENT_ID, listOf(VALID_KEY_PACKAGE))
         assertTrue(response.isSuccessful())
@@ -57,7 +57,7 @@ class KeyPackageApiTest: ApiTest {
                 assertPathEqual(KEY_PACKAGE_CLAIM_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiImpl(networkClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiV0(networkClient)
 
         val response = keyPackageApi.claimKeyPackages(KeyPackageApi.Param.IncludeOwnClient(VALID_USER_ID))
         assertTrue(response.isSuccessful())

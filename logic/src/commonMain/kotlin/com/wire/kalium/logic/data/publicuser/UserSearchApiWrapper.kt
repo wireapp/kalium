@@ -9,9 +9,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.contact.search.UserSearchApi
-import com.wire.kalium.network.api.contact.search.UserSearchRequest
-import com.wire.kalium.network.api.contact.search.UserSearchResponse
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchRequest
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity

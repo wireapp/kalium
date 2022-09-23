@@ -4,12 +4,12 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.user.client.ClientResponse
-import com.wire.kalium.network.api.user.client.ClientTypeDTO
-import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.RegisterClientRequest
-import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 
 class ClientMapper(

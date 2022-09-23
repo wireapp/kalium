@@ -10,10 +10,10 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.AssetId
-import com.wire.kalium.network.api.asset.AssetMetadataRequest
-import com.wire.kalium.network.api.asset.AssetResponse
-import com.wire.kalium.network.api.model.AssetRetentionType
+import com.wire.kalium.network.api.base.model.AssetId
+import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
