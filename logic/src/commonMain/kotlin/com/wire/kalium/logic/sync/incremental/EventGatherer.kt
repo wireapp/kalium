@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transformWhile
 
@@ -111,6 +110,7 @@ internal class EventGathererImpl(
             null -> logger.i("Websocket closed normally")
             is IOException ->
                 throw KaliumSyncException("Websocket disconnected", NetworkFailure.NoNetworkConnection(cause))
+
             else ->
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
         }
