@@ -249,7 +249,7 @@ class ConnectionRepositoryTest {
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement.withErrorUpdatingConnectionStatusResponse(userId)
-        
+
         // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.PENDING)
 
