@@ -260,7 +260,6 @@ class ConnectionRepositoryTest {
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement.withErrorUpdatingConnectionStatusResponse(userId)
 
-
         // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.PENDING)
 
@@ -343,8 +342,6 @@ class ConnectionRepositoryTest {
             service = null
         )
 
-        val stubJsonQualifiedId = """{"value":"test" , "domain":"test" }"""
-
         val stubUserEntity = UserEntity(
             id = QualifiedIDEntity("value", "domain"),
             name = null,
@@ -360,20 +357,6 @@ class ConnectionRepositoryTest {
             userType = UserTypeEntity.EXTERNAL,
             botService = null,
             deleted = false
-        )
-
-        val stubSelfUser = SelfUser(
-            id = com.wire.kalium.logic.data.id.QualifiedID("someValue", "someId"),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            teamId = null,
-            connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = null,
-            completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.AVAILABLE,
         )
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
@@ -471,7 +454,6 @@ class ConnectionRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
                 .whenInvokedWith(any(), any(), any())
-
 
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
                 .whenInvokedWith(any())
