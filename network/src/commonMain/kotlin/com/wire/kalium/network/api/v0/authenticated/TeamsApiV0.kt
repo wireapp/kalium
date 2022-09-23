@@ -12,7 +12,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
-internal class TeamsApiV0 internal constructor(
+internal open class TeamsApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : TeamsApi {
 

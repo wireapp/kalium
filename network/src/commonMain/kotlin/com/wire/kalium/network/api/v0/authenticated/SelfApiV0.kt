@@ -11,7 +11,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
-internal class SelfApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : SelfApi {
+internal open class SelfApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : SelfApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
