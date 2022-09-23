@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 
 /**
@@ -26,6 +27,7 @@ internal class EventProcessorImpl(
     private val eventRepository: EventRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: UserEventReceiver,
+    private val teamEventReceiver: TeamEventReceiver,
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
 ) : EventProcessor {
 
@@ -36,6 +38,7 @@ internal class EventProcessorImpl(
             is Event.User -> userEventReceiver.onEvent(event)
             is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
             is Event.Unknown -> kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Unhandled event id=${event.id.obfuscateId()}")
+            is Event.Team -> teamEventReceiver.onEvent(event)
         }
         kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Updating lastProcessedEventId ${event.id.obfuscateId()}")
         eventRepository.updateLastProcessedEventId(event.id)

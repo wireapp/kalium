@@ -5,6 +5,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLS.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
@@ -23,6 +24,7 @@ import kotlinx.coroutines.async
  * of but has not yet joined the corresponding MLS group.
  */
 class JoinExistingMLSConversationsUseCase(
+    val kaliumConfigs: KaliumConfigs,
     val conversationRepository: ConversationRepository,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -30,17 +32,22 @@ class JoinExistingMLSConversationsUseCase(
     private val scope = CoroutineScope(dispatcher)
 
     suspend operator fun invoke(): Either<CoreFailure, Unit> =
-        conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
-            kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
+        if (!kaliumConfigs.isMLSSupportEnabled) {
+            kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is disabled.")
+            Either.Right(Unit)
+        } else {
+            conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
+                kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
 
-            return pendingConversations.map { conversation ->
-                scope.async {
-                    requestToJoinMLSGroupAndRetry(conversation)
+                return pendingConversations.map { conversation ->
+                    scope.async {
+                        requestToJoinMLSGroupAndRetry(conversation)
+                    }
+                }.map {
+                    it.await()
+                }.foldToEitherWhileRight(Unit) { value, _ ->
+                    value
                 }
-            }.map {
-                it.await()
-            }.foldToEitherWhileRight(Unit) { value, _ ->
-                value
             }
         }
 

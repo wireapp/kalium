@@ -654,7 +654,7 @@
     <ID>MaximumLineLength:com.wire.kalium.api.tools.TestCredentials.kt:10</ID>
     <ID>MaximumLineLength:com.wire.kalium.api.tools.TestCredentials.kt:9</ID>
     <ID>MaximumLineLength:com.wire.kalium.api.tools.json.api.notification.NotificationEventsResponseJson.kt:90</ID>
-    <ID>MaximumLineLength:com.wire.kalium.logic.core_failure.WrapApiRequestTest.kt:27</ID>
+    <ID>MaximumLineLength:com.wire.kalium.logic.corefailure.WrapApiRequestTest.kt:27</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.data.client.ClientMapper.kt:38</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.data.notification.LocalNotification.kt:21</ID>
     <ID>MaximumLineLength:com.wire.kalium.logic.data.prekey.PreKeyListMapper.kt:22</ID>
@@ -934,7 +934,7 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.functional.FlowTest.kt:13</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.logic.util.stubs.ServerConfigStubs.kt:82</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.ServerMetaDataManager.kt:3</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.UnauthenticatedNetworkContainer.kt:28</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer.kt:28</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.conversation.AddParticipantRequest.kt:16</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.conversation.CreateConversationRequest.kt:16</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse.kt:50</ID>
@@ -1083,8 +1083,8 @@
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
     <ID>PackageName:com.wire.kalium.api.tools.json.api.api_version.VersionApiTest.kt:1</ID>
     <ID>PackageName:com.wire.kalium.api.tools.json.api.api_version.VersionInfoDTOJson.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.logic.core_failure.WrapApiRequestTest.kt:1</ID>
-    <ID>PackageName:com.wire.kalium.logic.core_failure.WrapCryptoRequestTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.corefailure.WrapApiRequestTest.kt:1</ID>
+    <ID>PackageName:com.wire.kalium.logic.corefailure.WrapCryptoRequestTest.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TestKaliumDispatcher.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TestNetworkException.kt:1</ID>
     <ID>PackageName:com.wire.kalium.logic.test_util.TimeUtils.kt:1</ID>
@@ -1116,7 +1116,7 @@
     <ID>ParameterListWrapping:com.wire.kalium.logic.feature.register.RegisterAccountUseCase.kt:27</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.feature.user.GetSelfUserUseCase.kt:8</ID>
     <ID>ParameterListWrapping:com.wire.kalium.logic.feature.user.GetSelfUserUseCase.kt:9</ID>
-    <ID>ParameterListWrapping:com.wire.kalium.network.UnauthenticatedNetworkContainer.kt:17</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer.kt:17</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.keypackage.KeyPackageDTO.kt:16</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.teams.TeamsApi.kt:40</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.user.login.LoginApi.kt:10</ID>

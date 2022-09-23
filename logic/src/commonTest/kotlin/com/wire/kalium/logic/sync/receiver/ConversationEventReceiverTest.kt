@@ -11,6 +11,7 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -20,6 +21,7 @@ import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -92,6 +94,38 @@ class ConversationEventReceiverTest {
         verify(arrangement.proteusClient)
             .suspendFunction(arrangement.proteusClient::decrypt)
             .with(matching { it.contentEquals(decodedByteArray) }, eq(cryptoSessionId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenValidNewImageMessageEvent_whenHandling_shouldSetDownloadStatusAsInProgress() = runTest {
+        val validImageContent = MessageContent.Asset(
+            AssetContent(
+                1000, "some-image.jpg", "image/jpg", AssetContent.AssetMetadata.Image(200, 200),
+                AssetContent.RemoteData(
+                    ByteArray(16), ByteArray(16), "assetid", null, null, null
+                ), Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
+            )
+        )
+        val coreFailure = StorageFailure.DataNotFound
+        val (arrangement, eventReceiver) = Arrangement()
+            .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
+            .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", validImageContent))
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFileSharingEnabled()
+            .withErrorGetMessageById(coreFailure)
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = arrangement.newMessageEvent(encodedEncryptedContent.decodeToString())
+        eventReceiver.onEvent(messageEvent)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                it.content is MessageContent.Asset &&
+                        (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+            })
             .wasInvoked(exactly = once)
     }
 
@@ -378,6 +412,56 @@ class ConversationEventReceiverTest {
         }
     }
 
+    @Test
+    fun givenAConversationEventRenamed_whenHandlingIt_thenShouldRenameTheConversation() = runTest {
+        val event = TestEvent.renamedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withGetConversation()
+            .withGetUserAuthor(event.senderUserId)
+            .withRenamingConversationReturning()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .with(eq(TestConversation.ID), any(), any())
+                .wasInvoked(exactly = once)
+
+            verify(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAConversationEventRenamed_whenHandlingItFails_thenShouldNotUpdateTheConversation() = runTest {
+        val event = TestEvent.renamedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withGetConversation()
+            .withGetUserAuthor(event.senderUserId)
+            .withRenamingConversationReturning(Either.Left(StorageFailure.DataNotFound))
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .with(eq(TestConversation.ID), any(), any())
+                .wasInvoked(exactly = once)
+
+            verify(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .with(any())
+                .wasNotInvoked()
+        }
+    }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -463,6 +547,27 @@ class ConversationEventReceiverTest {
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
+        }
+
+        fun withFileSharingEnabled() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::isFileSharingEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(FileSharingStatus(true, false)))
+        }
+
+        fun withGetMessageById(expectedMessage: Message.Regular) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(expectedMessage))
+        }
+
+        fun withErrorGetMessageById(coreFailure: CoreFailure) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(coreFailure))
         }
 
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
@@ -564,6 +669,13 @@ class ConversationEventReceiverTest {
                 .suspendFunction(conversationRepository::deleteConversation)
                 .whenInvokedWith((eq(conversationId)))
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withRenamingConversationReturning(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .whenInvokedWith(eq(TestConversation.ID), eq("newName"), any())
+                .thenReturn(result)
         }
 
         fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION) = apply {

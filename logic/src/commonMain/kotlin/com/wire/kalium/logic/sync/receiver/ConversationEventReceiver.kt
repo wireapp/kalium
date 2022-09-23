@@ -8,6 +8,7 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -21,6 +22,8 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.NOT_DOWNLOADED
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -91,6 +94,8 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MLSWelcome -> handleMLSWelcome(event)
             is Event.Conversation.NewMLSMessage -> handleNewMLSMessage(event)
             is Event.Conversation.MemberChanged -> handleMemberChange(event)
+            is Event.Conversation.RenamedConversation -> handleRenamedConversation(event)
+            is Event.Conversation.AccessUpdate -> TODO()
         }
     }
 
@@ -237,17 +242,22 @@ internal class ConversationEventReceiverImpl(
         }
     }
 
-    private fun updateAssetMessage(persistedMessage: Message.Regular, newMessageRemoteData: AssetContent.RemoteData): Message? =
+    private fun updateAssetMessage(message: Message.Regular, newMessageRemoteData: AssetContent.RemoteData): Message {
+        val assetMessageContent = message.content as MessageContent.Asset
+        val isValidImage = assetMessageContent.value.metadata?.let {
+            it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
+        } ?: false
+
         // The message was previously received with just metadata info, so let's update it with the raw data info
-        if (persistedMessage.content is MessageContent.Asset) {
-            persistedMessage.copy(
-                content = persistedMessage.content.copy(
-                    value = persistedMessage.content.value.copy(
-                        remoteData = newMessageRemoteData
-                    )
+        return message.copy(
+            content = assetMessageContent.copy(
+                value = assetMessageContent.value.copy(
+                    remoteData = newMessageRemoteData,
+                    downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
                 )
             )
-        } else null
+        )
+    }
 
     private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
         var verified = false
@@ -382,6 +392,27 @@ internal class ConversationEventReceiverImpl(
         }
     }
 
+    private suspend fun handleRenamedConversation(event: Event.Conversation.RenamedConversation) {
+        conversationRepository.updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
+            .onSuccess {
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .d("$TAG - The Conversation was renamed: ${event.conversationId.toString().obfuscateId()}")
+                val message = Message.System(
+                    id = event.id,
+                    content = MessageContent.ConversationRenamed(event.conversationName),
+                    conversationId = event.conversationId,
+                    date = event.timestampIso,
+                    senderUserId = event.senderUserId,
+                    status = Message.Status.SENT,
+                )
+                persistMessage(message)
+            }
+            .onFailure { coreFailure ->
+                kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                    .e("$TAG - Error renaming the conversation [${event.conversationId.toString().obfuscateId()}] $coreFailure")
+            }
+    }
+
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
         kaliumLogger.withFeatureId(EVENT_RECEIVER).d("Received MLS proposal, scheduling commit in $commitDelay seconds")
         pendingProposalScheduler.scheduleCommit(
@@ -431,6 +462,7 @@ internal class ConversationEventReceiverImpl(
                     kaliumLogger.withFeatureId(EVENT_RECEIVER).i(message = "Unknown Message received: $message")
                     persistMessage(message)
                 }
+
                 is MessageContent.Cleared -> clearConversationContentHandler.handle(message, content)
                 is MessageContent.Empty -> TODO()
             }
@@ -464,19 +496,28 @@ internal class ConversationEventReceiverImpl(
         messageRepository.getMessageById(message.conversationId, message.id)
             .onFailure {
                 // No asset message was received previously, so just persist the preview asset message
-                persistMessage(message)
+                val isValidImage = (message.content as MessageContent.Asset).value.metadata?.let {
+                    it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
+                } ?: false
+                val previewMessage = message.copy(
+                    content = message.content.copy(
+                        value = message.content.value.copy(
+                            downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
+                        )
+                    )
+                )
+                persistMessage(previewMessage)
             }
             .onSuccess { persistedMessage ->
+                val messageContent = persistedMessage.content
                 // Check the second asset message is from the same original sender
                 if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
                     persistedMessage is Message.Regular &&
-                    persistedMessage.content is MessageContent.Asset
+                    messageContent is MessageContent.Asset
                 ) {
                     // The asset message received contains the asset decryption keys,
                     // so update the preview message persisted previously
-                    updateAssetMessage(persistedMessage, (message.content as MessageContent.Asset).value.remoteData)?.let { assetMessage ->
-                        persistMessage(assetMessage)
-                    }
+                    persistMessage(updateAssetMessage(message, (message.content as MessageContent.Asset).value.remoteData))
                 }
             }
     }

@@ -139,10 +139,15 @@ interface ConversationRepository {
     suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
+    suspend fun updateConversationName(
+        conversationId: ConversationId,
+        conversationName: String,
+        timestamp: String
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
-internal class ConversationDataSource internal constructor (
+internal class ConversationDataSource internal constructor(
     private val userRepository: UserRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationDAO: ConversationDAO,
@@ -318,7 +323,7 @@ internal class ConversationDataSource internal constructor (
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getGroupConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
-        return userRepository.observeSelfUser()
+        return userRepository.observeSelfUser() // todo : why are we observing self user if we have it injected in the constructor
             .flatMapLatest { selfUser ->
                 combine(
                     observeUnreadMessageCount(conversation),
@@ -380,15 +385,18 @@ internal class ConversationDataSource internal constructor (
 
     private suspend fun observeUnreadMessageCount(conversation: Conversation): Flow<Long> {
         return if (conversation.supportsUnreadMessageCount) {
-            messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+            messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id), idMapper.toDaoModel(selfUserId))
         } else {
             flowOf(0L)
         }
     }
 
-    private suspend fun observeUnreadMentionsCount(conversation: Conversation, userId: UserId): Flow<Long> {
+    private suspend fun observeUnreadMentionsCount(conversation: Conversation, selfUserId: UserId): Flow<Long> {
         return if (conversation.supportsUnreadMessageCount) {
-            messageDAO.observeUnreadMentionsCount(idMapper.toDaoModel(conversation.id), idMapper.toDaoModel(userId))
+            messageDAO.observeUnreadMentionsCount(
+                idMapper.toDaoModel(conversation.id),
+                idMapper.toDaoModel(selfUserId)
+            )
         } else {
             flowOf(0L)
         }
@@ -426,6 +434,7 @@ internal class ConversationDataSource internal constructor (
             .map(conversationMapper::fromDaoModel)
             .wrapStorageRequest()
 
+    // TODO: refactor. 3 Ways different ways to return conversation details?!
     override suspend fun getConversationById(conversationId: ConversationId): Conversation? =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId))
             .map { conversationEntity ->
@@ -778,6 +787,9 @@ internal class ConversationDataSource internal constructor (
             idMapper.toStringDaoModel(selfUserId)
         )?.let { idMapper.fromDaoModel(it) }
     }
+
+    override suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
+        wrapStorageRequest { conversationDAO.updateConversationName(idMapper.toDaoModel(conversationId), conversationName, timestamp) }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

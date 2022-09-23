@@ -128,6 +128,16 @@ CREATE TABLE MessageMissedCallContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageConversationChangedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      conversation_name TEXT NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -176,7 +186,8 @@ UnknownContent.unknown_encoded_data AS unknownContentData,
 RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
 RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
-FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData
+FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+ConversationNameChangedContent.conversation_name AS conversationName
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -185,7 +196,8 @@ LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCa
 LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
 LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
-LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id;
+LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id;
 
 deleteAllMessages:
 DELETE FROM Message;
@@ -303,6 +315,12 @@ VALUES(?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 caller_id = excluded.caller_id;
 
+insertConversationRenamedMessage:
+INSERT INTO MessageConversationChangedContent(message_id, conversation_id, conversation_name)
+VALUES(?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+conversation_name = excluded.conversation_name;
+
 updateMessageStatus:
 UPDATE Message
 SET status = ?
@@ -375,6 +393,7 @@ getUnreadMessageCount:
 SELECT COUNT() FROM Message AS message
 WHERE message.conversation_id IS :conversation_id
 AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
+AND message.sender_user_id != :self_user_id
 AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
 
 getUnreadMentionsCount:
@@ -382,4 +401,4 @@ SELECT COUNT(DISTINCT message.id) FROM Message AS message
 WHERE message.conversation_id IS :conversation_id
 AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 AND message.content_type IN ('TEXT')
-AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :user_id);
+AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);

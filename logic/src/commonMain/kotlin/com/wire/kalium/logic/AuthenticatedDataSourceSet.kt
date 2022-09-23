@@ -2,7 +2,7 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
-import com.wire.kalium.network.AuthenticatedNetworkContainer
+import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.UserPrefProvider
 

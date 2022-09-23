@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
@@ -153,6 +154,11 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
                 /** NO-OP. No need to insert any content for Knock messages */
             }
 
+            is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                conversation_name = content.conversationName
+            )
         }
     }
 
@@ -257,12 +263,15 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
         mapper::toEntityMessageFromView
     ).asFlow().mapToOneOrNull()
 
-    override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity): Flow<Long> =
-        queries.getUnreadMessageCount(conversationId).asFlow().mapToOneOrDefault(0L)
+    override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity, selfUserId: UserIDEntity): Flow<Long> =
+        queries.getUnreadMessageCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
 
-    override suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Long> =
-        queries.getUnreadMentionsCount(conversationId, userId).asFlow().mapToOneOrDefault(0L)
+    override suspend fun observeUnreadMentionsCount(
+        conversationId: QualifiedIDEntity,
+        selfUserId: UserIDEntity
+    ): Flow<Long> =
+        queries.getUnreadMentionsCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
@@ -274,6 +283,7 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
         is MessageEntityContent.Unknown -> UNKNOWN
         is MessageEntityContent.FailedDecryption -> FAILED_DECRYPTION
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
+        is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)

@@ -137,6 +137,8 @@ import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
@@ -350,7 +352,10 @@ abstract class UserSessionScopeCommon internal constructor(
     private val eventProcessor: EventProcessor
         get() = EventProcessorImpl(
             eventRepository,
-            conversationEventReceiver, userEventReceiver, featureConfigEventReceiver
+            conversationEventReceiver,
+            userEventReceiver,
+            teamEventReceiver,
+            featureConfigEventReceiver
         )
 
     private val syncCriteriaProvider: SyncCriteriaProvider
@@ -381,7 +386,10 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(conversationRepository)
+        get() = JoinExistingMLSConversationsUseCase(
+            kaliumConfigs,
+            conversationRepository
+        )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
@@ -418,6 +426,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     internal val keyPackageManager: KeyPackageManager =
         KeyPackageManagerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { client.refillKeyPackages },
             lazy { client.mlsKeyPackageCountUseCase },
@@ -425,6 +434,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository }
@@ -434,6 +444,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val pendingProposalScheduler: PendingProposalScheduler =
         PendingProposalSchedulerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { mlsConversationRepository }
         )
@@ -503,6 +514,9 @@ abstract class UserSessionScopeCommon internal constructor(
             userId
         )
 
+    private val teamEventReceiver: TeamEventReceiver
+        get() = TeamEventReceiverImpl(teamRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)
 
@@ -539,7 +553,8 @@ abstract class UserSessionScopeCommon internal constructor(
             clientRemoteRepository,
             authenticatedDataSourceSet.proteusClient,
             globalScope.sessionRepository,
-            userId
+            userId,
+            kaliumConfigs
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -609,7 +624,7 @@ abstract class UserSessionScopeCommon internal constructor(
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
-    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(userConfigRepository)
+    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(kaliumConfigs, userConfigRepository)
 
     internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(

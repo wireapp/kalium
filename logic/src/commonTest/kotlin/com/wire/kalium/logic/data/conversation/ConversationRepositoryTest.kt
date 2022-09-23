@@ -253,7 +253,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -327,7 +327,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -384,7 +384,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -963,7 +963,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -1012,7 +1012,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
@@ -1076,7 +1076,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
@@ -1123,7 +1123,7 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -1283,6 +1283,21 @@ class ConversationRepositoryTest {
 
         val result = conversationRepository.getConversationById(conversationId)
         assertNotNull(result)
+    }
+
+    @Test
+    fun givenAConversation_WhenUpdatingTheName_ShouldReturnSuccess() = runTest {
+        val conversationId = ConversationId("conv_id", "conv_domain")
+        val (arrange, conversationRepository) = Arrangement().withExpectedConversation(TestConversation.ENTITY).arrange()
+
+        val result = conversationRepository.updateConversationName(conversationId, "newName", "2022-03-30T15:36:00.000Z")
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationName)
+                .with(any(), any(), any())
+                .wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {

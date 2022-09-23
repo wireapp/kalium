@@ -463,7 +463,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
-
+        val selfUserId = QualifiedIDEntity("1", "domain")
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
@@ -502,7 +502,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         launch(UnconfinedTestDispatcher(testScheduler)) {
             // when
-            messageDAO.observeUnreadMessageCount(conversationId).test {
+            messageDAO.observeUnreadMessageCount(conversationId, selfUserId).test {
                 // then
                 assertEquals(9L, awaitItem())
             }
@@ -513,6 +513,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
+        val selfUserId = QualifiedIDEntity("1", "domain")
 
         conversationDAO.insertConversation(
             newConversationEntity(
@@ -540,7 +541,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         launch(UnconfinedTestDispatcher(testScheduler)) {
             // when
-            messageDAO.observeUnreadMessageCount(conversationId).test {
+            messageDAO.observeUnreadMessageCount(conversationId, selfUserId).test {
                 // then
                 assertEquals(0L, awaitItem())
             }
@@ -876,6 +877,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // then
         assertEquals(false, isMember)
+    }
+
+    @Test
+    fun givenAConversation_whenChangingTheName_itReturnsTheUpdatedName() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        conversationDAO.updateConversationName(conversationEntity1.id, "NEW-NAME", "2023-11-22T15:36:00.000Z")
+        val updatedConversation = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+
+        // then
+        assertEquals("NEW-NAME", updatedConversation!!.name)
     }
 
     private companion object {

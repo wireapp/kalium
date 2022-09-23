@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -59,7 +60,8 @@ class EventRepositoryTest {
                 PublicUserMapperImpl(IdMapperImpl(), AvailabilityStatusMapperImpl(), ConnectionStateMapperImpl())
             ),
             FeatureConfigMapperImpl(),
-            ConversationRoleMapperImpl()
+            ConversationRoleMapperImpl(),
+            DomainUserTypeMapperImpl()
         )
 
     private lateinit var eventRepository: EventRepository
