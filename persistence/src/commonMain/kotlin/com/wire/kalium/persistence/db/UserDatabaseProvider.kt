@@ -9,6 +9,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import kotlin.jvm.JvmInline
 
 internal const val USER_CACHE_SIZE = 125
@@ -26,6 +27,7 @@ expect class UserDatabaseProvider {
     val callDAO: CallDAO
     val assetDAO: AssetDAO
     val teamDAO: TeamDAO
+    val reactionDAO: ReactionDAO
 
     /**
      * drops DB connection and delete the DB file

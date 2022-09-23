@@ -20,6 +20,7 @@ import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
+import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.cache.LRUCache
@@ -49,6 +50,8 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
+import com.wire.kalium.persistence.dao.reaction.ReactionDAO
+import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -167,6 +170,10 @@ actual class UserDatabaseProvider(
             MessageUnknownContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter
             ),
+            Reaction.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter,
+                sender_idAdapter = QualifiedIDAdapter
+            ),
             User.Adapter(
                 qualified_idAdapter = QualifiedIDAdapter,
                 accent_idAdapter = IntColumnAdapter,
@@ -208,6 +215,9 @@ actual class UserDatabaseProvider(
 
     actual val teamDAO: TeamDAO
         get() = TeamDAOImpl(database.teamsQueries)
+
+    actual val reactionDAO: ReactionDAO
+        get() = ReactionDAOImpl(database.reactionsQueries)
 
     actual fun nuke(): Boolean {
         databaseScope.cancel()

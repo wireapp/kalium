@@ -192,7 +192,7 @@ class ProtoContentMapperImpl(
             }
 
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
-            is GenericMessage.Content.Reaction -> MessageContent.Ignored
+            is GenericMessage.Content.Reaction -> MessageContent.Reaction(protoContent.value.messageId, protoContent.value.emoji ?: "")
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
                 MessageContent.Ignored
