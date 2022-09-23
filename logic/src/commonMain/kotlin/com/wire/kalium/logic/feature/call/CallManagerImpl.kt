@@ -15,7 +15,7 @@ interface CallManager {
         callType: CallType,
         conversationType: ConversationType,
         isAudioCbr: Boolean
-    ) //TODO(calling): Audio CBR
+    ) // TODO(calling): Audio CBR
 
     suspend fun answerCall(conversationId: ConversationId)
     suspend fun endCall(conversationId: ConversationId)
