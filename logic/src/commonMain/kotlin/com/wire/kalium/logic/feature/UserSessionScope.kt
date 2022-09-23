@@ -252,7 +252,9 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = TeamDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.teamDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            userId,
         )
 
     private val connectionRepository: ConnectionRepository
@@ -386,7 +388,10 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(conversationRepository)
+        get() = JoinExistingMLSConversationsUseCase(
+            kaliumConfigs,
+            conversationRepository
+        )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(

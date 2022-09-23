@@ -229,6 +229,10 @@ class UserDAOImpl internal constructor(
         userQueries.deleteUser(qualifiedID)
     }
 
+    override suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity) {
+        userQueries.markUserAsDeleted(user_type = UserTypeEntity.NONE, qualified_id = qualifiedID)
+    }
+
     override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {
         userQueries.updateUserhandle(handle, qualifiedID)
     }
