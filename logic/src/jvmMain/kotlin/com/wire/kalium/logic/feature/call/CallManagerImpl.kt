@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
@@ -45,5 +46,9 @@ actual class CallManagerImpl : CallManager {
 
     override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
         kaliumLogger.w("updateVideoState for JVM but not supported yet.")
+    }
+
+    override suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList) {
+        kaliumLogger.w("requestVideoStream for JVM but not supported yet.")
     }
 }
