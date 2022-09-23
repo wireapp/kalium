@@ -5,6 +5,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.util.requireField
 
 @Suppress("LongParameterList")
 object MessageMapper {
@@ -155,9 +156,5 @@ object MessageMapper {
             visibility,
             it
         )
-    }
-
-    private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
-        "Fild $fieldName null when unpacking message content"
     }
 }

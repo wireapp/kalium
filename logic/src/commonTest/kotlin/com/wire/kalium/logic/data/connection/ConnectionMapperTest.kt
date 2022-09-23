@@ -47,7 +47,7 @@ class ConnectionMapperTest {
         val (arrangement, mapper) = Arrangement().arrange()
 
         // when
-        val connectionEntity = mapper.fromDaoToModel(arrangement.stubConnectionEntity, null)
+        val connectionEntity = mapper.fromDaoToModel(arrangement.stubConnectionEntity)
 
         // then
         assertEquals(ConnectionState.ACCEPTED, connectionEntity.status)
