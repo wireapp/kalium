@@ -19,7 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-//todo: apply below testCases from here to the new changes
+// todo: apply below testCases from here to the new changes
 @Ignore
 class ObserveConversationsAndConnectionsUseCaseTest {
 
