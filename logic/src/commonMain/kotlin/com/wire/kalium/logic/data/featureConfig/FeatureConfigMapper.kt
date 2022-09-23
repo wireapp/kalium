@@ -1,9 +1,9 @@
 package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.id.PlainId
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
-import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 
 interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel

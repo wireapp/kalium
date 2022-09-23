@@ -4,7 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import com.wire.kalium.network.api.user.login.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -24,12 +24,12 @@ import kotlin.test.assertIs
 class SSOLoginRepositoryTest {
 
     @Mock
-    val ssoLoginApi = mock(classOf<SSOLoginApi>())
+    val ssoLogin = mock(classOf<SSOLoginApi>())
     private lateinit var ssoLoginRepository: SSOLoginRepository
 
     @BeforeTest
     fun setup() {
-        ssoLoginRepository = SSOLoginRepositoryImpl(ssoLoginApi)
+        ssoLoginRepository = SSOLoginRepositoryImpl(ssoLogin)
     }
 
     @Test
@@ -109,11 +109,11 @@ class SSOLoginRepositoryTest {
         expected: T,
         repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
     ) = runTest {
-        given(ssoLoginApi).coroutine { apiCoroutineBlock(this) }.then { NetworkResponse.Success(expected, mapOf(), 200) }
+        given(ssoLogin).coroutine { apiCoroutineBlock(this) }.then { NetworkResponse.Success(expected, mapOf(), 200) }
         val actual = repositoryCoroutineBlock(ssoLoginRepository)
         assertIs<Either.Right<T>>(actual)
         assertEquals(expected, actual.value)
-        verify(ssoLoginApi).coroutine { apiCoroutineBlock(this) }.wasInvoked(exactly = once)
+        verify(ssoLogin).coroutine { apiCoroutineBlock(this) }.wasInvoked(exactly = once)
     }
 
     private fun <T : Any> givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
@@ -121,11 +121,11 @@ class SSOLoginRepositoryTest {
         expected: KaliumException,
         repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
     ) = runTest {
-        given(ssoLoginApi).coroutine { apiCoroutineBlock(this) }.then { NetworkResponse.Error(expected) }
+        given(ssoLogin).coroutine { apiCoroutineBlock(this) }.then { NetworkResponse.Error(expected) }
         val actual = repositoryCoroutineBlock(ssoLoginRepository)
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
-        verify(ssoLoginApi).coroutine { apiCoroutineBlock(this) }.wasInvoked(exactly = once)
+        verify(ssoLogin).coroutine { apiCoroutineBlock(this) }.wasInvoked(exactly = once)
     }
 
     private companion object {

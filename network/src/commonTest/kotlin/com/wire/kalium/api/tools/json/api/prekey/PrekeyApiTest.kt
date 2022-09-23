@@ -4,8 +4,8 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.DomainToUserIdToClientToPreKeyMapJson
 import com.wire.kalium.api.tools.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.prekey.PreKeyApi
-import com.wire.kalium.network.api.prekey.PreKeyApiImpl
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.v0.authenticated.PreKeyApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -30,7 +30,7 @@ class PrekeyApiTest : ApiTest {
                 assertPathEqual(PATH_PREKEYS)
             }
         )
-        val preKeyApi: PreKeyApi = PreKeyApiImpl(networkClient)
+        val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
 
         val response = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
         assertTrue(response.isSuccessful())
@@ -43,7 +43,7 @@ class PrekeyApiTest : ApiTest {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.Forbidden,
         )
-        val preKeyApi: PreKeyApi = PreKeyApiImpl(networkClient)
+        val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
         val errorResponse = preKeyApi.getUsersPreKey(VALID_GET_USERS_PREKEY_REQUEST.serializableData)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)

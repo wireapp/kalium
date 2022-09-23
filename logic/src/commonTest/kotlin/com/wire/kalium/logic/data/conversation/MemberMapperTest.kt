@@ -3,9 +3,8 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.UserId as UserIdDTO
-import com.wire.kalium.network.api.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -17,6 +16,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 class MemberMapperTest {
 

@@ -2,8 +2,8 @@ package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND
-import com.wire.kalium.network.api.user.login.SSOLoginApi
-import com.wire.kalium.network.api.user.login.SSOLoginApiImpl
+import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -32,7 +32,7 @@ class SSOLoginApiTest : ApiTest {
                 assertPathEqual(expectedPath)
             }
         )
-        val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
         val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
@@ -55,7 +55,7 @@ class SSOLoginApiTest : ApiTest {
                 assertPathAndQueryEqual(expectedPathAndQuery)
             }
         )
-        val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
         val actual = ssoApi.initiate(param)
 
         assertIs<NetworkResponse.Success<String>>(actual)
@@ -75,7 +75,7 @@ class SSOLoginApiTest : ApiTest {
                 assertPathEqual(PATH_SSO_FINALIZE)
             }
         )
-        val ssoApi: SSOLoginApi = SSOLoginApiImpl(networkClient)
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
         val actual = ssoApi.finalize(cookie)
 
         assertIs<NetworkResponse.Success<String>>(actual)

@@ -1,9 +1,9 @@
 package com.wire.kalium.api.tools.json.api.message
 
 import com.wire.kalium.api.tools.IgnoreIOS
-import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.network.api.message.MessagePriority
-import com.wire.kalium.network.api.message.provideEnvelopeProtoMapper
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.base.authenticated.message.provideEnvelopeProtoMapper
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import kotlin.test.Test

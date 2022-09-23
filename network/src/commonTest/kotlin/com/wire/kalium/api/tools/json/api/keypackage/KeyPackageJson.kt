@@ -1,9 +1,9 @@
 package com.wire.kalium.api.tools.json.api.keypackage
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.keypackage.ClaimedKeyPackageList
-import com.wire.kalium.network.api.keypackage.KeyPackageCountDTO
-import com.wire.kalium.network.api.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 
 object KeyPackageJson {
 

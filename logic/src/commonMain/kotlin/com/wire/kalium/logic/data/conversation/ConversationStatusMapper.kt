@@ -2,8 +2,8 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.conversation.MemberUpdateDTO
-import com.wire.kalium.network.api.conversation.MutedStatus
+import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.datetime.Instant

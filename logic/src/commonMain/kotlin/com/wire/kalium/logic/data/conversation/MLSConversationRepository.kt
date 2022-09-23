@@ -24,8 +24,8 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.message.MLSMessageApi
-import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsClientMismatch
 import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences

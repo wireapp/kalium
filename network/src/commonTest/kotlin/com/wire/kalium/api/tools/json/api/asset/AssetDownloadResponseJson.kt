@@ -1,7 +1,7 @@
 package com.wire.kalium.api.tools.json.api.asset
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.ErrorResponse
+import com.wire.kalium.network.api.base.model.ErrorResponse
 
 object AssetDownloadResponseJson {
     private val invalidJsonProvider = { serializable: ErrorResponse ->
