@@ -14,7 +14,7 @@ import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
-class UnauthenticatedNetworkContainerV0 internal constructor(
+class UnauthenticatedNetworkContainerV0 constructor(
     backendLinks: ServerConfigDTO.Links,
     serverMetaDataManager: ServerMetaDataManager,
     developmentApiEnabled: Boolean = false,

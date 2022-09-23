@@ -4,8 +4,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
+import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
-import com.wire.kalium.network.api.v0.unauthenticated.SSOLogin
 
 interface SSOLoginRepository {
 
@@ -27,7 +27,7 @@ interface SSOLoginRepository {
 }
 
 class SSOLoginRepositoryImpl(
-    private val ssoLogin: SSOLogin
+    private val ssoLogin: SSOLoginApi
 ) : SSOLoginRepository {
 
     override suspend fun initiate(
@@ -35,11 +35,11 @@ class SSOLoginRepositoryImpl(
         successRedirect: String,
         errorRedirect: String
     ): Either<NetworkFailure, String> = wrapApiRequest {
-        ssoLogin.initiate(SSOLogin.InitiateParam.WithRedirect(successRedirect, errorRedirect, uuid))
+        ssoLogin.initiate(SSOLoginApi.InitiateParam.WithRedirect(successRedirect, errorRedirect, uuid))
     }
 
     override suspend fun initiate(uuid: String): Either<NetworkFailure, String> = wrapApiRequest {
-        ssoLogin.initiate(SSOLogin.InitiateParam.WithoutRedirect(uuid))
+        ssoLogin.initiate(SSOLoginApi.InitiateParam.WithoutRedirect(uuid))
     }
 
     override suspend fun finalize(cookie: String): Either<NetworkFailure, String> = wrapApiRequest {

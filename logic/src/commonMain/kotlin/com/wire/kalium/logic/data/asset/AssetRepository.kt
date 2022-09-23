@@ -19,7 +19,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.asset.AssetApi
+import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
 import okio.Path

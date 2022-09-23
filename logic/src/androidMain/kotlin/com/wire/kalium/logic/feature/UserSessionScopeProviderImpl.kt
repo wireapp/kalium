@@ -16,8 +16,8 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
-import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.kmmSettings.UserPrefProvider

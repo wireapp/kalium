@@ -5,7 +5,6 @@ import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface LoginApi {
-
     sealed class LoginParam(
         open val password: String,
         open val label: String
