@@ -13,6 +13,8 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 
@@ -244,6 +246,8 @@ class EventMapper(
         name = event.userData.name,
         handle = event.userData.handle,
         email = event.userData.email,
+        previewAssetId = event.userData.assets?.getPreviewAssetOrNull()?.key,
+        completeAssetId = event.userData.assets?.getCompleteAssetOrNull()?.key
     )
 
 }
