@@ -19,6 +19,7 @@ import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.websocket.Frame
 import io.ktor.websocket.close
@@ -62,7 +63,7 @@ internal class NotificationApiV0 internal constructor(
         querySince: String?
     ): NetworkResponse<NotificationResponse> {
         return wrapKaliumResponse({
-            if (it.status.value != 404) null
+            if (it.status.value != HttpStatusCode.NotFound.value) null
             else {
                 val body = it.body<NotificationResponse>().copy(isMissingNotifications = true)
                 NetworkResponse.Success(body, it)
