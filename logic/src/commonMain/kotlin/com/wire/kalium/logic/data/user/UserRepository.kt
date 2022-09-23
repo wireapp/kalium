@@ -301,9 +301,7 @@ internal class UserDataSource internal constructor(
         userDAO.updateUser(userMapper.toUpdateDaoFromEvent(event, user!!))
     }
 
-    companion
-
-    object {
+    companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
     }
 }
