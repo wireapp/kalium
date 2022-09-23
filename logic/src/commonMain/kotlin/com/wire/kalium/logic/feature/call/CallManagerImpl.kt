@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
@@ -21,6 +22,7 @@ interface CallManager {
     suspend fun rejectCall(conversationId: ConversationId)
     suspend fun muteCall(shouldMute: Boolean)
     suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState)
+    suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList)
 }
 
 expect class CallManagerImpl : CallManager
