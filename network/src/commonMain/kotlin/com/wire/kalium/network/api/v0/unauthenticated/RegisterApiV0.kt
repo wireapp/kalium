@@ -5,7 +5,7 @@ import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.UserDTO
-import com.wire.kalium.network.api.base.unAuthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap

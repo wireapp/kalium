@@ -1,6 +1,6 @@
 package com.wire.kalium.network.api.base.model
 
-import com.wire.kalium.network.api.base.unAuthenticated.register.NewBindingTeamDTO
+import com.wire.kalium.network.api.base.unauthenticated.register.NewBindingTeamDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

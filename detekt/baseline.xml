@@ -952,8 +952,8 @@
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.details.ListUserRequest.kt:19</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.v0.unauthenticated.LoginApiImpl.kt:43</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApi.kt:101</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.base.unAuthenticated.SSOSettingsResponse.kt:3</ID>
-    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.base.unAuthenticated.SSOSettingsResponse.kt:7</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse.kt:3</ID>
+    <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse.kt:7</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.logout.RemoveCookiesRequest.kt:6</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.base.model.PushTokenBody.kt:3</ID>
     <ID>NoConsecutiveBlankLines:com.wire.kalium.network.api.user.register.ActivationRequest.kt:3</ID>
@@ -1119,9 +1119,9 @@
     <ID>ParameterListWrapping:com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer.kt:17</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.keypackage.KeyPackageDTO.kt:16</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.base.authenticated.TeamsApi.kt:40</ID>
-    <ID>ParameterListWrapping:com.wire.kalium.network.api.base.unAuthenticated.LoginApi.kt:10</ID>
-    <ID>ParameterListWrapping:com.wire.kalium.network.api.base.unAuthenticated.LoginApi.kt:14</ID>
-    <ID>ParameterListWrapping:com.wire.kalium.network.api.base.unAuthenticated.LoginApi.kt:19</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.base.unauthenticated.LoginApi.kt:10</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.base.unauthenticated.LoginApi.kt:14</ID>
+    <ID>ParameterListWrapping:com.wire.kalium.network.api.base.unauthenticated.LoginApi.kt:19</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.v0.unauthenticated.LoginApiImpl.kt:45</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.api.user.register.RegisterApi.kt:102</ID>
     <ID>ParameterListWrapping:com.wire.kalium.network.utils.NetworkResponse.kt:14</ID>

@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.base.unAuthenticated
+package com.wire.kalium.network.api.base.unauthenticated
 
 
 import kotlinx.serialization.SerialName

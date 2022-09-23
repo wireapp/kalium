@@ -1,12 +1,12 @@
 package com.wire.kalium.network.api.v0.unauthenticated.networkContainer
 
 import com.wire.kalium.network.ServerMetaDataManager
-import com.wire.kalium.network.api.base.unAuthenticated.LoginApi
-import com.wire.kalium.network.api.base.unAuthenticated.SSOLogin
-import com.wire.kalium.network.api.base.unAuthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unauthenticated.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.v0.unauthenticated.LoginApiV0
 import com.wire.kalium.network.api.v0.unauthenticated.RegisterApiV0
-import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginV0
+import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProvider
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProviderImpl
@@ -28,5 +28,5 @@ class UnauthenticatedNetworkContainerV0 internal constructor(
     ) {
     override val loginApi: LoginApi get() = LoginApiV0(unauthenticatedNetworkClient)
     override val registerApi: RegisterApi get() = RegisterApiV0(unauthenticatedNetworkClient)
-    override val sso: SSOLogin get() = SSOLoginV0(unauthenticatedNetworkClient)
+    override val sso: SSOLoginApi get() = SSOLoginApiV0(unauthenticatedNetworkClient)
 }

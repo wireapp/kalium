@@ -2,12 +2,9 @@ package com.wire.kalium.network.networkContainer
 
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.api.base.unAuthenticated.LoginApi
-import com.wire.kalium.network.api.base.unAuthenticated.SSOLogin
-import com.wire.kalium.network.api.base.unAuthenticated.register.RegisterApi
-import com.wire.kalium.network.api.v0.unauthenticated.LoginApiV0
-import com.wire.kalium.network.api.v0.unauthenticated.RegisterApiV0
-import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginV0
+import com.wire.kalium.network.api.base.unauthenticated.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
@@ -15,7 +12,7 @@ import io.ktor.client.engine.HttpClientEngine
 interface UnauthenticatedNetworkContainer {
     val loginApi: LoginApi
     val registerApi: RegisterApi
-    val sso: SSOLogin
+    val sso: SSOLoginApi
 }
 
 internal interface UnauthenticatedNetworkClientProvider {

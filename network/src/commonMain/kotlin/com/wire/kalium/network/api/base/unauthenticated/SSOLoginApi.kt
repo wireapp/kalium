@@ -1,9 +1,9 @@
-package com.wire.kalium.network.api.base.unAuthenticated
+package com.wire.kalium.network.api.base.unauthenticated
 
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
-interface SSOLogin {
+interface SSOLoginApi {
 
     sealed class InitiateParam(open val uuid: String) {
         data class WithoutRedirect(override val uuid: String) : InitiateParam(uuid)

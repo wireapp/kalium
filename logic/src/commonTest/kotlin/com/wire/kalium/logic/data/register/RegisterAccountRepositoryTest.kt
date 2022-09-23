@@ -10,7 +10,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.UserDTO
-import com.wire.kalium.network.api.base.unAuthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any

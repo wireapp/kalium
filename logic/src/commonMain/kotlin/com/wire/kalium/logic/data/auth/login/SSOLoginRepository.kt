@@ -4,7 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
-import com.wire.kalium.network.api.base.unAuthenticated.SSOSettingsResponse
+import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLogin
 
 interface SSOLoginRepository {

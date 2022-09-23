@@ -7,7 +7,7 @@ import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.UserDTO
-import com.wire.kalium.network.api.base.unAuthenticated.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.LoginApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful

@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.base.unAuthenticated.register
+package com.wire.kalium.network.api.base.unauthenticated.register
 
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.NewUserDTO

@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.util.stubs.newTestServer
-import com.wire.kalium.network.api.base.unAuthenticated.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock
