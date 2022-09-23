@@ -87,7 +87,6 @@ internal object MapperProvider {
             idMapper(),
             ConversationStatusMapperImpl(idMapper()),
             ProtocolInfoMapperImpl(),
-            CallMapperImpl(),
             AvailabilityStatusMapperImpl(),
             DomainUserTypeMapperImpl(),
             ConnectionStatusMapperImpl()

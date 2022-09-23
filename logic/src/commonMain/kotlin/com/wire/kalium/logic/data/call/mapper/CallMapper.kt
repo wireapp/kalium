@@ -38,7 +38,6 @@ interface CallMapper {
     fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type
     fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status
     fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity
-    fun toCallStatus(callStatus: CallEntity.Status?): CallStatus
 }
 
 class CallMapperImpl : CallMapper {
@@ -145,7 +144,7 @@ class CallMapperImpl : CallMapper {
         CallStatus.CLOSED -> CallEntity.Status.CLOSED
     }
 
-    override fun toCallStatus(callStatus: CallEntity.Status?): CallStatus = when (callStatus) {
+    private fun toCallStatus(callStatus: CallEntity.Status): CallStatus = when (callStatus) {
         CallEntity.Status.STARTED -> CallStatus.STARTED
         CallEntity.Status.INCOMING -> CallStatus.INCOMING
         CallEntity.Status.MISSED -> CallStatus.MISSED
@@ -153,7 +152,6 @@ class CallMapperImpl : CallMapper {
         CallEntity.Status.ESTABLISHED -> CallStatus.ESTABLISHED
         CallEntity.Status.STILL_ONGOING -> CallStatus.STILL_ONGOING
         CallEntity.Status.CLOSED -> CallStatus.CLOSED
-        else -> CallStatus.CLOSED
     }
 
     override fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity = QualifiedIDEntity(

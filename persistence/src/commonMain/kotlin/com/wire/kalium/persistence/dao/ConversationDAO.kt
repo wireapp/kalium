@@ -21,7 +21,8 @@ data class ConversationEntity(
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>
+    val accessRole: List<AccessRole>,
+    val isCreator: Boolean = false
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -83,7 +84,10 @@ data class ConversationViewEntity(
     val isCreator: Long,
     val lastNotificationDate: String?,
     val unreadMessageCount: Long,
-    val isMember: Long
+    val isMember: Long,
+    val protocolInfo: ConversationEntity.ProtocolInfo,
+    val accessList: List<ConversationEntity.Access>,
+    val accessRoleList: List<ConversationEntity.AccessRole>
     )
 
 // TODO: rename to MemberEntity

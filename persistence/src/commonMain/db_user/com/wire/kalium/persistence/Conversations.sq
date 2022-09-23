@@ -137,7 +137,15 @@ WHEN (SELECT conversation FROM Member
         (SELECT Conversation.qualified_id FROM Conversation
          WHERE Conversation.type IS "SELF")) THEN 0
     ELSE 1
-    END AS isMember
+    END AS isMember,
+Conversation.protocol,
+Conversation.mls_cipher_suite,
+Conversation.mls_epoch,
+Conversation.mls_group_id,
+Conversation.mls_last_keying_material_update,
+Conversation.mls_group_state,
+Conversation.access_list,
+Conversation.access_role_list
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"

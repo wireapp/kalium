@@ -65,8 +65,16 @@ private class ConversationMapper {
         isCreator: Long,
         lastNotifiedMessageDate: String?,
         unreadMessageCount: Long,
-        isMember: Long
-        ): ConversationViewEntity =
+        isMember: Long,
+        protocol: ConversationEntity.Protocol,
+        mlsCipherSuite: ConversationEntity.CipherSuite,
+        mlsEpoch: Long,
+        mlsGroupId: String?,
+        mlsLastKeyingMaterialUpdate: Long,
+        mlsGroupState: ConversationEntity.GroupState,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>,
+    ): ConversationViewEntity =
         ConversationViewEntity(
             id,
             name,
@@ -86,7 +94,17 @@ private class ConversationMapper {
             isCreator,
             lastNotifiedMessageDate,
             unreadMessageCount,
-            isMember
+            isMember,
+            protocolInfo = mapProtocolInfo(
+                protocol,
+                mlsGroupId,
+                mlsGroupState,
+                mlsEpoch,
+                mlsLastKeyingMaterialUpdate,
+                mlsCipherSuite
+            ),
+            accessList,
+            accessRoleList
         )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationEntity? {
