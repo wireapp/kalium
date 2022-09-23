@@ -407,7 +407,10 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(conversationRepository)
+        get() = JoinExistingMLSConversationsUseCase(
+            kaliumConfigs,
+            conversationRepository
+        )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
