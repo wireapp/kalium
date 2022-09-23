@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.network.api.message.QualifiedUserIdToClientMap
+import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 
 interface SendMessageFailureMapper {

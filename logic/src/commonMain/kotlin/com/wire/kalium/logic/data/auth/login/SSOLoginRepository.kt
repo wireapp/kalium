@@ -3,9 +3,9 @@ package com.wire.kalium.logic.data.auth.login
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.AuthenticationResultDTO
-import com.wire.kalium.network.api.user.login.SSOLoginApi
-import com.wire.kalium.network.api.user.login.SSOSettingsResponse
+import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
+import com.wire.kalium.network.api.base.unAuthenticated.SSOSettingsResponse
+import com.wire.kalium.network.api.v0.unauthenticated.SSOLogin
 
 interface SSOLoginRepository {
 
@@ -27,7 +27,7 @@ interface SSOLoginRepository {
 }
 
 class SSOLoginRepositoryImpl(
-    private val ssoLoginApi: SSOLoginApi
+    private val ssoLogin: SSOLogin
 ) : SSOLoginRepository {
 
     override suspend fun initiate(
@@ -35,26 +35,26 @@ class SSOLoginRepositoryImpl(
         successRedirect: String,
         errorRedirect: String
     ): Either<NetworkFailure, String> = wrapApiRequest {
-        ssoLoginApi.initiate(SSOLoginApi.InitiateParam.WithRedirect(successRedirect, errorRedirect, uuid))
+        ssoLogin.initiate(SSOLogin.InitiateParam.WithRedirect(successRedirect, errorRedirect, uuid))
     }
 
     override suspend fun initiate(uuid: String): Either<NetworkFailure, String> = wrapApiRequest {
-        ssoLoginApi.initiate(SSOLoginApi.InitiateParam.WithoutRedirect(uuid))
+        ssoLogin.initiate(SSOLogin.InitiateParam.WithoutRedirect(uuid))
     }
 
     override suspend fun finalize(cookie: String): Either<NetworkFailure, String> = wrapApiRequest {
-        ssoLoginApi.finalize(cookie)
+        ssoLogin.finalize(cookie)
     }
 
     override suspend fun provideLoginSession(cookie: String): Either<NetworkFailure, AuthenticationResultDTO> = wrapApiRequest {
-        ssoLoginApi.provideLoginSession(cookie)
+        ssoLogin.provideLoginSession(cookie)
     }
 
     override suspend fun metaData(): Either<NetworkFailure, String> = wrapApiRequest {
-        ssoLoginApi.metaData()
+        ssoLogin.metaData()
     }
 
     override suspend fun settings(): Either<NetworkFailure, SSOSettingsResponse> = wrapApiRequest {
-        ssoLoginApi.settings()
+        ssoLogin.settings()
     }
 }

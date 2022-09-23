@@ -1,8 +1,7 @@
 package com.wire.kalium.api.tools.json.api.message
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.message.SendMessageResponse
-import com.wire.kalium.network.api.message.UserIdToClientMap
+import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
 
 object SendMessageResponseJson {
 

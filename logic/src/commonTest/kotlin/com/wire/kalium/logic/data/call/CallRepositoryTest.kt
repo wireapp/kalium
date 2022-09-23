@@ -22,7 +22,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.call.CallApi
+import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity

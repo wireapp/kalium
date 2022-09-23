@@ -2,8 +2,8 @@ package com.wire.kalium.api.tools.json.api.user.logout
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.user.logout.LogoutApi
-import com.wire.kalium.network.api.user.logout.LogoutImpl
+import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
+import com.wire.kalium.network.api.user.logout.LogoutV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpHeaders
@@ -31,7 +31,7 @@ class LogoutApiTest : ApiTest {
                     assertHeaderEqual(HttpHeaders.Cookie, "zuid=${sessionManager.session().first.refreshToken}")
                 }
             )
-            val logout: LogoutApi = LogoutImpl(networkClient, sessionManager)
+            val logout: LogoutApi = LogoutV0(networkClient, sessionManager)
             logout.logout()
         }
 
@@ -43,7 +43,7 @@ class LogoutApiTest : ApiTest {
             ERROR_RESPONSE.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val logout: LogoutApi = LogoutImpl(networkClient, sessionManager)
+        val logout: LogoutApi = LogoutV0(networkClient, sessionManager)
         val errorResponse = logout.logout()
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)

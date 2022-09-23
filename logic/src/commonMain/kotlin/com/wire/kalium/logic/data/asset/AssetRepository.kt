@@ -24,7 +24,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
 import okio.Path
 import okio.Path.Companion.toPath
-import com.wire.kalium.network.api.AssetId as NetworkAssetId
+import com.wire.kalium.network.api.base.model.AssetId as NetworkAssetId
 
 interface AssetRepository {
     /**

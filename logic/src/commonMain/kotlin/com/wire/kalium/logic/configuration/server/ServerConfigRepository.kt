@@ -13,8 +13,8 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.configuration.ServerConfigApi
-import com.wire.kalium.network.api.versioning.VersionApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow

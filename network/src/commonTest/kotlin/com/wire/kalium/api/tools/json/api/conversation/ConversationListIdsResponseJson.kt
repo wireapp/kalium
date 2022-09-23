@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.api.conversation
 
 import com.wire.kalium.api.tools.json.AnyResponseProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.conversation.ConversationsDetailsRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
 
 object ConversationListIdsResponseJson {
 

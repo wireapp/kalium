@@ -1,10 +1,10 @@
 package com.wire.kalium.api.tools.json.api.connection
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.user.connection.ConnectionApi
-import com.wire.kalium.network.api.user.connection.ConnectionApiImpl
-import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.user.connection.ConnectionApiV0
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -26,7 +26,7 @@ class ConnectionApiTest : ApiTest {
             }
         )
 
-        val connectionApi: ConnectionApi = ConnectionApiImpl(networkClient)
+        val connectionApi: ConnectionApi = ConnectionApiV0(networkClient)
         connectionApi.fetchSelfUserConnections(pagingState = null)
     }
 
@@ -43,7 +43,7 @@ class ConnectionApiTest : ApiTest {
             }
         )
 
-        val connectionApi: ConnectionApi = ConnectionApiImpl(networkClient)
+        val connectionApi: ConnectionApi = ConnectionApiV0(networkClient)
         connectionApi.fetchSelfUserConnections(pagingState = GET_CONNECTIONS_WITH_PAGING_REQUEST.serializableData)
     }
 
@@ -60,7 +60,7 @@ class ConnectionApiTest : ApiTest {
                 assertPathEqual("$PATH_CONNECTIONS_ENDPOINT/${userId.domain}/${userId.value}")
             }
         )
-        val connectionApi = ConnectionApiImpl(httpClient)
+        val connectionApi = ConnectionApiV0(httpClient)
 
         // when
         val response = connectionApi.createConnection(userId)
@@ -85,7 +85,7 @@ class ConnectionApiTest : ApiTest {
                     assertJsonBodyContent(GET_CONNECTION_STATUS_REQUEST.rawJson)
                 }
             )
-            val connectionApi = ConnectionApiImpl(httpClient)
+            val connectionApi = ConnectionApiV0(httpClient)
 
             // when
             val response = connectionApi.updateConnection(userId, ConnectionStateDTO.ACCEPTED)

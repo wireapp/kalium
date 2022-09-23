@@ -8,11 +8,12 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.network.api.model.AssetSizeDTO
-import com.wire.kalium.network.api.model.UserAssetDTO
-import com.wire.kalium.network.api.model.UserAssetTypeDTO
-import com.wire.kalium.network.api.user.LegalHoldStatusResponse
-import com.wire.kalium.network.api.user.details.UserProfileDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
+import com.wire.kalium.network.api.base.model.AssetSizeDTO
+import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.UserAssetDTO
+import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -22,7 +23,10 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 object TestUser {
     val USER_ID = UserId("value", "domain")
     val ENTITY_ID = QualifiedIDEntity("entityUserValue", "entityDomain")
-    val NETWORK_ID = com.wire.kalium.network.api.UserId(value = "networkValue", domain = "networkDomain")
+    val NETWORK_ID = com.wire.kalium.network.api.base.model.UserId(
+        value = "networkValue",
+        domain = "networkDomain"
+    )
     const val JSON_QUALIFIED_ID = """{"value":"jsonValue" , "domain":"jsonDomain" }"""
 
     val SELF = SelfUser(

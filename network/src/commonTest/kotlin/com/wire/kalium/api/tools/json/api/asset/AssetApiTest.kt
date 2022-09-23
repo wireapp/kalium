@@ -1,11 +1,11 @@
 package com.wire.kalium.api.tools.json.api.asset
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.AssetId
+import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.asset.AssetApi
-import com.wire.kalium.network.api.asset.AssetApiImpl
-import com.wire.kalium.network.api.asset.AssetMetadataRequest
-import com.wire.kalium.network.api.model.AssetRetentionType
+import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.base.model.AssetRetentionType
+import com.wire.kalium.network.api.v0.authenticated.AssetApiImplV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
@@ -42,7 +42,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(networkClient)
+        val assetApi: AssetApi = AssetApiImplV0(networkClient)
         val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
 
         // Then
@@ -77,7 +77,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(networkClient)
+        val assetApi: AssetApi = AssetApiImplV0(networkClient)
         val response = assetApi.uploadAsset(assetMetadata, encryptedDataSource, encryptedData.size.toLong())
 
         // Then
@@ -103,7 +103,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(networkClient)
+        val assetApi: AssetApi = AssetApiImplV0(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
         // todo: assert response
     }
@@ -125,7 +125,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(networkClient)
+        val assetApi: AssetApi = AssetApiImplV0(networkClient)
         val assetIdFallback = assetId.copy(domain = "")
         val response = assetApi.downloadAsset(assetIdFallback, ASSET_TOKEN, tempFileSink)
         // todo: assert response
@@ -148,7 +148,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(networkClient)
+        val assetApi: AssetApi = AssetApiImplV0(networkClient)
         val assetIdFallback = assetId.copy(domain = "")
         val response = assetApi.deleteAsset(assetIdFallback, ASSET_TOKEN)
 
@@ -172,7 +172,7 @@ class AssetApiTest : ApiTest {
         )
 
         // When
-        val assetApi: AssetApi = AssetApiImpl(networkClient)
+        val assetApi: AssetApi = AssetApiImplV0(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
         // todo: assert response
     }

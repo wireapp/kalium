@@ -2,11 +2,11 @@ package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
-import com.wire.kalium.network.api.NonQualifiedUserId
-import com.wire.kalium.network.api.model.TeamDTO
-import com.wire.kalium.network.api.teams.TeamsApi
-import com.wire.kalium.network.api.user.LegalHoldStatusResponse
-import com.wire.kalium.network.api.TeamId as TeamIdDTO
+import com.wire.kalium.network.api.base.model.NonQualifiedUserId
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.TeamDTO
+import com.wire.kalium.network.api.base.model.TeamId as TeamIdDTO
 
 @Suppress("LongParameterList")
 object TestTeam {

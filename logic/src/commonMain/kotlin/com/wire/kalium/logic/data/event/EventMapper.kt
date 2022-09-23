@@ -10,9 +10,9 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.notification.EventResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 

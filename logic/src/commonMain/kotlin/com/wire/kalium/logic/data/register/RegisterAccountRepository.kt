@@ -9,7 +9,7 @@ import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.user.register.RegisterApi
+import com.wire.kalium.network.api.base.unAuthenticated.register.RegisterApi
 
 internal interface RegisterAccountRepository {
     suspend fun requestEmailActivationCode(email: String): Either<NetworkFailure, Unit>

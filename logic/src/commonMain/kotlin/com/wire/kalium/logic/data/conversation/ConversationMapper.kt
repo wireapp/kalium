@@ -8,19 +8,19 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.conversation.ConvTeamInfo
-import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.conversation.ReceiptMode
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
-import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 interface ConversationMapper {

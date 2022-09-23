@@ -2,8 +2,8 @@ package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.ErrorResponseJson
-import com.wire.kalium.network.api.user.client.ClientApi
-import com.wire.kalium.network.api.user.client.ClientApiImpl
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.user.client.ClientApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
@@ -31,7 +31,7 @@ class ClientApiTest : ApiTest {
                     assertPathEqual(PATH_CLIENTS)
                 }
             )
-            val clientApi: ClientApi = ClientApiImpl(networkClient)
+            val clientApi: ClientApi = ClientApiV0(networkClient)
             val response = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
             assertTrue(response.isSuccessful())
             assertEquals(response.value, VALID_REGISTER_CLIENT_RESPONSE.serializableData)
@@ -43,7 +43,7 @@ class ClientApiTest : ApiTest {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val clientApi: ClientApi = ClientApiImpl(networkClient)
+        val clientApi: ClientApi = ClientApiV0(networkClient)
         val errorResponse = clientApi.registerClient(REGISTER_CLIENT_REQUEST.serializableData)
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
@@ -63,7 +63,7 @@ class ClientApiTest : ApiTest {
                     assertPathEqual("$PATH_CLIENTS/$VALID_CLIENT_ID")
                 }
             )
-            val clientApi: ClientApi = ClientApiImpl(networkClient)
+            val clientApi: ClientApi = ClientApiV0(networkClient)
             val response = clientApi.updateClient(UPDATE_CLIENT_REQUEST.serializableData, VALID_CLIENT_ID)
             assertTrue(response.isSuccessful())
         }
@@ -82,7 +82,7 @@ class ClientApiTest : ApiTest {
                     assertPathEqual("$PATH_CLIENTS/$VALID_CLIENT_ID")
                 }
             )
-            val clientApi: ClientApi = ClientApiImpl(httpClient)
+            val clientApi: ClientApi = ClientApiV0(httpClient)
             val response = clientApi.deleteClient(password, VALID_CLIENT_ID)
             assertTrue(response.isSuccessful())
         }
@@ -95,7 +95,7 @@ class ClientApiTest : ApiTest {
                 assertJsonBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson)
             }
         )
-        val clientApi = ClientApiImpl(networkClient)
+        val clientApi = ClientApiV0(networkClient)
         clientApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
 
         val actual = clientApi.registerToken(VALID_PUSH_TOKEN_REQUEST.serializableData)
@@ -112,7 +112,7 @@ class ClientApiTest : ApiTest {
                 assertPathEqual("/push/tokens/$pid")
             }
         )
-        val clientApi = ClientApiImpl(networkClient)
+        val clientApi = ClientApiV0(networkClient)
         val actual = clientApi.deregisterToken(pid)
         assertIs<NetworkResponse.Success<Unit>>(actual)
         assertTrue(actual.isSuccessful())
