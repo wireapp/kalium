@@ -32,7 +32,7 @@ class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
             recipients = qualifiedEntries,
             sender = otrClientIdMapper.toOtrClientId(envelopeParameters.sender),
             blob = envelopeParameters.externalBlob?.let { ByteArr(it) },
-            //TODO(messaging): Handle different report types, etc.
+            // TODO(messaging): Handle different report types, etc.
             clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll()),
             nativePush = envelopeParameters.nativePush,
             transient = envelopeParameters.transient

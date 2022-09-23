@@ -16,7 +16,6 @@ data class QualifiedUserIdListRequest(
     @SerialName("qualified_ids") val qualifiedIds: List<QualifiedID>
 ) : ListUserRequest()
 
-
 fun ListUserRequest.Companion.qualifiedHandles(qualifiedHandles: List<QualifiedHandle>) = QualifiedHandleListRequest(qualifiedHandles)
 
 @Serializable
