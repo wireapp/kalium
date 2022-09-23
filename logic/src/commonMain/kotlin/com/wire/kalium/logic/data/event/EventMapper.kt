@@ -222,7 +222,7 @@ class EventMapper(
         id = id,
         teamId = event.teamId,
         memberId = event.permissionsResponse.nonQualifiedUserId,
-        userType = userTypeMapper.teamRoleCodeToUserType(event.permissionsResponse.permissions.own)
+        permissionCode = event.permissionsResponse.permissions.own
     )
 
     private fun teamUpdate(
