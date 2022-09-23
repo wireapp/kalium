@@ -31,7 +31,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
@@ -330,7 +330,7 @@ internal class ConversationDataSource internal constructor(
                 combine(
                     observeUnreadMessageCount(conversation),
                     observeLastUnreadMessage(conversation),
-                    observeUnreadMentionsCount(conversation, selfUser.id)
+                    observeUnreadMentionsCount(conversation)
                 ) { unreadMessageCount: Long, lastUnreadMessage: Message?, unreadMentionsCount: Long ->
                     Either.Right(
                         ConversationDetails.Group(
@@ -367,7 +367,7 @@ internal class ConversationDataSource internal constructor(
                         combine(
                             observeUnreadMessageCount(conversation),
                             observeLastUnreadMessage(conversation),
-                            observeUnreadMentionsCount(conversation, selfUser.id)
+                            observeUnreadMentionsCount(conversation)
                         ) { unreadMessageCount: Long, lastUnreadMessage: Message?, unreadMentionsCount: Long ->
                             Either.Right(
                                 conversationMapper.toConversationDetailsOneToOne(
@@ -393,7 +393,7 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    private suspend fun observeUnreadMentionsCount(conversation: Conversation, selfUserId: UserId): Flow<Long> {
+    private suspend fun observeUnreadMentionsCount(conversation: Conversation): Flow<Long> {
         return if (conversation.supportsUnreadMessageCount) {
             messageDAO.observeUnreadMentionsCount(idMapper.toDaoModel(conversation.id))
         } else {
