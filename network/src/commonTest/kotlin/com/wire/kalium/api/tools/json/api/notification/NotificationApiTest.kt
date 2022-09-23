@@ -3,9 +3,9 @@ package com.wire.kalium.api.tools.json.api.notification
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.notification.NotificationApiImpl
-import com.wire.kalium.network.api.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -41,7 +41,7 @@ class NotificationApiTest : ApiTest {
                 assertQueryParameter(SINCE_QUERY_KEY, since)
             }
         )
-        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
 
         notificationsApi.notificationsByBatch(limit, clientId, since)
     }
@@ -61,7 +61,7 @@ class NotificationApiTest : ApiTest {
                 assertQueryDoesNotExist(SINCE_QUERY_KEY)
             }
         )
-        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
 
         notificationsApi.getAllNotifications(limit, clientId)
     }
@@ -72,7 +72,7 @@ class NotificationApiTest : ApiTest {
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
 
         val result = notificationsApi.notificationsByBatch(1, "", "")
 
@@ -89,7 +89,7 @@ class NotificationApiTest : ApiTest {
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
 
         val result = notificationsApi.getAllNotifications(1, "")
 
@@ -106,7 +106,7 @@ class NotificationApiTest : ApiTest {
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.NotFound
         )
-        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
 
         val result = notificationsApi.getAllNotifications(1, "")
 
@@ -120,7 +120,7 @@ class NotificationApiTest : ApiTest {
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.OK
         )
-        val notificationsApi = NotificationApiImpl(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
 
         val result = notificationsApi.getAllNotifications(1, "")
 

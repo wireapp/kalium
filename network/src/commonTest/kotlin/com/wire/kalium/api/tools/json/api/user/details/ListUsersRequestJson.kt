@@ -1,9 +1,9 @@
 package com.wire.kalium.api.tools.json.api.user.details
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.user.details.QualifiedHandleListRequest
-import com.wire.kalium.network.api.user.details.QualifiedUserIdListRequest
+import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedHandleListRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
 
 object ListUsersRequestJson {
 
@@ -20,15 +20,23 @@ object ListUsersRequestJson {
         """{"qualified_ids": [$handlesArrayContent]}"""
     }
 
-    val validIdsJsonProvider = ValidJsonProvider(QualifiedUserIdListRequest(listOf(
-        QualifiedID("id1","domain1"),
-        QualifiedID("id11","domain1"),
-        QualifiedID("id2","domain2")
-    )), qualifiedIdsProvider)
+    val validIdsJsonProvider = ValidJsonProvider(
+        QualifiedUserIdListRequest(
+            listOf(
+                QualifiedID("id1", "domain1"),
+                QualifiedID("id11", "domain1"),
+                QualifiedID("id2", "domain2")
+            )
+        ), qualifiedIdsProvider
+    )
 
-    val validHandlesJsonProvider = ValidJsonProvider(QualifiedUserIdListRequest(listOf(
-        QualifiedID("id1","domain1"),
-        QualifiedID("id11","domain1"),
-        QualifiedID("id2","domain2")
-    )), qualifiedIdsProvider)
+    val validHandlesJsonProvider = ValidJsonProvider(
+        QualifiedUserIdListRequest(
+            listOf(
+                QualifiedID("id1", "domain1"),
+                QualifiedID("id11", "domain1"),
+                QualifiedID("id2", "domain2")
+            )
+        ), qualifiedIdsProvider
+    )
 }

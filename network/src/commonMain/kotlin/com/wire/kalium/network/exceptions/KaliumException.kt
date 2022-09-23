@@ -2,9 +2,9 @@
 
 package com.wire.kalium.network.exceptions
 
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.message.SendMessageResponse
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION

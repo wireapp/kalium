@@ -3,9 +3,9 @@ package com.wire.kalium.logic.data.prekey
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.prekey.DomainToUserIdToClientsToPreKeyMap
-import com.wire.kalium.network.api.prekey.PreKeyApi
-import com.wire.kalium.network.api.prekey.PreKeyDTO
+import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException

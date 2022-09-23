@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.network.api.notification.WebSocketEvent
+import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import io.mockative.Mock
 import io.mockative.configure
 import io.mockative.given

@@ -8,9 +8,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.user.register.RegisterApi
+import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
@@ -25,7 +25,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import com.wire.kalium.network.api.UserId as UserIdDTO
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterAccountRepositoryTest {

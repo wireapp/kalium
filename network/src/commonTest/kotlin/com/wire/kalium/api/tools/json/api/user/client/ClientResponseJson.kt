@@ -1,12 +1,12 @@
 package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.model.LocationResponse
-import com.wire.kalium.network.api.user.client.Capabilities
-import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.user.client.ClientResponse
-import com.wire.kalium.network.api.user.client.ClientTypeDTO
-import com.wire.kalium.network.api.user.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.Capabilities
+import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.model.LocationResponse
 
 object ClientResponseJson {
     private val jsonProvider = { serializable: ClientResponse ->
