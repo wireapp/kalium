@@ -65,6 +65,7 @@ data class ConversationEntity(
     }
 }
 
+@Suppress("FunctionParameterNaming")
 data class ConversationViewEntity(
     val id: QualifiedIDEntity,
     val name: String?,
@@ -88,7 +89,7 @@ data class ConversationViewEntity(
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,
     val accessRoleList: List<ConversationEntity.AccessRole>
-    )
+)
 
 // TODO: rename to MemberEntity
 data class Member(

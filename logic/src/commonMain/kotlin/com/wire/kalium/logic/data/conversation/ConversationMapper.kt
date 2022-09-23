@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.dao.ProposalTimerEntity
 import com.wire.kalium.persistence.util.requireField
 import kotlinx.datetime.Instant
 
+@Suppress("TooManyFunctions")
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
@@ -108,6 +109,7 @@ internal class ConversationMapperImpl(
         accessRole = daoModel.accessRole.map { it.toDAO() }
     )
 
+    @Suppress("ComplexMethod", "LongMethod")
     override fun fromDaoModel(daoModel: ConversationViewEntity): ConversationDetails = with(daoModel) {
         when (type) {
 
@@ -120,8 +122,8 @@ internal class ConversationMapperImpl(
                         teamId = teamId?.let { TeamId(it) },
                         protocol = protocolInfoMapper.fromEntity(protocolInfo),
                         mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
-                        removedBy = null,// todo: ask how to calculate?
-                        creatorId = PlainId(""),// deprecated
+                        removedBy = null, // todo: ask how to calculate?
+                        creatorId = PlainId(""), // deprecated
                         lastNotificationDate,
                         lastModifiedDate,
                         lastReadDate,
@@ -142,8 +144,8 @@ internal class ConversationMapperImpl(
                         teamId = teamId?.let { TeamId(it) },
                         protocol = protocolInfoMapper.fromEntity(protocolInfo),
                         mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
-                        removedBy = null,// todo: ask how to calculate?
-                        creatorId = PlainId(""),// deprecated
+                        removedBy = null, // todo: ask how to calculate?
+                        creatorId = PlainId(""), // todo: deprecated
                         lastNotificationDate,
                         lastModifiedDate,
                         lastReadDate,
@@ -183,8 +185,8 @@ internal class ConversationMapperImpl(
                         teamId = teamId?.let { TeamId(it) },
                         protocol = protocolInfoMapper.fromEntity(protocolInfo),
                         mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
-                        removedBy = null,// todo: ask how to calculate?
-                        creatorId = PlainId(""),// deprecated
+                        removedBy = null, // todo: ask how to calculate?
+                        creatorId = PlainId(""), // todo: deprecated
                         lastNotificationDate,
                         lastModifiedDate,
                         lastReadDate,
@@ -194,7 +196,7 @@ internal class ConversationMapperImpl(
                         isCreator = isCreator == 1L,
                     ),
                     legalHoldStatus = LegalHoldStatus.DISABLED,
-                    hasOngoingCall = callStatus != null,// we can do better!
+                    hasOngoingCall = callStatus != null, // todo: we can do better!
                     unreadMessagesCount = unreadMessageCount,
                     unreadMentionsCount = 0L,
                     lastUnreadMessage = null,
@@ -228,9 +230,9 @@ internal class ConversationMapperImpl(
                         from = "",
                         lastUpdate = "",
                         qualifiedConversationId = idMapper.fromDaoModel(id),
-                        qualifiedToId = TODO(),
+                        qualifiedToId = otherUserId.let { idMapper.fromDaoModel(it!!) },
                         status = connectionStatusMapper.fromDaoModel(connectionStatus),
-                        toId = "",// todo
+                        toId = "", // todo
                         fromUser = OtherUser(
                             id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
                             name = name,
