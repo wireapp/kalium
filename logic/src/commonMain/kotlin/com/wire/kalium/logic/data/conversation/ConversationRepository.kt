@@ -536,7 +536,7 @@ internal class ConversationDataSource internal constructor(
                     idMapper.toDaoModel(conversationId)
                 )
             }.map {
-                when(response) {
+                when (response) {
                     is ConversationMemberRemovedDTO.Changed -> MemberChangeResult.Changed(response.time)
                     ConversationMemberRemovedDTO.Unchanged -> MemberChangeResult.Unchanged
                 }

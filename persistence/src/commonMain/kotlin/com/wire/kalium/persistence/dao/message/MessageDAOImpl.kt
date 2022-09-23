@@ -183,8 +183,8 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
                 )
                     .executeAsList()
                     .firstOrNull {
-                        it.memberChangeType == MessageEntity.MemberChangeType.REMOVED
-                                && it.memberChangeList?.toSet() == memberRemovedContent.memberUserIdList.toSet()
+                        it.memberChangeType == MessageEntity.MemberChangeType.REMOVED &&
+                                it.memberChangeList?.toSet() == memberRemovedContent.memberUserIdList.toSet()
                     }?.let {
                         // The message already exists in the local DB, if its id is different then just update id.
                         if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)

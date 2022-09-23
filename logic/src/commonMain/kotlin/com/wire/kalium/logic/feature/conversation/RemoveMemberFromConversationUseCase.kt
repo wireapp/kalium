@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
-import kotlinx.datetime.Clock
 
 interface RemoveMemberFromConversationUseCase {
 
@@ -40,9 +39,11 @@ class RemoveMemberFromConversationUseCaseImpl(
             RemoveMemberFromConversationUseCase.Result.Failure(it)
         }, {
             if (it is MemberChangeResult.Changed) {
-                // Backend doesn't forward a member-leave message event to clients that remove themselves from a conversation but everyone else
-                // on the group. Therefore, we need to map the member deletion api response manually, and create and persist the member-leave
-                // system message on these cases
+                /*
+                Backend doesn't forward a member-leave message event to clients that remove themselves from a conversation but everyone
+                else on the group. Therefore, we need to map the member deletion api response manually, and create and persist the
+                member-leave system message on these cases
+                 */
                 val message = Message.System(
                     id = uuid4().toString(), // We generate a random uuid for this new system message
                     content = MessageContent.MemberChange.Removed(members = listOf(userIdToRemove)),
