@@ -57,12 +57,13 @@ interface MessageDAO {
     ): Flow<MessageEntity?>
 
     suspend fun observeUnreadMessageCount(
-        conversationId: QualifiedIDEntity
+        conversationId: QualifiedIDEntity,
+        selfUserId: UserIDEntity
     ): Flow<Long>
 
     suspend fun observeUnreadMentionsCount(
         conversationId: QualifiedIDEntity,
-        userId: UserIDEntity
+        selfUserId: UserIDEntity
     ): Flow<Long>
 
     val platformExtensions: MessageExtensions
