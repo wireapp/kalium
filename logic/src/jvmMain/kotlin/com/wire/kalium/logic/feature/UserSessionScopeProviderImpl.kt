@@ -55,7 +55,7 @@ actual class UserSessionScopeProviderImpl(
             rootPath,
             kaliumConfigs.shouldEncryptData
         )
-        val userDatabase = UserDatabaseProvider(File(rootStoragePath), KaliumDispatcherImpl.io)
+        val userDatabase = UserDatabaseProvider(idMapper.toDaoModel(userId), File(rootStoragePath), KaliumDispatcherImpl.io)
 
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,

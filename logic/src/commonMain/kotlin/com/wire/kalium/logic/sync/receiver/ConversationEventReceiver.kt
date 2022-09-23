@@ -304,7 +304,7 @@ internal class ConversationEventReceiverImpl(
             }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
-        .deleteMembers(event.removedList, event.conversationId)
+        .deleteMembersFromEvent(event.removedList, event.conversationId)
         .flatMap {
             // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
             // and keep them to properly show this member-leave message
@@ -337,7 +337,7 @@ internal class ConversationEventReceiverImpl(
                         .w("Failure fetching conversation details on MemberChange Event: $event")
                 }
                 // Even if unable to fetch conversation details, at least attempt updating the member
-                conversationRepository.updateMember(event.member, event.conversationId)
+                conversationRepository.updateMemberFromEvent(event.member, event.conversationId)
             }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member update event: $it") }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MemberChangeResult
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
@@ -24,9 +25,9 @@ import kotlin.test.assertIs
 class RemoveMemberFromConversationUseCaseTest {
 
     @Test
-    fun givenMemberAndConversation_WhenRemoveMemberIsSuccessful_ThenReturnSuccess() = runTest {
+    fun givenMemberAndConversation_WhenRemoveMemberIsSuccessful_ThenReturnSuccessAndPersistMessage() = runTest {
         val (arrangement, removeMemberUseCase) = Arrangement()
-            .withRemoveMemberGroupIs(Either.Right(Unit))
+            .withRemoveMemberGroupIs(Either.Right(MemberChangeResult.Changed("2022-01-01T00:00:00.000Z")))
             .withPersistMessage(Either.Right(Unit))
             .arrange()
 
@@ -38,6 +39,32 @@ class RemoveMemberFromConversationUseCaseTest {
             .suspendFunction(arrangement.conversationRepository::deleteMember)
             .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberAndConversation_WhenRemoveMemberIsSuccessfulButUnchanged_ThenReturnSuccessAndDoNotPersistMessage() = runTest {
+        val (arrangement, removeMemberUseCase) = Arrangement()
+            .withRemoveMemberGroupIs(Either.Right(MemberChangeResult.Unchanged))
+            .arrange()
+
+        val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
+
+        assertIs<RemoveMemberFromConversationUseCase.Result.Success>(result)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::deleteMember)
+            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -70,7 +97,7 @@ class RemoveMemberFromConversationUseCaseTest {
             persistMessage
         )
 
-        fun withRemoveMemberGroupIs(either: Either<CoreFailure, Unit>) = apply {
+        fun withRemoveMemberGroupIs(either: Either<CoreFailure, MemberChangeResult>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::deleteMember)
                 .whenInvokedWith(any(), any())

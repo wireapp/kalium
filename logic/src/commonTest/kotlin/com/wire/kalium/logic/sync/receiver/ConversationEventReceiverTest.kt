@@ -348,7 +348,7 @@ class ConversationEventReceiverTest {
         eventReceiver.onEvent(event)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMember)
+            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
             .with(eq(updatedMember), eq(event.conversationId))
             .wasInvoked(exactly = once)
     }
@@ -367,7 +367,7 @@ class ConversationEventReceiverTest {
         eventReceiver.onEvent(event)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMember)
+            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
             .with(eq(updatedMember), eq(event.conversationId))
             .wasInvoked(exactly = once)
     }
@@ -614,7 +614,7 @@ class ConversationEventReceiverTest {
 
         fun withUpdateMemberSucceeding() = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMember)
+                .suspendFunction(conversationRepository::updateMemberFromEvent)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }

@@ -53,7 +53,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
 actual class UserDatabaseProvider(
-    userId: UserIDEntity,
+    private val userId: UserIDEntity,
     passphrase: String,
     dispatcher: CoroutineDispatcher
 ) {
@@ -168,7 +168,7 @@ actual class UserDatabaseProvider(
         get() = CallDAOImpl(database.callsQueries)
 
     actual val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId)
 
     actual val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)
