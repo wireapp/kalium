@@ -20,7 +20,7 @@ private class ConnectionMapper {
         toId = state.to_id,
         shouldNotify = state.should_notify
     )
-
+    @Suppress("FunctionParameterNaming", "LongParameterList")
     fun toModel(
         from_id: String,
         conversation_id: String,

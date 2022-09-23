@@ -170,7 +170,6 @@ fun interface SelfTeamIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }
 
-
 @Suppress("LongParameterList")
 abstract class UserSessionScopeCommon internal constructor(
     private val userId: UserId,

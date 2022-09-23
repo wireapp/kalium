@@ -149,7 +149,6 @@ internal class ConnectionDataSource(
         }
     }
 
-
     override suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequestsForNotification()
             .map {
