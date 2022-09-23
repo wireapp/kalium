@@ -2,10 +2,12 @@ package com.wire.kalium.logic.data.team
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.model.ErrorResponse
@@ -57,7 +59,13 @@ class TeamRepositoryTest {
     private val userMapper = mock(classOf<UserMapper>())
 
     @Mock
+    private val idMapper = mock(classOf<IdMapper>())
+
+    @Mock
     private val teamsApi = mock(classOf<TeamsApi>())
+
+    @Mock
+    private val userDetailsApi = mock(classOf<UserDetailsApi>())
 
     private lateinit var teamRepository: TeamRepository
 
@@ -67,8 +75,11 @@ class TeamRepositoryTest {
             teamDAO = teamDAO,
             teamMapper = teamMapper,
             teamsApi = teamsApi,
+            userDetailsApi = userDetailsApi,
             userDAO = userDAO,
             userMapper = userMapper,
+            idMapper = idMapper,
+            selfUserId = TestUser.USER_ID
         )
     }
 
@@ -81,7 +92,8 @@ class TeamRepositoryTest {
 
         val team = Team(
             id = "teamId",
-            name = "teamName"
+            name = "teamName",
+            icon = "icon"
         )
 
         given(teamsApi)
@@ -89,7 +101,7 @@ class TeamRepositoryTest {
             .whenInvokedWith(oneOf("teamId"))
             .then { NetworkResponse.Success(value = teamDto, headers = mapOf(), httpCode = 200) }
 
-        val teamEntity = TeamEntity(id = "teamId", name = "teamName")
+        val teamEntity = TeamEntity(id = "teamId", name = "teamName", "icon")
 
         given(teamMapper)
             .function(teamMapper::fromDtoToEntity)
@@ -169,7 +181,14 @@ class TeamRepositoryTest {
             .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
 
         given(userMapper)
-            .invocation { userMapper.fromTeamMemberToDaoModel(teamId = TeamId("teamId"), teamMember, "userDomain", null) }
+            .invocation {
+                userMapper.fromTeamMemberToDaoModel(
+                    teamId = TeamId("teamId"),
+                    teamMember.nonQualifiedUserId,
+                    null,
+                    "userDomain",
+                )
+            }
             .then { mappedTeamMember }
 
         val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
@@ -200,8 +219,8 @@ class TeamRepositoryTest {
 
     @Test
     fun givenSelfUserExists_whenGettingTeamById_thenTeamDataShouldBePassed() = runTest {
-        val teamEntity = TeamEntity(id = "teamId", name = "teamName")
-        val team = Team(id = "teamId", name = "teamName")
+        val teamEntity = TeamEntity(id = "teamId", name = "teamName", icon = "icon")
+        val team = Team(id = "teamId", name = "teamName", icon = "icon")
 
         given(teamDAO)
             .suspendFunction(teamDAO::getTeamById)

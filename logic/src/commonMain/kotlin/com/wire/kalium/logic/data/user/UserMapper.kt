@@ -55,12 +55,14 @@ interface UserMapper {
     fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
         teamId: TeamId,
-        teamMemberDTO: TeamsApi.TeamMemberDTO,
+        nonQualifiedUserId: NonQualifiedUserId,
+        permissionCode: Int?,
         userDomain: String,
-        permissionsCode: Int?,
     ): UserEntity
 
     fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient>
+
+    fun apiToEntity(user: UserProfileDTO, member: TeamsApi.TeamMemberDTO?, teamId: String?, selfUser: QualifiedID): UserEntity
 }
 
 internal class UserMapperImpl(
@@ -197,13 +199,13 @@ internal class UserMapperImpl(
      */
     override fun fromTeamMemberToDaoModel(
         teamId: TeamId,
-        teamMemberDTO: TeamsApi.TeamMemberDTO,
+        nonQualifiedUserId: NonQualifiedUserId,
+        permissionCode: Int?,
         userDomain: String,
-        permissionsCode: Int?,
     ): UserEntity =
         UserEntity(
             id = QualifiedIDEntity(
-                value = teamMemberDTO.nonQualifiedUserId,
+                value = nonQualifiedUserId,
                 domain = userDomain
             ),
             name = null,
@@ -216,7 +218,7 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode),
+            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
             deleted = false
         )
@@ -225,4 +227,32 @@ internal class UserMapperImpl(
         otherUsersClients.map {
             OtherUserClient(clientMapper.fromDeviceTypeEntity(it.deviceType), it.id)
         }
+
+    override fun apiToEntity(user: UserProfileDTO, member: TeamsApi.TeamMemberDTO?, teamId: String?, selfUser: QualifiedID): UserEntity {
+        return UserEntity(
+            id = idMapper.fromApiToDao(user.id),
+            name = user.name,
+            handle = user.handle,
+            email = user.email,
+            phone = null,
+            accentId = user.accentId,
+            team = teamId ?: user.teamId,
+            connectionStatus = member?.let { ConnectionEntity.State.ACCEPTED } ?: ConnectionEntity.State.NOT_CONNECTED,
+            previewAssetId = user.assets.getPreviewAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            completeAssetId = user.assets.getCompleteAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userType = member?.permissions?.let { userEntityTypeMapper.teamRoleCodeToUserType(it.own) }
+                ?: userEntityTypeMapper.fromTeamAndDomain(
+                    otherUserDomain = user.id.domain,
+                    selfUserDomain = selfUser.domain,
+                    selfUserTeamId = teamId,
+                    otherUserTeamId = teamId,
+                    isService = user.service != null
+                ),
+            botService = user.service?.let { BotEntity(it.id, it.provider) },
+            deleted = false
+        )
+    }
 }

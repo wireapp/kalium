@@ -11,7 +11,9 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
-internal class TeamsApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : TeamsApi {
+internal class TeamsApiV0 internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : TeamsApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
@@ -45,6 +47,11 @@ internal class TeamsApiV0 internal constructor(private val authenticatedNetworkC
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
             }
+        }
+
+    override suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamsApi.TeamMemberDTO> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
         }
 
     private companion object {
