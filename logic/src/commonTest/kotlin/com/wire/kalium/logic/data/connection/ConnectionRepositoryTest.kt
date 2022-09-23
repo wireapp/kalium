@@ -8,15 +8,15 @@ import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionResponse
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
+import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -55,7 +55,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withSuccessfulGetConversationById(arrangement.stubConversationID2)
 
-        //when
+        // when
         val result = connectionRepository.fetchSelfUserConnections()
 
         // then
@@ -77,7 +77,7 @@ class ConnectionRepositoryTest {
             .withNotFoundGetConversationError()
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
 
-        //when
+        // when
         val result = connectionRepository.fetchSelfUserConnections()
 
         // then
@@ -117,10 +117,6 @@ class ConnectionRepositoryTest {
         verify(arrangement.userDetailsApi)
             .suspendFunction(arrangement.userDetailsApi::getUserInfo)
             .with(any())
-            .wasInvoked(once)
-        verify(arrangement.connectionDAO)
-            .suspendFunction(arrangement.connectionDAO::updateConnectionLastUpdatedTime)
-            .with(any(), any())
             .wasInvoked(once)
     }
 
@@ -253,7 +249,6 @@ class ConnectionRepositoryTest {
         val userId = NetworkUserId("user_id", "domain_id")
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement.withErrorUpdatingConnectionStatusResponse(userId)
-
 
         // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.PENDING)
