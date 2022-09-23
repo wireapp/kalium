@@ -282,7 +282,6 @@ class ObserveConversationListDetailsUseCaseTest {
         @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
-
         fun withUnreadConversationCount(count: Long) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getUnreadConversationCount)

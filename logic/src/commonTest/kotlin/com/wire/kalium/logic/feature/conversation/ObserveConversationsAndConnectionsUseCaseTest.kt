@@ -1,8 +1,5 @@
 package com.wire.kalium.logic.feature.conversation
 
-
-
-
 // todo: apply below testCases from here to the new changes
 class ObserveConversationsAndConnectionsUseCaseTest {
 
