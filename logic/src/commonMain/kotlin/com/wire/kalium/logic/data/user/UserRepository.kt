@@ -298,7 +298,7 @@ internal class UserDataSource internal constructor(
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
         val userId = qualifiedIdMapper.fromStringToQualifiedID(event.userId)
         val user = userDAO.getUserByQualifiedID(idMapper.toDaoModel(userId)).firstOrNull()
-        if (user != null) {
+        if (user == null) {
             Either.Left(StorageFailure.DataNotFound)
         }
         userDAO.updateUser(userMapper.toUpdateDaoFromEvent(event, user!!))
