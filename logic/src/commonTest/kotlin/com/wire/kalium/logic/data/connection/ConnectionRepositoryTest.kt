@@ -1,11 +1,15 @@
 package com.wire.kalium.logic.data.connection
 
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ConversationId
@@ -22,7 +26,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -55,7 +58,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withSuccessfulGetConversationById(arrangement.stubConversationID2)
 
-        //when
+        // when
         val result = connectionRepository.fetchSelfUserConnections()
 
         // then
@@ -77,7 +80,7 @@ class ConnectionRepositoryTest {
             .withNotFoundGetConversationError()
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
 
-        //when
+        // when
         val result = connectionRepository.fetchSelfUserConnections()
 
         // then
@@ -99,6 +102,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withSuccessfulCreateConnectionResponse(userId)
+            .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -159,6 +163,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulCreateConnectionResponse(userId)
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withErrorOnPersistingConnectionResponse(userId)
+            .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -187,6 +192,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulUpdateConnectionStatusResponse(userId)
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
+            .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
 
         // when
         val result = connectionRepository.updateConnectionStatus(UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)
@@ -287,10 +293,7 @@ class ConnectionRepositoryTest {
         val userDAO = mock(classOf<UserDAO>())
 
         @Mock
-        val userMapper = mock(classOf<UserMapper>())
-
-        @Mock
-        val metaDAO = mock(classOf<MetadataDAO>())
+        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
@@ -298,8 +301,8 @@ class ConnectionRepositoryTest {
             connectionDAO = connectionDAO,
             userDetailsApi = userDetailsApi,
             userDAO = userDAO,
-            metadataDAO = metaDAO,
-            userMapper = userMapper
+            selfUserId = TestUser.SELF.id,
+            selfTeamIdProvider = selfTeamIdProvider
         )
 
         val stubConnectionOne = ConnectionDTO(
@@ -375,6 +378,13 @@ class ConnectionRepositoryTest {
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
         val stubConversationID2 = QualifiedIDEntity("conversationId2", "domain")
+
+        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) {
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { either }
+        }
 
         fun withSuccessfulCreateConnectionResponse(userId: NetworkUserId): Arrangement {
             given(connectionApi)
@@ -462,19 +472,11 @@ class ConnectionRepositoryTest {
                 .suspendFunction(conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
                 .whenInvokedWith(any(), any(), any())
 
-            given(metaDAO)
-                .suspendFunction(metaDAO::valueByKeyFlow)
-                .whenInvokedWith(any())
-                .then { flowOf(stubJsonQualifiedId) }
 
             given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(stubUserEntity) }
 
-            given(userMapper)
-                .function(userMapper::fromDaoModelToSelfUser)
-                .whenInvokedWith(any())
-                .then { stubSelfUser }
             given(userDAO)
                 .suspendFunction(userDAO::insertUser)
                 .whenInvokedWith(any())
