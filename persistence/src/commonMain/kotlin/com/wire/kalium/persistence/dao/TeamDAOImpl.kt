@@ -10,7 +10,8 @@ class TeamMapper {
     fun toModel(team: SQLDelightTeam): TeamEntity = with(team) {
         TeamEntity(
             id = id,
-            name = name
+            name = name,
+            icon = icon
         )
     }
 }
@@ -21,14 +22,16 @@ class TeamDAOImpl(private val queries: TeamsQueries) : TeamDAO {
 
     override suspend fun insertTeam(team: TeamEntity) = queries.insertTeam(
         id = team.id,
-        name = team.name
+        name = team.name,
+        icon = team.icon
     )
 
     override suspend fun insertTeams(teams: List<TeamEntity>) = queries.transaction {
         for (team: TeamEntity in teams) {
             queries.insertTeam(
                 id = team.id,
-                name = team.name
+                name = team.name,
+                icon = team.icon
             )
         }
     }
@@ -37,4 +40,10 @@ class TeamDAOImpl(private val queries: TeamsQueries) : TeamDAO {
         .asFlow()
         .mapToOneOrNull()
         .map { it?.let { mapper.toModel(team = it) } }
+
+    override suspend fun updateTeam(team: TeamEntity) = queries.updateTeam(
+        id = team.id,
+        name = team.name,
+        icon = team.icon
+    )
 }
