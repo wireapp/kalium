@@ -183,6 +183,15 @@ abstract class UserSessionScopeCommon internal constructor(
             }
         }
 
+    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
+
+    val federatedIdMapper: FederatedIdMapper
+        get() = MapperProvider.federatedIdMapper(
+            userId,
+            qualifiedIdMapper,
+            globalScope.sessionRepository
+        )
+
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
 
     private val userConfigRepository: UserConfigRepository
@@ -245,7 +254,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             globalScope.sessionRepository,
-            userId
+            userId,
+            qualifiedIdMapper
         )
 
     private val teamRepository: TeamRepository
@@ -451,15 +461,6 @@ abstract class UserSessionScopeCommon internal constructor(
             lazy { mlsConversationRepository }
         )
 
-    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
-
-    val federatedIdMapper: FederatedIdMapper
-        get() = MapperProvider.federatedIdMapper(
-            userId,
-            qualifiedIdMapper,
-            globalScope.sessionRepository
-        )
-
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
             userId = userId,
@@ -513,6 +514,7 @@ abstract class UserSessionScopeCommon internal constructor(
             connectionRepository,
             logout,
             clientRepository,
+            userRepository,
             userId
         )
 
