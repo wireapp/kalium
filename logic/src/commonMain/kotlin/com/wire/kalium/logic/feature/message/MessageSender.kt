@@ -23,6 +23,8 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
 
 /**
  * Responsible for orchestrating all the pieces necessary
@@ -80,23 +82,26 @@ internal class MessageSenderImpl internal constructor(
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val timeParser: TimeParser
+    private val timeParser: TimeParser,
+    private val scope: CoroutineScope
 ) : MessageSender {
 
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
 
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
-        return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
-            if (message is Message.Regular) sendMessage(message)
-            else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
-        }.onFailure {
-            logger.i("Failed to send message. Failure = $it")
-            if (it is NetworkFailure.NoNetworkConnection) {
-                logger.i("Scheduling message for retrying in the future.")
-                messageSendingScheduler.scheduleSendingOfPendingMessages()
-            } else {
-                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+        return withContext(scope.coroutineContext) {
+            messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
+                if (message is Message.Regular) sendMessage(message)
+                else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
+            }.onFailure {
+                logger.i("Failed to send message. Failure = $it")
+                if (it is NetworkFailure.NoNetworkConnection) {
+                    logger.i("Scheduling message for retrying in the future.")
+                    messageSendingScheduler.scheduleSendingOfPendingMessages()
+                } else {
+                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                }
             }
         }
     }
