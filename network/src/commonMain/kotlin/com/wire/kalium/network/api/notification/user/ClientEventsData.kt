@@ -28,5 +28,5 @@ data class UserUpdateEventData(
     @SerialName("handle") val handle: String?,
     @SerialName("email") val email: String?,
     @SerialName("sso_id_deleted") val ssoIdDeleted: Boolean?,
-    @SerialName("assets") val assets: List<UserAssetDTO>
+    @SerialName("assets") val assets: List<UserAssetDTO>?
 )
