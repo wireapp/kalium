@@ -242,7 +242,7 @@ internal class ConversationEventReceiverImpl(
         }
     }
 
-    private fun updateFinalAssetMessage(persistedMessage: Message.Regular, newMessageRemoteData: AssetContent.RemoteData): Message {
+    private fun updateAssetMessageWithDecryptionKeys(persistedMessage: Message.Regular, remoteData: AssetContent.RemoteData): Message {
         val assetMessageContent = persistedMessage.content as MessageContent.Asset
         val isValidImage = assetMessageContent.value.metadata?.let {
             it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
@@ -252,7 +252,7 @@ internal class ConversationEventReceiverImpl(
         return persistedMessage.copy(
             content = assetMessageContent.copy(
                 value = assetMessageContent.value.copy(
-                    remoteData = newMessageRemoteData,
+                    remoteData = remoteData,
                     downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
                 )
             ),
@@ -521,7 +521,12 @@ internal class ConversationEventReceiverImpl(
                 ) {
                     // The asset message received contains the asset decryption keys,
                     // so update the preview message persisted previously
-                    persistMessage(updateFinalAssetMessage(persistedMessage, (message.content as MessageContent.Asset).value.remoteData))
+                    persistMessage(
+                        updateAssetMessageWithDecryptionKeys(
+                            persistedMessage,
+                            (message.content as MessageContent.Asset).value.remoteData
+                        )
+                    )
                 }
             }
     }
