@@ -30,7 +30,7 @@ import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class JoinExistingMLSConversationsUseCaseTest {
-    
+
     @Test
     fun givenMLSSupportIsDisabled_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() =
         runTest {

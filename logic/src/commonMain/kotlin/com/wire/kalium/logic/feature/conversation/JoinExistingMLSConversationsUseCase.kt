@@ -31,26 +31,25 @@ class JoinExistingMLSConversationsUseCase(
     private val dispatcher = kaliumDispatcher.io
     private val scope = CoroutineScope(dispatcher)
 
-    suspend operator fun invoke(): Either<CoreFailure, Unit> {
+    suspend operator fun invoke(): Either<CoreFailure, Unit> =
         if (!kaliumConfigs.isMLSSupportEnabled) {
             kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is disabled.")
-            return Either.Right(Unit)
-        }
+            Either.Right(Unit)
+        } else {
+            conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
+                kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
 
-        return conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
-            kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
-
-            return pendingConversations.map { conversation ->
-                scope.async {
-                    requestToJoinMLSGroupAndRetry(conversation)
+                return pendingConversations.map { conversation ->
+                    scope.async {
+                        requestToJoinMLSGroupAndRetry(conversation)
+                    }
+                }.map {
+                    it.await()
+                }.foldToEitherWhileRight(Unit) { value, _ ->
+                    value
                 }
-            }.map {
-                it.await()
-            }.foldToEitherWhileRight(Unit) { value, _ ->
-                value
             }
         }
-    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun requestToJoinMLSGroupAndRetry(conversation: Conversation): Either<CoreFailure, Unit> =
