@@ -1,9 +1,8 @@
 package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.client.ClientResponse
-import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 
 object SimpleClientResponseJson {
     private val missingClassJsonProvider = { serializable: SimpleClientResponse ->

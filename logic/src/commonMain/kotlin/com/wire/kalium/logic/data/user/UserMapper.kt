@@ -2,19 +2,22 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.OtherUserClient
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.model.AssetSizeDTO
-import com.wire.kalium.network.api.model.UserAssetDTO
-import com.wire.kalium.network.api.model.UserAssetTypeDTO
-import com.wire.kalium.network.api.model.UserDTO
-import com.wire.kalium.network.api.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.model.getPreviewAssetOrNull
-import com.wire.kalium.network.api.teams.TeamsApi
-import com.wire.kalium.network.api.user.details.UserProfileDTO
-import com.wire.kalium.network.api.user.self.UserUpdateRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
+import com.wire.kalium.network.api.base.model.AssetSizeDTO
+import com.wire.kalium.network.api.base.model.NonQualifiedUserId
+import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.UserAssetDTO
+import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
+import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -55,12 +58,15 @@ interface UserMapper {
     fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
         teamId: TeamId,
-        teamMemberDTO: TeamsApi.TeamMemberDTO,
+        nonQualifiedUserId: NonQualifiedUserId,
+        permissionCode: Int?,
         userDomain: String,
-        permissionsCode: Int?,
     ): UserEntity
 
     fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient>
+
+    fun apiToEntity(user: UserProfileDTO, member: TeamsApi.TeamMemberDTO?, teamId: String?, selfUser: QualifiedID): UserEntity
+    fun toUpdateDaoFromEvent(event: Event.User.Update, userEntity: UserEntity): UserEntity
 }
 
 internal class UserMapperImpl(
@@ -197,13 +203,13 @@ internal class UserMapperImpl(
      */
     override fun fromTeamMemberToDaoModel(
         teamId: TeamId,
-        teamMemberDTO: TeamsApi.TeamMemberDTO,
+        nonQualifiedUserId: NonQualifiedUserId,
+        permissionCode: Int?,
         userDomain: String,
-        permissionsCode: Int?,
     ): UserEntity =
         UserEntity(
             id = QualifiedIDEntity(
-                value = teamMemberDTO.nonQualifiedUserId,
+                value = nonQualifiedUserId,
                 domain = userDomain
             ),
             name = null,
@@ -216,7 +222,7 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionsCode),
+            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
             deleted = false
         )
@@ -225,4 +231,47 @@ internal class UserMapperImpl(
         otherUsersClients.map {
             OtherUserClient(clientMapper.fromDeviceTypeEntity(it.deviceType), it.id)
         }
+
+    override fun apiToEntity(user: UserProfileDTO, member: TeamsApi.TeamMemberDTO?, teamId: String?, selfUser: QualifiedID): UserEntity {
+        return UserEntity(
+            id = idMapper.fromApiToDao(user.id),
+            name = user.name,
+            handle = user.handle,
+            email = user.email,
+            phone = null,
+            accentId = user.accentId,
+            team = teamId ?: user.teamId,
+            connectionStatus = member?.let { ConnectionEntity.State.ACCEPTED } ?: ConnectionEntity.State.NOT_CONNECTED,
+            previewAssetId = user.assets.getPreviewAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            completeAssetId = user.assets.getCompleteAssetOrNull()
+                ?.let { idMapper.toQualifiedAssetIdEntity(it.key, user.id.domain) },
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userType = member?.permissions?.let { userEntityTypeMapper.teamRoleCodeToUserType(it.own) }
+                ?: userEntityTypeMapper.fromTeamAndDomain(
+                    otherUserDomain = user.id.domain,
+                    selfUserDomain = selfUser.domain,
+                    selfUserTeamId = teamId,
+                    otherUserTeamId = teamId,
+                    isService = user.service != null
+                ),
+            botService = user.service?.let { BotEntity(it.id, it.provider) },
+            deleted = false
+        )
+    }
+
+    override fun toUpdateDaoFromEvent(event: Event.User.Update, userEntity: UserEntity): UserEntity {
+        return userEntity.let { persistedEntity ->
+            persistedEntity.copy(
+                email = event.email ?: persistedEntity.email,
+                name = event.name ?: persistedEntity.name,
+                handle = event.handle ?: persistedEntity.handle,
+                accentId = event.accentId ?: persistedEntity.accentId,
+                previewAssetId = event.previewAssetId?.let { idMapper.toQualifiedAssetIdEntity(it, persistedEntity.id.domain) }
+                    ?: persistedEntity.previewAssetId,
+                completeAssetId = event.completeAssetId?.let { idMapper.toQualifiedAssetIdEntity(it, persistedEntity.id.domain) }
+                    ?: persistedEntity.completeAssetId
+            )
+        }
+    }
 }

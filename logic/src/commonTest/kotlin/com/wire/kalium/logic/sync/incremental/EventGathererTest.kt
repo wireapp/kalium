@@ -10,7 +10,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.network.api.notification.WebSocketEvent
+import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import io.mockative.Mock
 import io.mockative.configure
 import io.mockative.given
@@ -162,6 +162,31 @@ class EventGathererTest {
 
             eventGatherer.currentSource.test {
                 assertEquals(EventSource.LIVE, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenWebSocketOpensAndCloses_whenGathering_thenSyncSourceShouldBeResetToPending() = runTest {
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
+
+        val (_, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(emptyFlow())
+            .withConnectionPolicyReturning(MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS))
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            // Open Websocket should trigger fetching pending events
+            eventGatherer.currentSource.test {
+                liveEventsChannel.send(WebSocketEvent.Open())
+                advanceUntilIdle()
+                assertEquals(EventSource.PENDING, awaitItem())
+                assertEquals(EventSource.LIVE, awaitItem())
+                assertEquals(EventSource.PENDING, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
             cancelAndIgnoreRemainingEvents()

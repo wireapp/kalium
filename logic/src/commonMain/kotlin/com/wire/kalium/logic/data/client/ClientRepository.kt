@@ -14,7 +14,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.user.pushToken.PushTokenBody
+import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64

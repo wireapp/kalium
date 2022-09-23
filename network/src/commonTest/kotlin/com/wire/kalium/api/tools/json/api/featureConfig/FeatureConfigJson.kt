@@ -1,27 +1,27 @@
 package com.wire.kalium.api.tools.json.api.featureConfig
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.AppLock
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.ConferenceCalling
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.ConversationGuestLinks
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.DigitalSignatures
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.Legalhold
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.SearchVisibility
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.FileSharing
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.MLS
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.ClassifiedDomains
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.SelfDeletingMessages
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.SecondFactorPasswordChallenge
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.SSO
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData.ValidateSAMLEmails
-import com.wire.kalium.network.api.featureConfigs.AppLockConfigDTO
-import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfigDTO
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
-import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
-import com.wire.kalium.network.api.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.AppLock
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ClassifiedDomains
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ConferenceCalling
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ConversationGuestLinks
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.DigitalSignatures
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.FileSharing
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.Legalhold
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.MLS
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SSO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SearchVisibility
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SecondFactorPasswordChallenge
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SelfDeletingMessages
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ValidateSAMLEmails
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 
 object FeatureConfigJson {
     private val featureConfigResponseSerializer = { _: FeatureConfigResponse ->

@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -28,6 +29,7 @@ expect class GlobalCallManager {
         videoStateChecker: VideoStateChecker
     ): CallManager
 
+    fun removeInMemoryCallingManagerForUser(userId: UserId)
     fun getFlowManager(): FlowManagerService
     fun getMediaManager(): MediaManagerService
 }

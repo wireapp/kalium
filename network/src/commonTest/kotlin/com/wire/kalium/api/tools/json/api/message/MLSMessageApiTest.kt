@@ -1,8 +1,8 @@
 package com.wire.kalium.api.tools.json.api.message
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.message.MLSMessageApi
-import com.wire.kalium.network.api.message.MLSMessageApiImpl
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
@@ -28,7 +28,7 @@ class MLSMessageApiTest: ApiTest {
                     assertPathEqual(PATH_MESSAGE)
                 }
             )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiImpl(networkClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0(networkClient)
             val response = mlsMessageApi.sendMessage(MESSAGE)
             assertTrue(response.isSuccessful())
         }
@@ -46,7 +46,7 @@ class MLSMessageApiTest: ApiTest {
                     assertPathEqual(PATH_WELCOME_MESSAGE)
                 }
             )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiImpl(networkClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0(networkClient)
             val response = mlsMessageApi.sendWelcomeMessage(WELCOME_MESSAGE)
             assertTrue(response.isSuccessful())
         }

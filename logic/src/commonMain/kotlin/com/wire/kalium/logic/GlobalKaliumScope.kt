@@ -33,7 +33,8 @@ import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSo
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCase
 import com.wire.kalium.logic.featureFlags.GetBuildConfigsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.UnboundNetworkContainer
+import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
+import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
@@ -55,7 +56,7 @@ class GlobalKaliumScope(
 ) {
 
     private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
-        UnboundNetworkContainer(developmentApiEnabled = kaliumConfigs.developmentApiEnabled)
+        UnboundNetworkContainerCommon(developmentApiEnabled = kaliumConfigs.developmentApiEnabled)
     }
 
     internal val serverConfigRepository: ServerConfigRepository

@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestEvent
@@ -71,6 +72,21 @@ class UserEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenUserUpdateEvent_RepoIsInvoked() = runTest {
+        val event = TestEvent.updateUser(userId = USER_ID)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateUserSuccess()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateUserFromEvent)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val connectionRepository = mock(classOf<ConnectionRepository>())
@@ -81,8 +97,12 @@ class UserEventReceiverTest {
         @Mock
         val logoutUseCase = mock(classOf<LogoutUseCase>())
 
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
+
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            connectionRepository, logoutUseCase, clientRepository, USER_ID)
+            connectionRepository, logoutUseCase, clientRepository, userRepository, USER_ID
+        )
 
         fun withCurrentClientIdIs(clientId: ClientId) = apply {
             given(clientRepository)
@@ -93,6 +113,10 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
+        }
+
+        fun withUpdateUserSuccess() = apply {
+            given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = this to userEventReceiver
