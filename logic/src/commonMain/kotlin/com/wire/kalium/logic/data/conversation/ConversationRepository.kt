@@ -326,7 +326,7 @@ internal class ConversationDataSource internal constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getGroupConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
-        return userRepository.observeSelfUser()
+        return userRepository.observeSelfUser() // todo : why are we observing self user if we have it injected in the constructor
             .flatMapLatest { selfUser ->
                 combine(
                     observeUnreadMessageCount(conversation),
@@ -388,15 +388,18 @@ internal class ConversationDataSource internal constructor(
 
     private suspend fun observeUnreadMessageCount(conversation: Conversation): Flow<Long> {
         return if (conversation.supportsUnreadMessageCount) {
-            messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id))
+            messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id), idMapper.toDaoModel(selfUserId))
         } else {
             flowOf(0L)
         }
     }
 
-    private suspend fun observeUnreadMentionsCount(conversation: Conversation, userId: UserId): Flow<Long> {
+    private suspend fun observeUnreadMentionsCount(conversation: Conversation, selfUserId: UserId): Flow<Long> {
         return if (conversation.supportsUnreadMessageCount) {
-            messageDAO.observeUnreadMentionsCount(idMapper.toDaoModel(conversation.id), idMapper.toDaoModel(userId))
+            messageDAO.observeUnreadMentionsCount(
+                idMapper.toDaoModel(conversation.id),
+                idMapper.toDaoModel(selfUserId)
+            )
         } else {
             flowOf(0L)
         }
