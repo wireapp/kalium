@@ -2,7 +2,10 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.QualifiedID
 import com.wire.kalium.network.api.user.details.UserDetailsApi
@@ -82,6 +85,60 @@ class UserRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAUserEvent_whenPersistingTheUser_thenShouldSucceed() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withMapperQualifiedUserId()
+            .arrange()
+
+        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = UserEventReceiverTest.USER_ID))
+
+        with(result) {
+            shouldSucceed()
+
+            verify(arrangement.qualifiedIdMapper)
+                .function(arrangement.qualifiedIdMapper::fromStringToQualifiedID)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::getUserByQualifiedID)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUser)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAUserEvent_whenPersistingTheUserAndNotExists_thenShouldFail() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withMapperQualifiedUserId()
+            .withUserDaoReturning(null)
+            .arrange()
+
+        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = UserEventReceiverTest.USER_ID))
+
+        with(result) {
+            shouldFail()
+
+            verify(arrangement.qualifiedIdMapper)
+                .function(arrangement.qualifiedIdMapper::fromStringToQualifiedID)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::getUserByQualifiedID)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUser)
+                .with(any())
+                .wasNotInvoked()
+        }
+    }
+
+
     // TODO other UserRepository tests
 
     private class Arrangement {
@@ -104,7 +161,7 @@ class UserRepositoryTest {
         val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+        val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
         val userRepository: UserRepository by lazy {
             UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, TestUser.SELF.id, qualifiedIdMapper)
@@ -133,6 +190,23 @@ class UserRepositoryTest {
                 .suspendFunction(userDAO::getUsersByQualifiedIDList)
                 .whenInvokedWith(any())
                 .thenReturn(knownUserEntities)
+            return this
+        }
+
+        fun withMapperQualifiedUserId(nonQualifiedId: String = "alice@wonderland") = apply {
+            given(qualifiedIdMapper)
+                .function(qualifiedIdMapper::fromStringToQualifiedID)
+                .whenInvokedWith(eq(nonQualifiedId))
+                .thenReturn(com.wire.kalium.logic.data.id.QualifiedID("alice", "wonderland"))
+
+            return this
+        }
+
+        fun withUserDaoReturning(userEntity: UserEntity? = TestUser.ENTITY) = apply {
+            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+                .whenInvokedWith(any())
+                .then { flowOf(userEntity) }
+
             return this
         }
 

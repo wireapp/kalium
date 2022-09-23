@@ -72,6 +72,21 @@ class UserEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenUserUpdateEvent_RepoIsInvoked() = runTest {
+        val event = TestEvent.updateUser(userId = USER_ID)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUpdateUserSuccess()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateUserFromEvent)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val connectionRepository = mock(classOf<ConnectionRepository>())
@@ -98,6 +113,10 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
+        }
+
+        fun withUpdateUserSuccess() = apply {
+            given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = this to userEventReceiver
