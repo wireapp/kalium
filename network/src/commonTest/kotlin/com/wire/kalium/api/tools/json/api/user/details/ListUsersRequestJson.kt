@@ -21,16 +21,22 @@ object ListUsersRequestJson {
     }
 
     val validIdsJsonProvider = ValidJsonProvider(
-        QualifiedUserIdListRequest(listOf(
-        QualifiedID("id1","domain1"),
-        QualifiedID("id11","domain1"),
-        QualifiedID("id2","domain2")
-    )), qualifiedIdsProvider)
+        QualifiedUserIdListRequest(
+            listOf(
+                QualifiedID("id1", "domain1"),
+                QualifiedID("id11", "domain1"),
+                QualifiedID("id2", "domain2")
+            )
+        ), qualifiedIdsProvider
+    )
 
     val validHandlesJsonProvider = ValidJsonProvider(
-        QualifiedUserIdListRequest(listOf(
-        QualifiedID("id1","domain1"),
-        QualifiedID("id11","domain1"),
-        QualifiedID("id2","domain2")
-    )), qualifiedIdsProvider)
+        QualifiedUserIdListRequest(
+            listOf(
+                QualifiedID("id1", "domain1"),
+                QualifiedID("id11", "domain1"),
+                QualifiedID("id2", "domain2")
+            )
+        ), qualifiedIdsProvider
+    )
 }

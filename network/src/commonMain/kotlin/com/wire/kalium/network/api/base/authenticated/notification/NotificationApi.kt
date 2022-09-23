@@ -4,11 +4,11 @@ import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.coroutines.flow.Flow
 
 sealed class WebSocketEvent<BinaryPayloadType> {
-    class Open<BinaryPayloadType>: WebSocketEvent<BinaryPayloadType>()
+    class Open<BinaryPayloadType> : WebSocketEvent<BinaryPayloadType>()
 
-    data class BinaryPayloadReceived<BinaryPayloadType>(val payload: BinaryPayloadType): WebSocketEvent<BinaryPayloadType>()
+    data class BinaryPayloadReceived<BinaryPayloadType>(val payload: BinaryPayloadType) : WebSocketEvent<BinaryPayloadType>()
 
-    data class NonBinaryPayloadReceived<BinaryPayloadType>(val payload: ByteArray): WebSocketEvent<BinaryPayloadType>() {
+    data class NonBinaryPayloadReceived<BinaryPayloadType>(val payload: ByteArray) : WebSocketEvent<BinaryPayloadType>() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false

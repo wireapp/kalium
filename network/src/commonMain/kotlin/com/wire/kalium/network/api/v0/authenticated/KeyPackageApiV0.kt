@@ -13,20 +13,26 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-internal class KeyPackageApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : KeyPackageApi {
+internal class KeyPackageApiV0 internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : KeyPackageApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun claimKeyPackages(param: KeyPackageApi.Param): NetworkResponse<ClaimedKeyPackageList> =
-        wrapKaliumResponse {
-            httpClient.post("$PATH_KEY_PACKAGES/$PATH_CLAIM/${param.user.domain}/${param.user.value}") {
-                if (param is KeyPackageApi.Param.SkipOwnClient) {
-                    parameter(QUERY_SKIP_OWN, param.selfClientId)
-                }
+    override suspend fun claimKeyPackages(
+        param: KeyPackageApi.Param
+    ): NetworkResponse<ClaimedKeyPackageList> = wrapKaliumResponse {
+        httpClient.post("$PATH_KEY_PACKAGES/$PATH_CLAIM/${param.user.domain}/${param.user.value}") {
+            if (param is KeyPackageApi.Param.SkipOwnClient) {
+                parameter(QUERY_SKIP_OWN, param.selfClientId)
             }
         }
+    }
 
-    override suspend fun uploadKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit> =
+    override suspend fun uploadKeyPackages(
+        clientId: String,
+        keyPackages: List<KeyPackage>
+    ): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.post("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId") {
                 setBody(KeyPackageList(keyPackages))

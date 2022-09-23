@@ -9,7 +9,9 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
-internal class UserSearchApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : UserSearchApi {
+internal class UserSearchApiV0 internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : UserSearchApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
@@ -18,7 +20,7 @@ internal class UserSearchApiV0 internal constructor(private val authenticatedNet
             httpClient.get(PATH_CONTACT_SEARCH) {
                 with(userSearchRequest) {
                     parameter(QUERY_KEY_SEARCH_QUERY, searchQuery)
-                    if(domain.isNotBlank()) {
+                    if (domain.isNotBlank()) {
                         parameter(QUERY_KEY_DOMAIN, domain)
                     }
                     maxResultSize?.let { parameter(QUERY_KEY_SIZE, it) }

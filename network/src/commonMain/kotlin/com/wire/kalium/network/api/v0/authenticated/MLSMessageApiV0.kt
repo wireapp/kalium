@@ -10,7 +10,11 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 
-internal class MLSMessageApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : MLSMessageApi {
+internal class MLSMessageApiV0 internal constructor(
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+) : MLSMessageApi {
+
+    // TODO: must be disabled for v0 and v1
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 

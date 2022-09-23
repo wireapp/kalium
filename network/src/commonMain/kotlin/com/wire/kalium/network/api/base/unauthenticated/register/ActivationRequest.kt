@@ -1,10 +1,8 @@
 package com.wire.kalium.network.api.base.unauthenticated.register
 
-
 import com.wire.kalium.network.api.base.model.AssetKey
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-
 
 @Serializable
 internal data class RequestActivationRequest(

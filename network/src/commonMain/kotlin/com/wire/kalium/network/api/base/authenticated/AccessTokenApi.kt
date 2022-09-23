@@ -7,4 +7,3 @@ import com.wire.kalium.network.utils.NetworkResponse
 interface AccessTokenApi {
     suspend fun getToken(refreshToken: String): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>>
 }
-

@@ -4,7 +4,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
-
 @Serializable
 data class AccessTokenDTO(
     @SerialName("user") val userId: NonQualifiedUserId,

@@ -13,7 +13,7 @@ data class KeyPackageList(
 data class ClaimedKeyPackageList(
     @SerialName("key_packages")
     val keyPackages: List<KeyPackageDTO>
-    )
+)
 
 @Serializable
 data class KeyPackageDTO(

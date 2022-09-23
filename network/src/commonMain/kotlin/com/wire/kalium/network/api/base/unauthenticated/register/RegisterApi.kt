@@ -88,7 +88,8 @@ interface RegisterApi {
     sealed class ActivationParam(val dryRun: Boolean = true) {
         internal abstract fun toBody(): ActivationRequest
         data class Email(
-            val email: String, val code: String
+            val email: String,
+            val code: String
         ) : ActivationParam() {
             override fun toBody(): ActivationRequest = ActivationRequest(code = code, dryRun = dryRun, email = email, null, null, null)
         }
