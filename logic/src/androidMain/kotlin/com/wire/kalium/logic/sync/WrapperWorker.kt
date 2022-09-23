@@ -24,7 +24,9 @@ import androidx.work.ListenableWorker.Result as AndroidResult
 import com.wire.kalium.logic.sync.Result as KaliumResult
 
 class WrapperWorker(
-    private val innerWorker: DefaultWorker, appContext: Context, params: WorkerParameters,
+    private val innerWorker: DefaultWorker,
+    appContext: Context,
+    params: WorkerParameters,
     private val foregroundNotificationDetailsProvider: ForegroundNotificationDetailsProvider
 ) :
     CoroutineWorker(appContext, params) {
