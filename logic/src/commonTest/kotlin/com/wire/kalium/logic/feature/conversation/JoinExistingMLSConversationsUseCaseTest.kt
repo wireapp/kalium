@@ -9,7 +9,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.ErrorResponse
@@ -113,6 +112,7 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         fun arrange() = this to JoinExistingMLSConversationsUseCase(kaliumConfigs, conversationRepository)
 
+        @Suppress("MaxLineLength")
         fun withGetConversationsByGroupStateSuccessful(conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) =
             apply {
                 given(conversationRepository)
