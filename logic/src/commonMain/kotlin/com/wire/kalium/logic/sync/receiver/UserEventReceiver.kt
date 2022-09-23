@@ -33,7 +33,7 @@ class UserEventReceiverImpl internal constructor(
 
     private suspend fun handleUserUpdate(event: Event.User.Update) {
         userRepository.updateUserFromEvent(event)
-            .onSuccess { kaliumLogger.d("$TAG - User was updated from event: $it") }
+            .onSuccess { kaliumLogger.d("$TAG - user was updated from event: $it") }
             .onFailure { kaliumLogger.e("$TAG - failure updating user from event: $it") }
     }
 
