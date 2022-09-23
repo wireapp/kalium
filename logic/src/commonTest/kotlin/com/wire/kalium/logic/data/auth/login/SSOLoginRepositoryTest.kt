@@ -4,7 +4,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import com.wire.kalium.network.api.v0.unauthenticated.SSOLogin
+import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -24,7 +24,7 @@ import kotlin.test.assertIs
 class SSOLoginRepositoryTest {
 
     @Mock
-    val ssoLogin = mock(classOf<SSOLogin>())
+    val ssoLogin = mock(classOf<SSOLoginApi>())
     private lateinit var ssoLoginRepository: SSOLoginRepository
 
     @BeforeTest
@@ -35,7 +35,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithoutRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLogin.InitiateParam.WithoutRedirect(TEST_CODE)) },
+            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE)) },
             "wire/response",
             { ssoLoginRepository.initiate(TEST_CODE) }
         )
@@ -43,7 +43,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLogin.InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE)) },
+            { initiate(SSOLoginApi.InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE)) },
             "wire/response",
             { ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR) }
         )
@@ -51,7 +51,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestFail_whenInitiating_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            { initiate(SSOLogin.InitiateParam.WithoutRedirect(TEST_CODE)) },
+            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE)) },
             expected = TestNetworkException.generic,
             { ssoLoginRepository.initiate(TEST_CODE) }
         )
@@ -105,7 +105,7 @@ class SSOLoginRepositoryTest {
         )
 
     private fun <T : Any> givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-        apiCoroutineBlock: suspend SSOLogin.() -> NetworkResponse<T>,
+        apiCoroutineBlock: suspend SSOLoginApi.() -> NetworkResponse<T>,
         expected: T,
         repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
     ) = runTest {
@@ -117,7 +117,7 @@ class SSOLoginRepositoryTest {
     }
 
     private fun <T : Any> givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-        apiCoroutineBlock: suspend SSOLogin.() -> NetworkResponse<T>,
+        apiCoroutineBlock: suspend SSOLoginApi.() -> NetworkResponse<T>,
         expected: KaliumException,
         repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
     ) = runTest {
