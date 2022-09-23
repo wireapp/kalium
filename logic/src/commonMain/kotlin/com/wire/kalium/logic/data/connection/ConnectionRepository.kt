@@ -64,8 +64,8 @@ internal class ConnectionDataSource(
     private val connectionApi: ConnectionApi,
     private val userDetailsApi: UserDetailsApi,
     private val userDAO: UserDAO,
-    private val selfUser: UserId,
-    private val selfUserTeamId: SelfTeamIdProvider,
+    private val selfUserId: UserId,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
@@ -185,7 +185,7 @@ internal class ConnectionDataSource(
     ) = wrapStorageRequest {
         connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
     }.flatMap {
-        selfUserTeamId.invoke().flatMap { teamId ->
+        selfTeamIdProvider().flatMap { teamId ->
             // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
             wrapApiRequest {
                 userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
@@ -198,7 +198,7 @@ internal class ConnectionDataSource(
                             otherUserDomain = userProfileDTO.id.domain,
                             selfUserTeamId = teamId?.value,
                             otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUser.domain,
+                            selfUserDomain = selfUserId.domain,
                             isService = userProfileDTO.service != null
                         )
                     )
