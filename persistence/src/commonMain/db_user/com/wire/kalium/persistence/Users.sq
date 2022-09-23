@@ -61,6 +61,11 @@ UPDATE User
 SET team = ?, connection_status = ?, user_type = ?
 WHERE qualified_id = ?;
 
+markUserAsDeleted:
+UPDATE User
+SET team = NULL , user_type = ?, deleted = 1
+WHERE qualified_id = ?;
+
 insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id)
 VALUES(?);

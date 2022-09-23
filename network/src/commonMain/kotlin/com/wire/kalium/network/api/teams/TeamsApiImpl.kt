@@ -2,6 +2,7 @@ package com.wire.kalium.network.api.teams
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.NonQualifiedConversationId
+import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.TeamId
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.utils.NetworkResponse
@@ -44,6 +45,11 @@ class TeamsApiImpl internal constructor(private val authenticatedNetworkClient: 
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
             }
+        }
+
+    override suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamsApi.TeamMemberDTO> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
         }
 
     private companion object {

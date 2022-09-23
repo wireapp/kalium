@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.network.api.teams.TeamsApi
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -41,7 +42,8 @@ class UserMapperTest {
     @Test
     fun givenTeamMemberApiModel_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
         val apiModel = TestTeam.memberDTO(
-            nonQualifiedUserId = "teamMember1"
+            nonQualifiedUserId = "teamMember1",
+            permissions = TeamsApi.Permissions(TeamRole.Member.value, TeamRole.Member.value)
         )
 
         val expectedResult = UserEntity(
@@ -67,9 +69,9 @@ class UserMapperTest {
 
         val result = userMapper.fromTeamMemberToDaoModel(
             teamId = TeamId("teamId"),
-            teamMemberDTO = apiModel,
             userDomain = "userDomain",
-            TeamRole.Member.value
+            nonQualifiedUserId = "teamMember1",
+            permissionCode = apiModel.permissions?.own
         )
 
         assertEquals(expectedResult, result)
