@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.transformWhile
 
@@ -76,6 +77,8 @@ internal class EventGathererImpl(
             // throw so it is handled by coroutineExceptionHandler
             throw KaliumSyncException("Failure when gathering events", it)
         }
+        // When it ends, reset source back to PENDING
+        _currentSource.value = EventSource.PENDING
     }
 
     private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
