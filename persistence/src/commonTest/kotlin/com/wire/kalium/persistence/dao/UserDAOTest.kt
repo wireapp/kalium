@@ -79,7 +79,7 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             false
         )
-        db.userDAO.updateSelfUser(updatedUser1)
+        db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
     }
@@ -110,7 +110,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.getUserByQualifiedID(user1.id).take(2).collect() {
             collectedValues.add(it)
             if (collectedValues.size == 1) {
-                db.userDAO.updateSelfUser(updatedUser1)
+                db.userDAO.updateUser(updatedUser1)
             }
         }
         assertEquals(user1, collectedValues[0])
