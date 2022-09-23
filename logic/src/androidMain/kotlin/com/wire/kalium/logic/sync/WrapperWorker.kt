@@ -13,7 +13,6 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.R
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
@@ -24,7 +23,10 @@ import kotlin.reflect.KClass
 import androidx.work.ListenableWorker.Result as AndroidResult
 import com.wire.kalium.logic.sync.Result as KaliumResult
 
-class WrapperWorker(private val innerWorker: DefaultWorker, appContext: Context, params: WorkerParameters) :
+class WrapperWorker(
+    private val innerWorker: DefaultWorker, appContext: Context, params: WorkerParameters,
+    private val foregroundNotificationDetailsProvider: ForegroundNotificationDetailsProvider
+) :
     CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): AndroidResult = when (innerWorker.doWork()) {
@@ -40,7 +42,7 @@ class WrapperWorker(private val innerWorker: DefaultWorker, appContext: Context,
         } else {
             Notification.Builder(applicationContext)
         }.setContentTitle(NOTIFICATION_TITLE)
-            .setSmallIcon(R.mipmap.ic_launcher) // TODO(ui-polishing): Customize icons too
+            .setSmallIcon(foregroundNotificationDetailsProvider.getSmallIconResId())
             .build()
         return ForegroundInfo(NOTIFICATION_ID, notification)
     }
@@ -66,7 +68,10 @@ class WrapperWorker(private val innerWorker: DefaultWorker, appContext: Context,
     }
 }
 
-class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
+class WrapperWorkerFactory(
+    private val coreLogic: CoreLogic,
+    private val foregroundNotificationDetailsProvider: ForegroundNotificationDetailsProvider
+) : WorkerFactory() {
 
     override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
         if (WrapperWorker::class.java.canonicalName != workerClassName) {
@@ -99,7 +104,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
         val worker = coreLogic.globalScope {
             UpdateApiVersionsWorker(updateApiVersions)
         }
-        return WrapperWorker(worker, appContext, workerParameters)
+        return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
     private fun createPendingMessageSenderWorker(workerParameters: WorkerParameters, userId: UserId, appContext: Context): WrapperWorker {
@@ -109,7 +114,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
             userScope.messages.messageSender,
             userId
         )
-        return WrapperWorker(worker, appContext, workerParameters)
+        return WrapperWorker(worker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
     private fun createDefaultWorker(
@@ -119,7 +124,7 @@ class WrapperWorkerFactory(private val coreLogic: CoreLogic) : WorkerFactory() {
     ): WrapperWorker {
         val constructor = Class.forName(innerWorkerClassName).getDeclaredConstructor()
         val innerWorker = constructor.newInstance()
-        return WrapperWorker(innerWorker as DefaultWorker, appContext, workerParameters)
+        return WrapperWorker(innerWorker as DefaultWorker, appContext, workerParameters, foregroundNotificationDetailsProvider)
     }
 
     internal companion object {
