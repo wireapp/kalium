@@ -25,7 +25,7 @@ class MessageDAOImpl(
     private val queries: MessagesQueries,
     private val conversationsQueries: ConversationsQueries,
     private val selfUserId: UserIDEntity
-    ) : MessageDAO {
+) : MessageDAO {
     private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
