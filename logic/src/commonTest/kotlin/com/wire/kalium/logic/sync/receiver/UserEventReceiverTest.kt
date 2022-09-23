@@ -82,7 +82,8 @@ class UserEventReceiverTest {
         val logoutUseCase = mock(classOf<LogoutUseCase>())
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            connectionRepository, logoutUseCase, clientRepository, USER_ID)
+            connectionRepository, logoutUseCase, clientRepository, userRepository, USER_ID
+        )
 
         fun withCurrentClientIdIs(clientId: ClientId) = apply {
             given(clientRepository)

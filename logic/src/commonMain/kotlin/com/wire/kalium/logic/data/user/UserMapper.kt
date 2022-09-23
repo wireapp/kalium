@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.OtherUserClient
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
@@ -61,6 +62,7 @@ interface UserMapper {
     ): UserEntity
 
     fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient>
+    fun toUpdateDaoFromEvent(event: Event.User.Update, userEntity: UserEntity): UserEntity
 }
 
 internal class UserMapperImpl(
@@ -225,4 +227,19 @@ internal class UserMapperImpl(
         otherUsersClients.map {
             OtherUserClient(clientMapper.fromDeviceTypeEntity(it.deviceType), it.id)
         }
+
+    override fun toUpdateDaoFromEvent(event: Event.User.Update, userEntity: UserEntity): UserEntity {
+        return userEntity.also { persistedEntity ->
+            persistedEntity.copy(
+                email = event.email ?: persistedEntity.email,
+                name = event.name ?: persistedEntity.name,
+                handle = event.handle ?: persistedEntity.handle,
+                accentId = event.accentId ?: persistedEntity.accentId,
+                previewAssetId = event.previewAssetId?.let { idMapper.toQualifiedAssetIdEntity(it, persistedEntity.id.domain) }
+                    ?: persistedEntity.previewAssetId,
+                completeAssetId = event.completeAssetId?.let { idMapper.toQualifiedAssetIdEntity(it, persistedEntity.id.domain) }
+                    ?: persistedEntity.completeAssetId
+            )
+        }
+    }
 }

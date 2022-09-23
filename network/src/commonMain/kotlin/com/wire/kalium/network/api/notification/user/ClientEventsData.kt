@@ -1,6 +1,7 @@
 package com.wire.kalium.network.api.notification.user
 
 import com.wire.kalium.network.api.NonQualifiedUserId
+import com.wire.kalium.network.api.model.UserAssetDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -26,5 +27,6 @@ data class UserUpdateEventData(
     @SerialName("name") val name: String?,
     @SerialName("handle") val handle: String?,
     @SerialName("email") val email: String?,
-    @SerialName("sso_id_deleted") val ssoIdDeleted: Boolean?
+    @SerialName("sso_id_deleted") val ssoIdDeleted: Boolean?,
+    @SerialName("assets") val assets: List<UserAssetDTO>
 )
