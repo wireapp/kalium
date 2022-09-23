@@ -11,7 +11,6 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.api.conversation.ConversationResponse
 import kotlinx.datetime.Clock
 

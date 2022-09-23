@@ -3,7 +3,6 @@ package com.wire.kalium.network.api.teams
 import com.wire.kalium.network.api.NonQualifiedConversationId
 import com.wire.kalium.network.api.NonQualifiedUserId
 import com.wire.kalium.network.api.TeamId
-import com.wire.kalium.network.api.UserId
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.user.LegalHoldStatusResponse
 import com.wire.kalium.network.utils.NetworkResponse

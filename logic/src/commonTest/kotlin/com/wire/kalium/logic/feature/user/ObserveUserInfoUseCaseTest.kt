@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.user
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
