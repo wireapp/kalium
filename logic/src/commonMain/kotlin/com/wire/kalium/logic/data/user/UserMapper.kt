@@ -10,6 +10,8 @@ import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
+import com.wire.kalium.network.api.base.model.NonQualifiedUserId
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.base.model.UserDTO
