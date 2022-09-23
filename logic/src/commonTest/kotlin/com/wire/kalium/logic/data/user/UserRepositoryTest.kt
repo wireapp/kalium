@@ -138,7 +138,6 @@ class UserRepositoryTest {
         }
     }
 
-
     // TODO other UserRepository tests
 
     private class Arrangement {
