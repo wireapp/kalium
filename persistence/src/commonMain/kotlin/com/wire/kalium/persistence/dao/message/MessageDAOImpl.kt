@@ -293,12 +293,15 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
         mapper::toEntityMessageFromView
     ).asFlow().mapToOneOrNull()
 
-    override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity): Flow<Long> =
-        queries.getUnreadMessageCount(conversationId).asFlow().mapToOneOrDefault(0L)
+    override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity, selfUserId: UserIDEntity): Flow<Long> =
+        queries.getUnreadMessageCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
 
-    override suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Long> =
-        queries.getUnreadMentionsCount(conversationId, userId).asFlow().mapToOneOrDefault(0L)
+    override suspend fun observeUnreadMentionsCount(
+        conversationId: QualifiedIDEntity,
+        selfUserId: UserIDEntity
+    ): Flow<Long> =
+        queries.getUnreadMentionsCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
