@@ -45,6 +45,7 @@ private class ConversationMapper {
         )
     }
 
+    @Suppress("FunctionParameterNaming", "LongParameterList")
     fun toModel(
         id: QualifiedIDEntity,
         name: String?,

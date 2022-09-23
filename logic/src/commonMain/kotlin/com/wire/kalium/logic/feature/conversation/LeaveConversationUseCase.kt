@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 
-
 interface LeaveConversationUseCase {
 
     /**

@@ -80,4 +80,3 @@ internal class ConnectionStatusMapperImpl : ConnectionStatusMapper {
         ConnectionState.NOT_CONNECTED -> ConnectionEntity.State.NOT_CONNECTED
     }
 }
-

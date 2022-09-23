@@ -5,7 +5,7 @@ import com.wire.kalium.logic.data.conversation.ConversationView
 import kotlinx.coroutines.flow.Flow
 
 fun interface ObserveConversationViewUseCase {
-    suspend operator fun invoke():  Flow<List<ConversationView>>
+    suspend operator fun invoke(): Flow<List<ConversationView>>
 }
 
 internal class ObserveConversationViewUseCaseImpl(

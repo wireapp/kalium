@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
