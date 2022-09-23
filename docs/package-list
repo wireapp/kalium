@@ -3860,6 +3860,8 @@ $dokka.location:com.wire.kalium.logic.sync.receiver/UserEventReceiverImpl/onEven
 $dokka.location:com.wire.kalium.logic.sync////PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/index.html
 $dokka.location:com.wire.kalium.logic.sync/DefaultWorker///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-default-worker/index.html
 $dokka.location:com.wire.kalium.logic.sync/DefaultWorker/doWork/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-default-worker/do-work.html
+$dokka.location:com.wire.kalium.logic.sync/ForegroundNotificationDetailsProvider///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-foreground-notification-details-provider/index.html
+$dokka.location:com.wire.kalium.logic.sync/ForegroundNotificationDetailsProvider/getSmallIconResId/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-foreground-notification-details-provider/get-small-icon-res-id.html
 $dokka.location:com.wire.kalium.logic.sync/GlobalWorkScheduler///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-global-work-scheduler/index.html
 $dokka.location:com.wire.kalium.logic.sync/GlobalWorkSchedulerImpl/schedulePeriodicApiVersionUpdate/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-global-work-scheduler-impl/[jvm]schedule-periodic-api-version-update.html
 $dokka.location:com.wire.kalium.logic.sync/KaliumSyncException///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-kalium-sync-exception/index.html
@@ -3883,11 +3885,11 @@ $dokka.location:com.wire.kalium.logic.sync/UserSessionWorkScheduler/userId/#/Poi
 $dokka.location:com.wire.kalium.logic.sync/UserSessionWorkSchedulerImpl/scheduleSendingOfPendingMessages/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-user-session-work-scheduler-impl/[jvm]schedule-sending-of-pending-messages.html
 $dokka.location:com.wire.kalium.logic.sync/UserSessionWorkSchedulerImpl/userId/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-user-session-work-scheduler-impl/[jvm]user-id.html
 $dokka.location:com.wire.kalium.logic.sync/WrapperWorker///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker/index.html
-$dokka.location:com.wire.kalium.logic.sync/WrapperWorker/WrapperWorker/#com.wire.kalium.logic.sync.DefaultWorker#android.content.Context#androidx.work.WorkerParameters/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker/-wrapper-worker.html
+$dokka.location:com.wire.kalium.logic.sync/WrapperWorker/WrapperWorker/#com.wire.kalium.logic.sync.DefaultWorker#android.content.Context#androidx.work.WorkerParameters#com.wire.kalium.logic.sync.ForegroundNotificationDetailsProvider/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker/-wrapper-worker.html
 $dokka.location:com.wire.kalium.logic.sync/WrapperWorker/doWork/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker/do-work.html
 $dokka.location:com.wire.kalium.logic.sync/WrapperWorker/getForegroundInfo/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker/get-foreground-info.html
 $dokka.location:com.wire.kalium.logic.sync/WrapperWorkerFactory///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker-factory/index.html
-$dokka.location:com.wire.kalium.logic.sync/WrapperWorkerFactory/WrapperWorkerFactory/#com.wire.kalium.logic.CoreLogic/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker-factory/-wrapper-worker-factory.html
+$dokka.location:com.wire.kalium.logic.sync/WrapperWorkerFactory/WrapperWorkerFactory/#com.wire.kalium.logic.CoreLogic#com.wire.kalium.logic.sync.ForegroundNotificationDetailsProvider/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker-factory/-wrapper-worker-factory.html
 $dokka.location:com.wire.kalium.logic.sync/WrapperWorkerFactory/createWorker/#android.content.Context#kotlin.String#androidx.work.WorkerParameters/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-wrapper-worker-factory/create-worker.html
 $dokka.location:com.wire.kalium.logic.util////PointingToDeclaration/logic/logic/com.wire.kalium.logic.util/index.html
 $dokka.location:com.wire.kalium.logic.util//EPOCH_FIRST_DAY/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.util/-e-p-o-c-h_-f-i-r-s-t_-d-a-y.html
