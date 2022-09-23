@@ -3,10 +3,10 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.user.connection.ConnectionDTO
-import com.wire.kalium.network.api.user.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity

@@ -11,8 +11,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.network.api.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import kotlinx.datetime.Clock
 
 sealed class Event(open val id: String) {
@@ -215,12 +214,12 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val teamId: String,
             val memberId: String,
-            val userType: UserType,
+            val permissionCode: Int?,
         ) : Team(id, teamId) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
                         "teamId: $teamId " +
-                        "userType: $userType " +
+                        "permissionCode: $permissionCode " +
                         "memberId: $memberId"
             }
         }
@@ -256,16 +255,17 @@ sealed class Event(open val id: String) {
 
         data class Update(
             override val id: String,
-            val userId: String?,
+            val userId: String,
             val accentId: Int?,
             val ssoIdDeleted: Boolean?,
             val name: String?,
             val handle: String?,
             val email: String?,
+            val previewAssetId: String?,
+            val completeAssetId: String?,
         ) : User(id) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} " +
-                        "userId: ${userId.orEmpty().obfuscateId()} "
+                return "id: ${id.obfuscateId()} userId: ${userId.obfuscateId()}"
             }
         }
 

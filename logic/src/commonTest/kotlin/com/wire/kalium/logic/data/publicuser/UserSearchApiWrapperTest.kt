@@ -9,11 +9,11 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.contact.search.ContactDTO
-import com.wire.kalium.network.api.contact.search.SearchPolicyDTO
-import com.wire.kalium.network.api.contact.search.UserSearchApi
-import com.wire.kalium.network.api.contact.search.UserSearchResponse
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
+import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationDAO

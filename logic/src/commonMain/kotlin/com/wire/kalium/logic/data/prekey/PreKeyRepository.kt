@@ -11,7 +11,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
-import com.wire.kalium.network.api.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 
 interface PreKeyRepository {
     suspend fun preKeysOfClientsByQualifiedUsers(

@@ -2,15 +2,15 @@ package com.wire.kalium.api.tools.json.api.conversation
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.api.notification.EventContentDTOJson
-import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.conversation.ConversationApi
-import com.wire.kalium.network.api.conversation.ConversationApiImpl
-import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -36,7 +36,7 @@ class ConversationApiTest : ApiTest {
                 assertJsonBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
             }
         )
-        val conversationApi: ConversationApi = ConversationApiImpl(networkClient)
+        val conversationApi: ConversationApi = ConversationApiV0(networkClient)
         val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
 
         assertTrue(result.isSuccessful())
@@ -57,7 +57,7 @@ class ConversationApiTest : ApiTest {
             }
         )
 
-        val conversationApi = ConversationApiImpl(networkClient)
+        val conversationApi = ConversationApiV0(networkClient)
         val result = conversationApi.updateConversationMemberState(
             MEMBER_UPDATE_REQUEST.serializableData, ConversationId(conversationId, domain)
         )
@@ -77,7 +77,7 @@ class ConversationApiTest : ApiTest {
             }
         )
 
-        val conversationApi = ConversationApiImpl(networkClient)
+        val conversationApi = ConversationApiV0(networkClient)
         conversationApi.fetchConversationsIds(pagingState = null)
     }
 
@@ -94,7 +94,7 @@ class ConversationApiTest : ApiTest {
             }
         )
 
-        val conversationApi = ConversationApiImpl(networkClient)
+        val conversationApi = ConversationApiV0(networkClient)
         conversationApi.fetchConversationsListDetails(
             listOf(
                 ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
@@ -116,7 +116,7 @@ class ConversationApiTest : ApiTest {
             }
         )
 
-        val conversationApi = ConversationApiImpl(networkClient)
+        val conversationApi = ConversationApiV0(networkClient)
         conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles)
     }
 
@@ -129,7 +129,7 @@ class ConversationApiTest : ApiTest {
             "", statusCode = HttpStatusCode.NoContent
         )
 
-        val conversationApi = ConversationApiImpl(networkClient)
+        val conversationApi = ConversationApiV0(networkClient)
         conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUnchanged>>(it)
         }
@@ -144,7 +144,7 @@ class ConversationApiTest : ApiTest {
             EventContentDTOJson.valid.rawJson, statusCode = HttpStatusCode.OK
         )
 
-        val conversationApi = ConversationApiImpl(networkClient)
+        val conversationApi = ConversationApiV0(networkClient)
         conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUpdated>>(it)
         }
@@ -159,7 +159,7 @@ class ConversationApiTest : ApiTest {
             EventContentDTOJson.validNullAccessRole, statusCode = HttpStatusCode.OK
         )
 
-        val conversationApi = ConversationApiImpl(networkClient)
+        val conversationApi = ConversationApiV0(networkClient)
         conversationApi.updateAccessRole(ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"), accessRoles).also {
             assertIs<NetworkResponse.Success<UpdateConversationAccessResponse.AccessUpdated>>(it)
             assertEquals(ConversationAccessRoleDTO.DEFAULT_VALUE_WHEN_NULL, it.value.event.data.accessRole)
@@ -179,7 +179,7 @@ class ConversationApiTest : ApiTest {
             }
         )
 
-        val conversationApi = ConversationApiImpl(networkClient)
+        val conversationApi = ConversationApiV0(networkClient)
         conversationApi.updateConversationMemberRole(conversationId, userId, memberRole)
     }
 

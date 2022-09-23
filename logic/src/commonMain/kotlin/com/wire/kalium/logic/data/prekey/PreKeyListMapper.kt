@@ -3,7 +3,7 @@ package com.wire.kalium.logic.data.prekey
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.prekey.PreKeyDTO
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 
 class PreKeyListMapper(private val preKeyMapper: PreKeyMapper) {
 

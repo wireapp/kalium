@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.api.prekey
 
 import com.wire.kalium.api.tools.json.FaultyJsonProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.prekey.PreKeyDTO
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 
 object PreKeyJson {
     val valid = ValidJsonProvider(
