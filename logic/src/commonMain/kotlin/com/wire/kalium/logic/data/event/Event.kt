@@ -256,7 +256,7 @@ sealed class Event(open val id: String) {
 
         data class Update(
             override val id: String,
-            val userId: String?,
+            val userId: String,
             val accentId: Int?,
             val ssoIdDeleted: Boolean?,
             val name: String?,
@@ -266,7 +266,7 @@ sealed class Event(open val id: String) {
             val completeAssetId: String?,
         ) : User(id) {
             override fun toString(): String {
-                return "id: ${id.obfuscateId()} userId: ${userId.orEmpty().obfuscateId()}"
+                return "id: ${id.obfuscateId()} userId: ${userId.obfuscateId()}"
             }
         }
 
