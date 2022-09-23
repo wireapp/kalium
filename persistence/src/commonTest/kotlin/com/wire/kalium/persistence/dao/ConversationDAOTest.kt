@@ -502,7 +502,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         launch(UnconfinedTestDispatcher(testScheduler)) {
             // when
-            messageDAO.observeUnreadMessageCount(conversationId).test {
+            messageDAO.observeUnreadMessageCount(conversationId, user1.id).test {
                 // then
                 assertEquals(9L, awaitItem())
             }
@@ -540,7 +540,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         launch(UnconfinedTestDispatcher(testScheduler)) {
             // when
-            messageDAO.observeUnreadMessageCount(conversationId).test {
+            messageDAO.observeUnreadMessageCount(conversationId, user1.id).test {
                 // then
                 assertEquals(0L, awaitItem())
             }
