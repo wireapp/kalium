@@ -47,7 +47,7 @@ internal class PushTokenUpdater(
             }
             .collect { result ->
                 if (result.isRight()) {
-                    kaliumLogger.i("$TAG Firebase registered successfully")
+                    kaliumLogger.i("$TAG Firebase token registered successfully")
                     pushTokenRepository.setUpdateFirebaseTokenFlag(false)
                 }
             }
