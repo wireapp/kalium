@@ -530,7 +530,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     private val teamEventReceiver: TeamEventReceiver
-        get() = TeamEventReceiverImpl(teamRepository)
+        get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userId)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)
