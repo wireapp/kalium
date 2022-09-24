@@ -73,9 +73,11 @@ internal class ClearConversationContentUseCaseImpl(
                         id = uuid4().toString(),
                         content = MessageContent.Cleared(
                             unqualifiedConversationId = conversationId.value,
+                            // the id of the conversation that we want to clear
                             conversationId = conversationId,
                             time = Clock.System.now()
                         ),
+                        // sending the message to clear this conversation
                         conversationId = selfConversationId,
                         date = Clock.System.now().toString(),
                         senderUserId = selfUserId,
