@@ -5,7 +5,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.network.api.user.pushToken.PushTokenBody
+import com.wire.kalium.network.api.base.model.PushTokenBody
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull

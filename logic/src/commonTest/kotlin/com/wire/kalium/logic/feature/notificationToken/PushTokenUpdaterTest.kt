@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.user.pushToken.PushTokenBody
+import com.wire.kalium.network.api.base.model.PushTokenBody
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
