@@ -41,7 +41,6 @@ class UpdateConversationReadDateUseCase internal constructor(
                     conversationId = conversationId,
                     time = time
                 ),
-                // conversationId = conversationRepository.getSelfConversationId(),
                 conversationId = selfConversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,
