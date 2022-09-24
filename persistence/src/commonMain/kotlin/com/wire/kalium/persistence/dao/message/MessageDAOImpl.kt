@@ -21,7 +21,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Suppress("TooManyFunctions")
-class MessageDAOImpl(private val queries: MessagesQueries, private val conversationsQueries: ConversationsQueries) : MessageDAO {
+class MessageDAOImpl(
+    private val queries: MessagesQueries,
+    private val conversationsQueries: ConversationsQueries,
+    private val selfUserId: UserIDEntity
+) : MessageDAO {
     private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
@@ -68,99 +72,131 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
      */
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
-        queries.insertMessage(
-            id = message.id,
-            conversation_id = message.conversationId,
-            date = message.date,
-            sender_user_id = message.senderUserId,
-            sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
-            visibility = message.visibility,
-            status = message.status,
-            content_type = contentTypeOf(message.content)
-        )
-        when (val content = message.content) {
-            is MessageEntityContent.Text -> {
-                queries.insertMessageTextContent(
-                    message_id = message.id,
-                    conversation_id = message.conversationId,
-                    text_body = content.messageBody
-                )
-                content.mentions.forEach {
-                    queries.insertMessageMention(
+        if (!updateIdIfAlreadyExists(message)) {
+            queries.insertMessage(
+                id = message.id,
+                conversation_id = message.conversationId,
+                date = message.date,
+                sender_user_id = message.senderUserId,
+                sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
+                visibility = message.visibility,
+                status = message.status,
+                content_type = contentTypeOf(message.content)
+            )
+            when (val content = message.content) {
+                is MessageEntityContent.Text -> {
+                    queries.insertMessageTextContent(
                         message_id = message.id,
                         conversation_id = message.conversationId,
-                        start = it.start,
-                        length = it.length,
-                        user_id = it.userId
+                        text_body = content.messageBody
                     )
+                    content.mentions.forEach {
+                        queries.insertMessageMention(
+                            message_id = message.id,
+                            conversation_id = message.conversationId,
+                            start = it.start,
+                            length = it.length,
+                            user_id = it.userId
+                        )
+                    }
                 }
+
+                is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    asset_mime_type = content.mimeType,
+                    asset_size = content.assetSizeInBytes,
+                    asset_name = content.assetName
+                )
+
+                is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    asset_size = content.assetSizeInBytes,
+                    asset_name = content.assetName,
+                    asset_mime_type = content.assetMimeType,
+                    asset_upload_status = content.assetUploadStatus,
+                    asset_download_status = content.assetDownloadStatus,
+                    asset_otr_key = content.assetOtrKey,
+                    asset_sha256 = content.assetSha256Key,
+                    asset_id = content.assetId,
+                    asset_token = content.assetToken,
+                    asset_domain = content.assetDomain,
+                    asset_encryption_algorithm = content.assetEncryptionAlgorithm,
+                    asset_width = content.assetWidth,
+                    asset_height = content.assetHeight,
+                    asset_duration_ms = content.assetDurationMs,
+                    asset_normalized_loudness = content.assetNormalizedLoudness
+                )
+
+                is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    unknown_encoded_data = content.encodedData,
+                    unknown_type_name = content.typeName
+                )
+
+                is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    unknown_encoded_data = content.encodedData,
+                )
+
+                is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    member_change_list = content.memberUserIdList,
+                    member_change_type = content.memberChangeType
+                )
+
+                is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    caller_id = message.senderUserId
+                )
+
+                is MessageEntityContent.Knock -> {
+                    /** NO-OP. No need to insert any content for Knock messages */
+                }
+
+                is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    conversation_name = content.conversationName
+                )
             }
-
-            is MessageEntityContent.RestrictedAsset -> queries.insertMessageRestrictedAssetContent(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                asset_mime_type = content.mimeType,
-                asset_size = content.assetSizeInBytes,
-                asset_name = content.assetName
-            )
-
-            is MessageEntityContent.Asset -> queries.insertMessageAssetContent(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                asset_size = content.assetSizeInBytes,
-                asset_name = content.assetName,
-                asset_mime_type = content.assetMimeType,
-                asset_upload_status = content.assetUploadStatus,
-                asset_download_status = content.assetDownloadStatus,
-                asset_otr_key = content.assetOtrKey,
-                asset_sha256 = content.assetSha256Key,
-                asset_id = content.assetId,
-                asset_token = content.assetToken,
-                asset_domain = content.assetDomain,
-                asset_encryption_algorithm = content.assetEncryptionAlgorithm,
-                asset_width = content.assetWidth,
-                asset_height = content.assetHeight,
-                asset_duration_ms = content.assetDurationMs,
-                asset_normalized_loudness = content.assetNormalizedLoudness
-            )
-
-            is MessageEntityContent.Unknown -> queries.insertMessageUnknownContent(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                unknown_encoded_data = content.encodedData,
-                unknown_type_name = content.typeName
-            )
-
-            is MessageEntityContent.FailedDecryption -> queries.insertFailedDecryptionMessageContent(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                unknown_encoded_data = content.encodedData,
-            )
-
-            is MessageEntityContent.MemberChange -> queries.insertMemberChangeMessage(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                member_change_list = content.memberUserIdList,
-                member_change_type = content.memberChangeType
-            )
-
-            is MessageEntityContent.MissedCall -> queries.insertMissedCallMessage(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                caller_id = message.senderUserId
-            )
-
-            is MessageEntityContent.Knock -> {
-                /** NO-OP. No need to insert any content for Knock messages */
-            }
-
-            is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                conversation_name = content.conversationName
-            )
         }
     }
+
+    private fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
+        /*
+        When the user leaves a group, the app generates MemberChangeType.REMOVED and saves it locally because the socket doesn't send such
+        message anymore because the user already left the group, but the REST request to get all events the user missed when offline still
+        returns this event, so in order to avoid duplicates, the app needs to check and replace already existing system message instead of
+        adding another one.
+         */
+        (message.content as? MessageEntityContent.MemberChange)
+            ?.let {
+                if (it.memberChangeType == MessageEntity.MemberChangeType.REMOVED && message.senderUserId == selfUserId) it
+                else null
+            }?.let { memberRemovedContent ->
+                // Check if the message with given time and type already exists in the local DB.
+                queries.selectByConversationIdAndSenderIdAndTimeAndType(
+                    message.conversationId,
+                    message.senderUserId,
+                    message.date,
+                    contentTypeOf(message.content)
+                )
+                    .executeAsList()
+                    .firstOrNull {
+                        it.memberChangeType == MessageEntity.MemberChangeType.REMOVED &&
+                                it.memberChangeList?.toSet() == memberRemovedContent.memberUserIdList.toSet()
+                    }?.let {
+                        // The message already exists in the local DB, if its id is different then just update id.
+                        if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
+                        true
+                    }
+            } ?: false
 
     override suspend fun updateAssetUploadStatus(
         uploadStatus: MessageEntity.UploadStatus,
@@ -263,13 +299,14 @@ class MessageDAOImpl(private val queries: MessagesQueries, private val conversat
         mapper::toEntityMessageFromView
     ).asFlow().mapToOneOrNull()
 
-    override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity, selfUserId: UserIDEntity): Flow<Long> =
+    override suspend fun observeUnreadMessageCount(
+        conversationId: QualifiedIDEntity
+    ): Flow<Long> =
         queries.getUnreadMessageCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
 
     override suspend fun observeUnreadMentionsCount(
-        conversationId: QualifiedIDEntity,
-        selfUserId: UserIDEntity
+        conversationId: QualifiedIDEntity
     ): Flow<Long> =
         queries.getUnreadMentionsCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
