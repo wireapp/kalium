@@ -208,7 +208,6 @@ class ClearConversationContentUseCaseTest {
             given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationId) }
         }
 
-
         fun arrange() = this to ClearConversationContentUseCaseImpl(
             clearConversationContent,
             clientRepository,
