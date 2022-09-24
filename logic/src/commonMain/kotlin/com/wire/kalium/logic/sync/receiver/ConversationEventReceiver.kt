@@ -242,20 +242,21 @@ internal class ConversationEventReceiverImpl(
         }
     }
 
-    private fun updateAssetMessage(message: Message.Regular, newMessageRemoteData: AssetContent.RemoteData): Message {
-        val assetMessageContent = message.content as MessageContent.Asset
+    private fun updateAssetMessageWithDecryptionKeys(persistedMessage: Message.Regular, remoteData: AssetContent.RemoteData): Message {
+        val assetMessageContent = persistedMessage.content as MessageContent.Asset
         val isValidImage = assetMessageContent.value.metadata?.let {
             it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
         } ?: false
 
         // The message was previously received with just metadata info, so let's update it with the raw data info
-        return message.copy(
+        return persistedMessage.copy(
             content = assetMessageContent.copy(
                 value = assetMessageContent.value.copy(
-                    remoteData = newMessageRemoteData,
+                    remoteData = remoteData,
                     downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
                 )
-            )
+            ),
+            visibility = Message.Visibility.VISIBLE
         )
     }
 
@@ -303,7 +304,7 @@ internal class ConversationEventReceiverImpl(
             }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
-        .deleteMembers(event.removedList, event.conversationId)
+        .deleteMembersFromEvent(event.removedList, event.conversationId)
         .flatMap {
             // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
             // and keep them to properly show this member-leave message
@@ -336,7 +337,7 @@ internal class ConversationEventReceiverImpl(
                         .w("Failure fetching conversation details on MemberChange Event: $event")
                 }
                 // Even if unable to fetch conversation details, at least attempt updating the member
-                conversationRepository.updateMember(event.member, event.conversationId)
+                conversationRepository.updateMemberFromEvent(event.member, event.conversationId)
             }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member update event: $it") }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
@@ -495,7 +496,7 @@ internal class ConversationEventReceiverImpl(
     private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
         messageRepository.getMessageById(message.conversationId, message.id)
             .onFailure {
-                // No asset message was received previously, so just persist the preview asset message
+                // No asset message was received previously, so just persist the preview of the asset message
                 val isValidImage = (message.content as MessageContent.Asset).value.metadata?.let {
                     it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
                 } ?: false
@@ -504,7 +505,10 @@ internal class ConversationEventReceiverImpl(
                         value = message.content.value.copy(
                             downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
                         )
-                    )
+                    ),
+                    // We restrict the generic asset message to be displayed/interacted with until the second message with the final remote
+                    // data arrives. For images, we just show a placeholder with a loading bar.
+                    visibility = if (isValidImage) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
                 )
                 persistMessage(previewMessage)
             }
@@ -517,7 +521,12 @@ internal class ConversationEventReceiverImpl(
                 ) {
                     // The asset message received contains the asset decryption keys,
                     // so update the preview message persisted previously
-                    persistMessage(updateAssetMessage(message, (message.content as MessageContent.Asset).value.remoteData))
+                    persistMessage(
+                        updateAssetMessageWithDecryptionKeys(
+                            persistedMessage,
+                            (message.content as MessageContent.Asset).value.remoteData
+                        )
+                    )
                 }
             }
     }

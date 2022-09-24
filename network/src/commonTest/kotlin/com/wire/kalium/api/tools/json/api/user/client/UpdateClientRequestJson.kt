@@ -1,8 +1,8 @@
 package com.wire.kalium.api.tools.json.api.user.client
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.client.MLSPublicKeyTypeDTO
-import com.wire.kalium.network.api.user.client.UpdateClientRequest
+import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.UpdateClientRequest
 import io.ktor.util.encodeBase64
 
 object UpdateClientRequestJson {

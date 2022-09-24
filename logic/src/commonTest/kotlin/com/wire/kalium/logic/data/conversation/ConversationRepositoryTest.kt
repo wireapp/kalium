@@ -17,22 +17,23 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.conversation.ConvProtocol.MLS
-import com.wire.kalium.network.api.conversation.ConversationApi
-import com.wire.kalium.network.api.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationPagingResponse
-import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.ConversationResponseDTO
-import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.conversation.model.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.user.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -72,7 +73,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.ConversationId as ConversationIdDTO
+import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
 import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
@@ -253,12 +254,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -327,12 +328,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -384,12 +385,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -731,15 +732,32 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPISucceeds_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
+    fun givenAConversationAndAPISucceedsWithChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceed()
+            .withDeleteMemberAPISucceedChanged()
             .withSuccessfulMemberDeletion()
             .arrange()
 
         conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
-            .shouldSucceed()
+            .shouldSucceed { it is MemberChangeResult.Changed }
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
+            .with(anything(), anything())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationAndAPISucceedsWithoutChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
+            .withDeleteMemberAPISucceedUnchanged()
+            .withSuccessfulMemberDeletion()
+            .arrange()
+
+        conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
+            .shouldSucceed { it is MemberChangeResult.Unchanged }
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
@@ -768,13 +786,13 @@ class ConversationRepositoryTest {
     fun givenAnMLSConversationAndAPISucceeds_whenRemovingLeavingConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withConversationProtocolIs(MLS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceed()
+            .withDeleteMemberAPISucceedChanged()
             .withSuccessfulMemberDeletion()
             .withSuccessfulLeaveMLSGroup()
             .arrange()
 
         conversationRepository.deleteMember(TestUser.SELF.id, TestConversation.ID)
-            .shouldSucceed()
+            .shouldSucceed { it is MemberChangeResult.Changed }
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
@@ -794,13 +812,13 @@ class ConversationRepositoryTest {
     fun givenAnMLSConversationAndAPISucceeds_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withConversationProtocolIs(MLS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceed()
+            .withDeleteMemberAPISucceedChanged()
             .withSuccessfulMemberDeletion()
             .withSuccessfulRemoveMemberFromMLSGroup()
             .arrange()
 
         conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
-            .shouldSucceed()
+            .shouldSucceed { it is MemberChangeResult.Changed }
 
         // this function called in the mlsRepo
         verify(arrangement.conversationDAO)
@@ -840,7 +858,7 @@ class ConversationRepositoryTest {
             EventContentDTO.Conversation.AccessUpdate(
                 conversationIdDTO,
                 data = newAccessIndoDTO,
-                qualifiedFrom = com.wire.kalium.network.api.UserId("from_id", "from_domain")
+                qualifiedFrom = com.wire.kalium.network.api.base.model.UserId("from_id", "from_domain")
             )
         )
 
@@ -963,12 +981,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
@@ -1012,12 +1030,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
@@ -1076,12 +1094,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(0))
 
         given(messageDAO)
@@ -1123,12 +1141,12 @@ class ConversationRepositoryTest {
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMessageCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(messageDAO)
             .suspendFunction(messageDAO::observeUnreadMentionsCount)
-            .whenInvokedWith(any(), any())
+            .whenInvokedWith(any())
             .thenReturn(flowOf(10))
 
         given(userRepository)
@@ -1391,13 +1409,26 @@ class ConversationRepositoryTest {
                 .thenReturn(TestConversation.GROUP_ENTITY(protocolInfo))
         }
 
-        fun withDeleteMemberAPISucceed() = apply {
+        fun withDeleteMemberAPISucceedChanged() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::removeMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(
                     NetworkResponse.Success(
                         TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withDeleteMemberAPISucceedUnchanged() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::removeMember)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        ConversationMemberRemovedDTO.Unchanged,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )

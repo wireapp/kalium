@@ -3,11 +3,11 @@ package com.wire.kalium.api.tools.json.api.user.details
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.tools.json.model.QualifiedHandleSample
 import com.wire.kalium.api.tools.json.model.QualifiedIDSamples
-import com.wire.kalium.network.api.user.details.ListUserRequest
-import com.wire.kalium.network.api.user.details.UserDetailsApi
-import com.wire.kalium.network.api.user.details.UserDetailsApiImpl
-import com.wire.kalium.network.api.user.details.qualifiedHandles
-import com.wire.kalium.network.api.user.details.qualifiedIds
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedHandles
+import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.v0.authenticated.UserDetailsApiV0
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -34,7 +34,7 @@ class UserDetailsApiTest : ApiTest {
                 assertJsonBodyContent(expectedRequestBody)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(networkClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiV0(networkClient)
 
         userDetailsApi.getMultipleUsers(params)
     }
@@ -50,7 +50,7 @@ class UserDetailsApiTest : ApiTest {
                 assertJsonBodyContent(expectedRequestBody)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(networkClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiV0(networkClient)
 
         userDetailsApi.getMultipleUsers(params)
     }
@@ -67,7 +67,7 @@ class UserDetailsApiTest : ApiTest {
                 assertPathEqual(PATH_LIST_USERS)
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(networkClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiV0(networkClient)
 
         userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(listOf()))
     }
@@ -83,7 +83,7 @@ class UserDetailsApiTest : ApiTest {
                 assertPathEqual("$PATH_USERS/${QualifiedIDSamples.one.domain}/${QualifiedIDSamples.one.value}")
             }
         )
-        val userDetailsApi: UserDetailsApi = UserDetailsApiImpl(httpClient)
+        val userDetailsApi: UserDetailsApi = UserDetailsApiV0(httpClient)
 
         val result = userDetailsApi.getUserInfo(QualifiedIDSamples.one)
         result.isSuccessful()

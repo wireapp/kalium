@@ -2,9 +2,9 @@ package com.wire.kalium.network.session
 
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.tools.testCredentials
-import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.model.AccessTokenDTO
-import com.wire.kalium.network.api.model.RefreshTokenDTO
+import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine

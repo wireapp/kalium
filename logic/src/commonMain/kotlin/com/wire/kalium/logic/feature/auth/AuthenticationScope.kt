@@ -16,8 +16,8 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.network.ServerMetaDataManager
+import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
-import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.tools.ServerConfigDTO
 
 class AuthenticationScope(
