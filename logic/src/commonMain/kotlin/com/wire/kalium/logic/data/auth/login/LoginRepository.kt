@@ -9,7 +9,7 @@ import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.user.login.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 
 internal interface LoginRepository {
     suspend fun loginWithEmail(

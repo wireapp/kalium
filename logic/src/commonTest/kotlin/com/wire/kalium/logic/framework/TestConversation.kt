@@ -1,24 +1,24 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
-import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.conversation.ConversationMemberAddedDTO
-import com.wire.kalium.network.api.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.conversation.ConversationMemberRemovedDTO
-import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
@@ -110,8 +110,10 @@ object TestConversation {
     val MEMBER_TEST1 = Member(USER_1, Member.Role.Admin)
     val USER_2 = UserId("member2", "domainMember")
     val MEMBER_TEST2 = Member(USER_2, Member.Role.Member)
-    val NETWORK_USER_ID1 = com.wire.kalium.network.api.UserId(value = "member1", domain = "domainMember")
-    val NETWORK_USER_ID2 = com.wire.kalium.network.api.UserId(value = "member2", domain = "domainMember")
+    val NETWORK_USER_ID1 =
+        com.wire.kalium.network.api.base.model.UserId(value = "member1", domain = "domainMember")
+    val NETWORK_USER_ID2 =
+        com.wire.kalium.network.api.base.model.UserId(value = "member2", domain = "domainMember")
     val USER_ID1 = UserId(value = "member1", domain = "domainMember")
 
     val CONVERSATION_RESPONSE = ConversationResponse(

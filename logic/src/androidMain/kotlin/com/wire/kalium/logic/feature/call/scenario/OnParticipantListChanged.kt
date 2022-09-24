@@ -1,13 +1,10 @@
 package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Pointer
-import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
-import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
-import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Participant
@@ -21,8 +18,6 @@ import kotlinx.serialization.json.Json
 
 @Suppress("LongParameterList")
 class OnParticipantListChanged internal constructor(
-    private val handle: Handle,
-    private val calling: Calling,
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val participantMapper: ParticipantMapper,
@@ -58,24 +53,10 @@ class OnParticipantListChanged internal constructor(
                 conversationId = conversationIdWithDomain.toString(),
                 participants = participants
             )
-
-            if (participants.size >= MINIMUM_PARTICIPANTS_FOR_VIDEO_REQUEST) {
-                calling.wcall_request_video_streams(
-                    inst = handle,
-                    conversationId = remoteConversationIdString,
-                    mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
-                    json = CallClientList(clients = clients).toJsonString()
-                )
-            }
             callingLogger.i(
                 "[onParticipantsChanged] - Total Participants: ${participants.size}" +
                         " | ConversationId: ${remoteConversationIdString.obfuscateId()}"
             )
         }
-    }
-
-    private companion object {
-        private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
-        private const val MINIMUM_PARTICIPANTS_FOR_VIDEO_REQUEST = 2
     }
 }

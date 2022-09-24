@@ -1,8 +1,8 @@
 package com.wire.kalium.api.tools.json.api.user.register
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.model.UserDTO
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.model.UserDTO
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put

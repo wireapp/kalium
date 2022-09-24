@@ -389,10 +389,14 @@ IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_dat
 ORDER BY message.date ASC
 LIMIT  1;
 
+selectByConversationIdAndSenderIdAndTimeAndType:
+SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
+
 getUnreadMessageCount:
 SELECT COUNT() FROM Message AS message
 WHERE message.conversation_id IS :conversation_id
 AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
+AND message.sender_user_id != :self_user_id
 AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
 
 getUnreadMentionsCount:
@@ -400,4 +404,4 @@ SELECT COUNT(DISTINCT message.id) FROM Message AS message
 WHERE message.conversation_id IS :conversation_id
 AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 AND message.content_type IN ('TEXT')
-AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :user_id);
+AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);

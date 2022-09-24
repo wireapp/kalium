@@ -14,8 +14,8 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
+import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
-import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.kmmSettings.UserPrefProvider
@@ -31,7 +31,7 @@ actual class UserSessionScopeProviderImpl(
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
     private val idMapper: IdMapper
-) : UserSessionScopeProviderCommon() {
+) : UserSessionScopeProviderCommon(globalCallManager) {
 
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
@@ -55,7 +55,7 @@ actual class UserSessionScopeProviderImpl(
             rootPath,
             kaliumConfigs.shouldEncryptData
         )
-        val userDatabase = UserDatabaseProvider(File(rootStoragePath), KaliumDispatcherImpl.io)
+        val userDatabase = UserDatabaseProvider(idMapper.toDaoModel(userId), File(rootStoragePath), KaliumDispatcherImpl.io)
 
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,

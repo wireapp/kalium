@@ -26,6 +26,9 @@ object TestEvent {
 
     fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(eventId, clientId)
     fun userDelete(eventId: String = "eventId", userId: UserId) = Event.User.UserDelete(eventId, userId)
+    fun updateUser(eventId: String = "eventId", userId: UserId) = Event.User.Update(
+        eventId, userId.toString(), null, false, "newName", null, null, null, null
+    )
 
     fun newConnection(eventId: String = "eventId") = Event.User.NewConnection(
         eventId,

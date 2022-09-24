@@ -463,7 +463,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
-
+        val selfUserId = QualifiedIDEntity("1", "domain")
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
@@ -513,6 +513,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
+        val selfUserId = QualifiedIDEntity("1", "domain")
 
         conversationDAO.insertConversation(
             newConversationEntity(

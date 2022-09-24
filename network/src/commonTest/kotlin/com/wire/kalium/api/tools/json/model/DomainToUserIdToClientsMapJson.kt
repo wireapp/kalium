@@ -1,7 +1,7 @@
 package com.wire.kalium.api.tools.json.model
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.prekey.DomainToUserIdToClientsMap
+import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsMap
 
 object DomainToUserIdToClientsMapJson {
 

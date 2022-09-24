@@ -1,10 +1,10 @@
 package com.wire.kalium.network.networkContainer
 
 import com.wire.kalium.network.UnboundNetworkClient
-import com.wire.kalium.network.api.configuration.ServerConfigApi
-import com.wire.kalium.network.api.configuration.ServerConfigApiImpl
-import com.wire.kalium.network.api.versioning.VersionApi
-import com.wire.kalium.network.api.versioning.VersionApiImpl
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import io.ktor.client.engine.HttpClientEngine
 
