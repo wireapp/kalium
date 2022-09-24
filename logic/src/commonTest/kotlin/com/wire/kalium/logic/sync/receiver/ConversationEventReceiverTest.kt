@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.SelfConversationIdProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
@@ -47,8 +48,6 @@ import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.protobuf.encodeToByteArray
-import com.wire.kalium.protobuf.messages.GenericMessage
-import com.wire.kalium.protobuf.messages.Text
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
@@ -479,6 +478,9 @@ class ConversationEventReceiverTest {
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
+        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
+
+        @Mock
         private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
         @Mock
@@ -510,16 +512,20 @@ class ConversationEventReceiverTest {
             callManagerImpl = lazyOf(callManager),
             editTextHandler = MessageTextEditHandler(messageRepository),
             lastReadContentHandler = LastReadContentHandler(
-                conversationRepository, TestUser.USER_ID
+                conversationRepository = conversationRepository,
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
             ),
             clearConversationContentHandler = ClearConversationContentHandler(
-                conversationRepository = conversationRepository,
-                userRepository = userRepository,
                 clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
-                TestUser.USER_ID
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
             ),
             deleteForMeHandler = DeleteForMeHandler(
-                conversationRepository = conversationRepository, messageRepository = messageRepository, selfUserId = TestUser.USER_ID
+                conversationRepository = conversationRepository,
+                messageRepository = messageRepository,
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
             ),
             userConfigRepository = userConfigRepository,
             ephemeralNotificationsManager = ephemeralNotifications,
@@ -697,6 +703,10 @@ class ConversationEventReceiverTest {
                 .suspendFunction(ephemeralNotifications::scheduleNotification)
                 .whenInvokedWith(any())
                 .thenDoNothing()
+        }
+
+        suspend fun withSelfConversationId(conversationId: ConversationId) = apply {
+            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationId) }
         }
 
         fun arrange() = this to conversationEventReceiver
