@@ -180,18 +180,16 @@ internal class ConnectionDataSource(
 
     // TODO: Vitor : Instead of duplicating, we could pass selfUser.teamId from the UseCases to this function.
     // This way, the UseCases can tie the different Repos together, calling these functions.
-    private suspend fun persistConnection(
-        connection: Connection,
-    ) =
+    private suspend fun persistConnection(connection: Connection) =
         selfTeamIdProvider().flatMap { teamId ->
             // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
             wrapApiRequest {
                 userDetailsApi.getUserInfo(idMapper.toApiModel(connection.qualifiedToId))
             }.fold({
-            wrapStorageRequest {
-                connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
-            }
-        }, { userProfileDTO ->
+                wrapStorageRequest {
+                    connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
+                }
+            }, { userProfileDTO ->
                 wrapStorageRequest {
                     val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
                         userDetailResponse = userProfileDTO,
@@ -208,8 +206,8 @@ internal class ConnectionDataSource(
                     // todo: ask if we need to insert the conversation here when the connection is sent!
                     connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
                 }
-            }
-        })
+            })
+        }
 
     private suspend fun deleteCancelledConnection(conversationId: ConversationId) = wrapStorageRequest {
         connectionDAO.deleteConnectionDataAndConversation(idMapper.toDaoModel(conversationId))
