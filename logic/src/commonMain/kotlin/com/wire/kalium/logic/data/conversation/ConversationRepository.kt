@@ -62,6 +62,7 @@ interface ConversationRepository {
     suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
+    suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -279,6 +280,9 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeConversationList(): Flow<List<Conversation>> {
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
+
+    override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
+        conversationDAO.getAllConversationDetails().map { it.map(conversationMapper::fromDaoModel) }
 
     /**
      * Gets a flow that allows observing of

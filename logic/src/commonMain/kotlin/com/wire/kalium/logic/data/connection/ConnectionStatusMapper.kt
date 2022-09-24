@@ -9,7 +9,7 @@ interface ConnectionStatusMapper {
     fun fromDaoToApi(state: ConnectionEntity.State): ConnectionStateDTO?
     fun fromApiModel(state: ConnectionStateDTO): ConnectionState
     fun toApiModel(state: ConnectionState): ConnectionStateDTO?
-    fun fromDaoModel(state: ConnectionEntity.State): ConnectionState
+    fun fromDaoModel(state: ConnectionEntity.State?): ConnectionState
     fun toDaoModel(state: ConnectionState): ConnectionEntity.State
 
 }
@@ -57,7 +57,7 @@ internal class ConnectionStatusMapperImpl : ConnectionStatusMapper {
         ConnectionState.NOT_CONNECTED -> null
     }
 
-    override fun fromDaoModel(state: ConnectionEntity.State): ConnectionState = when (state) {
+    override fun fromDaoModel(state: ConnectionEntity.State?): ConnectionState = when (state) {
         ConnectionEntity.State.PENDING -> ConnectionState.PENDING
         ConnectionEntity.State.SENT -> ConnectionState.SENT
         ConnectionEntity.State.BLOCKED -> ConnectionState.BLOCKED
@@ -66,6 +66,7 @@ internal class ConnectionStatusMapperImpl : ConnectionStatusMapper {
         ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
         ConnectionEntity.State.ACCEPTED -> ConnectionState.ACCEPTED
         ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
+        else -> ConnectionState.ACCEPTED
     }
 
     override fun toDaoModel(state: ConnectionState): ConnectionEntity.State = when (state) {
@@ -79,4 +80,3 @@ internal class ConnectionStatusMapperImpl : ConnectionStatusMapper {
         ConnectionState.NOT_CONNECTED -> ConnectionEntity.State.NOT_CONNECTED
     }
 }
-

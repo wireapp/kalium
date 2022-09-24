@@ -83,7 +83,14 @@ internal object MapperProvider {
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
     fun conversationMapper(): ConversationMapper =
-        ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(idMapper()), ProtocolInfoMapperImpl())
+        ConversationMapperImpl(
+            idMapper(),
+            ConversationStatusMapperImpl(idMapper()),
+            ProtocolInfoMapperImpl(),
+            AvailabilityStatusMapperImpl(),
+            DomainUserTypeMapperImpl(),
+            ConnectionStatusMapperImpl()
+        )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
