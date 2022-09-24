@@ -131,3 +131,8 @@ updateConversationName:
 UPDATE Conversation
 SET name = ?, last_modified_date = ?
 WHERE qualified_id = ?;
+
+revokeOneOnOneConversationWithDeletedUser:
+UPDATE Conversation
+SET type = ?
+WHERE qualified_id = ?;
