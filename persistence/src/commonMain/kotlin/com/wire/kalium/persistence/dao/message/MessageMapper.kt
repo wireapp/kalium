@@ -163,6 +163,6 @@ object MessageMapper {
     }
 
     private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
-        "Fild $fieldName null when unpacking message content"
+        "Field $fieldName null when unpacking message content"
     }
 }
