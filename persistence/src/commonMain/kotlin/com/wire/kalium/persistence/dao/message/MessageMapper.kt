@@ -102,23 +102,31 @@ object MessageMapper {
             mentions = listOf()
         )
 
-        MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
-            assetSizeInBytes = assetSize.requireField("asset_size"),
-            assetName = assetName,
-            assetMimeType = assetMimeType.requireField("asset_mime_type"),
-            assetUploadStatus = assetUploadStatus,
-            assetDownloadStatus = assetDownloadStatus,
-            assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
-            assetSha256Key = assetSha256.requireField("asset_sha256"),
-            assetId = assetId.requireField("asset_id"),
-            assetToken = assetToken,
-            assetDomain = assetDomain,
-            assetEncryptionAlgorithm = assetEncryptionAlgorithm,
-            assetWidth = assetWidth,
-            assetHeight = assetHeight,
-            assetDurationMs = assetDuration,
-            assetNormalizedLoudness = assetNormalizedLoudness,
-        )
+        MessageEntity.ContentType.ASSET -> if (visibility != MessageEntity.Visibility.DELETED) {
+            MessageEntityContent.Asset(
+                assetSizeInBytes = assetSize.requireField("asset_size"),
+                assetName = assetName,
+                assetMimeType = assetMimeType.requireField("asset_mime_type"),
+                assetUploadStatus = assetUploadStatus,
+                assetDownloadStatus = assetDownloadStatus,
+                assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
+                assetSha256Key = assetSha256.requireField("asset_sha256"),
+                assetId = assetId.requireField("asset_id"),
+                assetToken = assetToken,
+                assetDomain = assetDomain,
+                assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+                assetWidth = assetWidth,
+                assetHeight = assetHeight,
+                assetDurationMs = assetDuration,
+                assetNormalizedLoudness = assetNormalizedLoudness,
+            )
+        } else {
+            // In case the asset is deleted we just map it as a regular message to display the deleted placeholder
+            MessageEntityContent.Text(
+                messageBody = text ?: "",
+                mentions = listOf()
+            )
+        }
 
         MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
         MessageEntity.ContentType.MEMBER_CHANGE -> MessageEntityContent.MemberChange(
@@ -158,6 +166,6 @@ object MessageMapper {
     }
 
     private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
-        "Fild $fieldName null when unpacking message content"
+        "Field $fieldName null when unpacking message content"
     }
 }
