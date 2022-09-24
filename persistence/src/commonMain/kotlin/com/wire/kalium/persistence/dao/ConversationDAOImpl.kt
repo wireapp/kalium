@@ -443,4 +443,12 @@ class ConversationDAOImpl(
         conversationQueries.updateConversationName(conversationName, timestamp, conversationId)
     }
 
+    override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) {
+        conversationQueries.transaction {
+            val conversationId = memberQueries.selectConversationByMember(userId).executeAsOne().conversation
+            conversationQueries.revokeOneOnOneConversationWithDeletedUser(ConversationEntity.Type.GROUP, conversationId)
+            memberQueries.deleteUserFromConversations(userId)
+        }
+    }
+
 }

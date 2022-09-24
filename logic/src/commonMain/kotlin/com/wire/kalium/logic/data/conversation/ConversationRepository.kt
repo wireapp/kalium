@@ -147,6 +147,9 @@ interface ConversationRepository {
         conversationName: String,
         timestamp: String
     ): Either<CoreFailure, Unit>
+
+    suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit>
+
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -800,6 +803,10 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
         wrapStorageRequest { conversationDAO.updateConversationName(idMapper.toDaoModel(conversationId), conversationName, timestamp) }
+
+    override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.revokeOneOnOneConversationsWithDeletedUser(idMapper.toDaoModel(userId))
+    }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
