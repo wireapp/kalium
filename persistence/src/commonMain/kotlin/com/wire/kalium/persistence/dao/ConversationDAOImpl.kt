@@ -264,7 +264,7 @@ class ConversationDAOImpl(
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getAllConversationsView(): Flow<List<ConversationViewEntity>> {
+    override suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>> {
         return conversationQueries.selectAllConversationsView(conversationMapper::toModel)
             .asFlow()
             .mapToList()

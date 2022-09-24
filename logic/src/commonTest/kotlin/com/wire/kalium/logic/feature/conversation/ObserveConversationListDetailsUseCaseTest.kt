@@ -330,7 +330,7 @@ class ObserveConversationListDetailsUseCaseTest {
                 .thenReturn(conversations.consumeAsFlow())
         }
 
-        fun arrange() = this to ObserveConversationViewUseCaseImpl(conversationRepository)
+        fun arrange() = this to ObserveConversationListDetailsUseCaseImpl(conversationRepository)
     }
 
 }

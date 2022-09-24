@@ -76,7 +76,7 @@ UPDATE Conversation
 SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
 
-CREATE VIEW IF NOT EXISTS ConversatonsList AS
+CREATE VIEW IF NOT EXISTS ConversatonDetails AS
 SELECT
 Conversation.qualified_id AS qualifiedId,
 CASE (Conversation.type)
@@ -159,8 +159,8 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
 LEFT JOIN Call ON Call.id IS (SELECT MAX(id) FROM Call WHERE Call.conversation_id = Conversation.qualified_id) AND Call.status IS "STILL_ONGOING";
 
-selectAllConversationsView:
-SELECT * FROM ConversatonsList
+selectAllConversationDetails:
+SELECT * FROM ConversatonDetails
 WHERE type IS NOT "SELF" AND
 (type IS "GROUP" AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
 OR (type IS NOT "GROUP" AND otherUserId IS NOT NULL)) -- show other conversation- todo: problem here! if the sync wasn't succesful the the user seems to be null!

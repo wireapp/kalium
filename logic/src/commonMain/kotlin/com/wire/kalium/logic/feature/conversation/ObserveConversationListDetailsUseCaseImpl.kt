@@ -4,14 +4,14 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import kotlinx.coroutines.flow.Flow
 
-fun interface ObserveConversationViewUseCase {
+fun interface ObserveConversationListDetailsUseCase {
     suspend operator fun invoke(): Flow<List<ConversationDetails>>
 }
 
-internal class ObserveConversationViewUseCaseImpl(
+internal class ObserveConversationListDetailsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-) : ObserveConversationViewUseCase {
+) : ObserveConversationListDetailsUseCase {
 
     override suspend operator fun invoke(): Flow<List<ConversationDetails>> =
-        conversationRepository.observeConversationViewList()
+        conversationRepository.observeConversationListDetails()
 }

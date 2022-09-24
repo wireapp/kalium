@@ -119,7 +119,7 @@ interface ConversationDAO {
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String)
     suspend fun updateAllConversationsNotificationDate(date: String)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getAllConversationsView(): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationEntity?
