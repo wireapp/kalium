@@ -17,7 +17,7 @@ internal class AvailabilityStatusMapperImpl : AvailabilityStatusMapper {
             UserAvailabilityStatusEntity.BUSY -> UserAvailabilityStatus.BUSY
             UserAvailabilityStatusEntity.AWAY -> UserAvailabilityStatus.AWAY
             UserAvailabilityStatusEntity.NONE -> UserAvailabilityStatus.NONE
-            else -> UserAvailabilityStatus.NONE
+            null -> UserAvailabilityStatus.NONE
         }
 
     override fun fromModelAvailabilityStatusToDao(status: UserAvailabilityStatus): UserAvailabilityStatusEntity =

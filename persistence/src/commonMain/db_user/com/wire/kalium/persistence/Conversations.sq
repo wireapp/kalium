@@ -167,7 +167,7 @@ OR (type IS NOT "GROUP" AND otherUserId IS NOT NULL)) -- show other conversation
 ORDER BY lastModifiedDate DESC;
 
 selectAllConversations:
-SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC;
+SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date AND name DESC;
 
 selectByQualifiedId:
 SELECT * FROM Conversation WHERE qualified_id = ?;

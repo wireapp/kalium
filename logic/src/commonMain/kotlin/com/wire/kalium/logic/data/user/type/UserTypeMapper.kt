@@ -54,7 +54,7 @@ class DomainUserTypeMapperImpl : DomainUserTypeMapper {
             UserTypeEntity.OWNER -> owner
             UserTypeEntity.ADMIN -> admin
             UserTypeEntity.SERVICE -> service
-            else -> none
+            null -> none
         }
     }
 
