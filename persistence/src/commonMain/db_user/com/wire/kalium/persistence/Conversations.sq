@@ -150,7 +150,7 @@ FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"
     AND Member.user IS NOT (SELECT Conversation.qualified_id FROM Conversation WHERE Conversation.type IS "SELF")
-LEFT JOIN User ON User.qualified_id = Member.user AND User.qualified_id
+LEFT JOIN User ON User.qualified_id = Member.user
 LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
     AND (Connection.status = 'SENT'
          OR Connection.status = 'PENDING'
