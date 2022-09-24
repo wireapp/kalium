@@ -47,6 +47,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.notification.PushTokenDataSource
+import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -99,6 +101,7 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -255,6 +258,9 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             qualifiedIdMapper
         )
+
+    internal val pushTokenRepository: PushTokenRepository
+        get() = PushTokenDataSource(userDatabaseProvider.metadataDAO)
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
@@ -652,6 +658,12 @@ abstract class UserSessionScopeCommon internal constructor(
         }
     }
 
+    private fun createPushTokenUpdater() = PushTokenUpdater(
+        clientRepository,
+        notificationTokenRepository,
+        pushTokenRepository
+    )
+
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     fun onInit() {
@@ -661,6 +673,11 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
+        }
+
+        launch {
+            val pushTokenUpdater = createPushTokenUpdater()
+            pushTokenUpdater.monitorTokenChanges()
         }
     }
 
