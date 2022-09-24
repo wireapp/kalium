@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.SelfConversationIdProvider
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
@@ -37,6 +38,7 @@ class ConversationScope internal constructor(
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
     private val selfUserId: UserId,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) {
@@ -100,7 +102,8 @@ class ConversationScope internal constructor(
             conversationRepository,
             messageSender,
             clientRepository,
-            selfUserId
+            selfUserId,
+            selfConversationIdProvider,
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
@@ -119,9 +122,9 @@ class ConversationScope internal constructor(
         get() = ClearConversationContentUseCaseImpl(
             clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
             clientRepository,
-            conversationRepository,
             messageSender,
-            selfUserId
+            selfUserId,
+            selfConversationIdProvider
         )
 
 }

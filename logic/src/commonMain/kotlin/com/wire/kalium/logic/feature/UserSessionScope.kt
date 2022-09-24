@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -35,6 +36,7 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
@@ -152,6 +154,7 @@ import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -162,6 +165,10 @@ import kotlin.coroutines.CoroutineContext
 expect class UserSessionScope : UserSessionScopeCommon
 fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
+}
+
+fun interface SelfConversationIdProvider {
+    suspend operator fun invoke(): Either<StorageFailure, ConversationId>
 }
 
 @Suppress("LongParameterList")
@@ -184,6 +191,16 @@ abstract class UserSessionScopeCommon internal constructor(
             }
         }
 
+    private var _selfConversationId: ConversationId? = null
+    @OptIn(DelicateKaliumApi::class)
+    private suspend fun selfConversationId(): Either<StorageFailure, ConversationId> =
+        if (_selfConversationId != null) Either.Right(_selfConversationId!!)
+        else {
+            conversationRepository.getSelfConversationId().onSuccess {
+                _selfConversationId = it
+            }
+        }
+
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
 
     val federatedIdMapper: FederatedIdMapper
@@ -194,6 +211,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
+    private val selfConversationIdProvider = SelfConversationIdProvider { selfConversationId() }
 
     private val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(authenticatedDataSourceSet.userPrefProvider.userConfigStorage)
@@ -474,6 +492,9 @@ abstract class UserSessionScopeCommon internal constructor(
     }
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
+        val conversationRepository = conversationRepository
+        val messageRepository = messageRepository
+        val assetRepository = assetRepository
         ConversationEventReceiverImpl(
             proteusClient = authenticatedDataSourceSet.proteusClient,
             persistMessage = persistMessage,
@@ -484,14 +505,13 @@ abstract class UserSessionScopeCommon internal constructor(
             userRepository = userRepository,
             callManagerImpl = callManager,
             editTextHandler = MessageTextEditHandler(messageRepository),
-            lastReadContentHandler = LastReadContentHandler(conversationRepository, userId),
+            lastReadContentHandler = LastReadContentHandler(conversationRepository, userId, selfConversationIdProvider),
             clearConversationContentHandler = ClearConversationContentHandler(
-                conversationRepository,
-                userRepository,
                 ClearConversationContentImpl(conversationRepository, assetRepository),
-                userId
+                userId,
+                selfConversationIdProvider,
             ),
-            deleteForMeHandler = DeleteForMeHandler(conversationRepository, messageRepository, userId),
+            deleteForMeHandler = DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
             userConfigRepository = userConfigRepository,
             ephemeralNotificationsManager = EphemeralNotificationsManager,
             pendingProposalScheduler = pendingProposalScheduler,
@@ -563,6 +583,7 @@ abstract class UserSessionScopeCommon internal constructor(
             messages.messageSender,
             teamRepository,
             userId,
+            selfConversationIdProvider,
             persistMessage,
             updateKeyingMaterialThresholdProvider
         )

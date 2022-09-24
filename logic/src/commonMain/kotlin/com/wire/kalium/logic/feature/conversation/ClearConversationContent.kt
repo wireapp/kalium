@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.SelfConversationIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -59,29 +60,31 @@ interface ClearConversationContentUseCase {
 internal class ClearConversationContentUseCaseImpl(
     private val clearConversationContent: ClearConversationContent,
     private val clientRepository: ClientRepository,
-    private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
+    private val selfConversationIdProvider: SelfConversationIdProvider
 ) : ClearConversationContentUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result =
         clearConversationContent(conversationId).flatMap {
             clientRepository.currentClientId().flatMap { currentClientId ->
-                val regularMessage = Message.Regular(
-                    id = uuid4().toString(),
-                    content = MessageContent.Cleared(
-                        unqualifiedConversationId = conversationId.value,
-                        conversationId = conversationId,
-                        time = Clock.System.now()
-                    ),
-                    conversationId = conversationRepository.getSelfConversationId(),
-                    date = Clock.System.now().toString(),
-                    senderUserId = selfUserId,
-                    senderClientId = currentClientId,
-                    status = Message.Status.PENDING,
-                    editStatus = Message.EditStatus.NotEdited,
-                )
-                messageSender.sendMessage(regularMessage)
+                selfConversationIdProvider().flatMap { selfConversationId ->
+                    val regularMessage = Message.Regular(
+                        id = uuid4().toString(),
+                        content = MessageContent.Cleared(
+                            unqualifiedConversationId = conversationId.value,
+                            conversationId = conversationId,
+                            time = Clock.System.now()
+                        ),
+                        conversationId = selfConversationId,
+                        date = Clock.System.now().toString(),
+                        senderUserId = selfUserId,
+                        senderClientId = currentClientId,
+                        status = Message.Status.PENDING,
+                        editStatus = Message.EditStatus.NotEdited,
+                    )
+                    messageSender.sendMessage(regularMessage)
+                }
             }
         }.fold({ ClearConversationContentUseCase.Result.Failure }, { ClearConversationContentUseCase.Result.Success })
 }
