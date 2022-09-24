@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -30,7 +29,6 @@ class ConversationScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
-    private val callRepository: CallRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
@@ -59,10 +57,7 @@ class ConversationScope internal constructor(
         get() = GetOneToOneConversationUseCase(conversationRepository)
 
     val observeConversationListDetails: ObserveConversationListDetailsUseCase
-        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository, observeIsSelfUserMemberUseCase)
-
-    val observeConversationsAndConnectionListUseCase: ObserveConversationsAndConnectionsUseCase
-        get() = ObserveConversationsAndConnectionsUseCaseImpl(observeConversationListDetails, observeConnectionList)
+        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
 
     val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCase(conversationRepository, userRepository)
@@ -114,6 +109,9 @@ class ConversationScope internal constructor(
 
     val removeMemberFromConversation: RemoveMemberFromConversationUseCase
         get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
+
+    val leaveConversation: LeaveConversationUseCase
+        get() = LeaveConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)

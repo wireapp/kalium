@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
@@ -119,6 +120,8 @@ import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
@@ -167,6 +170,10 @@ fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
 }
 
+fun interface SelfTeamIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
+}
+
 fun interface SelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, ConversationId>
 }
@@ -212,6 +219,19 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val selfConversationIdProvider = SelfConversationIdProvider { selfConversationId() }
+
+    // TODO: make atomic
+    // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
+    private var _teamId: Either<CoreFailure, TeamId?> = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
+
+    private suspend fun teamId(): Either<CoreFailure, TeamId?> =
+        if (_teamId.isRight()) _teamId else {
+            userRepository.userById(userId).map {
+                _teamId = Either.Right(it.teamId)
+                it.teamId
+            }
+        }
+    private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(authenticatedDataSourceSet.userPrefProvider.userConfigStorage)
@@ -296,7 +316,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userDatabaseProvider.userDAO,
-            userDatabaseProvider.metadataDAO
+            userId,
+            selfTeamId
         )
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
@@ -575,7 +596,6 @@ abstract class UserSessionScopeCommon internal constructor(
             conversationRepository,
             connectionRepository,
             userRepository,
-            callRepository,
             syncManager,
             mlsConversationRepository,
             clientRepository,
