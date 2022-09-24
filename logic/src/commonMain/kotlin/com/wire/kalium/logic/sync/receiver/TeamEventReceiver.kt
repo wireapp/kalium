@@ -37,9 +37,7 @@ class TeamEventReceiverImpl(
         teamRepository.removeTeamMember(
             teamId = event.teamId,
             userId = event.memberId,
-        ).onSuccess {
-            conversationRepository.deleteUserFromConversations(UserId(event.memberId, selfUserId.domain))
-        }
+        ).onSuccess { conversationRepository.deleteUserFromConversations(UserId(event.memberId, selfUserId.domain)) }
             .onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
 
     private suspend fun handleMemberUpdate(event: Event.Team.MemberUpdate) =

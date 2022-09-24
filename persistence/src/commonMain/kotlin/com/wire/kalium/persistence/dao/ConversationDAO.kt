@@ -135,7 +135,6 @@ interface ConversationDAO {
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
     suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
-    suspend fun deleteUserFromConversations(userId: UserIDEntity)
-    suspend fun revokeOneOnOneConversationsWithDeletedUser(conversationID: QualifiedIDEntity)
+    suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
 
 }
