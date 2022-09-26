@@ -160,12 +160,8 @@ internal class ConversationEventReceiverImpl(
             .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event) }
             .onFailure {
                 when (it) {
-                    is CoreFailure.Unknown -> logger
-                        .e("$TAG - UnknownFailure when processing message: $it", it.rootCause)
-
-                    is ProteusFailure -> logger
-                        .e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
-
+                    is CoreFailure.Unknown -> logger.e("$TAG - UnknownFailure when processing message: $it", it.rootCause)
+                    is ProteusFailure -> logger.e("$TAG - ProteusFailure when processing message: $it", it.proteusException)
                     else -> logger.e("$TAG - Failure when processing message: $it")
                 }
                 handleFailedProteusDecryptedMessage(event)
@@ -283,12 +279,10 @@ internal class ConversationEventReceiverImpl(
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
                 onSuccess {
-                    logger.withFeatureId(EVENT_RECEIVER)
-                        .v("Succeeded fetching conversation details on MemberJoin Event: $event")
+                    logger.v("Succeeded fetching conversation details on MemberJoin Event: $event")
                 }
                 onFailure {
-                    logger.withFeatureId(EVENT_RECEIVER)
-                        .w("Failure fetching conversation details on MemberJoin Event: $event")
+                    logger.w("Failure fetching conversation details on MemberJoin Event: $event")
                 }
                 // Even if unable to fetch conversation details, at least attempt adding the member
                 conversationRepository.persistMembers(event.members, event.conversationId)
@@ -303,7 +297,7 @@ internal class ConversationEventReceiverImpl(
                     visibility = Message.Visibility.VISIBLE
                 )
                 processMessage(message) // TODO(exception-handling): processMessage exceptions are not caught
-            }.onFailure { logger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member join event: $it") }
+            }.onFailure { logger.e("$TAG - failure on member join event: $it") }
 
     private suspend fun handleMemberLeave(event: Event.Conversation.MemberLeave) = conversationRepository
         .deleteMembersFromEvent(event.removedList, event.conversationId)
@@ -324,7 +318,7 @@ internal class ConversationEventReceiverImpl(
             )
             processMessage(message)
         }
-        .onFailure { logger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member leave event: $it") }
+        .onFailure { logger.e("$TAG - failure on member leave event: $it") }
 
     private suspend fun handleMemberChange(event: Event.Conversation.MemberChanged) {
         if (event is Event.Conversation.IgnoredMemberChanged) {
@@ -338,8 +332,7 @@ internal class ConversationEventReceiverImpl(
                         logger.v("Succeeded fetching conversation details on MemberChange Event: $event")
                     }
                     onFailure {
-                        logger.withFeatureId(EVENT_RECEIVER)
-                            .w("Failure fetching conversation details on MemberChange Event: $event")
+                        logger.w("Failure fetching conversation details on MemberChange Event: $event")
                     }
                     // Even if unable to fetch conversation details, at least attempt updating the member
                     event.member?.let { conversationRepository.updateMemberFromEvent(it, event.conversationId) }
