@@ -379,7 +379,7 @@ class ConnectionRepositoryTest {
             given(selfTeamIdProvider)
                 .suspendFunction(selfTeamIdProvider::invoke)
                 .whenInvoked()
-                .then{ either }
+                .then { either }
             return this
         }
 
