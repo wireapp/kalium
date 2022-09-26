@@ -76,11 +76,9 @@ class SelfConversationIdProviderTest {
             .wasInvoked(exactly = once)
     }
 
-
     private companion object {
         val SELF_CONVERSATION_ID = ConversationId("self_conv_id", "conv_domain")
     }
-
 
     private class Arrangement {
 

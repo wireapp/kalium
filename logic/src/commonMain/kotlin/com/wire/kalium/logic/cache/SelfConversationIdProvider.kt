@@ -13,7 +13,7 @@ internal interface SelfConversationIdProvider {
 
 internal class SelfConversationIdProviderImpl(
     private val conversationRepository: ConversationRepository
-): SelfConversationIdProvider {
+) : SelfConversationIdProvider {
 
     private var _selfConversationId: ConversationId? = null
 
