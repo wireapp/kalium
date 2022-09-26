@@ -185,6 +185,8 @@ abstract class UserSessionScopeCommon internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
 ) : CoroutineScope {
 
+    private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
+
     // TODO: extract client id provider to it's own class and test it
     private var _clientId: ClientId? = null
     private suspend fun clientId(): Either<CoreFailure, ClientId> =
@@ -201,10 +203,10 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             qualifiedIdMapper,
             globalScope.sessionRepository
-        )
+            )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
-    private val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(conversationRepository)
+    private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
 
     // TODO: make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
@@ -221,8 +223,6 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(authenticatedDataSourceSet.userPrefProvider.userConfigStorage)
-
-    private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
@@ -337,6 +337,8 @@ abstract class UserSessionScopeCommon internal constructor(
         )
     }
 
+    // TODO: Refactor. These should be passed in the constructor to
+    //       avoid depending on not-yet-initialized fields
     protected abstract val clientConfig: ClientConfig
 
     private val clientRemoteRepository: ClientRemoteRepository
