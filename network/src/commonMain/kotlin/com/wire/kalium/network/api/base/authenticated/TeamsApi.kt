@@ -12,13 +12,6 @@ import kotlinx.serialization.Serializable
 interface TeamsApi {
 
     @Serializable
-    data class TeamsResponse(
-        @SerialName("has_more") val hasMore: Boolean,
-        val convTeamInfos: List<TeamDTO>
-    )
-
-
-    @Serializable
     data class TeamMemberList(
         // Please note that this is intentionally cased differently form the has_more in TeamsResponse
         // because the backend response contains a different casing
@@ -66,14 +59,6 @@ interface TeamsApi {
 
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
 
-    /**
-     * Gets a list of teams
-     *
-     * @return a list of teams, represented by [TeamsApi.TeamsResponse] wrapped in a [NetworkResponse]
-     * @param[size] limits the number of teams returned
-     * @param[option] one of [GetTeamsOption.LimitTo] or [GetTeamsOption.StartFrom]
-     */
-    suspend fun getTeams(size: Int?, option: GetTeamsOption?): NetworkResponse<TeamsResponse>
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>

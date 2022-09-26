@@ -25,7 +25,7 @@ internal open class ClientApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ClientApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientResponse> =
         wrapKaliumResponse {
@@ -36,7 +36,7 @@ internal open class ClientApiV0 internal constructor(
 
     override suspend fun listClientsOfUsers(userIds: List<UserId>): NetworkResponse<Map<UserId, List<SimpleClientResponse>>> =
         wrapKaliumResponse<ClientsOfUsersResponse> {
-            httpClient.post(PATH_LIST_CLIENTS) {
+            httpClient.post("$PATH_USERS/$PATH_List_CLIENTS/v2") {
                 setBody(ListClientsOfUsersRequest(userIds))
             }
         }.mapSuccess { response ->
@@ -79,10 +79,10 @@ internal open class ClientApiV0 internal constructor(
         httpClient.delete("$PUSH_TOKEN/$pid")
     }
 
-    private companion object {
+    protected companion object {
         const val PATH_USERS = "users"
         const val PATH_CLIENTS = "clients"
-        const val PATH_LIST_CLIENTS = "$PATH_USERS/list-clients/v2"
+        const val PATH_List_CLIENTS = "list-clients"
         const val PUSH_TOKEN = "push/tokens"
 
     }

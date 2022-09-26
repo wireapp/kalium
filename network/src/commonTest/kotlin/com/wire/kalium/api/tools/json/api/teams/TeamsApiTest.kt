@@ -12,43 +12,6 @@ import kotlin.test.Test
 class TeamsApiTest: ApiTest {
 
     @Test
-    fun givenAValidListOfTeamsIds_whenCallingGetTeamsLimitedTo_theRequestShouldBeConfiguredCorrectly() =
-        runTest {
-            val commaSeparatedListOfIds = LIST_OF_TEAM_IDS.joinToString(",")
-            val networkClient = mockAuthenticatedNetworkClient(
-                GET_LIMIT_TO_CLIENT_RESPONSE.rawJson,
-                statusCode = HttpStatusCode.OK,
-                assertion = {
-                    assertGet()
-                    assertQueryExist("size")
-                    assertQueryExist("ids")
-                    assertQueryParameter("ids", hasValue = commaSeparatedListOfIds)
-                    assertPathEqual("/$PATH_TEAMS")
-                }
-            )
-            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
-            teamsApi.getTeams(size = 10, option = TeamsApi.GetTeamsOption.LimitTo(LIST_OF_TEAM_IDS))
-        }
-
-    @Test
-    fun givenAValidGetTeamsRequest_whenCallingGetTeamsStartFrom_theRequestShouldBeConfiguredCorrectly() =
-        runTest {
-            val networkClient = mockAuthenticatedNetworkClient(
-                GET_START_FROM_CLIENT_RESPONSE.rawJson,
-                statusCode = HttpStatusCode.OK,
-                assertion = {
-                    assertGet()
-                    assertQueryExist("size")
-                    assertQueryDoesNotExist("ids")
-                    assertQueryParameter("start", hasValue = DUMMY_TEAM_ID)
-                    assertPathEqual("/$PATH_TEAMS")
-                }
-            )
-            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
-            teamsApi.getTeams(size = 10, option = TeamsApi.GetTeamsOption.StartFrom(DUMMY_TEAM_ID))
-        }
-
-    @Test
     fun givenAValidGetTeamsFirstPageRequest_whenGettingTeamsMembers_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val networkClient = mockAuthenticatedNetworkClient(
@@ -86,9 +49,6 @@ class TeamsApiTest: ApiTest {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_MEMBERS = "members"
         const val DUMMY_TEAM_ID = "770b0623-ffd5-4e08-8092-7a6b9b9ca3b4"
-        val LIST_OF_TEAM_IDS = listOf(DUMMY_TEAM_ID)
-        val GET_LIMIT_TO_CLIENT_RESPONSE = TeamsResponsesJson.GetTeams.validGetTeamsLimitTo(LIST_OF_TEAM_IDS)
-        val GET_START_FROM_CLIENT_RESPONSE = TeamsResponsesJson.GetTeams.validGetTeamsStartFrom(DUMMY_TEAM_ID)
         val GET_TEAM_MEMBER_CLIENT_RESPONSE = TeamsResponsesJson.GetTeamsMembers.validGetTeamsMembers
     }
 }

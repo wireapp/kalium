@@ -34,7 +34,7 @@ internal open class ConversationApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ConversationApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun fetchConversationsIds(
         pagingState: String?
@@ -164,7 +164,7 @@ internal open class ConversationApiV0 internal constructor(
         }
     }
 
-    private companion object {
+    protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
         const val PATH_MEMBERS = "members"
