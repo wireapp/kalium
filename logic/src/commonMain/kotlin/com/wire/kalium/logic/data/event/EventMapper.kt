@@ -144,15 +144,21 @@ class EventMapper(
     private fun memberUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO
-    ) = Event.Conversation.MemberChanged(
-        id = id,
-        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-        timestampIso = eventContentDTO.time,
-        member = Conversation.Member(
-            id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
-            role = roleMapper.fromApi(eventContentDTO.roleChange.role)
-        ),
-    )
+    ): Event.Conversation.MemberChanged {
+        return if (eventContentDTO.roleChange.role.isNullOrEmpty()) {
+            Event.Conversation.IgnoredMemberChanged(id, idMapper.fromApiModel(eventContentDTO.qualifiedConversation))
+        } else {
+            Event.Conversation.MemberChanged(
+                id = id,
+                conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                timestampIso = eventContentDTO.time,
+                member = Conversation.Member(
+                    id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
+                    role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
+                ),
+            )
+        }
+    }
 
     private fun featureConfig(
         id: String,

@@ -324,21 +324,27 @@ internal class ConversationEventReceiverImpl(
         }
         .onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member leave event: $it") }
 
-    private suspend fun handleMemberChange(event: Event.Conversation.MemberChanged) =
-        // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        conversationRepository.fetchConversationIfUnknown(event.conversationId)
-            .run {
-                onSuccess {
-                    kaliumLogger.withFeatureId(EVENT_RECEIVER)
-                        .v("Succeeded fetching conversation details on MemberChange Event: $event")
-                }
-                onFailure {
-                    kaliumLogger.withFeatureId(EVENT_RECEIVER)
-                        .w("Failure fetching conversation details on MemberChange Event: $event")
-                }
-                // Even if unable to fetch conversation details, at least attempt updating the member
-                conversationRepository.updateMemberFromEvent(event.member, event.conversationId)
-            }.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member update event: $it") }
+    private suspend fun handleMemberChange(event: Event.Conversation.MemberChanged) {
+        if (event is Event.Conversation.IgnoredMemberChanged) {
+            kaliumLogger.withFeatureId(EVENT_RECEIVER).w("Failure member role is : $event")
+            return
+        } else {
+            // Attempt to fetch conversation details if needed, as this might be an unknown conversation
+            conversationRepository.fetchConversationIfUnknown(event.conversationId)
+                .run {
+                    onSuccess {
+                        kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                            .v("Succeeded fetching conversation details on MemberChange Event: $event")
+                    }
+                    onFailure {
+                        kaliumLogger.withFeatureId(EVENT_RECEIVER)
+                            .w("Failure fetching conversation details on MemberChange Event: $event")
+                    }
+                    // Even if unable to fetch conversation details, at least attempt updating the member
+                    event.member?.let { conversationRepository.updateMemberFromEvent(it, event.conversationId) }
+                }?.onFailure { kaliumLogger.withFeatureId(EVENT_RECEIVER).e("$TAG - failure on member update event: $it") }
+        }
+    }
 
     private suspend fun handleMLSWelcome(event: Event.Conversation.MLSWelcome) {
         mlsConversationRepository.establishMLSGroupFromWelcome(event)
