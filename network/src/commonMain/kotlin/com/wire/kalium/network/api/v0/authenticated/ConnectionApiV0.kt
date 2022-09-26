@@ -1,13 +1,13 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionResponse
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.connection.UpdateConnectionRequest
 import com.wire.kalium.network.api.base.model.PaginationRequest
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post
@@ -22,7 +22,7 @@ internal class ConnectionApiV0 internal constructor(private val authenticatedNet
     override suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse> =
         wrapKaliumResponse {
             httpClient.post(PATH_CONNECTIONS) {
-                setBody(PaginationRequest(pagingState = pagingState))
+                setBody(PaginationRequest(pagingState = pagingState, size = MAX_CONNECTIONS_COUNT))
             }
         }
 
@@ -41,5 +41,6 @@ internal class ConnectionApiV0 internal constructor(private val authenticatedNet
     private companion object {
         const val PATH_CONNECTIONS = "list-connections"
         const val PATH_CONNECTIONS_ENDPOINTS = "connections"
+        const val MAX_CONNECTIONS_COUNT = 500
     }
 }
