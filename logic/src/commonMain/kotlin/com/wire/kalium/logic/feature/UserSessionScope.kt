@@ -201,10 +201,10 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             qualifiedIdMapper,
             globalScope.sessionRepository
-        )
+            )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
-    private val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(conversationRepository)
+    private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
 
     // TODO: make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
