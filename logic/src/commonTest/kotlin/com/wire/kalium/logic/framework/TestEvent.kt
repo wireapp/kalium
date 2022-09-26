@@ -24,6 +24,11 @@ object TestEvent {
         member
     )
 
+    fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.IgnoredMemberChanged(
+        eventId,
+        TestConversation.ID,
+    )
+
     fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(eventId, clientId)
     fun userDelete(eventId: String = "eventId", userId: UserId) = Event.User.UserDelete(eventId, userId)
     fun updateUser(eventId: String = "eventId", userId: UserId) = Event.User.Update(

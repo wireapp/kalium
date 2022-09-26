@@ -21,7 +21,7 @@ data class ConversationUsers(
 data class ConversationRoleChange(
     @SerialName("target") val user: String,
     @SerialName("qualified_target") val qualifiedUserId: UserId,
-    @SerialName("conversation_role") val role: String,
+    @SerialName("conversation_role") val role: String?,
 )
 
 @Serializable
