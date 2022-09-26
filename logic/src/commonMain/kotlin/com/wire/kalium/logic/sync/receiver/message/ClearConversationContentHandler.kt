@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.SelfConversationIdProvider
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.feature.conversation.ClearConversationContent
 import com.wire.kalium.logic.functional.fold
 

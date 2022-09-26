@@ -3,7 +3,8 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
-import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.cache.SelfConversationIdProviderImpl
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -36,7 +37,6 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
@@ -174,10 +174,6 @@ fun interface SelfTeamIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }
 
-fun interface SelfConversationIdProvider {
-    suspend operator fun invoke(): Either<StorageFailure, ConversationId>
-}
-
 @Suppress("LongParameterList")
 abstract class UserSessionScopeCommon internal constructor(
     private val userId: UserId,
@@ -190,21 +186,12 @@ abstract class UserSessionScopeCommon internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
 ) : CoroutineScope {
 
+    // TODO: extract client id provider to it's own class and test it
     private var _clientId: ClientId? = null
     private suspend fun clientId(): Either<CoreFailure, ClientId> =
         if (_clientId != null) Either.Right(_clientId!!) else {
             clientRepository.currentClientId().onSuccess {
                 _clientId = it
-            }
-        }
-
-    private var _selfConversationId: ConversationId? = null
-    @OptIn(DelicateKaliumApi::class)
-    private suspend fun selfConversationId(): Either<StorageFailure, ConversationId> =
-        if (_selfConversationId != null) Either.Right(_selfConversationId!!)
-        else {
-            conversationRepository.getSelfConversationId().onSuccess {
-                _selfConversationId = it
             }
         }
 
@@ -218,7 +205,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
-    private val selfConversationIdProvider = SelfConversationIdProvider { selfConversationId() }
+    private val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(conversationRepository)
 
     // TODO: make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))

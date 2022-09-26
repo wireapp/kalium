@@ -59,7 +59,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 interface ConversationRepository {
     @DelicateKaliumApi("this function does not get values from cache")
-     suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId>
+    suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId>
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
     suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
