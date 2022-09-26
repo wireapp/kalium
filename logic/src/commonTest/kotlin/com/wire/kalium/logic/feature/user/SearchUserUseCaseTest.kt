@@ -60,11 +60,6 @@ class SearchUserUseCaseTest {
         searchPublicUsersUseCase = SearchPublicUsersUseCaseImpl(searchUserRepository, connectionRepository, qualifiedIdMapper)
 
         given(connectionRepository)
-            .suspendFunction(connectionRepository::getConnectionRequests)
-            .whenInvoked()
-            .thenReturn(listOf())
-
-        given(connectionRepository)
             .suspendFunction(connectionRepository::observeConnectionList)
             .whenInvoked()
             .thenReturn(flowOf(listOf()))

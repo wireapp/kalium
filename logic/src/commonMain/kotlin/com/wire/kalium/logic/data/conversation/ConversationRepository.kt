@@ -43,6 +43,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -57,11 +58,13 @@ import kotlinx.datetime.Clock
 import kotlin.coroutines.cancellation.CancellationException
 
 interface ConversationRepository {
-    suspend fun getSelfConversationId(): ConversationId
+    @DelicateKaliumApi("this function does not get values from cache")
+    suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId>
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
     suspend fun insertConversationFromEvent(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
+    suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -146,6 +149,9 @@ interface ConversationRepository {
         conversationName: String,
         timestamp: String
     ): Either<CoreFailure, Unit>
+
+    suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit>
+
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -267,7 +273,9 @@ internal class ConversationDataSource internal constructor(
             }
         })
 
-    override suspend fun getSelfConversationId(): ConversationId = idMapper.fromDaoModel(conversationDAO.getSelfConversationId())
+    override suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId> =
+        wrapStorageRequest { conversationDAO.getSelfConversationId() }
+            .map { idMapper.fromDaoModel(it) }
 
     override suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
         observeConversationList()
@@ -276,6 +284,9 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeConversationList(): Flow<List<Conversation>> {
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
+
+    override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
+        conversationDAO.getAllConversationDetails().map { it.map(conversationMapper::fromDaoModel) }
 
     /**
      * Gets a flow that allows observing of
@@ -796,6 +807,10 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun updateConversationName(conversationId: ConversationId, conversationName: String, timestamp: String) =
         wrapStorageRequest { conversationDAO.updateConversationName(idMapper.toDaoModel(conversationId), conversationName, timestamp) }
+
+    override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.revokeOneOnOneConversationsWithDeletedUser(idMapper.toDaoModel(userId))
+    }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

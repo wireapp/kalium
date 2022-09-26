@@ -7,8 +7,8 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
@@ -43,6 +43,68 @@ private class ConversationMapper {
             accessRole = access_role_list
         )
     }
+
+    @Suppress("FunctionParameterNaming", "LongParameterList")
+    fun toModel(
+        id: QualifiedIDEntity,
+        name: String?,
+        type: ConversationEntity.Type,
+        callStatus: CallEntity.Status?,
+        previewAssetId: QualifiedIDEntity?,
+        mutedStatus: ConversationEntity.MutedStatus,
+        teamId: String?,
+        lastModifiedDate: String,
+        lastReadDate: String,
+        userAvailabilityStatus: UserAvailabilityStatusEntity?,
+        userType: UserTypeEntity?,
+        botService: BotEntity?,
+        userDeleted: Boolean?,
+        connectionStatus: ConnectionEntity.State?,
+        otherUserId: QualifiedIDEntity?,
+        isCreator: Long,
+        lastNotifiedMessageDate: String?,
+        unreadMessageCount: Long,
+        isMember: Long,
+        protocol: ConversationEntity.Protocol,
+        mlsCipherSuite: ConversationEntity.CipherSuite,
+        mlsEpoch: Long,
+        mlsGroupId: String?,
+        mlsLastKeyingMaterialUpdate: Long,
+        mlsGroupState: ConversationEntity.GroupState,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>,
+    ): ConversationViewEntity =
+        ConversationViewEntity(
+            id,
+            name,
+            type,
+            callStatus,
+            previewAssetId,
+            mutedStatus,
+            teamId,
+            lastModifiedDate,
+            lastReadDate,
+            userAvailabilityStatus,
+            userType,
+            botService,
+            userDeleted,
+            connectionStatus,
+            otherUserId,
+            isCreator,
+            lastNotifiedMessageDate,
+            unreadMessageCount,
+            isMember,
+            protocolInfo = mapProtocolInfo(
+                protocol,
+                mlsGroupId,
+                mlsGroupState,
+                mlsEpoch,
+                mlsLastKeyingMaterialUpdate,
+                mlsCipherSuite
+            ),
+            accessList,
+            accessRoleList
+        )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationEntity? {
         return conversation?.run {
@@ -116,11 +178,7 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
-
-    // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
-    override suspend fun getSelfConversationId() =
-        getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
-
+    override suspend fun getSelfConversationId() = conversationQueries.selfConversationId().executeAsOneOrNull()
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         nonSuspendingInsertConversation(conversationEntity)
     }
@@ -199,6 +257,12 @@ class ConversationDAOImpl(
             .asFlow()
             .mapToList()
             .map { it.map(conversationMapper::toModel) }
+    }
+
+    override suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>> {
+        return conversationQueries.selectAllConversationDetails(conversationMapper::toModel)
+            .asFlow()
+            .mapToList()
     }
 
     override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
@@ -372,6 +436,14 @@ class ConversationDAOImpl(
 
     override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String) {
         conversationQueries.updateConversationName(conversationName, timestamp, conversationId)
+    }
+
+    override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) {
+        conversationQueries.transaction {
+            val conversationId = memberQueries.selectConversationByMember(userId).executeAsOne().conversation
+            conversationQueries.revokeOneOnOneConversationWithDeletedUser(ConversationEntity.Type.GROUP, conversationId)
+            memberQueries.deleteUserFromConversations(userId)
+        }
     }
 
 }

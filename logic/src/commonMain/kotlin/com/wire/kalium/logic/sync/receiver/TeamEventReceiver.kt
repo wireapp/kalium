@@ -1,15 +1,20 @@
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 interface TeamEventReceiver : EventReceiver<Event.Team>
 
 class TeamEventReceiverImpl(
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamRepository,
+    private val conversationRepository: ConversationRepository,
+    private val selfUserId: UserId,
 ) : TeamEventReceiver {
 
     override suspend fun onEvent(event: Event.Team) {
@@ -32,7 +37,7 @@ class TeamEventReceiverImpl(
         teamRepository.removeTeamMember(
             teamId = event.teamId,
             userId = event.memberId,
-        )
+        ).onSuccess { conversationRepository.deleteUserFromConversations(UserId(event.memberId, selfUserId.domain)) }
             .onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
 
     private suspend fun handleMemberUpdate(event: Event.Team.MemberUpdate) =
