@@ -178,6 +178,6 @@ internal open class ConversationApiV0 internal constructor(
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_IDS = "qualified_ids"
 
-        const val MAX_CONVERSATION_DETAILS_COUNT = 200 // fixme: adjust "size" value later on when server can handle the load
+        const val MAX_CONVERSATION_DETAILS_COUNT = 500
     }
 }

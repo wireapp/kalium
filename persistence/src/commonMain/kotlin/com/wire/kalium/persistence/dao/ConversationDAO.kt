@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -20,7 +21,8 @@ data class ConversationEntity(
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>
+    val accessRole: List<AccessRole>,
+    val isCreator: Boolean = false
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -63,6 +65,32 @@ data class ConversationEntity(
     }
 }
 
+@Suppress("FunctionParameterNaming")
+data class ConversationViewEntity(
+    val id: QualifiedIDEntity,
+    val name: String?,
+    val type: ConversationEntity.Type,
+    val callStatus: CallEntity.Status?,
+    val previewAssetId: QualifiedIDEntity?,
+    val mutedStatus: ConversationEntity.MutedStatus,
+    val teamId: String?,
+    val lastModifiedDate: String,
+    val lastReadDate: String,
+    val userAvailabilityStatus: UserAvailabilityStatusEntity?,
+    val userType: UserTypeEntity?,
+    val botService: BotEntity?,
+    val userDeleted: Boolean?,
+    val connectionStatus: ConnectionEntity.State? = ConnectionEntity.State.NOT_CONNECTED,
+    val otherUserId: QualifiedIDEntity?,
+    val isCreator: Long,
+    val lastNotificationDate: String?,
+    val unreadMessageCount: Long,
+    val isMember: Long,
+    val protocolInfo: ConversationEntity.ProtocolInfo,
+    val accessList: List<ConversationEntity.Access>,
+    val accessRoleList: List<ConversationEntity.AccessRole>
+)
+
 // TODO: rename to MemberEntity
 data class Member(
     val user: QualifiedIDEntity,
@@ -81,7 +109,7 @@ data class ProposalTimerEntity(
 )
 
 interface ConversationDAO {
-    suspend fun getSelfConversationId(): QualifiedIDEntity
+    suspend fun getSelfConversationId(): QualifiedIDEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
@@ -91,6 +119,7 @@ interface ConversationDAO {
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String)
     suspend fun updateAllConversationsNotificationDate(date: String)
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
+    suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationEntity?
@@ -135,4 +164,6 @@ interface ConversationDAO {
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
     suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
+    suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
+
 }

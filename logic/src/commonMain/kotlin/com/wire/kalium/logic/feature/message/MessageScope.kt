@@ -30,6 +30,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
 class MessageScope internal constructor(
@@ -48,7 +49,8 @@ class MessageScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val scope: CoroutineScope,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -79,7 +81,8 @@ class MessageScope internal constructor(
             messageEnvelopeCreator,
             mlsMessageCreator,
             messageSendingScheduler,
-            timeParser
+            timeParser,
+            scope
         )
 
     val persistMessage: PersistMessageUseCase
