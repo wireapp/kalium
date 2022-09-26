@@ -5,6 +5,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -40,6 +41,7 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionState
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserDAO
 import kotlinx.coroutines.flow.Flow
@@ -67,6 +69,7 @@ internal class ConnectionDataSource(
     private val userDAO: UserDAO,
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val conversationRepository: ConversationRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
@@ -202,12 +205,40 @@ internal class ConnectionDataSource(
                             isService = userProfileDTO.service != null
                         )
                     )
+                    insertConversationFromConnection(connection)
                     userDAO.insertUser(userEntity)
-                    // todo: ask if we need to insert the conversation here when the connection is sent!
                     connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
                 }
             })
         }
+
+    private suspend fun insertConversationFromConnection(connection: Connection) {
+        when (connection.status) {
+            SENT -> conversationRepository.fetchConversation(connection.qualifiedConversationId)
+            PENDING -> {
+                /* TODO: we had to do it manually, the server won't give us for received connections
+                     as the final solution we need to ignore the conversation part, but now? we can't! */
+                conversationDAO.insertConversation(
+                    conversationEntity = ConversationEntity(
+                        id = idMapper.toDaoModel(connection.qualifiedConversationId),
+                        name = null,
+                        type = ConversationEntity.Type.CONNECTION_PENDING,
+                        teamId = null,
+                        protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+                        creatorId = connection.from,
+                        lastNotificationDate = null,
+                        lastModifiedDate = connection.lastUpdate,
+                        lastReadDate = connection.lastUpdate,
+                        access = emptyList(),
+                        accessRole = emptyList(),
+                        isCreator = false
+                    )
+                )
+            }
+
+            else -> {}
+        }
+    }
 
     private suspend fun deleteCancelledConnection(conversationId: ConversationId) = wrapStorageRequest {
         connectionDAO.deleteConnectionDataAndConversation(idMapper.toDaoModel(conversationId))
