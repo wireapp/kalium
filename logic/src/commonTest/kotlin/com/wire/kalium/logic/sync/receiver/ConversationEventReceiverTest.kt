@@ -11,6 +11,7 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -479,6 +480,9 @@ class ConversationEventReceiverTest {
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
+        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
+
+        @Mock
         private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
         @Mock
@@ -510,16 +514,20 @@ class ConversationEventReceiverTest {
             callManagerImpl = lazyOf(callManager),
             editTextHandler = MessageTextEditHandler(messageRepository),
             lastReadContentHandler = LastReadContentHandler(
-                conversationRepository, TestUser.USER_ID
+                conversationRepository = conversationRepository,
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
             ),
             clearConversationContentHandler = ClearConversationContentHandler(
-                conversationRepository = conversationRepository,
-                userRepository = userRepository,
                 clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
-                TestUser.USER_ID
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
             ),
             deleteForMeHandler = DeleteForMeHandler(
-                conversationRepository = conversationRepository, messageRepository = messageRepository, selfUserId = TestUser.USER_ID
+                conversationRepository = conversationRepository,
+                messageRepository = messageRepository,
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
             ),
             userConfigRepository = userConfigRepository,
             ephemeralNotificationsManager = ephemeralNotifications,
@@ -697,6 +705,10 @@ class ConversationEventReceiverTest {
                 .suspendFunction(ephemeralNotifications::scheduleNotification)
                 .whenInvokedWith(any())
                 .thenDoNothing()
+        }
+
+        suspend fun withSelfConversationId(conversationId: ConversationId) = apply {
+            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationId) }
         }
 
         fun arrange() = this to conversationEventReceiver

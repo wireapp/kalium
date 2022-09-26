@@ -1,12 +1,12 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -29,7 +29,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(false)
             .withMessageSending(true)
             .withCurrentClientId((true))
-            .withGetSelfConversationId()
+            .withSelfConversationId(selfConversationId)
             .arrange()
 
         // when
@@ -61,7 +61,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(true)
             .withCurrentClientId(false)
             .withMessageSending(true)
-            .withGetSelfConversationId()
+            .withSelfConversationId(selfConversationId)
             .arrange()
 
         // when
@@ -94,7 +94,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(true)
             .withCurrentClientId(true)
             .withMessageSending(false)
-            .withGetSelfConversationId()
+            .withSelfConversationId(selfConversationId)
             .arrange()
 
         // when
@@ -127,7 +127,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(true)
             .withCurrentClientId(true)
             .withMessageSending(true)
-            .withGetSelfConversationId()
+            .withSelfConversationId(selfConversationId)
             .arrange()
 
         // when
@@ -153,6 +153,10 @@ class ClearConversationContentUseCaseTest {
         }
     }
 
+    private companion object {
+        val selfConversationId = ConversationId("self_conversation_id", "self_domain")
+    }
+
     private class Arrangement {
 
         @Mock
@@ -165,7 +169,7 @@ class ClearConversationContentUseCaseTest {
         val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
 
         @Mock
-        val userRepository: UserRepository = mock(classOf<UserRepository>())
+        val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
         @Mock
         val messageSender: MessageSender = mock(classOf<MessageSender>())
@@ -191,15 +195,6 @@ class ClearConversationContentUseCaseTest {
             return this
         }
 
-        fun withGetSelfConversationId(): Arrangement {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getSelfConversationId)
-                .whenInvoked()
-                .thenReturn(ConversationId("someValue", "someDomain"))
-
-            return this
-        }
-
         fun withMessageSending(isSuccessFull: Boolean): Arrangement {
             given(messageSender)
                 .suspendFunction(messageSender::sendMessage)
@@ -209,12 +204,16 @@ class ClearConversationContentUseCaseTest {
             return this
         }
 
+        suspend fun withSelfConversationId(conversationId: ConversationId) = apply {
+            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationId) }
+        }
+
         fun arrange() = this to ClearConversationContentUseCaseImpl(
             clearConversationContent,
             clientRepository,
-            conversationRepository,
             messageSender,
-            UserId("someValue", "someDomain")
+            UserId("someValue", "someDomain"),
+            selfConversationIdProvider
         )
     }
 

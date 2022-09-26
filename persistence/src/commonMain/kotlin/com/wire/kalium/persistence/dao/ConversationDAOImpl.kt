@@ -9,7 +9,6 @@ import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
@@ -179,11 +178,7 @@ class ConversationDAOImpl(
 
     private val memberMapper = MemberMapper()
     private val conversationMapper = ConversationMapper()
-
-    // TODO: the DB holds information about the conversation type Self, OneOnOne...ect
-    override suspend fun getSelfConversationId() =
-        getAllConversations().first().first { it.type == ConversationEntity.Type.SELF }.id
-
+    override suspend fun getSelfConversationId() = conversationQueries.selfConversationId().executeAsOneOrNull()
     override suspend fun insertConversation(conversationEntity: ConversationEntity) {
         nonSuspendingInsertConversation(conversationEntity)
     }
