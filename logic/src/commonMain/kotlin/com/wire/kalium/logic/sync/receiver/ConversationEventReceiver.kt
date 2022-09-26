@@ -322,7 +322,7 @@ internal class ConversationEventReceiverImpl(
 
     private suspend fun handleMemberChange(event: Event.Conversation.MemberChanged) {
         if (event is Event.Conversation.IgnoredMemberChanged) {
-            logger.w("failure member role is not present: $event")
+            logger.w("failure? member role is missing from event: $event")
             return
         } else {
             // Attempt to fetch conversation details if needed, as this might be an unknown conversation
@@ -335,8 +335,8 @@ internal class ConversationEventReceiverImpl(
                         logger.w("Failure fetching conversation details on MemberChange Event: $event")
                     }
                     // Even if unable to fetch conversation details, at least attempt updating the member
-                    event.member?.let { conversationRepository.updateMemberFromEvent(it, event.conversationId) }
-                }?.onFailure { logger.e("$TAG - failure on member update event: $it") }
+                    conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
+                }.onFailure { logger.e("$TAG - failure on member update event: $it") }
         }
     }
 
