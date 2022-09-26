@@ -226,3 +226,6 @@ revokeOneOnOneConversationWithDeletedUser:
 UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
+
+selfConversationId:
+SELECT qualified_id FROM Conversation WHERE type = 'SELF' LIMIT 1;
