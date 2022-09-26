@@ -236,7 +236,9 @@ internal class ConnectionDataSource(
                 )
             }
 
-            else -> {}
+            else -> {
+                kaliumLogger.i("INSERT CONVERSATION FROM CONNECTION NOT ENGAGED FOR $connection")
+            }
         }
     }
 
