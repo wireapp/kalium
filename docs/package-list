@@ -6172,6 +6172,7 @@ module:logger
 com.wire.kalium.logger
 module:logic
 com.wire.kalium.logic
+com.wire.kalium.logic.cache
 com.wire.kalium.logic.configuration
 com.wire.kalium.logic.configuration.notification
 com.wire.kalium.logic.configuration.server
