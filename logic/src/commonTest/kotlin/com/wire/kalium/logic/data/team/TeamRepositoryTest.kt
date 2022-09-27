@@ -2,19 +2,11 @@ package com.wire.kalium.logic.data.team
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.UserRepositoryTest
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
-import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
-import com.wire.kalium.logic.sync.receiver.TeamEventReceiverTest
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -44,7 +36,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -317,7 +308,6 @@ class TeamRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(TestUser.USER_PROFILE_DTO, mapOf(), 200))
         }
-
 
         fun withApiGetTeamMemberSuccess(teamMemberDTO: TeamsApi.TeamMemberDTO) = apply {
             given(teamsApi)
