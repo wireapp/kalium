@@ -564,6 +564,22 @@ class UserDAOTest : BaseDatabaseTest() {
         assertTrue(!result.contains(user3))
     }
 
+    @Test
+    fun givenUser_WhenMarkingAsDeleted_ThenProperValueShouldBeUpdated() = runTest(dispatcher) {
+        val user = user1
+        db.userDAO.insertUser(user)
+        val deletedUser = user1.copy(deleted = true)
+        db.userDAO.markUserAsDeleted(user1.id)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByQualifiedID(user1.id).test {
+                val result = awaitItem()
+                assertEquals(result, deletedUser)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+    }
+
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))

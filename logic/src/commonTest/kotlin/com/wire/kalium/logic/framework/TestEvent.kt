@@ -57,4 +57,30 @@ object TestEvent {
         TestUser.USER_ID,
         "2022-03-30T15:36:00.000Z"
     )
+
+    fun teamUpdated(eventId: String = "eventId") = Event.Team.Update(
+        eventId,
+        teamId = "teamId",
+        name = "teamName",
+        icon = "icon",
+    )
+
+    fun teamMemberJoin(eventId: String = "eventId") = Event.Team.MemberJoin(
+        eventId,
+        teamId = "teamId",
+        memberId = "memberId"
+    )
+
+    fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
+        eventId,
+        teamId = "teamId",
+        memberId = "memberId"
+    )
+
+    fun teamMemberUpdate(eventId: String = "eventId", permissionCode: Int) = Event.Team.MemberUpdate(
+        eventId,
+        teamId = "teamId",
+        memberId = "memberId",
+        permissionCode = permissionCode
+    )
 }
