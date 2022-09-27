@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -30,6 +31,7 @@ class AddMemberToConversationUseCaseTest {
         val (arrangement, addMemberUseCase) = Arrangement()
             .withConversationProtocolIs(Arrangement.proteusProtocolInfo)
             .withAddMemberToProteusGroupSuccessful()
+            .withPersistMessage(Either.Right(Unit))
             .arrange()
 
         addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
@@ -52,6 +54,7 @@ class AddMemberToConversationUseCaseTest {
         val (arrangement, addMemberUseCase) = Arrangement()
             .withConversationProtocolIs(Arrangement.mlsProtocolInfo)
             .withAddMemberToMLSGroupSuccessful()
+            .withPersistMessage(Either.Right(Unit))
             .arrange()
 
         addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
@@ -107,6 +110,13 @@ class AddMemberToConversationUseCaseTest {
                 .suspendFunction(conversationRepository::detailsById)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(TestConversation.GROUP(protocolInfo)))
+        }
+
+        fun withPersistMessage(either: Either<CoreFailure, Unit>) = apply {
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(either)
         }
 
         fun arrange() = this to addMemberUseCase
