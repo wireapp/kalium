@@ -236,7 +236,8 @@ internal class ConnectionDataSource(
                 )
             }
 
-            else -> {
+            NOT_CONNECTED, BLOCKED, IGNORED, CANCELLED,
+            MISSING_LEGALHOLD_CONSENT, ACCEPTED -> {
                 kaliumLogger.i("INSERT CONVERSATION FROM CONNECTION NOT ENGAGED FOR $connection")
             }
         }
