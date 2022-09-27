@@ -52,13 +52,13 @@ class AssetApiV2Test : ApiTest {
                 assertNoQueryParams()
                 assertAuthorizationHeaderExist()
                 assertHeaderExist(HEADER_ASSET_TOKEN)
-                assertPathEqual("$PATH_ASSETS/$ASSET_KEY/$ASSET_DOMAIN")
+                assertPathEqual("$PATH_ASSETS/$ASSET_DOMAIN/$ASSET_KEY")
             }
         )
 
         // When
-        val assetApi: AssetApi = AssetApiV0(networkClient)
-        val assetIdFallback = assetId.copy(domain = "")
+        val assetApi: AssetApi = AssetApiV2(networkClient)
+        val assetIdFallback = assetId
         val response = assetApi.deleteAsset(assetIdFallback, ASSET_TOKEN)
 
         // Then
@@ -66,8 +66,6 @@ class AssetApiV2Test : ApiTest {
     }
 
     companion object {
-        val VALID_ASSET_UPLOAD_RESPONSE = AssetUploadResponseJson.valid
-        val INVALID_ASSET_UPLOAD_RESPONSE = AssetUploadResponseJson.invalid
         const val PATH_ASSETS = "/assets"
         const val HEADER_ASSET_TOKEN = "Asset-Token"
         const val ASSET_KEY = "3-1-e7788668-1b22-488a-b63c-acede42f771f"
