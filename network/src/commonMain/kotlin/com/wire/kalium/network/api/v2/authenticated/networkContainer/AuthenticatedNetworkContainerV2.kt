@@ -87,5 +87,6 @@ class AuthenticatedNetworkContainerV2(
     override val connectionApi: ConnectionApi get() = ConnectionApiV2(networkClient)
 
     override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV2(networkClient)
+
     override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV2(networkClient)
 }

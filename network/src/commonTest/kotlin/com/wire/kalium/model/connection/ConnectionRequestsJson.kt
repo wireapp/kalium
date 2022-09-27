@@ -7,6 +7,7 @@ object ConnectionRequestsJson {
     val validEmptyBody = ValidJsonProvider(String) {
         """
             {
+                "size":500
             }
         """.trimIndent()
     }
@@ -14,7 +15,8 @@ object ConnectionRequestsJson {
     val validPagingState = ValidJsonProvider("PAGING_STATE_1234") {
         """
             {
-                "paging_state": "$it"
+                "paging_state": "$it",
+                "size":500
             }
         """.trimIndent()
     }

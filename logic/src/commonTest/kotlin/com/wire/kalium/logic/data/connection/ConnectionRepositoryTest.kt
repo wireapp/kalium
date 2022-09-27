@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -101,6 +102,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withSuccessfulCreateConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
+            .withFetchConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -120,6 +122,11 @@ class ConnectionRepositoryTest {
             .suspendFunction(arrangement.userDetailsApi::getUserInfo)
             .with(any())
             .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversations)
+            .wasNotInvoked()
+
     }
 
     @Test
@@ -130,6 +137,7 @@ class ConnectionRepositoryTest {
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withErrorOnCreateConnectionResponse(userId)
+            .withFetchConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -143,6 +151,9 @@ class ConnectionRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
             .with(any(), any(), any())
+            .wasNotInvoked()
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversations)
             .wasNotInvoked()
     }
 
@@ -158,6 +169,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withErrorOnPersistingConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
+            .withFetchConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -175,6 +187,9 @@ class ConnectionRepositoryTest {
             .suspendFunction(arrangement.userDAO::insertUser)
             .with(any())
             .wasInvoked(once)
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversations)
+            .wasNotInvoked()
     }
 
     @Test
@@ -274,6 +289,9 @@ class ConnectionRepositoryTest {
         val conversationDAO = configure(mock(classOf<ConversationDAO>())) { stubsUnitByDefault = true }
 
         @Mock
+        val conversationRepository = configure(mock(classOf<ConversationRepository>())) { stubsUnitByDefault = true }
+
+        @Mock
         val connectionDAO = configure(mock(classOf<ConnectionDAO>())) { stubsUnitByDefault = true }
 
         @Mock
@@ -295,7 +313,8 @@ class ConnectionRepositoryTest {
             userDetailsApi = userDetailsApi,
             userDAO = userDAO,
             selfUserId = TestUser.SELF.id,
-            selfTeamIdProvider = selfTeamIdProvider
+            selfTeamIdProvider = selfTeamIdProvider,
+            conversationRepository = conversationRepository
         )
 
         val stubConnectionOne = ConnectionDTO(
@@ -356,11 +375,20 @@ class ConnectionRepositoryTest {
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
         val stubConversationID2 = QualifiedIDEntity("conversationId2", "domain")
 
-        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) {
+        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>): Arrangement {
             given(selfTeamIdProvider)
                 .suspendFunction(selfTeamIdProvider::invoke)
                 .whenInvoked()
                 .then { either }
+            return this
+        }
+
+        fun withFetchConversationSucceed(): Arrangement {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::fetchConversation)
+                .whenInvokedWith(any())
+                .then { Either.Right(Unit) }
+            return this
         }
 
         fun withSuccessfulCreateConnectionResponse(userId: NetworkUserId): Arrangement {
