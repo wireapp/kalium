@@ -19,7 +19,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -327,7 +326,8 @@ class MLSConversationDataSource(
                     wrapMLSRequest {
                         mlsClient.createConversation(
                             idMapper.toCryptoModel(groupID),
-                            publicKeys.map { mlsPublicKeysMapper.toCrypto(it) })
+                            publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
+                        )
                     }
                 }.flatMap {
                     retryOnCommitFailure(groupID) {
