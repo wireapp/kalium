@@ -14,7 +14,8 @@ object ConnectionRequestsJson {
     val validPagingState = ValidJsonProvider("PAGING_STATE_1234") {
         """
             {
-                "paging_state": "$it"
+                "paging_state": "$it",
+                "size":500
             }
         """.trimIndent()
     }
@@ -22,7 +23,8 @@ object ConnectionRequestsJson {
     val validConnectionStatusUpdate = ValidJsonProvider("accepted") {
         """
             {
-                "status": "$it"  
+                "status": "$it",
+                "size":500
             }
         """.trimIndent()
     }
