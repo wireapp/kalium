@@ -76,7 +76,7 @@ class ConversationScope internal constructor(
         get() = CreateGroupConversationUseCase(conversationRepository, syncManager, clientRepository)
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
-        get() = AddMemberToConversationUseCaseImpl(conversationRepository, mlsConversationRepository)
+        get() = AddMemberToConversationUseCaseImpl(conversationRepository, mlsConversationRepository, selfUserId, persistMessage)
 
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
         get() = GetOrCreateOneToOneConversationUseCase(conversationRepository)
