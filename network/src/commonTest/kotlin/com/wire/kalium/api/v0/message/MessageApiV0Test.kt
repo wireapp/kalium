@@ -152,7 +152,6 @@ class MessageApiV0Test : ApiTest {
             assertEquals((response.kException as SendMessageError.MissingDeviceError).errorBody, errorResponse.serializableData)
         }
 
-
     private companion object {
         val TEST_USER_LIST = listOf("user_1", "user_2", "user_3")
         const val TEST_CONVERSATION_ID = "33d8dee6-7a55-4551-97d2-bd7a5160cd4e"

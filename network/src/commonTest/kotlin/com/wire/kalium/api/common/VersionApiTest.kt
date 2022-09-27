@@ -1,4 +1,4 @@
-package com.wire.kalium.api.api_version
+package com.wire.kalium.api.common
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.VersionInfoDTOJson

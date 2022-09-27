@@ -106,7 +106,7 @@ class LoginApiV0Test : ApiTest {
     }
 
     private companion object {
-        val refreshToken = "415a5306-a476-41bc-af36-94ab075fd881"
+        const val refreshToken = "415a5306-a476-41bc-af36-94ab075fd881"
         val userID = QualifiedID("user_id", "user.domain.io")
         val accessTokenDto = AccessTokenDTO(
             userId = userID.value,

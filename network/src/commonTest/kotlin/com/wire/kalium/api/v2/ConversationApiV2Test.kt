@@ -9,7 +9,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class ConversationApiV2Test: ApiTest {
+class ConversationApiV2Test : ApiTest {
     @Test
     fun givenFetchConversationsDetails_whenCallingFetchWithIdList_thenTheRequestShouldBeConfiguredOK() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
@@ -31,6 +31,7 @@ class ConversationApiV2Test: ApiTest {
             )
         )
     }
+
     private companion object {
         const val PATH_CONVERSATIONS_LIST = "/conversations/list"
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds

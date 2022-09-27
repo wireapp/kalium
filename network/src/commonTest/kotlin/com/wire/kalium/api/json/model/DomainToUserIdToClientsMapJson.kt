@@ -15,7 +15,7 @@ object DomainToUserIdToClientsMapJson {
     private const val USER_2_client_1 = "32233lj33j3dfh7u"
     private const val USER_2_client_2 = "duf3eif09324wq5j"
 
-    private val jsonProvider = { _ : DomainToUserIdToClientsMap ->
+    private val jsonProvider = { _: DomainToUserIdToClientsMap ->
         """
         |{
         |  "$DOMAIN_1": {

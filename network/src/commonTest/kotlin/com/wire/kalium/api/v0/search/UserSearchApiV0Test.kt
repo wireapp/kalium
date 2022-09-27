@@ -1,4 +1,4 @@
-package com.wire.kalium.api.contact.search
+package com.wire.kalium.api.v0.search
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
@@ -66,12 +66,8 @@ class UserSearchApiV0Test : ApiTest {
         const val DUMMY_SEARCH_QUERY = "dummy search query"
         const val DUMMY_DOMAIN = "dummy domain"
         const val DUMMY_SIZE = 100
-
         const val QUERY_KEY_SEARCH_QUERY = "q"
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_DOMAIN = "domain"
     }
 }
-
-
-

@@ -115,4 +115,3 @@ object ConversationDetailsResponse {
 
     val validGetDetailsForIds = AnyResponseProvider(data = "", jsonProvider)
 }
-

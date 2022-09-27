@@ -6,7 +6,6 @@ import kotlin.test.fail
 
 class SupportedApiVersionTest {
 
-
     @Test
     fun givenEmptySupportedApiVersionList_thenFail() {
         if (SupportedApiVersions.isNullOrEmpty()) fail()

@@ -12,7 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class KeyPackageApiV0Test: ApiTest {
+class KeyPackageApiV0Test : ApiTest {
 
     @Test
     fun givenAValidClientId_whenCallingGetAvailableKeyPackageCountEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
@@ -75,5 +75,4 @@ class KeyPackageApiV0Test: ApiTest {
         const val KEY_PACKAGE_UPLOAD_PATH = "/mls/key-packages/self/$VALID_CLIENT_ID"
         val KEY_PACKAGE_CLAIM_PATH = "/mls/key-packages/claim/${VALID_USER_ID.domain}/${VALID_USER_ID.value}"
     }
-
 }

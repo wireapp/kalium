@@ -1,7 +1,6 @@
 package com.wire.kalium.api.v2
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.v0.asset.AssetApiV0Test.Companion.PATH_ASSETS_V3
 import com.wire.kalium.model.asset.AssetUploadResponseJson
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.model.AssetId

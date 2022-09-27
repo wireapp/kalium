@@ -15,7 +15,6 @@ object RegisterTokenJson {
                 }
             """.trimIndent()
 
-
     private val jsonProvider = { serializable: PushTokenBody ->
         buildJsonObject {
             put("app", serializable.senderId)

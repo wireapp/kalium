@@ -23,6 +23,7 @@ object TeamsResponsesJson {
                 |  ]
                 |}
                 """.trimMargin()
+
                 is TeamsApi.GetTeamsOption.StartFrom ->
                     """
                 |{
@@ -76,4 +77,3 @@ object TeamsResponsesJson {
         val validGetTeamsMembers = AnyResponseProvider(data = "", jsonProvider)
     }
 }
-

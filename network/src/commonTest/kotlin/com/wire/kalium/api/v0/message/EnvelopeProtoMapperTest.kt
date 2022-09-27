@@ -34,7 +34,7 @@ class EnvelopeProtoMapperTest {
         assertContentEquals(data, newOtrMessage.blob!!.array)
     }
 
-    private companion object{
+    private companion object {
         const val TEST_SENDER = "9AFBD180"
     }
 }

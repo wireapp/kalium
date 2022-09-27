@@ -1,4 +1,4 @@
-package com.wire.kalium.api.user.details
+package com.wire.kalium.api.v0.user.details
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.QualifiedHandleSample
@@ -95,4 +95,3 @@ class UserDetailsApiV0Test : ApiTest {
         const val PATH_USERS = "/users"
     }
 }
-

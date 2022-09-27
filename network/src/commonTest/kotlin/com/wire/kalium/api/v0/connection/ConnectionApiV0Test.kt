@@ -96,7 +96,6 @@ class ConnectionApiV0Test : ApiTest {
             assertTrue(response.isSuccessful())
         }
 
-
     private companion object {
         const val PATH_CONNECTIONS = "/list-connections"
         const val PATH_CONNECTIONS_ENDPOINT = "/connections"

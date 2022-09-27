@@ -4,7 +4,6 @@ import com.wire.kalium.api.json.FaultyJsonProvider
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ServiceReferenceDTO
 
-
 object ServiceReferenceDTOJson {
     val valid = ValidJsonProvider(
         ServiceReferenceDTO("ID", "provider")

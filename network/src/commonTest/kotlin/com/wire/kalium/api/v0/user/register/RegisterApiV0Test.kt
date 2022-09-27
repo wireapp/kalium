@@ -31,11 +31,11 @@ class RegisterApiV0Test : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
-        //val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
+        // val registerApi: RegisterApi = RegisterApiImpl(networkClient)
+        // val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
 
-        //assertIs<NetworkResponse.Success<UserDTO>>(result)
-        //assertEquals(VALID_REGISTER_RESPONSE.serializableData, result.value)
+        // assertIs<NetworkResponse.Success<UserDTO>>(result)
+        // assertEquals(VALID_REGISTER_RESPONSE.serializableData, result.value)
     }
 
     @Test
@@ -54,10 +54,10 @@ class RegisterApiV0Test : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
-        //val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
+        // val registerApi: RegisterApi = RegisterApiImpl(networkClient)
+        // val result = registerApi.register(VALID_PERSONAL_ACCOUNT_REQUEST.serializableData, TEST_HOST)
 
-        //assertIs<NetworkResponse.Error>(result)
+        // assertIs<NetworkResponse.Error>(result)
     }
 
     @Test
@@ -76,13 +76,12 @@ class RegisterApiV0Test : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
-        //val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
+        // val registerApi: RegisterApi = RegisterApiImpl(networkClient)
+        // val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        //assertIs<NetworkResponse.Success<UserDTO>>(result)
-        //assertIs<Unit>(result.value)
+        // assertIs<NetworkResponse.Success<UserDTO>>(result)
+        // assertIs<Unit>(result.value)
     }
-
 
     @Test
     fun givenSendActivationCodeFail_thenErrorIsPropagated() = runTest {
@@ -100,10 +99,10 @@ class RegisterApiV0Test : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
-        //val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
+        // val registerApi: RegisterApi = RegisterApiImpl(networkClient)
+        // val result = registerApi.requestActivationCode(VALID_SEND_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        //assertIs<NetworkResponse.Error>(result)
+        // assertIs<NetworkResponse.Error>(result)
     }
 
     @Test
@@ -122,13 +121,12 @@ class RegisterApiV0Test : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
-        //val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
+        // val registerApi: RegisterApi = RegisterApiImpl(networkClient)
+        // val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        //assertIs<NetworkResponse.Success<UserDTO>>(result)
-        //assertIs<Unit>(result.value)
+        // assertIs<NetworkResponse.Success<UserDTO>>(result)
+        // assertIs<Unit>(result.value)
     }
-
 
     @Test
     fun givenActivationCodeFail_thenErrorIsPropagated() = runTest {
@@ -146,13 +144,11 @@ class RegisterApiV0Test : ApiTest {
             }
         )
         TODO()
-        //val registerApi: RegisterApi = RegisterApiImpl(networkClient)
-        //val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
+        // val registerApi: RegisterApi = RegisterApiImpl(networkClient)
+        // val result = registerApi.activate(VALID_ACTIVATE_EMAIL.serializableData, TEST_HOST)
 
-        //assertIs<NetworkResponse.Error>(result)
+        // assertIs<NetworkResponse.Error>(result)
     }
-
-
 
     private companion object {
         val VALID_PERSONAL_ACCOUNT_REQUEST = RegisterAccountJson.validPersonalAccountRegister

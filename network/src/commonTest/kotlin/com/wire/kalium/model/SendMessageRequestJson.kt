@@ -7,7 +7,6 @@ import com.wire.kalium.network.api.base.authenticated.message.UserToClientToEncM
 
 object SendMessageRequestJson {
 
-
     private const val USER_1 = "user10d0-000b-9c1a-000d-a4130002c221"
     private const val USER_1_CLIENT_1 = "60f85e4b15ad3786"
     private const val USER_1_CLIENT_1_MSG = "hello, world but encrypted for USER_1_client_1"

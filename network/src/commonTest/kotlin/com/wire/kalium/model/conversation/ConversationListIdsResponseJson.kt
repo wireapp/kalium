@@ -27,7 +27,6 @@ object ConversationListIdsResponseJson {
 
     val validGetIds = AnyResponseProvider(data = "", jsonProvider)
 
-
     val validRequestIds = ValidJsonProvider(
         ConversationsDetailsRequest(emptyList())
     ) {
@@ -48,4 +47,3 @@ object ConversationListIdsResponseJson {
     }
 
 }
-

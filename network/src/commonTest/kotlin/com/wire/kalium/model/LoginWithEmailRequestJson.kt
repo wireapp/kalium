@@ -10,7 +10,7 @@ object LoginWithEmailRequestJson {
         buildJsonObject {
             "password" to serializable.password
             "label" to serializable.label
-            when(serializable) {
+            when (serializable) {
                 is LoginApi.LoginParam.LoginWithEmail -> "email" to serializable.email
                 is LoginApi.LoginParam.LoginWithHandel -> "handle" to serializable.handle
             }
@@ -41,7 +41,6 @@ object LoginWithEmailRequestJson {
         |}
         """.trimMargin()
     )
-
 
     val missingLabel = FaultyJsonProvider(
         """
