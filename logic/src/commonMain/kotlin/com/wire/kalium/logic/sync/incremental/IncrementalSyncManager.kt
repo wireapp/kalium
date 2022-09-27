@@ -63,11 +63,13 @@ internal class IncrementalSyncManager(
 
     private val coroutineExceptionHandler = SyncExceptionHandler({
         kaliumLogger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
-        incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+        syncScope.launch {
+            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+        }
     }, {
         kaliumLogger.i("$TAG ExceptionHandler error $it")
-        incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(it))
         syncScope.launch {
+            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(it))
             kaliumLogger.i("$TAG Triggering delay")
             delay(RETRY_DELAY)
             kaliumLogger.i("$TAG Delay finished")
