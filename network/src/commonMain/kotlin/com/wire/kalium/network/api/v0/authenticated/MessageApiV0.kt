@@ -1,13 +1,13 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapper
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.UserToClientToEncMsgMap
+import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.exceptions.SendMessageError
 import com.wire.kalium.network.serialization.XProtoBuf
@@ -23,7 +23,7 @@ import io.ktor.http.contentType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-internal class MessageApiV0 internal constructor(
+internal open class MessageApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
     private val envelopeProtoMapper: EnvelopeProtoMapper
 ) : MessageApi {
