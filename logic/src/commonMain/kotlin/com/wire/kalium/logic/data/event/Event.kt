@@ -109,11 +109,11 @@ sealed class Event(open val id: String) {
             }
         }
 
-        data class MemberChanged(
+        open class MemberChanged(
             override val id: String,
             override val conversationId: ConversationId,
             val timestampIso: String,
-            val member: Member,
+            val member: Member?,
         ) : Conversation(id, conversationId) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
@@ -121,6 +121,11 @@ sealed class Event(open val id: String) {
                         "member: $member timestampIso: $timestampIso"
             }
         }
+
+        data class IgnoredMemberChanged(
+            override val id: String,
+            override val conversationId: ConversationId
+        ) : MemberChanged(id, conversationId, "", null)
 
         data class MLSWelcome(
             override val id: String,

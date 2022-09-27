@@ -133,8 +133,8 @@ internal class MessageSenderImpl internal constructor(
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
-    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> =
-        conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
+    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> {
+        return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is ConversationEntity.ProtocolInfo.MLS -> {
                     attemptToSendWithMLS(protocolInfo.groupId, message)
@@ -146,6 +146,7 @@ internal class MessageSenderImpl internal constructor(
                 }
             }
         }
+}
 
     private suspend fun attemptToSendWithProteus(message: Message.Regular): Either<CoreFailure, String> {
         val conversationId = message.conversationId
