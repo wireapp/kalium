@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.mlspublickeys
 
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.network.api.serverypublickey.MLSPublicKeysDTO
+import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.model.MLSPublicKeyEntity
 

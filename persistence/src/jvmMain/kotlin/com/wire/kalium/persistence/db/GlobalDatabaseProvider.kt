@@ -1,16 +1,20 @@
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
+import com.wire.kalium.persistence.MLSPublicKey
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.LogoutReasonAdapter
+import com.wire.kalium.persistence.daokaliumdb.MLSPublicKeysDAO
+import com.wire.kalium.persistence.daokaliumdb.MLSPublicKeysDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -48,6 +52,10 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
             ),
             CurrentAccountAdapter = CurrentAccount.Adapter(
                 user_idAdapter = QualifiedIDAdapter
+            ),
+            MLSPublicKeyAdapter = MLSPublicKey.Adapter(
+                key_typeAdapter = EnumColumnAdapter(),
+                cipher_suiteAdapter = EnumColumnAdapter()
             )
         )
     }
@@ -57,6 +65,8 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
 
     actual val accountsDAO: AccountsDAO
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries)
+    actual val mlsPublicKeysDAO: MLSPublicKeysDAO
+        get() = MLSPublicKeysDAOImpl(database.mLSPublicKeyQueries)
     actual fun nuke(): Boolean {
         return storePath.resolve(dbName).delete()
     }

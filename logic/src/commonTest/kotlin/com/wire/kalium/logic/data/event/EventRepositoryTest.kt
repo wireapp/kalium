@@ -11,16 +11,17 @@ import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
 import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.notification.EventResponse
-import com.wire.kalium.network.api.notification.NotificationApi
-import com.wire.kalium.network.api.notification.NotificationResponse
-import com.wire.kalium.network.api.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
+import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock
@@ -59,7 +60,8 @@ class EventRepositoryTest {
                 PublicUserMapperImpl(IdMapperImpl(), AvailabilityStatusMapperImpl(), ConnectionStateMapperImpl())
             ),
             FeatureConfigMapperImpl(),
-            ConversationRoleMapperImpl()
+            ConversationRoleMapperImpl(),
+            DomainUserTypeMapperImpl()
         )
 
     private lateinit var eventRepository: EventRepository

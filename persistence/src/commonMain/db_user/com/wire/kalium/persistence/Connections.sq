@@ -1,6 +1,5 @@
 import com.wire.kalium.persistence.dao.ConnectionEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import kotlin.Int;
 import kotlin.Boolean;
 
 CREATE TABLE Connection (
@@ -13,9 +12,6 @@ CREATE TABLE Connection (
     status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
     should_notify INTEGER AS Boolean DEFAULT 1
 );
-
-deleteAllConnections:
-DELETE FROM Connection;
 
 deleteConnection:
 DELETE FROM Connection WHERE qualified_conversation = ?;
@@ -41,10 +37,7 @@ getConnections:
 SELECT * FROM Connection;
 
 selectConnectionRequests:
-SELECT * FROM Connection WHERE status = 'SENT' OR status = 'PENDING' OR status = 'IGNORED';
+SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.qualified_id WHERE status = 'SENT' OR status = 'PENDING' OR status = 'IGNORED';
 
 selectConnectionsForNotification:
-SELECT * FROM Connection WHERE status = 'PENDING' AND should_notify = 1;
-
-selectChanges:
-SELECT changes();
+SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.qualified_id WHERE status = 'PENDING' AND should_notify = 1;

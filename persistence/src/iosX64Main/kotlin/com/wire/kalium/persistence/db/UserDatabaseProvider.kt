@@ -10,6 +10,7 @@ import com.wire.kalium.persistence.Conversation
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
@@ -52,7 +53,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
 actual class UserDatabaseProvider(
-    userId: UserIDEntity,
+    private val userId: UserIDEntity,
     passphrase: String,
     dispatcher: CoroutineDispatcher
 ) {
@@ -103,7 +104,11 @@ actual class UserDatabaseProvider(
                 conversation_idAdapter = QualifiedIDAdapter,
                 asset_widthAdapter = IntColumnAdapter,
                 asset_heightAdapter = IntColumnAdapter,
+                asset_upload_statusAdapter = EnumColumnAdapter(),
                 asset_download_statusAdapter = EnumColumnAdapter(),
+            ),
+            MessageConversationChangedContent.Adapter(
+                conversation_idAdapter = QualifiedIDAdapter
             ),
             MessageFailedToDecryptContent.Adapter(
                 conversation_idAdapter = QualifiedIDAdapter
@@ -163,7 +168,7 @@ actual class UserDatabaseProvider(
         get() = CallDAOImpl(database.callsQueries)
 
     actual val messageDAO: MessageDAO
-        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries)
+        get() = MessageDAOImpl(database.messagesQueries, database.conversationsQueries, userId)
 
     actual val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries)

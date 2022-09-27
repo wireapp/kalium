@@ -1,6 +1,6 @@
 package com.wire.kalium.persistence.client
 
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 
 interface LastRetrievedNotificationEventStorage {
     /**
@@ -14,7 +14,7 @@ interface LastRetrievedNotificationEventStorage {
     fun getLastEventId(): String?
 }
 
-class LastRetrievedNotificationEventStorageImpl(
+internal class LastRetrievedNotificationEventStorageImpl internal constructor(
     private val kaliumPreferences: KaliumPreferences
     ): LastRetrievedNotificationEventStorage {
 

@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -65,6 +66,23 @@ class KeyingMaterialsManagerTests {
         }
 
     @Test
+    fun givenMLSSupportIsDisabled_whenObservingAndSyncFinishes_updateKeyingMaterialsUseCaseNotPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+
+            val (arrangement, _) = Arrangement()
+                .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Success)
+                .withTimestampKeyCheck(true)
+                .arrange()
+
+            arrangement.kaliumConfigs.isMLSSupportEnabled = false
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+            verify(arrangement.updateKeyingMaterialsUseCase)
+                .suspendFunction(arrangement.updateKeyingMaterialsUseCase::invoke)
+                .wasNotInvoked()
+        }
+
+    @Test
     fun givenLastCheckTimestampKeyHasPassedAndUpdateKeyingMaterialsFailed_whenObservingAndSyncFinishes_TimestampKeyResetNotCalled() =
         runTest(TestKaliumDispatcher.default) {
 
@@ -86,6 +104,8 @@ class KeyingMaterialsManagerTests {
         }
 
     private class Arrangement {
+
+        val kaliumConfigs = KaliumConfigs()
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
@@ -117,6 +137,7 @@ class KeyingMaterialsManagerTests {
         }
 
         fun arrange() = this to KeyingMaterialsManagerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { updateKeyingMaterialsUseCase },
             lazy { timestampKeyRepository },

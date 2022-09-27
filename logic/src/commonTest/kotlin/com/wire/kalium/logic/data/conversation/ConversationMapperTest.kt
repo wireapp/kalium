@@ -1,16 +1,19 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.MutedStatus
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
@@ -35,11 +38,27 @@ class ConversationMapperTest {
     @Mock
     val conversationStatusMapper = mock(classOf<ConversationStatusMapper>())
 
+    @Mock
+    val userAvailabilityStatusMapper = mock(classOf<AvailabilityStatusMapper>())
+
+    @Mock
+    val domainUserTypeMapper = mock(classOf<DomainUserTypeMapper>())
+
+    @Mock
+    val connectionStatusMapper = mock(classOf<ConnectionStatusMapper>())
+
     private lateinit var conversationMapper: ConversationMapper
 
     @BeforeTest
     fun setup() {
-        conversationMapper = ConversationMapperImpl(idMapper, conversationStatusMapper, protocolInfoMapper)
+        conversationMapper = ConversationMapperImpl(
+            idMapper,
+            conversationStatusMapper,
+            protocolInfoMapper,
+            userAvailabilityStatusMapper,
+            domainUserTypeMapper,
+            connectionStatusMapper
+        )
     }
 
     @Test

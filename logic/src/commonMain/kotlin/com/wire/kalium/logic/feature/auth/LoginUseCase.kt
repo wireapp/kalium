@@ -60,7 +60,7 @@ internal class LoginUseCaseImpl internal constructor(
                 loginRepository.loginWithEmail(cleanUserIdentifier, password, shouldPersistClient)
             }
 
-            validateUserHandleUseCase(cleanUserIdentifier).isValid -> {
+            validateUserHandleUseCase(cleanUserIdentifier).isValidAllowingDots -> {
                 loginRepository.loginWithHandle(cleanUserIdentifier, password, shouldPersistClient)
             }
 

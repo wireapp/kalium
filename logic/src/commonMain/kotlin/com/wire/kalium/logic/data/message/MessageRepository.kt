@@ -16,9 +16,9 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.message.MLSMessageApi
-import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.network.api.message.MessagePriority
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -50,6 +50,12 @@ interface MessageRepository {
     suspend fun markMessageAsEdited(messageUuid: String, conversationId: ConversationId, timeStamp: String): Either<StorageFailure, Unit>
     suspend fun updateMessageStatus(
         messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateAssetMessageUploadStatus(
+        uploadStatus: Message.UploadStatus,
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
@@ -187,6 +193,19 @@ class MessageDataSource(
     override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
         wrapStorageRequest {
             messageDAO.updateMessageStatus(messageStatus, messageUuid, idMapper.toDaoModel(conversationId))
+        }
+
+    override suspend fun updateAssetMessageUploadStatus(
+        uploadStatus: Message.UploadStatus,
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            messageDAO.updateAssetUploadStatus(
+                assetMapper.fromUploadStatusToDaoModel(uploadStatus),
+                messageUuid,
+                idMapper.toDaoModel(conversationId)
+            )
         }
 
     override suspend fun updateAssetMessageDownloadStatus(

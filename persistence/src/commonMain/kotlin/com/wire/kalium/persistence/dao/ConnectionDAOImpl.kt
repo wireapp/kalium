@@ -5,6 +5,7 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.wire.kalium.persistence.Connection as SQLDelightConnection
 import com.wire.kalium.persistence.ConnectionsQueries
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.util.requireField
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -19,6 +20,57 @@ private class ConnectionMapper {
         toId = state.to_id,
         shouldNotify = state.should_notify
     )
+    @Suppress("FunctionParameterNaming", "LongParameterList")
+    fun toModel(
+        from_id: String,
+        conversation_id: String,
+        qualified_conversation: QualifiedIDEntity,
+        to_id: String,
+        last_update: String,
+        qualified_to: QualifiedIDEntity,
+        status: ConnectionEntity.State,
+        should_notify: Boolean?,
+        qualified_id: QualifiedIDEntity?,
+        name: String?,
+        handle: String?,
+        email: String?,
+        phone: String?,
+        accent_id: Int?,
+        team: String?,
+        connection_status: ConnectionEntity.State?,
+        preview_asset_id: QualifiedIDEntity?,
+        complete_asset_id: QualifiedIDEntity?,
+        user_availability_status: UserAvailabilityStatusEntity?,
+        user_type: UserTypeEntity?,
+        bot_service: BotEntity?,
+        deleted: Boolean?
+    ): ConnectionEntity = ConnectionEntity(
+        conversationId = conversation_id,
+        from = from_id,
+        lastUpdate = last_update,
+        qualifiedConversationId = qualified_conversation,
+        qualifiedToId = qualified_to,
+        status = status,
+        toId = to_id,
+        shouldNotify = should_notify,
+        otherUser = if (qualified_id != null) UserEntity(
+            id = qualified_id,
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accent_id.requireField("accent_id"),
+            team = team,
+            connectionStatus = connection_status.requireField("connection_status"),
+            previewAssetId = preview_asset_id,
+            completeAssetId = complete_asset_id,
+            availabilityStatus = user_availability_status.requireField("user_availability_status"),
+            userType = user_type.requireField("user_type"),
+            botService = bot_service,
+            deleted = deleted.requireField("deleted"),
+        ) else null
+    )
+
 }
 
 class ConnectionDAOImpl(
@@ -35,10 +87,9 @@ class ConnectionDAOImpl(
     }
 
     override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
-        return connectionsQueries.selectConnectionRequests()
+        return connectionsQueries.selectConnectionRequests(connectionMapper::toModel)
             .asFlow()
             .mapToList()
-            .map { it.map(connectionMapper::toModel) }
     }
 
     override suspend fun insertConnection(connectionEntity: ConnectionEntity) {
@@ -81,10 +132,9 @@ class ConnectionDAOImpl(
     }
 
     override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
-        return connectionsQueries.selectConnectionsForNotification()
+        return connectionsQueries.selectConnectionsForNotification(connectionMapper::toModel)
             .asFlow()
             .mapToList()
-            .map { it.map(connectionMapper::toModel) }
     }
 
     override suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity) {

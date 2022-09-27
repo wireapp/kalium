@@ -173,7 +173,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateSelfUser(user: UserEntity) {
+    override suspend fun updateUser(user: UserEntity) {
         userQueries.updateSelfUser(
             user.name,
             user.handle,
@@ -227,6 +227,10 @@ class UserDAOImpl internal constructor(
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
         userQueries.deleteUser(qualifiedID)
+    }
+
+    override suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity) {
+        userQueries.markUserAsDeleted(user_type = UserTypeEntity.NONE, qualified_id = qualifiedID)
     }
 
     override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {

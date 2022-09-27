@@ -5,8 +5,10 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -20,12 +22,12 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.user.details.ListUserRequest
-import com.wire.kalium.network.api.user.details.UserDetailsApi
-import com.wire.kalium.network.api.user.details.UserProfileDTO
-import com.wire.kalium.network.api.user.details.qualifiedIds
-import com.wire.kalium.network.api.user.self.ChangeHandleRequest
-import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
+import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -62,6 +64,7 @@ internal interface UserRepository {
     suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
     suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
     suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
+    suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -73,13 +76,14 @@ internal class UserDataSource internal constructor(
     private val userDetailsApi: UserDetailsApi,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
+    private val qualifiedIdMapper: QualifiedIdMapper,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
+    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
 ) : UserRepository {
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
@@ -194,7 +198,7 @@ internal class UserDataSource internal constructor(
             .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
             .flatMap { userEntity ->
                 wrapStorageRequest {
-                    userDAO.updateSelfUser(userEntity)
+                    userDAO.updateUser(userEntity)
                 }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
             }
     }
@@ -290,6 +294,13 @@ internal class UserDataSource internal constructor(
                 users.associate { user -> user.id to clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(user.id)) }
             }
             .map(memberMapper::fromMapOfClientsToRecipients)
+
+    override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
+        val userId = qualifiedIdMapper.fromStringToQualifiedID(event.userId)
+        val user =
+            userDAO.getUserByQualifiedID(idMapper.toDaoModel(userId)).firstOrNull() ?: return Either.Left(StorageFailure.DataNotFound)
+        userDAO.updateUser(userMapper.toUpdateDaoFromEvent(event, user))
+    }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"

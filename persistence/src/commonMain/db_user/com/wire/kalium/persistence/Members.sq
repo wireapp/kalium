@@ -30,3 +30,6 @@ updateMemberRole:
 UPDATE Member
 SET role = ?
 WHERE user = ? AND conversation = ?;
+
+deleteUserFromConversations:
+DELETE FROM Member WHERE user = ?;

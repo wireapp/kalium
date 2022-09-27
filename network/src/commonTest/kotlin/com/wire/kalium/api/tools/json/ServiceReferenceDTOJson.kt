@@ -1,6 +1,6 @@
 package com.wire.kalium.api.tools.json
 
-import com.wire.kalium.network.api.conversation.ServiceReferenceDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ServiceReferenceDTO
 
 
 object ServiceReferenceDTOJson {

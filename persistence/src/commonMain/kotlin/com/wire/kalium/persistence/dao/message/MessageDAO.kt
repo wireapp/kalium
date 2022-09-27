@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 @Suppress("TooManyFunctions")
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
+    suspend fun updateAssetUploadStatus(uploadStatus: MessageEntity.UploadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun markAsEdited(editTimeStamp: String, conversationId: QualifiedIDEntity, id: String)
@@ -55,14 +56,9 @@ interface MessageDAO {
         conversationID: QualifiedIDEntity
     ): Flow<MessageEntity?>
 
-    suspend fun observeUnreadMessageCount(
-        conversationId: QualifiedIDEntity
-    ): Flow<Long>
+    suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity): Flow<Long>
 
-    suspend fun observeUnreadMentionsCount(
-        conversationId: QualifiedIDEntity,
-        userId: UserIDEntity
-    ): Flow<Long>
+    suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity): Flow<Long>
 
     val platformExtensions: MessageExtensions
 }

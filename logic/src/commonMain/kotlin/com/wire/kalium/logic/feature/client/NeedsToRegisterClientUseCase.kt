@@ -17,7 +17,7 @@ class NeedsToRegisterClientUseCaseImpl(
 ) : NeedsToRegisterClientUseCase {
     override suspend fun invoke(): Boolean =
         sessionRepository.userAccountInfo(selfUserId).fold(
-            { true },
+            { false },
             {
                 when (it) {
                     is AccountInfo.Invalid -> false

@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.logout
 
 import app.cash.turbine.test
-import com.wire.kalium.network.api.user.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock

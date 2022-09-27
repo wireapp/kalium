@@ -1,9 +1,9 @@
 package com.wire.kalium.network.session
 
-import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.auth.AccessTokenApiImpl
-import com.wire.kalium.network.api.model.AccessTokenDTO
-import com.wire.kalium.network.api.model.RefreshTokenDTO
+import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.RefreshTokenDTO
+import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isUnknownClient
@@ -55,7 +55,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
                 BearerTokens(accessToken = access, refreshToken = refresh)
             }
             refreshTokens {
-                when (val response = AccessTokenApiImpl(client).getToken(oldTokens!!.refreshToken)) {
+                when (val response = AccessTokenApiV0(client).getToken(oldTokens!!.refreshToken)) {
                     is NetworkResponse.Success -> {
                         response.value.first.let { newAccessToken -> access = newAccessToken.value }
                         response.value.second?.let { newRefreshToken -> refresh = newRefreshToken.value }

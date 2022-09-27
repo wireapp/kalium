@@ -11,7 +11,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.serverypublickey.MLSPublicKeyApi
+import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.persistence.daokaliumdb.MLSPublicKeysDAO
 
 interface MLSPublicKeysRepository {
