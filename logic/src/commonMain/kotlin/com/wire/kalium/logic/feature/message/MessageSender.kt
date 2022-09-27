@@ -23,6 +23,8 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
 
 /**
  * Responsible for orchestrating all the pieces necessary
@@ -71,7 +73,8 @@ interface MessageSender {
     suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
 
-class MessageSenderImpl(
+@Suppress("LongParameterList")
+internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
     private val syncManager: SyncManager,
@@ -80,23 +83,26 @@ class MessageSenderImpl(
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val timeParser: TimeParser
+    private val timeParser: TimeParser,
+    private val scope: CoroutineScope
 ) : MessageSender {
 
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
 
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
-        return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
-            if (message is Message.Regular) sendMessage(message)
-            else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
-        }.onFailure {
-            logger.i("Failed to send message. Failure = $it")
-            if (it is NetworkFailure.NoNetworkConnection) {
-                logger.i("Scheduling message for retrying in the future.")
-                messageSendingScheduler.scheduleSendingOfPendingMessages()
-            } else {
-                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+        return withContext(scope.coroutineContext) {
+            messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
+                if (message is Message.Regular) sendMessage(message)
+                else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
+            }.onFailure {
+                logger.i("Failed to send message. Failure = $it")
+                if (it is NetworkFailure.NoNetworkConnection) {
+                    logger.i("Scheduling message for retrying in the future.")
+                    messageSendingScheduler.scheduleSendingOfPendingMessages()
+                } else {
+                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                }
             }
         }
     }
@@ -127,8 +133,8 @@ class MessageSenderImpl(
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
-    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> =
-        conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
+    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> {
+        return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is ConversationEntity.ProtocolInfo.MLS -> {
                     attemptToSendWithMLS(protocolInfo.groupId, message)
@@ -140,6 +146,7 @@ class MessageSenderImpl(
                 }
             }
         }
+}
 
     private suspend fun attemptToSendWithProteus(message: Message.Regular): Either<CoreFailure, String> {
         val conversationId = message.conversationId

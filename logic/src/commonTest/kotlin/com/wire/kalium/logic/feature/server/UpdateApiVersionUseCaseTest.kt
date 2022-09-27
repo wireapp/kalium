@@ -3,7 +3,6 @@ package com.wire.kalium.logic.feature.server
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.any
@@ -17,7 +16,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@OptIn(ConfigurationApi::class, ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateApiVersionUseCaseTest {
 
     @Mock

@@ -1,12 +1,11 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.GlobalConfigRepository
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -28,7 +27,7 @@ class PersistWebSocketStatusUseCaseTest {
         val actual = persistPersistentWebSocketConnectionStatusUseCase(true)
         assertEquals(expectedValue, actual)
 
-        verify(arrangement.userConfigRepository).invocation { persistPersistentWebSocketConnectionStatus(true) }
+        verify(arrangement.globalConfigRepository).invocation { persistPersistentWebSocketConnectionStatus(true) }
             .wasInvoked(exactly = once)
     }
 
@@ -43,21 +42,21 @@ class PersistWebSocketStatusUseCaseTest {
         // When
         persistPersistentWebSocketConnectionStatusUseCase(true)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::persistPersistentWebSocketConnectionStatus).with(any())
+        verify(arrangement.globalConfigRepository)
+            .function(arrangement.globalConfigRepository::persistPersistentWebSocketConnectionStatus).with(any())
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val userConfigRepository: UserConfigRepository = mock(classOf<UserConfigRepository>())
+        val globalConfigRepository: GlobalConfigRepository = mock(GlobalConfigRepository::class)
 
         val persistPersistentWebSocketConnectionStatusUseCaseImpl =
-            PersistPersistentWebSocketConnectionStatusUseCaseImpl(userConfigRepository)
+            PersistPersistentWebSocketConnectionStatusUseCaseImpl(globalConfigRepository)
 
         fun withSuccessfulResponse(expectedValue: Unit): Arrangement {
-            given(userConfigRepository)
-                .function(userConfigRepository::persistPersistentWebSocketConnectionStatus)
+            given(globalConfigRepository)
+                .function(globalConfigRepository::persistPersistentWebSocketConnectionStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(expectedValue))
 
@@ -65,8 +64,8 @@ class PersistWebSocketStatusUseCaseTest {
         }
 
         fun withPersistWebSocketErrorResponse(storageFailure: StorageFailure): Arrangement {
-            given(userConfigRepository)
-                .function(userConfigRepository::persistPersistentWebSocketConnectionStatus)
+            given(globalConfigRepository)
+                .function(globalConfigRepository::persistPersistentWebSocketConnectionStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(storageFailure))
             return this

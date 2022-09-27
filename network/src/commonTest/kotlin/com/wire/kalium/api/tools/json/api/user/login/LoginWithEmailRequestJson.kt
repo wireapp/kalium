@@ -2,7 +2,7 @@ package com.wire.kalium.api.tools.json.api.user.login
 
 import com.wire.kalium.api.tools.json.FaultyJsonProvider
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.user.login.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import kotlinx.serialization.json.buildJsonObject
 
 object LoginWithEmailRequestJson {

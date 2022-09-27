@@ -18,7 +18,6 @@ import kotlinx.coroutines.launch
 
 internal class OnClientsRequest(
     private val calling: Calling,
-    private val selfUserId: String,
     private val conversationRepository: ConversationRepository,
     private val federatedIdMapper: FederatedIdMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
@@ -29,14 +28,13 @@ internal class OnClientsRequest(
         callingScope.launch {
             callingLogger.d("[OnClientsRequest] -> ConversationId: $conversationIdString")
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationIdString)
-            val conversationRecipients = conversationRepository.getConversationRecipients(
+            val conversationRecipients = conversationRepository.getConversationRecipientsForCalling(
                 conversationId = conversationIdWithDomain
             )
 
             conversationRecipients.map { recipients ->
                 callingLogger.d("[OnClientsRequest] -> Mapping ${recipients.size} recipients")
                 recipients
-                    .filter { it.id.value != selfUserId }
                     .flatMap { recipient ->
                         recipient.clients.map { clientId ->
                             CallClient(

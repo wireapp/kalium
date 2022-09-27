@@ -1,12 +1,16 @@
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.user.details.UserDetailsApi
-import com.wire.kalium.network.api.user.details.UserProfileDTO
-import com.wire.kalium.network.api.user.self.SelfApi
+import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
@@ -14,7 +18,6 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -28,7 +31,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ConfigurationApi::class)
 class UserRepositoryTest {
 
     @Test
@@ -83,6 +85,59 @@ class UserRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAUserEvent_whenPersistingTheUser_thenShouldSucceed() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withMapperQualifiedUserId()
+            .arrange()
+
+        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = UserEventReceiverTest.USER_ID))
+
+        with(result) {
+            shouldSucceed()
+
+            verify(arrangement.qualifiedIdMapper)
+                .function(arrangement.qualifiedIdMapper::fromStringToQualifiedID)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::getUserByQualifiedID)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUser)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAUserEvent_whenPersistingTheUserAndNotExists_thenShouldFail() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withMapperQualifiedUserId()
+            .withUserDaoReturning(null)
+            .arrange()
+
+        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = UserEventReceiverTest.USER_ID))
+
+        with(result) {
+            shouldFail()
+
+            verify(arrangement.qualifiedIdMapper)
+                .function(arrangement.qualifiedIdMapper::fromStringToQualifiedID)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::getUserByQualifiedID)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUser)
+                .with(any())
+                .wasNotInvoked()
+        }
+    }
+
     // TODO other UserRepository tests
 
     private class Arrangement {
@@ -104,8 +159,11 @@ class UserRepositoryTest {
         @Mock
         val sessionRepository = mock(SessionRepository::class)
 
+        @Mock
+        val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+
         val userRepository: UserRepository by lazy {
-            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository)
+            UserDataSource(userDAO, metadataDAO, clientDAO, selfApi, userDetailsApi, sessionRepository, TestUser.SELF.id, qualifiedIdMapper)
         }
 
         init {
@@ -134,9 +192,26 @@ class UserRepositoryTest {
             return this
         }
 
+        fun withMapperQualifiedUserId(nonQualifiedId: String = "alice@wonderland") = apply {
+            given(qualifiedIdMapper)
+                .function(qualifiedIdMapper::fromStringToQualifiedID)
+                .whenInvokedWith(eq(nonQualifiedId))
+                .thenReturn(com.wire.kalium.logic.data.id.QualifiedID("alice", "wonderland"))
+
+            return this
+        }
+
+        fun withUserDaoReturning(userEntity: UserEntity? = TestUser.ENTITY) = apply {
+            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+                .whenInvokedWith(any())
+                .then { flowOf(userEntity) }
+
+            return this
+        }
+
         fun withGetSelfUserId(): Arrangement {
             given(metadataDAO)
-                .function(metadataDAO::valueByKey)
+                .suspendFunction(metadataDAO::valueByKey)
                 .whenInvokedWith(any())
                 .thenReturn(
                     """

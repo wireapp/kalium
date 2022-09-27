@@ -1,32 +1,41 @@
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.BotService
+import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.conversation.ConvTeamInfo
-import com.wire.kalium.network.api.conversation.ConversationResponse
-import com.wire.kalium.network.api.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.conversation.ReceiptMode
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
+import com.wire.kalium.persistence.dao.ConversationViewEntity
 import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
 import kotlinx.datetime.Instant
+import com.wire.kalium.persistence.util.requireField
 
+@Suppress("TooManyFunctions")
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
+    fun fromDaoModel(daoModel: ConversationViewEntity): ConversationDetails
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -36,6 +45,7 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
+
     @Suppress("LongParameterList")
     fun toConversationDetailsOneToOne(
         conversation: Conversation,
@@ -51,7 +61,10 @@ interface ConversationMapper {
 internal class ConversationMapperImpl(
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
-    private val protocolInfoMapper: ProtocolInfoMapper
+    private val protocolInfoMapper: ProtocolInfoMapper,
+    private val userAvailabilityStatusMapper: AvailabilityStatusMapper,
+    private val domainUserTypeMapper: DomainUserTypeMapper,
+    private val connectionStatusMapper: ConnectionStatusMapper
 ) : ConversationMapper {
 
     override fun fromApiModelToDaoModel(
@@ -95,6 +108,152 @@ internal class ConversationMapperImpl(
         access = daoModel.access.map { it.toDAO() },
         accessRole = daoModel.accessRole.map { it.toDAO() }
     )
+
+    @Suppress("ComplexMethod", "LongMethod")
+    override fun fromDaoModel(daoModel: ConversationViewEntity): ConversationDetails = with(daoModel) {
+        when (type) {
+
+            ConversationEntity.Type.SELF -> {
+                ConversationDetails.Self(
+                    Conversation(
+                        id = idMapper.fromDaoModel(id),
+                        name = name,
+                        type = type.fromDaoModelToType(),
+                        teamId = teamId?.let { TeamId(it) },
+                        protocol = protocolInfoMapper.fromEntity(protocolInfo),
+                        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+                        removedBy = null, // todo: ask how to calculate?
+                        creatorId = PlainId(""), // deprecated
+                        lastNotificationDate,
+                        lastModifiedDate,
+                        lastReadDate,
+                        access = accessList.map { it.toDAO() },
+                        accessRole = accessRoleList.map { it.toDAO() },
+                        isSelfUserMember = isMember == 1L,
+                        isCreator = isCreator == 1L,
+                    )
+                )
+            }
+
+            ConversationEntity.Type.ONE_ON_ONE -> {
+                ConversationDetails.OneOne(
+                    conversation = Conversation(
+                        id = idMapper.fromDaoModel(id),
+                        name = name,
+                        type = type.fromDaoModelToType(),
+                        teamId = teamId?.let { TeamId(it) },
+                        protocol = protocolInfoMapper.fromEntity(protocolInfo),
+                        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+                        removedBy = null, // todo: ask how to calculate?
+                        creatorId = PlainId(""), // todo: deprecated
+                        lastNotificationDate,
+                        lastModifiedDate,
+                        lastReadDate,
+                        access = accessList.map { it.toDAO() },
+                        accessRole = accessRoleList.map { it.toDAO() },
+                        isSelfUserMember = isMember == 1L,
+                        isCreator = isCreator == 1L,
+                    ),
+                    otherUser = OtherUser(
+                        id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
+                        name = name,
+                        accentId = 0,
+                        userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                        availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
+                        deleted = type != ConversationEntity.Type.GROUP && otherUserId != null,
+                        botService = botService?.let { BotService(it.id, it.provider) },
+                        handle = null,
+                        completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                        previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                        teamId = teamId?.let { TeamId(it) }
+                    ),
+                    connectionState = connectionStatusMapper.fromDaoModel(connectionStatus),
+                    legalHoldStatus = LegalHoldStatus.DISABLED,
+                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                    unreadMessagesCount = unreadMessageCount,
+                    unreadMentionsCount = 0L,
+                    lastUnreadMessage = null
+                )
+            }
+
+            ConversationEntity.Type.GROUP -> {
+                ConversationDetails.Group(
+                    conversation = Conversation(
+                        id = idMapper.fromDaoModel(id),
+                        name = name,
+                        type = type.fromDaoModelToType(),
+                        teamId = teamId?.let { TeamId(it) },
+                        protocol = protocolInfoMapper.fromEntity(protocolInfo),
+                        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+                        removedBy = null, // todo: ask how to calculate?
+                        creatorId = PlainId(""), // todo: deprecated
+                        lastNotificationDate,
+                        lastModifiedDate,
+                        lastReadDate,
+                        access = accessList.map { it.toDAO() },
+                        accessRole = accessRoleList.map { it.toDAO() },
+                        isSelfUserMember = isMember == 1L,
+                        isCreator = isCreator == 1L,
+                    ),
+                    legalHoldStatus = LegalHoldStatus.DISABLED,
+                    hasOngoingCall = callStatus != null, // todo: we can do better!
+                    unreadMessagesCount = unreadMessageCount,
+                    unreadMentionsCount = 0L,
+                    lastUnreadMessage = null,
+                    isSelfUserMember = isMember == 1L,
+                    isSelfCreated = isCreator == 1L
+                )
+            }
+
+            ConversationEntity.Type.CONNECTION_PENDING -> {
+                ConversationDetails.Connection(
+                    conversationId = idMapper.fromDaoModel(id),
+                    otherUser = otherUserId?.let {
+                        OtherUser(
+                            id = idMapper.fromDaoModel(it),
+                            name = name,
+                            accentId = 0,
+                            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                            availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
+                            deleted = type != ConversationEntity.Type.GROUP && otherUserId != null,
+                            botService = botService?.let { BotService(it.id, it.provider) },
+                            handle = null,
+                            completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                            previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                            teamId = teamId?.let { TeamId(it) }
+                        )
+                    },
+                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                    lastModifiedDate = lastModifiedDate,
+                    connection = Connection(
+                        conversationId = id.value,
+                        from = "",
+                        lastUpdate = "",
+                        qualifiedConversationId = idMapper.fromDaoModel(id),
+                        qualifiedToId = otherUserId.let { idMapper.fromDaoModel(it!!) },
+                        status = connectionStatusMapper.fromDaoModel(connectionStatus),
+                        toId = "", // todo
+                        fromUser = OtherUser(
+                            id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
+                            name = name,
+                            accentId = 0,
+                            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                            availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
+                            deleted = type != ConversationEntity.Type.GROUP && otherUserId != null,
+                            botService = botService?.let { BotService(it.id, it.provider) },
+                            handle = null,
+                            completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                            previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                            teamId = teamId?.let { TeamId(it) }
+                        )
+                    ),
+                    protocolInfo = protocolInfoMapper.fromEntity(protocolInfo),
+                    access = accessList.map { it.toDAO() },
+                    accessRole = accessRoleList.map { it.toDAO() },
+                )
+            }
+        }
+    }
 
     override fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer =
         ProposalTimer(idMapper.fromGroupIDEntity(daoModel.groupID), daoModel.firingDate)

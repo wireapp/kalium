@@ -52,8 +52,12 @@ sealed class NetworkFailure : CoreFailure() {
     }
 }
 
+class MLSFailure(internal val exception: Exception) : CoreFailure() {
+
+    val rootCause: Throwable get() = exception
+}
+
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure() {
-    constructor(cause: Throwable) : this(ProteusException("Unknown error caught from logic", code = ProteusException.Code.UNKNOWN_ERROR))
 
     val rootCause: Throwable get() = proteusException
 }
@@ -87,13 +91,31 @@ internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<
         Either.Left(ProteusFailure(e))
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(ProteusFailure(e))
+        Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)))
+    }
+}
+
+internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
+    return try {
+        Either.Right(mlsRequest())
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        Either.Left(MLSFailure(e))
     }
 }
 
 internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Either<StorageFailure, T> {
     return try {
         storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        Either.Left(StorageFailure.Generic(e))
+    }
+}
+
+internal inline fun <T : Any> wrapStorageNullableRequest(storageRequest: () -> T?): Either<StorageFailure, T?> {
+    return try {
+        storageRequest().let { data -> Either.Right(data) }
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(StorageFailure.Generic(e))

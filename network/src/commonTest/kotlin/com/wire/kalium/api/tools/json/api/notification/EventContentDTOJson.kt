@@ -1,12 +1,12 @@
 package com.wire.kalium.api.tools.json.api.notification
 
 import com.wire.kalium.api.tools.json.ValidJsonProvider
-import com.wire.kalium.network.api.ConversationId
-import com.wire.kalium.network.api.UserId
-import com.wire.kalium.network.api.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.model.ConversationAccessDTO
-import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessDTO
+import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 
 object EventContentDTOJson {
 

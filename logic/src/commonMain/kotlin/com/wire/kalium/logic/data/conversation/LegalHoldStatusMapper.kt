@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.network.api.user.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 
 interface LegalHoldStatusMapper {
     fun fromApiModel(legalHoldStatusResponse: LegalHoldStatusResponse): LegalHoldStatus

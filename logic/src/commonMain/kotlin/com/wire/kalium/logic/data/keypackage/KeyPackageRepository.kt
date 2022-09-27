@@ -13,9 +13,10 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.keypackage.KeyPackageCountDTO
-import com.wire.kalium.network.api.keypackage.KeyPackageDTO
+import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import io.ktor.util.encodeBase64
 
 interface KeyPackageRepository {
@@ -54,14 +55,20 @@ class KeyPackageDataSource(
 
     override suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
-            wrapApiRequest {
-                keyPackageApi.uploadKeyPackages(clientId.value, mlsClient.generateKeyPackages(amount).map { it.encodeBase64() })
+            wrapMLSRequest {
+                mlsClient.generateKeyPackages(amount)
+            }.flatMap { keyPackages ->
+                wrapApiRequest {
+                    keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
+                }
             }
         }
 
     override suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int> =
         mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
-            Either.Right(mlsClient.validKeyPackageCount().toInt())
+            wrapMLSRequest {
+                mlsClient.validKeyPackageCount().toInt()
+            }
         }
 
     override suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO> =

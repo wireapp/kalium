@@ -36,6 +36,13 @@ data class UserEntity(
     val deleted: Boolean
 )
 
+data class UserEntityMinimized(
+    val id: QualifiedIDEntity,
+    val name: String?,
+    val completeAssetId: UserAssetIdEntity?,
+    val userType: UserTypeEntity,
+)
+
 data class BotEntity(
     val id: String,
     val provider: String
@@ -113,7 +120,7 @@ interface UserDAO {
     suspend fun upsertTeamMembers(users: List<UserEntity>)
 
     /**
-     * This will update a user record corresponding to the Self User,
+     * This will update a user record corresponding to the User,
      * The Fields to update are:
      * [UserEntity.name]
      * [UserEntity.handle]
@@ -122,27 +129,33 @@ interface UserDAO {
      * [UserEntity.previewAssetId]
      * [UserEntity.completeAssetId]
      */
-    suspend fun updateSelfUser(user: UserEntity)
+    suspend fun updateUser(user: UserEntity)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
     suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
+    fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
     suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
         connectionStates: List<ConnectionEntity.State>
-    ): List<UserEntity>
+    ): Flow<List<UserEntity>>
 
     suspend fun getUserByHandleAndConnectionStates(
         handle: String,
         connectionStates: List<ConnectionEntity.State>
-    ): List<UserEntity>
+    ): Flow<List<UserEntity>>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
+    suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity): List<UserEntity>
     suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
-    suspend fun getUsersNotInConversationByNameOrHandleOrEmail(conversationId: QualifiedIDEntity, searchQuery: String): List<UserEntity>
-    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): List<UserEntity>
+    suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
+        conversationId: QualifiedIDEntity,
+        searchQuery: String,
+    ): Flow<List<UserEntity>>
+
+    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>>
     suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
 }

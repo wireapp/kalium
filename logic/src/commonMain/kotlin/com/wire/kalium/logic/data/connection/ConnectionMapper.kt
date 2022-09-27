@@ -1,21 +1,20 @@
 package com.wire.kalium.logic.data.connection
 
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.user.connection.ConnectionDTO
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.UserEntity
 
 interface ConnectionMapper {
     fun fromApiToDao(state: ConnectionDTO): ConnectionEntity
-    fun fromDaoToModel(state: ConnectionEntity, otherUser: UserEntity?): Connection
-    fun fromDaoToConnectionDetails(state: ConnectionEntity, otherUser: UserEntity?): ConversationDetails
+    fun fromDaoToModel(connection: ConnectionEntity): Connection
+    fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails
     fun fromApiToModel(state: ConnectionDTO): Connection
     fun modelToDao(state: Connection): ConnectionEntity
 }
@@ -36,24 +35,26 @@ internal class ConnectionMapperImpl(
         toId = state.toId,
     )
 
-    override fun fromDaoToModel(state: ConnectionEntity, otherUser: UserEntity?): Connection = Connection(
-        conversationId = state.conversationId,
-        from = state.from,
-        lastUpdate = state.lastUpdate,
-        qualifiedConversationId = idMapper.fromDaoModel(state.qualifiedConversationId),
-        qualifiedToId = idMapper.fromDaoModel(state.qualifiedToId),
-        status = statusMapper.fromDaoModel(state.status),
-        toId = state.toId,
-        fromUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) }
-    )
+    override fun fromDaoToModel(connection: ConnectionEntity) = with(connection) {
+        Connection(
+            conversationId = conversationId,
+            from = from,
+            lastUpdate = lastUpdate,
+            qualifiedConversationId = idMapper.fromDaoModel(qualifiedConversationId),
+            qualifiedToId = idMapper.fromDaoModel(qualifiedToId),
+            status = statusMapper.fromDaoModel(status),
+            toId = toId,
+            fromUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) }
+        )
+    }
 
-    override fun fromDaoToConnectionDetails(connection: ConnectionEntity, otherUser: UserEntity?): ConversationDetails {
-        return ConversationDetails.Connection(
-            conversationId = idMapper.fromDaoModel(connection.qualifiedConversationId),
+    override fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails = with(connection) {
+        ConversationDetails.Connection(
+            conversationId = idMapper.fromDaoModel(qualifiedConversationId),
             otherUser = otherUser?.let { publicUserMapper.fromDaoModelToPublicUser(it) },
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
-            lastModifiedDate = connection.lastUpdate,
-            connection = fromDaoToModel(connection, otherUser),
+            lastModifiedDate = lastUpdate,
+            connection = fromDaoToModel(this),
             protocolInfo = ProtocolInfo.Proteus,
             // TODO(qol): need to be refactored
             access = emptyList(),

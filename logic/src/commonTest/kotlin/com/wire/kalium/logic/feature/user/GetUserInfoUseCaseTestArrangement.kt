@@ -1,10 +1,10 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -13,7 +13,7 @@ import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 
-class GetUserInfoUseCaseTestArrangement {
+internal class GetUserInfoUseCaseTestArrangement {
 
     @Mock
     val userRepository: UserRepository = mock(UserRepository::class)
@@ -32,7 +32,8 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(
                 flowOf(
                     if (!localUserPresent) null
-                    else if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(teamId = null, userType = userType)
+                    else if (hasTeam) TestUser.OTHER.copy(userType = userType)
+                    else TestUser.OTHER.copy(teamId = null, userType = userType)
                 )
             )
 
@@ -71,7 +72,7 @@ class GetUserInfoUseCaseTestArrangement {
             .thenReturn(
                 flowOf(
                     if (!localTeamPresent) null
-                    else team
+                    else TestTeam.TEAM
                 )
             )
 
@@ -79,7 +80,7 @@ class GetUserInfoUseCaseTestArrangement {
             given(teamRepository)
                 .suspendFunction(teamRepository::fetchTeamById)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(team))
+                .thenReturn(Either.Right(TestTeam.TEAM))
         }
 
         return this
@@ -107,7 +108,4 @@ class GetUserInfoUseCaseTestArrangement {
         return this to GetUserInfoUseCaseImpl(userRepository, teamRepository)
     }
 
-    private companion object {
-        val team = Team("teamId", "teamName")
-    }
 }

@@ -8,9 +8,9 @@ import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.message.MLSMessageApi
-import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.network.api.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
+import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -88,9 +88,9 @@ class MessageRepositoryTest {
     @Test
     fun givenAMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
         val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
+        val selfUserId = TEST_QUALIFIED_ID_ENTITY
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
-
         val (arrangement, messageRepository) = Arrangement()
             .withMappedId(mappedId)
             .withMappedMessageEntity(mappedEntity)
@@ -106,7 +106,7 @@ class MessageRepositoryTest {
 
             verify(messageDAO)
                 .suspendFunction(messageDAO::insertMessage)
-                .with(eq(mappedEntity))
+                .with(eq(mappedEntity), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
         }
     }

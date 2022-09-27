@@ -4,25 +4,28 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.network.api.user.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.user.client.ClientResponse
-import com.wire.kalium.network.api.user.client.ClientTypeDTO
-import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.RegisterClientRequest
-import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 
 class ClientMapper(
     private val preyKeyMapper: PreKeyMapper,
-    private val locationMapper: LocationMapper,
-    private val clientConfig: ClientConfig
+    private val locationMapper: LocationMapper
 ) {
 
-    fun toRegisterClientRequest(param: RegisterClientParam): RegisterClientRequest = RegisterClientRequest(
+    fun toRegisterClientRequest(
+        clientConfig: ClientConfig,
+        param: RegisterClientParam
+    ): RegisterClientRequest = RegisterClientRequest(
         password = param.password,
         lastKey = preyKeyMapper.toPreKeyDTO(param.lastKey),
         label = clientConfig.deviceName(),
         deviceType = toDeviceTypeDTO(clientConfig.deviceType()),
-        type = toClientTypeDTO(clientConfig.clientType()),
+        type = param.clientType?.let { toClientTypeDTO(param.clientType) } ?: toClientTypeDTO(clientConfig.clientType()),
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } } ?: run { null },
         model = clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
@@ -83,5 +86,21 @@ class ClientMapper(
         DeviceTypeDTO.Desktop -> DeviceType.Desktop
         DeviceTypeDTO.LegalHold -> DeviceType.LegalHold
         DeviceTypeDTO.Unknown -> DeviceType.Unknown
+    }
+
+    fun fromDeviceTypeEntity(deviceTypeEntity: DeviceTypeEntity?): DeviceType = when (deviceTypeEntity) {
+        DeviceTypeEntity.Phone -> DeviceType.Phone
+        DeviceTypeEntity.Tablet -> DeviceType.Tablet
+        DeviceTypeEntity.Desktop -> DeviceType.Desktop
+        DeviceTypeEntity.LegalHold -> DeviceType.LegalHold
+        DeviceTypeEntity.Unknown, null -> DeviceType.Unknown
+    }
+
+    fun toDeviceTypeEntity(deviceTypeEntity: DeviceType): DeviceTypeEntity = when (deviceTypeEntity) {
+        DeviceType.Phone -> DeviceTypeEntity.Phone
+        DeviceType.Tablet -> DeviceTypeEntity.Tablet
+        DeviceType.Desktop -> DeviceTypeEntity.Desktop
+        DeviceType.LegalHold -> DeviceTypeEntity.LegalHold
+        DeviceType.Unknown -> DeviceTypeEntity.Unknown
     }
 }

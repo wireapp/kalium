@@ -1,10 +1,15 @@
 package com.wire.kalium.persistence.dao
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -14,6 +19,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserDAOTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
@@ -29,14 +35,14 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUser_ThenUserCanBeInserted() = runTest {
+    fun givenUser_ThenUserCanBeInserted() = runTest(dispatcher) {
         db.userDAO.insertUser(user1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, user1)
     }
 
     @Test
-    fun givenListOfUsers_ThenMultipleUsersCanBeInsertedAtOnce() = runTest {
+    fun givenListOfUsers_ThenMultipleUsersCanBeInsertedAtOnce() = runTest(dispatcher) {
         db.userDAO.upsertUsers(listOf(user1, user2, user3))
         val result1 = db.userDAO.getUserByQualifiedID(user1.id).first()
         val result2 = db.userDAO.getUserByQualifiedID(user2.id).first()
@@ -47,7 +53,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingUser_ThenUserCanBeDeleted() = runTest {
+    fun givenExistingUser_ThenUserCanBeDeleted() = runTest(dispatcher) {
         db.userDAO.insertUser(user1)
         db.userDAO.deleteUserByQualifiedID(user1.id)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -55,7 +61,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingUser_ThenUserCanBeUpdated() = runTest {
+    fun givenExistingUser_ThenUserCanBeUpdated() = runTest(dispatcher) {
         db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
             user1.id,
@@ -73,41 +79,17 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             false
         )
-        db.userDAO.updateSelfUser(updatedUser1)
+        db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
     }
 
     @Test
-    fun givenListOfUsers_ThenUserCanBeQueriedByName() = runTest {
+    fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest(dispatcher) {
+        val collectedValues = mutableListOf<UserEntity?>()
+
         db.userDAO.insertUser(user1)
-        val updatedUser1 = UserEntity(
-            user1.id,
-            "John Doe",
-            "johndoe",
-            "email1",
-            "phone1",
-            1,
-            "team",
-            ConnectionEntity.State.ACCEPTED,
-            UserAssetIdEntity("asset1", "domain"),
-            UserAssetIdEntity("asset2", "domain"),
-            UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.STANDARD,
-            botService = null,
-            false
-        )
 
-        val result = db.userDAO.getUserByQualifiedID(user1.id)
-        assertEquals(user1, result.first())
-
-        db.userDAO.updateSelfUser(updatedUser1)
-        assertEquals(updatedUser1, result.first())
-    }
-
-    @Test
-    fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest {
-        db.userDAO.insertUser(user1)
         val updatedUser1 = UserEntity(
             user1.id,
             "John Doe",
@@ -125,60 +107,84 @@ class UserDAOTest : BaseDatabaseTest() {
             false
         )
 
-        val result = db.userDAO.getUserByQualifiedID(user1.id)
-        assertEquals(user1, result.first())
-
-        db.userDAO.updateSelfUser(updatedUser1)
-        assertEquals(updatedUser1, result.first())
+        db.userDAO.getUserByQualifiedID(user1.id).take(2).collect() {
+            collectedValues.add(it)
+            if (collectedValues.size == 1) {
+                db.userDAO.updateUser(updatedUser1)
+            }
+        }
+        assertEquals(user1, collectedValues[0])
+        assertEquals(updatedUser1, collectedValues[1])
     }
 
     @Test
-    fun givenAExistingUsers_WhenQueriedUserByUserEmail_ThenResultsIsEqualToThatUser() = runTest {
+    fun givenAExistingUsers_WhenQueriedUserByUserEmail_ThenResultsIsEqualToThatUser() = runTest(dispatcher) {
         // given
         val user1 = USER_ENTITY_1
         val user2 = USER_ENTITY_2.copy(email = "uniqueEmailForUser2")
         val user3 = USER_ENTITY_3
         db.userDAO.upsertUsers(listOf(user1, user2, user3))
         // when
-        val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(user2.email!!, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        assertEquals(searchResult, listOf(user2))
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                user2.email!!,
+                listOf(ConnectionEntity.State.ACCEPTED)
+            )
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    assertEquals(searchResult, listOf(user2))
+                    cancelAndIgnoreRemainingEvents()
+                }
+        }
+
     }
 
     @Test
     fun givenAExistingUsers_WhenQueriedUserByName_ThenResultsIsEqualToThatUser(): TestResult {
-        return runTest {
+        return runTest(dispatcher) {
             // given
             val user1 = USER_ENTITY_1
             val user2 = USER_ENTITY_3
             val user3 = USER_ENTITY_3.copy(handle = "uniqueHandlForUser3")
             db.userDAO.upsertUsers(listOf(user1, user2, user3))
             // when
-            val searchResult =
-                db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(user3.handle!!, listOf(ConnectionEntity.State.ACCEPTED))
-            // then
-            assertEquals(searchResult, listOf(user3))
+            launch(UnconfinedTestDispatcher(testScheduler)) {
+                db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                    user3.handle!!,
+                    listOf(ConnectionEntity.State.ACCEPTED)
+                )
+                    .test {
+                        // then
+                        val searchResult = awaitItem()
+                        assertEquals(searchResult, listOf(user3))
+                        cancelAndIgnoreRemainingEvents()
+                    }
+            }
         }
     }
 
     @Test
-    fun givenAExistingUsers_WhenQueriedUserByHandle_ThenResultsIsEqualToThatUser() = runTest {
+    fun givenAExistingUsers_WhenQueriedUserByHandle_ThenResultsIsEqualToThatUser() = runTest(dispatcher) {
         // given
         val user1 = USER_ENTITY_1.copy(name = "uniqueNameFor User1")
         val user2 = USER_ENTITY_2
         val user3 = USER_ENTITY_3
         db.userDAO.upsertUsers(listOf(user1, user2, user3))
         // when
-        val searchResult =
+        launch(UnconfinedTestDispatcher(testScheduler)) {
             db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(user1.name!!, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        assertEquals(searchResult, listOf(user1))
+                .test {
+                    val searchResult = awaitItem()
+                    assertEquals(searchResult, listOf(user1))
+                    cancelAndIgnoreRemainingEvents()
+                }
+        }
     }
 
     @Test
     fun givenAExistingUsersWithCommonEmailPrefix_WhenQueriedWithThatEmailPrefix_ThenResultIsEqualToTheUsersWithCommonEmailPrefix() =
-        runTest {
+        runTest(dispatcher) {
             // given
             val commonEmailPrefix = "commonEmail"
 
@@ -225,78 +231,115 @@ class UserDAOTest : BaseDatabaseTest() {
 
             db.userDAO.upsertUsers(mockUsers)
             // when
-            val searchResult =
+            launch(UnconfinedTestDispatcher(testScheduler)) {
                 db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonEmailPrefix, listOf(ConnectionEntity.State.ACCEPTED))
-            // then
-            assertEquals(searchResult, commonEmailUsers)
+                    .test {
+                        // then
+                        val searchResult = awaitItem()
+                        assertEquals(searchResult, commonEmailUsers)
+                        cancelAndIgnoreRemainingEvents()
+                    }
+            }
         }
 
     // when entering
     @Test
-    fun givenAExistingUsers_WhenQueriedWithNonExistingEmail_ThenReturnNoResults() = runTest {
+    fun givenAExistingUsers_WhenQueriedWithNonExistingEmail_ThenReturnNoResults() = runTest(dispatcher) {
         // given
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.upsertUsers(mockUsers)
 
         val nonExistingEmailQuery = "doesnotexist@wire.com"
         // when
-        val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(nonExistingEmailQuery, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        assertTrue { searchResult.isEmpty() }
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                nonExistingEmailQuery,
+                listOf(ConnectionEntity.State.ACCEPTED)
+            )
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    assertTrue { searchResult.isEmpty() }
+                    cancelAndIgnoreRemainingEvents()
+                }
+        }
     }
 
     @Test
-    fun givenAExistingUsers_whenQueriedWithCommonEmailPrefix_ThenResultsUsersEmailContainsThatPrefix() = runTest {
+    fun givenAExistingUsers_whenQueriedWithCommonEmailPrefix_ThenResultsUsersEmailContainsThatPrefix() = runTest(dispatcher) {
         // given
         val commonEmailPrefix = "commonEmail"
 
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.upsertUsers(mockUsers)
         // when
-        val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonEmailPrefix, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        searchResult.forEach { userEntity ->
-            assertContains(userEntity.email!!, commonEmailPrefix)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                commonEmailPrefix,
+                listOf(ConnectionEntity.State.ACCEPTED)
+            )
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    searchResult.forEach { userEntity ->
+                        assertContains(userEntity.email!!, commonEmailPrefix)
+                    }
+                    cancelAndIgnoreRemainingEvents()
+                }
         }
     }
 
     @Test
-    fun givenAExistingUsers_whenQueriedWithCommonHandlePrefix_ThenResultsUsersHandleContainsThatPrefix() = runTest {
+    fun givenAExistingUsers_whenQueriedWithCommonHandlePrefix_ThenResultsUsersHandleContainsThatPrefix() = runTest(dispatcher) {
         // given
         val commonHandlePrefix = "commonHandle"
 
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.upsertUsers(mockUsers)
         // when
-        val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonHandlePrefix, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        searchResult.forEach { userEntity ->
-            assertContains(userEntity.handle!!, commonHandlePrefix)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                commonHandlePrefix,
+                listOf(ConnectionEntity.State.ACCEPTED)
+            )
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    searchResult.forEach { userEntity ->
+                        assertContains(userEntity.handle!!, commonHandlePrefix)
+                    }
+                    cancelAndIgnoreRemainingEvents()
+                }
         }
     }
 
     @Test
-    fun givenAExistingUsers_whenQueriedWithCommonNamePrefix_ThenResultsUsersNameContainsThatPrefix() = runTest {
+    fun givenAExistingUsers_whenQueriedWithCommonNamePrefix_ThenResultsUsersNameContainsThatPrefix() = runTest(dispatcher) {
         // given
         val commonNamePrefix = "commonName"
 
         val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3)
         db.userDAO.upsertUsers(mockUsers)
         // when
-        val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonNamePrefix, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        searchResult.forEach { userEntity ->
-            assertContains(userEntity.name!!, commonNamePrefix)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                commonNamePrefix,
+                listOf(ConnectionEntity.State.ACCEPTED)
+            )
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    searchResult.forEach { userEntity ->
+                        assertContains(userEntity.name!!, commonNamePrefix)
+                    }
+                    cancelAndIgnoreRemainingEvents()
+                }
         }
     }
 
     @Test
     fun givenAExistingUsers_whenQueriedWithCommonPrefixForNameHandleAndEmail_ThenResultsUsersNameHandleAndEmailContainsThatPrefix() =
-        runTest {
+        runTest(dispatcher) {
             // given
             val commonPrefix = "common"
 
@@ -307,14 +350,19 @@ class UserDAOTest : BaseDatabaseTest() {
             )
             db.userDAO.upsertUsers(mockUsers)
             // when
-            val searchResult =
+            launch(UnconfinedTestDispatcher(testScheduler)) {
                 db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonPrefix, listOf(ConnectionEntity.State.ACCEPTED))
-            // then
-            assertEquals(mockUsers, searchResult)
+                    .test {
+                        // then
+                        val searchResult = awaitItem()
+                        assertEquals(mockUsers, searchResult)
+                        cancelAndIgnoreRemainingEvents()
+                    }
+            }
         }
 
     @Test
-    fun givenAExistingUsers_whenQueried_ThenResultsUsersAreConnected() = runTest {
+    fun givenAExistingUsers_whenQueried_ThenResultsUsersAreConnected() = runTest(dispatcher) {
         // given
         val commonPrefix = "common"
 
@@ -326,16 +374,24 @@ class UserDAOTest : BaseDatabaseTest() {
 
         db.userDAO.upsertUsers(mockUsers)
         // when
-        val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonPrefix, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        searchResult.forEach { userEntity ->
-            assertEquals(ConnectionEntity.State.ACCEPTED, userEntity.connectionStatus)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                commonPrefix,
+                listOf(ConnectionEntity.State.ACCEPTED)
+            )
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    searchResult.forEach { userEntity ->
+                        assertEquals(ConnectionEntity.State.ACCEPTED, userEntity.connectionStatus)
+                    }
+                    cancelAndIgnoreRemainingEvents()
+                }
         }
     }
 
     @Test
-    fun givenAConnectedExistingUsersAndNonConnected_whenQueried_ThenResultsUsersAreConnected() = runTest {
+    fun givenAConnectedExistingUsersAndNonConnected_whenQueried_ThenResultsUsersAreConnected() = runTest(dispatcher) {
         // given
         val commonPrefix = "common"
 
@@ -348,17 +404,22 @@ class UserDAOTest : BaseDatabaseTest() {
 
         db.userDAO.upsertUsers(mockUsers)
         // when
-        val searchResult =
+        launch(UnconfinedTestDispatcher(testScheduler)) {
             db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonPrefix, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        assertTrue(searchResult.size == 2)
-        searchResult.forEach { userEntity ->
-            assertEquals(ConnectionEntity.State.ACCEPTED, userEntity.connectionStatus)
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    assertTrue(searchResult.size == 2)
+                    searchResult.forEach { userEntity ->
+                        assertEquals(ConnectionEntity.State.ACCEPTED, userEntity.connectionStatus)
+                    }
+                    cancelAndIgnoreRemainingEvents()
+                }
         }
     }
 
     @Test
-    fun givenAConnectedExistingUserAndNonConnected_whenQueried_ThenResultIsTheConnectedUser() = runTest {
+    fun givenAConnectedExistingUserAndNonConnected_whenQueried_ThenResultIsTheConnectedUser() = runTest(dispatcher) {
         // given
         val commonPrefix = "common"
 
@@ -373,14 +434,22 @@ class UserDAOTest : BaseDatabaseTest() {
 
         db.userDAO.upsertUsers(mockUsers)
         // when
-        val searchResult =
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonPrefix, listOf(ConnectionEntity.State.ACCEPTED))
-        // then
-        assertEquals(expectedResult, searchResult)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                commonPrefix,
+                listOf(ConnectionEntity.State.ACCEPTED)
+            )
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    assertEquals(expectedResult, searchResult)
+                    cancelAndIgnoreRemainingEvents()
+                }
+        }
     }
 
     @Test
-    fun givenTheListOfUser_whenQueriedByHandle_ThenResultContainsOnlyTheUserHavingTheHandleAndAreConnected() = runTest {
+    fun givenTheListOfUser_whenQueriedByHandle_ThenResultContainsOnlyTheUserHavingTheHandleAndAreConnected() = runTest(dispatcher) {
         val expectedResult = listOf(
             USER_ENTITY_1.copy(handle = "@someHandle"),
             USER_ENTITY_4.copy(handle = "@someHandle1")
@@ -396,14 +465,22 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(mockUsers)
 
         // when
-        val searchResult = db.userDAO.getUserByHandleAndConnectionStates("some", listOf(ConnectionEntity.State.ACCEPTED))
-
-        // then
-        assertEquals(expectedResult, searchResult)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            db.userDAO.getUserByHandleAndConnectionStates(
+                "some",
+                listOf(ConnectionEntity.State.ACCEPTED)
+            )
+                .test {
+                    // then
+                    val searchResult = awaitItem()
+                    assertEquals(expectedResult, searchResult)
+                    cancelAndIgnoreRemainingEvents()
+                }
+        }
     }
 
     @Test
-    fun givenAExistingUsers_whenUpdatingTheirValues_ThenResultsIsEqualToThatUserButWithFieldsModified() = runTest {
+    fun givenAExistingUsers_whenUpdatingTheirValues_ThenResultsIsEqualToThatUserButWithFieldsModified() = runTest(dispatcher) {
         // given
         val newNameA = "new user naming a"
         val newNameB = "new user naming b"
@@ -420,7 +497,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsers_whenUpdatingTheirValuesAndRecordNotExists_ThenResultsOneUpdatedAnotherInserted() = runTest {
+    fun givenAExistingUsers_whenUpdatingTheirValuesAndRecordNotExists_ThenResultsOneUpdatedAnotherInserted() = runTest(dispatcher) {
         // given
         val newNameA = "new user naming a"
         db.userDAO.insertUser(user1)
@@ -435,7 +512,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsers_whenUpsertingTeamMembers_ThenResultsOneUpdatedAnotherInserted() = runTest {
+    fun givenAExistingUsers_whenUpsertingTeamMembers_ThenResultsOneUpdatedAnotherInserted() = runTest(dispatcher) {
         // given
         val newTeamId = "new user team id"
         db.userDAO.insertUser(user1)
@@ -450,7 +527,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenATeamMember_whenUpsertingTeamMember_ThenUserTypeShouldStayTheSame() = runTest {
+    fun givenATeamMember_whenUpsertingTeamMember_ThenUserTypeShouldStayTheSame() = runTest(dispatcher) {
         // given
         val externalMember = user1.copy(userType = UserTypeEntity.EXTERNAL)
         db.userDAO.upsertTeamMembersTypes(listOf(externalMember))
@@ -462,7 +539,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAExistingUsers_whenUpsertingUsers_ThenResultsOneUpdatedAnotherInsertedWithNoConnectionStatusOverride() = runTest {
+    fun givenAExistingUsers_whenUpsertingUsers_ThenResultsOneUpdatedAnotherInsertedWithNoConnectionStatusOverride() = runTest(dispatcher) {
         // given
         val newTeamId = "new team id"
         db.userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.ACCEPTED))
@@ -478,7 +555,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenListOfUsers_WhenGettingListOfUsers_ThenMatchingUsersAreReturned() = runTest {
+    fun givenListOfUsers_WhenGettingListOfUsers_ThenMatchingUsersAreReturned() = runTest(dispatcher) {
         val users = listOf(user1, user2)
         val requestedIds = (users + user3).map { it.id }
         db.userDAO.upsertUsers(users)

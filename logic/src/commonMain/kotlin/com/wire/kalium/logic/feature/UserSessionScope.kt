@@ -1,7 +1,10 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.AuthenticatedDataSourceSet
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.cache.SelfConversationIdProviderImpl
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -23,6 +26,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
@@ -35,6 +39,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
@@ -45,10 +50,10 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.notification.PushTokenDataSource
+import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteDataSource
-import com.wire.kalium.logic.data.prekey.remote.PreKeyRemoteRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
@@ -74,6 +79,7 @@ import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
@@ -93,13 +99,12 @@ import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
-import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -114,6 +119,10 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncCriteriaProvider
@@ -134,8 +143,11 @@ import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
@@ -143,15 +155,8 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.client.TokenStorage
-import com.wire.kalium.persistence.client.TokenStorageImpl
-import com.wire.kalium.persistence.client.UserConfigStorage
-import com.wire.kalium.persistence.client.UserConfigStorageImpl
 import com.wire.kalium.persistence.db.UserDatabaseProvider
-import com.wire.kalium.persistence.event.EventInfoStorage
-import com.wire.kalium.persistence.event.EventInfoStorageImpl
-import com.wire.kalium.persistence.kmm_settings.EncryptedSettingsHolder
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -160,6 +165,13 @@ import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
 
 expect class UserSessionScope : UserSessionScopeCommon
+fun interface CurrentClientIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, ClientId>
+}
+
+fun interface SelfTeamIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
+}
 
 @Suppress("LongParameterList")
 abstract class UserSessionScopeCommon internal constructor(
@@ -167,22 +179,50 @@ abstract class UserSessionScopeCommon internal constructor(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
-    private val globalPreferences: KaliumPreferences,
+    private val globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: UserSessionScopeProvider,
 ) : CoroutineScope {
-    // we made this lazy, so it will have a single instance for the storage
-    private val userConfigStorage: UserConfigStorage by lazy { UserConfigStorageImpl(globalPreferences) }
-
-    private val userConfigRepository: UserConfigRepository get() = UserConfigDataSource(userConfigStorage)
-
-    private val encryptedSettingsHolder: EncryptedSettingsHolder = authenticatedDataSourceSet.encryptedSettingsHolder
-    private val userPreferencesSettings = authenticatedDataSourceSet.kaliumPreferencesSettings
-    private val eventInfoStorage: EventInfoStorage
-        get() = EventInfoStorageImpl(userPreferencesSettings)
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
+
+    // TODO: extract client id provider to it's own class and test it
+    private var _clientId: ClientId? = null
+    private suspend fun clientId(): Either<CoreFailure, ClientId> =
+        if (_clientId != null) Either.Right(_clientId!!) else {
+            clientRepository.currentClientId().onSuccess {
+                _clientId = it
+            }
+        }
+
+    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
+
+    val federatedIdMapper: FederatedIdMapper
+        get() = MapperProvider.federatedIdMapper(
+            userId,
+            qualifiedIdMapper,
+            globalScope.sessionRepository
+            )
+
+    private val clientIdProvider = CurrentClientIdProvider { clientId() }
+    private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
+
+    // TODO: make atomic
+    // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
+    private var _teamId: Either<CoreFailure, TeamId?> = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
+
+    private suspend fun teamId(): Either<CoreFailure, TeamId?> =
+        if (_teamId.isRight()) _teamId else {
+            userRepository.userById(userId).map {
+                _teamId = Either.Right(it.teamId)
+                it.teamId
+            }
+        }
+    private val selfTeamId = SelfTeamIdProvider { teamId() }
+
+    private val userConfigRepository: UserConfigRepository
+        get() = UserConfigDataSource(authenticatedDataSourceSet.userPrefProvider.userConfigStorage)
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
@@ -195,7 +235,7 @@ abstract class UserSessionScopeCommon internal constructor(
             "${authenticatedDataSourceSet.authenticatedRootDir}/mls",
             userId,
             clientRepository,
-            authenticatedDataSourceSet.kaliumPreferencesSettings
+            globalPreferences.passphraseStorage
         )
     }
 
@@ -209,7 +249,7 @@ abstract class UserSessionScopeCommon internal constructor(
             syncManager
         )
 
-    private val notificationTokenRepository get() = NotificationTokenDataSource(tokenStorage)
+    private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -218,8 +258,10 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userDatabaseProvider.messageDAO,
+            userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            timeParser
+            timeParser,
+            userId
         )
 
     private val messageRepository: MessageRepository
@@ -236,14 +278,21 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            globalScope.sessionRepository
+            globalScope.sessionRepository,
+            userId,
+            qualifiedIdMapper
         )
+
+    internal val pushTokenRepository: PushTokenRepository
+        get() = PushTokenDataSource(userDatabaseProvider.metadataDAO)
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
             userDatabaseProvider.userDAO,
             userDatabaseProvider.teamDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi
+            authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
+            userId,
         )
 
     private val connectionRepository: ConnectionRepository
@@ -253,7 +302,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userDatabaseProvider.userDAO,
-            userDatabaseProvider.metadataDAO
+            userId,
+            selfTeamId
         )
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
@@ -272,7 +322,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, conversationRepository, userId)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
     private val callRepository: CallRepository by lazy {
         CallDataSource(
@@ -287,10 +337,9 @@ abstract class UserSessionScopeCommon internal constructor(
         )
     }
 
+    // TODO: Refactor. These should be passed in the constructor to
+    //       avoid depending on not-yet-initialized fields
     protected abstract val clientConfig: ClientConfig
-
-    private val tokenStorage: TokenStorage
-        get() = TokenStorageImpl(globalPreferences)
 
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
@@ -316,20 +365,6 @@ abstract class UserSessionScopeCommon internal constructor(
     private val messageSendingScheduler: MessageSendingScheduler
         get() = authenticatedDataSourceSet.userSessionWorkScheduler
 
-    // TODO(optimization) code duplication, can't we get the MessageSender from the message scope?
-    private val messageSender: MessageSender
-        get() = MessageSenderImpl(
-            messageRepository,
-            conversationRepository,
-            syncManager,
-            messageSendFailureHandler,
-            sessionEstablisher,
-            messageEnvelopeCreator,
-            mlsMessageCreator,
-            messageSendingScheduler,
-            timeParser
-        )
-
     private val assetRepository: AssetRepository
         get() = AssetDataSource(
             assetApi = authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi,
@@ -346,7 +381,10 @@ abstract class UserSessionScopeCommon internal constructor(
     private val eventProcessor: EventProcessor
         get() = EventProcessorImpl(
             eventRepository,
-            conversationEventReceiver, userEventReceiver, featureConfigEventReceiver
+            conversationEventReceiver,
+            userEventReceiver,
+            teamEventReceiver,
+            featureConfigEventReceiver
         )
 
     private val syncCriteriaProvider: SyncCriteriaProvider
@@ -377,7 +415,10 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(conversationRepository)
+        get() = JoinExistingMLSConversationsUseCase(
+            kaliumConfigs,
+            conversationRepository
+        )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
@@ -407,11 +448,14 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val eventRepository: EventRepository
         get() = EventDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi, eventInfoStorage, clientRepository
+            authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi,
+            userDatabaseProvider.metadataDAO,
+            clientRepository
         )
 
     internal val keyPackageManager: KeyPackageManager =
         KeyPackageManagerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { client.refillKeyPackages },
             lazy { client.mlsKeyPackageCountUseCase },
@@ -419,6 +463,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository }
@@ -428,17 +473,9 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val pendingProposalScheduler: PendingProposalScheduler =
         PendingProposalSchedulerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { mlsConversationRepository }
-        )
-
-    val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userRepository)
-
-    val federatedIdMapper: FederatedIdMapper
-        get() = MapperProvider.federatedIdMapper(
-            userId,
-            qualifiedIdMapper,
-            globalScope.sessionRepository
         )
 
     private val callManager: Lazy<CallManager> = lazy {
@@ -448,7 +485,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userRepository = userRepository,
             clientRepository = clientRepository,
             conversationRepository = conversationRepository,
-            messageSender = messageSender,
+            messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
             videoStateChecker = videoStateChecker
@@ -464,21 +501,30 @@ abstract class UserSessionScopeCommon internal constructor(
     }
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
+        val conversationRepository = conversationRepository
+        val messageRepository = messageRepository
+        val assetRepository = assetRepository
         ConversationEventReceiverImpl(
-            authenticatedDataSourceSet.proteusClient,
-            persistMessage,
-            messageRepository,
-            assetRepository,
-            conversationRepository,
-            mlsConversationRepository,
-            userRepository,
-            callManager,
-            MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userRepository),
-            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
-            userConfigRepository,
-            EphemeralNotificationsManager,
-            pendingProposalScheduler
+            proteusClient = authenticatedDataSourceSet.proteusClient,
+            persistMessage = persistMessage,
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            userRepository = userRepository,
+            callManagerImpl = callManager,
+            editTextHandler = MessageTextEditHandler(messageRepository),
+            lastReadContentHandler = LastReadContentHandler(conversationRepository, userId, selfConversationIdProvider),
+            clearConversationContentHandler = ClearConversationContentHandler(
+                ClearConversationContentImpl(conversationRepository, assetRepository),
+                userId,
+                selfConversationIdProvider,
+            ),
+            deleteForMeHandler = DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+            userConfigRepository = userConfigRepository,
+            ephemeralNotificationsManager = EphemeralNotificationsManager,
+            pendingProposalScheduler = pendingProposalScheduler,
+            userId
         )
     }
 
@@ -487,17 +533,20 @@ abstract class UserSessionScopeCommon internal constructor(
             connectionRepository,
             logout,
             clientRepository,
+            userRepository,
             userId
         )
 
-    private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs)
+    private val teamEventReceiver: TeamEventReceiver
+        get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userId)
 
-    private val preKeyRemoteRepository: PreKeyRemoteRepository
-        get() = PreKeyRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi)
+    private val featureConfigEventReceiver: FeatureConfigEventReceiver
+        get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)
+
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
-            preKeyRemoteRepository, authenticatedDataSourceSet.proteusClient
+            authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
+            authenticatedDataSourceSet.proteusClient
         )
 
     private val keyPackageRepository: KeyPackageRepository
@@ -507,7 +556,8 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsClientProvider
         )
 
-    private val logoutRepository: LogoutRepository = LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
+    private val logoutRepository: LogoutRepository =
+        LogoutDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.logoutApi)
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
@@ -524,20 +574,24 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsClientProvider,
             notificationTokenRepository,
             clientRemoteRepository,
-            authenticatedDataSourceSet.proteusClient
+            authenticatedDataSourceSet.proteusClient,
+            globalScope.sessionRepository,
+            userId,
+            kaliumConfigs
         )
     val conversations: ConversationScope
         get() = ConversationScope(
             conversationRepository,
             connectionRepository,
             userRepository,
-            callRepository,
             syncManager,
             mlsConversationRepository,
             clientRepository,
-            messageSender,
+            assetRepository,
+            messages.messageSender,
             teamRepository,
             userId,
+            selfConversationIdProvider,
             persistMessage,
             updateKeyingMaterialThresholdProvider
         )
@@ -545,6 +599,7 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = MessageScope(
             connectionRepository,
             userId,
+            clientIdProvider,
             messageRepository,
             conversationRepository,
             clientRepository,
@@ -557,6 +612,7 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             timeParser,
+            this
         )
     val users: UserScope
         get() = UserScope(
@@ -584,19 +640,23 @@ abstract class UserSessionScopeCommon internal constructor(
             clearUserData,
             userSessionScopeProvider
         )
+
     private val featureConfigRepository: FeatureConfigRepository
-        get() = FeatureConfigDataSource(featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi)
+        get() = FeatureConfigDataSource(
+            featureConfigApi = authenticatedDataSourceSet.authenticatedNetworkContainer.featureConfigApi
+        )
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
-    val observeFileSharingStatus: ObserveFileSharingStatusUseCase get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
-    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(userConfigRepository)
+    val observeFileSharingStatus: ObserveFileSharingStatusUseCase
+        get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
+    val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(kaliumConfigs, userConfigRepository)
 
     internal val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
             userConfigRepository,
             featureConfigRepository,
-            userRepository,
             isFileSharingEnabled,
-            kaliumConfigs
+            kaliumConfigs,
+            userId
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository)
@@ -628,6 +688,12 @@ abstract class UserSessionScopeCommon internal constructor(
         }
     }
 
+    private fun createPushTokenUpdater() = PushTokenUpdater(
+        clientRepository,
+        notificationTokenRepository,
+        pushTokenRepository
+    )
+
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     fun onInit() {
@@ -637,6 +703,11 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
+        }
+
+        launch {
+            val pushTokenUpdater = createPushTokenUpdater()
+            pushTokenUpdater.monitorTokenChanges()
         }
     }
 

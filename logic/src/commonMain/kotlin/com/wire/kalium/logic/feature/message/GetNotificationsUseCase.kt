@@ -47,7 +47,7 @@ interface GetNotificationsUseCase {
  * That Flow emits everytime when the list is changed
  */
 @Suppress("LongParameterList")
-class GetNotificationsUseCaseImpl(
+internal class GetNotificationsUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
@@ -55,7 +55,8 @@ class GetNotificationsUseCaseImpl(
     private val timeParser: TimeParser,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
-    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
+    private val localNotificationMessageMapper: LocalNotificationMessageMapper =
+        MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
@@ -254,6 +255,8 @@ class GetNotificationsUseCaseImpl(
         is MessageContent.Empty -> false
         is MessageContent.Ignored -> false
         is MessageContent.LastRead -> false
+        is MessageContent.Cleared -> false
+        is MessageContent.ConversationRenamed -> false
     }
 
     private fun shouldMessageBeVisibleAsNotification(message: Message) =

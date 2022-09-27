@@ -7,22 +7,25 @@ import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.model.getPreviewAssetOrNull
-import com.wire.kalium.network.api.user.details.UserProfileDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
+import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
 interface PublicUserMapper {
     fun fromDaoModelToPublicUser(userEntity: UserEntity): OtherUser
+    fun fromDaoModelToPublicUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized
     fun fromUserDetailResponseWithUsertype(
         userDetailResponse: UserProfileDTO,
         // UserProfileDTO has no info about userType, we need to pass it explicitly
@@ -62,6 +65,14 @@ class PublicUserMapperImpl(
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted
     )
+
+    override fun fromDaoModelToPublicUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized =
+        OtherUserMinimized(
+            id = idMapper.fromDaoModel(userEntity.id),
+            name = userEntity.name,
+            completePicture = userEntity.completeAssetId?.let { idMapper.fromDaoModel(it) },
+            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+        )
 
     override fun fromUserDetailResponseWithUsertype(
         userDetailResponse: UserProfileDTO,

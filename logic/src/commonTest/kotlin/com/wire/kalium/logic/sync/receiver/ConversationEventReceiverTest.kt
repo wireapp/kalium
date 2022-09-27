@@ -11,14 +11,18 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -29,14 +33,15 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
@@ -72,7 +77,6 @@ class ConversationEventReceiverTest {
     @Test
     fun givenNewMessageEvent_whenHandling_shouldAskProteusClientForDecryption() = runTest {
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
             .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown()))
             .withPersistingMessageReturning(Either.Right(Unit))
@@ -91,6 +95,38 @@ class ConversationEventReceiverTest {
         verify(arrangement.proteusClient)
             .suspendFunction(arrangement.proteusClient::decrypt)
             .with(matching { it.contentEquals(decodedByteArray) }, eq(cryptoSessionId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenValidNewImageMessageEvent_whenHandling_shouldSetDownloadStatusAsInProgress() = runTest {
+        val validImageContent = MessageContent.Asset(
+            AssetContent(
+                1000, "some-image.jpg", "image/jpg", AssetContent.AssetMetadata.Image(200, 200),
+                AssetContent.RemoteData(
+                    ByteArray(16), ByteArray(16), "assetid", null, null, null
+                ), Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
+            )
+        )
+        val coreFailure = StorageFailure.DataNotFound
+        val (arrangement, eventReceiver) = Arrangement()
+            .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
+            .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", validImageContent))
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFileSharingEnabled()
+            .withErrorGetMessageById(coreFailure)
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = arrangement.newMessageEvent(encodedEncryptedContent.decodeToString())
+        eventReceiver.onEvent(messageEvent)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                it.content is MessageContent.Asset &&
+                        (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+            })
             .wasInvoked(exactly = once)
     }
 
@@ -115,7 +151,6 @@ class ConversationEventReceiverTest {
         val emptyArray = byteArrayOf()
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withConversationUpdateConversationReadDate(Either.Right(Unit))
@@ -207,7 +242,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
@@ -228,7 +262,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownSucceeding()
             .withPersistMembersSucceeding()
@@ -249,7 +282,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
@@ -269,7 +301,6 @@ class ConversationEventReceiverTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withSelfUserIdReturning(TestUser.USER_ID)
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withPersistMembersSucceeding()
@@ -286,11 +317,111 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenMemberChangeEvent_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
+        val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = updatedMember)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateMemberSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
+            .with(eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberChangeEvent_whenHandlingIt_thenShouldUpdateMembers() = runTest {
+        val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = updatedMember)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateMemberSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
+            .with(eq(updatedMember), eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberChangeEventAndFetchConversationFails_whenHandlingIt_thenShouldAttemptUpdateMembersAnyway() = runTest {
+        val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = updatedMember)
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withUpdateMemberSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
+            .with(eq(updatedMember), eq(event.conversationId))
+    }
+
+    @Test
+    fun givenMemberChangeEventAndNotRolePresent_whenHandlingIt_thenShouldIgnoreTheEvent() = runTest {
+        val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChangeIgnored()
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withUpdateMemberSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
+            .with(eq(updatedMember), eq(event.conversationId))
+            .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
+            .with(eq(event.conversationId))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenADeletedConversationEvent_whenHandlingItAndNotExists_thenShouldSkipTheDeletion() = runTest {
+        val event = TestEvent.deletedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withEphemeralNotificationEnqueue()
+            .withGetConversation(null)
+            .withGetUserAuthor(event.senderUserId)
+            .withDeletingConversationSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::deleteConversation)
+                .with(eq(TestConversation.ID))
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
     fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventReceiver) = Arrangement()
             .withEphemeralNotificationEnqueue()
-            .withGetConversation(event.conversationId)
+            .withGetConversation()
             .withGetUserAuthor(event.senderUserId)
             .withDeletingConversationSucceeding()
             .arrange()
@@ -304,6 +435,57 @@ class ConversationEventReceiverTest {
                 .wasInvoked(exactly = once)
         }
     }
+
+    @Test
+    fun givenAConversationEventRenamed_whenHandlingIt_thenShouldRenameTheConversation() = runTest {
+        val event = TestEvent.renamedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withGetConversation()
+            .withGetUserAuthor(event.senderUserId)
+            .withRenamingConversationReturning()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .with(eq(TestConversation.ID), any(), any())
+                .wasInvoked(exactly = once)
+
+            verify(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAConversationEventRenamed_whenHandlingItFails_thenShouldNotUpdateTheConversation() = runTest {
+        val event = TestEvent.renamedConversation()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withGetConversation()
+            .withGetUserAuthor(event.senderUserId)
+            .withRenamingConversationReturning(Either.Left(StorageFailure.DataNotFound))
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        with(arrangement) {
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .with(eq(TestConversation.ID), any(), any())
+                .wasInvoked(exactly = once)
+
+            verify(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .with(any())
+                .wasNotInvoked()
+        }
+    }
+
     private class Arrangement {
         @Mock
         val proteusClient = mock(classOf<ProteusClient>())
@@ -319,6 +501,9 @@ class ConversationEventReceiverTest {
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
+
+        @Mock
+        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
         @Mock
         private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
@@ -342,21 +527,36 @@ class ConversationEventReceiverTest {
         val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
-            proteusClient,
-            persistMessage,
-            messageRepository,
-            assetRepository,
-            conversationRepository,
-            mlsConversationRepository,
-            userRepository,
-            lazyOf(callManager),
-            MessageTextEditHandler(messageRepository),
-            LastReadContentHandler(conversationRepository, userRepository),
-            DeleteForMeHandler(conversationRepository, messageRepository, userRepository),
-            userConfigRepository,
-            ephemeralNotifications,
-            pendingProposalScheduler,
+            proteusClient = proteusClient,
+            persistMessage = persistMessage,
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
+            userRepository = userRepository,
+            callManagerImpl = lazyOf(callManager),
+            editTextHandler = MessageTextEditHandler(messageRepository),
+            lastReadContentHandler = LastReadContentHandler(
+                conversationRepository = conversationRepository,
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
+            ),
+            clearConversationContentHandler = ClearConversationContentHandler(
+                clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
+            ),
+            deleteForMeHandler = DeleteForMeHandler(
+                conversationRepository = conversationRepository,
+                messageRepository = messageRepository,
+                selfUserId = TestUser.USER_ID,
+                selfConversationIdProvider = selfConversationIdProvider
+            ),
+            userConfigRepository = userConfigRepository,
+            ephemeralNotificationsManager = ephemeralNotifications,
+            pendingProposalScheduler = pendingProposalScheduler,
             protoContentMapper = protoContentMapper,
+            selfUserId = TestUser.USER_ID
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
@@ -373,18 +573,32 @@ class ConversationEventReceiverTest {
                 .thenReturn(protoContent)
         }
 
-        fun withSelfUserIdReturning(selfUserId: UserId) = apply {
-            given(userRepository)
-                .function(userRepository::getSelfUserId)
-                .whenInvoked()
-                .thenReturn(selfUserId)
-        }
-
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
             given(persistMessage)
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
+        }
+
+        fun withFileSharingEnabled() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::isFileSharingEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(FileSharingStatus(true, false)))
+        }
+
+        fun withGetMessageById(expectedMessage: Message.Regular) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(expectedMessage))
+        }
+
+        fun withErrorGetMessageById(coreFailure: CoreFailure) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(coreFailure))
         }
 
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
@@ -425,6 +639,13 @@ class ConversationEventReceiverTest {
         fun withPersistMembersSucceeding() = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::persistMembers)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withUpdateMemberSucceeding() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateMemberFromEvent)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
@@ -481,11 +702,18 @@ class ConversationEventReceiverTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetConversation(conversationId: ConversationId = TestConversation.ID) = apply {
+        fun withRenamingConversationReturning(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
+                .suspendFunction(conversationRepository::updateConversationName)
+                .whenInvokedWith(eq(TestConversation.ID), eq("newName"), any())
+                .thenReturn(result)
+        }
+
+        fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationById)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(Either.Right(TestConversationDetails.CONVERSATION_ONE_ONE)))
+                .thenReturn(conversation)
         }
 
         fun withGetUserAuthor(userId: UserId = TestUser.USER_ID) = apply {
@@ -500,6 +728,10 @@ class ConversationEventReceiverTest {
                 .suspendFunction(ephemeralNotifications::scheduleNotification)
                 .whenInvokedWith(any())
                 .thenDoNothing()
+        }
+
+        suspend fun withSelfConversationId(conversationId: ConversationId) = apply {
+            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationId) }
         }
 
         fun arrange() = this to conversationEventReceiver

@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.network.api.message.QualifiedUserIdToClientMap
+import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 
 interface SendMessageFailureMapper {
@@ -26,7 +26,7 @@ class SendMessageFailureMapperImpl : SendMessageFailureMapper {
             val userEntries = domainEntry.value
             userEntries.map { userEntry ->
                 val clients = userEntry.value.map { ClientId(it) }
-                val userId = UserId(domain, userEntry.key)
+                val userId = UserId(value = userEntry.key, domain = domain)
                 userId to clients
             }
         }.toMap()

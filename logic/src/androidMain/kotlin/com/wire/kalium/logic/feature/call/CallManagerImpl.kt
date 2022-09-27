@@ -55,9 +55,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logic.data.call.CallClient
+import com.wire.kalium.logic.data.call.CallClientList
 
 @Suppress("LongParameterList", "TooManyFunctions")
-actual class CallManagerImpl(
+actual class CallManagerImpl internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
@@ -91,7 +95,7 @@ actual class CallManagerImpl(
     }
     private val userId: Deferred<UserId> = scope.async(start = CoroutineStart.LAZY) {
         userRepository.observeSelfUser().first().id.also {
-            callingLogger.d("$TAG - userId $it")
+            callingLogger.d("$TAG - userId ${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}")
         }
     }
 
@@ -271,6 +275,26 @@ actual class CallManagerImpl(
         }
     }
 
+    override suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList) {
+        withCalling {
+            // Needed to support calls between federated and non federated environments
+            val clients = callClients.clients.map { callClient ->
+                CallClient(
+                    federatedIdMapper.parseToFederatedId(callClient.userId),
+                    callClient.clientId
+                )
+            }
+            val clientsJson = CallClientList(clients).toJsonString()
+            val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
+            calling.wcall_request_video_streams(
+                inst = it,
+                conversationId = conversationIdString,
+                mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
+                json = clientsJson
+            )
+        }
+    }
+
     /**
      * onCallingReady
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
@@ -286,13 +310,10 @@ actual class CallManagerImpl(
         scope.launch {
             withCalling {
                 val onParticipantListChanged = OnParticipantListChanged(
-                    handle = deferredHandle.await(),
-                    calling = calling,
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
-                    conversationRepository = conversationRepository,
                     callingScope = scope
                 ).keepingStrongReference()
 
@@ -326,11 +347,8 @@ actual class CallManagerImpl(
     private fun initClientsHandler() {
         scope.launch {
             withCalling {
-                val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
-
                 val onClientsRequest = OnClientsRequest(
                     calling = calling,
-                    selfUserId = selfUserId,
                     conversationRepository = conversationRepository,
                     federatedIdMapper = federatedIdMapper,
                     qualifiedIdMapper = qualifiedIdMapper,
@@ -366,6 +384,7 @@ actual class CallManagerImpl(
     }
 
     companion object {
+        private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
         const val TAG = "CallManager"
         const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
         const val UTF8_ENCODING = "UTF-8"

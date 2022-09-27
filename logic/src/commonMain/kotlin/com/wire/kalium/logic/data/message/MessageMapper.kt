@@ -126,6 +126,7 @@ class MessageMapperImpl(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) }
         )
+
         is MessageContent.Asset -> with(this.value) {
             val assetWidth = when (metadata) {
                 is Image -> metadata.width
@@ -146,6 +147,7 @@ class MessageMapperImpl(
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,
+                assetUploadStatus = assetMapper.fromUploadStatusToDaoModel(uploadStatus),
                 assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,
@@ -177,6 +179,7 @@ class MessageMapperImpl(
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
         is MessageContent.Empty -> MessageEntityContent.Unknown()
         is MessageContent.LastRead -> MessageEntityContent.Unknown()
+        is MessageContent.Cleared -> MessageEntityContent.Unknown()
     }
 
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
@@ -192,6 +195,7 @@ class MessageMapperImpl(
         }
 
         is MessageContent.MissedCall -> MessageEntityContent.MissedCall
+        is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -199,14 +203,17 @@ class MessageMapperImpl(
             value = this.messageBody,
             mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) }
         )
+
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
         )
+
         is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
 
         is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
             this.mimeType, this.assetSizeInBytes, this.assetName
         )
+
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
         is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData)
     }
@@ -221,6 +228,7 @@ class MessageMapperImpl(
         }
 
         is MessageEntityContent.MissedCall -> MessageContent.MissedCall
+        is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
     }
 }
 

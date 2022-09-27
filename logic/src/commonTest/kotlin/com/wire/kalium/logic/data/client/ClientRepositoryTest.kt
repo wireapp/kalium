@@ -16,16 +16,15 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.ErrorResponse
-import com.wire.kalium.network.api.user.client.ClientApi
-import com.wire.kalium.network.api.user.client.DeviceTypeDTO
-import com.wire.kalium.network.api.user.client.SimpleClientResponse
-import com.wire.kalium.network.api.user.pushToken.PushTokenBody
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
-import io.mockative.ConfigurationApi
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -43,10 +42,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
-import com.wire.kalium.network.api.UserId as UserIdDTO
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @ExperimentalCoroutinesApi
-@ConfigurationApi
 class ClientRepositoryTest {
 
     @Mock
@@ -411,7 +409,7 @@ class ClientRepositoryTest {
 
     private companion object {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam(
-            "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null
+            "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null, null
         )
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
