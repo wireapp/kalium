@@ -19,14 +19,14 @@ import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.v0.authenticated.AssetApiImplV0
+import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
 import com.wire.kalium.network.api.v0.authenticated.CallApiV0
 import com.wire.kalium.network.api.v0.authenticated.ClientApiV0
 import com.wire.kalium.network.api.v0.authenticated.ConnectionApiV0
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
 import com.wire.kalium.network.api.v0.authenticated.FeatureConfigApiV0
 import com.wire.kalium.network.api.v0.authenticated.KeyPackageApiV0
-import com.wire.kalium.network.api.v0.authenticated.LogoutV0
+import com.wire.kalium.network.api.v0.authenticated.LogoutApiV0
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.api.v0.authenticated.MLSPublicKeyApiV0
 import com.wire.kalium.network.api.v0.authenticated.MessageApiV0
@@ -56,7 +56,7 @@ class AuthenticatedNetworkContainerV0(
         developmentApiEnabled
     ) {
 
-    override val logoutApi: LogoutApi get() = LogoutV0(networkClient, sessionManager)
+    override val logoutApi: LogoutApi get() = LogoutApiV0(networkClient, sessionManager)
 
     override val clientApi: ClientApi get() = ClientApiV0(networkClient)
 
@@ -70,7 +70,7 @@ class AuthenticatedNetworkContainerV0(
 
     override val preKeyApi: PreKeyApi get() = PreKeyApiV0(networkClient)
 
-    override val assetApi: AssetApi get() = AssetApiImplV0(networkClientWithoutCompression)
+    override val assetApi: AssetApi get() = AssetApiV0(networkClientWithoutCompression)
 
     override val notificationApi: NotificationApi get() = NotificationApiV0(networkClient, websocketClient, backendConfig)
 
