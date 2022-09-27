@@ -36,7 +36,7 @@ internal open class ClientApiV0 internal constructor(
 
     override suspend fun listClientsOfUsers(userIds: List<UserId>): NetworkResponse<Map<UserId, List<SimpleClientResponse>>> =
         wrapKaliumResponse<ClientsOfUsersResponse> {
-            httpClient.post("$PATH_USERS/$PATH_List_CLIENTS/v2") {
+            httpClient.post("$PATH_USERS/$PATH_LIST_CLIENTS/v2") {
                 setBody(ListClientsOfUsersRequest(userIds))
             }
         }.mapSuccess { response ->
@@ -82,7 +82,7 @@ internal open class ClientApiV0 internal constructor(
     protected companion object {
         const val PATH_USERS = "users"
         const val PATH_CLIENTS = "clients"
-        const val PATH_List_CLIENTS = "list-clients"
+        const val PATH_LIST_CLIENTS = "list-clients"
         const val PUSH_TOKEN = "push/tokens"
 
     }

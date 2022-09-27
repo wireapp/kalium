@@ -18,7 +18,7 @@ internal open class ClientApiV2 internal constructor(
 ) : ClientApiV0(authenticatedNetworkClient) {
     override suspend fun listClientsOfUsers(userIds: List<UserId>): NetworkResponse<Map<UserId, List<SimpleClientResponse>>> =
         wrapKaliumResponse<ClientsOfUsersResponse> {
-            httpClient.post("$PATH_USERS/$PATH_List_CLIENTS") {
+            httpClient.post("$PATH_USERS/$PATH_LIST_CLIENTS") {
                 setBody(ListClientsOfUsersRequest(userIds))
             }
         }.mapSuccess { response ->
