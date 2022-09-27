@@ -95,7 +95,10 @@ CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN User.team
     ELSE Conversation.team_id
     END AS teamId,
-Conversation.last_modified_date AS lastModifiedDate,
+CASE (Conversation.type)
+        WHEN "CONNECTION_PENDING" THEN Connection.last_update
+        ELSE Conversation.last_modified_date
+        END AS lastModifiedDate,
 Conversation.last_read_date AS lastReadDate,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.user_availability_status
