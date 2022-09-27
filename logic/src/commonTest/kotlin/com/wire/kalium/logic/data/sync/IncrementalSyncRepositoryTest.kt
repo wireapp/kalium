@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.sync
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
@@ -74,6 +75,40 @@ class IncrementalSyncRepositoryTest {
         collectionJob.join()
 
         assertContentEquals(updates, collectedUpdates)
+    }
+
+    @Test
+    fun givenStateIsUpdatedWithRepeatedValue_whenCollectingSyncState_thenShouldNotCollectRepeatedValues() = runTest {
+        incrementalSyncRepository.incrementalSyncState.test {
+            awaitItem() // Ignore initial value
+
+            val firstUpdate = IncrementalSyncStatus.FetchingPendingEvents
+            incrementalSyncRepository.updateIncrementalSyncState(firstUpdate)
+            assertEquals(firstUpdate, awaitItem())
+
+            // Repeat update
+            incrementalSyncRepository.updateIncrementalSyncState(firstUpdate)
+
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenConnectionPolicyIsUpdatedWithRepeatedValue_whenCollectingPolicy_thenShouldNotCollectRepeatedValues() = runTest {
+        incrementalSyncRepository.connectionPolicyState.test {
+            awaitItem() // Ignore initial value
+
+            val firstUpdate = ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS
+            incrementalSyncRepository.setConnectionPolicy(firstUpdate)
+            assertEquals(firstUpdate, awaitItem())
+
+            // Repeat update
+            incrementalSyncRepository.setConnectionPolicy(firstUpdate)
+
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
