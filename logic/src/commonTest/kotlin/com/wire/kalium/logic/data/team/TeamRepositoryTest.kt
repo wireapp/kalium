@@ -93,25 +93,6 @@ class TeamRepositoryTest {
             )
         )
 
-        val mappedTeamMember = UserEntity(
-            id = QualifiedIDEntity(
-                value = "teamMember1",
-                domain = "userDomain"
-            ),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 1,
-            team = "teamId",
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.EXTERNAL,
-            botService = null,
-            deleted = false
-        )
-
         val (arrangement, teamRepository) = Arrangement()
             .arrange()
 
@@ -120,23 +101,12 @@ class TeamRepositoryTest {
             .whenInvokedWith(oneOf("teamId"), oneOf(null))
             .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
 
-        given(arrangement.userMapper)
-            .invocation {
-                arrangement.userMapper.fromTeamMemberToDaoModel(
-                    teamId = TeamId("teamId"),
-                    teamMember.nonQualifiedUserId,
-                    null,
-                    "userDomain",
-                )
-            }
-            .then { mappedTeamMember }
-
-        val result = arrangement.teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
 
         // Verifies that userDAO insertUsers was called with the correct mapped values
         verify(arrangement.userDAO)
             .suspendFunction(arrangement.userDAO::upsertTeamMembersTypes)
-            .with(oneOf(listOf(mappedTeamMember)))
+            .with(any())
             .wasInvoked(exactly = once)
 
         // Verifies that when fetching members by team id, it succeeded
@@ -172,10 +142,6 @@ class TeamRepositoryTest {
             .suspendFunction(arrangement.teamDAO::getTeamById)
             .whenInvokedWith(oneOf("teamId"))
             .then { flowOf(teamEntity) }
-        given(arrangement.teamMapper)
-            .function(arrangement.teamMapper::fromDaoModelToTeam)
-            .whenInvokedWith(oneOf(teamEntity))
-            .then { team }
 
         teamRepository.getTeam(teamId = TeamId("teamId")).test {
             assertEquals(team, awaitItem())
