@@ -74,7 +74,7 @@ data class ConversationViewEntity(
     val previewAssetId: QualifiedIDEntity?,
     val mutedStatus: ConversationEntity.MutedStatus,
     val teamId: String?,
-    val lastModifiedDate: String,
+    val lastModifiedDate: String?,
     val lastReadDate: String,
     val userAvailabilityStatus: UserAvailabilityStatusEntity?,
     val userType: UserTypeEntity?,

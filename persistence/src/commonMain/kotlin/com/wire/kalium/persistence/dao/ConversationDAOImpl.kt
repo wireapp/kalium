@@ -54,7 +54,7 @@ private class ConversationMapper {
         previewAssetId: QualifiedIDEntity?,
         mutedStatus: ConversationEntity.MutedStatus,
         teamId: String?,
-        lastModifiedDate: String,
+        lastModifiedDate: String?,
         lastReadDate: String,
         userAvailabilityStatus: UserAvailabilityStatusEntity?,
         userType: UserTypeEntity?,
