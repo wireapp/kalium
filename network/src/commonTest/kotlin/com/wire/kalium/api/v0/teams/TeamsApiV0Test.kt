@@ -1,7 +1,6 @@
-package com.wire.kalium.api.v0.teams
+package com.wire.kalium.api.tools.json.api.teams
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.TeamsResponsesJson
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.v0.authenticated.TeamsApiV0
 import io.ktor.http.HttpStatusCode
@@ -10,7 +9,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 @ExperimentalCoroutinesApi
-class TeamsApiV0Test: ApiTest {
+class TeamsApiTest: ApiTest {
 
     @Test
     fun givenAValidGetTeamsFirstPageRequest_whenGettingTeamsMembers_theRequestShouldBeConfiguredCorrectly() =

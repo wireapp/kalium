@@ -15,7 +15,6 @@ internal open class MLSMessageApiV2 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : MLSMessageApiV0(authenticatedNetworkClient) {
 
-
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun sendMessage(message: MLSMessageApi.Message): NetworkResponse<Unit> =
