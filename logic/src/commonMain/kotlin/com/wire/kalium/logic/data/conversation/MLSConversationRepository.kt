@@ -322,13 +322,13 @@ class MLSConversationDataSource(
                             it.keyPackage.decodeBase64Bytes()
                         )
                     }
-                val externalSenders = mlsPublicKeysRepository.getKeys().fold(
-                    { emptyList() },
-                    { keys -> keys.map { mlsPublicKeysMapper.toCrypto(it) } }
-                )
 
-                wrapMLSRequest {
-                    mlsClient.createConversation(idMapper.toCryptoModel(groupID), externalSenders)
+                mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
+                    wrapMLSRequest {
+                        mlsClient.createConversation(
+                            idMapper.toCryptoModel(groupID),
+                            publicKeys.map { mlsPublicKeysMapper.toCrypto(it) })
+                    }
                 }.flatMap {
                     retryOnCommitFailure(groupID) {
                         wrapMLSRequest {
