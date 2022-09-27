@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -74,9 +76,16 @@ class AddMemberToConversationUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
+        @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+        var selfUserId = UserId("my-own-user-id", "my-domain")
+
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            selfUserId,
+            persistMessage
         )
 
         fun withAddMemberToProteusGroupSuccessful() = apply {
