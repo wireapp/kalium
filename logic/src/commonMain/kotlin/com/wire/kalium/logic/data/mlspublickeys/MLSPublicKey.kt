@@ -1,16 +1,16 @@
 package com.wire.kalium.logic.data.mlspublickeys
 
-import com.wire.kalium.logic.data.conversation.Conversation
 import kotlin.jvm.JvmInline
 
+@JvmInline
+value class Ed25519Key(
+    val value: ByteArray
+)
+
 data class MLSPublicKey(
-    val cipherSuite: Conversation.CipherSuite,
-    val key: Key,
+    val key: Ed25519Key,
     val keyType: KeyType
 
 )
-
-@JvmInline
-value class Key(val value: String)
 
 enum class KeyType { REMOVAL }

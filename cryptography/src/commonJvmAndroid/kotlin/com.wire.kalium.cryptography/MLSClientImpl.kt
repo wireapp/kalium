@@ -80,18 +80,13 @@ actual class MLSClientImpl actual constructor(
 
     override fun createConversation(
         groupId: MLSGroupId,
-        externalSenders: List<MLSPublicKey>
+        externalSenders: List<Ed22519Key>
     ) {
-        val conversationCipherSuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
-        val validatedExternalSenderKeys = externalSenders
-            .filter { conversationCipherSuiteName.name == it.cipherSuiteName }
-            .map { toUByteList(it.key.decodeBase64Bytes()) }
-
         val conf = ConversationConfiguration(
             emptyList(),
-            conversationCipherSuiteName,
+            CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
             keyRotationDuration,
-            validatedExternalSenderKeys
+            externalSenders.map { toUByteList(it.value) }
         )
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())

@@ -9,7 +9,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.mlspublickeys.Key
+import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
 import com.wire.kalium.logic.data.mlspublickeys.KeyType
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -32,6 +32,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.anyInstanceOf
@@ -824,7 +825,10 @@ class MLSConversationRepositoryTest {
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
             val MEMBERS = listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))
-            val MLS_PUBLIC_KEY = MLSPublicKey(Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519, Key("gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw="), KeyType.REMOVAL)
+            val MLS_PUBLIC_KEY = MLSPublicKey(
+                Ed25519Key("gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw=".decodeBase64Bytes()),
+                KeyType.REMOVAL
+            )
             val CRYPTO_MLS_PUBLIC_KEY = MapperProvider.mlsPublicKeyMapper().toCrypto(MLS_PUBLIC_KEY)
             val KEY_PACKAGE = KeyPackageDTO(
                 "client1",
