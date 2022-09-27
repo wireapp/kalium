@@ -13,7 +13,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapperImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -101,7 +100,7 @@ class MLSConversationDataSource(
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
-    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MLSPublicKeysMapperImpl()
+    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
 ) : MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(

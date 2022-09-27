@@ -27,7 +27,7 @@ class DecryptedMessageBundle(
     val senderClientId: CryptoQualifiedClientId?
 )
 
-class MLSPublicKey(
+data class MLSPublicKey(
     val cipherSuiteName: String,
     val key: CoreCryptoKey,
     val keyType: KeyType
