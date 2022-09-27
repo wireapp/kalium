@@ -504,9 +504,10 @@ abstract class UserSessionScopeCommon internal constructor(
         globalCallManager.getMediaManager()
     }
 
+    private val reactionRepository = ReactionRepositoryImpl(userDatabaseProvider.reactionDAO)
     private val persistReaction: PersistReactionUseCase
         get() = PersistReactionUseCaseImpl(
-            ReactionRepositoryImpl(userDatabaseProvider.reactionDAO),
+            reactionRepository,
             userId
         )
 
@@ -619,6 +620,7 @@ abstract class UserSessionScopeCommon internal constructor(
             preKeyRepository,
             userRepository,
             assetRepository,
+            reactionRepository,
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
