@@ -7,6 +7,7 @@ object ConnectionRequestsJson {
     val validEmptyBody = ValidJsonProvider(String) {
         """
             {
+                "size":500
             }
         """.trimIndent()
     }
@@ -23,8 +24,7 @@ object ConnectionRequestsJson {
     val validConnectionStatusUpdate = ValidJsonProvider("accepted") {
         """
             {
-                "status": "$it",
-                "size":500
+                "status": "$it"  
             }
         """.trimIndent()
     }
