@@ -9,7 +9,6 @@ internal open class AssetApiV2 internal constructor(
 ) : AssetApiV0(authenticatedNetworkClient) {
     override fun buildAssetsPath(assetId: AssetId): String = "$PATH_ASSETS/${assetId.domain}/${assetId.value}"
 
-
     private companion object {
         const val PATH_ASSETS = "assets"
     }
