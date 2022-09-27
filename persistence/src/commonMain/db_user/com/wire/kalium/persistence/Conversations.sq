@@ -160,7 +160,7 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          OR Connection.status = "NOT_CONNECTED"
          AND Conversation.type IS "CONNECTION_PENDING")
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
-LEFT JOIN Call ON Call.id IS (SELECT MAX(id) FROM Call WHERE Call.conversation_id = Conversation.qualified_id) AND Call.status IS "STILL_ONGOING";
+LEFT JOIN Call ON Call.created_at IS (SELECT MAX(created_at) FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS "STILL_ONGOING") AND Call.status IS "STILL_ONGOING";
 
 selectAllConversationDetails:
 SELECT * FROM ConversatonDetails
