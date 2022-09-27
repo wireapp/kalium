@@ -17,6 +17,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.NotificationA
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.v2.authenticated.AssetApiV2
 import com.wire.kalium.network.api.v2.authenticated.CallApiV2
@@ -85,4 +86,6 @@ class AuthenticatedNetworkContainerV2(
     override val connectionApi: ConnectionApi get() = ConnectionApiV2(networkClient)
 
     override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV2(networkClient)
+    override val mlsPublicKeyApi: MLSPublicKeyApi
+        get() = TODO("Not yet implemented")
 }

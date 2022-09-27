@@ -154,7 +154,7 @@ class ConversationRepositoryTest {
             CONVERSATION_RESPONSE.copy(
                 groupId = RAW_GROUP_ID,
                 protocol = MLS,
-                mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.tag
+                mlsCipherSuiteTag = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519.cipherSuiteTag
             )
         )
         val protocolInfo = ConversationEntity.ProtocolInfo.MLS(

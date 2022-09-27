@@ -106,10 +106,6 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
-import com.wire.kalium.logic.feature.server.publickeys.FetchMLSPublicKeysUseCase
-import com.wire.kalium.logic.feature.server.publickeys.FetchMLSPublicKeysUseCaseImpl
-import com.wire.kalium.logic.feature.server.publickeys.MLSPublicKeysManager
-import com.wire.kalium.logic.feature.server.publickeys.MLSPublicKeysManagerImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
@@ -161,7 +157,6 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
@@ -189,8 +184,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
-    private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val globalDatabase: GlobalDatabaseProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : CoroutineScope {
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
@@ -481,22 +475,6 @@ abstract class UserSessionScopeCommon internal constructor(
     internal val mlsPublicKeysRepository: MLSPublicKeysRepository
         get() = MLSPublicKeysRepositoryImpl(
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsPublicKeyApi,
-            globalDatabase.mlsPublicKeysDAO,
-            userId
-        )
-
-    val fetchMLSPublicKeys: FetchMLSPublicKeysUseCase
-        get() = FetchMLSPublicKeysUseCaseImpl(
-            mlsPublicKeysRepository,
-            userId,
-            globalScope.serverConfigRepository
-        )
-
-    internal val mlsPublicKeysManager: MLSPublicKeysManager =
-        MLSPublicKeysManagerImpl(
-            incrementalSyncRepository,
-            lazy { fetchMLSPublicKeys },
-            lazy { users.timestampKeyRepository }
         )
 
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()

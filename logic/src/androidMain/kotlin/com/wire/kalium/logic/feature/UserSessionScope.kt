@@ -9,12 +9,7 @@ import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-<<<<<<< HEAD
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
-=======
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
->>>>>>> develop
 
 /**
  * This class is only for platform specific variables,
@@ -30,8 +25,7 @@ actual class UserSessionScope internal constructor(
     globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
-    userSessionScopeProvider: UserSessionScopeProvider,
-    globalDatabase: GlobalDatabaseProvider
+    userSessionScopeProvider: UserSessionScopeProvider
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
@@ -40,8 +34,7 @@ actual class UserSessionScope internal constructor(
     globalPreferences,
     dataStoragePaths,
     kaliumConfigs,
-    userSessionScopeProvider,
-    globalDatabase
+    userSessionScopeProvider
 ) {
 
     override val clientConfig: ClientConfig get() = ClientConfigImpl(applicationContext)

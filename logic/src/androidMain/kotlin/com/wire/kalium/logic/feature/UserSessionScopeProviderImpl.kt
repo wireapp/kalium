@@ -18,7 +18,6 @@ import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.kmmSettings.UserPrefProvider
@@ -33,8 +32,7 @@ actual class UserSessionScopeProviderImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
-    private val idMapper: IdMapper,
-    private val globalDatabase: GlobalDatabaseProvider
+    private val idMapper: IdMapper
 ) : UserSessionScopeProviderCommon(globalCallManager) {
 
     override fun create(userId: UserId): UserSessionScope {
@@ -84,8 +82,7 @@ actual class UserSessionScopeProviderImpl(
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
-            this,
-            globalDatabase
+            this
         )
     }
 

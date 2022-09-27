@@ -35,21 +35,19 @@ data class ConversationEntity(
     enum class Protocol { PROTEUS, MLS }
 
     @Suppress("MagicNumber")
-    enum class CipherSuite(val tag: Int, val shortName: String) {
-        UNKNOWN(0, ""),
-        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1, "ed25519"),
-        MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2, TODO()),
-        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3, TODO()),
-        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4, TODO()),
-        MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5, TODO()),
-        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6, TODO()),
-        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7, TODO());
+    enum class CipherSuite(val cipherSuiteTag: Int) {
+        UNKNOWN(0),
+        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
+        MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
+        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3),
+        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
+        MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
+        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
 
         companion object {
             fun fromTag(tag: Int?): CipherSuite =
-                if (tag != null) values().first { type -> type.tag == tag } else UNKNOWN
-
-            fun fromShortName(shortName: String): CipherSuite = values().first { type -> type.shortName == shortName }
+                if (tag != null) values().first { type -> type.cipherSuiteTag == tag } else UNKNOWN
         }
     }
 

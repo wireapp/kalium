@@ -2,20 +2,16 @@ package com.wire.kalium.persistence.db
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
-import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
-import com.wire.kalium.persistence.MLSPublicKey
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.dao.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.LogoutReasonAdapter
-import com.wire.kalium.persistence.daokaliumdb.MLSPublicKeysDAO
-import com.wire.kalium.persistence.daokaliumdb.MLSPublicKeysDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -57,10 +53,6 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
             CurrentAccountAdapter = CurrentAccount.Adapter(QualifiedIDAdapter),
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter
-            ),
-            MLSPublicKeyAdapter = MLSPublicKey.Adapter(
-                key_typeAdapter = EnumColumnAdapter(),
-                cipher_suiteAdapter = EnumColumnAdapter()
             )
         )
     }
@@ -70,9 +62,6 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
 
     actual val accountsDAO: AccountsDAO
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries)
-
-    actual val mlsPublicKeysDAO: MLSPublicKeysDAO
-        get() = MLSPublicKeysDAOImpl(database.mLSPublicKeyQueries)
 
     actual fun nuke(): Boolean {
         driver.close()

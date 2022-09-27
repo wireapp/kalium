@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -70,7 +71,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::createConversation)
-            .with(eq(Arrangement.RAW_GROUP_ID))
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())// TODO jacob verify sender key
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
@@ -596,6 +597,9 @@ class MLSConversationRepositoryTest {
         val keyPackageRepository = mock(classOf<KeyPackageRepository>())
 
         @Mock
+        val mlsPublicKeysRepository = mock(classOf<MLSPublicKeysRepository>())
+
+        @Mock
         val mlsClientProvider = mock(classOf<MLSClientProvider>())
 
         @Mock
@@ -665,7 +669,7 @@ class MLSConversationRepositoryTest {
         fun withCreateMLSConversationSuccessful() = apply {
             given(mlsClient)
                 .function(mlsClient::createConversation)
-                .whenInvokedWith(anything())
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(Unit)
         }
 
@@ -795,7 +799,8 @@ class MLSConversationRepositoryTest {
             mlsMessageApi,
             conversationDAO,
             clientApi,
-            syncManager
+            syncManager,
+            mlsPublicKeysRepository
         )
 
         internal companion object {
