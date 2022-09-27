@@ -1,4 +1,4 @@
-package com.wire.kalium.network.api.v0.authenticated
+package com.wire.kalium.network.api.v2.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackage
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageList
+import com.wire.kalium.network.api.v0.authenticated.KeyPackageApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
@@ -13,11 +14,9 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-internal open class KeyPackageApiV0 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
-) : KeyPackageApi {
-
-    protected val httpClient get() = authenticatedNetworkClient.httpClient
+internal class KeyPackageApiV2 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient
+) : KeyPackageApiV0(authenticatedNetworkClient) {
 
     override suspend fun claimKeyPackages(
         param: KeyPackageApi.Param
