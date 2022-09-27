@@ -30,7 +30,8 @@ interface TeamsApi {
 
     @Serializable
     data class Permissions(
-        val copy: Int, @SerialName("self") val own: Int
+        val copy: Int,
+        @SerialName("self") val own: Int
     )
 
     sealed interface GetTeamsOptionsInterface
