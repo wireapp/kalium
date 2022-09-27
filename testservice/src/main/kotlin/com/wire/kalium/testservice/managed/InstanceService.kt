@@ -9,6 +9,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
@@ -177,7 +178,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                         }
                     }
                     log.info("Instance $id: Device ${instance.clientId} deleted")
-                    runBlocking { logout() }
+                    runBlocking { logout(LogoutReason.SELF_HARD_LOGOUT) }
                 }
             }
             log.info("Instance $id: Delete sessions in preference file")
