@@ -1,17 +1,12 @@
 package com.wire.kalium.api
 
-import com.wire.kalium.api.tools.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
-import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
-import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.mock.MockEngine
@@ -35,33 +30,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-class TestSessionManager : SessionManager {
-    private val serverConfig = TEST_BACKEND_CONFIG
-    private var session = testCredentials
-
-    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = Pair(session, serverConfig.links)
-    override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
-        SessionDTO(
-            session.userId,
-            newAccessTokenDTO.tokenType,
-            newAccessTokenDTO.value,
-            newRefreshTokenDTO?.value ?: session.refreshToken
-        )
-
-    override suspend fun onClientRemoved() {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun onSessionExpired() {
-        TODO("Not yet implemented")
-    }
-
-    companion object {
-        val SESSION = testCredentials
-    }
-
-}
-
 class TestServerMetaDataManager : ServerMetaDataManager {
     override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? = TEST_BACKEND
     override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO = TEST_BACKEND
@@ -70,7 +38,7 @@ class TestServerMetaDataManager : ServerMetaDataManager {
 internal interface ApiTest {
 
     private val json get() = KtxSerializer.json
-    val TEST_SESSION_NAMAGER: TestSessionManager get() = TestSessionManager()
+    val TEST_SESSION_NAMAGER: TestSessionManagerV0 get() = TestSessionManagerV0()
 
     /**
      * creates an authenticated mock Ktor Http client
