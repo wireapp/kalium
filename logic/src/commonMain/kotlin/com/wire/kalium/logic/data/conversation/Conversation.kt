@@ -71,20 +71,18 @@ data class Conversation(
     }
 
     @Suppress("MagicNumber")
-    enum class CipherSuite(val tag: Int, val shortName: String) {
-        UNKNOWN(0, ""),
-        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1, "ed25519"),
-        MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2, "unavailable"),
-        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3, "unavailable"),
-        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4, "unavailable"),
-        MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5, "unavailable"),
-        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6, "unavailable"),
-        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7, "unavailable");
+    enum class CipherSuite(val tag: Int) {
+        UNKNOWN(0),
+        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
+        MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
+        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3),
+        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
+        MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
+        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
 
         companion object {
             fun fromTag(tag: Int): CipherSuite = values().first { type -> type.tag == tag }
-
-            fun fromShortName(shortName: String): CipherSuite = values().first { type -> type.shortName == shortName }
         }
     }
 
