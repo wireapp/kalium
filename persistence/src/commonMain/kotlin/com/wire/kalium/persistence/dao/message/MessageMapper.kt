@@ -5,7 +5,8 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.util.requireField
+import com.wire.kalium.persistence.dao.reaction.ReactionMapper
+import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 
 @Suppress("LongParameterList")
 object MessageMapper {
@@ -19,7 +20,9 @@ object MessageMapper {
         status: MessageEntity.Status,
         lastEditTimestamp: String?,
         visibility: MessageEntity.Visibility,
-        content: MessageEntityContent
+        content: MessageEntityContent,
+        allReactionsJson: String?,
+        selfReactionsJson: String?
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
@@ -30,7 +33,11 @@ object MessageMapper {
             senderClientId = senderClientId!!,
             status = status,
             editStatus = mapEditStatus(lastEditTimestamp),
-            visibility = visibility
+            visibility = visibility,
+            reactions = ReactionsEntity(
+                totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
+                selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
+            )
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -97,6 +104,8 @@ object MessageMapper {
         restrictedAssetName: String?,
         failedToDecryptData: ByteArray?,
         conversationName: String?,
+        allReactionsJson: String?,
+        selfReactionsJson: String?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -159,7 +168,9 @@ object MessageMapper {
             status,
             lastEditTimestamp,
             visibility,
-            content
+            content,
+            allReactionsJson,
+            selfReactionsJson
         )
     }
 

@@ -88,7 +88,8 @@ class MessageMapperImpl(
                     MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
                     is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
                 },
-                visibility = visibility
+                visibility = visibility,
+                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions)
             )
 
             is MessageEntity.System -> Message.System(

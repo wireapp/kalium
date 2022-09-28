@@ -26,7 +26,8 @@ sealed class Message(
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         val senderClientId: ClientId,
-        val editStatus: EditStatus
+        val editStatus: EditStatus,
+        val reactions: Reactions = Reactions.EMPTY
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
             val contentString: String
@@ -86,6 +87,7 @@ sealed class Message(
                         contentString += "${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}"
                     }
                 }
+
                 else -> {
                     contentString = content.toString()
                 }
@@ -164,4 +166,15 @@ sealed class Message(
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN
     }
+
+    data class Reactions(
+        val totalReactions: ReactionsCount,
+        val selfUserReactions: UserReactions
+    ) {
+        companion object {
+            val EMPTY = Reactions(emptyMap(), emptySet())
+        }
+    }
 }
+typealias ReactionsCount = Map<String, Int>
+typealias UserReactions = Set<String>
