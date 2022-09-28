@@ -210,6 +210,8 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> {
                 val emoji = protoContent.value.emoji
+                // TODO: Actually handle Unicode properly
+                // We need to filter out the unicode variants for the emojis
                 val emojiSet = emoji?.filter { it.toString().isNotBlank() && !UNICODE_SELECTORS.contains(it) }
                     ?.map { it.toString() }
                     ?.toSet() ?: emptySet()
