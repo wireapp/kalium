@@ -101,6 +101,9 @@ class GetMessageAssetUseCaseTest {
         @Mock
         private val assetDataSource = mock(classOf<AssetRepository>())
 
+        @Mock
+        private val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
+
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
         private var encryptionKey = AES256Key(ByteArray(1))
@@ -139,7 +142,7 @@ class GetMessageAssetUseCaseTest {
             )
         }
 
-        val getMessageAssetUseCase = GetMessageAssetUseCaseImpl(assetDataSource, messageRepository)
+        val getMessageAssetUseCase = GetMessageAssetUseCaseImpl(assetDataSource, messageRepository, updateAssetMessageDownloadStatus)
 
         fun withSuccessfulFlow(
             conversationId: ConversationId,
@@ -158,6 +161,10 @@ class GetMessageAssetUseCaseTest {
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
                 .whenInvokedWith(anything(), anything(), anything(), matching { it.data.contentEquals(secretKey.data) })
                 .thenReturn(Either.Right(encodedPath))
+            given(updateAssetMessageDownloadStatus)
+                .suspendFunction(updateAssetMessageDownloadStatus::invoke)
+                .whenInvokedWith(anything(), matching { it == conversationId }, matching { it == messageId })
+                .thenReturn(UpdateDownloadStatusResult.Success)
             return this
         }
 

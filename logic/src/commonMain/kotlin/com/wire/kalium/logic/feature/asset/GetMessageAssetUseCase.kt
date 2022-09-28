@@ -3,8 +3,10 @@ package com.wire.kalium.logic.feature.asset
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.AssetId
@@ -28,7 +30,8 @@ interface GetMessageAssetUseCase {
 
 internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase,
 ) : GetMessageAssetUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,
@@ -63,9 +66,20 @@ internal class GetMessageAssetUseCaseImpl(
                 encryptionKey = assetMetadata.encryptionKey
             ).fold({
                 kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey}")
+                updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
                 MessageAssetResult.Failure(it)
             }, { decodedAssetPath ->
-                MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
+                when (updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)) {
+                    is UpdateDownloadStatusResult.Failure -> {
+                        kaliumLogger.e("There was an error updating the asset message download status")
+                        MessageAssetResult.Failure(StorageFailure.Generic(
+                            RuntimeException("There was an error updating the asset message download status"))
+                        )
+                    }
+                    is UpdateDownloadStatusResult.Success -> {
+                        MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
+                    }
+                }
             })
         })
 }
