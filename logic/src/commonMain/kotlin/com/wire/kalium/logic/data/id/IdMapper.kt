@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -34,6 +35,7 @@ interface IdMapper {
     fun toGroupIDEntity(groupID: GroupID): String
     fun fromGroupIDEntity(groupID: String): GroupID
     fun fromCryptoModel(groupID: MLSGroupId): GroupID
+    fun fromCryptoQualifiedClientId(clientId: CryptoQualifiedClientId): ClientId
     fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
     fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
@@ -84,6 +86,8 @@ internal class IdMapperImpl : IdMapper {
     override fun toCryptoModel(groupID: GroupID): MLSGroupId = groupID.value
 
     override fun fromCryptoModel(groupID: MLSGroupId): GroupID = GroupID(groupID)
+
+    override fun fromCryptoQualifiedClientId(clientId: CryptoQualifiedClientId): ClientId = ClientId(clientId.value)
 
     override fun fromApiToDao(qualifiedID: NetworkQualifiedId) =
         PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
