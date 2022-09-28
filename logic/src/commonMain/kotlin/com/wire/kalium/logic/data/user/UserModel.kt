@@ -38,9 +38,11 @@ data class Connection(
     override fun toString(): String {
         return "Connection( conversationId: ${conversationId.obfuscateId()}, from:${from.obfuscateId()}," +
                 " lastUpdate:$lastUpdate," +
-                " qualifiedConversationId:${qualifiedConversationId.value.obfuscateId()}@${qualifiedConversationId.domain.obfuscateDomain()}, " +
+                " qualifiedConversationId:${qualifiedConversationId.value.obfuscateId()}" +
+                "@${qualifiedConversationId.domain.obfuscateDomain()}, " +
                 "qualifiedToId:${qualifiedToId.value.obfuscateId()}@${qualifiedToId.domain.obfuscateDomain()}, " +
-                "status:$status, toId:${toId.obfuscateId()} fromUser:${fromUser?.id?.value?.obfuscateId()}@ ${fromUser?.id?.domain?.obfuscateDomain()} "
+                "status:$status, toId:${toId.obfuscateId()} " +
+                "fromUser:${fromUser?.id?.value?.obfuscateId()}@ ${fromUser?.id?.domain?.obfuscateDomain()} "
     }
 }
 
