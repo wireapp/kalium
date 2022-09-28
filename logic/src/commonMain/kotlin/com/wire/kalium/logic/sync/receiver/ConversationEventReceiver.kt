@@ -479,7 +479,6 @@ internal class ConversationEventReceiverImpl(
 
     private suspend fun handleAssetMessage(message: Message.Regular) {
         val content = message.content as MessageContent.Asset
-        logger.i(message = "$TAG Handling Asset Message with content: $content")
         userConfigRepository.isFileSharingEnabled().onSuccess {
             if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
                 processNonRestrictedAssetMessage(message)
