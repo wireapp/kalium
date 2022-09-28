@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.distinct
 import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.functional.onFailure
@@ -44,6 +45,7 @@ interface PendingProposalScheduler {
 }
 
 internal class PendingProposalSchedulerImpl(
+    private val kaliumConfigs: KaliumConfigs,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
@@ -61,7 +63,7 @@ internal class PendingProposalSchedulerImpl(
         commitPendingProposalsScope.launch() {
             incrementalSyncRepository.incrementalSyncState.collectLatest { syncState ->
                 ensureActive()
-                if (syncState == IncrementalSyncStatus.Live) {
+                if (syncState == IncrementalSyncStatus.Live && kaliumConfigs.isMLSSupportEnabled) {
                     startCommittingPendingProposals()
                 }
             }

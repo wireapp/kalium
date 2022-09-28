@@ -5,17 +5,20 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
 interface UserEventReceiver : EventReceiver<Event.User>
 
-class UserEventReceiverImpl(
+class UserEventReceiverImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val logoutUseCase: LogoutUseCase,
     private val clientRepository: ClientRepository,
+    private val userRepository: UserRepository,
     private val selfUserId: UserId
 ) : UserEventReceiver {
 
@@ -24,7 +27,14 @@ class UserEventReceiverImpl(
             is Event.User.NewConnection -> handleNewConnection(event)
             is Event.User.ClientRemove -> handleClientRemove(event)
             is Event.User.UserDelete -> handleUserDelete(event)
+            is Event.User.Update -> handleUserUpdate(event)
         }
+    }
+
+    private suspend fun handleUserUpdate(event: Event.User.Update) {
+        userRepository.updateUserFromEvent(event)
+            .onSuccess { kaliumLogger.d("$TAG - user was updated from event: $it") }
+            .onFailure { kaliumLogger.e("$TAG - failure updating user from event: $it") }
     }
 
     private suspend fun handleNewConnection(event: Event.User.NewConnection) =
@@ -39,13 +49,13 @@ class UserEventReceiverImpl(
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
-            if (selfUserId == event.userId) {
-                logoutUseCase(LogoutReason.DELETED_ACCOUNT)
-            } else {
-                /* TODO: handle a connection delete their account:
-                    update connection, conversations[member left, 1:1 show as the connection is deleted and... */
-            }
+        if (selfUserId == event.userId) {
+            logoutUseCase(LogoutReason.DELETED_ACCOUNT)
+        } else {
+            /* TODO: handle a connection delete their account:
+                update connection, conversations[member left, 1:1 show as the connection is deleted and... */
         }
+    }
 
     private companion object {
         const val TAG = "UserEventReceiver"

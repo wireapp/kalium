@@ -9,13 +9,12 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
-import com.wire.kalium.network.api.configuration.ServerConfigApi
-import com.wire.kalium.network.api.versioning.VersionApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import com.wire.kalium.persistence.kmm_settings.KaliumPreferences
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -223,9 +222,6 @@ class ServerConfigRepositoryTest {
 
         @Mock
         val versionApi = mock(classOf<VersionApi>())
-
-        @Mock
-        val kaliumPreferences = mock(classOf<KaliumPreferences>())
 
         private var serverConfigRepository: ServerConfigRepository =
             ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi)

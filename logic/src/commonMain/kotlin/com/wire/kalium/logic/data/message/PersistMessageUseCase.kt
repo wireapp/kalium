@@ -1,12 +1,9 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
-
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
  * It automatically updates ConversationModifiedDate and ConversationNotificationDate if needed
@@ -17,20 +14,18 @@ interface PersistMessageUseCase {
 
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val conversationRepository: ConversationRepository,
-    private val userId: QualifiedID,
+    private val selfUser: UserId
 ) : PersistMessageUseCase {
-
     override suspend operator fun invoke(message: Message): Either<CoreFailure, Unit> {
+        val isMyMessage = message.senderUserId == selfUser
         @OptIn(DelicateKaliumApi::class)
-        return messageRepository.persistMessage(message)
-            .onSuccess {
-                if (message.content.shouldUpdateConversationOrder())
-                    conversationRepository.updateConversationModifiedDate(message.conversationId, message.date)
-
-                if (userId == message.senderUserId)
-                    conversationRepository.updateConversationNotificationDate(message.conversationId, message.date)
-            }
+        return messageRepository
+            .persistMessage(
+                message,
+                updateConversationReadDate = isMyMessage,
+                updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
+                updateConversationNotificationsDate = isMyMessage
+            )
     }
 
     @Suppress("ComplexMethod")
@@ -52,5 +47,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Empty -> false
             is MessageContent.Ignored -> false
             is MessageContent.LastRead -> false
+            is MessageContent.Cleared -> false
+            is MessageContent.ConversationRenamed -> true
         }
 }

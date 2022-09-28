@@ -11,6 +11,7 @@ data class RegisterClientParam(
     val deviceType: DeviceType?,
     val label: String?,
     val capabilities: List<ClientCapability>?,
+    val clientType: ClientType?,
     val model: String?
 )
 

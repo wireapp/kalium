@@ -1,6 +1,6 @@
 package com.wire.kalium.network.tools
 
-import com.wire.kalium.network.api.notification.eventSerializationModule
+import com.wire.kalium.network.api.base.authenticated.notification.eventSerializationModule
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.plus

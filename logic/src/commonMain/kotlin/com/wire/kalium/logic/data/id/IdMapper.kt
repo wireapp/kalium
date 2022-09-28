@@ -1,20 +1,21 @@
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.UserSsoIdDTO
-import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.model.UserSsoIdDTO
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.QualifiedUserId
-import com.wire.kalium.network.api.UserId as UserIdDTO
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
-internal typealias NetworkQualifiedId = com.wire.kalium.network.api.QualifiedID
+internal typealias NetworkQualifiedId = com.wire.kalium.network.api.base.model.QualifiedID
 internal typealias PersistenceQualifiedId = QualifiedIDEntity
 
 @Suppress("TooManyFunctions")
@@ -26,7 +27,7 @@ interface IdMapper {
     fun toApiModel(qualifiedID: QualifiedID): NetworkQualifiedId
     fun toDaoModel(qualifiedID: QualifiedID): PersistenceQualifiedId
     fun toStringDaoModel(qualifiedID: QualifiedID): String
-    fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.QualifiedID): PersistenceQualifiedId
+    fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.base.model.QualifiedID): PersistenceQualifiedId
     fun fromDaoToDto(qualifiedID: PersistenceQualifiedId): UserIdDTO
 
     fun toCryptoModel(qualifiedID: QualifiedID): CryptoQualifiedID
@@ -34,6 +35,7 @@ interface IdMapper {
     fun toGroupIDEntity(groupID: GroupID): String
     fun fromGroupIDEntity(groupID: String): GroupID
     fun fromCryptoModel(groupID: MLSGroupId): GroupID
+    fun fromCryptoQualifiedClientId(clientId: CryptoQualifiedClientId): ClientId
     fun fromApiToDao(qualifiedID: NetworkQualifiedId): PersistenceQualifiedId
     fun toCryptoQualifiedIDId(qualifiedID: QualifiedID): CryptoQualifiedID
     fun fromProtoModel(qualifiedConversationID: QualifiedConversationId): ConversationId
@@ -71,7 +73,7 @@ internal class IdMapperImpl : IdMapper {
 
     override fun toStringDaoModel(qualifiedID: QualifiedID): String = "${qualifiedID.value}@${qualifiedID.domain}"
 
-    override fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.QualifiedID): PersistenceQualifiedId =
+    override fun fromDtoToDao(qualifiedID: com.wire.kalium.network.api.base.model.QualifiedID): PersistenceQualifiedId =
         PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)
 
     override fun fromDaoToDto(qualifiedID: PersistenceQualifiedId): UserIdDTO = with(qualifiedID) {
@@ -84,6 +86,8 @@ internal class IdMapperImpl : IdMapper {
     override fun toCryptoModel(groupID: GroupID): MLSGroupId = groupID.value
 
     override fun fromCryptoModel(groupID: MLSGroupId): GroupID = GroupID(groupID)
+
+    override fun fromCryptoQualifiedClientId(clientId: CryptoQualifiedClientId): ClientId = ClientId(clientId.value)
 
     override fun fromApiToDao(qualifiedID: NetworkQualifiedId) =
         PersistenceQualifiedId(value = qualifiedID.value, domain = qualifiedID.domain)

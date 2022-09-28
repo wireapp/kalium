@@ -4,10 +4,12 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrDefault
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
+import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.ASSET
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.CONVERSATION_RENAMED
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_DECRYPTION
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
@@ -15,17 +17,16 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.Message as SQLDelightMessage
 
-class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
-    private val mapper = MessageMapper(queries)
+@Suppress("TooManyFunctions")
+class MessageDAOImpl(
+    private val queries: MessagesQueries,
+    private val conversationsQueries: ConversationsQueries,
+    private val selfUserId: UserIDEntity
+) : MessageDAO {
+    private val mapper = MessageMapper
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) = queries.deleteMessage(id, conversationsId)
 
@@ -38,16 +39,40 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
 
     override suspend fun deleteAllMessages() = queries.deleteAllMessages()
 
-    override suspend fun insertMessage(message: MessageEntity) = insertInDB(message)
+    override suspend fun insertMessage(
+        message: MessageEntity,
+        updateConversationReadDate: Boolean,
+        updateConversationModifiedDate: Boolean,
+        updateConversationNotificationsDate: Boolean
+    ) {
+        queries.transaction {
+            if (updateConversationReadDate) {
+                conversationsQueries.updateConversationReadDate(message.date, message.conversationId)
+            }
 
+            insertInDB(message)
+
+            if (updateConversationModifiedDate) {
+                conversationsQueries.updateConversationModifiedDate(message.date, message.conversationId)
+            }
+            if (updateConversationNotificationsDate) {
+                conversationsQueries.updateConversationNotificationsDate(message.date, message.conversationId)
+            }
+        }
+    }
+
+    @Deprecated("For test only!")
     override suspend fun insertMessages(messages: List<MessageEntity>) =
         queries.transaction {
             messages.forEach { insertInDB(it) }
         }
 
+    /**
+     * Be careful and run this operation in ONE wrapping transaction.
+     */
     @Suppress("ComplexMethod", "LongMethod")
     private fun insertInDB(message: MessageEntity) {
-        queries.transaction {
+        if (!updateIdIfAlreadyExists(message)) {
             queries.insertMessage(
                 id = message.id,
                 conversation_id = message.conversationId,
@@ -59,7 +84,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                 content_type = contentTypeOf(message.content)
             )
             when (val content = message.content) {
-                is MessageEntityContent.Text -> queries.transaction {
+                is MessageEntityContent.Text -> {
                     queries.insertMessageTextContent(
                         message_id = message.id,
                         conversation_id = message.conversationId,
@@ -90,6 +115,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     asset_size = content.assetSizeInBytes,
                     asset_name = content.assetName,
                     asset_mime_type = content.assetMimeType,
+                    asset_upload_status = content.assetUploadStatus,
                     asset_download_status = content.assetDownloadStatus,
                     asset_otr_key = content.assetOtrKey,
                     asset_sha256 = content.assetSha256Key,
@@ -129,10 +155,54 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
                     caller_id = message.senderUserId
                 )
 
-                is MessageEntityContent.Knock -> { /** NO-OP. No need to insert any content for Knock messages */ }
+                is MessageEntityContent.Knock -> {
+                    /** NO-OP. No need to insert any content for Knock messages */
+                }
+
+                is MessageEntityContent.ConversationRenamed -> queries.insertConversationRenamedMessage(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    conversation_name = content.conversationName
+                )
             }
         }
     }
+
+    private fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
+        /*
+        When the user leaves a group, the app generates MemberChangeType.REMOVED and saves it locally because the socket doesn't send such
+        message anymore because the user already left the group, but the REST request to get all events the user missed when offline still
+        returns this event, so in order to avoid duplicates, the app needs to check and replace already existing system message instead of
+        adding another one.
+         */
+        (message.content as? MessageEntityContent.MemberChange)
+            ?.let {
+                if (it.memberChangeType == MessageEntity.MemberChangeType.REMOVED && message.senderUserId == selfUserId) it
+                else null
+            }?.let { memberRemovedContent ->
+                // Check if the message with given time and type already exists in the local DB.
+                queries.selectByConversationIdAndSenderIdAndTimeAndType(
+                    message.conversationId,
+                    message.senderUserId,
+                    message.date,
+                    contentTypeOf(message.content)
+                )
+                    .executeAsList()
+                    .firstOrNull {
+                        it.memberChangeType == MessageEntity.MemberChangeType.REMOVED &&
+                                it.memberChangeList?.toSet() == memberRemovedContent.memberUserIdList.toSet()
+                    }?.let {
+                        // The message already exists in the local DB, if its id is different then just update id.
+                        if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
+                        true
+                    }
+            } ?: false
+
+    override suspend fun updateAssetUploadStatus(
+        uploadStatus: MessageEntity.UploadStatus,
+        id: String,
+        conversationId: QualifiedIDEntity
+    ) = queries.updateAssetUploadStatus(uploadStatus, id, conversationId)
 
     override suspend fun updateAssetDownloadStatus(
         downloadStatus: MessageEntity.DownloadStatus,
@@ -153,18 +223,10 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
     override suspend fun updateMessagesAddMillisToDate(millis: Long, conversationId: QualifiedIDEntity, status: MessageEntity.Status) =
         queries.updateMessagesAddMillisToDate(millis, conversationId, status)
 
-    override suspend fun getMessagesFromAllConversations(limit: Int, offset: Int): Flow<List<MessageEntity>> =
-        queries.selectAllMessages(limit.toLong(), offset.toLong())
-            .asFlow()
-            .mapToList()
-            .toMessageEntityListFlow()
-
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
-        queries.selectById(id, conversationId)
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
             .asFlow()
             .mapToOneOrNull()
-            .flatMapLatest { it?.let { mapper.toMessageEntityFlow(it) } ?: flowOf(null) }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
@@ -172,25 +234,32 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         offset: Int,
         visibility: List<MessageEntity.Visibility>
     ): Flow<List<MessageEntity>> =
-        queries.selectByConversationIdAndVisibility(conversationId, visibility, limit.toLong(), offset.toLong())
-            .asFlow()
-            .mapToList()
-            .toMessageEntityListFlow()
+        queries.selectByConversationIdAndVisibility(
+            conversationId,
+            visibility,
+            limit.toLong(),
+            offset.toLong(),
+            mapper::toEntityMessageFromView
+        ).asFlow().mapToList()
 
     override suspend fun getMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility>
     ): Flow<List<MessageEntity>> =
-        queries.selectMessagesByConversationIdAndVisibilityAfterDate(conversationId, visibility, date)
+        queries.selectMessagesByConversationIdAndVisibilityAfterDate(
+            conversationId, visibility, date,
+            mapper::toEntityMessageFromView
+        )
             .asFlow()
             .mapToList()
-            .toMessageEntityListFlow()
 
     override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> =
-        queries.selectMessagesFromUserByStatus(userId, MessageEntity.Status.PENDING)
+        queries.selectMessagesFromUserByStatus(
+            userId, MessageEntity.Status.PENDING,
+            mapper::toEntityMessageFromView
+        )
             .executeAsList()
-            .map(mapper::toMessageEntity)
 
     override suspend fun updateTextMessageContent(
         conversationId: QualifiedIDEntity,
@@ -212,18 +281,34 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         }
     }
 
+    override suspend fun getConversationMessagesByContentType(
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType
+    ): List<MessageEntity> =
+        queries.getConversationMessagesByContentType(conversationId, contentType, mapper::toEntityMessageFromView)
+            .executeAsList()
+
+    override suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity) {
+        queries.deleteAllConversationMessages(conversationId)
+    }
+
     override suspend fun observeLastUnreadMessage(
         conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?> = queries.getLastUnreadMessage(conversationID).asFlow().mapToOneOrNull().map { it?.let {
-        mapper.toMessageEntity(it)
-    } }.distinctUntilChanged()
+    ): Flow<MessageEntity?> = queries.getLastUnreadMessage(
+        conversationID,
+        mapper::toEntityMessageFromView
+    ).asFlow().mapToOneOrNull()
 
-    override suspend fun observeUnreadMessageCount(conversationId: QualifiedIDEntity): Flow<Long> =
-        queries.getUnreadMessageCount(conversationId).asFlow().mapToOneOrDefault(0L)
+    override suspend fun observeUnreadMessageCount(
+        conversationId: QualifiedIDEntity
+    ): Flow<Long> =
+        queries.getUnreadMessageCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
 
-    override suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Long> =
-        queries.getUnreadMentionsCount(conversationId, userId).asFlow().mapToOneOrDefault(0L)
+    override suspend fun observeUnreadMentionsCount(
+        conversationId: QualifiedIDEntity
+    ): Flow<Long> =
+        queries.getUnreadMentionsCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
             .distinctUntilChanged()
 
     private fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType = when (content) {
@@ -235,12 +320,7 @@ class MessageDAOImpl(private val queries: MessagesQueries) : MessageDAO {
         is MessageEntityContent.Unknown -> UNKNOWN
         is MessageEntityContent.FailedDecryption -> FAILED_DECRYPTION
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun Flow<List<SQLDelightMessage>>.toMessageEntityListFlow(): Flow<List<MessageEntity>> = this.flatMapLatest {
-        if (it.isEmpty()) flowOf(listOf())
-        else combine(it.map { message -> mapper.toMessageEntityFlow(message) }) { it.asList() }
+        is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)

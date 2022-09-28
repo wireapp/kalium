@@ -1,6 +1,6 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.versioning.VersionInfoDTO
+import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 

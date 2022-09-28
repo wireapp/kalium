@@ -9,9 +9,9 @@ CREATE TABLE Call (
     caller_id TEXT NOT NULL,
     conversation_type TEXT AS ConversationEntity.Type NOT NULL,
     created_at TEXT NOT NULL,
-
     PRIMARY KEY (conversation_id, id)
 );
+CREATE INDEX CallDateIndex ON Call (created_at);
 
 insertCall:
 INSERT INTO Call(conversation_id, id, status, caller_id, conversation_type, created_at)
@@ -44,11 +44,36 @@ WHERE
         LIMIT 1
     );
 
-selectLastCallByConversationId:
-SELECT *
+selectLastClosedCallCreationTimeConversationId:
+SELECT created_at
 FROM Call
 WHERE
-    conversation_id = ?
+    conversation_id = :conversationId
+    AND status = 'CLOSED'
+ORDER BY created_at DESC
+LIMIT 1;
+
+selectLastCallConversionTypeByConversationId:
+SELECT conversation_type
+FROM Call
+WHERE
+    conversation_id = :conversationId
+ORDER BY created_at DESC
+LIMIT 1;
+
+lastCallStatusByConversationId:
+SELECT status
+FROM Call
+WHERE
+    conversation_id = :conversationId
+ORDER BY created_at DESC
+LIMIT 1;
+
+lastCallCallerIdByConversationId:
+SELECT caller_id
+FROM Call
+WHERE
+    conversation_id = :conversationId
 ORDER BY created_at DESC
 LIMIT 1;
 
@@ -56,7 +81,7 @@ selectLastClosedCallByConversationId:
 SELECT *
 FROM Call
 WHERE
-    conversation_id = ?
+    conversation_id = :conversationId
     AND status = 'CLOSED'
 ORDER BY created_at DESC
 LIMIT 1;

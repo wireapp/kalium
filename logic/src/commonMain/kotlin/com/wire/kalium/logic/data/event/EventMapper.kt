@@ -3,21 +3,29 @@ package com.wire.kalium.logic.data.event
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.notification.EventResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 
+@Suppress("TooManyFunctions")
 class EventMapper(
     private val idMapper: IdMapper,
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper,
     private val featureConfigMapper: FeatureConfigMapper,
+    private val roleMapper: ConversationRoleMapper,
+    private val userTypeMapper: DomainUserTypeMapper,
 ) {
     @Suppress("ComplexMethod")
     fun fromDTO(eventResponse: EventResponse): List<Event> {
@@ -27,8 +35,9 @@ class EventMapper(
             when (eventContentDTO) {
                 is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO)
-                is EventContentDTO.Conversation.MemberJoinDTO -> memberJoin(id, eventContentDTO)
-                is EventContentDTO.Conversation.MemberLeaveDTO -> memberLeave(id, eventContentDTO)
+                is EventContentDTO.Conversation.MemberJoinDTO -> conversationMemberJoin(id, eventContentDTO)
+                is EventContentDTO.Conversation.MemberLeaveDTO -> conversationMemberLeave(id, eventContentDTO)
+                is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO)
                 is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
                 is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
                 is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
@@ -38,6 +47,12 @@ class EventMapper(
                 is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
                 is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id) // TODO: update it after logic code is merged
                 is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
+                is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO)
+                is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO)
+                is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
+                is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO)
+                is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO)
+                is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO)
             }
         } ?: listOf()
     }
@@ -104,7 +119,7 @@ class EventMapper(
         eventContentDTO.data
     )
 
-    private fun memberJoin(
+    private fun conversationMemberJoin(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberJoinDTO
     ) = Event.Conversation.MemberJoin(
@@ -115,7 +130,7 @@ class EventMapper(
         timestampIso = eventContentDTO.time
     )
 
-    private fun memberLeave(
+    private fun conversationMemberLeave(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberLeaveDTO
     ) = Event.Conversation.MemberLeave(
@@ -125,6 +140,25 @@ class EventMapper(
         removedList = eventContentDTO.members.qualifiedUserIds.map { idMapper.fromApiModel(it) },
         timestampIso = eventContentDTO.time
     )
+
+    private fun memberUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO
+    ): Event.Conversation.MemberChanged {
+        return if (eventContentDTO.roleChange.role.isNullOrEmpty()) {
+            Event.Conversation.IgnoredMemberChanged(id, idMapper.fromApiModel(eventContentDTO.qualifiedConversation))
+        } else {
+            Event.Conversation.MemberChanged(
+                id = id,
+                conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                timestampIso = eventContentDTO.time,
+                member = Conversation.Member(
+                    id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
+                    role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
+                ),
+            )
+        }
+    }
 
     private fun featureConfig(
         id: String,
@@ -156,6 +190,70 @@ class EventMapper(
         conversationId = idMapper.fromApiModel(deletedConversationDTO.qualifiedConversation),
         senderUserId = idMapper.fromApiModel(deletedConversationDTO.qualifiedFrom),
         timestampIso = deletedConversationDTO.time
+    )
+
+    private fun conversationRenamed(
+        id: String,
+        event: EventContentDTO.Conversation.ConversationRenameDTO
+    ) = Event.Conversation.RenamedConversation(
+        id = id,
+        conversationId = idMapper.fromApiModel(event.qualifiedConversation),
+        senderUserId = idMapper.fromApiModel(event.qualifiedFrom),
+        conversationName = event.updateNameData.conversationName,
+        timestampIso = event.time,
+    )
+
+    private fun teamMemberJoined(
+        id: String,
+        event: EventContentDTO.Team.MemberJoin
+    ) = Event.Team.MemberJoin(
+        id = id,
+        teamId = event.teamId,
+        memberId = event.teamMember.nonQualifiedUserId
+    )
+
+    private fun teamMemberLeft(
+        id: String,
+        event: EventContentDTO.Team.MemberLeave
+    ) = Event.Team.MemberLeave(
+        id = id,
+        teamId = event.teamId,
+        memberId = event.teamMember.nonQualifiedUserId
+    )
+
+    private fun teamMemberUpdate(
+        id: String,
+        event: EventContentDTO.Team.MemberUpdate
+    ) = Event.Team.MemberUpdate(
+        id = id,
+        teamId = event.teamId,
+        memberId = event.permissionsResponse.nonQualifiedUserId,
+        permissionCode = event.permissionsResponse.permissions.own
+    )
+
+    private fun teamUpdate(
+        id: String,
+        event: EventContentDTO.Team.Update
+    ) = Event.Team.Update(
+        id = id,
+        teamId = event.teamId,
+        icon = event.teamUpdate.icon,
+        name = event.teamUpdate.name
+    )
+
+    private fun userUpdate(
+        id: String,
+        event: EventContentDTO.User.UpdateDTO
+    ) = Event.User.Update(
+        id = id,
+        userId = event.userData.nonQualifiedUserId,
+        accentId = event.userData.accentId,
+        ssoIdDeleted = event.userData.ssoIdDeleted,
+        name = event.userData.name,
+        handle = event.userData.handle,
+        email = event.userData.email,
+        previewAssetId = event.userData.assets?.getPreviewAssetOrNull()?.key,
+        completeAssetId = event.userData.assets?.getCompleteAssetOrNull()?.key
     )
 
 }

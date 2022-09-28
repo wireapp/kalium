@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
@@ -28,13 +29,14 @@ class ConversationScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
-    private val callRepository: CallRepository,
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
+    private val assetRepository: AssetRepository,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
     private val selfUserId: UserId,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
     private val persistMessage: PersistMessageUseCase,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) {
@@ -51,11 +53,11 @@ class ConversationScope internal constructor(
     val getConversationDetails: GetConversationUseCase
         get() = GetConversationUseCase(conversationRepository)
 
-    val observeConversationListDetails: ObserveConversationListDetailsUseCase
-        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository, callRepository, observeIsSelfUserMemberUseCase)
+    val getOneToOneConversation: GetOneToOneConversationUseCase
+        get() = GetOneToOneConversationUseCase(conversationRepository)
 
-    val observeConversationsAndConnectionListUseCase: ObserveConversationsAndConnectionsUseCase
-        get() = ObserveConversationsAndConnectionsUseCaseImpl(observeConversationListDetails, observeConnectionList)
+    val observeConversationListDetails: ObserveConversationListDetailsUseCase
+        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
 
     val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCase(conversationRepository, userRepository)
@@ -93,9 +95,10 @@ class ConversationScope internal constructor(
     val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
         get() = UpdateConversationReadDateUseCase(
             conversationRepository,
-            userRepository,
             messageSender,
-            clientRepository
+            clientRepository,
+            selfUserId,
+            selfConversationIdProvider,
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase
@@ -107,7 +110,19 @@ class ConversationScope internal constructor(
     val removeMemberFromConversation: RemoveMemberFromConversationUseCase
         get() = RemoveMemberFromConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
 
+    val leaveConversation: LeaveConversationUseCase
+        get() = LeaveConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage)
+
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)
+
+    val clearConversationContent: ClearConversationContentUseCase
+        get() = ClearConversationContentUseCaseImpl(
+            clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
+            clientRepository,
+            messageSender,
+            selfUserId,
+            selfConversationIdProvider
+        )
 
 }

@@ -9,9 +9,10 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 
 interface LogoutUseCase {
-    suspend operator fun invoke(reason: LogoutReason = LogoutReason.SELF_LOGOUT, isHardLogout: Boolean = false)
+    suspend operator fun invoke(reason: LogoutReason)
 }
 
 class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
@@ -27,18 +28,24 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
-    override suspend operator fun invoke(reason: LogoutReason, isHardLogout: Boolean) {
+    override suspend operator fun invoke(reason: LogoutReason) {
+        logoutRepository.onLogout(reason)
         deregisterTokenUseCase()
         logoutRepository.logout()
-        sessionRepository.logout(userId = userId, reason, isHardLogout)
-        if (isHardLogout) {
+        sessionRepository.logout(userId = userId, reason)
+        if (reason == LogoutReason.SELF_HARD_LOGOUT) {
+            // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
+            delay(CLEAR_DATA_DELAY)
             clearClientDataUseCase()
             clearUserDataUseCase() // this clears also current client id
         } else {
             clientRepository.clearCurrentClientId()
         }
-        sessionRepository.updateCurrentSession(userId)
         userSessionScopeProvider.get(userId)?.cancel()
         userSessionScopeProvider.delete(userId)
+    }
+
+    companion object {
+        const val CLEAR_DATA_DELAY = 1000L
     }
 }

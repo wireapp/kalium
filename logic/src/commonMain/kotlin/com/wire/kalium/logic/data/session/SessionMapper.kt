@@ -5,7 +5,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthTokens
-import com.wire.kalium.network.api.SessionDTO
+import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
@@ -64,7 +64,8 @@ internal class SessionMapperImpl(
 
     override fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity =
         when (reason) {
-            LogoutReason.SELF_LOGOUT -> LogoutReasonEntity.SELF_LOGOUT
+            LogoutReason.SELF_HARD_LOGOUT -> LogoutReasonEntity.SELF_HARD_LOGOUT
+            LogoutReason.SELF_SOFT_LOGOUT -> LogoutReasonEntity.SELF_SOFT_LOGOUT
             LogoutReason.REMOVED_CLIENT -> LogoutReasonEntity.REMOVED_CLIENT
             LogoutReason.DELETED_ACCOUNT -> LogoutReasonEntity.DELETED_ACCOUNT
             LogoutReason.SESSION_EXPIRED -> LogoutReasonEntity.SESSION_EXPIRED
@@ -85,7 +86,8 @@ internal class SessionMapperImpl(
 
     override fun toLogoutReason(reason: com.wire.kalium.persistence.model.LogoutReason): LogoutReason =
         when (reason) {
-            LogoutReasonEntity.SELF_LOGOUT -> LogoutReason.SELF_LOGOUT
+            LogoutReasonEntity.SELF_SOFT_LOGOUT -> LogoutReason.SELF_SOFT_LOGOUT
+            LogoutReasonEntity.SELF_HARD_LOGOUT -> LogoutReason.SELF_HARD_LOGOUT
             LogoutReasonEntity.REMOVED_CLIENT -> LogoutReason.REMOVED_CLIENT
             LogoutReasonEntity.DELETED_ACCOUNT -> LogoutReason.DELETED_ACCOUNT
             LogoutReasonEntity.SESSION_EXPIRED -> LogoutReason.SESSION_EXPIRED

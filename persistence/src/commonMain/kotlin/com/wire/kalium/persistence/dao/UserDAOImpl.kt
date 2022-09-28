@@ -4,8 +4,12 @@ import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.cache.Cache
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted.Companion.Lazily
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import com.wire.kalium.persistence.User as SQLDelightUser
 
 class UserMapper {
@@ -27,11 +31,25 @@ class UserMapper {
             deleted = user.deleted
         )
     }
+
+    fun toModelMinimized(
+        userId: QualifiedIDEntity,
+        name: String?,
+        assetId: QualifiedIDEntity?,
+        userTypeEntity: UserTypeEntity
+    ) = UserEntityMinimized(
+        userId,
+        name,
+        assetId,
+        userTypeEntity
+    )
 }
 
 @Suppress("TooManyFunctions")
-class UserDAOImpl(
-    private val userQueries: UsersQueries
+class UserDAOImpl internal constructor(
+    private val userQueries: UsersQueries,
+    private val userCache: Cache<UserIDEntity, Flow<UserEntity?>>,
+    private val databaseScope: CoroutineScope
 ) : UserDAO {
 
     val mapper = UserMapper()
@@ -155,7 +173,7 @@ class UserDAOImpl(
         }
     }
 
-    override suspend fun updateSelfUser(user: UserEntity) {
+    override suspend fun updateUser(user: UserEntity) {
         userQueries.updateSelfUser(
             user.name,
             user.handle,
@@ -172,12 +190,18 @@ class UserDAOImpl(
         .mapToList()
         .map { entryList -> entryList.map(mapper::toModel) }
 
-    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> {
-        return userQueries.selectByQualifiedId(listOf(qualifiedID))
+    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> = userCache.get(qualifiedID) {
+        userQueries.selectByQualifiedId(listOf(qualifiedID))
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { mapper.toModel(it) } }
+            .shareIn(databaseScope, Lazily, 1)
     }
+
+    override fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
+        userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
+            mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+        }.executeAsOneOrNull()
 
     override suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity> {
         return userQueries.selectByQualifiedId(qualifiedIDList)
@@ -203,6 +227,10 @@ class UserDAOImpl(
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
         userQueries.deleteUser(qualifiedID)
+    }
+
+    override suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity) {
+        userQueries.markUserAsDeleted(user_type = UserTypeEntity.NONE, qualified_id = qualifiedID)
     }
 
     override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) {

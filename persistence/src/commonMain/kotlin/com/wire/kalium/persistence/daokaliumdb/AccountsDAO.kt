@@ -3,38 +3,58 @@ package com.wire.kalium.persistence.daokaliumdb
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
-import com.wire.kalium.persistence.AccountInfo
 import com.wire.kalium.persistence.AccountsQueries
-import com.wire.kalium.persistence.AllAccounts
 import com.wire.kalium.persistence.CurrentAccountQueries
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 
 data class AccountInfoEntity(
     val userIDEntity: UserIDEntity,
     val logoutReason: LogoutReason?
-) {
-    internal constructor(accountInfo: AccountInfo) : this(
-        userIDEntity = accountInfo.id,
-        logoutReason = accountInfo.logout_reason
-    )
-
-    internal constructor(allAccounts: AllAccounts) : this(
-        userIDEntity = allAccounts.id,
-        logoutReason = allAccounts.logout_reason
-    )
-}
+)
 
 data class FullAccountEntity(
     val info: AccountInfoEntity,
     val serverConfigId: String,
-    val ssoId: SsoIdEntity?,
-    val logoutReason: LogoutReason?
+    val ssoId: SsoIdEntity?
 )
+
+@Suppress("FunctionParameterNaming", "LongParameterList")
+internal object AccountMapper {
+    fun fromAccount(
+        user_id: UserIDEntity,
+        logout_reason: LogoutReason?
+    ): AccountInfoEntity = AccountInfoEntity(
+        userIDEntity = user_id,
+        logoutReason = logout_reason
+    )
+
+    fun fromFullAccountInfo(
+        id: QualifiedIDEntity,
+        scim_external_id: String?,
+        subject: String?,
+        tenant: String?,
+        server_config_id: String,
+        logout_reason: LogoutReason?,
+    ): FullAccountEntity = FullAccountEntity(
+        info = fromAccount(id, logout_reason),
+        serverConfigId = server_config_id,
+        ssoId = toSsoIdEntity(scim_external_id, subject, tenant)
+    )
+
+    fun toSsoIdEntity(
+        scim_external_id: String?,
+        subject: String?,
+        tenant: String?
+    ): SsoIdEntity? = if (scim_external_id == null && subject == null && tenant == null) {
+        null
+    } else {
+        SsoIdEntity(scim_external_id, subject, tenant)
+    }
+}
 
 @Suppress("TooManyFunctions")
 interface AccountsDAO {
@@ -46,7 +66,6 @@ interface AccountsDAO {
     suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
     fun isFederated(userIDEntity: UserIDEntity): Boolean?
-    suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean
     suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean
     fun currentAccount(): AccountInfoEntity?
     fun observerCurrentAccount(): Flow<AccountInfoEntity?>
@@ -61,13 +80,18 @@ interface AccountsDAO {
 @Suppress("TooManyFunctions")
 internal class AccountsDAOImpl internal constructor(
     private val queries: AccountsQueries,
-    private val currentAccountQueries: CurrentAccountQueries
+    private val currentAccountQueries: CurrentAccountQueries,
+    private val mapper: AccountMapper = AccountMapper
 ) : AccountsDAO {
-    override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? = queries.ssoId(userIDEntity).executeAsOneOrNull()?.let {
-        SsoIdEntity(scimExternalId = it.scim_external_id, subject = it.subject, tenant = it.tenant)
-    }
+    override suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity? =
+        queries.ssoId(userIDEntity).executeAsOneOrNull()
+            ?.let { mapper.toSsoIdEntity(scim_external_id = it.scim_external_id, subject = it.subject, tenant = it.tenant) }
 
-    override suspend fun insertOrReplace(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, serverConfigId: String) {
+    override suspend fun insertOrReplace(
+        userIDEntity: UserIDEntity,
+        ssoIdEntity: SsoIdEntity?,
+        serverConfigId: String
+    ) {
         queries.insertOrReplace(
             scimExternalId = ssoIdEntity?.scimExternalId,
             subject = ssoIdEntity?.subject,
@@ -79,61 +103,39 @@ internal class AccountsDAOImpl internal constructor(
     }
 
     override suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?> =
-        queries.accountInfo(userIDEntity)
+        queries.accountInfo(userIDEntity, mapper = mapper::fromAccount)
             .asFlow()
             .mapToOneOrNull()
-            .map { accountInfo ->
-                accountInfo?.let { AccountInfoEntity(accountInfo) }
-            }
 
     override suspend fun allAccountList(): List<AccountInfoEntity> =
-        queries.allAccounts()
-            .executeAsList()
-            .map { accountInfo ->
-                AccountInfoEntity(accountInfo)
-            }
+        queries.allAccounts(mapper = mapper::fromAccount).executeAsList()
 
     override suspend fun allValidAccountList(): List<AccountInfoEntity> =
-        queries.allValidAccounts()
-            .executeAsList()
-            .map { validAccount ->
-                AccountInfoEntity(validAccount.id, validAccount.logout_reason)
-            }
+        queries.allValidAccounts(mapper = mapper::fromAccount).executeAsList()
 
     override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
-        queries.allAccounts()
+        queries.allValidAccounts(mapper = mapper::fromAccount)
             .asFlow()
             .mapToList()
-            .map { accountInfoList ->
-                accountInfoList.map { accountInfo ->
-                    AccountInfoEntity(accountInfo.id, null)
-                }
-            }
 
     override suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>> =
-        queries.allAccounts()
+        queries.allAccounts(mapper = mapper::fromAccount)
             .asFlow()
             .mapToList()
-            .map { accountInfoList ->
-                accountInfoList.map { AccountInfoEntity(it) }
-            }
 
-    override fun isFederated(userIDEntity: UserIDEntity): Boolean? = queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
-
-    override suspend fun doesAccountExists(userIDEntity: UserIDEntity): Boolean =
-        queries.doesAccountExist(userIDEntity).executeAsOne()
+    override fun isFederated(userIDEntity: UserIDEntity): Boolean? =
+        queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
 
     override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean =
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
 
     override fun currentAccount(): AccountInfoEntity? =
-        currentAccountQueries.currentAccountInfo().executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logout_reason) }
+        currentAccountQueries.currentAccountInfo(mapper = mapper::fromAccount).executeAsOneOrNull()
 
-    override fun observerCurrentAccount(): Flow<AccountInfoEntity?> = currentAccountQueries.currentAccountInfo()
-        .asFlow()
-        .mapToOneOrNull()
-        .map { it?.let { AccountInfoEntity(it.id, it.logout_reason) } }
-        .distinctUntilChanged()
+    override fun observerCurrentAccount(): Flow<AccountInfoEntity?> =
+        currentAccountQueries.currentAccountInfo(mapper = mapper::fromAccount)
+            .asFlow()
+            .mapToOneOrNull()
 
     override suspend fun setCurrentAccount(userIDEntity: UserIDEntity?) {
         currentAccountQueries.update(userIDEntity)
@@ -157,21 +159,8 @@ internal class AccountsDAOImpl internal constructor(
     }
 
     override suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? =
-        queries.accountInfo(userIDEntity).executeAsOneOrNull()?.let { AccountInfoEntity(it.id, it.logout_reason) }
+        queries.accountInfo(userIDEntity, mapper = mapper::fromAccount).executeAsOneOrNull()
 
     override fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
-        queries.fullAccountInfo(userIDEntity).executeAsOneOrNull()?.let {
-            FullAccountEntity(
-                info = AccountInfoEntity(it.id, it.logout_reason),
-                serverConfigId = it.server_config_id,
-                ssoId = it.scim_external_id?.let { scimExternalId ->
-                    SsoIdEntity(
-                        scimExternalId = scimExternalId,
-                        subject = it.subject,
-                        tenant = it.tenant
-                    )
-                },
-                logoutReason = it.logout_reason
-            )
-        }
+        queries.fullAccountInfo(userIDEntity, mapper = mapper::fromFullAccountInfo).executeAsOneOrNull()
 }

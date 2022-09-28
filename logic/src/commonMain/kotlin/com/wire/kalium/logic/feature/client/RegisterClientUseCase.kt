@@ -5,12 +5,14 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -48,7 +50,8 @@ interface RegisterClientUseCase {
     data class RegisterClientParam(
         val password: String?,
         val capabilities: List<ClientCapability>?,
-        val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT
+        val clientType: ClientType? = null,
+        val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT,
     )
 
     companion object {
@@ -58,6 +61,7 @@ interface RegisterClientUseCase {
 }
 
 class RegisterClientUseCaseImpl(
+    private val kaliumConfigs: KaliumConfigs,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
@@ -67,11 +71,17 @@ class RegisterClientUseCaseImpl(
 
     override suspend operator fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult =
         with(registerClientParam) {
-            generateProteusPreKeys(preKeysToSend, password, capabilities).fold({
+            generateProteusPreKeys(preKeysToSend, password, capabilities, clientType).fold({
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam).flatMap { client ->
-                    createMLSClient(client)
+                    if (kaliumConfigs.isMLSSupportEnabled) {
+                        createMLSClient(client)
+                    } else {
+                        Either.Right(client)
+                    }
+                }.flatMap { client ->
+                    clientRepository.persistClientId(client.id).map { client }
                 }.fold({ failure ->
                     if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
                         when {
@@ -94,13 +104,13 @@ class RegisterClientUseCaseImpl(
         mlsClientProvider.getMLSClient(client.id)
             .flatMap { clientRepository.registerMLSClient(client.id, it.getPublicKey()) }
             .flatMap { keyPackageRepository.uploadNewKeyPackages(client.id, keyPackageLimitsProvider.refillAmount()) }
-            .flatMap { clientRepository.persistClientId(client.id) }
             .map { client }
 
     private suspend fun generateProteusPreKeys(
         preKeysToSend: Int,
         password: String?,
-        capabilities: List<ClientCapability>?
+        capabilities: List<ClientCapability>?,
+        clientType: ClientType? = null
     ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
         preKeyRepository.generateNewLastKey().flatMap { lastKey ->
             Either.Right(
@@ -111,7 +121,8 @@ class RegisterClientUseCaseImpl(
                     lastKey = lastKey,
                     deviceType = null,
                     label = null,
-                    model = null
+                    model = null,
+                    clientType = clientType
                 )
             )
         }

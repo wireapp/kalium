@@ -189,32 +189,6 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingMessagesFromAllConversations_thenAllMessagesAreReturned() = runTest {
-        insertInitialData()
-
-        val allMessages = listOf(
-            newRegularMessageEntity(
-                "1",
-                conversationId = conversationEntity1.id,
-                senderUserId = userEntity1.id,
-                status = MessageEntity.Status.PENDING
-            ),
-            newRegularMessageEntity(
-                "2",
-                // different conversation
-                conversationId = conversationEntity2.id,
-                // different user
-                senderUserId = userEntity2.id,
-                status = MessageEntity.Status.READ
-            )
-        )
-
-        messageDAO.insertMessages(allMessages)
-        val result = messageDAO.getMessagesFromAllConversations(10, 0)
-        assertContentEquals(allMessages, result.first())
-    }
-
-    @Test
     fun givenMessagesAreInserted_whenGettingMessagesByConversation_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()
 

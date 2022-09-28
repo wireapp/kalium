@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.data.logout
 
 import app.cash.turbine.test
-import com.wire.kalium.network.api.user.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock
@@ -14,7 +14,7 @@ class LogoutRepositoryTest {
     @Test
     fun givenLogoutFlowIsBeingObserved_whenInvokingOnLogout_thenFlowShouldEmit() = runTest {
         // Given
-        val reason = LogoutReason.SELF_LOGOUT
+        val reason = LogoutReason.SELF_HARD_LOGOUT
 
         val (_, logoutRepository) = Arrangement().arrange()
 
@@ -56,9 +56,9 @@ class LogoutRepositoryTest {
             // Ignored, really
         }
 
-        logoutRepository.onLogout(LogoutReason.SELF_LOGOUT)
+        logoutRepository.onLogout(LogoutReason.SELF_HARD_LOGOUT)
         logoutRepository.observeLogout().test {
-            assertEquals(LogoutReason.SELF_LOGOUT, awaitItem())
+            assertEquals(LogoutReason.SELF_HARD_LOGOUT, awaitItem())
 
             logoutRepository.onLogout(LogoutReason.SESSION_EXPIRED)
             assertEquals(LogoutReason.SESSION_EXPIRED, awaitItem())

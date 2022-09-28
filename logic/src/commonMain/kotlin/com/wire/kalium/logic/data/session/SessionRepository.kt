@@ -16,6 +16,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
@@ -35,12 +36,11 @@ interface SessionRepository {
     suspend fun allSessionsFlow(): Flow<List<AccountInfo>>
     suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>>
     suspend fun allValidSessionsFlow(): Flow<List<AccountInfo>>
-    suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
-    suspend fun logout(userId: UserId, reason: LogoutReason, isHardLogout: Boolean): Either<StorageFailure, Unit>
+    suspend fun logout(userId: UserId, reason: LogoutReason): Either<StorageFailure, Unit>
     fun currentSession(): Either<StorageFailure, AccountInfo>
     fun currentSessionFlow(): Flow<Either<StorageFailure, AccountInfo>>
     suspend fun deleteSession(userId: UserId): Either<StorageFailure, Unit>
@@ -89,9 +89,6 @@ internal class SessionDataSource(
         accountsDAO.observerValidAccountList()
             .map { it.map { AccountInfo.Valid(idMapper.fromDaoModel(it.userIDEntity)) } }
 
-    override suspend fun doesSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
-        wrapStorageRequest { accountsDAO.doesAccountExists(idMapper.toDaoModel(userId)) }
-
     override suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
         wrapStorageRequest { accountsDAO.doesValidAccountExists(idMapper.toDaoModel(userId)) }
 
@@ -114,8 +111,7 @@ internal class SessionDataSource(
 
     override suspend fun logout(
         userId: UserId,
-        reason: LogoutReason,
-        isHardLogout: Boolean
+        reason: LogoutReason
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.markAccountAsInvalid(
@@ -141,7 +137,7 @@ internal class SessionDataSource(
     }
 
     override suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?> =
-        wrapStorageRequest { accountsDAO.ssoId(idMapper.toDaoModel(userId)) }
+        wrapStorageNullableRequest { accountsDAO.ssoId(idMapper.toDaoModel(userId)) }
 
     override suspend fun updateSsoId(userId: UserId, ssoId: SsoId?): Either<StorageFailure, Unit> = wrapStorageRequest {
         accountsDAO.updateSsoId(idMapper.toDaoModel(userId), idMapper.toSsoIdEntity(ssoId))

@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -58,6 +59,23 @@ class PendingProposalSchedulerTest {
             .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
             .with(eq(TestConversation.GROUP_ID))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenMLSSupportIsDisabled_whenSyncIsLive_thenPendingProposalIsNotCommitted() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, _) = Arrangement()
+            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withCommitPendingProposalsSuccessful()
+            .arrange()
+
+        arrangement.kaliumConfigs.isMLSSupportEnabled = false
+        arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+        yield()
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
+            .with(eq(TestConversation.GROUP_ID))
+            .wasNotInvoked()
     }
 
     @Test
@@ -135,6 +153,8 @@ class PendingProposalSchedulerTest {
 
     private class Arrangement {
 
+        val kaliumConfigs = KaliumConfigs()
+
         @Mock
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
@@ -142,6 +162,7 @@ class PendingProposalSchedulerTest {
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
         val pendingProposalScheduler = PendingProposalSchedulerImpl(
+            kaliumConfigs,
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             TestKaliumDispatcher

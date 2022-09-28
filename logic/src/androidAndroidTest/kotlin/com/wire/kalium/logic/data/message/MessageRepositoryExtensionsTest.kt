@@ -23,14 +23,13 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import com.wire.kalium.persistence.Message as PersistenceMessage
 
 class MessageRepositoryExtensionsTest {
 
-    private val fakePagingSource = object : PagingSource<Long, PersistenceMessage>() {
-        override fun getRefreshKey(state: PagingState<Long, PersistenceMessage>): Long? = null
+    private val fakePagingSource = object : PagingSource<Long, MessageEntity>() {
+        override fun getRefreshKey(state: PagingState<Long, MessageEntity>): Long? = null
 
-        override suspend fun load(params: LoadParams<Long>): LoadResult<Long, PersistenceMessage> =
+        override suspend fun load(params: LoadParams<Long>): LoadResult<Long, MessageEntity> =
             LoadResult.Error(NotImplementedError("STUB for tests. Not implemented."))
     }
 
@@ -39,7 +38,7 @@ class MessageRepositoryExtensionsTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
 
-        val kaliumPager = KaliumPager<PersistenceMessage, MessageEntity>(pager, fakePagingSource) { MESSAGE_ENTITY }
+        val kaliumPager = KaliumPager<MessageEntity>(pager, fakePagingSource)
         val (arrangement, messageRepositoryExtensions) = Arrangement()
             .withMessageExtensionsReturningPager(kaliumPager)
             .arrange()
@@ -91,7 +90,7 @@ class MessageRepositoryExtensionsTest {
                 .thenReturn(messageDaoExtensions)
         }
 
-        fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<PersistenceMessage, MessageEntity>) = apply {
+        fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>) = apply {
             given(messageDaoExtensions)
                 .function(messageDaoExtensions::getPagerForConversation)
                 .whenInvokedWith(any(), any(), any())

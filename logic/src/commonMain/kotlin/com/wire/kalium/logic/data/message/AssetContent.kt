@@ -6,6 +6,7 @@ data class AssetContent(
     val mimeType: String,
     val metadata: AssetMetadata? = null,
     val remoteData: RemoteData,
+    val uploadStatus: Message.UploadStatus = Message.UploadStatus.NOT_UPLOADED,
     val downloadStatus: Message.DownloadStatus
 ) {
     sealed class AssetMetadata {

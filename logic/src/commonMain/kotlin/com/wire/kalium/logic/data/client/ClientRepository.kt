@@ -12,8 +12,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.user.pushToken.PushTokenBody
+import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64
@@ -26,6 +27,7 @@ interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
+    @Deprecated("this function is not cached use CurrentClientIdProvider")
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
     suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
     suspend fun retainedClientId(): Either<CoreFailure, ClientId>
@@ -34,19 +36,21 @@ interface ClientRepository {
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
-    suspend fun storeUserClientList(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit>
+    suspend fun storeUserClientListAndRemoveRedundantClients(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit>
     suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
 }
+
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME")
 class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
@@ -64,12 +68,28 @@ class ClientDataSource(
     override suspend fun currentClientId(): Either<CoreFailure, ClientId> =
         wrapStorageRequest { clientRegistrationStorage.getRegisteredClientId() }
             .map { ClientId(it) }
-            .mapLeft { if (it is StorageFailure.DataNotFound) { CoreFailure.MissingClientRegistration } else { it } }
+            .mapLeft {
+                if (it is StorageFailure.DataNotFound) {
+                    kaliumLogger.e("Data Not Found for Registered Client Id")
+                    CoreFailure.MissingClientRegistration
+                } else {
+                    kaliumLogger.e("Failure when getting Registered Client Id")
+                    it
+                }
+            }
 
     override suspend fun retainedClientId(): Either<CoreFailure, ClientId> =
         wrapStorageRequest { clientRegistrationStorage.getRetainedClientId() }
             .map { ClientId(it) }
-            .mapLeft { if (it is StorageFailure.DataNotFound) { CoreFailure.MissingClientRegistration } else { it } }
+            .mapLeft {
+                if (it is StorageFailure.DataNotFound) {
+                    kaliumLogger.e("Data Not Found for Retained Client Id")
+                    CoreFailure.MissingClientRegistration
+                } else {
+                    kaliumLogger.e("Failure when getting Retained Client Id")
+                    it
+                }
+            }
 
     override suspend fun observeCurrentClientId(): Flow<ClientId?> =
         clientRegistrationStorage.observeRegisteredClientId().map { rawClientId ->
@@ -98,10 +118,14 @@ class ClientDataSource(
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
         }
-    override suspend fun storeUserClientList(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit> =
+
+    override suspend fun storeUserClientListAndRemoveRedundantClients(
+        userId: UserId,
+        clients: List<OtherUserClient>
+    ): Either<StorageFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
-            clients.map { ClientEntity(userEntity, it.id, it.deviceType.name) }.let { clientEntityList ->
-                wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
+            clients.map { ClientEntity(userEntity, it.id, clientMapper.toDeviceTypeEntity(it.deviceType)) }.let { clientEntityList ->
+                wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(userEntity, clientEntityList) }
             }
         }
 
