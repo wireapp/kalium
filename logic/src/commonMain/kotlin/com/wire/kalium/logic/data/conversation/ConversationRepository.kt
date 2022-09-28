@@ -525,7 +525,6 @@ internal class ConversationDataSource internal constructor(
             }
         })
 
-
     override suspend fun deleteMember(
         userId: UserId,
         conversationId: ConversationId

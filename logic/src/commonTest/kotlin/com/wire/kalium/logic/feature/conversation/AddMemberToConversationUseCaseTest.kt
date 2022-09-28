@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.MemberChangeResult
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
@@ -95,7 +96,7 @@ class AddMemberToConversationUseCaseTest {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::addMembers)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(MemberChangeResult.Changed("")))
         }
 
         fun withAddMemberToMLSGroupSuccessful() = apply {

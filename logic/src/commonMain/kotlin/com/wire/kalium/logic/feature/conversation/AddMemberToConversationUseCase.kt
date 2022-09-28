@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -11,10 +10,8 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
-import kotlinx.datetime.Clock
 
 interface AddMemberToConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>)
