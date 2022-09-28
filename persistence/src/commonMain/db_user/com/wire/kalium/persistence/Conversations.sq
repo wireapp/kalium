@@ -225,7 +225,7 @@ UPDATE Conversation
 SET name = ?, last_modified_date = ?
 WHERE qualified_id = ?;
 
-revokeOneOnOneConversationWithDeletedUser:
+updateConversationType:
 UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
