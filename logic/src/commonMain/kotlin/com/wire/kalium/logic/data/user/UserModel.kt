@@ -1,5 +1,7 @@
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
@@ -32,7 +34,15 @@ data class Connection(
     val status: ConnectionState,
     val toId: String,
     val fromUser: OtherUser? = null
-)
+) {
+    override fun toString(): String {
+        return "Connection( conversationId: ${conversationId.obfuscateId()}, from:${from.obfuscateId()}," +
+                " lastUpdate:$lastUpdate," +
+                " qualifiedConversationId:${qualifiedConversationId.value.obfuscateId()}@${qualifiedConversationId.domain.obfuscateDomain()}, " +
+                "qualifiedToId:${qualifiedToId.value.obfuscateId()}@${qualifiedToId.domain.obfuscateDomain()}, " +
+                "status:$status, toId:${toId.obfuscateId()} fromUser:${fromUser?.id?.value?.obfuscateId()}@ ${fromUser?.id?.domain?.obfuscateDomain()} "
+    }
+}
 
 enum class UserAvailabilityStatus {
     NONE, AVAILABLE, BUSY, AWAY
