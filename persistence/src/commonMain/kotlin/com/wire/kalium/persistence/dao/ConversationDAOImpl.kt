@@ -340,6 +340,7 @@ class ConversationDAOImpl(
             if (recordDidNotExist) {
                 userQueries.insertOrIgnoreUserIdWithConnectionStatus(member.user, status)
             }
+            conversationQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
             memberQueries.insertMember(member.user, conversationID, member.role)
         }
     }
@@ -438,10 +439,14 @@ class ConversationDAOImpl(
         conversationQueries.updateConversationName(conversationName, timestamp, conversationId)
     }
 
+    override suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type) {
+        conversationQueries.updateConversationType(type, conversationID)
+    }
+
     override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) {
         conversationQueries.transaction {
             val conversationId = memberQueries.selectConversationByMember(userId).executeAsOne().conversation
-            conversationQueries.revokeOneOnOneConversationWithDeletedUser(ConversationEntity.Type.GROUP, conversationId)
+            conversationQueries.updateConversationType(ConversationEntity.Type.GROUP, conversationId)
             memberQueries.deleteUserFromConversations(userId)
         }
     }
