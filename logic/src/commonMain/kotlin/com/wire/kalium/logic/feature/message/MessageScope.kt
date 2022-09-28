@@ -135,8 +135,8 @@ class MessageScope internal constructor(
             messageSender
         )
 
-    val reactionUseCase: ReactionMessageUseCase
-        get() = ReactionMessageUseCase(
+    val toggleReaction: ToggleReactionUseCase
+        get() = ToggleReactionUseCase(
             currentClientIdProvider,
             userId,
             slowSyncRepository,

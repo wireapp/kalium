@@ -42,7 +42,7 @@ sealed class MessageContent {
 
     data class Reaction(
         val messageId: String,
-        val emoji: String? // empty string removes previous emojis
+        val emojiSet: Set<String>
     ): Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()

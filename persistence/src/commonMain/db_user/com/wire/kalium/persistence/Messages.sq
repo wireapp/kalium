@@ -191,11 +191,13 @@ ConversationNameChangedContent.conversation_name AS conversationName,
 IFNULL(
 '{' || GROUP_CONCAT(
    DISTINCT '"' || Reaction.emoji || '":' ||
-       (SELECT COUNT(emoji)
-           FROM Reaction
-           WHERE Reaction.message_id = Message.id
-               AND Reaction.conversation_id = Message.conversation_id
-               AND emoji = emoji)
+       (SELECT COUNT(R.emoji)
+           FROM Reaction AS R
+           WHERE R.message_id = Message.id
+               AND R.conversation_id = Message.conversation_id
+               AND R.emoji = Reaction.emoji
+           GROUP BY R.emoji
+           )
        )
 || '}', '{}') AS allReactionsJson,
 IFNULL((SELECT '[' || GROUP_CONCAT('"' || Reaction.emoji || '"') || ']'

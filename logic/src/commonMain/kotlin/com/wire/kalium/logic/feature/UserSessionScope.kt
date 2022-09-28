@@ -504,11 +504,10 @@ abstract class UserSessionScopeCommon internal constructor(
         globalCallManager.getMediaManager()
     }
 
-    private val reactionRepository = ReactionRepositoryImpl(userDatabaseProvider.reactionDAO)
+    private val reactionRepository = ReactionRepositoryImpl(userId, userDatabaseProvider.reactionDAO)
     private val persistReaction: PersistReactionUseCase
         get() = PersistReactionUseCaseImpl(
-            reactionRepository,
-            userId
+            reactionRepository
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
