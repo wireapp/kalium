@@ -35,6 +35,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -418,7 +419,7 @@ class MessageSenderTest {
                 .thenReturn(result)
         }
 
-        fun withSendOutgoingMlsMessage(result: Either<CoreFailure, Unit> = Either.Right(Unit), times: Int = Int.MAX_VALUE) = apply {
+        fun withSendOutgoingMlsMessage(result: Either<CoreFailure, String> = Either.Right(MESSAGE_SENT_TIME), times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
             given(messageRepository)
                 .suspendFunction(messageRepository::sendMLSMessage)
@@ -487,7 +488,7 @@ class MessageSenderTest {
             }
 
         fun withSendMlsMessage(
-            sendMlsMessageWithResult: Either<CoreFailure, Unit>? = null,
+            sendMlsMessageWithResult: Either<CoreFailure, String>? = null,
         ) = apply {
             withGetMessageById()
             withGetProtocolInfo(protocolInfo = MLS_PROTOCOL_INFO)
@@ -509,6 +510,7 @@ class MessageSenderTest {
                 recipients = listOf(),
                 dataBlob = null
             )
+            val MESSAGE_SENT_TIME = Clock.System.now().toString()
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
             val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(

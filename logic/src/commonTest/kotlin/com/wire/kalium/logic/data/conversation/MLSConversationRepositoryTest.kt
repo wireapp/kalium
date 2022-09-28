@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -51,6 +52,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
@@ -756,7 +758,7 @@ class MLSConversationRepositoryTest {
             given(mlsMessageApi)
                 .suspendFunction(mlsMessageApi::sendMessage)
                 .whenInvokedWith(anything())
-                .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
+                .then { NetworkResponse.Success(SendMLSMessageResponse(TIME, emptyList()), emptyMap(), 201) }
         }
 
         fun withCommitBundleSuccessful() = apply {
@@ -820,6 +822,7 @@ class MLSConversationRepositoryTest {
         internal companion object {
             const val EPOCH = 5UL
             const val RAW_GROUP_ID = "groupId"
+            val TIME = Clock.System.now().toString()
             val GROUP_ID = GroupID(RAW_GROUP_ID)
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
