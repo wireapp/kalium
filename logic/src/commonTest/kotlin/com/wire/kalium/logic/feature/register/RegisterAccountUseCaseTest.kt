@@ -33,16 +33,13 @@ class RegisterAccountUseCaseTest {
     @Mock
     private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
 
-    @Mock
-    private val serverConfigRepository = mock(classOf<ServerConfigRepository>())
-
-    private val serverLinks = TEST_SERVER_CONFIG.links
+    private val serverConfig = TEST_SERVER_CONFIG
 
     private lateinit var registerAccountUseCase: RegisterAccountUseCase
 
     @BeforeTest
     fun setup() {
-        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverConfigRepository, serverLinks)
+        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverConfig)
     }
 
     @Test
@@ -57,10 +54,6 @@ class RegisterAccountUseCaseTest {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.then { Either.Right(Pair(ssoId, authTokens)) }
 
-        given(serverConfigRepository)
-            .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
-            .then { Either.Right(userServerConfig) }
-
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
@@ -71,11 +64,6 @@ class RegisterAccountUseCaseTest {
         verify(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.wasInvoked(exactly = once)
-
-        verify(serverConfigRepository)
-            .function(serverConfigRepository::configByLinks)
-            .with(any())
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -92,10 +80,6 @@ class RegisterAccountUseCaseTest {
             )
         }.then { Either.Right(Pair(ssoId, authTokens)) }
 
-        given(serverConfigRepository)
-            .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
-            .then { Either.Right(userServerConfig) }
-
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
@@ -108,11 +92,6 @@ class RegisterAccountUseCaseTest {
                 param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
             )
         }.wasInvoked(exactly = once)
-
-        verify(serverConfigRepository)
-            .function(serverConfigRepository::configByLinks)
-            .with(any())
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -133,10 +112,6 @@ class RegisterAccountUseCaseTest {
         verify(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.wasInvoked(exactly = once)
-
-        verify(serverConfigRepository)
-            .suspendFunction(serverConfigRepository::configForUser)
-            .with(any()).wasNotInvoked()
     }
 
     @Test

@@ -27,9 +27,6 @@ class SSOInitiateLoginUseCaseTest {
     @Mock
     private val validateUUIDUseCase = mock(ValidateSSOCodeUseCase::class)
 
-    @Mock
-    private val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
-
     private val serverConfig = newServerConfig(1)
 
 
@@ -38,7 +35,7 @@ class SSOInitiateLoginUseCaseTest {
     @BeforeTest
     fun setup() {
         ssoInitiateLoginUseCase =
-            SSOInitiateLoginUseCaseImpl(ssoLoginRepository, validateUUIDUseCase, serverConfig.links, serverConfigRepository)
+            SSOInitiateLoginUseCaseImpl(ssoLoginRepository, validateUUIDUseCase, serverConfig)
     }
 
     @Test
@@ -102,9 +99,6 @@ class SSOInitiateLoginUseCaseTest {
                 .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
             given(ssoLoginRepository).coroutine { initiate(TEST_UUID, expectedRedirects.success, expectedRedirects.error) }
                 .then { Either.Right(TEST_RESPONSE) }
-            given(serverConfigRepository)
-                .coroutine { getOrFetchMetadata(serverConfig.links) }
-                .then { Either.Right(serverConfig) }
 
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithRedirect(TEST_CODE))
 
