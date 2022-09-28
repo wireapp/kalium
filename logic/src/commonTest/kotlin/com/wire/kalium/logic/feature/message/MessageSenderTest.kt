@@ -419,7 +419,10 @@ class MessageSenderTest {
                 .thenReturn(result)
         }
 
-        fun withSendOutgoingMlsMessage(result: Either<CoreFailure, String> = Either.Right(MESSAGE_SENT_TIME), times: Int = Int.MAX_VALUE) = apply {
+        fun withSendOutgoingMlsMessage(
+            result: Either<CoreFailure, String> = Either.Right(MESSAGE_SENT_TIME),
+            times: Int = Int.MAX_VALUE
+        ) = apply {
             var invocationCounter = 0
             given(messageRepository)
                 .suspendFunction(messageRepository::sendMLSMessage)
