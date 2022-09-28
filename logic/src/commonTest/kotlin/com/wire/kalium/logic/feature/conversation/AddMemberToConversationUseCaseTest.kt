@@ -1,10 +1,13 @@
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -28,6 +31,7 @@ class AddMemberToConversationUseCaseTest {
         val (arrangement, addMemberUseCase) = Arrangement()
             .withConversationProtocolIs(Arrangement.proteusProtocolInfo)
             .withAddMemberToProteusGroupSuccessful()
+            .withPersistMessage(Either.Right(Unit))
             .arrange()
 
         addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
@@ -50,6 +54,7 @@ class AddMemberToConversationUseCaseTest {
         val (arrangement, addMemberUseCase) = Arrangement()
             .withConversationProtocolIs(Arrangement.mlsProtocolInfo)
             .withAddMemberToMLSGroupSuccessful()
+            .withPersistMessage(Either.Right(Unit))
             .arrange()
 
         addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
@@ -74,9 +79,16 @@ class AddMemberToConversationUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
+        @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+        var selfUserId = UserId("my-own-user-id", "my-domain")
+
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            selfUserId,
+            persistMessage
         )
 
         fun withAddMemberToProteusGroupSuccessful() = apply {
@@ -98,6 +110,13 @@ class AddMemberToConversationUseCaseTest {
                 .suspendFunction(conversationRepository::detailsById)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(TestConversation.GROUP(protocolInfo)))
+        }
+
+        fun withPersistMessage(either: Either<CoreFailure, Unit>) = apply {
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(either)
         }
 
         fun arrange() = this to addMemberUseCase
