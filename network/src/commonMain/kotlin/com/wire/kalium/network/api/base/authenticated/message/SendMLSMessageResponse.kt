@@ -8,4 +8,3 @@ data class SendMLSMessageResponse(
     val time: String,
     val events: List<EventResponse>
 )
-
