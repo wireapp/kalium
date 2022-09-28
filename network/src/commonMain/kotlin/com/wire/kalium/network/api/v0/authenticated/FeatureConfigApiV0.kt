@@ -7,7 +7,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 
-internal class FeatureConfigApiV0 internal constructor(
+internal open class FeatureConfigApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : FeatureConfigApi {
     private val httpClient get() = authenticatedNetworkClient.httpClient

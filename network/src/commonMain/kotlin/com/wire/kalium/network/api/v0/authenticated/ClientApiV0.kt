@@ -1,8 +1,6 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.model.QualifiedID
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
 import com.wire.kalium.network.api.base.authenticated.client.ClientsOfUsersResponse
@@ -12,6 +10,8 @@ import com.wire.kalium.network.api.base.authenticated.client.RegisterClientReque
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.authenticated.client.UpdateClientRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
+import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -21,11 +21,11 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
-internal class ClientApiV0 internal constructor(
+internal open class ClientApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ClientApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientResponse> =
         wrapKaliumResponse {
@@ -36,7 +36,7 @@ internal class ClientApiV0 internal constructor(
 
     override suspend fun listClientsOfUsers(userIds: List<UserId>): NetworkResponse<Map<UserId, List<SimpleClientResponse>>> =
         wrapKaliumResponse<ClientsOfUsersResponse> {
-            httpClient.post(PATH_LIST_CLIENTS) {
+            httpClient.post("$PATH_USERS/$PATH_LIST_CLIENTS/v2") {
                 setBody(ListClientsOfUsersRequest(userIds))
             }
         }.mapSuccess { response ->
@@ -79,10 +79,10 @@ internal class ClientApiV0 internal constructor(
         httpClient.delete("$PUSH_TOKEN/$pid")
     }
 
-    private companion object {
+    protected companion object {
         const val PATH_USERS = "users"
         const val PATH_CLIENTS = "clients"
-        const val PATH_LIST_CLIENTS = "$PATH_USERS/list-clients/v2"
+        const val PATH_LIST_CLIENTS = "list-clients"
         const val PUSH_TOKEN = "push/tokens"
 
     }

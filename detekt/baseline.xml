@@ -1132,7 +1132,7 @@
     <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.ValidSingleJsonObjectProvider.kt:19</ID>
     <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.api.keypackage.KeyPackageApiTest.kt:14</ID>
     <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.api.message.MLSMessageApiTest.kt:16</ID>
-    <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.api.teams.TeamsApiTest.kt:12</ID>
+    <ID>SpacingAroundColon:com.wire.kalium.api.v0.teams.TeamsApiTest.kt:12</ID>
     <ID>SpacingAroundColon:com.wire.kalium.api.tools.json.model.DomainToUserIdToClientsMapJson.kt:18</ID>
     <ID>SpacingAroundColon:com.wire.kalium.cryptography.MLSClientTest.kt:10</ID>
     <ID>SpacingAroundColon:com.wire.kalium.cryptography.ProteusClientTest.kt:11</ID>
