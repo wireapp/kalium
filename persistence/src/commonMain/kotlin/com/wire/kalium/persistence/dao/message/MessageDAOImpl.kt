@@ -174,6 +174,7 @@ class MessageDAOImpl(
         message anymore because the user already left the group, but the REST request to get all events the user missed when offline still
         returns this event, so in order to avoid duplicates, the app needs to check and replace already existing system message instead of
         adding another one.
+        similar to MemberChangeType.ADDED
          */
         (message.content as? MessageEntityContent.MemberChange)
             ?.let {
