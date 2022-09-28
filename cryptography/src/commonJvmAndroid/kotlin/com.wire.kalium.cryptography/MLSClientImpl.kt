@@ -88,12 +88,13 @@ actual class MLSClientImpl actual constructor(
 
     override fun createConversation(
         groupId: MLSGroupId,
+        externalSenders: List<Ed22519Key>
     ) {
         val conf = ConversationConfiguration(
             emptyList(),
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
             keyRotationDuration,
-            emptyList()
+            externalSenders.map { toUByteList(it.value) }
         )
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
@@ -165,11 +166,13 @@ actual class MLSClientImpl actual constructor(
             value.welcome?.let { toByteArray(it) },
             toByteArray(value.publicGroupState)
         )
+
         fun toAddMemberCommitBundle(value: com.wire.crypto.MemberAddedMessages) = AddMemberCommitBundle(
             toByteArray(value.commit),
             toByteArray(value.welcome),
             toByteArray(value.publicGroupState)
         )
+
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),

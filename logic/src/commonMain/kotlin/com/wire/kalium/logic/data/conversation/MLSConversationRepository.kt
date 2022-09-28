@@ -12,6 +12,8 @@ import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -98,8 +100,10 @@ class MLSConversationDataSource(
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
     private val syncManager: SyncManager,
+    private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
+    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
 ) : MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(
@@ -333,8 +337,13 @@ class MLSConversationDataSource(
                         )
                     }
 
-                wrapMLSRequest {
-                    mlsClient.createConversation(idMapper.toCryptoModel(groupID))
+                mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
+                    wrapMLSRequest {
+                        mlsClient.createConversation(
+                            idMapper.toCryptoModel(groupID),
+                            publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
+                        )
+                    }
                 }.flatMap {
                     retryOnCommitFailure(groupID) {
                         wrapMLSRequest {

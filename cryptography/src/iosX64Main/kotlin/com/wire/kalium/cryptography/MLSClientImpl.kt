@@ -38,7 +38,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun createConversation(groupId: MLSGroupId) {
+    override fun createConversation(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
         TODO("Not yet implemented")
     }
 

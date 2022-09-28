@@ -25,6 +25,10 @@ class DecryptedMessageBundle(
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?
 )
+@JvmInline
+value class Ed22519Key(
+    val value: ByteArray
+)
 
 @Suppress("TooManyFunctions")
 interface MLSClient {
@@ -102,7 +106,8 @@ interface MLSClient {
      * @param groupId MLS group ID provided by BE
      */
     fun createConversation(
-        groupId: MLSGroupId
+        groupId: MLSGroupId,
+        externalSenders: List<Ed22519Key> = emptyList()
     )
 
     fun wipeConversation(groupId: MLSGroupId)

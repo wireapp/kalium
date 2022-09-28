@@ -9,6 +9,11 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
+import com.wire.kalium.logic.data.mlspublickeys.KeyType
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -27,6 +32,7 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.anyInstanceOf
@@ -57,6 +63,7 @@ class MLSConversationRepositoryTest {
             .withGetAllMembersSuccessful()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
             .withCreateMLSConversationSuccessful()
             .withAddMLSMemberSuccessful()
             .withSendWelcomeMessageSuccessful()
@@ -70,7 +77,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::createConversation)
-            .with(eq(Arrangement.RAW_GROUP_ID))
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
@@ -97,6 +104,7 @@ class MLSConversationRepositoryTest {
             .withGetAllMembersSuccessful()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
             .withCreateMLSConversationSuccessful()
             .withAddMLSMemberSuccessful()
             .withSendWelcomeMessageSuccessful()
@@ -596,6 +604,9 @@ class MLSConversationRepositoryTest {
         val keyPackageRepository = mock(classOf<KeyPackageRepository>())
 
         @Mock
+        val mlsPublicKeysRepository = mock(classOf<MLSPublicKeysRepository>())
+
+        @Mock
         val mlsClientProvider = mock(classOf<MLSClientProvider>())
 
         @Mock
@@ -655,6 +666,13 @@ class MLSConversationRepositoryTest {
                 .then { Either.Right(listOf(KEY_PACKAGE)) }
         }
 
+        fun withGetPublicKeysSuccessful() = apply {
+            given(mlsPublicKeysRepository)
+                .suspendFunction(mlsPublicKeysRepository::getKeys)
+                .whenInvoked()
+                .then { Either.Right(listOf(MLS_PUBLIC_KEY)) }
+        }
+
         fun withGetMLSClientSuccessful() = apply {
             given(mlsClientProvider)
                 .suspendFunction(mlsClientProvider::getMLSClient)
@@ -665,7 +683,7 @@ class MLSConversationRepositoryTest {
         fun withCreateMLSConversationSuccessful() = apply {
             given(mlsClient)
                 .function(mlsClient::createConversation)
-                .whenInvokedWith(anything())
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(Unit)
         }
 
@@ -795,7 +813,8 @@ class MLSConversationRepositoryTest {
             mlsMessageApi,
             conversationDAO,
             clientApi,
-            syncManager
+            syncManager,
+            mlsPublicKeysRepository
         )
 
         internal companion object {
@@ -806,6 +825,11 @@ class MLSConversationRepositoryTest {
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
             val MEMBERS = listOf(Member(TestUser.ENTITY_ID, Member.Role.Member))
+            val MLS_PUBLIC_KEY = MLSPublicKey(
+                Ed25519Key("gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw=".decodeBase64Bytes()),
+                KeyType.REMOVAL
+            )
+            val CRYPTO_MLS_PUBLIC_KEY = MapperProvider.mlsPublicKeyMapper().toCrypto(MLS_PUBLIC_KEY)
             val KEY_PACKAGE = KeyPackageDTO(
                 "client1",
                 "wire.com",
