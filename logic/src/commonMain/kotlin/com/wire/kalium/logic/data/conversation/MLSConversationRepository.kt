@@ -125,11 +125,13 @@ class MLSConversationDataSource(
                                 it.message?.let { message ->
                                     // We will always have senderClientId together with an application message
                                     // but CoreCrypto API doesn't express this
-                                    val clientID = it.senderClientId?.value?.let { rawClientID -> ClientId(rawClientID) } ?: ClientId("")
+                                    val senderClientId = it.senderClientId?.let { senderClientId ->
+                                        idMapper.fromCryptoQualifiedClientId(senderClientId)
+                                    } ?: ClientId("")
 
                                     ApplicationMessage(
                                         message,
-                                        clientID
+                                        senderClientId
                                     )
                                 },
                                 it.commitDelay
