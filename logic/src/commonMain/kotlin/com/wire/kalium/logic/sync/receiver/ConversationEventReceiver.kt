@@ -479,6 +479,7 @@ internal class ConversationEventReceiverImpl(
 
     private suspend fun handleAssetMessage(message: Message.Regular) {
         val content = message.content as MessageContent.Asset
+        logger.i(message = "$TAG Handling Asset Message with content: $content")
         userConfigRepository.isFileSharingEnabled().onSuccess {
             if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
                 processNonRestrictedAssetMessage(message)
@@ -494,10 +495,11 @@ internal class ConversationEventReceiverImpl(
     }
 
     private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
+        val assetContent = message.content as MessageContent.Asset
         messageRepository.getMessageById(message.conversationId, message.id)
             .onFailure {
                 // No asset message was received previously, so just persist the preview of the asset message
-                val isValidImage = (message.content as MessageContent.Asset).value.metadata?.let {
+                val isValidImage = assetContent.value.metadata?.let {
                     it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
                 } ?: false
                 val previewMessage = message.copy(
@@ -506,9 +508,10 @@ internal class ConversationEventReceiverImpl(
                             downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
                         )
                     ),
-                    // We restrict the generic asset message to be displayed/interacted with until the second message with the final remote
-                    // data arrives. For images, we just show a placeholder with a loading bar.
-                    visibility = if (isValidImage) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
+                    // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
+                    // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
+                    // hide the messages with empty encryption keys as a way to avoid user interaction with them.
+                    visibility = if (!assetContent.value.hasValidRemoteData()) Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
                 )
                 persistMessage(previewMessage)
             }
@@ -519,12 +522,12 @@ internal class ConversationEventReceiverImpl(
                     persistedMessage is Message.Regular &&
                     messageContent is MessageContent.Asset
                 ) {
-                    // The asset message received contains the asset decryption keys,
-                    // so update the preview message persisted previously
+                    // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
+                    // the preview message persisted previously with the rest of the data
                     persistMessage(
                         updateAssetMessageWithDecryptionKeys(
                             persistedMessage,
-                            (message.content as MessageContent.Asset).value.remoteData
+                            messageContent.value.remoteData
                         )
                     )
                 }
@@ -561,4 +564,8 @@ internal class ConversationEventReceiverImpl(
     private companion object {
         const val TAG = "ConversationEventReceiver"
     }
+}
+
+private fun AssetContent.hasValidRemoteData() = this.remoteData.let {
+    it.assetId.isNotEmpty() && it.sha256.isNotEmpty() && it.otrKey.isNotEmpty()
 }

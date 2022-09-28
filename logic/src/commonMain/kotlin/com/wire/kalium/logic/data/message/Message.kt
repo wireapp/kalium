@@ -36,9 +36,10 @@ sealed class Message(
                 }
 
                 is MessageContent.Asset -> {
-                    contentString = "content:{sizeInBytes:${content.value.sizeInBytes}, mimeType:${content.value.mimeType}, metaData : " +
-                            "${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}, " +
-                            "uploadStatus: ${content.value.uploadStatus}}"
+                    contentString =
+                        "content: {name: ${content.value.name}, sizeInBytes:${content.value.sizeInBytes}, mimeType:${content.value.mimeType}" +
+                                ", metaData : ${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}, uploadStatus: " +
+                                "${content.value.uploadStatus}}, remoteData - otrKeySize: ${content.value.remoteData.otrKey.size}"
                 }
 
                 is MessageContent.RestrictedAsset -> {
