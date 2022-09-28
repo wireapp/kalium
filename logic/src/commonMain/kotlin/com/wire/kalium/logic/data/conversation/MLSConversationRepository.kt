@@ -42,9 +42,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
 
+data class ApplicationMessage(
+    val message: ByteArray,
+    val senderClientID: ClientId
+)
 data class DecryptedMessageBundle(
     val groupID: GroupID,
-    val message: ByteArray?,
+    val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?
 )
 
@@ -122,7 +126,18 @@ class MLSConversationDataSource(
                         ).let {
                             DecryptedMessageBundle(
                                 groupID,
-                                it.message,
+                                it.message?.let { message ->
+                                    // We will always have senderClientId together with an application message
+                                    // but CoreCrypto API doesn't express this
+                                    val senderClientId = it.senderClientId?.let { senderClientId ->
+                                        idMapper.fromCryptoQualifiedClientId(senderClientId)
+                                    } ?: ClientId("")
+
+                                    ApplicationMessage(
+                                        message,
+                                        senderClientId
+                                    )
+                                },
                                 it.commitDelay
                             )
                         }
@@ -231,7 +246,7 @@ class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
-                    sendCommitBundle(groupID, commitBundle)
+                    commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {
                         conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))

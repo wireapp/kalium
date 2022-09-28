@@ -128,9 +128,10 @@ interface MLSClient {
     /**
      * Create a commit for any pending proposals
      *
-     * @return commit bundle, which needs to be sent to the distribution service.
+     * @return commit bundle, which needs to be sent to the distribution service. If there are no
+     * pending proposals null is returned.
      */
-    fun commitPendingProposals(groupId: MLSGroupId): CommitBundle
+    fun commitPendingProposals(groupId: MLSGroupId): CommitBundle?
 
     /**
      * Clear a pending commit which has not yet been accepted by the distribution service

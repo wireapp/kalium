@@ -54,7 +54,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle {
+    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
         TODO("Not yet implemented")
     }
 

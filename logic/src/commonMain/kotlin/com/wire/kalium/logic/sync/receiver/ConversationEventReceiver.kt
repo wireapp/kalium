@@ -361,8 +361,8 @@ internal class ConversationEventReceiverImpl(
                     )
                 }
 
-                bundle.message?.let {
-                    val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(it))
+                bundle.applicationMessage?.let {
+                    val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(it.message))
                     if (protoContent !is ProtoContent.Readable) {
                         throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
                     }
@@ -370,7 +370,7 @@ internal class ConversationEventReceiverImpl(
                         conversationId = event.conversationId,
                         timestampIso = event.timestampIso,
                         senderUserId = event.senderUserId,
-                        senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                        senderClientId = it.senderClientID,
                         content = protoContent
                     )
                 }
