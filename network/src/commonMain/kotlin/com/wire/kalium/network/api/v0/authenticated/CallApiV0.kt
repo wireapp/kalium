@@ -10,7 +10,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-internal class CallApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) :
+internal open class CallApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) :
     CallApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient

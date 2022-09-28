@@ -13,11 +13,11 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-internal class KeyPackageApiV0 internal constructor(
+internal open class KeyPackageApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : KeyPackageApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun claimKeyPackages(
         param: KeyPackageApi.Param
