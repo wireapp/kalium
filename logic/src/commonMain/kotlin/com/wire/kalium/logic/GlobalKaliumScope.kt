@@ -10,6 +10,12 @@ import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
+import com.wire.kalium.logic.feature.auth.ValidateEmailUseCase
+import com.wire.kalium.logic.feature.auth.ValidateEmailUseCaseImpl
+import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
+import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
+import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
@@ -81,6 +87,11 @@ class GlobalKaliumScope(
     private val globalConfigRepository: GlobalConfigRepository
         get() =
             GlobalConfigDataSource(globalPreferences.value.globalAppConfigStorage)
+
+    val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
+    val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
+    val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
+
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
@@ -95,7 +106,11 @@ class GlobalKaliumScope(
     val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
 
     val saveNotificationToken: SaveNotificationTokenUseCase
-        get() = SaveNotificationTokenUseCaseImpl(notificationTokenRepository, observeValidAccounts, userSessionScopeProvider.value)
+        get() = SaveNotificationTokenUseCaseImpl(
+            notificationTokenRepository,
+            observeValidAccounts,
+            userSessionScopeProvider.value
+        )
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(globalConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(globalConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)

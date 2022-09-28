@@ -1,7 +1,5 @@
 package com.wire.kalium.logic.network
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -9,7 +7,6 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.server.FetchApiVersionResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
@@ -62,23 +59,5 @@ class SessionManagerImpl(
 
     override suspend fun onClientRemoved() {
         sessionRepository.logout(userId, LogoutReason.REMOVED_CLIENT)
-    }
-}
-
-class LoginUseCasePOC(
-    private val coreLogic: CoreLogic
-) {
-    suspend operator fun invoke(email: String, password: String, serverLinks: ServerConfig.Links) {
-        val metadata = coreLogic.globalScope {
-
-            fetchApiVersion(serverLinks)
-        }
-        when(metadata) {
-            is FetchApiVersionResult.Failure.Generic -> TODO()
-            FetchApiVersionResult.Failure.TooNewVersion -> TODO()
-            FetchApiVersionResult.Failure.UnknownServerVersion -> TODO()
-            is FetchApiVersionResult.Success -> metadata.serverConfig
-        }
-        coreLogic.authenticationScope(metadata).login(email, password)
     }
 }

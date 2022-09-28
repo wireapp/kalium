@@ -7,6 +7,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
@@ -31,7 +32,7 @@ abstract class CoreLogicCommon(
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(backendLinks: ServerConfig.Links): AuthenticationScope =
+    fun getAuthenticationScope(backendLinks: ServerConfig): AuthenticationScope =
         // TODO(logic): make it lazier
         AuthenticationScope(clientLabel, backendLinks, getGlobalScope(), kaliumConfigs)
 
@@ -43,7 +44,7 @@ abstract class CoreLogicCommon(
     // TODO: make globalScope a singleton
     inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
-    inline fun <T> authenticationScope(backendLinks: ServerConfig.Links, action: AuthenticationScope.() -> T): T =
+    inline fun <T> authenticationScope(backendLinks: ServerConfig, action: AuthenticationScope.() -> T): T =
         getAuthenticationScope(backendLinks).action()
 
     inline fun <T> sessionScope(userId: UserId, action: UserSessionScope.() -> T): T = getSessionScope(userId).action()
@@ -53,4 +54,7 @@ abstract class CoreLogicCommon(
     protected abstract val globalWorkScheduler: GlobalWorkScheduler
 
     val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
+
+    fun autoVersionAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
+        AutoVersionAuthScopeUseCase(serverLinks, this)
 }

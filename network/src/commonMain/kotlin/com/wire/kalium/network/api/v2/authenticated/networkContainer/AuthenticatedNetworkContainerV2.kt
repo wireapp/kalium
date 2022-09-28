@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.v2.authenticated.networkContainer
 
-import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
@@ -41,17 +40,13 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
 
-class AuthenticatedNetworkContainerV2(
+internal class AuthenticatedNetworkContainerV2 internal constructor(
     private val sessionManager: SessionManager,
-    serverMetaDataManager: ServerMetaDataManager,
-    engine: HttpClientEngine = defaultHttpEngine(),
-    developmentApiEnabled: Boolean = false
+    engine: HttpClientEngine = defaultHttpEngine()
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,
-        serverMetaDataManager,
-        engine,
-        developmentApiEnabled
+        engine
     ) {
 
     override val logoutApi: LogoutApi get() = LogoutApiV2(networkClient, sessionManager)

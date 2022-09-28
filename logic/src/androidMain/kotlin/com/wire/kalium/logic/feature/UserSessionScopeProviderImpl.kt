@@ -10,13 +10,11 @@ import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.ServerMetaDataManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.logic.util.SecurityHelper
-import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -42,10 +40,8 @@ actual class UserSessionScopeProviderImpl(
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         // TODO: check the server common api version and user the correct AuthenticatedNetworkContainer implementation
-        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainerV0(
-            SessionManagerImpl(globalScope.sessionRepository, userId, globalPreferences.authTokenStorage),
-            ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
-            developmentApiEnabled = kaliumConfigs.developmentApiEnabled
+        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
+            SessionManagerImpl(globalScope.sessionRepository, userId, globalPreferences.authTokenStorage)
         )
         val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
         runBlocking { proteusClient.open() }

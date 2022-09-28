@@ -2,7 +2,6 @@ package com.wire.kalium.network.networkContainer
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
@@ -19,6 +18,8 @@ import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
+import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -57,6 +58,28 @@ interface AuthenticatedNetworkContainer {
     val connectionApi: ConnectionApi
 
     val featureConfigApi: FeatureConfigApi
+
+    companion object {
+        fun create(
+            sessionManager: SessionManager
+        ): AuthenticatedNetworkContainer {
+            val version = sessionManager.session().second.metaData.commonApiVersion.version
+            return when (version) {
+                0 -> AuthenticatedNetworkContainerV0(
+                    sessionManager
+                )
+
+                1 -> AuthenticatedNetworkContainerV0(
+                    sessionManager
+                )
+
+                2 -> AuthenticatedNetworkContainerV2(
+                    sessionManager
+                )
+                else -> throw error("Unsupported version: $version")
+            }
+        }
+    }
 }
 
 internal interface AuthenticatedHttpClientProvider {
@@ -68,19 +91,20 @@ internal interface AuthenticatedHttpClientProvider {
 
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
-    serverMetaDataManager: ServerMetaDataManager,
     private val engine: HttpClientEngine = defaultHttpEngine(),
-    private val developmentApiEnabled: Boolean = false
 ) : AuthenticatedHttpClientProvider {
-    override val backendConfig = sessionManager.session().second
+    override val backendConfig = sessionManager.session().second.links
 
     override val networkClient by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager, developmentApiEnabled = developmentApiEnabled)
+        AuthenticatedNetworkClient(
+            engine,
+            sessionManager
+        )
     }
     override val websocketClient by lazy {
-        AuthenticatedWebSocketClient(engine, sessionManager, serverMetaDataManager, developmentApiEnabled)
+        AuthenticatedWebSocketClient(engine, sessionManager)
     }
     override val networkClientWithoutCompression by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager, serverMetaDataManager, false, developmentApiEnabled)
+        AuthenticatedNetworkClient(engine, sessionManager, installCompression = false)
     }
 }
