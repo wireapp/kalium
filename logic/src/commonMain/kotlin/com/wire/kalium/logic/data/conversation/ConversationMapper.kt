@@ -224,7 +224,7 @@ internal class ConversationMapperImpl(
                         )
                     },
                     userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                    lastModifiedDate = lastModifiedDate,
+                    lastModifiedDate = lastModifiedDate.orEmpty(),
                     connection = Connection(
                         conversationId = id.value,
                         from = "",

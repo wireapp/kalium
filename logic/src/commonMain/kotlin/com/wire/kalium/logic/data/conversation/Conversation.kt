@@ -71,7 +71,7 @@ data class Conversation(
     }
 
     @Suppress("MagicNumber")
-    enum class CipherSuite(val cipherSuiteTag: Int) {
+    enum class CipherSuite(val tag: Int) {
         UNKNOWN(0),
         MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
         MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
@@ -82,7 +82,7 @@ data class Conversation(
         MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
 
         companion object {
-            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.cipherSuiteTag == tag }
+            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.tag == tag }
         }
     }
 

@@ -39,7 +39,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun createConversation(groupId: MLSGroupId) {
+    override fun createConversation(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
         TODO("Not yet implemented")
     }
 
@@ -55,7 +55,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle {
+    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
         TODO("Not yet implemented")
     }
 

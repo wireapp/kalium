@@ -22,7 +22,7 @@ internal open class ConnectionApiV0 internal constructor(private val authenticat
     override suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse> =
         wrapKaliumResponse {
             httpClient.post(PATH_CONNECTIONS) {
-                setBody(PaginationRequest(pagingState = pagingState))
+                setBody(PaginationRequest(pagingState = pagingState, size = MAX_CONNECTIONS_COUNT))
             }
         }
 
@@ -41,5 +41,6 @@ internal open class ConnectionApiV0 internal constructor(private val authenticat
     private companion object {
         const val PATH_CONNECTIONS = "list-connections"
         const val PATH_CONNECTIONS_ENDPOINTS = "connections"
+        const val MAX_CONNECTIONS_COUNT = 500
     }
 }

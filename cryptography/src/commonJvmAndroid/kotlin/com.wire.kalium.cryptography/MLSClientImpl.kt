@@ -11,17 +11,25 @@ import io.ktor.util.encodeBase64
 import java.io.File
 import java.time.Duration
 
-/**
- * We provide dummy callbacks because our BE is currently enforcing these constraints are always true
- */
-private class DummyCallbacks : CoreCryptoCallbacks {
-    override fun authorize(conversationId: List<UByte>, clientId: String): Boolean {
+private class Callbacks : CoreCryptoCallbacks {
+
+    override fun authorize(conversationId: List<UByte>, clientId: List<UByte>): Boolean {
+        // We always return true because our BE is currently enforcing that this constraint is always true
         return true
     }
 
-    override fun isUserInGroup(identity: List<UByte>, otherClients: List<List<UByte>>): Boolean {
-        return true
+    override fun clientIdBelongsToOneOf(clientId: List<UByte>, otherClients: List<List<UByte>>): Boolean {
+        val userId = toClientID(clientId)?.userId ?: return false
+        return otherClients.find {
+            toClientID(it)?.userId == userId
+        } != null
     }
+
+    companion object {
+        fun toClientID(rawClientId: List<UByte>): CryptoQualifiedClientId? =
+            CryptoQualifiedClientId.fromEncodedString(String(MLSClientImpl.toByteArray(rawClientId)))
+    }
+
 }
 
 @Suppress("TooManyFunctions")
@@ -37,7 +45,7 @@ actual class MLSClientImpl actual constructor(
 
     init {
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, clientId.toString(), null)
-        coreCrypto.setCallbacks(DummyCallbacks())
+        coreCrypto.setCallbacks(Callbacks())
     }
 
     override fun clearLocalFiles(): Boolean {
@@ -80,12 +88,13 @@ actual class MLSClientImpl actual constructor(
 
     override fun createConversation(
         groupId: MLSGroupId,
+        externalSenders: List<Ed22519Key>
     ) {
         val conf = ConversationConfiguration(
             emptyList(),
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
             keyRotationDuration,
-            emptyList()
+            externalSenders.map { toUByteList(it.value) }
         )
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
@@ -114,8 +123,8 @@ actual class MLSClientImpl actual constructor(
         coreCrypto.commitAccepted(toUByteList(groupId.decodeBase64Bytes()))
     }
 
-    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle {
-        return toCommitBundle(coreCrypto.commitPendingProposals(toUByteList(groupId.decodeBase64Bytes())))
+    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
+        return coreCrypto.commitPendingProposals(toUByteList(groupId.decodeBase64Bytes()))?.let { toCommitBundle(it) }
     }
 
     override fun clearPendingCommit(groupId: MLSGroupId) {
@@ -157,11 +166,13 @@ actual class MLSClientImpl actual constructor(
             value.welcome?.let { toByteArray(it) },
             toByteArray(value.publicGroupState)
         )
+
         fun toAddMemberCommitBundle(value: com.wire.crypto.MemberAddedMessages) = AddMemberCommitBundle(
             toByteArray(value.commit),
             toByteArray(value.welcome),
             toByteArray(value.publicGroupState)
         )
+
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),

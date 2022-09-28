@@ -78,7 +78,7 @@ actual class UserSessionScopeProviderImpl(
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
-            this,
+            this
         )
     }
 

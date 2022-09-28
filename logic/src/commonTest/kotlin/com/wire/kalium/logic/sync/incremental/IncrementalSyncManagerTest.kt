@@ -102,7 +102,7 @@ class IncrementalSyncManagerTest {
 
         advanceUntilIdle()
         verify(arrangement.incrementalSyncRepository)
-            .function(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
+            .suspendFunction(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
             .with(matching { it is IncrementalSyncStatus.Failed })
             .wasInvoked(exactly = once)
     }
