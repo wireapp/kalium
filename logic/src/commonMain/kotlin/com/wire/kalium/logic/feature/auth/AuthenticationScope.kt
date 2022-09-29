@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
@@ -11,19 +10,16 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 
 class AuthenticationScope(
     private val clientLabel: String,
-    private val backendLinks: ServerConfig,
-    private val globalScope: GlobalKaliumScope,
-    private val kaliumConfigs: KaliumConfigs
+    private val serverConfig: ServerConfig
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
-            MapperProvider.serverConfigMapper().toDTO(backendLinks)
+            MapperProvider.serverConfigMapper().toDTO(serverConfig)
         )
     }
     private val loginRepository: LoginRepository
@@ -44,10 +40,10 @@ class AuthenticationScope(
             loginRepository,
             validateEmailUseCase,
             validateUserHandleUseCase,
-            backendLinks
+            serverConfig
         )
     val registerScope: RegisterScope
-        get() = RegisterScope(registerAccountRepository, backendLinks)
+        get() = RegisterScope(registerAccountRepository, serverConfig)
     val ssoLoginScope: SSOLoginScope
-        get() = SSOLoginScope(ssoLoginRepository, backendLinks)
+        get() = SSOLoginScope(ssoLoginRepository, serverConfig)
 }

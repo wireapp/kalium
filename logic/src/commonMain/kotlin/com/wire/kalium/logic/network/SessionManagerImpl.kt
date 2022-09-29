@@ -35,8 +35,8 @@ class SessionManagerImpl(
             }, {
                 it
             })
-        val links = serverConfigMapper.toDTO(account.serverConfig)
-        session to links
+        val serverConfig = serverConfigMapper.toDTO(account.serverConfig)
+        session to serverConfig
     })
 
     override fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =

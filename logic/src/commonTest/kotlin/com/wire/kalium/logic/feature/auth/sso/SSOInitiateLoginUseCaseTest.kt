@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.auth.sso
 
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
@@ -28,7 +27,6 @@ class SSOInitiateLoginUseCaseTest {
     private val validateUUIDUseCase = mock(ValidateSSOCodeUseCase::class)
 
     private val serverConfig = newServerConfig(1)
-
 
     private lateinit var ssoInitiateLoginUseCase: SSOInitiateLoginUseCase
 

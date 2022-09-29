@@ -5,9 +5,9 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 
 class RegisterScope internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
-    private val serverLinks: ServerConfig
+    private val serverConfig: ServerConfig
 ) {
-    val register get() = RegisterAccountUseCase(registerAccountRepository, serverLinks)
+    val register get() = RegisterAccountUseCase(registerAccountRepository, serverConfig)
     val requestActivationCode get() = RequestActivationCodeUseCase(registerAccountRepository)
     val activate get() = VerifyActivationCodeUseCase(registerAccountRepository)
 }

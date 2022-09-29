@@ -7,7 +7,6 @@ import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData

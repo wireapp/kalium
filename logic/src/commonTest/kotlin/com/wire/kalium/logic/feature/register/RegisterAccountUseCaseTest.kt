@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -15,7 +14,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock

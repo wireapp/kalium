@@ -5,14 +5,14 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 
 class SSOLoginScope internal constructor(
     private val ssoLoginRepository: SSOLoginRepository,
-    private val serverLinks: ServerConfig
+    private val serverConfig: ServerConfig
 ) {
     private val validateSSOCodeUseCase: ValidateSSOCodeUseCase get() = ValidateSSOCodeUseCaseImpl()
     val initiate: SSOInitiateLoginUseCase
         get() = SSOInitiateLoginUseCaseImpl(
             ssoLoginRepository,
             validateSSOCodeUseCase,
-            serverLinks,
+            serverConfig,
         )
     val finalize: SSOFinalizeLoginUseCase get() = SSOFinalizeLoginUseCaseImpl(ssoLoginRepository)
     val getLoginSessionGet: GetSSOLoginSessionUseCase get() = GetSSOLoginSessionUseCaseImpl(ssoLoginRepository)

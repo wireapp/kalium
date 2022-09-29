@@ -25,7 +25,6 @@ class AutoVersionAuthScopeUseCase(
             else -> Result.Failure.Generic(coreFailure)
         }
 
-
     sealed class Result {
         class Success(val authenticationScope: AuthenticationScope) : Result()
 

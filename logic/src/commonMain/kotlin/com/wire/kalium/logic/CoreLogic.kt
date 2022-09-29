@@ -32,9 +32,9 @@ abstract class CoreLogicCommon(
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(backendLinks: ServerConfig): AuthenticationScope =
+    fun getAuthenticationScope(serverConfig: ServerConfig): AuthenticationScope =
         // TODO(logic): make it lazier
-        AuthenticationScope(clientLabel, backendLinks, getGlobalScope(), kaliumConfigs)
+        AuthenticationScope(clientLabel, serverConfig, getGlobalScope(), kaliumConfigs)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
@@ -44,8 +44,8 @@ abstract class CoreLogicCommon(
     // TODO: make globalScope a singleton
     inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
-    inline fun <T> authenticationScope(backendLinks: ServerConfig, action: AuthenticationScope.() -> T): T =
-        getAuthenticationScope(backendLinks).action()
+    inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T): T =
+        getAuthenticationScope(serverConfig).action()
 
     inline fun <T> sessionScope(userId: UserId, action: UserSessionScope.() -> T): T = getSessionScope(userId).action()
 
