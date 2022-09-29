@@ -65,7 +65,7 @@ internal class GetMessageAssetUseCaseImpl(
                 )
             }
 
-            if (assetDownloadStatus != DOWNLOAD_IN_PROGRESS)
+            if (assetDownloadStatus != DOWNLOAD_IN_PROGRESS) // todo: should we omit for preview ?
                 updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
 
             assetDataSource.fetchPrivateDecodedAsset(
@@ -94,4 +94,6 @@ internal class GetMessageAssetUseCaseImpl(
 sealed class MessageAssetResult {
     class Success(val decodedAssetPath: Path, val assetSize: Long) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
+
+
 }

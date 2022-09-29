@@ -242,16 +242,11 @@ internal class ConversationEventReceiverImpl(
 
     private fun updateAssetMessageWithDecryptionKeys(persistedMessage: Message.Regular, remoteData: AssetContent.RemoteData): Message {
         val assetMessageContent = persistedMessage.content as MessageContent.Asset
-        val isValidImage = assetMessageContent.value.metadata?.let {
-            it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
-        } ?: false
-
         // The message was previously received with just metadata info, so let's update it with the raw data info
         return persistedMessage.copy(
             content = assetMessageContent.copy(
                 value = assetMessageContent.value.copy(
-                    remoteData = remoteData,
-                    downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
+                    remoteData = remoteData
                 )
             ),
             visibility = Message.Visibility.VISIBLE
@@ -507,11 +502,7 @@ internal class ConversationEventReceiverImpl(
                     it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
                 } ?: false
                 val previewMessage = message.copy(
-                    content = message.content.copy(
-                        value = message.content.value.copy(
-                            downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
-                        )
-                    ),
+                    content = message.content,
                     // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
                     // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
                     // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
@@ -570,6 +561,6 @@ internal class ConversationEventReceiverImpl(
     }
 }
 
-private fun AssetContent.hasValidRemoteData() = this.remoteData.let {
+fun AssetContent.hasValidRemoteData() = this.remoteData.let {
     it.assetId.isNotEmpty() && it.sha256.isNotEmpty() && it.otrKey.isNotEmpty()
 }
