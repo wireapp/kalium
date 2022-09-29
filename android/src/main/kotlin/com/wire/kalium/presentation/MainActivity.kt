@@ -89,7 +89,6 @@ class MainActivity : ComponentActivity() {
             is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
 
-
     private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): UserId {
         val result = provideAuthScope(coreLogic, backendLinks)
             .login("jacob.persson+summer1@wire.com", "hepphepp", false)
