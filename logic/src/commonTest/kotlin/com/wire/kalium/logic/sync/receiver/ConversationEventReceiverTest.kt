@@ -370,7 +370,30 @@ class ConversationEventReceiverTest {
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
             .with(eq(updatedMember), eq(event.conversationId))
-            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberChangeEventAndNotRolePresent_whenHandlingIt_thenShouldIgnoreTheEvent() = runTest {
+        val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChangeIgnored()
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withUpdateMemberSucceeding()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
+            .with(eq(updatedMember), eq(event.conversationId))
+            .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
+            .with(eq(event.conversationId))
+            .wasNotInvoked()
     }
 
     @Test

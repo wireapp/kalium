@@ -18,7 +18,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
 
-// The duration in hours after which we should re-check key package count.
+// The duration in hours after which we should re-check keying materials.
 internal val KEYING_MATERIAL_CHECK_DURATION = 24.hours
 
 /**

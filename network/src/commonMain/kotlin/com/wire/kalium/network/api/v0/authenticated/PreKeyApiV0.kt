@@ -9,7 +9,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-internal class PreKeyApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : PreKeyApi {
+internal open class PreKeyApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) : PreKeyApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 

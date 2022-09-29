@@ -50,6 +50,8 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
@@ -182,7 +184,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
-    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : CoroutineScope {
 
     private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
@@ -246,7 +248,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
             userDatabaseProvider.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            syncManager
+            syncManager,
+            mlsPublicKeysRepository
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
@@ -303,7 +306,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userDatabaseProvider.userDAO,
             userId,
-            selfTeamId
+            selfTeamId,
+            conversationRepository
         )
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
@@ -469,6 +473,11 @@ abstract class UserSessionScopeCommon internal constructor(
             lazy { users.timestampKeyRepository }
         )
 
+    internal val mlsPublicKeysRepository: MLSPublicKeysRepository
+        get() = MLSPublicKeysRepositoryImpl(
+            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsPublicKeyApi,
+        )
+
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
 
     private val pendingProposalScheduler: PendingProposalScheduler =
@@ -602,6 +611,7 @@ abstract class UserSessionScopeCommon internal constructor(
             clientIdProvider,
             messageRepository,
             conversationRepository,
+            mlsConversationRepository,
             clientRepository,
             authenticatedDataSourceSet.proteusClient,
             mlsClientProvider,

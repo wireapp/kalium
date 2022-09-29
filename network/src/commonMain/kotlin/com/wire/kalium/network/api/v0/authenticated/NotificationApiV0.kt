@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.serialization.decodeFromString
-internal class NotificationApiV0 internal constructor(
+internal open class NotificationApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
     private val authenticatedWebSocketClient: AuthenticatedWebSocketClient,
     private val serverLinks: ServerConfigDTO.Links

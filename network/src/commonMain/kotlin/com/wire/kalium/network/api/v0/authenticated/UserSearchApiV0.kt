@@ -9,7 +9,7 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
-internal class UserSearchApiV0 internal constructor(
+internal open class UserSearchApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : UserSearchApi {
 
