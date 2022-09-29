@@ -165,9 +165,9 @@ internal class ConversationMapperImpl(
                         handle = null,
                         completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
                         previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                        teamId = teamId?.let { TeamId(it) }
+                        teamId = teamId?.let { TeamId(it) },
+                        connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
                     ),
-                    connectionState = connectionStatusMapper.fromDaoModel(connectionStatus),
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                     unreadMessagesCount = unreadMessageCount,
@@ -319,7 +319,6 @@ internal class ConversationMapperImpl(
         return ConversationDetails.OneOne(
             conversation = conversation,
             otherUser = otherUser,
-            connectionState = otherUser.connectionStatus,
             // TODO(user-metadata) get actual legal hold status
             legalHoldStatus = LegalHoldStatus.DISABLED,
             userType = otherUser.userType,

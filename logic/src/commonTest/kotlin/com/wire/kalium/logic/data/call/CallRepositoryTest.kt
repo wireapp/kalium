@@ -1249,7 +1249,6 @@ class CallRepositoryTest {
         private val oneOnOneConversationDetails = ConversationDetails.OneOne(
             conversation = oneOnOneConversation,
             otherUser = TestUser.OTHER,
-            connectionState = ConnectionState.ACCEPTED,
             legalHoldStatus = LegalHoldStatus.ENABLED,
             userType = UserType.INTERNAL,
             unreadMessagesCount = 0,

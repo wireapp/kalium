@@ -122,7 +122,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER,
-            ConnectionState.ACCEPTED,
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
             unreadMessagesCount = 0,
@@ -131,7 +130,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
-            ConnectionState.PENDING,
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
             unreadMessagesCount = 0,

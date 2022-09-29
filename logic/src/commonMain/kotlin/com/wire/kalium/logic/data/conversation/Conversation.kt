@@ -130,7 +130,6 @@ sealed class ConversationDetails(open val conversation: Conversation) {
     data class OneOne(
         override val conversation: Conversation,
         val otherUser: OtherUser,
-        val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
         val unreadMessagesCount: Long = 0L,

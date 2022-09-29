@@ -23,7 +23,6 @@ object TestConversationDetails {
     val CONVERSATION_ONE_ONE = ConversationDetails.OneOne(
         TestConversation.ONE_ON_ONE,
         TestUser.OTHER,
-        ConnectionState.ACCEPTED,
         LegalHoldStatus.DISABLED,
         UserType.EXTERNAL,
         unreadMessagesCount = 0,
