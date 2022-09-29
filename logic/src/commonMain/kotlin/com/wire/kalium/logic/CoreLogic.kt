@@ -55,6 +55,6 @@ abstract class CoreLogicCommon(
 
     val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
 
-    fun autoVersionAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
+    fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(serverLinks, this)
 }
