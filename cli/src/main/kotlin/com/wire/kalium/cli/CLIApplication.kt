@@ -185,24 +185,27 @@ class LoginCommand : CliktCommand(name = "login") {
     }
 
     private suspend fun provideVersionedAuthenticationScope(serverLinks: ServerConfig.Links): AuthenticationScope =
-        when(val result = coreLogic.autoVersionAuthenticationScope(serverLinks).invoke() ) {
+        when (val result = coreLogic.autoVersionAuthenticationScope(serverLinks).invoke()) {
             is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
                 throw PrintMessage("failed to create authentication scope: ${result.genericFailure}")
+
             AutoVersionAuthScopeUseCase.Result.Failure.TooNewVersion ->
                 throw PrintMessage("failed to create authentication scope: api version not supported")
+
             AutoVersionAuthScopeUseCase.Result.Failure.UnknownServerVersion ->
                 throw PrintMessage("failed to create authentication scope: unknown server version")
+
             is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
 
     override fun run() = runBlocking {
         val loginResult = provideVersionedAuthenticationScope(serverConfig()).login(email, password, true).let {
-                if (it !is AuthenticationResult.Success) {
-                    throw PrintMessage("Login failed, check your credentials")
-                } else {
-                    it
-                }
+            if (it !is AuthenticationResult.Success) {
+                throw PrintMessage("Login failed, check your credentials")
+            } else {
+                it
             }
+        }
 
         val userId = coreLogic.globalScope {
             addAuthenticatedAccount(loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, true)
