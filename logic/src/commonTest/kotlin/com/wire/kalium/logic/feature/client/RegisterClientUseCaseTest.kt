@@ -39,7 +39,7 @@ import kotlin.test.assertSame
 class RegisterClientUseCaseTest {
 
     private var kaliumConfigs = KaliumConfigs()
-
+    
     @Mock
     private val clientRepository = mock(classOf<ClientRepository>())
 
