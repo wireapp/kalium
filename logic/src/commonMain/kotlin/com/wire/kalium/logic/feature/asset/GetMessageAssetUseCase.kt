@@ -3,10 +3,13 @@ package com.wire.kalium.logic.feature.asset
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.FAILED_DOWNLOAD
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALLY
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.AssetId
@@ -41,6 +44,8 @@ internal class GetMessageAssetUseCaseImpl(
             kaliumLogger.e("There was an error retrieving the asset message ${messageId.obfuscateId()}")
             MessageAssetResult.Failure(it)
         }, { message ->
+            val assetDownloadStatus = (message.content as MessageContent.Asset).value.downloadStatus
+            val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
             val assetMetadata = when (val content = message.content) {
                 is MessageContent.Asset -> {
                     with(content.value.remoteData) {
@@ -59,6 +64,10 @@ internal class GetMessageAssetUseCaseImpl(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
+
+            if (assetDownloadStatus != DOWNLOAD_IN_PROGRESS)
+                updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
+
             assetDataSource.fetchPrivateDecodedAsset(
                 assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
                 assetName = assetMetadata.assetName,
@@ -66,20 +75,18 @@ internal class GetMessageAssetUseCaseImpl(
                 encryptionKey = assetMetadata.encryptionKey
             ).fold({
                 kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey}")
-                updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
+                // Only update the asset download status to failed if it wasn't set as FAILED_DOWNLOAD before. Otherwise it will result in
+                // an endless recursive loop, modifying the message, mapping the value and trying to fetch the asset again.
+                if (assetDownloadStatus != FAILED_DOWNLOAD)
+                    updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
                 MessageAssetResult.Failure(it)
             }, { decodedAssetPath ->
-                when (updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)) {
-                    is UpdateDownloadStatusResult.Failure -> {
-                        kaliumLogger.e("There was an error updating the asset message download status")
-                        MessageAssetResult.Failure(StorageFailure.Generic(
-                            RuntimeException("There was an error updating the asset message download status"))
-                        )
-                    }
-                    is UpdateDownloadStatusResult.Success -> {
-                        MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
-                    }
-                }
+                // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while running
+                // this specific use case. Otherwise recursive loop as described above kicks in.
+                if (!wasDownloaded)
+                    updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
+
+                MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
             })
         })
 }
