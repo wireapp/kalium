@@ -73,7 +73,7 @@ interface ConversationRepository {
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
+    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
     suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
 
@@ -170,6 +170,7 @@ internal class ConversationDataSource internal constructor(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
+    private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper()
 ) : ConversationRepository {
 
@@ -457,9 +458,11 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
+    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo> =
         wrapStorageRequest {
-            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
+            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo?.let {
+                protocolInfoMapper.fromEntity(it)
+            }
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
