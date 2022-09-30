@@ -2,6 +2,7 @@ package com.wire.kalium.network.api.v2.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.NetworkResponse
@@ -17,7 +18,7 @@ internal open class MLSMessageApiV2 internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun sendMessage(message: MLSMessageApi.Message): NetworkResponse<Unit> =
+    override suspend fun sendMessage(message: MLSMessageApi.Message): NetworkResponse<SendMLSMessageResponse> =
         wrapKaliumResponse {
             httpClient.post(PATH_MESSAGE) {
                 setBody(message.value)

@@ -181,7 +181,7 @@ internal class MessageSenderImpl internal constructor(
                     }
                     Either.Left(it)
                 }, {
-                    Either.Right(message.date) // TODO(mls): return actual server time from the response
+                    Either.Right(it)
                 })
             }
         }

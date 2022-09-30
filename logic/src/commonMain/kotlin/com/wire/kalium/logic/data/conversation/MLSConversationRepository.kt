@@ -187,7 +187,7 @@ class MLSConversationDataSource(
                     mlsMessageApi.sendMessage(
                         MLSMessageApi.Message(message)
                     )
-                }
+                }.flatMap { Either.Right(Unit) }
             }.onSuccess {
                 conversationDAO.updateConversationGroupState(
                     ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,

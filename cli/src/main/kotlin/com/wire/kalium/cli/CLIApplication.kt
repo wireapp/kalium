@@ -43,7 +43,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
-private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", kaliumConfigs = KaliumConfigs())
+private val coreLogic = CoreLogic(
+    clientLabel = "Kalium CLI",
+    rootPath = "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts",
+    kaliumConfigs = KaliumConfigs(developmentApiEnabled = true))
 
 fun restoreSession(): AccountInfo? {
     return coreLogic.globalScope {
