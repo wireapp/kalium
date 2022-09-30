@@ -4,8 +4,11 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -19,7 +22,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
@@ -163,6 +165,7 @@ class MessageSenderTest {
 
         // given
         val (arrangement, messageSender) = Arrangement()
+            .withCommitPendingProposals()
             .withSendMlsMessage(sendMlsMessageWithResult = Either.Left(CoreFailure.Unknown(Throwable("some exception"))))
             .arrange()
 
@@ -281,6 +284,7 @@ class MessageSenderTest {
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenRetryAfterSyncIsLive() {
         // given
         val (arrangement, messageSender) = Arrangement()
+            .withCommitPendingProposals()
             .withSendMlsMessage()
             .withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
             .withWaitUntilLiveOrFailure()
@@ -300,9 +304,32 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenPendingProposals_whenSendingMlsMessage_thenProposalsAreCommitted() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withCommitPendingProposals()
+            .withSendMlsMessage()
+            .withSendOutgoingMlsMessage()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
+                .with(eq(Arrangement.GROUP_ID))
+                .wasInvoked(once)
+        }
+    }
+
+    @Test
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenGiveUpIfSyncIsPending() {
         // given
         val (arrangement, messageSender) = Arrangement()
+            .withCommitPendingProposals()
             .withSendMlsMessage(sendMlsMessageWithResult = Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE))
             .withWaitUntilLiveOrFailure(failing = true)
             .arrange()
@@ -331,6 +358,9 @@ class MessageSenderTest {
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
         @Mock
+        val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
+
+        @Mock
         val sessionEstablisher = mock(SessionEstablisher::class)
 
         @Mock
@@ -353,6 +383,7 @@ class MessageSenderTest {
         fun arrange() = this to MessageSenderImpl(
             messageRepository = messageRepository,
             conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
             syncManager = syncManager,
             messageSendFailureHandler = messageSendFailureHandler,
             sessionEstablisher = sessionEstablisher,
@@ -370,7 +401,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(TestMessage.TEXT_MESSAGE))
         }
 
-        fun withGetProtocolInfo(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = apply {
+        fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getConversationProtocolInfo)
                 .whenInvokedWith(anything())
@@ -394,6 +425,13 @@ class MessageSenderTest {
         fun withPrepareRecipientsForNewOutgoingMessage(failing: Boolean = false) = apply {
             given(sessionEstablisher)
                 .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
+                .whenInvokedWith(anything())
+                .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
+        }
+
+        fun withCommitPendingProposals(failing: Boolean = false) = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::commitPendingProposals)
                 .whenInvokedWith(anything())
                 .thenReturn(if (failing) TEST_CORE_FAILURE else Either.Right(Unit))
         }
@@ -516,12 +554,13 @@ class MessageSenderTest {
             val MESSAGE_SENT_TIME = Clock.System.now().toString()
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
-            val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(
-                "groupId",
-                ConversationEntity.GroupState.ESTABLISHED,
+            val GROUP_ID = GroupID("groupId")
+            val MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
+                GROUP_ID,
+                Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
                 0UL,
                 Instant.DISTANT_PAST,
-                ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
             val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(

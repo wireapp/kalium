@@ -169,6 +169,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
@@ -201,6 +202,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenMemberIsInsertedInDB() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsSuccessful()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
@@ -220,8 +222,31 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenPendingProposalsAreFirstCommitted() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsSuccessful()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withInsertMemberSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::commitPendingProposals)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
     fun givenMlsClientMismatchError_whenCallingAddMemberToMLSGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
@@ -247,13 +272,13 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenMlsStaleMessageError_whenCallingAddMemberToMLSGroup_thenWaitUntilLiveAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing(times = 1)
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
             .withSendWelcomeMessageSuccessful()
             .withSendMLSMessageFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withClearPendingCommitSuccessful()
-            .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
             .withCommitAcceptedSuccessful()
@@ -410,6 +435,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withSendMLSMessageSuccessful()
@@ -439,6 +465,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenMemberIsRemovedFromDB() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
             .withSendMLSMessageSuccessful()
@@ -460,8 +487,33 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenPendingProposalsAreFirstCommitted() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsSuccessful()
+            .withGetMLSClientSuccessful()
+            .withRemoveMemberSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withUpdateConversationGroupStateSuccessful()
+            .withFetchClientsOfUsersSuccessful()
+            .withCommitAcceptedSuccessful()
+            .withSendWelcomeMessageSuccessful()
+            .withDeleteMembersSuccessful()
+            .arrange()
+
+        val users = listOf(TestUser.USER_ID)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitPendingProposals)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
     fun givenNonRecoverableError_whenCallingRemoveMemberFromGroup_thenClearCommitAndFail() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
@@ -482,6 +534,7 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenClientMismatchError_whenCallingRemoveMemberFromGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
@@ -509,12 +562,12 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenStaleMessageError_whenCallingRemoveMemberFromGroup_thenWaitUntilLiveAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing(times = 1)
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendMLSMessageFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withSendWelcomeMessageSuccessful()
-            .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
             .withUpdateConversationGroupStateSuccessful()
@@ -729,6 +782,15 @@ class MLSConversationRepositoryTest {
                 .function(mlsClient::commitPendingProposals)
                 .whenInvokedWith(anything())
                 .thenReturn(COMMIT_BUNDLE)
+        }
+
+        fun withCommitPendingProposalsReturningNothing(times: Int = Int.MAX_VALUE) = apply {
+            withCommitPendingProposalsSuccessful()
+            var invocationCounter = 0
+            given(mlsClient)
+                .function(mlsClient::commitPendingProposals)
+                .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
+                .thenReturn(null)
         }
 
         fun withUpdateKeyingMaterialSuccessful() = apply {
