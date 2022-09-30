@@ -29,6 +29,7 @@ class KeyPackageManagerTests {
         runTest(TestKaliumDispatcher.default) {
 
             val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(false)
                 .withLastKeyPackageCountCheck(false)
                 .withKeyPackageCountFailed()
                 .arrange()
