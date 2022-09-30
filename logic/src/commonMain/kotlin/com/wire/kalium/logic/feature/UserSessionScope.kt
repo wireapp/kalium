@@ -120,6 +120,7 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
@@ -184,6 +185,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
+    private val featureSupport: FeatureSupport,
     private val userSessionScopeProvider: UserSessionScopeProvider
 ) : CoroutineScope {
 
@@ -420,7 +422,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
         get() = JoinExistingMLSConversationsUseCase(
-            kaliumConfigs,
+            featureSupport,
             conversationRepository
         )
 
@@ -459,7 +461,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     internal val keyPackageManager: KeyPackageManager =
         KeyPackageManagerImpl(
-            kaliumConfigs,
+            featureSupport,
             incrementalSyncRepository,
             lazy { client.refillKeyPackages },
             lazy { client.mlsKeyPackageCountUseCase },
@@ -467,7 +469,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
-            kaliumConfigs,
+            featureSupport,
             incrementalSyncRepository,
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository }
@@ -586,7 +588,7 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.proteusClient,
             globalScope.sessionRepository,
             userId,
-            kaliumConfigs
+            featureSupport
         )
     val conversations: ConversationScope
         get() = ConversationScope(
