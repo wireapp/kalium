@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
@@ -38,9 +39,9 @@ actual class UserSessionScopeProviderImpl(
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
-        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
-            SessionManagerImpl(globalScope.sessionRepository, userId, tokenStorage = globalPreferences.authTokenStorage)
-        )
+        val sessionManager = SessionManagerImpl(globalScope.sessionRepository, userId, tokenStorage = globalPreferences.authTokenStorage)
+        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
+        val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.session().second.metaData.commonApiVersion.version)
 
         val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
         runBlocking { proteusClient.open() }
@@ -69,6 +70,7 @@ actual class UserSessionScopeProviderImpl(
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
+            featureSupport,
             this
         )
     }
