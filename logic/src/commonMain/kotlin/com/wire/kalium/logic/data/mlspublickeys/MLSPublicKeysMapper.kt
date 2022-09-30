@@ -12,7 +12,7 @@ class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
     override fun fromDTO(publicKeys: MLSPublicKeysDTO) = with(publicKeys) {
         removal?.entries?.mapNotNull {
             when (it.key) {
-                ED22519 -> MLSPublicKey(Ed25519Key(it.value.decodeBase64Bytes()), KeyType.REMOVAL)
+                ED25519 -> MLSPublicKey(Ed25519Key(it.value.decodeBase64Bytes()), KeyType.REMOVAL)
                 else -> null
             }
         } ?: emptyList()
@@ -23,7 +23,7 @@ class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
     }
 
     companion object {
-        const val ED22519 = "ed22519"
+        const val ED25519 = "ed25519"
     }
 
 }
