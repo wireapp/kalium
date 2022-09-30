@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SendMLSMessageResponse(
-    @SerialName("name")
+    @SerialName("time")
     val time: String,
     @SerialName("events")
     val events: List<EventResponse>
