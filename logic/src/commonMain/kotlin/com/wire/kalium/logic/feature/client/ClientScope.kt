@@ -17,7 +17,6 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 @Suppress("LongParameterList")
 class ClientScope(

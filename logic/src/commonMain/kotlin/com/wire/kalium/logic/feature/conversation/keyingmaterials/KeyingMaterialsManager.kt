@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure

@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLS.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
