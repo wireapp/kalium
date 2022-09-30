@@ -40,7 +40,7 @@ class RegisterClientUseCaseTest {
 
     @Mock
     private val featureSupport = mock(classOf<FeatureSupport>())
-    
+
     @Mock
     private val clientRepository = mock(classOf<ClientRepository>())
 
