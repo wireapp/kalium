@@ -1,6 +1,7 @@
 package com.wire.kalium.api.v0.message
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.model.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.serialization.Mls
@@ -19,7 +20,7 @@ class MLSMessageApiV0Test : ApiTest {
     fun givenMessage_whenSendingMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val networkClient = mockAuthenticatedNetworkClient(
-                "",
+                SendMLSMessageResponseJson.validMessageSentJson.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
                 {
@@ -37,7 +38,7 @@ class MLSMessageApiV0Test : ApiTest {
     fun givenWelcomeMessage_whenSendingWelcomeMessage_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val networkClient = mockAuthenticatedNetworkClient(
-                "",
+                SendMLSMessageResponseJson.validMessageSentJson.rawJson,
                 statusCode = HttpStatusCode.Created,
                 assertion =
                 {

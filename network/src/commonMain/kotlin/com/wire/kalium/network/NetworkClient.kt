@@ -27,12 +27,10 @@ import io.ktor.serialization.kotlinx.json.json
 internal class AuthenticatedNetworkClient(
     engine: HttpClientEngine,
     sessionManager: SessionManager,
-    serverMetaDataManager: ServerMetaDataManager,
-    installCompression: Boolean = true,
-    developmentApiEnabled: Boolean = false
+    installCompression: Boolean = true
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
-        installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager, developmentApiEnabled)
+        installWireDefaultRequest(sessionManager.session().second,)
         installAuth(sessionManager)
         install(ContentNegotiation) {
             mls()
@@ -48,12 +46,10 @@ internal class AuthenticatedNetworkClient(
  */
 internal class UnauthenticatedNetworkClient(
     engine: HttpClientEngine,
-    backendLinks: ServerConfigDTO.Links,
-    serverMetaDataManager: ServerMetaDataManager,
-    developmentApiEnabled: Boolean
+    backendLinks: ServerConfigDTO,
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-        installWireDefaultRequest(backendLinks, serverMetaDataManager, developmentApiEnabled)
+        installWireDefaultRequest(backendLinks)
     }
 }
 
@@ -74,9 +70,7 @@ internal class UnboundNetworkClient(engine: HttpClientEngine) {
  */
 internal class AuthenticatedWebSocketClient(
     private val engine: HttpClientEngine,
-    private val sessionManager: SessionManager,
-    private val serverMetaDataManager: ServerMetaDataManager,
-    private val developmentApiEnabled: Boolean
+    private val sessionManager: SessionManager
 ) {
     /**
      * Creates a disposable [HttpClient] for a single use.
@@ -86,7 +80,7 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireDefaultRequest(sessionManager.session().second, serverMetaDataManager, developmentApiEnabled)
+            installWireDefaultRequest(sessionManager.session().second)
             installAuth(sessionManager)
             install(ContentNegotiation) {
                 mls()

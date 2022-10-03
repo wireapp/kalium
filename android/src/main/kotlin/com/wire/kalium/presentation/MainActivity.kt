@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.PublicAssetResult
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
+import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -79,10 +81,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): UserId {
-        val result = coreLogic.authenticationScope(backendLinks) {
-            login("jacob.persson+summer1@wire.com", "hepphepp", false)
+    private suspend fun provideAuthScope(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthenticationScope =
+        when (val result = coreLogic.versionedAuthenticationScope(backendLinks).invoke()) {
+            is AutoVersionAuthScopeUseCase.Result.Failure.Generic -> throw error("Generic failure")
+            AutoVersionAuthScopeUseCase.Result.Failure.TooNewVersion -> throw error("Too new version")
+            AutoVersionAuthScopeUseCase.Result.Failure.UnknownServerVersion -> throw error("Unknown server version")
+            is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
+
+    private suspend fun login(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): UserId {
+        val result = provideAuthScope(coreLogic, backendLinks)
+            .login("jacob.persson+summer1@wire.com", "hepphepp", false)
 
         if (result !is AuthenticationResult.Success) {
             throw RuntimeException(

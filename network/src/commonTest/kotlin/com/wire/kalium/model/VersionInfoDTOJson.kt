@@ -10,6 +10,11 @@ import kotlinx.serialization.json.putJsonArray
 object VersionInfoDTOJson {
     private val defaultParametersJson = { serializable: VersionInfoDTO ->
         buildJsonObject {
+            serializable.developmentSupported?.let {
+                putJsonArray("development") {
+                    it.forEach { add(it) }
+                }
+            }
             putJsonArray("supported") {
                 serializable.supported.forEach { add(it) }
             }
@@ -21,7 +26,7 @@ object VersionInfoDTOJson {
     val valid404Result = VersionInfoDTO(null, null, false, listOf(0))
 
     val valid = ValidJsonProvider(
-        VersionInfoDTO(null, "wire.com", true, listOf(0, 1, 2)),
+        VersionInfoDTO(listOf(2), "wire.com", true, listOf(0, 1)),
         defaultParametersJson
     )
 }

@@ -12,7 +12,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.Companion.FIRST_KEY_ID
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -61,7 +61,7 @@ interface RegisterClientUseCase {
 }
 
 class RegisterClientUseCaseImpl(
-    private val kaliumConfigs: KaliumConfigs,
+    private val featureSupport: FeatureSupport,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
     private val keyPackageRepository: KeyPackageRepository,
@@ -75,7 +75,7 @@ class RegisterClientUseCaseImpl(
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam).flatMap { client ->
-                    if (kaliumConfigs.isMLSSupportEnabled) {
+                    if (featureSupport.isMLSSupported) {
                         createMLSClient(client)
                     } else {
                         Either.Right(client)
