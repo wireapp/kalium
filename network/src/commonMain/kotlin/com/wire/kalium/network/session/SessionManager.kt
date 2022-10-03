@@ -1,8 +1,8 @@
 package com.wire.kalium.network.session
 
-import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
+import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
@@ -27,7 +27,7 @@ import io.ktor.utils.io.ByteReadChannel
 import kotlin.coroutines.CoroutineContext
 
 interface SessionManager {
-    fun session(): Pair<SessionDTO, ServerConfigDTO.Links>
+    fun session(): Pair<SessionDTO, ServerConfigDTO>
     fun updateLoginSession(
         newAccessTokenDTO: AccessTokenDTO,
         newRefreshTokenDTO: RefreshTokenDTO?

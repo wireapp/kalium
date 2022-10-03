@@ -3,10 +3,8 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
@@ -44,8 +42,7 @@ internal class LoginUseCaseImpl internal constructor(
     private val loginRepository: LoginRepository,
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase,
-    private val serverConfigRepository: ServerConfigRepository,
-    private val serverLinks: ServerConfig.Links
+    private val serverConfig: ServerConfig
 ) : LoginUseCase {
     override suspend operator fun invoke(
         userIdentifier: String,
@@ -65,10 +62,8 @@ internal class LoginUseCaseImpl internal constructor(
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
-        }.flatMap { (authTokens, ssoId) ->
-            serverConfigRepository.configByLinks(serverLinks)
-                .map { serverConfig -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id) }
-        }.fold({
+        }.map { (authTokens, ssoId) -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id) }
+        .fold({
             when (it) {
                 is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
                 is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)

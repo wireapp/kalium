@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -15,7 +14,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -33,16 +31,13 @@ class RegisterAccountUseCaseTest {
     @Mock
     private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
 
-    @Mock
-    private val serverConfigRepository = mock(classOf<ServerConfigRepository>())
-
-    private val serverLinks = TEST_SERVER_CONFIG.links
+    private val serverConfig = TEST_SERVER_CONFIG
 
     private lateinit var registerAccountUseCase: RegisterAccountUseCase
 
     @BeforeTest
     fun setup() {
-        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverConfigRepository, serverLinks)
+        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverConfig)
     }
 
     @Test
@@ -57,10 +52,6 @@ class RegisterAccountUseCaseTest {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.then { Either.Right(Pair(ssoId, authTokens)) }
 
-        given(serverConfigRepository)
-            .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
-            .then { Either.Right(userServerConfig) }
-
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
@@ -71,11 +62,6 @@ class RegisterAccountUseCaseTest {
         verify(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.wasInvoked(exactly = once)
-
-        verify(serverConfigRepository)
-            .function(serverConfigRepository::configByLinks)
-            .with(any())
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -92,10 +78,6 @@ class RegisterAccountUseCaseTest {
             )
         }.then { Either.Right(Pair(ssoId, authTokens)) }
 
-        given(serverConfigRepository)
-            .invocation { serverConfigRepository.configByLinks(userServerConfig.links) }
-            .then { Either.Right(userServerConfig) }
-
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Success>(actual)
@@ -108,11 +90,6 @@ class RegisterAccountUseCaseTest {
                 param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon
             )
         }.wasInvoked(exactly = once)
-
-        verify(serverConfigRepository)
-            .function(serverConfigRepository::configByLinks)
-            .with(any())
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -133,10 +110,6 @@ class RegisterAccountUseCaseTest {
         verify(registerAccountRepository).coroutine {
             registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password)
         }.wasInvoked(exactly = once)
-
-        verify(serverConfigRepository)
-            .suspendFunction(serverConfigRepository::configForUser)
-            .with(any()).wasNotInvoked()
     }
 
     @Test

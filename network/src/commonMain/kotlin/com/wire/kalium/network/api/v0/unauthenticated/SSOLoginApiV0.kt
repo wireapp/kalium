@@ -1,9 +1,9 @@
 package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.model.toSessionDto
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
@@ -24,7 +24,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.appendPathSegments
 
-class SSOLoginApiV0 internal constructor(
+internal open class SSOLoginApiV0 internal constructor(
     private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
 ) : SSOLoginApi {
 

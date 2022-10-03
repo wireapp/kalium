@@ -1,10 +1,10 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.base.model.AssetId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -31,7 +31,7 @@ import okio.Sink
 import okio.Source
 import okio.use
 
-internal class AssetApiImplV0 internal constructor(
+internal open class AssetApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : AssetApi {
 
@@ -70,11 +70,8 @@ internal class AssetApiImplV0 internal constructor(
     /**
      * Build path for assets endpoint download.
      * The case for using V3 is a fallback and should not happen.
-     *
-     * TODO(assets): once API v2 is alive, this should be changed/merged.
-     * https://github.com/wireapp/wire-server/blob/dfe207073b54a63372898a75f670e972dd482118/changelog.d/1-api-changes/api-versioning
      */
-    private fun buildAssetsPath(assetId: AssetId): String {
+    protected open fun buildAssetsPath(assetId: AssetId): String {
         return if (assetId.domain.isNotBlank()) "$PATH_PUBLIC_ASSETS_V4/${assetId.domain}/${assetId.value}"
         else "$PATH_PUBLIC_ASSETS_V3/${assetId.value}"
     }

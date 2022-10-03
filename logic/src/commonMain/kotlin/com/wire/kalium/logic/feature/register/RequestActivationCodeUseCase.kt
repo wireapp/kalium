@@ -21,7 +21,8 @@ class RequestActivationCodeUseCase internal constructor(
                         it.kaliumException.isInvalidEmail() -> RequestActivationCodeResult.Failure.InvalidEmail
                         it.kaliumException.isBlackListedEmail() -> RequestActivationCodeResult.Failure.BlacklistedEmail
                         it.kaliumException.isKeyExists() -> RequestActivationCodeResult.Failure.AlreadyInUse
-                        it.kaliumException.isDomainBlockedForRegistration() -> RequestActivationCodeResult.Failure.DomainBlocked
+                        it.kaliumException.isDomainBlockedForRegistration() ->
+                            RequestActivationCodeResult.Failure.DomainBlocked
                         else -> RequestActivationCodeResult.Failure.Generic(it)
                     }
                 else RequestActivationCodeResult.Failure.Generic(it)

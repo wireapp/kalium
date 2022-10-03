@@ -90,7 +90,7 @@ interface MessageRepository {
      * @return [Either.Left] of other [CoreFailure] for more generic cases
      */
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<CoreFailure, String>
-    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit>
+    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
 
@@ -261,9 +261,11 @@ class MessageDataSource(
         })
     }
 
-    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit> =
+    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String> =
         wrapApiRequest {
             mlsMessageApi.sendMessage(message)
+        }.flatMap { response ->
+            Either.Right(response.time)
         }
 
     override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> = wrapStorageRequest {
