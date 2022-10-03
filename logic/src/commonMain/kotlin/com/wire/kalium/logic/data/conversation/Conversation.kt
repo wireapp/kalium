@@ -7,13 +7,11 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
-
 import kotlinx.datetime.Instant
 
 data class Conversation(
@@ -130,7 +128,6 @@ sealed class ConversationDetails(open val conversation: Conversation) {
     data class OneOne(
         override val conversation: Conversation,
         val otherUser: OtherUser,
-        val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
         val unreadMessagesCount: Long = 0L,
