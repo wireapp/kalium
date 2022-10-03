@@ -568,15 +568,11 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenUser_WhenMarkingAsDeleted_ThenProperValueShouldBeUpdated() = runTest(dispatcher) {
         val user = user1
         db.userDAO.insertUser(user)
-        val deletedUser = user1.copy(deleted = true)
+        val deletedUser = user1.copy(deleted = true, team = null, userType = UserTypeEntity.NONE)
         db.userDAO.markUserAsDeleted(user1.id)
-        launch(UnconfinedTestDispatcher(testScheduler)) {
-            db.userDAO.getUserByQualifiedID(user1.id).test {
-                val result = awaitItem()
-                assertEquals(result, deletedUser)
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(result, deletedUser)
+
     }
 
     private companion object {
