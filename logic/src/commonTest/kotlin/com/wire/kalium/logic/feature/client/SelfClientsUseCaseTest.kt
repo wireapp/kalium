@@ -5,7 +5,9 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
@@ -26,12 +28,17 @@ class SelfClientsUseCaseTest {
     private val clientRepository = configure(mock(classOf<ClientRepository>())) {
         stubsUnitByDefault = true
     }
-
+    @Mock
+    private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
     private lateinit var selfClientsUseCase: SelfClientsUseCase
 
     @BeforeTest
     fun setup() {
-        selfClientsUseCase = SelfClientsUseCaseImpl(clientRepository)
+        selfClientsUseCase = SelfClientsUseCaseImpl(clientRepository, provideClientId = currentClientIdProvider)
+        given(currentClientIdProvider)
+            .suspendFunction(currentClientIdProvider::invoke)
+            .whenInvoked()
+            .then { Either.Right(CLIENT.id) }
     }
 
     @Test
