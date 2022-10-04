@@ -500,11 +500,12 @@ internal class ConversationEventReceiverImpl(
                 val isValidImage = assetContent.value.metadata?.let {
                     it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
                 } ?: false
+
+                // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
+                // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
+                // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
                 val previewMessage = message.copy(
                     content = message.content.copy(value = assetContent.value),
-                    // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
-                    // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
-                    // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
                     visibility = if (isPreviewMessage && !isValidImage)
                         Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
                 )
