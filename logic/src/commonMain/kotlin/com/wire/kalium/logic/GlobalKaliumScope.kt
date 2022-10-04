@@ -71,6 +71,7 @@ class GlobalKaliumScope(
             unboundNetworkContainer.serverConfigApi,
             globalDatabase.value.serverConfigurationDAO,
             unboundNetworkContainer.remoteVersion,
+            kaliumConfigs.developmentApiEnabled
         )
 
     val sessionRepository: SessionRepository
