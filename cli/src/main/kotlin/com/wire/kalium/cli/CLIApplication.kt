@@ -252,7 +252,7 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
 }
 
 class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
-    override fun run() = runBlocking {
+    override fun run(): Unit = runBlocking {
 
         val userSession = currentUserSession()
 
