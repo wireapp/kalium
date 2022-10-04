@@ -541,19 +541,17 @@ internal class ConversationDataSource internal constructor(
                 addParticipantRequest, idMapper.toApiModel(conversationId)
             )
         }.flatMap { response ->
-            userIdList.map { userId ->
+            val memberList = userIdList.map { userId ->
                 // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
                 Conversation.Member(userId, Conversation.Member.Role.Member)
-            }.let { membersList ->
-                persistMembers(membersList, conversationId)
             }
 
-            val foo = when (response) {
-                is ConversationMemberAddedDTO.Changed -> MemberChangeResult.Changed(response.time)
-                ConversationMemberAddedDTO.Unchanged -> MemberChangeResult.Unchanged
+            persistMembers(memberList, conversationId).map {
+                when (response) {
+                    is ConversationMemberAddedDTO.Changed -> MemberChangeResult.Changed(response.time)
+                    ConversationMemberAddedDTO.Unchanged -> MemberChangeResult.Unchanged
+                }
             }
-
-            Either.Right(foo)
         }
 
 
