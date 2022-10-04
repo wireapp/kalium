@@ -65,9 +65,6 @@ internal class GetMessageAssetUseCaseImpl(
                 )
             }
 
-            if (assetDownloadStatus == NOT_DOWNLOADED)
-                updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
-
             assetDataSource.fetchPrivateDecodedAsset(
                 assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
                 assetName = assetMetadata.assetName,
