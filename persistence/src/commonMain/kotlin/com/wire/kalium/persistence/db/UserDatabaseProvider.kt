@@ -52,7 +52,7 @@ class UserDatabaseProvider internal constructor(
     private val platformDatabaseData: PlatformDatabaseData
 ) {
 
-    private val database: UserDatabase = UserDatabase(
+    internal val database: UserDatabase = UserDatabase(
         driver = sqlDriver,
         CallAdapter = TableMapper.callAdapter,
         ClientAdapter = TableMapper.clientAdapter,
