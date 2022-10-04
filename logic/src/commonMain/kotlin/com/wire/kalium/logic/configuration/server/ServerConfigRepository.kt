@@ -86,6 +86,7 @@ internal class ServerConfigDataSource(
     private val dao: ServerConfigurationDAO,
     private val versionApi: VersionApi,
     private val developmentApiEnabled: Boolean,
+    private val backendMetaDataUtil: BackendMetaDataUtil = BackendMetaDataUtilImpl,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ServerConfigRepository {
@@ -147,7 +148,7 @@ internal class ServerConfigDataSource(
         }
 
     override fun storeConfig(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): Either<StorageFailure, ServerConfig> {
-        val metaData = BackendMetaDataUtilImpl.calculateApiVersion(
+        val metaData = backendMetaDataUtil.calculateApiVersion(
             versionInfoDTO = VersionInfoDTO(
                 developmentSupported = versionInfo.developmentSupported,
                 domain = versionInfo.domain,
