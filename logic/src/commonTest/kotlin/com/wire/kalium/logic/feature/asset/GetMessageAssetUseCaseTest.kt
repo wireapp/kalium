@@ -84,6 +84,7 @@ class GetMessageAssetUseCaseTest {
         val connectionFailure = NetworkFailure.NoNetworkConnection(null)
         val (_, getMessageAsset) = Arrangement()
             .withDownloadAssetErrorResponse(connectionFailure)
+            .withSuccessfulDownloadStatusUpdate()
             .arrange()
 
         // When
@@ -166,6 +167,13 @@ class GetMessageAssetUseCaseTest {
                 .whenInvokedWith(anything(), matching { it == conversationId }, matching { it == messageId })
                 .thenReturn(UpdateDownloadStatusResult.Success)
             return this
+        }
+
+        fun withSuccessfulDownloadStatusUpdate(): Arrangement = apply {
+            given(updateAssetMessageDownloadStatus)
+                .suspendFunction(updateAssetMessageDownloadStatus::invoke)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(UpdateDownloadStatusResult.Success)
         }
 
         fun withGetMessageErrorResponse(): Arrangement {

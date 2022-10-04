@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.FAILED_DOWNLOAD
-import com.wire.kalium.logic.data.message.Message.DownloadStatus.NOT_DOWNLOADED
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALLY
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
 import com.wire.kalium.logic.data.message.MessageContent
@@ -91,6 +90,5 @@ internal class GetMessageAssetUseCaseImpl(
 sealed class MessageAssetResult {
     class Success(val decodedAssetPath: Path, val assetSize: Long) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
-
 
 }
