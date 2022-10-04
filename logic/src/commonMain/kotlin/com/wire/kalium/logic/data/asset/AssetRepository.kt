@@ -223,6 +223,7 @@ internal class AssetDataSource(
 
                 if (assetDataSize == -1L)
                     Either.Left(EncryptionFailure())
+
                 wrapStorageRequest {
                     assetDao.insertAsset(
                         assetMapper.fromUserAssetToDaoModel(
