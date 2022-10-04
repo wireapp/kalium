@@ -11,7 +11,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
-
 interface AddMemberToConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>): Result
 

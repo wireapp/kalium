@@ -554,7 +554,6 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
-
     private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
         wrapApiRequest {
             conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
