@@ -124,10 +124,7 @@ CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.qualified_id
     WHEN "CONNECTION_PENDING" THEN connection_user.qualified_id
     END AS otherUserId,
-CASE (Conversation.creator_id)
-    WHEN (SELECT Conversation.qualified_id FROM Conversation WHERE Conversation.type IS "SELF") THEN 1
-    ELSE 0
-    END AS isCreator,
+Conversation.creator_id AS creator_id,
 Conversation.last_notified_message_date AS lastNotifiedMessageDate,
 (SELECT COUNT() FROM Message AS message
     WHERE message.conversation_id = Conversation.qualified_id

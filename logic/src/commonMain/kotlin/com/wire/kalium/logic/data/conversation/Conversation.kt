@@ -28,8 +28,7 @@ data class Conversation(
     val lastReadDate: String,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
-    val isSelfUserMember: Boolean = true,
-    val isCreator: Boolean = false
+    val isSelfUserMember: Boolean = true
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
@@ -142,8 +141,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadMessagesCount: Long = 0L,
         val unreadMentionsCount: Long = 0L,
         val lastUnreadMessage: Message?,
-        val isSelfUserMember: Boolean = true,
-        val isSelfCreated: Boolean = false
+        val isSelfUserMember: Boolean = true
     ) : ConversationDetails(conversation)
 
     data class Connection(
@@ -170,8 +168,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
             accessRole = accessRole,
-            isSelfUserMember = false,
-            isCreator = false
+            isSelfUserMember = false
         )
     )
 }

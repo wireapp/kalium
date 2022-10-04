@@ -123,14 +123,13 @@ internal class ConversationMapperImpl(
                         protocol = protocolInfoMapper.fromEntity(protocolInfo),
                         mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
                         removedBy = null, // todo: ask how to calculate?
-                        creatorId = PlainId(""), // deprecated
+                        creatorId = PlainId(creatorId),
                         lastNotificationDate,
                         lastModifiedDate,
                         lastReadDate,
                         access = accessList.map { it.toDAO() },
                         accessRole = accessRoleList.map { it.toDAO() },
-                        isSelfUserMember = isMember == 1L,
-                        isCreator = isCreator == 1L,
+                        isSelfUserMember = isMember == 1L
                     )
                 )
             }
@@ -145,14 +144,13 @@ internal class ConversationMapperImpl(
                         protocol = protocolInfoMapper.fromEntity(protocolInfo),
                         mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
                         removedBy = null, // todo: ask how to calculate?
-                        creatorId = PlainId(""), // todo: deprecated
+                        creatorId = PlainId(creatorId),
                         lastNotificationDate,
                         lastModifiedDate,
                         lastReadDate,
                         access = accessList.map { it.toDAO() },
                         accessRole = accessRoleList.map { it.toDAO() },
-                        isSelfUserMember = isMember == 1L,
-                        isCreator = isCreator == 1L,
+                        isSelfUserMember = isMember == 1L
                     ),
                     otherUser = OtherUser(
                         id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
@@ -186,22 +184,20 @@ internal class ConversationMapperImpl(
                         protocol = protocolInfoMapper.fromEntity(protocolInfo),
                         mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
                         removedBy = null, // todo: ask how to calculate?
-                        creatorId = PlainId(""), // todo: deprecated
+                        creatorId = PlainId(creatorId),
                         lastNotificationDate,
                         lastModifiedDate,
                         lastReadDate,
                         access = accessList.map { it.toDAO() },
                         accessRole = accessRoleList.map { it.toDAO() },
-                        isSelfUserMember = isMember == 1L,
-                        isCreator = isCreator == 1L,
+                        isSelfUserMember = isMember == 1L
                     ),
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     hasOngoingCall = callStatus != null, // todo: we can do better!
                     unreadMessagesCount = unreadMessageCount,
                     unreadMentionsCount = 0L,
                     lastUnreadMessage = null,
-                    isSelfUserMember = isMember == 1L,
-                    isSelfCreated = isCreator == 1L
+                    isSelfUserMember = isMember == 1L
                 )
             }
 
