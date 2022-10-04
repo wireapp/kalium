@@ -140,6 +140,40 @@ class ServerConfigRepositoryTest {
             .function(arrangement.serverConfigDAO::configById)
             .with(any())
             .wasInvoked(exactly = once)
+
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::insert)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenInValidCompatibleApiVersion_whenStoringConfigLocally_thenErrorIsPropagated() = runTest {
+        val expected = newServerConfig(1).copy(metaData = ServerConfig.MetaData(false, CommonApiVersionType.Unknown, "domain") )
+        val (arrangement, repository) = Arrangement()
+            .withApiAversionResponse(expected)
+            .withConfigById()
+            .withConfigByLinks()
+            .arrange()
+
+        repository.fetchApiVersionAndStore(expected.links).shouldSucceed {
+            assertEquals(expected, it)
+        }
+
+        verify(arrangement.versionApi)
+            .suspendFunction(arrangement.versionApi::fetchApiVersion)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::insert)
+            .with(any())
+            .wasNotInvoked()
     }
 
     @Test
