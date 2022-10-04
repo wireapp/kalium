@@ -30,6 +30,7 @@ interface GetMessageAssetUseCase {
     ): MessageAssetResult
 }
 
+// TODO: refactor this use case or find a way to centralize [Message.DownloadStatus] management
 internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val messageRepository: MessageRepository,
@@ -63,6 +64,9 @@ internal class GetMessageAssetUseCaseImpl(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
+
+            // Start progress bar for generic assets
+            if (!wasDownloaded) updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
 
             assetDataSource.fetchPrivateDecodedAsset(
                 assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
