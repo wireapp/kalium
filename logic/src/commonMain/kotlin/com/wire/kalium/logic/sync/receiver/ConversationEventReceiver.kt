@@ -22,8 +22,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
-import com.wire.kalium.logic.data.message.Message.DownloadStatus.NOT_DOWNLOADED
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -470,6 +468,7 @@ internal class ConversationEventReceiverImpl(
                     logger.i(message = "System MemberChange Message received: $message")
                     persistMessage(message)
                 }
+
                 is MessageContent.ConversationRenamed -> TODO()
                 is MessageContent.MissedCall -> TODO()
             }
@@ -502,11 +501,7 @@ internal class ConversationEventReceiverImpl(
                     it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
                 } ?: false
                 val previewMessage = message.copy(
-                    content = message.content.copy(
-                        value = assetContent.value.copy(
-                            downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
-                        )
-                    ),
+                    content = message.content.copy(value = assetContent.value),
                     // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
                     // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
                     // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
