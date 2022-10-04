@@ -127,7 +127,7 @@ class ConversationEventReceiverTest {
                 it.content is MessageContent.Asset &&
                         (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
             })
-            .wasInvoked(exactly = once)
+            .wasInvoked()
     }
 
     @Test
