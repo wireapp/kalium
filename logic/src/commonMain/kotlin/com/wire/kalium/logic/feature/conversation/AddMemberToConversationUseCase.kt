@@ -33,7 +33,7 @@ class AddMemberToConversationUseCaseImpl(
             if (it is MemberChangeResult.Changed) {
                 /*
                 Backend doesn't forward a member-join message event to the client that add users to a conversation but everyone
-                else on the group. Therefore, we need to map the member deletion api response manually, and create and persist the
+                else on the group. Therefore, we need to map the member add api response manually, and create and persist the
                 member-join system message on these cases
                  */
                 val message = Message.System(
