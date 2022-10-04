@@ -26,7 +26,6 @@ class SelfClientsUseCaseImpl(
     )
 }
 
-
 sealed class SelfClientsResult {
     data class Success(val clients: List<Client>, val currentClient: Client?) : SelfClientsResult()
 
@@ -34,4 +33,3 @@ sealed class SelfClientsResult {
         class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }
-
