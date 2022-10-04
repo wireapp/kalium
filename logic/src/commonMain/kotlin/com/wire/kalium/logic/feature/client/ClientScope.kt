@@ -1,15 +1,18 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
@@ -17,6 +20,8 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onSuccess
 
 @Suppress("LongParameterList")
 class ClientScope(
@@ -41,7 +46,19 @@ class ClientScope(
             keyPackageLimitsProvider,
             mlsClientProvider
         )
-    val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository)
+
+    // TODO: extract client id provider to it's own class and test it
+    private var _clientId: ClientId? = null
+    private suspend fun clientId(): Either<CoreFailure, ClientId> =
+        if (_clientId != null) Either.Right(_clientId!!) else {
+            clientRepository.currentClientId().onSuccess {
+                _clientId = it
+            }
+        }
+
+    private val clientIdProvider = CurrentClientIdProvider { clientId() }
+
+    val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase
         get() = NeedsToRegisterClientUseCaseImpl(clientRepository, sessionRepository, selfUserId)
