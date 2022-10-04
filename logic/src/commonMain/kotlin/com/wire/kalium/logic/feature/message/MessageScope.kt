@@ -117,7 +117,8 @@ class MessageScope internal constructor(
     val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
-            messageRepository
+            messageRepository,
+            updateAssetMessageDownloadStatus
         )
 
     val getRecentMessages: GetRecentMessagesUseCase
