@@ -32,23 +32,21 @@ class ParticipantsFilterTest {
     }
 
     @Test
-    fun givenAListOfParticipantsAndUserId_whenCallingParticipantsWithoutUserId_thenReturnParticipantsWithoutThatUser() {
+    fun givenAListOfParticipantsAndUserId_whenGettingOtherParticipants_thenReturnParticipantsExceptSelfParticipant() {
 
-        val result = participantsFilter.participantsWithoutUserId(participants, selfUserId)
+        val result = participantsFilter.otherParticipants(participants, selfClientId)
 
-        assertEquals(2, result.size)
+        assertEquals(3, result.size)
         assertEquals(participant2, result.first())
-        assertEquals(participant3, result.last())
+        assertEquals(participant11, result.last())
     }
 
     @Test
-    fun givenAListOfParticipantsAndUserId_whenCallingParticipantsWithUserIdOnly_thenReturnParticipantsWithThatIdOnly() {
+    fun givenAListOfParticipants_whenGettingSelfParticipant_thenReturnCorrectParticipant() {
 
-        val result = participantsFilter.selfParticipants(participants, selfUserId)
+        val result = participantsFilter.selfParticipant(participants, selfUserId, selfClientId)
 
-        assertEquals(2, result.size)
-        assertEquals(participant1, result.first())
-        assertEquals(participant11, result.last())
+        assertEquals(participant1, result)
     }
 
     @Test
@@ -71,6 +69,7 @@ class ParticipantsFilterTest {
     }
 
     companion object {
+        const val selfClientId = "1243545623"
         const val selfUserIdString = "participant1@domain"
         val selfUserId = UserId("participant1", "domain")
 
@@ -82,7 +81,7 @@ class ParticipantsFilterTest {
 
         val participant1 = Participant(
             id = selfUserId,
-            clientId = "clientId1",
+            clientId = selfClientId,
             name = "Alok",
             isCameraOn = true,
             isMuted = false
@@ -96,14 +95,14 @@ class ParticipantsFilterTest {
         )
         val participant2 = Participant(
             id = userId2,
-            clientId = "clientId",
+            clientId = "clientId2",
             name = "Max",
             isCameraOn = true,
             isMuted = false
         )
         val participant3 = Participant(
             id = userId3,
-            clientId = "clientId",
+            clientId = "clientId3",
             name = "Hisoka",
             isCameraOn = false,
             isMuted = false

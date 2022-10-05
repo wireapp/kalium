@@ -10,6 +10,7 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -34,15 +35,16 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
         )
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenCallsFlowEmitsANewValue_whenUseCaseIsCollected_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
         val calls1 = listOf(call1, call2)
         val calls2 = listOf(call2)
 
-        given(callingParticipantsOrder).invocation { reorderItems(calls1.first().participants) }
+        given(callingParticipantsOrder).coroutine { reorderItems(calls1.first().participants) }
             .thenReturn(calls1.first().participants)
 
-        given(callingParticipantsOrder).invocation { reorderItems(calls2.first().participants) }
+        given(callingParticipantsOrder).coroutine { reorderItems(calls2.first().participants) }
             .thenReturn(calls2.first().participants)
 
         val callsFlow = flowOf(calls1, calls2)
