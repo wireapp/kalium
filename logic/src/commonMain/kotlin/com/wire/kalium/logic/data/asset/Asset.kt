@@ -28,4 +28,4 @@ enum class RetentionType {
     EXPIRING
 }
 
-fun isValidImage(mimeType: String): Boolean = mimeType in setOf("image/jpg", "image/jpeg", "image/png", "image/heic")
+fun isValidImage(mimeType: String): Boolean = mimeType in setOf("image/jpg", "image/jpeg", "image/png", "image/heic", "image/gif")
