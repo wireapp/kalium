@@ -36,6 +36,7 @@ class ClientScope(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val featureSupport: FeatureSupport,
+    private val clientIdProvider: CurrentClientIdProvider,
 ) {
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
@@ -46,17 +47,6 @@ class ClientScope(
             keyPackageLimitsProvider,
             mlsClientProvider
         )
-
-    // TODO: extract client id provider to it's own class and test it
-    private var _clientId: ClientId? = null
-    private suspend fun clientId(): Either<CoreFailure, ClientId> =
-        if (_clientId != null) Either.Right(_clientId!!) else {
-            clientRepository.currentClientId().onSuccess {
-                _clientId = it
-            }
-        }
-
-    private val clientIdProvider = CurrentClientIdProvider { clientId() }
 
     val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)

@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
@@ -21,13 +22,13 @@ class SelfClientsUseCaseImpl(
             val currentClientId = provideClientId()
             SelfClientsResult.Success(
                 clients = clients.sortedByDescending { it.registrationTime },
-                currentClient = clients.firstOrNull { it.id == currentClientId.getOrNull() })
+                currentClientId = currentClientId.getOrNull())
         }
     )
 }
 
 sealed class SelfClientsResult {
-    data class Success(val clients: List<Client>, val currentClient: Client?) : SelfClientsResult()
+    data class Success(val clients: List<Client>, val currentClientId: ClientId?) : SelfClientsResult()
 
     sealed class Failure : SelfClientsResult() {
         class Generic(val genericFailure: CoreFailure) : Failure()
