@@ -414,7 +414,9 @@ class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
             }.flatMap {
-                operation()
+                syncManager.waitUntilLiveOrFailure().flatMap {
+                    operation()
+                }
             }
         }
     }
