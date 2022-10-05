@@ -816,7 +816,7 @@ $dokka.location:com.wire.kalium.logic.configuration/UserConfigRepository/setClas
 $dokka.location:com.wire.kalium.logic.configuration/UserConfigRepository/setFileSharingStatus/#kotlin.Boolean#kotlin.Boolean?/PointingToDeclaration/logic/logic/com.wire.kalium.logic.configuration/-user-config-repository/set-file-sharing-status.html
 $dokka.location:com.wire.kalium.logic.configuration/UserConfigRepository/setMLSEnabled/#kotlin.Boolean/PointingToDeclaration/logic/logic/com.wire.kalium.logic.configuration/-user-config-repository/set-m-l-s-enabled.html
 $dokka.location:com.wire.kalium.logic.data.asset////PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.asset/index.html
-$dokka.location:com.wire.kalium.logic.data.asset//isValidImage/#kotlin.String/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.asset/is-valid-image.html
+$dokka.location:com.wire.kalium.logic.data.asset//isDisplayableMimeType/#kotlin.String/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.asset/is-displayable-mime-type.html
 $dokka.location:com.wire.kalium.logic.data.asset/AssetMapper///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.asset/-asset-mapper/index.html
 $dokka.location:com.wire.kalium.logic.data.asset/AssetMapper/fromApiUploadResponseToDomainModel/#com.wire.kalium.network.api.base.authenticated.asset.AssetResponse/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.asset/-asset-mapper/from-api-upload-response-to-domain-model.html
 $dokka.location:com.wire.kalium.logic.data.asset/AssetMapper/fromAssetContentToProtoAssetMessage/#com.wire.kalium.logic.data.message.AssetContent/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.asset/-asset-mapper/from-asset-content-to-proto-asset-message.html
