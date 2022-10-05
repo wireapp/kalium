@@ -164,6 +164,16 @@ fun <L, R> Either<L, R>.getOrElse(value: R): R =
     }
 
 /**
+ * Returns the value from this `Right` or null if this is a `Left`.
+ * Right(12).getOrNull() RETURNS 12 and Left(12).getOrNull() RETURNS null
+ */
+fun <L, R> Either<L, R>.getOrNull(): R? =
+    when (this) {
+        is Left -> null
+        is Right -> this.value
+    }
+
+/**
  * Folds a list into an Either while it doesn't go Left.
  * Allows for accumulation of value through iterations.
  * @return the final accumulated value if there are NO Left results, or the first Left result otherwise.
