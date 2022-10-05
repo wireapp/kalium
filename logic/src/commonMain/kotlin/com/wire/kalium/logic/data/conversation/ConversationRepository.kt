@@ -507,6 +507,29 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
+    private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId) =
+        wrapApiRequest {
+            val users = userIdList.map {
+                idMapper.toApiModel(it)
+            }
+            val addParticipantRequest = AddConversationMembersRequest(users, DEFAULT_MEMBER_ROLE)
+            conversationApi.addMember(
+                addParticipantRequest, idMapper.toApiModel(conversationId)
+            )
+        }.flatMap { response ->
+            val memberList = userIdList.map { userId ->
+                // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
+                Conversation.Member(userId, Conversation.Member.Role.Member)
+            }
+
+            persistMembers(memberList, conversationId).map {
+                when (response) {
+                    is ConversationMemberAddedDTO.Changed -> MemberChangeResult.Changed(response.time)
+                    ConversationMemberAddedDTO.Unchanged -> MemberChangeResult.Unchanged
+                }
+            }
+        }
+
     override suspend fun deleteMember(
         userId: UserId,
         conversationId: ConversationId
@@ -527,29 +550,6 @@ internal class ConversationDataSource internal constructor(
                         mlsConversationRepository.removeMembersFromMLSGroup(conversation.protocol.groupId, listOf(userId))
                             .map { MemberChangeResult.Changed(Clock.System.now().toString()) }
                     }
-                }
-            }
-        }
-
-    private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId) =
-        wrapApiRequest {
-            val users = userIdList.map {
-                idMapper.toApiModel(it)
-            }
-            val addParticipantRequest = AddConversationMembersRequest(users, DEFAULT_MEMBER_ROLE)
-            conversationApi.addMember(
-                addParticipantRequest, idMapper.toApiModel(conversationId)
-            )
-        }.flatMap { response ->
-            val memberList = userIdList.map { userId ->
-                // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
-                Conversation.Member(userId, Conversation.Member.Role.Member)
-            }
-
-            persistMembers(memberList, conversationId).map {
-                when (response) {
-                    is ConversationMemberAddedDTO.Changed -> MemberChangeResult.Changed(response.time)
-                    ConversationMemberAddedDTO.Unchanged -> MemberChangeResult.Unchanged
                 }
             }
         }
