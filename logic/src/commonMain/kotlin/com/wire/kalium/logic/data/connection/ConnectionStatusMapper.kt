@@ -66,7 +66,7 @@ internal class ConnectionStatusMapperImpl : ConnectionStatusMapper {
         ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
         ConnectionEntity.State.ACCEPTED -> ConnectionState.ACCEPTED
         ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
-        else -> ConnectionState.ACCEPTED
+        null -> ConnectionState.ACCEPTED
     }
 
     override fun toDaoModel(state: ConnectionState): ConnectionEntity.State = when (state) {

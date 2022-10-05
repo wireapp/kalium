@@ -235,8 +235,16 @@ internal class ConnectionDataSource(
                 )
             }
 
+            ACCEPTED -> {
+                kaliumLogger.i("INSERT CONVERSATION FROM CONNECTION NOT ENGAGED FOR $connection")
+                conversationDAO.updateConversationType(
+                    idMapper.toDaoModel(connection.qualifiedConversationId),
+                    ConversationEntity.Type.ONE_ON_ONE
+                )
+            }
+
             NOT_CONNECTED, BLOCKED, IGNORED, CANCELLED,
-            MISSING_LEGALHOLD_CONSENT, ACCEPTED -> {
+            MISSING_LEGALHOLD_CONSENT -> {
                 kaliumLogger.i("INSERT CONVERSATION FROM CONNECTION NOT ENGAGED FOR $connection")
             }
         }

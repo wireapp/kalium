@@ -5,6 +5,9 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALLY
+import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.AssetId
@@ -26,9 +29,11 @@ interface GetMessageAssetUseCase {
     ): MessageAssetResult
 }
 
+// TODO: refactor this use case or find a way to centralize [Message.DownloadStatus] management
 internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase,
 ) : GetMessageAssetUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,
@@ -38,6 +43,8 @@ internal class GetMessageAssetUseCaseImpl(
             kaliumLogger.e("There was an error retrieving the asset message ${messageId.obfuscateId()}")
             MessageAssetResult.Failure(it)
         }, { message ->
+            val assetDownloadStatus = (message.content as MessageContent.Asset).value.downloadStatus
+            val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
             val assetMetadata = when (val content = message.content) {
                 is MessageContent.Asset -> {
                     with(content.value.remoteData) {
@@ -56,15 +63,26 @@ internal class GetMessageAssetUseCaseImpl(
                     CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
                 )
             }
+
+            // Start progress bar for generic assets
+            if (!wasDownloaded) updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
+
             assetDataSource.fetchPrivateDecodedAsset(
                 assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
                 assetName = assetMetadata.assetName,
                 assetToken = assetMetadata.assetToken,
                 encryptionKey = assetMetadata.encryptionKey
             ).fold({
-                kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey}")
+                kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
+                // This should be called if there is an issue while downloading the asset
+                updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
                 MessageAssetResult.Failure(it)
             }, { decodedAssetPath ->
+                // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while running
+                // this specific use case. Otherwise, recursive loop as described above kicks in.
+                if (!wasDownloaded)
+                    updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
+
                 MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
             })
         })
@@ -73,4 +91,5 @@ internal class GetMessageAssetUseCaseImpl(
 sealed class MessageAssetResult {
     class Success(val decodedAssetPath: Path, val assetSize: Long) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
+
 }
