@@ -132,7 +132,7 @@ Conversation.last_notified_message_date AS lastNotifiedMessageDate,
 (SELECT COUNT() FROM Message AS message
     WHERE message.conversation_id = Conversation.qualified_id
     AND (DateTime(message.date) >  DateTime(Conversation.last_read_date))
-    AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL'))
+    AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL') AND message.visibility IS 'VISIBLE')
     AS unreadMessageCount,
 CASE Conversation.qualified_id
 WHEN (SELECT conversation FROM Member
@@ -167,7 +167,7 @@ SELECT * FROM ConversatonDetails
 WHERE type IS NOT "SELF" AND
 (type IS "GROUP" AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
 OR (type IS NOT "GROUP" AND otherUserId IS NOT NULL)) -- show other conversation- todo: problem here! if the sync wasn't succesful the the user seems to be null!
-ORDER BY lastModifiedDate DESC, name ASC;
+ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
 
 selectAllConversations:
 SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
@@ -225,7 +225,7 @@ UPDATE Conversation
 SET name = ?, last_modified_date = ?
 WHERE qualified_id = ?;
 
-revokeOneOnOneConversationWithDeletedUser:
+updateConversationType:
 UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
