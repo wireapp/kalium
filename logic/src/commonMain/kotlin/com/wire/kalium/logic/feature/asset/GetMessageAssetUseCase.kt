@@ -6,7 +6,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.Message.DownloadStatus.FAILED_DOWNLOAD
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALLY
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
 import com.wire.kalium.logic.data.message.MessageContent
@@ -30,6 +29,7 @@ interface GetMessageAssetUseCase {
     ): MessageAssetResult
 }
 
+// TODO: refactor this use case or find a way to centralize [Message.DownloadStatus] management
 internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val messageRepository: MessageRepository,
@@ -64,21 +64,22 @@ internal class GetMessageAssetUseCaseImpl(
                 )
             }
 
+            // Start progress bar for generic assets
+            if (!wasDownloaded) updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
+
             assetDataSource.fetchPrivateDecodedAsset(
                 assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
                 assetName = assetMetadata.assetName,
                 assetToken = assetMetadata.assetToken,
                 encryptionKey = assetMetadata.encryptionKey
             ).fold({
-                kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey}")
-                // Only update the asset download status to failed if it wasn't set as FAILED_DOWNLOAD before. Otherwise it will result in
-                // an endless recursive loop, modifying the message, mapping the value and trying to fetch the asset again.
-                if (assetDownloadStatus != FAILED_DOWNLOAD)
-                    updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
+                kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
+                // This should be called if there is an issue while downloading the asset
+                updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
                 MessageAssetResult.Failure(it)
             }, { decodedAssetPath ->
                 // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while running
-                // this specific use case. Otherwise recursive loop as described above kicks in.
+                // this specific use case. Otherwise, recursive loop as described above kicks in.
                 if (!wasDownloaded)
                     updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
 
