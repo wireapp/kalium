@@ -1,10 +1,9 @@
 package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
-import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.type.UserType
 
 object TestConversationDetails {
@@ -23,7 +22,6 @@ object TestConversationDetails {
     val CONVERSATION_ONE_ONE = ConversationDetails.OneOne(
         TestConversation.ONE_ON_ONE,
         TestUser.OTHER,
-        ConnectionState.ACCEPTED,
         LegalHoldStatus.DISABLED,
         UserType.EXTERNAL,
         unreadMessagesCount = 0,

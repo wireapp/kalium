@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
+import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.client.DeleteClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
@@ -41,7 +43,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
-private val coreLogic = CoreLogic("Kalium CLI", "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts", kaliumConfigs = KaliumConfigs())
+private val coreLogic = CoreLogic(
+    clientLabel = "Kalium CLI",
+    rootPath = "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts",
+    kaliumConfigs = KaliumConfigs(developmentApiEnabled = true))
 
 fun restoreSession(): AccountInfo? {
     return coreLogic.globalScope {
@@ -173,7 +178,8 @@ class LoginCommand : CliktCommand(name = "login") {
                     coreLogic.globalScope {
                         when (val result = fetchServerConfigFromDeepLink(env)) {
                             is GetServerConfigResult.Success -> result.serverConfigLinks
-                            is GetServerConfigResult.Failure -> throw PrintMessage("failed to fetch server config from: $env")
+                            is GetServerConfigResult.Failure ->
+                                throw PrintMessage("failed to fetch server config from: $env")
                         }
                     }
                 }
@@ -181,14 +187,26 @@ class LoginCommand : CliktCommand(name = "login") {
         } ?: ServerConfig.DEFAULT
     }
 
+    private suspend fun provideVersionedAuthenticationScope(serverLinks: ServerConfig.Links): AuthenticationScope =
+        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke()) {
+            is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
+                throw PrintMessage("failed to create authentication scope: ${result.genericFailure}")
+
+            AutoVersionAuthScopeUseCase.Result.Failure.TooNewVersion ->
+                throw PrintMessage("failed to create authentication scope: api version not supported")
+
+            AutoVersionAuthScopeUseCase.Result.Failure.UnknownServerVersion ->
+                throw PrintMessage("failed to create authentication scope: unknown server version")
+
+            is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
+        }
+
     override fun run() = runBlocking {
-        val loginResult = coreLogic.authenticationScope(serverConfig()) {
-            login(email, password, true).let {
-                if (it !is AuthenticationResult.Success) {
-                    throw PrintMessage("Login failed, check your credentials")
-                } else {
-                    it
-                }
+        val loginResult = provideVersionedAuthenticationScope(serverConfig()).login(email, password, true).let {
+            if (it !is AuthenticationResult.Success) {
+                throw PrintMessage("Login failed, check your credentials")
+            } else {
+                it
             }
         }
 

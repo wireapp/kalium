@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 class SetConnectionPolicyUseCase internal constructor(
     private val incrementalSyncRepository: IncrementalSyncRepository,
 ) {
-    operator fun invoke(connectionPolicy: ConnectionPolicy) {
+    suspend operator fun invoke(connectionPolicy: ConnectionPolicy) {
         incrementalSyncRepository.setConnectionPolicy(connectionPolicy)
     }
 }

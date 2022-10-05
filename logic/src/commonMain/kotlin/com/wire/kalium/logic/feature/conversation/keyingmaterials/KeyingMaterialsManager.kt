@@ -4,7 +4,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -18,7 +18,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
 
-// The duration in hours after which we should re-check key package count.
+// The duration in hours after which we should re-check keying materials.
 internal val KEYING_MATERIAL_CHECK_DURATION = 24.hours
 
 /**
@@ -29,7 +29,7 @@ internal val KEYING_MATERIAL_CHECK_DURATION = 24.hours
 internal interface KeyingMaterialsManager
 
 internal class KeyingMaterialsManagerImpl(
-    private val kaliumConfigs: KaliumConfigs,
+    private val featureSupport: FeatureSupport,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val updateKeyingMaterialsUseCase: Lazy<UpdateKeyingMaterialsUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
@@ -50,7 +50,7 @@ internal class KeyingMaterialsManagerImpl(
         updateKeyingMaterialsJob = updateKeyingMaterialsScope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Live && kaliumConfigs.isMLSSupportEnabled) {
+                if (syncState is IncrementalSyncStatus.Live && featureSupport.isMLSSupported) {
                     updateKeyingMaterialIfNeeded()
                 }
             }

@@ -89,7 +89,7 @@ internal open class ConversationApiV0 internal constructor(
         request: AddConversationMembersRequest,
         conversationId: ConversationId
     ): NetworkResponse<ConversationMemberAddedDTO> = try {
-        httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
             setBody(request)
         }.let { response ->
             when (response.status) {
@@ -178,6 +178,6 @@ internal open class ConversationApiV0 internal constructor(
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_IDS = "qualified_ids"
 
-        const val MAX_CONVERSATION_DETAILS_COUNT = 500
+        const val MAX_CONVERSATION_DETAILS_COUNT = 1000
     }
 }

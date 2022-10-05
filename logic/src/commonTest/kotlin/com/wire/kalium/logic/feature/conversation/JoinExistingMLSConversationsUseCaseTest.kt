@@ -6,7 +6,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -35,11 +35,11 @@ class JoinExistingMLSConversationsUseCaseTest {
     fun givenMLSSupportIsDisabled_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() =
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(false)
                 .withGetConversationsByGroupStateSuccessful()
                 .withRequestToJoinMLSGroupSuccessful()
                 .arrange()
 
-            arrangement.kaliumConfigs.isMLSSupportEnabled = false
             joinExistingMLSConversationsUseCase().shouldSucceed()
 
             verify(arrangement.conversationRepository)
@@ -52,6 +52,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     fun givenExistingConversations_whenInvokingUseCase_ThenRequestToJoinConversationIsCalledForAllConversations() =
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
                 .withGetConversationsByGroupStateSuccessful()
                 .withRequestToJoinMLSGroupSuccessful()
                 .arrange()
@@ -72,6 +73,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenOutOfDateEpochFailure_whenInvokingUseCase_ThenRetryWithNewEpoch() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetConversationsByGroupStateSuccessful(conversations = listOf(Arrangement.MLS_CONVERSATION1))
             .withRequestToJoinMLSGroupSuccessful()
             .withRequestToJoinMLSGroupFailing(Arrangement.MLS_STALE_MESSAGE_FAILURE, times = 1)
@@ -96,6 +98,7 @@ class JoinExistingMLSConversationsUseCaseTest {
     @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
         val (_, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetConversationsByGroupStateSuccessful()
             .withRequestToJoinMLSGroupFailing(Arrangement.MLS_UNSUPPORTED_PROPOSAL_FAILURE)
             .arrange()
@@ -105,12 +108,13 @@ class JoinExistingMLSConversationsUseCaseTest {
 
     private class Arrangement {
 
-        val kaliumConfigs = KaliumConfigs()
+        @Mock
+        val featureSupport = mock(classOf<FeatureSupport>())
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
-        fun arrange() = this to JoinExistingMLSConversationsUseCase(kaliumConfigs, conversationRepository)
+        fun arrange() = this to JoinExistingMLSConversationsUseCase(featureSupport, conversationRepository)
 
         @Suppress("MaxLineLength")
         fun withGetConversationsByGroupStateSuccessful(conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) =
@@ -148,6 +152,12 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .suspendFunction(conversationRepository::requestToJoinMLSGroup)
                 .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
                 .then { Either.Left(failure) }
+        }
+
+        fun withIsMLSSupported(supported: Boolean) = apply {
+            given(featureSupport)
+                .invocation { featureSupport.isMLSSupported }
+                .thenReturn(supported)
         }
 
         companion object {
