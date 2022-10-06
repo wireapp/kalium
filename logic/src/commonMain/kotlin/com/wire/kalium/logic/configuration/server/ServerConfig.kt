@@ -66,6 +66,14 @@ data class ServerConfig(
         @SerialName("domain") val domain: String?
     )
 
+    @Serializable
+    data class VersionInfo(
+        @SerialName("federation") val federation: Boolean,
+        @SerialName("supported") val supported: List<Int>,
+        @SerialName("domain") val domain: String? = null,
+        @SerialName("development") val developmentSupported: List<Int>? = null,
+    )
+
     companion object {
         val PRODUCTION = Links(
             api = """https://prod-nginz-https.wire.com""",
