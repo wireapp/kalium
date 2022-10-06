@@ -43,7 +43,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -281,7 +280,10 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
         val selectedConversation = selectConversation(userSession)
         val selectedConnection = selectConnection(userSession)
 
-        when (val result = userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(selectedConnection.id))) {
+        when (val result = userSession.conversations.addMemberToConversationUseCase(
+            selectedConversation.id,
+            listOf(selectedConnection.id)
+        )) {
             is AddMemberToConversationUseCase.Result.Success -> echo("Added user successfully")
             is AddMemberToConversationUseCase.Result.Failure -> throw PrintMessage("Add user failed: $result")
         }
@@ -296,7 +298,10 @@ class RemoveMemberFromGroupCommand : CliktCommand(name = "remove-member") {
         val selectedConversation = selectConversation(userSession)
         val selectedMember = selectMember(userSession, selectedConversation.id)
 
-        when (val result = userSession.conversations.removeMemberFromConversation(selectedConversation.id, selectedMember.id)) {
+        when (val result = userSession.conversations.removeMemberFromConversation(
+            selectedConversation.id,
+            selectedMember.id
+        )) {
             is RemoveMemberFromConversationUseCase.Result.Success -> echo("Removed user successfully")
             is RemoveMemberFromConversationUseCase.Result.Failure -> throw PrintMessage("Remove user failed: $result")
         }
