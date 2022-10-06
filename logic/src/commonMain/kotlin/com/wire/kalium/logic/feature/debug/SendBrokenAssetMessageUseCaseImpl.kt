@@ -31,13 +31,18 @@ import okio.Path
 
 fun interface SendBrokenAssetMessageUseCase {
     /**
-     * Function that enables sending an asset message to a given conversation
+     * Function that can be used to send manipulated asset messages to a given conversation. Manipulation can be either a wrong
+     * checksum or a changed otrKey. This debug function can be used to test correct client behaviour. It should not be used by
+     * clients itself.
+     *
+     * In contrast to SendAssetMessageUseCase this debug function does not persist the message.
      *
      * @param conversationId the id of the conversation where the asset wants to be sent
      * @param assetDataPath the raw data of the asset to be uploaded to the backend and sent to the given conversation
      * @param assetDataSize the size of the original asset file
      * @param assetName the name of the original asset file
      * @param assetMimeType the type of the asset file
+     * @param brokenState the type of manipulation
      * @return an [SendBrokenAssetMessageResult] containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
      */
     @Suppress("LongParameterList")
@@ -105,7 +110,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 content = MessageContent.Asset(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
-                        Message.UploadStatus.UPLOAD_IN_PROGRESS, // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
+                        Message.UploadStatus.UPLOAD_IN_PROGRESS,
                         brokenState
                     )
                 ),
