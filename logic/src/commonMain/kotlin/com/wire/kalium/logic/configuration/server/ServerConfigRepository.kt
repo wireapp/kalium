@@ -83,6 +83,7 @@ internal interface ServerConfigRepository {
     suspend fun configForUser(userId: UserId): Either<CoreFailure, ServerConfig>
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
