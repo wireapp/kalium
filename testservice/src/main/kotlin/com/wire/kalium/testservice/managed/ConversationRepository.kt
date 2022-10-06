@@ -96,7 +96,7 @@ sealed class ConversationRepository {
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "LongMethod", "ThrowsCount")
         fun sendFile(
             instance: Instance,
             conversationId: ConversationId,
@@ -110,7 +110,7 @@ sealed class ConversationRepository {
             val temp: File = Files.createTempFile("asset", ".data").toFile()
             val byteArray = Base64.getDecoder().decode(data)
             FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
-            log.info("Instance ${instance.instanceId}: Send file")
+            log.info("Instance ${instance.instanceId}: Send file $fileName")
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
@@ -161,16 +161,16 @@ sealed class ConversationRepository {
                                             "Instance ${instance.instanceId}: Sending failed with $rootCause"
                                         )
                                     } else {
-                                        throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                                        throw WebApplicationException("Instance ${instance.instanceId}: Sending file $fileName failed")
                                     }
                                 }
 
                                 is SendBrokenAssetMessageResult.Failure -> {
-                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending broken file failed")
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending broken file $fileName failed")
                                 }
 
                                 else -> {
-                                    log.info("Instance ${instance.instanceId}: Sending file was successful")
+                                    log.info("Instance ${instance.instanceId}: Sending file $fileName was successful")
                                 }
                             }
                         }

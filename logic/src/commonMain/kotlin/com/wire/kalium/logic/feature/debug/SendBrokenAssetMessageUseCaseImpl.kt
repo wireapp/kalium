@@ -1,3 +1,4 @@
+@file:Suppress("MaximumLineLength")
 package com.wire.kalium.logic.feature.debug
 
 import com.benasher44.uuid.uuid4
@@ -56,7 +57,7 @@ fun interface SendBrokenAssetMessageUseCase {
     ): SendBrokenAssetMessageResult
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "MaxLineLength")
 internal class SendBrokenAssetMessageUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val assetDataSource: AssetRepository,
@@ -128,6 +129,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
         }, { SendBrokenAssetMessageResult.Success })
     }
 
+    @Suppress("MaxLineLength")
     private suspend fun uploadAssetAndUpdateMessage(message: Message.Regular, conversationId: ConversationId, brokenState: BrokenState): Either<CoreFailure, Unit> =
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         assetDataSource.uploadAndPersistPrivateAsset(
