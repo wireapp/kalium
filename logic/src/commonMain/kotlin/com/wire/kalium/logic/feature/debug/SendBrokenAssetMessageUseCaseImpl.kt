@@ -8,7 +8,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
-import com.wire.kalium.logic.data.asset.isValidImage
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -25,7 +24,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
-import com.wire.kalium.logic.util.isGreaterThan
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
@@ -133,8 +131,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
             currentAssetMessageContent.otrKey,
             currentAssetMessageContent.assetName.fileExtension()
         ).flatMap { (assetId, sha256) ->
-            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist and
-            // update the message on the DB layer to display the changes on the Conversation screen
+            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
             val updatedMessage = message.copy(
                 // We update the upload status to UPLOADED as the upload succeeded
@@ -142,7 +139,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED, brokenState)
                 )
             )
-            prepareAndSendAssetMessage(message, conversationId)
+            prepareAndSendAssetMessage(updatedMessage)
         }.flatMap {
             Either.Right(Unit)
         }.onFailure {
@@ -151,10 +148,9 @@ internal class SendBrokenAssetMessageUseCaseImpl(
 
     @Suppress("LongParameterList")
     private suspend fun prepareAndSendAssetMessage(
-        message: Message,
-        conversationId: ConversationId
+        message: Message.Regular
     ): Either<CoreFailure, Unit> =
-        messageSender.sendPendingMessage(conversationId, message.id).onFailure {
+        messageSender.sendMessage(message).onFailure {
             kaliumLogger.e("There was an error when trying to send the asset on the conversation")
         }
 
@@ -166,7 +162,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     ): AssetContent {
         with(assetMessageMetadata) {
             val manipulatedSha256KeyData = if (brokenState.invalidHash) {
-                ByteArray(1)
+                ByteArray(DEFAULT_BYTE_ARRAY_SIZE)
             } else if (brokenState.otherHash) {
                 SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)).data
             } else {
@@ -176,12 +172,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 sizeInBytes = assetDataSize,
                 name = assetName,
                 mimeType = mimeType,
-                metadata = when {
-                    isValidImage(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
-                        AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
-                    }
-                    else -> null
-                },
+                metadata = null,
                 remoteData = AssetContent.RemoteData(
                     otrKey = otrKey.data,
                     sha256 = manipulatedSha256KeyData,
@@ -190,9 +181,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     assetDomain = assetId.domain,
                     assetToken = assetId.assetToken
                 ),
-                // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
-                // will only be treated as "SAVED_INTERNALLY"
-                downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
+                downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY,
                 uploadStatus = uploadStatus
             )
         }
