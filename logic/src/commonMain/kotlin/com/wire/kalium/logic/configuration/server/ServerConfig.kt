@@ -68,10 +68,10 @@ data class ServerConfig(
 
     @Serializable
     data class VersionInfo(
-        @SerialName("domain") val domain: String?,
         @SerialName("federation") val federation: Boolean,
         @SerialName("supported") val supported: List<Int>,
-        @SerialName("development") val developmentSupported: List<Int>?,
+        @SerialName("domain") val domain: String? = null,
+        @SerialName("development") val developmentSupported: List<Int>? = null,
     )
 
     companion object {
