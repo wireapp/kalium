@@ -19,5 +19,5 @@ actual open class BaseDatabaseTest actual constructor() {
     }
 
     val UserIDEntity.databaseFile
-        get() = Files.createTempDirectory("test-storage").toFile().resolve("test-${domain}-${value}.db")
+        get() = Files.createTempDirectory("test-storage").toFile().resolve("test-$domain-$value.db")
 }
