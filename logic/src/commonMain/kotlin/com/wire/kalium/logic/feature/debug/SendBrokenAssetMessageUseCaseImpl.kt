@@ -174,10 +174,10 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 mimeType = mimeType,
                 metadata = null,
                 remoteData = AssetContent.RemoteData(
-                    otrKey = otrKey.data,
+                    otrKey = if (brokenState.otherAlgorithm) otrKey.data + 1 else otrKey.data,
                     sha256 = manipulatedSha256KeyData,
                     assetId = assetId.key,
-                    encryptionAlgorithm = if (brokenState.otherAlgorithm) MessageEncryptionAlgorithm.AES_GCM else MessageEncryptionAlgorithm.AES_CBC,
+                    encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
                     assetDomain = assetId.domain,
                     assetToken = assetId.assetToken
                 ),
