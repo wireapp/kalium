@@ -39,7 +39,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -74,7 +73,7 @@ interface ConversationRepository {
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
-    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo>
+    suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
     suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit>
 
@@ -92,7 +91,7 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, MemberChangeResult>
+    suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, MemberChangeResult>
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, MemberChangeResult>
     suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
@@ -171,6 +170,7 @@ internal class ConversationDataSource internal constructor(
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
+    private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper()
 ) : ConversationRepository {
 
@@ -458,9 +458,11 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, ProtocolInfo> =
+    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo> =
         wrapStorageRequest {
-            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo
+            conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationId)).first()?.protocolInfo?.let {
+                protocolInfoMapper.fromEntity(it)
+            }
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
@@ -491,39 +493,42 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun addMembers(
         userIdList: List<UserId>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, MemberChangeResult> {
-        val users = userIdList.map {
-            idMapper.toApiModel(it)
-        }
-        val addParticipantRequest = AddConversationMembersRequest(users, DEFAULT_MEMBER_ROLE)
-        return addedMemberFromCloudAndStorage(userIdList, addParticipantRequest, conversationID)
-    }
-
-    private suspend fun addedMemberFromCloudAndStorage(
-        userIdList: List<UserId>,
-        addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
-    ) =
-        wrapApiRequest {
-            conversationApi.addMember(addParticipantRequest, idMapper.toApiModel(conversationId))
-        }.fold({
-            Either.Left(it)
-        }, { response ->
-            wrapStorageRequest {
-                userIdList.map { userId ->
-                    // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
-                    Conversation.Member(userId, Conversation.Member.Role.Member)
-                }.let { membersList ->
-                    persistMembers(membersList, conversationId)
+    ): Either<CoreFailure, MemberChangeResult> =
+        detailsById(conversationId).flatMap { conversation ->
+            when (conversation.protocol) {
+                is Conversation.ProtocolInfo.Proteus ->
+                    addMembersToCloudAndStorage(userIdList, conversationId)
+
+                is Conversation.ProtocolInfo.MLS -> {
+                    mlsConversationRepository.addMemberToMLSGroup(conversation.protocol.groupId, userIdList)
+                        .map { MemberChangeResult.Changed(Clock.System.now().toString()) }
                 }
-            }.map {
+            }
+        }
+
+    private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId) =
+        wrapApiRequest {
+            val users = userIdList.map {
+                idMapper.toApiModel(it)
+            }
+            val addParticipantRequest = AddConversationMembersRequest(users, DEFAULT_MEMBER_ROLE)
+            conversationApi.addMember(
+                addParticipantRequest, idMapper.toApiModel(conversationId)
+            )
+        }.flatMap { response ->
+            val memberList = userIdList.map { userId ->
+                // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
+                Conversation.Member(userId, Conversation.Member.Role.Member)
+            }
+
+            persistMembers(memberList, conversationId).map {
                 when (response) {
                     is ConversationMemberAddedDTO.Changed -> MemberChangeResult.Changed(response.time)
                     ConversationMemberAddedDTO.Unchanged -> MemberChangeResult.Unchanged
                 }
             }
-        })
+        }
 
     override suspend fun deleteMember(
         userId: UserId,

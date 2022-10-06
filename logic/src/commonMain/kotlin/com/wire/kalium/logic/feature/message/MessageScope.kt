@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -40,6 +41,7 @@ class MessageScope internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
     private val proteusClient: ProteusClient,
     private val mlsClientProvider: MLSClientProvider,
@@ -77,6 +79,7 @@ class MessageScope internal constructor(
         get() = MessageSenderImpl(
             messageRepository,
             conversationRepository,
+            mlsConversationRepository,
             syncManager,
             messageSendFailureHandler,
             sessionEstablisher,

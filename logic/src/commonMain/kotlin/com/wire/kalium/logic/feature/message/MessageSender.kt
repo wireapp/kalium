@@ -4,9 +4,12 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -21,7 +24,6 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -77,6 +79,7 @@ interface MessageSender {
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val syncManager: SyncManager,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val sessionEstablisher: SessionEstablisher,
@@ -136,11 +139,11 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> {
         return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
-                is ConversationEntity.ProtocolInfo.MLS -> {
+                is Conversation.ProtocolInfo.MLS -> {
                     attemptToSendWithMLS(protocolInfo.groupId, message)
                 }
 
-                is ConversationEntity.ProtocolInfo.Proteus -> {
+                is Conversation.ProtocolInfo.Proteus -> {
                     // TODO(messaging): make this thread safe (per user)
                     attemptToSendWithProteus(message)
                 }
@@ -164,21 +167,23 @@ internal class MessageSenderImpl internal constructor(
      *
      * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
      */
-    private suspend fun attemptToSendWithMLS(groupId: String, message: Message.Regular): Either<CoreFailure, String> =
-        mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-            messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
-                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                    if (it.kaliumException.isMlsStaleMessage()) {
-                        logger.w("Encrypted MLS message for outdated epoch '${message.id}', re-trying..")
-                        return syncManager.waitUntilLiveOrFailure().flatMap {
-                            attemptToSend(message)
+    private suspend fun attemptToSendWithMLS(groupId: GroupID, message: Message.Regular): Either<CoreFailure, String> =
+        mlsConversationRepository.commitPendingProposals(groupId).flatMap {
+            mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
+                messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
+                    if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+                        if (it.kaliumException.isMlsStaleMessage()) {
+                            logger.w("Encrypted MLS message for outdated epoch '${message.id}', re-trying..")
+                            return syncManager.waitUntilLiveOrFailure().flatMap {
+                                attemptToSend(message)
+                            }
                         }
                     }
-                }
-                Either.Left(it)
-            }, {
-                Either.Right(message.date) // TODO(mls): return actual server time from the response
-            })
+                    Either.Left(it)
+                }, {
+                    Either.Right(it)
+                })
+            }
         }
 
     /**

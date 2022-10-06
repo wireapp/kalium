@@ -1,12 +1,9 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.MemberChangeResult
-import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
@@ -21,64 +18,73 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddMemberToConversationUseCaseTest {
 
     @Test
-    fun givenMemberAndProteusConversation_WhenAddMemberIsSuccessful_ThenMemberIsAddedToDB() = runTest {
+    fun givenMemberAndConversation_WhenAddMemberIsSuccessful_ThenReturnSuccessAndPersistMessage() = runTest {
         val (arrangement, addMemberUseCase) = Arrangement()
-            .withConversationProtocolIs(Arrangement.proteusProtocolInfo)
-            .withAddMemberToProteusGroupSuccessful()
+            .withAddMembers(Either.Right(MemberChangeResult.Changed("2022-01-01T00:00:00.000Z")))
             .withPersistMessage(Either.Right(Unit))
             .arrange()
 
-        addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
 
-        // VERIFY PROTEUS INVOKED CORRECTLY
+        assertIs<AddMemberToConversationUseCase.Result.Success>(result)
+
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::addMembers)
             .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
 
-        // VERIFY MLS NOT INVOKED
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
-            .with(any(), any())
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberAndConversation_WhenAddMemberIsSuccessfulButUnchanged_ThenReturnSuccessAndDoNotPersistMessage() = runTest {
+        val (arrangement, addMemberUseCase) = Arrangement()
+            .withAddMembers(Either.Right(MemberChangeResult.Unchanged))
+            .arrange()
+
+        val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+
+        assertIs<AddMemberToConversationUseCase.Result.Success>(result)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::addMembers)
+            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(any())
             .wasNotInvoked()
     }
 
     @Test
-    fun givenMemberAndMLSConversation_WhenAddMemberIsSuccessful_ThenMemberIsAddedToDB() = runTest {
+    fun givenMemberAndConversation_WhenAddMemberFailed_ThenReturnFailure() = runTest {
         val (arrangement, addMemberUseCase) = Arrangement()
-            .withConversationProtocolIs(Arrangement.mlsProtocolInfo)
-            .withAddMemberToMLSGroupSuccessful()
-            .withPersistMessage(Either.Right(Unit))
+            .withAddMembers(Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
-        addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        assertIs<AddMemberToConversationUseCase.Result.Failure>(result)
 
-        // VERIFY PROTEUS FUNCTION NOT INVOKED
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::addMembers)
-            .with(any(), any())
-            .wasNotInvoked()
-
-        // VERIFY MLS FUNCTIONS INVOKED CORRECTLY
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
-            .with(eq(Arrangement.mlsGroupId), eq(listOf(TestConversation.USER_1)))
-            .wasInvoked(once)
+            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -87,30 +93,15 @@ class AddMemberToConversationUseCaseTest {
 
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
             conversationRepository,
-            mlsConversationRepository,
             selfUserId,
             persistMessage
         )
 
-        fun withAddMemberToProteusGroupSuccessful() = apply {
+        fun withAddMembers(either: Either<CoreFailure, MemberChangeResult>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::addMembers)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(MemberChangeResult.Changed("")))
-        }
-
-        fun withAddMemberToMLSGroupSuccessful() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::addMemberToMLSGroup)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withConversationProtocolIs(protocolInfo: ProtocolInfo) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::detailsById)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(TestConversation.GROUP(protocolInfo)))
+                .thenReturn(either)
         }
 
         fun withPersistMessage(either: Either<CoreFailure, Unit>) = apply {
@@ -121,19 +112,6 @@ class AddMemberToConversationUseCaseTest {
         }
 
         fun arrange() = this to addMemberUseCase
-
-        companion object {
-            val mlsGroupId = GroupID("mlsGroupId")
-            val proteusProtocolInfo = ProtocolInfo.Proteus
-            val mlsProtocolInfo = ProtocolInfo.MLS(
-                mlsGroupId,
-                groupState = ProtocolInfo.MLS.GroupState.ESTABLISHED,
-                0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            )
-
-        }
     }
 
 }

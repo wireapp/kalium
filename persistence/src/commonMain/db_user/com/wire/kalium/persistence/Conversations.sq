@@ -167,6 +167,7 @@ SELECT * FROM ConversatonDetails
 WHERE type IS NOT "SELF" AND
 (type IS "GROUP" AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
 OR (type IS NOT "GROUP" AND otherUserId IS NOT NULL)) -- show other conversation- todo: problem here! if the sync wasn't succesful the the user seems to be null!
+AND (protocol IS "PROTEUS" OR (protocol IS "MLS" AND mls_group_state IS "ESTABLISHED"))
 ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
 
 selectAllConversations:

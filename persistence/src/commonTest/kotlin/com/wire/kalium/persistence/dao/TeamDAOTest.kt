@@ -47,6 +47,18 @@ class TeamDAOTest : BaseDatabaseTest() {
         assertEquals(insertedTeam2.id, resultTeam2.first()?.id)
     }
 
+    @Test
+    fun givenTeam_whenGetsUpdated_thenProperDataIsReturned() = runTest {
+        val team = TeamEntity(id = "teamId 1", name = "Test Team 1", icon = "icon")
+        teamDAO.insertTeam(team)
+        val updatedTeam = team.copy(name = "Test Team 2")
+
+        teamDAO.updateTeam(updatedTeam)
+        val result = teamDAO.getTeamById(teamId = "teamId 1")
+
+        assertEquals(updatedTeam, result.first())
+    }
+
     private companion object {
         const val teamId = "abc-1234-def-5678-ghi-9012"
     }

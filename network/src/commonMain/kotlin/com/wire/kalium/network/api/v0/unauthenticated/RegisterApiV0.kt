@@ -1,9 +1,9 @@
 package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.utils.CustomErrors
@@ -16,7 +16,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpHeaders
 
-internal class RegisterApiV0 internal constructor(
+internal open class RegisterApiV0 internal constructor(
     private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
 ) : RegisterApi {
 

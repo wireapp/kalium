@@ -3,11 +3,9 @@ package com.wire.kalium.logic.feature.register
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AuthTokens
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
@@ -49,8 +47,7 @@ sealed class RegisterParam(
 
 class RegisterAccountUseCase internal constructor(
     private val registerAccountRepository: RegisterAccountRepository,
-    private val serverConfigRepository: ServerConfigRepository,
-    private val serverLinks: ServerConfig.Links
+    private val serverConfig: ServerConfig
 ) {
     suspend operator fun invoke(
         param: RegisterParam
@@ -73,9 +70,8 @@ class RegisterAccountUseCase internal constructor(
                 )
             }
         }
-    }.flatMap { (ssoId, authTokens) ->
-        serverConfigRepository.configByLinks(serverLinks)
-            .map { serverConfig -> RegisterResult.Success(authTokens, ssoId, serverConfig.id) }
+    }.map { (ssoId, authTokens) ->
+               RegisterResult.Success(authTokens, ssoId, serverConfig.id)
     }.fold({
         if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
             handleSpecialErrors(it.kaliumException)

@@ -7,13 +7,11 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
-
 import kotlinx.datetime.Instant
 
 data class Conversation(
@@ -71,7 +69,7 @@ data class Conversation(
     }
 
     @Suppress("MagicNumber")
-    enum class CipherSuite(val cipherSuiteTag: Int) {
+    enum class CipherSuite(val tag: Int) {
         UNKNOWN(0),
         MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
         MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
@@ -82,7 +80,7 @@ data class Conversation(
         MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
 
         companion object {
-            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.cipherSuiteTag == tag }
+            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.tag == tag }
         }
     }
 
@@ -130,7 +128,6 @@ sealed class ConversationDetails(open val conversation: Conversation) {
     data class OneOne(
         override val conversation: Conversation,
         val otherUser: OtherUser,
-        val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
         val unreadMessagesCount: Long = 0L,

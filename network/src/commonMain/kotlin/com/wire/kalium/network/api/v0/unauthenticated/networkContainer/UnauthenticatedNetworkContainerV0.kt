@@ -1,6 +1,5 @@
 package com.wire.kalium.network.api.v0.unauthenticated.networkContainer
 
-import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
@@ -15,15 +14,11 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
 class UnauthenticatedNetworkContainerV0 constructor(
-    backendLinks: ServerConfigDTO.Links,
-    serverMetaDataManager: ServerMetaDataManager,
-    developmentApiEnabled: Boolean = false,
+    backendLinks: ServerConfigDTO,
     engine: HttpClientEngine = defaultHttpEngine(),
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
         backendLinks,
-        serverMetaDataManager,
-        developmentApiEnabled,
         engine
     ) {
     override val loginApi: LoginApi get() = LoginApiV0(unauthenticatedNetworkClient)

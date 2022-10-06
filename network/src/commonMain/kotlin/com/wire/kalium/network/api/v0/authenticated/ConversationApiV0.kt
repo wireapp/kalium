@@ -30,11 +30,11 @@ import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import okio.IOException
 
-internal class ConversationApiV0 internal constructor(
+internal open class ConversationApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ConversationApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun fetchConversationsIds(
         pagingState: String?
@@ -89,7 +89,7 @@ internal class ConversationApiV0 internal constructor(
         request: AddConversationMembersRequest,
         conversationId: ConversationId
     ): NetworkResponse<ConversationMemberAddedDTO> = try {
-        httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
             setBody(request)
         }.let { response ->
             when (response.status) {
@@ -164,7 +164,7 @@ internal class ConversationApiV0 internal constructor(
         }
     }
 
-    private companion object {
+    protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
         const val PATH_MEMBERS = "members"
