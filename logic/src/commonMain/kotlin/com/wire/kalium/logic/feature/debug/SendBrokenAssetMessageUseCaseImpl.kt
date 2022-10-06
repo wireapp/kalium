@@ -124,14 +124,17 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 editStatus = Message.EditStatus.NotEdited
             )
 
-            uploadAssetAndUpdateMessage(message, conversationId, brokenState)
+            uploadAssetAndUpdateMessage(message, brokenState)
         }.fold({
             SendBrokenAssetMessageResult.Failure(it)
         }, { SendBrokenAssetMessageResult.Success })
     }
 
     @Suppress("MaxLineLength")
-    private suspend fun uploadAssetAndUpdateMessage(message: Message.Regular, conversationId: ConversationId, brokenState: BrokenState): Either<CoreFailure, Unit> =
+    private suspend fun uploadAssetAndUpdateMessage(
+        message: Message.Regular,
+        brokenState: BrokenState
+    ): Either<CoreFailure, Unit> =
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         assetDataSource.uploadAndPersistPrivateAsset(
             currentAssetMessageContent.mimeType,
