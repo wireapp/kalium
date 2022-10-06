@@ -129,6 +129,9 @@ class DeleteClientCommand : CliktCommand(name = "delete-client") {
 class CreateGroupCommand : CliktCommand(name = "create-group") {
 
     private val name: String by option(help = "Name of the group").prompt()
+    private val protocol: ConversationOptions.Protocol
+        by option(help = "Protocol for sending messages").enum<ConversationOptions.Protocol>().default(ConversationOptions.Protocol.MLS)
+
 
     override fun run() = runBlocking {
         val userSession = currentUserSession()
@@ -151,7 +154,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val result = userSession.conversations.createGroupConversation(
             name,
             userToAddList,
-            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+            ConversationOptions(protocol = protocol)
         )
         when (result) {
             is CreateGroupConversationUseCase.Result.Success -> echo("group created successfully")
