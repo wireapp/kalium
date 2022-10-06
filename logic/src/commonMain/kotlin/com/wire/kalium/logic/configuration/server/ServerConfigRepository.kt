@@ -14,9 +14,12 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.BackendMetaDataUtil
+import com.wire.kalium.network.BackendMetaDataUtilImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.tools.ApiVersionDTO
+import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +50,7 @@ internal interface ServerConfigRepository {
     fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
     suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig>
     fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig>
+    fun storeConfig(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): Either<StorageFailure, ServerConfig>
 
     /**
      * calculate the app/server common api version for a new non stored config and store it locally if the version is valid
@@ -79,10 +83,13 @@ internal interface ServerConfigRepository {
     suspend fun configForUser(userId: UserId): Either<CoreFailure, ServerConfig>
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class ServerConfigDataSource(
     private val api: ServerConfigApi,
     private val dao: ServerConfigurationDAO,
     private val versionApi: VersionApi,
+    private val developmentApiEnabled: Boolean,
+    private val backendMetaDataUtil: BackendMetaDataUtil = BackendMetaDataUtilImpl,
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ServerConfigRepository {
@@ -142,6 +149,19 @@ internal class ServerConfigDataSource(
         }.map {
             serverConfigMapper.fromEntity(it)
         }
+
+    override fun storeConfig(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): Either<StorageFailure, ServerConfig> {
+        val metaDataDTO = backendMetaDataUtil.calculateApiVersion(
+            versionInfoDTO = VersionInfoDTO(
+                developmentSupported = versionInfo.developmentSupported,
+                domain = versionInfo.domain,
+                federation = versionInfo.federation,
+                supported = versionInfo.supported,
+            ),
+            developmentApiEnabled = developmentApiEnabled
+        )
+        return storeConfig(links, serverConfigMapper.fromDTO(metaDataDTO))
+    }
 
     override suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
         fetchMetadata(links)
