@@ -6,8 +6,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 
 internal actual class PlatformDatabaseData
 
-fun UserDatabaseProvider(): UserDatabaseProvider = TODO()
-
 internal actual fun nuke(
     userId: UserIDEntity,
     database: UserDatabase,
