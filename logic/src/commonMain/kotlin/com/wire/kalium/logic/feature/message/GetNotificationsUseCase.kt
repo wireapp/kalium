@@ -242,6 +242,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
         is MessageContent.Unknown -> false
         is MessageContent.MemberChange -> false
         is MessageContent.Text -> true
+        is MessageContent.Reaction -> true
         is MessageContent.Calling -> false
         is MessageContent.Asset -> true
         is MessageContent.Knock -> true

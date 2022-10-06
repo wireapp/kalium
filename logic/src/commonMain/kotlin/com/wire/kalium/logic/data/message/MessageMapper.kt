@@ -88,7 +88,8 @@ class MessageMapperImpl(
                     MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
                     is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
                 },
-                visibility = visibility
+                visibility = visibility,
+                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions)
             )
 
             is MessageEntity.System -> Message.System(
@@ -174,6 +175,7 @@ class MessageMapperImpl(
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
         is MessageContent.Calling -> MessageEntityContent.Unknown()
         is MessageContent.DeleteMessage -> MessageEntityContent.Unknown()
+        is MessageContent.Reaction -> MessageEntityContent.Unknown()
         is MessageContent.TextEdited -> MessageEntityContent.Unknown()
         is MessageContent.DeleteForMe -> MessageEntityContent.Unknown()
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = this.hotKnock)
