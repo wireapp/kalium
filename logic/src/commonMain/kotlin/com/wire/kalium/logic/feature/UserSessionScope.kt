@@ -589,7 +589,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.proteusClient,
             globalScope.sessionRepository,
             userId,
-            featureSupport
+            featureSupport,
+            clientIdProvider
         )
     val conversations: ConversationScope
         get() = ConversationScope(

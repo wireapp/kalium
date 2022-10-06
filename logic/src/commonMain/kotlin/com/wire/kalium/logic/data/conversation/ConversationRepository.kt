@@ -31,6 +31,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
@@ -38,7 +39,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateConversationAccessResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -91,7 +91,7 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun addMembers(userIdList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, MemberChangeResult>
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, MemberChangeResult>
     suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
@@ -493,23 +493,42 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun addMembers(
         userIdList: List<UserId>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, Unit> = wrapApiRequest {
-        val users = userIdList.map {
-            idMapper.toApiModel(it)
+        conversationId: ConversationId
+    ): Either<CoreFailure, MemberChangeResult> =
+        detailsById(conversationId).flatMap { conversation ->
+            when (conversation.protocol) {
+                is Conversation.ProtocolInfo.Proteus ->
+                    addMembersToCloudAndStorage(userIdList, conversationId)
+
+                is Conversation.ProtocolInfo.MLS -> {
+                    mlsConversationRepository.addMemberToMLSGroup(conversation.protocol.groupId, userIdList)
+                        .map { MemberChangeResult.Changed(Clock.System.now().toString()) }
+                }
+            }
         }
-        val addParticipantRequest = AddConversationMembersRequest(users, DEFAULT_MEMBER_ROLE)
-        conversationApi.addMember(
-            addParticipantRequest, idMapper.toApiModel(conversationID)
-        )
-    }.flatMap {
-        userIdList.map { userId ->
-            // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
-            Conversation.Member(userId, Conversation.Member.Role.Member)
-        }.let { membersList ->
-            persistMembers(membersList, conversationID)
+
+    private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId) =
+        wrapApiRequest {
+            val users = userIdList.map {
+                idMapper.toApiModel(it)
+            }
+            val addParticipantRequest = AddConversationMembersRequest(users, DEFAULT_MEMBER_ROLE)
+            conversationApi.addMember(
+                addParticipantRequest, idMapper.toApiModel(conversationId)
+            )
+        }.flatMap { response ->
+            val memberList = userIdList.map { userId ->
+                // TODO: mapping the user id list to members with a made up role is incorrect and a recipe for disaster
+                Conversation.Member(userId, Conversation.Member.Role.Member)
+            }
+
+            persistMembers(memberList, conversationId).map {
+                when (response) {
+                    is ConversationMemberAddedDTO.Changed -> MemberChangeResult.Changed(response.time)
+                    ConversationMemberAddedDTO.Unchanged -> MemberChangeResult.Unchanged
+                }
+            }
         }
-    }
 
     override suspend fun deleteMember(
         userId: UserId,

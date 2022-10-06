@@ -7,6 +7,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -15,6 +16,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
@@ -142,9 +144,9 @@ internal class ServerConfigDataSource(
         }
 
     override suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
-        wrapApiRequest { versionApi.fetchApiVersion(Url(links.api)) }
+        fetchMetadata(links)
             .flatMap { metaData ->
-                storeConfig(links, serverConfigMapper.fromDTO(metaData))
+                storeConfig(links, metaData)
             }
 
     override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
@@ -155,10 +157,20 @@ internal class ServerConfigDataSource(
         wrapStorageRequest { dao.configByLinks(links.title, links.api, links.webSocket) }.map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
-        .flatMap { wrapApiRequest { versionApi.fetchApiVersion(Url(it.links.api)) } }
+        .flatMap { fetchMetadata(it.links) }
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
 
     override suspend fun configForUser(userId: UserId): Either<CoreFailure, ServerConfig> =
         wrapStorageRequest { dao.configForUser(idMapper.toDaoModel(userId)) }
             .map { serverConfigMapper.fromEntity(it) }
+
+    private suspend fun fetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig.MetaData> =
+        wrapApiRequest { versionApi.fetchApiVersion(Url(serverLinks.api)) }
+            .flatMap {
+                when (it.commonApiVersion) {
+                    ApiVersionDTO.Invalid.New -> Either.Left(ServerConfigFailure.NewServerVersion)
+                    ApiVersionDTO.Invalid.Unknown -> Either.Left(ServerConfigFailure.UnknownServerVersion)
+                    is ApiVersionDTO.Valid -> Either.Right(it)
+                }
+            }.map { serverConfigMapper.fromDTO(it) }
 }

@@ -22,8 +22,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
-import com.wire.kalium.logic.data.message.Message.DownloadStatus.NOT_DOWNLOADED
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -242,16 +240,11 @@ internal class ConversationEventReceiverImpl(
 
     private fun updateAssetMessageWithDecryptionKeys(persistedMessage: Message.Regular, remoteData: AssetContent.RemoteData): Message {
         val assetMessageContent = persistedMessage.content as MessageContent.Asset
-        val isValidImage = assetMessageContent.value.metadata?.let {
-            it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
-        } ?: false
-
         // The message was previously received with just metadata info, so let's update it with the raw data info
         return persistedMessage.copy(
             content = assetMessageContent.copy(
                 value = assetMessageContent.value.copy(
-                    remoteData = remoteData,
-                    downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
+                    remoteData = remoteData
                 )
             ),
             visibility = Message.Visibility.VISIBLE
@@ -466,6 +459,8 @@ internal class ConversationEventReceiverImpl(
 
                 is MessageContent.Cleared -> clearConversationContentHandler.handle(message, content)
                 is MessageContent.Empty -> TODO()
+                is MessageContent.RestrictedAsset -> TODO()
+                is MessageContent.Knock -> TODO()
             }
 
             is Message.System -> when (message.content) {
@@ -473,6 +468,9 @@ internal class ConversationEventReceiverImpl(
                     logger.i(message = "System MemberChange Message received: $message")
                     persistMessage(message)
                 }
+
+                is MessageContent.ConversationRenamed -> TODO()
+                is MessageContent.MissedCall -> TODO()
             }
         }
     }
@@ -494,37 +492,37 @@ internal class ConversationEventReceiverImpl(
     }
 
     private suspend fun processNonRestrictedAssetMessage(message: Message.Regular) {
+        val assetContent = message.content as MessageContent.Asset
+        val isPreviewMessage = assetContent.value.sizeInBytes > 0 && !assetContent.value.hasValidRemoteData()
         messageRepository.getMessageById(message.conversationId, message.id)
             .onFailure {
                 // No asset message was received previously, so just persist the preview of the asset message
-                val isValidImage = (message.content as MessageContent.Asset).value.metadata?.let {
+                val isValidImage = assetContent.value.metadata?.let {
                     it is AssetContent.AssetMetadata.Image && it.width > 0 && it.height > 0
                 } ?: false
+
+                // Web/Mac clients split the asset message delivery into 2. One with the preview metadata (assetName, assetSize...) and
+                // with empty encryption keys and the second with empty metadata but all the correct encryption keys. We just want to
+                // hide the preview of generic asset messages with empty encryption keys as a way to avoid user interaction with them.
                 val previewMessage = message.copy(
-                    content = message.content.copy(
-                        value = message.content.value.copy(
-                            downloadStatus = if (isValidImage) DOWNLOAD_IN_PROGRESS else NOT_DOWNLOADED
-                        )
-                    ),
-                    // We restrict the generic asset message to be displayed/interacted with until the second message with the final remote
-                    // data arrives. For images, we just show a placeholder with a loading bar.
-                    visibility = if (isValidImage) Message.Visibility.VISIBLE else Message.Visibility.HIDDEN
+                    content = message.content.copy(value = assetContent.value),
+                    visibility = if (isPreviewMessage && !isValidImage)
+                        Message.Visibility.HIDDEN else Message.Visibility.VISIBLE
                 )
                 persistMessage(previewMessage)
             }
             .onSuccess { persistedMessage ->
-                val messageContent = persistedMessage.content
+                val validDecryptionKeys = message.content.value.remoteData
                 // Check the second asset message is from the same original sender
                 if (isSenderVerified(persistedMessage.id, persistedMessage.conversationId, message.senderUserId) &&
-                    persistedMessage is Message.Regular &&
-                    messageContent is MessageContent.Asset
+                    persistedMessage is Message.Regular
                 ) {
-                    // The asset message received contains the asset decryption keys,
-                    // so update the preview message persisted previously
+                    // The second asset message received from Web/Mac clients contains the full asset decryption keys, so we need to update
+                    // the preview message persisted previously with the rest of the data
                     persistMessage(
                         updateAssetMessageWithDecryptionKeys(
                             persistedMessage,
-                            (message.content as MessageContent.Asset).value.remoteData
+                            validDecryptionKeys
                         )
                     )
                 }
@@ -561,4 +559,8 @@ internal class ConversationEventReceiverImpl(
     private companion object {
         const val TAG = "ConversationEventReceiver"
     }
+}
+
+fun AssetContent.hasValidRemoteData() = this.remoteData.let {
+    it.assetId.isNotEmpty() && it.sha256.isNotEmpty() && it.otrKey.isNotEmpty()
 }

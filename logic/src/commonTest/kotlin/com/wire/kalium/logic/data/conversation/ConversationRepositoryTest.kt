@@ -21,6 +21,7 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
@@ -680,55 +681,78 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPISucceeds_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
-        val conversationId = TestConversation.ID
-        given(conversationApi)
-            .suspendFunction(conversationApi::addMember)
-            .whenInvokedWith(any(), any())
-            .thenReturn(
-                NetworkResponse.Success(
-                    TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
-                    mapOf(),
-                    HttpStatusCode.OK.value
-                )
-            )
-        given(conversationDAO)
-            .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-            .whenInvokedWith(any(), any())
-            .thenDoNothing()
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+    fun givenAConversationAndAPISucceedsWithChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
+            .withFetchUsersIfUnknownByIdsSuccessful()
+            .withAddMemberAPISucceedChanged()
+            .withSuccessfulMemberInsert()
+            .arrange()
 
-        conversationRepository.addMembers(listOf(TestConversation.USER_1), conversationId)
+        conversationRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
             .shouldSucceed()
 
-        verify(conversationDAO)
-            .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+            .with(anything(), anything())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationAndAPISucceedsWithoutChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
+            .withFetchUsersIfUnknownByIdsSuccessful()
+            .withAddMemberAPISucceedUnchanged()
+            .withSuccessfulMemberInsert()
+            .arrange()
+
+        conversationRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+            .shouldSucceed()
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
             .with(anything(), anything())
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAConversationAndAPIFailed_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
-        val conversationId = TestConversation.ID
-        given(conversationApi)
-            .suspendFunction(conversationApi::addMember)
-            .whenInvokedWith(any(), any())
-            .thenReturn(
-                NetworkResponse.Error(
-                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                )
-            )
+        val (arrangement, conversationRepository) = Arrangement()
+            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
+            .withAddMemberAPIFailed()
+            .arrange()
 
-        conversationRepository.addMembers(listOf(TestConversation.USER_1), conversationId)
+        conversationRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
             .shouldFail()
 
-        verify(conversationDAO)
+        verify(arrangement.conversationDAO)
             .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
             .with(any(), any())
             .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAnMLSConversationAndAPISucceeds_whenAddMemberFromConversation_thenShouldSucceed() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withConversationProtocolIs(MLS_PROTOCOL_INFO)
+            .withAddMemberAPISucceedChanged()
+            .withSuccessfulMemberInsert()
+            .withSuccessfulAddMemberToMLSGroup()
+            .arrange()
+
+        conversationRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+            .shouldSucceed { it is MemberChangeResult.Changed }
+
+        // this function called in the mlsRepo
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
+            .with(anything(), anything())
+            .wasNotInvoked()
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -1409,6 +1433,44 @@ class ConversationRepositoryTest {
                 .thenReturn(TestConversation.GROUP_ENTITY(protocolInfo))
         }
 
+        fun withAddMemberAPISucceedChanged() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::addMember)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withAddMemberAPISucceedUnchanged() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::addMember)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        ConversationMemberAddedDTO.Unchanged,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withAddMemberAPIFailed() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::addMember)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    )
+                )
+
+        }
+
         fun withDeleteMemberAPISucceedChanged() = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::removeMember)
@@ -1447,6 +1509,20 @@ class ConversationRepositoryTest {
 
         }
 
+        fun withFetchUsersIfUnknownByIdsSuccessful() = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSuccessfulMemberInsert() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+                .whenInvokedWith(any(), any())
+                .thenDoNothing()
+        }
+
         fun withSuccessfulMemberDeletion() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::deleteMemberByQualifiedID)
@@ -1458,6 +1534,13 @@ class ConversationRepositoryTest {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::leaveGroup)
                 .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSuccessfulAddMemberToMLSGroup() = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::addMemberToMLSGroup)
+                .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
 
