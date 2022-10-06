@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import okio.Path
 
+@Suppress("MaxLineLength")
 fun interface SendBrokenAssetMessageUseCase {
     /**
      * Function that can be used to send manipulated asset messages to a given conversation. Manipulation can be either a wrong
