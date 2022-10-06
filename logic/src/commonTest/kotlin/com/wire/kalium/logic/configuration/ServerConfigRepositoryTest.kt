@@ -266,9 +266,9 @@ class ServerConfigRepositoryTest {
         val expectedServerConfig = newServerConfig(1)
         val expectedServerConfigDTO = newServerConfigDTO(1)
         val expectedVersionInfo = ServerConfig.VersionInfo(
-            expectedServerConfig.metaData.domain,
             expectedServerConfig.metaData.federation,
             listOf(expectedServerConfig.metaData.commonApiVersion.version),
+            expectedServerConfig.metaData.domain,
             null
         )
         val (arrangement, repository) = Arrangement()
