@@ -188,24 +188,26 @@ RestrictedAssetContent.asset_size AS restrictedAssetSize,
 RestrictedAssetContent.asset_name AS restrictedAssetName,
 FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
 ConversationNameChangedContent.conversation_name AS conversationName,
+'{' || IFNULL(
+    (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
+    FROM (
+        SELECT COUNT(*) count, Reaction.emoji emoji
+        FROM Reaction
+        WHERE Reaction.message_id = Message.id
+        AND Reaction.conversation_id = Message.conversation_id
+        GROUP BY Reaction.emoji
+    )),
+    '')
+|| '}' AS allReactionsJson,
 IFNULL(
-'{' || GROUP_CONCAT(
-   DISTINCT '"' || Reaction.emoji || '":' ||
-       (SELECT COUNT(R.emoji)
-           FROM Reaction AS R
-           WHERE R.message_id = Message.id
-               AND R.conversation_id = Message.conversation_id
-               AND R.emoji = Reaction.emoji
-           GROUP BY R.emoji
-           )
-       )
-|| '}', '{}') AS allReactionsJson,
-IFNULL((SELECT '[' || GROUP_CONCAT('"' || Reaction.emoji || '"') || ']'
+    (SELECT '[' || GROUP_CONCAT('"' || Reaction.emoji || '"') || ']'
     FROM Reaction
-    WHERE Reaction.sender_id = SelfUser.id
-        AND Reaction.message_id = Message.id
-        AND Reaction.conversation_id = Message.conversation_id),
-'[]') AS selfReactionsJson
+    WHERE Reaction.message_id = Message.id
+        AND Reaction.conversation_id = Message.conversation_id
+        AND Reaction.sender_id = SelfUser.id
+    ),
+    '[]'
+) AS selfReactionsJson
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -216,9 +218,7 @@ LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
-LEFT JOIN Reaction AS Reaction ON Message.id = Reaction.message_id AND Message.conversation_id = Reaction.conversation_id
-LEFT JOIN SelfUser
-GROUP BY Message.id;
+LEFT JOIN SelfUser;
 
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
