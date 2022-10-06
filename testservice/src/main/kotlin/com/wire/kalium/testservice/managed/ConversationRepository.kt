@@ -45,6 +45,25 @@ sealed class ConversationRepository {
             }
         }
 
+        fun sendReaction(
+            instance: Instance,
+            conversationId: ConversationId,
+            originalMessageId: String,
+            type: String
+        ) {
+            instance.coreLogic?.globalScope {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send reaction $type")
+                        runBlocking {
+                            messages.toggleReaction(conversationId, originalMessageId, type)
+                        }
+                    }
+                }
+            }
+        }
+
         fun sendTextMessage(instance: Instance, conversationId: ConversationId, text: String?) {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
@@ -134,13 +153,13 @@ sealed class ConversationRepository {
                                 val brokenState = BrokenState(invalidHash, otherHash, otherAlgorithm)
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
                                 debug.sendBrokenAssetMessage(
-                                   conversationId,
-                                   temp.toOkioPath(),
-                                   byteArray.size.toLong(),
-                                   fileName,
-                                   type,
-                                   brokenState
-                               )
+                                    conversationId,
+                                    temp.toOkioPath(),
+                                    byteArray.size.toLong(),
+                                    fileName,
+                                    type,
+                                    brokenState
+                                )
                             } else {
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
                                 messages.sendAssetMessage(
