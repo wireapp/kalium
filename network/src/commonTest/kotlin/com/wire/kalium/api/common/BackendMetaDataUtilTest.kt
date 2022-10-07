@@ -28,7 +28,7 @@ class BackendMetaDataUtilTest {
             serverVersion.domain
         )
 
-        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion,false)
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion, false)
         assertEquals(expected, actual)
     }
 
@@ -43,7 +43,7 @@ class BackendMetaDataUtilTest {
             serverVersion.domain
         )
 
-        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion,false)
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion, false)
         assertEquals(expected, actual)
     }
 
@@ -58,7 +58,7 @@ class BackendMetaDataUtilTest {
             serverVersion.domain
         )
 
-        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion,true)
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion, true)
         assertEquals(expected, actual)
     }
 
@@ -88,7 +88,7 @@ class BackendMetaDataUtilTest {
             serverVersion.domain
         )
 
-        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion,false)
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion, false)
         assertEquals(expected, actual)
     }
 
@@ -102,7 +102,7 @@ class BackendMetaDataUtilTest {
             ApiVersionDTO.Invalid.New,
             serverVersion.domain
         )
-        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion,false)
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion, false)
         assertEquals(expected, actual)
     }
 
@@ -117,7 +117,7 @@ class BackendMetaDataUtilTest {
             serverVersion.domain
         )
 
-        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion,false)
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion, false)
         assertEquals(expected, actual)
     }
 
@@ -132,7 +132,7 @@ class BackendMetaDataUtilTest {
             serverVersion.domain
         )
 
-        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion,false)
+        val actual = serverConfigUtil.calculateApiVersion(serverVersion, appVersion, developmentVersion, false)
         assertEquals(expected, actual)
     }
 }
