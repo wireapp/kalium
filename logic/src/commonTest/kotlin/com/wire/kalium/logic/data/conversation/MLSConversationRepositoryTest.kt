@@ -112,6 +112,7 @@ class MLSConversationRepositoryTest {
             .withSendWelcomeMessageSuccessful()
             .withSendMLSMessageFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withClearPendingCommitSuccessful()
+            .withWaitUntilLiveSuccessful()
             .withCommitAcceptedSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .arrange()
@@ -122,6 +123,11 @@ class MLSConversationRepositoryTest {
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::clearPendingCommit)
             .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.syncManager)
+            .function(arrangement.syncManager::waitUntilLiveOrFailure)
+            .with()
             .wasInvoked(once)
 
         verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
@@ -253,6 +259,7 @@ class MLSConversationRepositoryTest {
             .withSendWelcomeMessageSuccessful()
             .withSendMLSMessageFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withClearPendingCommitSuccessful()
+            .withWaitUntilLiveSuccessful()
             .withCommitAcceptedSuccessful()
             .withInsertMemberSuccessful()
             .arrange()
@@ -263,6 +270,11 @@ class MLSConversationRepositoryTest {
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::clearPendingCommit)
             .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.syncManager)
+            .function(arrangement.syncManager::waitUntilLiveOrFailure)
+            .with()
             .wasInvoked(once)
 
         verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
@@ -542,6 +554,7 @@ class MLSConversationRepositoryTest {
             .withSendWelcomeMessageSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .withClearPendingCommitSuccessful()
+            .withWaitUntilLiveSuccessful()
             .withCommitAcceptedSuccessful()
             .withDeleteMembersSuccessful()
             .arrange()
@@ -553,6 +566,11 @@ class MLSConversationRepositoryTest {
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::clearPendingCommit)
             .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.syncManager)
+            .function(arrangement.syncManager::waitUntilLiveOrFailure)
+            .with()
             .wasInvoked(once)
 
         verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
