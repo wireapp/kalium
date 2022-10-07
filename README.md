@@ -49,8 +49,6 @@ For example, if you want to run the task `jvmTest` and the libraries are in `./n
 
 #### Running the CLI
 
-Note: Currently the CLI only works on the development or staging environments (see CL-61).
-
 Run the following with the native libs in the
 classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
 
