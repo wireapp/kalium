@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.Message
@@ -137,7 +136,10 @@ internal class MessageSenderImpl internal constructor(
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
-    private suspend fun attemptToSend(message: Message.Regular, messageTarget: MessageTarget = MessageTarget.Conversation): Either<CoreFailure, String> {
+    private suspend fun attemptToSend(
+        message: Message.Regular,
+        messageTarget: MessageTarget = MessageTarget.Conversation
+    ): Either<CoreFailure, String> {
         return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is Conversation.ProtocolInfo.MLS -> {

@@ -90,7 +90,12 @@ interface MessageRepository {
      * @return [Either.Left] of a [ProteusSendMessageFailure] if the server rejected the message
      * @return [Either.Left] of other [CoreFailure] for more generic cases
      */
-    suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope, messageTarget: MessageTarget): Either<CoreFailure, String>
+    suspend fun sendEnvelope(
+        conversationId: ConversationId,
+        envelope: MessageEnvelope,
+        messageTarget: MessageTarget
+    ): Either<CoreFailure, String>
+
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
