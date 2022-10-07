@@ -54,6 +54,9 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
+import com.wire.kalium.logic.data.message.PersistReactionUseCase
+import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -120,6 +123,7 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UserScope
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
@@ -184,6 +188,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
+    private val featureSupport: FeatureSupport,
     private val userSessionScopeProvider: UserSessionScopeProvider
 ) : CoroutineScope {
 
@@ -420,7 +425,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
         get() = JoinExistingMLSConversationsUseCase(
-            kaliumConfigs,
+            featureSupport,
             conversationRepository
         )
 
@@ -459,7 +464,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     internal val keyPackageManager: KeyPackageManager =
         KeyPackageManagerImpl(
-            kaliumConfigs,
+            featureSupport,
             incrementalSyncRepository,
             lazy { client.refillKeyPackages },
             lazy { client.mlsKeyPackageCountUseCase },
@@ -467,7 +472,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
     internal val keyingMaterialsManager: KeyingMaterialsManager =
         KeyingMaterialsManagerImpl(
-            kaliumConfigs,
+            featureSupport,
             incrementalSyncRepository,
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository }
@@ -509,6 +514,12 @@ abstract class UserSessionScopeCommon internal constructor(
         globalCallManager.getMediaManager()
     }
 
+    private val reactionRepository = ReactionRepositoryImpl(userId, userDatabaseProvider.reactionDAO)
+    private val persistReaction: PersistReactionUseCase
+        get() = PersistReactionUseCaseImpl(
+            reactionRepository
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         val conversationRepository = conversationRepository
         val messageRepository = messageRepository
@@ -516,6 +527,7 @@ abstract class UserSessionScopeCommon internal constructor(
         ConversationEventReceiverImpl(
             proteusClient = authenticatedDataSourceSet.proteusClient,
             persistMessage = persistMessage,
+            persistReaction = persistReaction,
             messageRepository = messageRepository,
             assetRepository = assetRepository,
             conversationRepository = conversationRepository,
@@ -586,7 +598,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.proteusClient,
             globalScope.sessionRepository,
             userId,
-            kaliumConfigs
+            featureSupport,
+            clientIdProvider
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -611,12 +624,14 @@ abstract class UserSessionScopeCommon internal constructor(
             clientIdProvider,
             messageRepository,
             conversationRepository,
+            mlsConversationRepository,
             clientRepository,
             authenticatedDataSourceSet.proteusClient,
             mlsClientProvider,
             preKeyRepository,
             userRepository,
             assetRepository,
+            reactionRepository,
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,

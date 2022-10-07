@@ -1,8 +1,8 @@
 package com.wire.kalium.network.session
 
-import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
+import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
@@ -27,11 +27,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.util.InternalAPI
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.preventFreeze
 import kotlin.coroutines.CoroutineContext
 
 interface SessionManager {
-    fun session(): Pair<SessionDTO, ServerConfigDTO.Links>
+    fun session(): Pair<SessionDTO, ServerConfigDTO>
     fun updateLoginSession(
         newAccessTokenDTO: AccessTokenDTO,
         newRefreshTokenDTO: RefreshTokenDTO?
@@ -81,7 +80,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
                 }
             }
         }
-        if (sessionManager.session().second.proxy?.needsAuthentication == true) {
+        if (sessionManager.session().second.links.proxy?.needsAuthentication == true) {
             basic {
                 credentials {
                     sessionManager.proxyCredentials()?.first?.let {
@@ -102,7 +101,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
 
 fun HttpClientConfig<*>.installProxy(sessionManager: SessionManager) {
     engine {
-        proxy = sessionManager.session().second.proxy?.apiProxy?.let { ProxyBuilder.socks(host = it, port = 1080) }
+        proxy = sessionManager.session().second.links.proxy?.apiProxy?.let { ProxyBuilder.socks(host = it, port = 1080) }
     }
 }
 

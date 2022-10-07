@@ -2,13 +2,11 @@ package com.wire.kalium.api
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.ServerMetaDataManager
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -29,11 +27,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
-
-class TestServerMetaDataManager : ServerMetaDataManager {
-    override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? = TEST_BACKEND
-    override fun storeServerConfig(links: ServerConfigDTO.Links, metaData: ServerConfigDTO.MetaData): ServerConfigDTO = TEST_BACKEND
-}
 
 internal interface ApiTest {
 
@@ -68,8 +61,7 @@ internal interface ApiTest {
         }
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            serverMetaDataManager = TestServerMetaDataManager()
+            sessionManager = TEST_SESSION_NAMAGER
         ).networkClient
     }
 
@@ -79,8 +71,7 @@ internal interface ApiTest {
         }
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            serverMetaDataManager = TestServerMetaDataManager()
+            sessionManager = TEST_SESSION_NAMAGER
         ).websocketClient
     }
 
@@ -93,8 +84,7 @@ internal interface ApiTest {
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
         return AuthenticatedNetworkClient(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            serverMetaDataManager = TestServerMetaDataManager()
+            sessionManager = TEST_SESSION_NAMAGER
         )
     }
 
@@ -122,9 +112,8 @@ internal interface ApiTest {
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
 
         return UnauthenticatedNetworkContainerV0(
-            backendLinks = TEST_BACKEND.links,
-            engine = mockEngine,
-            serverMetaDataManager = TestServerMetaDataManager()
+            backendLinks = TEST_BACKEND,
+            engine = mockEngine
         ).unauthenticatedNetworkClient
     }
 
@@ -157,9 +146,8 @@ internal interface ApiTest {
             fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
         }
         return UnauthenticatedNetworkContainerV0(
-            backendLinks = TEST_BACKEND.links,
-            engine = mockEngine,
-            serverMetaDataManager = TestServerMetaDataManager()
+            backendLinks = TEST_BACKEND,
+            engine = mockEngine
         ).unauthenticatedNetworkClient
     }
 
@@ -184,8 +172,7 @@ internal interface ApiTest {
         )
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER,
-            serverMetaDataManager = TestServerMetaDataManager()
+            sessionManager = TEST_SESSION_NAMAGER
         ).networkClient
     }
 

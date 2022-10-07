@@ -8,7 +8,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
-import com.wire.kalium.logic.data.asset.isValidImage
+import com.wire.kalium.logic.data.asset.isDisplayableMimeType
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -188,7 +188,7 @@ internal class SendAssetMessageUseCaseImpl(
                 name = assetName,
                 mimeType = mimeType,
                 metadata = when {
-                    isValidImage(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
+                    isDisplayableMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
                         AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
                     }
                     else -> null

@@ -68,6 +68,14 @@ data class ServerConfig(
     )
 
     @Serializable
+    data class VersionInfo(
+        @SerialName("federation") val federation: Boolean,
+        @SerialName("supported") val supported: List<Int>,
+        @SerialName("domain") val domain: String? = null,
+        @SerialName("development") val developmentSupported: List<Int>? = null,
+    )
+
+    @Serializable
     data class Proxy(
         @SerialName("needsAuthentication") val needsAuthentication: Boolean?,
         @SerialName("apiProxy") val apiProxy: String?

@@ -56,13 +56,13 @@ classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
 
 ```
 ./gradlew :cli:assemble
-java -jar cli/build/libs/cli.jar login
+java -Djava.library.path=/usr/local/lib/:./native/libs -jar cli/build/libs/cli.jar login 
 ```
 
 or if you want the jar file deleted after your run:
 
 ```
-./gradlew :cli:run --args="login"
+./gradlew :cli:run --args="login" -Djava.library.path=/usr/local/lib/:./native/libs
 ```
 
 #### Detekt rules

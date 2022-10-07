@@ -12,7 +12,7 @@ import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -38,7 +38,8 @@ import kotlin.test.assertSame
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterClientUseCaseTest {
 
-    private var kaliumConfigs = KaliumConfigs()
+    @Mock
+    private val featureSupport = mock(classOf<FeatureSupport>())
 
     @Mock
     private val clientRepository = mock(classOf<ClientRepository>())
@@ -59,9 +60,8 @@ class RegisterClientUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        kaliumConfigs = KaliumConfigs()
         registerClient = RegisterClientUseCaseImpl(
-            kaliumConfigs,
+            featureSupport,
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
@@ -83,6 +83,10 @@ class RegisterClientUseCaseTest {
             .function(preKeyRepository::generateNewLastKey)
             .whenInvoked()
             .then { Either.Right(LAST_KEY) }
+
+        given(featureSupport)
+            .invocation { featureSupport.isMLSSupported }
+            .thenReturn(true)
 
     }
 
@@ -436,7 +440,9 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenMLsSupportIsDisabled_whenRegistering_thenMLSClientIsNotRegistered() = runTest {
-        kaliumConfigs.isMLSSupportEnabled = false
+        given(featureSupport)
+            .invocation { featureSupport.isMLSSupported }
+            .thenReturn(false)
 
         val registeredClient = CLIENT
         given(clientRepository)
@@ -462,7 +468,6 @@ class RegisterClientUseCaseTest {
 
     private companion object {
         const val KEY_PACKAGE_LIMIT = 100
-        const val KEY_PACKAGE_THRESHOLD = 0.5F
         const val TEST_PASSWORD = "password"
         val TEST_CAPABILITIES: List<ClientCapability> = listOf(
             ClientCapability.LegalHoldImplicitConsent

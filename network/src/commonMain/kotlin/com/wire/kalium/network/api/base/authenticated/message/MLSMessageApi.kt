@@ -23,7 +23,7 @@ interface MLSMessageApi {
      *
      * @param message MLS Message
      */
-    suspend fun sendMessage(message: Message): NetworkResponse<Unit>
+    suspend fun sendMessage(message: Message): NetworkResponse<SendMLSMessageResponse>
 
     /**
      * Send an MLS welcome message to a client(s) which you've added to a MLS group.

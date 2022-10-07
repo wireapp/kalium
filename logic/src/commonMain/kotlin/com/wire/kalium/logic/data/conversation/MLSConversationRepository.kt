@@ -187,7 +187,7 @@ class MLSConversationDataSource(
                     mlsMessageApi.sendMessage(
                         MLSMessageApi.Message(message)
                     )
-                }
+                }.flatMap { Either.Right(Unit) }
             }.onSuccess {
                 conversationDAO.updateConversationGroupState(
                     ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
@@ -263,56 +263,60 @@ class MLSConversationDataSource(
     }
 
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        retryOnCommitFailure(groupID) {
-            // TODO: check for federated and non-federated members
-            keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
-                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                    val clientKeyPackageList = keyPackages
-                        .map {
-                            Pair(
-                                CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
-                                it.keyPackage.decodeBase64Bytes()
-                            )
-                        }
+        commitPendingProposals(groupID).flatMap {
+            retryOnCommitFailure(groupID) {
+                // TODO: check for federated and non-federated members
+                keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
+                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                        val clientKeyPackageList = keyPackages
+                            .map {
+                                Pair(
+                                    CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
+                                    it.keyPackage.decodeBase64Bytes()
+                                )
+                            }
 
-                    wrapMLSRequest {
-                        mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
-                    }.flatMap { commitBundle ->
-                        commitBundle?.let {
-                            sendCommitBundle(groupID, it)
-                                .flatMap {
-                                    wrapStorageRequest {
-                                        val list = userIdList.map {
-                                            Member(idMapper.toDaoModel(it), Member.Role.Member)
+                        wrapMLSRequest {
+                            mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
+                        }.flatMap { commitBundle ->
+                            commitBundle?.let {
+                                sendCommitBundle(groupID, it)
+                                    .flatMap {
+                                        wrapStorageRequest {
+                                            val list = userIdList.map {
+                                                Member(idMapper.toDaoModel(it), Member.Role.Member)
+                                            }
+                                            conversationDAO.insertMembers(list, idMapper.toGroupIDEntity(groupID))
                                         }
-                                        conversationDAO.insertMembers(list, idMapper.toGroupIDEntity(groupID))
                                     }
-                                }
-                        } ?: Either.Right(Unit)
+                            } ?: Either.Right(Unit)
+                        }
                     }
                 }
             }
         }
 
     override suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        retryOnCommitFailure(groupID) {
-            wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
-                val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
-                    userClients.value.map { userClient ->
-                        CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
+        commitPendingProposals(groupID).flatMap {
+            retryOnCommitFailure(groupID) {
+                wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { idMapper.toApiModel(it) }) }.map { userClientsList ->
+                    val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
+                        userClients.value.map { userClient ->
+                            CryptoQualifiedClientId(userClient.id, idMapper.toCryptoQualifiedIDId(idMapper.fromApiModel(userClients.key)))
+                        }
                     }
-                }
-                return@retryOnCommitFailure mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                    wrapMLSRequest {
-                        mlsClient.removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs)
-                    }.flatMap {
-                        sendCommitBundle(groupID, it)
-                    }.flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.deleteMembersByQualifiedID(
-                                userIdList.map { idMapper.toDaoModel(it) },
-                                idMapper.toGroupIDEntity(groupID)
-                            )
+                    return@retryOnCommitFailure mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                        wrapMLSRequest {
+                            mlsClient.removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs)
+                        }.flatMap {
+                            sendCommitBundle(groupID, it)
+                        }.flatMap {
+                            wrapStorageRequest {
+                                conversationDAO.deleteMembersByQualifiedID(
+                                    userIdList.map { idMapper.toDaoModel(it) },
+                                    idMapper.toGroupIDEntity(groupID)
+                                )
+                            }
                         }
                     }
                 }
@@ -410,7 +414,9 @@ class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
             }.flatMap {
-                operation()
+                syncManager.waitUntilLiveOrFailure().flatMap {
+                    operation()
+                }
             }
         }
     }
