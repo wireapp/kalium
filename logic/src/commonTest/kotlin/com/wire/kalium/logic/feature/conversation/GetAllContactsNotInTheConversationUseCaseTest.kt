@@ -54,8 +54,6 @@ class GetAllContactsNotInTheConversationUseCaseTest {
             assertIs<Result.Failure>(result)
             cancelAndIgnoreRemainingEvents()
         }
-
-
     }
 
     private class Arrangement {

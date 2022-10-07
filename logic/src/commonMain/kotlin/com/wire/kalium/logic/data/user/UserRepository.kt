@@ -273,8 +273,9 @@ internal class UserDataSource internal constructor(
         userDAO.updateUserAvailabilityStatus(idMapper.toDaoModel(userId), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
 
-    override suspend fun observeAllKnownUsersNotInConversation(conversationId: ConversationId)
-            : Flow<Either<StorageFailure, List<OtherUser>>> {
+    override suspend fun observeAllKnownUsersNotInConversation(
+        conversationId: ConversationId
+    ): Flow<Either<StorageFailure, List<OtherUser>>> {
         return userDAO.observeUsersNotInConversation(idMapper.toDaoModel(conversationId))
             .wrapStorageRequest()
             .mapRight { users ->
