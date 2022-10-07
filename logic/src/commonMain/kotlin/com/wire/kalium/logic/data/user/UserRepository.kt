@@ -221,7 +221,7 @@ internal class UserDataSource internal constructor(
             .wrapStorageRequest()
             .mapRight { users ->
                 users
-                    .filter { it.id != selfUserId && !it.deleted}
+                    .filter { it.id != selfUserId && !it.deleted }
                     .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
             }
     }
@@ -273,13 +273,15 @@ internal class UserDataSource internal constructor(
         userDAO.updateUserAvailabilityStatus(idMapper.toDaoModel(userId), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
 
-    override suspend fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>> {
+    override suspend fun observeAllKnownUsersNotInConversation(conversationId: ConversationId)
+            : Flow<Either<StorageFailure, List<OtherUser>>> {
         return userDAO.observeUsersNotInConversation(idMapper.toDaoModel(conversationId))
-                .wrapStorageRequest()
-                .mapRight { users -> users
+            .wrapStorageRequest()
+            .mapRight { users ->
+                users
                     .filter { !it.deleted }
-                    .map { publicUserMapper.fromDaoModelToPublicUser(it) }}
-
+                    .map { publicUserMapper.fromDaoModelToPublicUser(it) }
+            }
     }
 
     override suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>> {

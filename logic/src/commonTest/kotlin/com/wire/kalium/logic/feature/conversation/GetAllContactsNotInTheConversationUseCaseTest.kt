@@ -25,14 +25,14 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
     @Test
     fun givenSuccessFullResult_whenGettingUsersNotPartofTheConversation_ThenReturnTheResult() = runTest {
-        //given
+        // given
         val (_, getAllContactsNotInTheConversation) = Arrangement()
             .withSuccessFullGetUsersNotPartOfConversation()
             .arrange()
 
-        //when
+        // when
         getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain")).test {
-            //then
+            // then
             val result = awaitItem()
             assertIs<Result.Success>(result)
             assertTrue { result.contactsNotInConversation == Arrangement.mockAllContacts }
@@ -42,14 +42,14 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
     @Test
     fun givenFailure_whenGettingUsersNotPartofTheConversation_ThenReturnTheResult() = runTest {
-        //given
+        // given
         val (_, getAllContactsNotInTheConversation) = Arrangement()
             .withFailureGetUsersNotPartOfConversation()
             .arrange()
 
-        //when
+        // when
         getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain")).test {
-            //then
+            // then
             val result = awaitItem()
             assertIs<Result.Failure>(result)
             cancelAndIgnoreRemainingEvents()
@@ -107,9 +107,11 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                 .suspendFunction(userRepository::observeAllKnownUsersNotInConversation)
                 .whenInvokedWith(anything())
                 .thenReturn(
-                    flowOf( Either.Right(
-                        allContacts
-                    ))
+                    flowOf(
+                        Either.Right(
+                            allContacts
+                        )
+                    )
                 )
             return this
         }
