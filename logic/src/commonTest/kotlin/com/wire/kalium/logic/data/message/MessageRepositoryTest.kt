@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -122,7 +123,7 @@ class MessageRepositoryTest {
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
             .shouldSucceed {
                 assertSame(it, TEST_DATETIME)
             }
@@ -140,7 +141,7 @@ class MessageRepositoryTest {
             .withSuccessfulMessageDelivery(timestamp)
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
             .shouldSucceed {
                 assertSame(it, TEST_DATETIME)
             }

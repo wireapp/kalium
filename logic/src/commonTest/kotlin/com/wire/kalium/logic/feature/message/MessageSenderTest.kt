@@ -453,7 +453,7 @@ class MessageSenderTest {
         fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right("date")) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(result)
         }
 
