@@ -2,10 +2,12 @@ package com.wire.kalium.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
+import com.github.ajalt.clikt.core.requireObject
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.output.TermUi.echo
 import com.github.ajalt.clikt.output.TermUi.prompt
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.types.enum
@@ -23,7 +25,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
@@ -38,7 +39,6 @@ import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUs
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.server.GetServerConfigResult
-import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -46,26 +46,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
-
-private val coreLogic = CoreLogic(
-    clientLabel = "Kalium CLI",
-    rootPath = "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts",
-    kaliumConfigs = KaliumConfigs(developmentApiEnabled = true)
-)
-
-fun restoreSession(): AccountInfo? {
-    return coreLogic.globalScope {
-        when (val currentSessionResult = session.currentSession()) {
-            is CurrentSessionResult.Success -> currentSessionResult.accountInfo
-            else -> null
-        }
-    }
-}
-
-fun currentUserSession(): UserSessionScope {
-    val accountInfo = restoreSession() ?: throw PrintMessage("no active session")
-    return coreLogic.getSessionScope(accountInfo.userId)
-}
 
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
     userSession.syncManager.waitUntilLive()
@@ -118,12 +98,11 @@ suspend fun selectConnection(userSession: UserSessionScope): OtherUser {
 
 class DeleteClientCommand : CliktCommand(name = "delete-client") {
 
+    private val userSession by requireObject<UserSessionScope>()
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
 
     override fun run() = runBlocking {
-        val userSession = currentUserSession()
-
-        val selfClientsResult = currentUserSession().client.selfClients()
+        val selfClientsResult = userSession.client.selfClients()
 
         if (selfClientsResult !is SelfClientsResult.Success) {
             throw PrintMessage("failed to retrieve self clients")
@@ -147,13 +126,12 @@ class DeleteClientCommand : CliktCommand(name = "delete-client") {
 
 class CreateGroupCommand : CliktCommand(name = "create-group") {
 
+    private val userSession by requireObject<UserSessionScope>()
     private val name: String by option(help = "Name of the group").prompt()
     private val protocol: ConversationOptions.Protocol
             by option(help = "Protocol for sending messages").enum<ConversationOptions.Protocol>().default(ConversationOptions.Protocol.MLS)
 
     override fun run() = runBlocking {
-        val userSession = currentUserSession()
-
         val users = userSession.users.getAllKnownUsers().let {
             when (it) {
                 is GetAllContactsResult.Failure -> throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
@@ -184,6 +162,8 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
 class LoginCommand : CliktCommand(name = "login") {
 
+    private val coreLogic by requireObject<CoreLogic>()
+    private var userSession: UserSessionScope? = null
     private val email: String by option(help = "Account email").prompt("email", promptSuffix = ": ")
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
     private val environment: String? by option(
@@ -222,7 +202,7 @@ class LoginCommand : CliktCommand(name = "login") {
             is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
 
-    override fun run() = runBlocking {
+    override fun run(): Unit = runBlocking {
         val loginResult = provideVersionedAuthenticationScope(serverConfig()).login(email, password, true).let {
             if (it !is AuthenticationResult.Success) {
                 throw PrintMessage("Login failed, check your credentials")
@@ -244,13 +224,16 @@ class LoginCommand : CliktCommand(name = "login") {
                 }
             }
         }
+
+        userSession = currentContext.findOrSetObject { coreLogic.getSessionScope(userId) }
     }
 }
 
 class ListenGroupCommand : CliktCommand(name = "listen-group") {
 
+    private val userSession by requireObject<UserSessionScope>()
+
     override fun run() = runBlocking {
-        val userSession = currentUserSession()
         val conversationID = selectConversation(userSession).id
 
         GlobalScope.launch(Dispatchers.Default) {
@@ -273,10 +256,10 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
 }
 
 class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
+
+    private val userSession by requireObject<UserSessionScope>()
+
     override fun run(): Unit = runBlocking {
-
-        val userSession = currentUserSession()
-
         val selectedConversation = selectConversation(userSession)
         val selectedConnection = selectConnection(userSession)
 
@@ -291,10 +274,10 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
 }
 
 class RemoveMemberFromGroupCommand : CliktCommand(name = "remove-member") {
+
+    private val userSession by requireObject<UserSessionScope>()
+
     override fun run(): Unit = runBlocking {
-
-        val userSession = currentUserSession()
-
         val selectedConversation = selectConversation(userSession)
         val selectedMember = selectMember(userSession, selectedConversation.id)
 
@@ -309,9 +292,10 @@ class RemoveMemberFromGroupCommand : CliktCommand(name = "remove-member") {
 }
 
 class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
-    override fun run() = runBlocking {
-        val userSession = currentUserSession()
 
+    private val userSession by requireObject<UserSessionScope>()
+
+    override fun run() = runBlocking {
         when (val result = userSession.client.refillKeyPackages()) {
             is RefillKeyPackagesResult.Success -> echo("key packages were refilled")
             is RefillKeyPackagesResult.Failure -> throw PrintMessage("refill key packages failed: ${result.failure}")
@@ -322,12 +306,20 @@ class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
-    private val logFile by option(help = "output file for logs").file(canBeDir = false)
-
-    private val fileLogger: FileLogger by lazy { FileLogger(logFile ?: File("kalium.log")) }
+    private val logOutputFile by option(help = "output file for logs").file(canBeDir = false)
+    private val developmentApiEnabled by option(help = "use development API if supported by backend").flag(default = false)
+    private val fileLogger: FileLogger by lazy { FileLogger(logOutputFile ?: File("kalium.log")) }
 
     override fun run() = runBlocking {
-        if (logFile != null) {
+        currentContext.findOrSetObject {
+            CoreLogic(
+                clientLabel = "Kalium CLI",
+                rootPath = "$HOME_DIRECTORY/.kalium/accounts",
+                kaliumConfigs = KaliumConfigs(developmentApiEnabled = developmentApiEnabled)
+            )
+        }
+
+        if (logOutputFile != null) {
             CoreLogger.setLoggingLevel(logLevel, fileLogger)
         } else {
             CoreLogger.setLoggingLevel(logLevel)
@@ -341,11 +333,12 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 }
 
 fun main(args: Array<String>) = CLIApplication().subcommands(
-    LoginCommand(),
-    CreateGroupCommand(),
-    ListenGroupCommand(),
-    DeleteClientCommand(),
-    AddMemberToGroupCommand(),
-    RemoveMemberFromGroupCommand(),
-    RefillKeyPackagesCommand()
+    LoginCommand().subcommands(
+        CreateGroupCommand(),
+        ListenGroupCommand(),
+        DeleteClientCommand(),
+        AddMemberToGroupCommand(),
+        RemoveMemberFromGroupCommand(),
+        RefillKeyPackagesCommand()
+    )
 ).main(args)
