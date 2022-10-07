@@ -150,9 +150,12 @@ internal class MessageSenderImpl internal constructor(
                 }
             }
         }
-}
+    }
 
-    private suspend fun attemptToSendWithProteus(message: Message.Regular, targetRecipients: List<Recipient>?): Either<CoreFailure, String> {
+    private suspend fun attemptToSendWithProteus(
+        message: Message.Regular,
+        targetRecipients: List<Recipient>?
+    ): Either<CoreFailure, String> {
         val conversationId = message.conversationId
 
         return targetRecipients?.let {
