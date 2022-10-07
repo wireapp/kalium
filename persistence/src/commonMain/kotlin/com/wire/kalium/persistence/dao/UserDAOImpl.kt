@@ -241,10 +241,11 @@ class UserDAOImpl internal constructor(
         userQueries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
-    override suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity): List<UserEntity> =
+    override suspend fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserEntity>> =
         userQueries.getUsersNotPartOfTheConversation(conversationId)
-            .executeAsList()
-            .map(mapper::toModel)
+            .asFlow()
+            .mapToList()
+            .map { it.map(mapper::toModel) }
 
     override suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
@@ -265,10 +266,11 @@ class UserDAOImpl internal constructor(
         userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
     }
 
-    override suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity> =
+    override suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>> =
         userQueries.selectAllUsersWithConnectionStatus(connectionState)
-            .executeAsList()
-            .map(mapper::toModel)
+            .asFlow()
+            .mapToList()
+            .map { it.map(mapper::toModel) }
 
     override suspend fun getAllUsersByTeam(teamId: String): List<UserEntity> =
         userQueries.selectUsersByTeam(teamId)
