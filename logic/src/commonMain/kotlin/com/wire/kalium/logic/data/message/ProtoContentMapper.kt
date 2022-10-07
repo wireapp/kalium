@@ -10,16 +10,17 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Calling
+import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
-import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
-import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import com.wire.kalium.protobuf.messages.Reaction
+import com.wire.kalium.protobuf.messages.Text
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
@@ -73,12 +74,22 @@ class ProtoContentMapperImpl(
                     )
                 )
             }
+
             is MessageContent.Cleared -> {
                 GenericMessage.Content.Cleared(
                     Cleared(
                         conversationId = readableContent.unqualifiedConversationId,
                         qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) },
                         clearedTimestamp = readableContent.time.toEpochMilliseconds()
+                    )
+                )
+            }
+
+            is MessageContent.Reaction -> {
+                GenericMessage.Content.Reaction(
+                    Reaction(
+                        emoji = readableContent.emojiSet.joinToString(separator = ",") { it },
+                        messageId = readableContent.messageId
                     )
                 )
             }
@@ -123,10 +134,12 @@ class ProtoContentMapperImpl(
                 protoContent.value.content,
                 protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull()
             )
+
             is GenericMessage.Content.Asset -> {
                 // Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one
                 MessageContent.Asset(assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value))
             }
+
             is GenericMessage.Content.Availability ->
                 MessageContent.Availability(availabilityMapper.fromProtoAvailabilityToModel(protoContent.value))
 
@@ -140,6 +153,7 @@ class ProtoContentMapperImpl(
                     time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
                 )
             }
+
             is GenericMessage.Content.ClientAction -> MessageContent.Ignored
             is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Confirmation -> MessageContent.Ignored
@@ -166,6 +180,7 @@ class ProtoContentMapperImpl(
                     }
                 }
             }
+
             is GenericMessage.Content.Ephemeral -> MessageContent.Ignored
             is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
             is GenericMessage.Content.Hidden -> {
@@ -181,6 +196,7 @@ class ProtoContentMapperImpl(
                     MessageContent.Ignored
                 }
             }
+
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> {
                 MessageContent.LastRead(
@@ -192,7 +208,15 @@ class ProtoContentMapperImpl(
             }
 
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
-            is GenericMessage.Content.Reaction -> MessageContent.Ignored
+            is GenericMessage.Content.Reaction -> {
+                val emoji = protoContent.value.emoji
+                // TODO: Actually handle Unicode properly
+                // We need to filter out the unicode variants for the emojis
+                val emojiSet = emoji?.split(',')?.filter { it.isNotBlank() }
+                    ?.toSet() ?: emptySet()
+                MessageContent.Reaction(protoContent.value.messageId, emojiSet)
+            }
+
             else -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
                 MessageContent.Ignored

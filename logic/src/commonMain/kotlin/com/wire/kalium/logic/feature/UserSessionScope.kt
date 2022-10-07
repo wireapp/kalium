@@ -54,6 +54,9 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
+import com.wire.kalium.logic.data.message.PersistReactionUseCase
+import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -511,6 +514,12 @@ abstract class UserSessionScopeCommon internal constructor(
         globalCallManager.getMediaManager()
     }
 
+    private val reactionRepository = ReactionRepositoryImpl(userId, userDatabaseProvider.reactionDAO)
+    private val persistReaction: PersistReactionUseCase
+        get() = PersistReactionUseCaseImpl(
+            reactionRepository
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         val conversationRepository = conversationRepository
         val messageRepository = messageRepository
@@ -518,6 +527,7 @@ abstract class UserSessionScopeCommon internal constructor(
         ConversationEventReceiverImpl(
             proteusClient = authenticatedDataSourceSet.proteusClient,
             persistMessage = persistMessage,
+            persistReaction = persistReaction,
             messageRepository = messageRepository,
             assetRepository = assetRepository,
             conversationRepository = conversationRepository,
@@ -588,7 +598,8 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.proteusClient,
             globalScope.sessionRepository,
             userId,
-            featureSupport
+            featureSupport,
+            clientIdProvider
         )
     val conversations: ConversationScope
         get() = ConversationScope(
@@ -620,6 +631,7 @@ abstract class UserSessionScopeCommon internal constructor(
             preKeyRepository,
             userRepository,
             assetRepository,
+            reactionRepository,
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,

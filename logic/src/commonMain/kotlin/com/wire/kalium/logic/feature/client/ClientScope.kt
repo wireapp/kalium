@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
@@ -31,6 +32,7 @@ class ClientScope(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val featureSupport: FeatureSupport,
+    private val clientIdProvider: CurrentClientIdProvider,
 ) {
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
@@ -41,7 +43,8 @@ class ClientScope(
             keyPackageLimitsProvider,
             mlsClientProvider
         )
-    val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository)
+
+    val selfClients: SelfClientsUseCase get() = SelfClientsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase
         get() = NeedsToRegisterClientUseCaseImpl(clientRepository, sessionRepository, selfUserId)

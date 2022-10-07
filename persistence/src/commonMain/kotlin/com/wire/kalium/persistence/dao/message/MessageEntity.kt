@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 
 @Suppress("LongParameterList")
 sealed class MessageEntity(
@@ -22,7 +23,8 @@ sealed class MessageEntity(
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
         val senderClientId: String,
-        val editStatus: EditStatus
+        val editStatus: EditStatus,
+        val reactions: ReactionsEntity = ReactionsEntity.EMPTY
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
 
     data class System(

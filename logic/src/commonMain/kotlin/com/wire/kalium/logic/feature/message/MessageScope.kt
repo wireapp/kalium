@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
@@ -47,6 +48,7 @@ class MessageScope internal constructor(
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
+    private val reactionRepository: ReactionRepository,
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
@@ -117,7 +119,8 @@ class MessageScope internal constructor(
     val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
-            messageRepository
+            messageRepository,
+            updateAssetMessageDownloadStatus
         )
 
     val getRecentMessages: GetRecentMessagesUseCase
@@ -133,6 +136,15 @@ class MessageScope internal constructor(
             clientRepository,
             assetRepository,
             slowSyncRepository,
+            messageSender
+        )
+
+    val toggleReaction: ToggleReactionUseCase
+        get() = ToggleReactionUseCase(
+            currentClientIdProvider,
+            userId,
+            slowSyncRepository,
+            reactionRepository,
             messageSender
         )
 

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -127,7 +128,7 @@ class ConversationEventReceiverTest {
                 it.content is MessageContent.Asset &&
                         (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
             })
-            .wasInvoked(exactly = once)
+            .wasInvoked()
     }
 
     @Test
@@ -526,6 +527,9 @@ class ConversationEventReceiverTest {
         @Mock
         val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
 
+        @Mock
+        val persistReactionsUseCase = mock(classOf<PersistReactionUseCase>())
+
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             proteusClient = proteusClient,
             persistMessage = persistMessage,
@@ -556,7 +560,8 @@ class ConversationEventReceiverTest {
             ephemeralNotificationsManager = ephemeralNotifications,
             pendingProposalScheduler = pendingProposalScheduler,
             protoContentMapper = protoContentMapper,
-            selfUserId = TestUser.USER_ID
+            selfUserId = TestUser.USER_ID,
+            persistReaction = persistReactionsUseCase
         )
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
