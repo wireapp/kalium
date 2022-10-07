@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.Message
@@ -67,7 +68,7 @@ interface MessageSender {
      * @param message that will be sent
      * @see [sendPendingMessage]
      */
-    suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit>
+    suspend fun sendMessage(message: Message.Regular, targetRecipients: List<Recipient>? = null): Either<CoreFailure, Unit>
 
     /**
      * Attempts to send the given Client Discovery [Message] to suitable recipients.
@@ -110,8 +111,8 @@ internal class MessageSenderImpl internal constructor(
         }
     }
 
-    override suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> =
-        attemptToSend(message).map { messageRemoteTime ->
+    override suspend fun sendMessage(message: Message.Regular, targetRecipients: List<Recipient>?): Either<CoreFailure, Unit> =
+        attemptToSend(message, targetRecipients).map { messageRemoteTime ->
             updateDatesOfMessagesWithServerTime(message, messageRemoteTime)
         }
 
@@ -136,7 +137,7 @@ internal class MessageSenderImpl internal constructor(
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
-    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> {
+    private suspend fun attemptToSend(message: Message.Regular, targetRecipients: List<Recipient>? = null): Either<CoreFailure, String> {
         return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is Conversation.ProtocolInfo.MLS -> {
@@ -145,15 +146,20 @@ internal class MessageSenderImpl internal constructor(
 
                 is Conversation.ProtocolInfo.Proteus -> {
                     // TODO(messaging): make this thread safe (per user)
-                    attemptToSendWithProteus(message)
+                    attemptToSendWithProteus(message, targetRecipients)
                 }
             }
         }
 }
 
-    private suspend fun attemptToSendWithProteus(message: Message.Regular): Either<CoreFailure, String> {
+    private suspend fun attemptToSendWithProteus(message: Message.Regular, targetRecipients: List<Recipient>?): Either<CoreFailure, String> {
         val conversationId = message.conversationId
-        return conversationRepository.getConversationRecipients(conversationId).flatMap { recipients ->
+
+        return targetRecipients?.let {
+            messageEnvelopeCreator.createOutgoingEnvelope(it, message).flatMap { envelope ->
+                trySendingProteusEnvelope(envelope, message)
+            }
+        } ?: conversationRepository.getConversationRecipients(conversationId).flatMap { recipients ->
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
         }.flatMap { recipients ->
             messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
