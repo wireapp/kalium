@@ -18,8 +18,10 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -29,8 +31,10 @@ import com.wire.kalium.logic.feature.client.DeleteClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
 import com.wire.kalium.logic.feature.client.SelfClientsResult
+import com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCase
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.server.GetServerConfigResult
@@ -46,7 +50,8 @@ import java.io.File
 private val coreLogic = CoreLogic(
     clientLabel = "Kalium CLI",
     rootPath = "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts",
-    kaliumConfigs = KaliumConfigs(developmentApiEnabled = true))
+    kaliumConfigs = KaliumConfigs(developmentApiEnabled = true)
+)
 
 fun restoreSession(): AccountInfo? {
     return coreLogic.globalScope {
@@ -79,6 +84,20 @@ suspend fun selectConversation(userSession: UserSessionScope): Conversation {
     val selectedConversationIndex =
         prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
     return conversations[selectedConversationIndex]
+}
+
+suspend fun selectMember(userSession: UserSessionScope, conversationId: ConversationId): User {
+
+    val members = userSession.conversations.observeConversationMembers(conversationId).first()
+
+    members.forEachIndexed { index, member ->
+        echo("$index) ${member.user.id.value} Name: ${member.user.name}")
+    }
+
+    val selectedMemberIndex =
+        prompt("Enter member index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+
+    return members[selectedMemberIndex].user
 }
 
 suspend fun selectConnection(userSession: UserSessionScope): OtherUser {
@@ -129,6 +148,8 @@ class DeleteClientCommand : CliktCommand(name = "delete-client") {
 class CreateGroupCommand : CliktCommand(name = "create-group") {
 
     private val name: String by option(help = "Name of the group").prompt()
+    private val protocol: ConversationOptions.Protocol
+            by option(help = "Protocol for sending messages").enum<ConversationOptions.Protocol>().default(ConversationOptions.Protocol.MLS)
 
     override fun run() = runBlocking {
         val userSession = currentUserSession()
@@ -151,7 +172,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
         val result = userSession.conversations.createGroupConversation(
             name,
             userToAddList,
-            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+            ConversationOptions(protocol = protocol)
         )
         when (result) {
             is CreateGroupConversationUseCase.Result.Success -> echo("group created successfully")
@@ -259,7 +280,31 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
         val selectedConversation = selectConversation(userSession)
         val selectedConnection = selectConnection(userSession)
 
-        userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(selectedConnection.id))
+        when (val result = userSession.conversations.addMemberToConversationUseCase(
+            selectedConversation.id,
+            listOf(selectedConnection.id)
+        )) {
+            is AddMemberToConversationUseCase.Result.Success -> echo("Added user successfully")
+            is AddMemberToConversationUseCase.Result.Failure -> throw PrintMessage("Add user failed: $result")
+        }
+    }
+}
+
+class RemoveMemberFromGroupCommand : CliktCommand(name = "remove-member") {
+    override fun run(): Unit = runBlocking {
+
+        val userSession = currentUserSession()
+
+        val selectedConversation = selectConversation(userSession)
+        val selectedMember = selectMember(userSession, selectedConversation.id)
+
+        when (val result = userSession.conversations.removeMemberFromConversation(
+            selectedConversation.id,
+            selectedMember.id
+        )) {
+            is RemoveMemberFromConversationUseCase.Result.Success -> echo("Removed user successfully")
+            is RemoveMemberFromConversationUseCase.Result.Failure -> throw PrintMessage("Remove user failed: $result")
+        }
     }
 }
 
@@ -301,5 +346,6 @@ fun main(args: Array<String>) = CLIApplication().subcommands(
     ListenGroupCommand(),
     DeleteClientCommand(),
     AddMemberToGroupCommand(),
+    RemoveMemberFromGroupCommand(),
     RefillKeyPackagesCommand()
 ).main(args)
