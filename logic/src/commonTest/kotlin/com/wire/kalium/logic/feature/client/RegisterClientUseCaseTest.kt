@@ -80,7 +80,7 @@ class RegisterClientUseCaseTest {
             .then { _, _ -> Either.Right(PRE_KEYS) }
 
         given(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+            .suspendFunction(preKeyRepository::generateNewLastKey)
             .whenInvoked()
             .then { Either.Right(LAST_KEY) }
 
@@ -111,7 +111,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+            .suspendFunction(preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -133,7 +133,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+            .suspendFunction(preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -155,7 +155,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+            .suspendFunction(preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -406,7 +406,7 @@ class RegisterClientUseCaseTest {
         val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
 
         given(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+            .suspendFunction(preKeyRepository::generateNewLastKey)
             .whenInvoked()
             .then { Either.Left(failure) }
 
@@ -434,7 +434,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+            .suspendFunction(preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 

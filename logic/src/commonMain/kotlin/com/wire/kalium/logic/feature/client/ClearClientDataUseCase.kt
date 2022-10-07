@@ -1,8 +1,8 @@
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -17,7 +17,7 @@ interface ClearClientDataUseCase {
 
 internal class ClearClientDataUseCaseImpl internal constructor(
     private val mlsClientProvider: MLSClientProvider,
-    private val proteusClient: ProteusClient
+    private val proteusClientProvider: ProteusClientProvider
 ) : ClearClientDataUseCase {
 
     override suspend operator fun invoke() {
@@ -34,7 +34,7 @@ internal class ClearClientDataUseCaseImpl internal constructor(
 
     private suspend fun clearCrypto(): Either<CoreFailure, Boolean> =
         wrapCryptoRequest {
-            proteusClient.clearLocalFiles()
+            proteusClientProvider.clear()
         }.flatMap {
             mlsClientProvider.getMLSClient()
                 .flatMap { mlsClient ->

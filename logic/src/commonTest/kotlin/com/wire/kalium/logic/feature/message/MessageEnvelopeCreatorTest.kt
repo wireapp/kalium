@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -27,7 +28,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
@@ -40,13 +40,23 @@ class MessageEnvelopeCreatorTest {
     private val proteusClient = mock(ProteusClient::class)
 
     @Mock
+    private val proteusClientProvider = mock(ProteusClientProvider::class)
+
+    @Mock
     private val protoContentMapper = mock(ProtoContentMapper::class)
 
     private lateinit var messageEnvelopeCreator: MessageEnvelopeCreator
 
+    init {
+        given(proteusClientProvider)
+            .suspendFunction(proteusClientProvider::getOrCreate)
+            .whenInvoked()
+            .thenReturn(proteusClient)
+    }
+
     @BeforeTest
     fun setup() {
-        messageEnvelopeCreator = MessageEnvelopeCreatorImpl(proteusClient, protoContentMapper)
+        messageEnvelopeCreator = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
     }
 
     @Test

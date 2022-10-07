@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature
 
-import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -363,10 +362,10 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClient, preKeyRepository)
+        get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClient)
+        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClientProvider)
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(mlsClientProvider)
@@ -525,7 +524,7 @@ abstract class UserSessionScopeCommon internal constructor(
         val messageRepository = messageRepository
         val assetRepository = assetRepository
         ConversationEventReceiverImpl(
-            proteusClient = authenticatedDataSourceSet.proteusClient,
+            proteusClientProvider = authenticatedDataSourceSet.proteusClientProvider,
             persistMessage = persistMessage,
             persistReaction = persistReaction,
             messageRepository = messageRepository,
@@ -567,7 +566,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
-            authenticatedDataSourceSet.proteusClient
+            authenticatedDataSourceSet.proteusClientProvider
         )
 
     private val keyPackageRepository: KeyPackageRepository
@@ -595,7 +594,7 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsClientProvider,
             notificationTokenRepository,
             clientRemoteRepository,
-            authenticatedDataSourceSet.proteusClient,
+            authenticatedDataSourceSet.proteusClientProvider,
             globalScope.sessionRepository,
             userId,
             featureSupport,
@@ -626,7 +625,7 @@ abstract class UserSessionScopeCommon internal constructor(
             conversationRepository,
             mlsConversationRepository,
             clientRepository,
-            authenticatedDataSourceSet.proteusClient,
+            authenticatedDataSourceSet.proteusClientProvider,
             mlsClientProvider,
             preKeyRepository,
             userRepository,

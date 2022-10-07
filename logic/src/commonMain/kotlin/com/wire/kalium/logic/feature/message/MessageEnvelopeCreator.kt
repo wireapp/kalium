@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.calcSHA256
@@ -22,6 +21,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
@@ -39,7 +39,7 @@ interface MessageEnvelopeCreator {
 }
 
 class MessageEnvelopeCreatorImpl(
-    private val proteusClient: ProteusClient,
+    private val proteusClientProvider: ProteusClientProvider,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : MessageEnvelopeCreator {
@@ -58,7 +58,7 @@ class MessageEnvelopeCreatorImpl(
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->
                 val session = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipient.id), CryptoClientId(client.value))
 
-                wrapCryptoRequest { proteusClient.encrypt(encodedContent.data, session) }
+                wrapCryptoRequest { proteusClientProvider.getOrCreate().encrypt(encodedContent.data, session) }
                     .map { EncryptedMessageBlob(it) }
                     .fold({
                         // when encryption fails because of SESSION_NOT_FOUND, we just skip the client

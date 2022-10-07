@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
@@ -99,7 +100,17 @@ class PreKeyRepositoryTest {
         @Mock
         val proteusClient: ProteusClient = mock(ProteusClient::class)
 
-        private val preKeyRepository = PreKeyDataSource(preKeyApi, proteusClient)
+        @Mock
+        val proteusClientProvider: ProteusClientProvider = mock(ProteusClientProvider::class)
+
+        private val preKeyRepository = PreKeyDataSource(preKeyApi, proteusClientProvider)
+
+        init {
+            given(proteusClientProvider)
+                .suspendFunction(proteusClientProvider::getOrCreate)
+                .whenInvoked()
+                .thenReturn(proteusClient)
+        }
 
         fun withGetRemoteUsersPreKeySuccess(preKeyMap: DomainToUserIdToClientsToPreKeyMap) = apply {
             given(preKeyApi)
