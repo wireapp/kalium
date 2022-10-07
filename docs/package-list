@@ -115,6 +115,7 @@ $dokka.location:com.wire.kalium.cli//main/#kotlin.Array[kotlin.String]/PointingT
 $dokka.location:com.wire.kalium.cli//restoreSession/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/restore-session.html
 $dokka.location:com.wire.kalium.cli//selectConnection/#com.wire.kalium.logic.feature.UserSessionScope/PointingToDeclaration/cli/cli/com.wire.kalium.cli/select-connection.html
 $dokka.location:com.wire.kalium.cli//selectConversation/#com.wire.kalium.logic.feature.UserSessionScope/PointingToDeclaration/cli/cli/com.wire.kalium.cli/select-conversation.html
+$dokka.location:com.wire.kalium.cli//selectMember/#com.wire.kalium.logic.feature.UserSessionScope#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/cli/cli/com.wire.kalium.cli/select-member.html
 $dokka.location:com.wire.kalium.cli/AddMemberToGroupCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-add-member-to-group-command/index.html
 $dokka.location:com.wire.kalium.cli/AddMemberToGroupCommand/AddMemberToGroupCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-add-member-to-group-command/-add-member-to-group-command.html
 $dokka.location:com.wire.kalium.cli/AddMemberToGroupCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-add-member-to-group-command/run.html
@@ -141,6 +142,9 @@ $dokka.location:com.wire.kalium.cli/LoginCommand/run/#/PointingToDeclaration/cl
 $dokka.location:com.wire.kalium.cli/RefillKeyPackagesCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-refill-key-packages-command/index.html
 $dokka.location:com.wire.kalium.cli/RefillKeyPackagesCommand/RefillKeyPackagesCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-refill-key-packages-command/-refill-key-packages-command.html
 $dokka.location:com.wire.kalium.cli/RefillKeyPackagesCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-refill-key-packages-command/run.html
+$dokka.location:com.wire.kalium.cli/RemoveMemberFromGroupCommand///PointingToDeclaration/cli/cli/com.wire.kalium.cli/-remove-member-from-group-command/index.html
+$dokka.location:com.wire.kalium.cli/RemoveMemberFromGroupCommand/RemoveMemberFromGroupCommand/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-remove-member-from-group-command/-remove-member-from-group-command.html
+$dokka.location:com.wire.kalium.cli/RemoveMemberFromGroupCommand/run/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/-remove-member-from-group-command/run.html
 $dokka.location:com.wire.kalium.cryptography.exceptions////PointingToDeclaration/cryptography/cryptography/com.wire.kalium.cryptography.exceptions/index.html
 $dokka.location:com.wire.kalium.cryptography.exceptions/ProteusException.Code.DECODE_ERROR///PointingToDeclaration/cryptography/cryptography/com.wire.kalium.cryptography.exceptions/-proteus-exception/-code/-d-e-c-o-d-e_-e-r-r-o-r/index.html
 $dokka.location:com.wire.kalium.cryptography.exceptions/ProteusException.Code.DUPLICATE_MESSAGE///PointingToDeclaration/cryptography/cryptography/com.wire.kalium.cryptography.exceptions/-proteus-exception/-code/-d-u-p-l-i-c-a-t-e_-m-e-s-s-a-g-e/index.html
