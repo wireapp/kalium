@@ -110,9 +110,7 @@ $dokka.location:com.wire.kalium.calling/VideoStateCalling.UNKNOWN///PointingToDe
 $dokka.location:com.wire.kalium.calling/VideoStateCalling///PointingToDeclaration/calling/calling/com.wire.kalium.calling/-video-state-calling/index.html
 $dokka.location:com.wire.kalium.calling/VideoStateCalling/avsValue/#/PointingToDeclaration/calling/calling/com.wire.kalium.calling/-video-state-calling/avs-value.html
 $dokka.location:com.wire.kalium.cli////PointingToDeclaration/cli/cli/com.wire.kalium.cli/index.html
-$dokka.location:com.wire.kalium.cli//currentUserSession/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/current-user-session.html
 $dokka.location:com.wire.kalium.cli//main/#kotlin.Array[kotlin.String]/PointingToDeclaration/cli/cli/com.wire.kalium.cli/main.html
-$dokka.location:com.wire.kalium.cli//restoreSession/#/PointingToDeclaration/cli/cli/com.wire.kalium.cli/restore-session.html
 $dokka.location:com.wire.kalium.cli//selectConnection/#com.wire.kalium.logic.feature.UserSessionScope/PointingToDeclaration/cli/cli/com.wire.kalium.cli/select-connection.html
 $dokka.location:com.wire.kalium.cli//selectConversation/#com.wire.kalium.logic.feature.UserSessionScope/PointingToDeclaration/cli/cli/com.wire.kalium.cli/select-conversation.html
 $dokka.location:com.wire.kalium.cli//selectMember/#com.wire.kalium.logic.feature.UserSessionScope#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/cli/cli/com.wire.kalium.cli/select-member.html
