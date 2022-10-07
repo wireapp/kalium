@@ -157,12 +157,9 @@ internal class MessageSenderImpl internal constructor(
         targetRecipients: List<Recipient>?
     ): Either<CoreFailure, String> {
         val conversationId = message.conversationId
+        val target = targetRecipients?.let { Either.Right(it) } ?: conversationRepository.getConversationRecipients(conversationId)
 
-        return targetRecipients?.let {
-            messageEnvelopeCreator.createOutgoingEnvelope(it, message).flatMap { envelope ->
-                trySendingProteusEnvelope(envelope, message)
-            }
-        } ?: conversationRepository.getConversationRecipients(conversationId).flatMap { recipients ->
+        return target.flatMap { recipients ->
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
         }.flatMap { recipients ->
             messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
