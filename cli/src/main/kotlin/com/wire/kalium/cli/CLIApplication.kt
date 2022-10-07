@@ -50,7 +50,8 @@ import java.io.File
 private val coreLogic = CoreLogic(
     clientLabel = "Kalium CLI",
     rootPath = "${CLIApplication.HOME_DIRECTORY}/.kalium/accounts",
-    kaliumConfigs = KaliumConfigs(developmentApiEnabled = true))
+    kaliumConfigs = KaliumConfigs(developmentApiEnabled = true)
+)
 
 fun restoreSession(): AccountInfo? {
     return coreLogic.globalScope {
@@ -148,8 +149,8 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
 
     private val name: String by option(help = "Name of the group").prompt()
     private val protocol: ConversationOptions.Protocol
-        by option(help = "Protocol for sending messages").enum<ConversationOptions.Protocol>().default(ConversationOptions.Protocol.MLS)
-    
+            by option(help = "Protocol for sending messages").enum<ConversationOptions.Protocol>().default(ConversationOptions.Protocol.MLS)
+
     override fun run() = runBlocking {
         val userSession = currentUserSession()
 
