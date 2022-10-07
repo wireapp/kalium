@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -64,6 +65,7 @@ interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 internal class ConversationEventReceiverImpl(
     private val proteusClient: ProteusClient,
     private val persistMessage: PersistMessageUseCase,
+    private val persistReaction: PersistReactionUseCase,
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
     private val conversationRepository: ConversationRepository,
@@ -118,6 +120,7 @@ internal class ConversationEventReceiverImpl(
                         else Message.Visibility.VISIBLE
 
                     is MessageContent.Text -> Message.Visibility.VISIBLE
+                    is MessageContent.Reaction -> Message.Visibility.HIDDEN
                     is MessageContent.Calling -> Message.Visibility.VISIBLE
                     is MessageContent.Asset -> Message.Visibility.VISIBLE
                     is MessageContent.Knock -> Message.Visibility.VISIBLE
@@ -439,6 +442,7 @@ internal class ConversationEventReceiverImpl(
             is Message.Regular -> when (val content = message.content) {
                 // Persist Messages - > lists
                 is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
+                is MessageContent.Reaction -> persistReaction(message, content)
                 is MessageContent.Asset -> handleAssetMessage(message)
                 is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
                 is MessageContent.DeleteForMe -> deleteForMeHandler.handle(message, content)
