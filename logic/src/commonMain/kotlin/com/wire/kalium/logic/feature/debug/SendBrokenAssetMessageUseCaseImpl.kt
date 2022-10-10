@@ -9,7 +9,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -18,6 +17,7 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -26,7 +26,6 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import okio.Path
 
@@ -60,7 +59,7 @@ fun interface SendBrokenAssetMessageUseCase {
 
 @Suppress("LongParameterList", "MaxLineLength")
 internal class SendBrokenAssetMessageUseCaseImpl(
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val assetDataSource: AssetRepository,
     private val userRepository: UserRepository,
     private val slowSyncRepository: SlowSyncRepository,
@@ -95,9 +94,9 @@ internal class SendBrokenAssetMessageUseCaseImpl(
         )
         lateinit var message: Message.Regular
 
-        return clientRepository.currentClientId().flatMap { currentClientId ->
+        return currentClientIdProvider().flatMap { currentClientId ->
             // Get my current user
-            val selfUser = userRepository.observeSelfUser().firstOrNull()
+            val selfUser = userRepository.getSelfUser()
 
             if (selfUser == null) {
                 kaliumLogger.e("There was an error obtaining the self user object :(")

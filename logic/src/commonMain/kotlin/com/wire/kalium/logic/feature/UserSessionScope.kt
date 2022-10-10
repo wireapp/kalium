@@ -624,6 +624,7 @@ abstract class UserSessionScopeCommon internal constructor(
             conversationRepository,
             mlsConversationRepository,
             clientRepository,
+            clientIdProvider,
             authenticatedDataSourceSet.proteusClient,
             mlsClientProvider,
             preKeyRepository,
