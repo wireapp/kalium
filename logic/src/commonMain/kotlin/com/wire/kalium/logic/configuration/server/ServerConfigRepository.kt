@@ -80,7 +80,7 @@ internal interface ServerConfigRepository {
     /**
      * Return the server links and metadata for the given userId
      */
-    suspend fun configForUser(userId: UserId): Either<CoreFailure, ServerConfig>
+    suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -180,7 +180,7 @@ internal class ServerConfigDataSource(
         .flatMap { fetchMetadata(it.links) }
         .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
 
-    override suspend fun configForUser(userId: UserId): Either<CoreFailure, ServerConfig> =
+    override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { dao.configForUser(idMapper.toDaoModel(userId)) }
             .map { serverConfigMapper.fromEntity(it) }
 
