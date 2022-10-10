@@ -7,6 +7,11 @@ import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * Operation that fetches all known users
+ *
+ * @return GetAllContactsResult with list of known users
+ */
 interface GetAllContactsUseCase {
     suspend operator fun invoke(): Flow<GetAllContactsResult>
 }
