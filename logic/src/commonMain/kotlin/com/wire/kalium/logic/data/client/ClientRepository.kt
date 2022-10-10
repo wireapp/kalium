@@ -14,7 +14,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.user.pushToken.PushTokenBody
+import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64
@@ -27,6 +27,7 @@ interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
+    @Deprecated("this function is not cached use CurrentClientIdProvider")
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
     suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
     suspend fun retainedClientId(): Either<CoreFailure, ClientId>

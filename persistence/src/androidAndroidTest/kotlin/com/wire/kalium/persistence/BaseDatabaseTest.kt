@@ -10,16 +10,15 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 
 actual open class BaseDatabaseTest actual constructor() {
-    private val userId = UserIDEntity("78dd6502-ab84-40f7-a8b3-1e7e1eb4cc8c", "user_12_domain")
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
-    actual fun deleteDatabase() {
+    actual fun deleteDatabase(userId: UserIDEntity) {
         val context: Context = ApplicationProvider.getApplicationContext()
         context.deleteDatabase(FileNameUtil.userDBName(userId))
     }
 
-    actual fun createDatabase(): UserDatabaseProvider {
+    actual fun createDatabase(userId: UserIDEntity): UserDatabaseProvider {
         return UserDatabaseProvider(
             ApplicationProvider.getApplicationContext(),
             userId,

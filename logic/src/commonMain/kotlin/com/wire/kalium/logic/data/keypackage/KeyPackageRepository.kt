@@ -11,12 +11,11 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.network.api.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.keypackage.KeyPackageCountDTO
-import com.wire.kalium.network.api.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import io.ktor.util.encodeBase64
 
 interface KeyPackageRepository {
@@ -45,8 +44,12 @@ class KeyPackageDataSource(
                     keyPackageApi.claimKeyPackages(
                         KeyPackageApi.Param.SkipOwnClient(idMapper.toApiModel(userId), selfClientId.value)
                     )
-                }.map {
-                    it.keyPackages
+                }.flatMap {
+                    if (it.keyPackages.isEmpty()) {
+                        Either.Left(CoreFailure.NoKeyPackagesAvailable(userId))
+                    } else {
+                        Either.Right(it.keyPackages)
+                    }
                 }
             }.foldToEitherWhileRight(emptyList()) { item, acc ->
                 item.flatMap { Either.Right(acc + it) }

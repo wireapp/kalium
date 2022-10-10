@@ -4,14 +4,14 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.id.PlainId
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.featureConfigs.AppLockConfigDTO
-import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfigDTO
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
-import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
-import com.wire.kalium.network.api.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

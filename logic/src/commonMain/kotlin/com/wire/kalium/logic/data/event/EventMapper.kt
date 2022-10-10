@@ -10,9 +10,11 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.notification.EventContentDTO
-import com.wire.kalium.network.api.notification.EventResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 
@@ -142,15 +144,21 @@ class EventMapper(
     private fun memberUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO
-    ) = Event.Conversation.MemberChanged(
-        id = id,
-        conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-        timestampIso = eventContentDTO.time,
-        member = Conversation.Member(
-            id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
-            role = roleMapper.fromApi(eventContentDTO.roleChange.role)
-        ),
-    )
+    ): Event.Conversation.MemberChanged {
+        return if (eventContentDTO.roleChange.role.isNullOrEmpty()) {
+            Event.Conversation.IgnoredMemberChanged(id, idMapper.fromApiModel(eventContentDTO.qualifiedConversation))
+        } else {
+            Event.Conversation.MemberChanged(
+                id = id,
+                conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                timestampIso = eventContentDTO.time,
+                member = Conversation.Member(
+                    id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
+                    role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
+                ),
+            )
+        }
+    }
 
     private fun featureConfig(
         id: String,
@@ -220,7 +228,7 @@ class EventMapper(
         id = id,
         teamId = event.teamId,
         memberId = event.permissionsResponse.nonQualifiedUserId,
-        userType = userTypeMapper.teamRoleCodeToUserType(event.permissionsResponse.permissions.own)
+        permissionCode = event.permissionsResponse.permissions.own
     )
 
     private fun teamUpdate(
@@ -244,6 +252,8 @@ class EventMapper(
         name = event.userData.name,
         handle = event.userData.handle,
         email = event.userData.email,
+        previewAssetId = event.userData.assets?.getPreviewAssetOrNull()?.key,
+        completeAssetId = event.userData.assets?.getCompleteAssetOrNull()?.key
     )
 
 }

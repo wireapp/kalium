@@ -32,7 +32,7 @@ class ProtocolInfoMapperImpl(
                 ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
-                ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
+                ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
             )
         }
 }

@@ -19,12 +19,12 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.asset.AssetApi
+import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
 import okio.Path
 import okio.Path.Companion.toPath
-import com.wire.kalium.network.api.AssetId as NetworkAssetId
+import com.wire.kalium.network.api.base.model.AssetId as NetworkAssetId
 
 interface AssetRepository {
     /**
@@ -223,6 +223,7 @@ internal class AssetDataSource(
 
                 if (assetDataSize == -1L)
                     Either.Left(EncryptionFailure())
+
                 wrapStorageRequest {
                     assetDao.insertAsset(
                         assetMapper.fromUserAssetToDaoModel(

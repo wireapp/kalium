@@ -27,7 +27,7 @@ class TeamDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenTeamIsInserted_whenFetchingTeamById_thenTheTeamIsReturned() = runTest {
-        val insertedTeam = TeamEntity(id = teamId, name = "Test Team")
+        val insertedTeam = TeamEntity(id = teamId, name = "Test Team", icon = "icon")
         teamDAO.insertTeam(insertedTeam)
 
         val result = teamDAO.getTeamById(teamId = teamId)
@@ -36,8 +36,8 @@ class TeamDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenMultipleTeamsAreInserted_whenFetchingEachTeamById_thenEachTeamIsReturned() = runTest {
-        val insertedTeam1 = TeamEntity(id = "teamId 1", name = "Test Team 1")
-        val insertedTeam2 = TeamEntity(id = "teamId 2", name = "Test Team 2")
+        val insertedTeam1 = TeamEntity(id = "teamId 1", name = "Test Team 1", icon = "icon")
+        val insertedTeam2 = TeamEntity(id = "teamId 2", name = "Test Team 2", icon = "icon")
         teamDAO.insertTeams(listOf(insertedTeam1, insertedTeam2))
 
         val resultTeam1 = teamDAO.getTeamById(teamId = "teamId 1")
@@ -45,6 +45,18 @@ class TeamDAOTest : BaseDatabaseTest() {
 
         assertEquals(insertedTeam1.id, resultTeam1.first()?.id)
         assertEquals(insertedTeam2.id, resultTeam2.first()?.id)
+    }
+
+    @Test
+    fun givenTeam_whenGetsUpdated_thenProperDataIsReturned() = runTest {
+        val team = TeamEntity(id = "teamId 1", name = "Test Team 1", icon = "icon")
+        teamDAO.insertTeam(team)
+        val updatedTeam = team.copy(name = "Test Team 2")
+
+        teamDAO.updateTeam(updatedTeam)
+        val result = teamDAO.getTeamById(teamId = "teamId 1")
+
+        assertEquals(updatedTeam, result.first())
     }
 
     private companion object {

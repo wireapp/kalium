@@ -16,9 +16,9 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.message.MLSMessageApi
-import com.wire.kalium.network.api.message.MessageApi
-import com.wire.kalium.network.api.message.MessagePriority
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -90,7 +90,7 @@ interface MessageRepository {
      * @return [Either.Left] of other [CoreFailure] for more generic cases
      */
     suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<CoreFailure, String>
-    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit>
+    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
 
@@ -261,9 +261,11 @@ class MessageDataSource(
         })
     }
 
-    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, Unit> =
+    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String> =
         wrapApiRequest {
             mlsMessageApi.sendMessage(message)
+        }.flatMap { response ->
+            Either.Right(response.time)
         }
 
     override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> = wrapStorageRequest {

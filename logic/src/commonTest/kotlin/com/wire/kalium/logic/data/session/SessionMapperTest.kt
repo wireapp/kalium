@@ -5,8 +5,8 @@ import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthTokens
-import com.wire.kalium.network.api.QualifiedID
-import com.wire.kalium.network.api.SessionDTO
+import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
@@ -17,7 +17,7 @@ import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import com.wire.kalium.network.api.UserId as UserIdDTO
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 class SessionMapperTest {
 

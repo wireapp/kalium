@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
@@ -28,7 +27,9 @@ data class Conversation(
     val lastModifiedDate: String?,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>
+    val accessRole: List<AccessRole>,
+    val isSelfUserMember: Boolean = true,
+    val isCreator: Boolean = false
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
@@ -68,7 +69,7 @@ data class Conversation(
     }
 
     @Suppress("MagicNumber")
-    enum class CipherSuite(val cipherSuiteTag: Int) {
+    enum class CipherSuite(val tag: Int) {
         UNKNOWN(0),
         MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
         MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
@@ -79,7 +80,7 @@ data class Conversation(
         MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
 
         companion object {
-            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.cipherSuiteTag == tag }
+            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.tag == tag }
         }
     }
 
@@ -127,7 +128,6 @@ sealed class ConversationDetails(open val conversation: Conversation) {
     data class OneOne(
         override val conversation: Conversation,
         val otherUser: OtherUser,
-        val connectionState: ConnectionState,
         val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
         val unreadMessagesCount: Long = 0L,
@@ -142,7 +142,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadMessagesCount: Long = 0L,
         val unreadMentionsCount: Long = 0L,
         val lastUnreadMessage: Message?,
-        val isSelfUserMember: Boolean = true
+        val isSelfUserMember: Boolean = true,
+        val isSelfCreated: Boolean = false
     ) : ConversationDetails(conversation)
 
     data class Connection(
@@ -168,7 +169,9 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             lastModifiedDate = lastModifiedDate,
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
-            accessRole = accessRole
+            accessRole = accessRole,
+            isSelfUserMember = false,
+            isCreator = false
         )
     )
 }

@@ -84,6 +84,7 @@ class GetMessageAssetUseCaseTest {
         val connectionFailure = NetworkFailure.NoNetworkConnection(null)
         val (_, getMessageAsset) = Arrangement()
             .withDownloadAssetErrorResponse(connectionFailure)
+            .withSuccessfulDownloadStatusUpdate()
             .arrange()
 
         // When
@@ -100,6 +101,9 @@ class GetMessageAssetUseCaseTest {
 
         @Mock
         private val assetDataSource = mock(classOf<AssetRepository>())
+
+        @Mock
+        private val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
 
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
@@ -139,7 +143,7 @@ class GetMessageAssetUseCaseTest {
             )
         }
 
-        val getMessageAssetUseCase = GetMessageAssetUseCaseImpl(assetDataSource, messageRepository)
+        val getMessageAssetUseCase = GetMessageAssetUseCaseImpl(assetDataSource, messageRepository, updateAssetMessageDownloadStatus)
 
         fun withSuccessfulFlow(
             conversationId: ConversationId,
@@ -158,7 +162,18 @@ class GetMessageAssetUseCaseTest {
                 .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
                 .whenInvokedWith(anything(), anything(), anything(), matching { it.data.contentEquals(secretKey.data) })
                 .thenReturn(Either.Right(encodedPath))
+            given(updateAssetMessageDownloadStatus)
+                .suspendFunction(updateAssetMessageDownloadStatus::invoke)
+                .whenInvokedWith(anything(), matching { it == conversationId }, matching { it == messageId })
+                .thenReturn(UpdateDownloadStatusResult.Success)
             return this
+        }
+
+        fun withSuccessfulDownloadStatusUpdate(): Arrangement = apply {
+            given(updateAssetMessageDownloadStatus)
+                .suspendFunction(updateAssetMessageDownloadStatus::invoke)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(UpdateDownloadStatusResult.Success)
         }
 
         fun withGetMessageErrorResponse(): Arrangement {

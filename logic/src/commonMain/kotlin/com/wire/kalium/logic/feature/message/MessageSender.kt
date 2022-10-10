@@ -4,9 +4,12 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -21,8 +24,9 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
 
 /**
  * Responsible for orchestrating all the pieces necessary
@@ -71,32 +75,37 @@ interface MessageSender {
     suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
 
+@Suppress("LongParameterList")
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val syncManager: SyncManager,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val timeParser: TimeParser
+    private val timeParser: TimeParser,
+    private val scope: CoroutineScope
 ) : MessageSender {
 
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
 
     override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
-        return messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
-            if (message is Message.Regular) sendMessage(message)
-            else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
-        }.onFailure {
-            logger.i("Failed to send message. Failure = $it")
-            if (it is NetworkFailure.NoNetworkConnection) {
-                logger.i("Scheduling message for retrying in the future.")
-                messageSendingScheduler.scheduleSendingOfPendingMessages()
-            } else {
-                messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+        return withContext(scope.coroutineContext) {
+            messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
+                if (message is Message.Regular) sendMessage(message)
+                else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
+            }.onFailure {
+                logger.i("Failed to send message. Failure = $it")
+                if (it is NetworkFailure.NoNetworkConnection) {
+                    logger.i("Scheduling message for retrying in the future.")
+                    messageSendingScheduler.scheduleSendingOfPendingMessages()
+                } else {
+                    messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
+                }
             }
         }
     }
@@ -127,19 +136,20 @@ internal class MessageSenderImpl internal constructor(
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
-    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> =
-        conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
+    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> {
+        return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
-                is ConversationEntity.ProtocolInfo.MLS -> {
+                is Conversation.ProtocolInfo.MLS -> {
                     attemptToSendWithMLS(protocolInfo.groupId, message)
                 }
 
-                is ConversationEntity.ProtocolInfo.Proteus -> {
+                is Conversation.ProtocolInfo.Proteus -> {
                     // TODO(messaging): make this thread safe (per user)
                     attemptToSendWithProteus(message)
                 }
             }
         }
+}
 
     private suspend fun attemptToSendWithProteus(message: Message.Regular): Either<CoreFailure, String> {
         val conversationId = message.conversationId
@@ -157,21 +167,23 @@ internal class MessageSenderImpl internal constructor(
      *
      * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
      */
-    private suspend fun attemptToSendWithMLS(groupId: String, message: Message.Regular): Either<CoreFailure, String> =
-        mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
-            messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
-                if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
-                    if (it.kaliumException.isMlsStaleMessage()) {
-                        logger.w("Encrypted MLS message for outdated epoch '${message.id}', re-trying..")
-                        return syncManager.waitUntilLiveOrFailure().flatMap {
-                            attemptToSend(message)
+    private suspend fun attemptToSendWithMLS(groupId: GroupID, message: Message.Regular): Either<CoreFailure, String> =
+        mlsConversationRepository.commitPendingProposals(groupId).flatMap {
+            mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
+                messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
+                    if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
+                        if (it.kaliumException.isMlsStaleMessage()) {
+                            logger.w("Encrypted MLS message for outdated epoch '${message.id}', re-trying..")
+                            return syncManager.waitUntilLiveOrFailure().flatMap {
+                                attemptToSend(message)
+                            }
                         }
                     }
-                }
-                Either.Left(it)
-            }, {
-                Either.Right(message.date) // TODO(mls): return actual server time from the response
-            })
+                    Either.Left(it)
+                }, {
+                    Either.Right(it)
+                })
+            }
         }
 
     /**

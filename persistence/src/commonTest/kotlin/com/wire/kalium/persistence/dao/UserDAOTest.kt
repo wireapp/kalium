@@ -79,7 +79,7 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             false
         )
-        db.userDAO.updateSelfUser(updatedUser1)
+        db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
     }
@@ -110,7 +110,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.getUserByQualifiedID(user1.id).take(2).collect() {
             collectedValues.add(it)
             if (collectedValues.size == 1) {
-                db.userDAO.updateSelfUser(updatedUser1)
+                db.userDAO.updateUser(updatedUser1)
             }
         }
         assertEquals(user1, collectedValues[0])
@@ -562,6 +562,17 @@ class UserDAOTest : BaseDatabaseTest() {
         val result = db.userDAO.getUsersByQualifiedIDList(requestedIds)
         assertEquals(result, users)
         assertTrue(!result.contains(user3))
+    }
+
+    @Test
+    fun givenUser_WhenMarkingAsDeleted_ThenProperValueShouldBeUpdated() = runTest(dispatcher) {
+        val user = user1
+        db.userDAO.insertUser(user)
+        val deletedUser = user1.copy(deleted = true, team = null, userType = UserTypeEntity.NONE)
+        db.userDAO.markUserAsDeleted(user1.id)
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(result, deletedUser)
+
     }
 
     private companion object {

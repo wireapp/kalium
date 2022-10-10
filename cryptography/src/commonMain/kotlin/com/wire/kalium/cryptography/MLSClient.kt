@@ -25,6 +25,10 @@ class DecryptedMessageBundle(
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?
 )
+@JvmInline
+value class Ed22519Key(
+    val value: ByteArray
+)
 
 @Suppress("TooManyFunctions")
 interface MLSClient {
@@ -102,7 +106,8 @@ interface MLSClient {
      * @param groupId MLS group ID provided by BE
      */
     fun createConversation(
-        groupId: MLSGroupId
+        groupId: MLSGroupId,
+        externalSenders: List<Ed22519Key> = emptyList()
     )
 
     fun wipeConversation(groupId: MLSGroupId)
@@ -123,9 +128,10 @@ interface MLSClient {
     /**
      * Create a commit for any pending proposals
      *
-     * @return commit bundle, which needs to be sent to the distribution service.
+     * @return commit bundle, which needs to be sent to the distribution service. If there are no
+     * pending proposals null is returned.
      */
-    fun commitPendingProposals(groupId: MLSGroupId): CommitBundle
+    fun commitPendingProposals(groupId: MLSGroupId): CommitBundle?
 
     /**
      * Clear a pending commit which has not yet been accepted by the distribution service

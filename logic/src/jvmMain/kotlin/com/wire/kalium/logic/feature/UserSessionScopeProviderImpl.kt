@@ -9,13 +9,12 @@ import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.ServerMetaDataManagerImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
-import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.kmmSettings.UserPrefProvider
@@ -40,11 +39,9 @@ actual class UserSessionScopeProviderImpl(
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
-        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainerV0(
-            SessionManagerImpl(globalScope.sessionRepository, userId, tokenStorage = globalPreferences.authTokenStorage),
-            ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
-            developmentApiEnabled = kaliumConfigs.developmentApiEnabled
-        )
+        val sessionManager = SessionManagerImpl(globalScope.sessionRepository, userId, tokenStorage = globalPreferences.authTokenStorage)
+        val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
+        val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.session().second.metaData.commonApiVersion.version)
 
         val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
         runBlocking { proteusClient.open() }
@@ -55,7 +52,7 @@ actual class UserSessionScopeProviderImpl(
             rootPath,
             kaliumConfigs.shouldEncryptData
         )
-        val userDatabase = UserDatabaseProvider(File(rootStoragePath), KaliumDispatcherImpl.io)
+        val userDatabase = UserDatabaseProvider(idMapper.toDaoModel(userId), File(rootStoragePath), KaliumDispatcherImpl.io)
 
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,
@@ -73,6 +70,7 @@ actual class UserSessionScopeProviderImpl(
             globalPreferences,
             dataStoragePaths,
             kaliumConfigs,
+            featureSupport,
             this
         )
     }
