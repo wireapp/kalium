@@ -110,6 +110,7 @@ class GlobalKaliumScope(
     val deleteSession: DeleteSessionUseCase
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
 
-    val serverConfigForAccounts : ServerConfigForAccountUseCase get() =
-        ServerConfigForAccountUseCase(serverConfigRepository)
+    val serverConfigForAccounts: ServerConfigForAccountUseCase
+        get() =
+            ServerConfigForAccountUseCase(serverConfigRepository)
 }
