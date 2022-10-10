@@ -8,14 +8,13 @@ interface PrekeyDAO {
     suspend fun lastOTRPrekeyId(): Int
 }
 
-
 internal class PrekeyDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries
 ) : PrekeyDAO {
     override suspend fun updateOTRLastPrekeyId(newKeyId: Int) {
         metadataQueries.transaction {
             val currentId = metadataQueries.selectValueByKey(OTR_LAST_PRE_KEY_ID).executeAsOne().toInt()
-            if(newKeyId > currentId) {
+            if (newKeyId > currentId) {
                 metadataQueries.insertValue(OTR_LAST_PRE_KEY_ID, newKeyId.toString())
             }
         }

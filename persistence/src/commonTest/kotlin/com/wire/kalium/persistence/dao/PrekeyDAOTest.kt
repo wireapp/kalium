@@ -8,7 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PrekeyDAOTest: BaseDatabaseTest() {
+class PrekeyDAOTest : BaseDatabaseTest() {
 
     private lateinit var prekeyDAO: PrekeyDAO
 
@@ -30,7 +30,6 @@ class PrekeyDAOTest: BaseDatabaseTest() {
         prekeyDAO.updateOTRLastPrekeyId(101)
         assertEquals(101, prekeyDAO.lastOTRPrekeyId())
     }
-
 
     @Test
     fun whenForceInsertingPrekeyId_thenTheNewIdIsInserted() = runTest {
