@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.keypackage
 
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -8,6 +9,7 @@ import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackage
@@ -79,6 +81,21 @@ class KeyPackageRepositoryTest {
         }
     }
 
+    @Test
+    fun givenUserWithNoKeyPackages_whenClaimingKeyPackages_thenResultShouldFailWithError() = runTest {
+
+        val (_, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .withClaimKeyPackagesSuccessfulWithEmptyResponse()
+            .arrange()
+
+        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
+
+        result.shouldFail { failure ->
+            assertEquals(CoreFailure.NoKeyPackagesAvailable(Arrangement.USER_ID), failure)
+        }
+    }
+
     class Arrangement {
 
         @Mock
@@ -119,6 +136,12 @@ class KeyPackageRepositoryTest {
                 .thenReturn(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
+        fun withClaimKeyPackagesSuccessfulWithEmptyResponse() = apply {
+            given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(USER_ID), SELF_CLIENT_ID.value)))
+                .thenReturn(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
+        }
+
         fun arrange() = this to KeyPackageDataSource(clientRepository, keyPackageApi, mlsClientProvider)
 
         internal companion object {
@@ -129,6 +152,9 @@ class KeyPackageRepositoryTest {
             val USER_ID = UserId("user_id", "wire.com")
             val KEY_PACKAGES = listOf("keypackage".encodeToByteArray())
             val KEY_PACKAGES_BASE64 = KEY_PACKAGES.map { it.encodeBase64() }
+            val EMPTY_CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(
+                emptyList()
+            )
             val CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(
                 listOf(
                     KeyPackageDTO(OTHER_CLIENT_ID.value, "wire.com", KeyPackage(), KeyPackageRef(), "user_id")
