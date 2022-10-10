@@ -52,7 +52,7 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         log.info("Instance ${instance.instanceId}: Send $type confirmation")
                         runBlocking {
-                            val sendResult = debug.sendConfirmation(conversationId, type, messageId)
+                            val sendResult = debug.sendConfirmation(conversationId, type, messageId, listOf())
                             if (sendResult.isLeft()) {
                                 throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with ${sendResult.value}")
                             }
