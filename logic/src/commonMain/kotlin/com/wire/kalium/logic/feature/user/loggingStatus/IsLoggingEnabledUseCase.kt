@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.user.loggingStatus
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.configuration.GlobalConfigRepository
 import com.wire.kalium.logic.functional.fold
 
 interface IsLoggingEnabledUseCase {
@@ -8,11 +8,10 @@ interface IsLoggingEnabledUseCase {
 }
 
 class IsLoggingEnabledUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository
+    private val globalConfigRepository: GlobalConfigRepository
 ) : IsLoggingEnabledUseCase {
-
     override operator fun invoke(): Boolean =
-        userConfigRepository.isLoggingEnabled().fold({
+        globalConfigRepository.isLoggingEnabled().fold({
             false
         }, {
             it

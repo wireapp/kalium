@@ -35,3 +35,6 @@ SELECT * FROM Client WHERE user_id IN :userIds GROUP BY user_id;
 
 selectAllClientsByConversation:
 SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id);
+
+deleteClientsOfUserExcept:
+DELETE FROM Client WHERE user_id = :user_id AND id NOT IN :exception_ids;

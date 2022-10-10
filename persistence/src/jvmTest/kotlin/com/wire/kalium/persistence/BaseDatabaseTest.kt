@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence
 
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -9,14 +10,14 @@ actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
-    private val databaseFile = Files.createTempDirectory("test-storage").toFile().resolve("test.db")
-
-    actual fun deleteDatabase() {
-        databaseFile.delete()
+    actual fun deleteDatabase(userId: UserIDEntity) {
+        userId.databaseFile.delete()
     }
 
-    actual fun createDatabase(): UserDatabaseProvider {
-        return UserDatabaseProvider(databaseFile, dispatcher = dispatcher)
+    actual fun createDatabase(userId: UserIDEntity): UserDatabaseProvider {
+        return UserDatabaseProvider(userId, userId.databaseFile, dispatcher = dispatcher)
     }
 
+    val UserIDEntity.databaseFile
+        get() = Files.createTempDirectory("test-storage").toFile().resolve("test-$domain-$value.db")
 }

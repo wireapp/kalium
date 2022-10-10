@@ -2,8 +2,10 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
@@ -42,7 +44,7 @@ class MLSMessageCreatorTest {
         given(mlsClientProvider)
             .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT)}
+            .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
             .function(MLS_CLIENT::encryptMessage)
@@ -59,12 +61,13 @@ class MLSMessageCreatorTest {
 
         verify(MLS_CLIENT)
             .function(MLS_CLIENT::encryptMessage)
-            .with(eq(GROUP_ID), eq(plainData))
+            .with(eq(CRYPTO_GROUP_ID), eq(plainData))
             .wasInvoked(once)
     }
 
     private companion object {
-        const val GROUP_ID = "groupId"
+        val GROUP_ID = GroupID("groupId")
+        val CRYPTO_GROUP_ID = MapperProvider.idMapper().toCryptoModel(GroupID("groupId"))
         val MLS_CLIENT = mock(classOf<MLSClient>())
     }
 

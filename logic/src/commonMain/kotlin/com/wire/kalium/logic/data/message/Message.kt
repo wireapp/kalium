@@ -26,7 +26,8 @@ sealed class Message(
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         val senderClientId: ClientId,
-        val editStatus: EditStatus
+        val editStatus: EditStatus,
+        val reactions: Reactions = Reactions.EMPTY
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
             val contentString: String
@@ -36,8 +37,9 @@ sealed class Message(
                 }
 
                 is MessageContent.Asset -> {
-                    contentString = "content:{sizeInBytes:${content.value.sizeInBytes}," + "mimeType:${content.value.mimeType}, " +
-                            "metaData :${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}}"
+                    contentString = "content: {name: ${content.value.name}, sizeInBytes:${content.value.sizeInBytes}, mimeType: ${
+                        content.value.mimeType}, metaData : ${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}, " +
+                            "uploadStatus: ${content.value.uploadStatus}}, remoteData - otrKeySize: ${content.value.remoteData.otrKey.size}"
                 }
 
                 is MessageContent.RestrictedAsset -> {
@@ -85,6 +87,7 @@ sealed class Message(
                         contentString += "${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}"
                     }
                 }
+
                 else -> {
                     contentString = content.toString()
                 }
@@ -110,6 +113,29 @@ sealed class Message(
         data class Edited(val lastTimeStamp: String) : EditStatus()
     }
 
+    enum class UploadStatus {
+        /**
+         * There was no attempt done to upload the asset's data to remote (server) storage.
+         */
+        NOT_UPLOADED,
+
+        /**
+         * The asset is currently being uploaded and will be saved internally after a successful upload
+         * @see UPLOADED
+         */
+        UPLOAD_IN_PROGRESS,
+
+        /**
+         * The asset was uploaded and saved in the internal storage, that should be only readable by this Kalium client.
+         */
+        UPLOADED,
+
+        /**
+         * The last attempt at uploading and saving this asset's data failed.
+         */
+        FAILED_UPLOAD
+    }
+
     enum class DownloadStatus {
         /**
          * There was no attempt done to fetch the asset's data from remote (server) storage.
@@ -120,7 +146,7 @@ sealed class Message(
          * The asset is currently being downloaded and will be saved internally after a successful download
          * @see SAVED_INTERNALLY
          */
-        IN_PROGRESS,
+        DOWNLOAD_IN_PROGRESS,
 
         /**
          * The asset was downloaded and saved in the internal storage, that should be only readable by this Kalium client.
@@ -138,10 +164,21 @@ sealed class Message(
         /**
          * The last attempt at fetching and saving this asset's data failed.
          */
-        FAILED
+        FAILED_DOWNLOAD
     }
 
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN
     }
+
+    data class Reactions(
+        val totalReactions: ReactionsCount,
+        val selfUserReactions: UserReactions
+    ) {
+        companion object {
+            val EMPTY = Reactions(emptyMap(), emptySet())
+        }
+    }
 }
+typealias ReactionsCount = Map<String, Int>
+typealias UserReactions = Set<String>

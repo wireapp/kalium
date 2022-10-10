@@ -12,6 +12,8 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
+import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
@@ -106,17 +108,14 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         }
 
         log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.backend}")
-        val loginResult = coreLogic.authenticationScope(serverConfig) {
-            runBlocking {
-                login(instanceRequest.email, instanceRequest.password, true).let {
-                    if (it !is AuthenticationResult.Success) {
-                        throw WebApplicationException("Instance $instanceId: Login failed, check your credentials")
-                    } else {
-                        it
-                    }
+        val loginResult = provideVersionedAuthenticationScope(coreLogic, serverConfig)
+            .login(instanceRequest.email, instanceRequest.password, true).let {
+                if (it !is AuthenticationResult.Success) {
+                    throw WebApplicationException("Instance $instanceId: Login failed, check your credentials")
+                } else {
+                    it
                 }
             }
-        }
 
         log.info("Instance $instanceId: Save Session")
         val userId = coreLogic.globalScope {
@@ -203,5 +202,19 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         }
         instances.remove(id)
     }
+
+    private suspend fun provideVersionedAuthenticationScope(coreLogic: CoreLogic, serverLinks: ServerConfig.Links): AuthenticationScope =
+        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke()) {
+            is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
+                throw WebApplicationException("failed to create authentication scope: ${result.genericFailure}")
+
+            AutoVersionAuthScopeUseCase.Result.Failure.TooNewVersion ->
+                throw WebApplicationException("failed to create authentication scope: api version not supported")
+
+            AutoVersionAuthScopeUseCase.Result.Failure.UnknownServerVersion ->
+                throw WebApplicationException("failed to create authentication scope: unknown server version")
+
+            is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
+        }
 
 }

@@ -2,7 +2,6 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
@@ -35,12 +34,9 @@ class LoginUseCaseTest {
     @Mock
     private val validateUserHandleUseCase = mock(classOf<ValidateUserHandleUseCase>())
 
-    @Mock
-    private val serverConfigRepository = mock(classOf<ServerConfigRepository>())
-
     lateinit var loginUseCase: LoginUseCase
 
-    private val serverLinks = TEST_SERVER_CONFIG.links
+    private val serverConfig = TEST_SERVER_CONFIG
 
     @BeforeTest
     fun setup() {
@@ -49,8 +45,7 @@ class LoginUseCaseTest {
                 loginRepository,
                 validateEmailUseCase,
                 validateUserHandleUseCase,
-                serverConfigRepository,
-                serverLinks
+                serverConfig
             )
     }
 
@@ -60,15 +55,10 @@ class LoginUseCaseTest {
             val cleanEmail = TEST_EMAIL
             given(validateEmailUseCase).invocation { invoke(cleanEmail) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(cleanEmail) }
-                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf()) }
             given(loginRepository)
                 .coroutine { loginWithEmail(cleanEmail, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
                 .then { Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID) }
-
-            given(serverConfigRepository)
-                .function(serverConfigRepository::configByLinks)
-                .whenInvokedWith(any())
-                .then { Either.Right(TEST_SERVER_CONFIG) }
 
             val loginUserCaseResult = loginUseCase("   $cleanEmail  ", TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
@@ -106,11 +96,6 @@ class LoginUseCaseTest {
                 .coroutine { loginWithHandle(cleanHandle, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
                 .then { Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID) }
 
-            given(serverConfigRepository)
-                .function(serverConfigRepository::configByLinks)
-                .whenInvokedWith(any())
-                .then { Either.Right(TEST_SERVER_CONFIG) }
-
             val loginUserCaseResult = loginUseCase("   $cleanHandle  ", TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
             assertEquals(
@@ -139,15 +124,10 @@ class LoginUseCaseTest {
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf()) }
             given(loginRepository)
                 .coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
                 .then { Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID) }
-
-            given(serverConfigRepository)
-                .function(serverConfigRepository::configByLinks)
-                .whenInvokedWith(any())
-                .then { Either.Right(TEST_SERVER_CONFIG) }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
@@ -171,11 +151,6 @@ class LoginUseCaseTest {
             given(loginRepository).coroutine { loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT) }.then {
                 Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID)
             }
-
-            given(serverConfigRepository)
-                .function(serverConfigRepository::configByLinks)
-                .whenInvokedWith(any())
-                .then { Either.Right(TEST_SERVER_CONFIG) }
 
             // when
             val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT)
@@ -202,14 +177,9 @@ class LoginUseCaseTest {
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf()) }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
                 .then { Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID) }
-
-            given(serverConfigRepository)
-                .function(serverConfigRepository::configByLinks)
-                .whenInvokedWith(any())
-                .then { Either.Right(TEST_SERVER_CONFIG) }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
@@ -224,7 +194,7 @@ class LoginUseCaseTest {
         runTest {
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { false }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf()) }
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
@@ -242,7 +212,7 @@ class LoginUseCaseTest {
 
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf()) }
             given(loginRepository).coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
                 .then { Either.Left(invalidCredentialsFailure) }
 
@@ -295,7 +265,7 @@ class LoginUseCaseTest {
             val badRequestFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
             given(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.then { true }
             given(validateUserHandleUseCase).invocation { invoke(TEST_EMAIL) }
-                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("") }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf()) }
             given(loginRepository)
                 .coroutine { loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
                 .then { Either.Left(badRequestFailure) }
@@ -339,6 +309,40 @@ class LoginUseCaseTest {
             verify(loginRepository).coroutine {
                 loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT)
             }.wasInvoked(exactly = once)
+            verify(loginRepository)
+                .suspendFunction(loginRepository::loginWithEmail)
+                .with(any(), any(), any())
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenUserHandleWithDots_whenLoggingInUsingUserHandle_thenStoreTheSessionAndReturnSuccess() =
+        runTest {
+            val handle = "cool.user"
+            given(validateEmailUseCase).invocation { invoke(handle) }.then { false }
+            given(validateUserHandleUseCase).invocation { invoke(handle) }
+                .then { ValidateUserHandleResult.Invalid.InvalidCharacters("cooluser", listOf('.')) }
+            given(loginRepository)
+                .coroutine { loginWithHandle(handle, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
+                .then { Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID) }
+
+            val loginUserCaseResult = loginUseCase(handle, TEST_PASSWORD, TEST_PERSIST_CLIENT)
+
+            assertEquals(
+                loginUserCaseResult,
+                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id)
+            )
+
+            verify(validateEmailUseCase)
+                .invocation { invoke(handle) }
+                .wasInvoked(exactly = once)
+            verify(validateUserHandleUseCase)
+                .invocation { invoke(handle) }
+                .wasInvoked(exactly = once)
+            verify(loginRepository)
+                .coroutine { loginWithHandle(handle, TEST_PASSWORD, TEST_PERSIST_CLIENT) }
+                .wasInvoked(exactly = once)
+
             verify(loginRepository)
                 .suspendFunction(loginRepository::loginWithEmail)
                 .with(any(), any(), any())

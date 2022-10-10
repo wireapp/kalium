@@ -1,9 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigMapper
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
@@ -13,24 +10,16 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.nullableFold
-import com.wire.kalium.network.ServerMetaDataManager
-import com.wire.kalium.network.UnauthenticatedNetworkContainer
-import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 
 class AuthenticationScope(
     private val clientLabel: String,
-    private val backendLinks: ServerConfig.Links,
-    private val globalScope: GlobalKaliumScope,
-    private val kaliumConfigs: KaliumConfigs
+    private val serverConfig: ServerConfig
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
-        UnauthenticatedNetworkContainer(
-            MapperProvider.serverConfigMapper().toDTO(backendLinks),
-            serverMetaDataManager = ServerMetaDataManagerImpl(globalScope.serverConfigRepository),
-            developmentApiEnabled = kaliumConfigs.developmentApiEnabled
+        UnauthenticatedNetworkContainer.create(
+            MapperProvider.serverConfigMapper().toDTO(serverConfig)
         )
     }
     private val loginRepository: LoginRepository
@@ -43,49 +32,18 @@ class AuthenticationScope(
     private val ssoLoginRepository: SSOLoginRepository
         get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso)
 
-    val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
-    val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
-    val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
+    private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
+    private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
 
     val login: LoginUseCase
         get() = LoginUseCaseImpl(
             loginRepository,
             validateEmailUseCase,
             validateUserHandleUseCase,
-            globalScope.serverConfigRepository,
-            backendLinks
+            serverConfig
         )
-    val register: RegisterScope
-        get() = RegisterScope(registerAccountRepository, globalScope.serverConfigRepository, backendLinks)
+    val registerScope: RegisterScope
+        get() = RegisterScope(registerAccountRepository, serverConfig)
     val ssoLoginScope: SSOLoginScope
-        get() = SSOLoginScope(ssoLoginRepository, backendLinks, globalScope.serverConfigRepository)
-}
-
-class ServerMetaDataManagerImpl internal constructor(
-    private val serverConfigRepository: ServerConfigRepository,
-    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
-) : ServerMetaDataManager {
-
-    override fun getLocalMetaData(backendLinks: ServerConfigDTO.Links): ServerConfigDTO? =
-        serverConfigRepository.configByLinks(
-            serverConfigMapper.fromDTO(backendLinks)
-        ).nullableFold({
-            null
-        }, {
-            serverConfigMapper.toDTO(it)
-        })
-
-    override fun storeServerConfig(
-        links: ServerConfigDTO.Links,
-        metaData: ServerConfigDTO.MetaData
-    ): ServerConfigDTO? {
-        return serverConfigRepository.storeConfig(
-            serverConfigMapper.fromDTO(links),
-            serverConfigMapper.fromDTO(metaData)
-        ).nullableFold({
-            null
-        }, {
-            serverConfigMapper.toDTO(it)
-        })
-    }
+        get() = SSOLoginScope(ssoLoginRepository, serverConfig)
 }

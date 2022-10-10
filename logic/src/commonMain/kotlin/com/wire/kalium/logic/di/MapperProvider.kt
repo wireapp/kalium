@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.ConversationStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
+import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
@@ -45,6 +46,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapperImpl
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyListMapper
@@ -86,7 +89,14 @@ internal object MapperProvider {
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
     fun conversationMapper(): ConversationMapper =
-        ConversationMapperImpl(idMapper(), ConversationStatusMapperImpl(idMapper()), ProtocolInfoMapperImpl())
+        ConversationMapperImpl(
+            idMapper(),
+            ConversationStatusMapperImpl(idMapper()),
+            ProtocolInfoMapperImpl(),
+            AvailabilityStatusMapperImpl(),
+            DomainUserTypeMapperImpl(),
+            ConnectionStatusMapperImpl()
+        )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
     fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
@@ -98,7 +108,8 @@ internal object MapperProvider {
         memberMapper(),
         connectionMapper(),
         featureConfigMapper(),
-        conversationRoleMapper()
+        conversationRoleMapper(),
+        userTypeMapper(),
     )
 
     fun messageMentionMapper(): MessageMentionMapper = MessageMentionMapperImpl(idMapper())
@@ -123,5 +134,9 @@ internal object MapperProvider {
         qualifiedIdMapper: QualifiedIdMapper,
         sessionRepository: SessionRepository
     ): FederatedIdMapper = FederatedIdMapperImpl(userId, qualifiedIdMapper, sessionRepository)
+
+    fun mlsPublicKeyMapper(): MLSPublicKeysMapper = MLSPublicKeysMapperImpl()
+
+    fun protocolInfoMapper(): ProtocolInfoMapper = ProtocolInfoMapperImpl()
 
 }

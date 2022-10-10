@@ -144,7 +144,10 @@ class ConversationResources(private val instanceService: InstanceService) {
                 ConversationId(conversationId, conversationDomain),
                 data,
                 fileName,
-                type
+                type,
+                invalidHash,
+                otherAlgorithm,
+                otherHash
             )
         }
         return Response.status(Response.Status.OK).build()

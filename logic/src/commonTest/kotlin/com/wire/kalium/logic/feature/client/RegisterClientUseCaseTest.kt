@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -38,6 +39,9 @@ import kotlin.test.assertSame
 class RegisterClientUseCaseTest {
 
     @Mock
+    private val featureSupport = mock(classOf<FeatureSupport>())
+
+    @Mock
     private val clientRepository = mock(classOf<ClientRepository>())
 
     @Mock
@@ -57,6 +61,7 @@ class RegisterClientUseCaseTest {
     @BeforeTest
     fun setup() {
         registerClient = RegisterClientUseCaseImpl(
+            featureSupport,
             clientRepository,
             preKeyRepository,
             keyPackageRepository,
@@ -78,6 +83,10 @@ class RegisterClientUseCaseTest {
             .function(preKeyRepository::generateNewLastKey)
             .whenInvoked()
             .then { Either.Right(LAST_KEY) }
+
+        given(featureSupport)
+            .invocation { featureSupport.isMLSSupported }
+            .thenReturn(true)
 
     }
 
@@ -429,9 +438,36 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenMLsSupportIsDisabled_whenRegistering_thenMLSClientIsNotRegistered() = runTest {
+        given(featureSupport)
+            .invocation { featureSupport.isMLSSupported }
+            .thenReturn(false)
+
+        val registeredClient = CLIENT
+        given(clientRepository)
+            .suspendFunction(clientRepository::registerClient)
+            .whenInvokedWith(anything())
+            .then { Either.Right(CLIENT) }
+
+        given(clientRepository)
+            .suspendFunction(clientRepository::persistClientId)
+            .whenInvokedWith(anything())
+            .then { Either.Right(Unit) }
+
+        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
+
+        verify(clientRepository)
+            .suspendFunction(clientRepository::registerMLSClient)
+            .with(any(), any())
+            .wasNotInvoked()
+
+        assertIs<RegisterClientResult.Success>(result)
+        assertEquals(registeredClient, result.client)
+    }
+
     private companion object {
         const val KEY_PACKAGE_LIMIT = 100
-        const val KEY_PACKAGE_THRESHOLD = 0.5F
         const val TEST_PASSWORD = "password"
         val TEST_CAPABILITIES: List<ClientCapability> = listOf(
             ClientCapability.LegalHoldImplicitConsent

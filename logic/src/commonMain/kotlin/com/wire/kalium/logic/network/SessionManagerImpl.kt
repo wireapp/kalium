@@ -10,9 +10,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.SessionDTO
-import com.wire.kalium.network.api.model.AccessTokenDTO
-import com.wire.kalium.network.api.model.RefreshTokenDTO
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.RefreshTokenDTO
+import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
@@ -25,7 +25,7 @@ class SessionManagerImpl(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionManager {
-    override fun session(): Pair<SessionDTO, ServerConfigDTO.Links> = sessionRepository.fullAccountInfo(userId).fold({
+    override fun session(): Pair<SessionDTO, ServerConfigDTO> = sessionRepository.fullAccountInfo(userId).fold({
         TODO("IMPORTANT! Not yet implemented")
     }, { account ->
         val session: SessionDTO = wrapStorageRequest { tokenStorage.getToken(idMapper.toDaoModel(account.info.userId)) }
@@ -35,8 +35,8 @@ class SessionManagerImpl(
             }, {
                 it
             })
-        val links = serverConfigMapper.toDTO(account.serverConfig).links
-        session to links
+        val serverConfig = serverConfigMapper.toDTO(account.serverConfig)
+        session to serverConfig
     })
 
     override fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =

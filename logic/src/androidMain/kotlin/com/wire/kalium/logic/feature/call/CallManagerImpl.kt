@@ -57,6 +57,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logic.data.call.CallClient
+import com.wire.kalium.logic.data.call.CallClientList
 
 @Suppress("LongParameterList", "TooManyFunctions")
 actual class CallManagerImpl internal constructor(
@@ -273,6 +275,26 @@ actual class CallManagerImpl internal constructor(
         }
     }
 
+    override suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList) {
+        withCalling {
+            // Needed to support calls between federated and non federated environments
+            val clients = callClients.clients.map { callClient ->
+                CallClient(
+                    federatedIdMapper.parseToFederatedId(callClient.userId),
+                    callClient.clientId
+                )
+            }
+            val clientsJson = CallClientList(clients).toJsonString()
+            val conversationIdString = federatedIdMapper.parseToFederatedId(conversationId)
+            calling.wcall_request_video_streams(
+                inst = it,
+                conversationId = conversationIdString,
+                mode = DEFAULT_REQUEST_VIDEO_STREAMS_MODE,
+                json = clientsJson
+            )
+        }
+    }
+
     /**
      * onCallingReady
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
@@ -288,8 +310,6 @@ actual class CallManagerImpl internal constructor(
         scope.launch {
             withCalling {
                 val onParticipantListChanged = OnParticipantListChanged(
-                    handle = deferredHandle.await(),
-                    calling = calling,
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
@@ -364,6 +384,7 @@ actual class CallManagerImpl internal constructor(
     }
 
     companion object {
+        private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
         const val TAG = "CallManager"
         const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
         const val UTF8_ENCODING = "UTF-8"

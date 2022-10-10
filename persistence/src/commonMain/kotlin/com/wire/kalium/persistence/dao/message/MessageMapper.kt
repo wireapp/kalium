@@ -5,6 +5,8 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.reaction.ReactionMapper
+import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 
 @Suppress("LongParameterList")
 object MessageMapper {
@@ -18,7 +20,9 @@ object MessageMapper {
         status: MessageEntity.Status,
         lastEditTimestamp: String?,
         visibility: MessageEntity.Visibility,
-        content: MessageEntityContent
+        content: MessageEntityContent,
+        allReactionsJson: String?,
+        selfReactionsJson: String?
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
@@ -29,7 +33,11 @@ object MessageMapper {
             senderClientId = senderClientId!!,
             status = status,
             editStatus = mapEditStatus(lastEditTimestamp),
-            visibility = visibility
+            visibility = visibility,
+            reactions = ReactionsEntity(
+                totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
+                selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
+            )
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -74,6 +82,7 @@ object MessageMapper {
         assetSize: Long?,
         assetName: String?,
         assetMimeType: String?,
+        assetUploadStatus: MessageEntity.UploadStatus?,
         assetDownloadStatus: MessageEntity.DownloadStatus?,
         assetOtrKey: ByteArray?,
         assetSha256: ByteArray?,
@@ -93,8 +102,15 @@ object MessageMapper {
         restrictedAssetMimeType: String?,
         restrictedAssetSize: Long?,
         restrictedAssetName: String?,
-        failedToDecryptData: ByteArray?
-    ) = when (contentType) {
+        failedToDecryptData: ByteArray?,
+        conversationName: String?,
+        allReactionsJson: String?,
+        selfReactionsJson: String?
+    ): MessageEntity {
+        // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
+        val content = if (visibility == MessageEntity.Visibility.DELETED) {
+            MessageEntityContent.Unknown()
+        } else when (contentType) {
             MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
                 messageBody = text ?: "",
                 mentions = listOf()
@@ -104,6 +120,7 @@ object MessageMapper {
                 assetSizeInBytes = assetSize.requireField("asset_size"),
                 assetName = assetName,
                 assetMimeType = assetMimeType.requireField("asset_mime_type"),
+                assetUploadStatus = assetUploadStatus,
                 assetDownloadStatus = assetDownloadStatus,
                 assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
                 assetSha256Key = assetSha256.requireField("asset_sha256"),
@@ -138,21 +155,26 @@ object MessageMapper {
                 restrictedAssetSize.requireField("assetSize"),
                 restrictedAssetName.requireField("assetName")
             )
-        }.let {
-            createMessageEntity(
-                id,
-                conversationId,
-                date,
-                senderUserId,
-                senderClientId,
-                status,
-                lastEditTimestamp,
-                visibility,
-                it
-            )
+
+            MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
         }
 
+        return createMessageEntity(
+            id,
+            conversationId,
+            date,
+            senderUserId,
+            senderClientId,
+            status,
+            lastEditTimestamp,
+            visibility,
+            content,
+            allReactionsJson,
+            selfReactionsJson
+        )
+    }
+
     private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
-        "Fild $fieldName null when unpacking message content"
+        "Field $fieldName null when unpacking message content"
     }
 }

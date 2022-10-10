@@ -63,11 +63,13 @@ internal class IncrementalSyncManager(
 
     private val coroutineExceptionHandler = SyncExceptionHandler({
         kaliumLogger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
-        incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+        syncScope.launch {
+            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
+        }
     }, {
         kaliumLogger.i("$TAG ExceptionHandler error $it")
-        incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(it))
         syncScope.launch {
+            incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(it))
             kaliumLogger.i("$TAG Triggering delay")
             delay(RETRY_DELAY)
             kaliumLogger.i("$TAG Delay finished")
@@ -89,7 +91,6 @@ internal class IncrementalSyncManager(
                     // START SYNC. The ConnectionPolicy doesn't matter the first time
                     kaliumLogger.i("$TAG Starting IncrementalSync, as SlowSync is completed")
                     doIncrementalSyncWhilePolicyAllows()
-                    incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
                     kaliumLogger.i("$TAG IncrementalSync finished normally. Starting to observe ConnectionPolicy upgrade")
                     observeConnectionPolicyUpgrade()
                 }
@@ -119,6 +120,7 @@ internal class IncrementalSyncManager(
                 }
                 incrementalSyncRepository.updateIncrementalSyncState(newState)
             }
+        incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
         kaliumLogger.i("$TAG IncrementalSync stopped.")
     }
 

@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -14,6 +15,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
@@ -24,10 +26,13 @@ import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
 class MessageScope internal constructor(
@@ -36,17 +41,20 @@ class MessageScope internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     internal val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
     private val proteusClient: ProteusClient,
     private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
     private val assetRepository: AssetRepository,
+    private val reactionRepository: ReactionRepository,
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val scope: CoroutineScope,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -71,13 +79,15 @@ class MessageScope internal constructor(
         get() = MessageSenderImpl(
             messageRepository,
             conversationRepository,
+            mlsConversationRepository,
             syncManager,
             messageSendFailureHandler,
             sessionEstablisher,
             messageEnvelopeCreator,
             mlsMessageCreator,
             messageSendingScheduler,
-            timeParser
+            timeParser,
+            scope
         )
 
     val persistMessage: PersistMessageUseCase
@@ -106,6 +116,7 @@ class MessageScope internal constructor(
     val sendAssetMessage: SendAssetMessageUseCase
         get() = SendAssetMessageUseCaseImpl(
             persistMessage,
+            updateAssetMessageUploadStatus,
             clientRepository,
             assetRepository,
             userRepository,
@@ -116,7 +127,8 @@ class MessageScope internal constructor(
     val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
-            messageRepository
+            messageRepository,
+            updateAssetMessageDownloadStatus
         )
 
     val getRecentMessages: GetRecentMessagesUseCase
@@ -135,6 +147,15 @@ class MessageScope internal constructor(
             messageSender
         )
 
+    val toggleReaction: ToggleReactionUseCase
+        get() = ToggleReactionUseCase(
+            currentClientIdProvider,
+            userId,
+            slowSyncRepository,
+            reactionRepository,
+            messageSender
+        )
+
     val sendKnock: SendKnockUseCase
         get() = SendKnockUseCase(
             persistMessage,
@@ -145,6 +166,11 @@ class MessageScope internal constructor(
         )
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase get() = MarkMessagesAsNotifiedUseCaseImpl(conversationRepository)
+
+    val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase
+        get() = UpdateAssetMessageUploadStatusUseCaseImpl(
+            messageRepository
+        )
 
     val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase
         get() = UpdateAssetMessageDownloadStatusUseCaseImpl(

@@ -16,7 +16,6 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.times
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
@@ -103,7 +102,7 @@ class IncrementalSyncManagerTest {
 
         advanceUntilIdle()
         verify(arrangement.incrementalSyncRepository)
-            .function(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
+            .suspendFunction(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
             .with(matching { it is IncrementalSyncStatus.Failed })
             .wasInvoked(exactly = once)
     }
@@ -178,6 +177,51 @@ class IncrementalSyncManagerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenDisconnectPolicy_whenWorkerCompletes_thenShouldUpdateIncrementalSyncStatusToPending() = runTest(TestKaliumDispatcher.default) {
+        val connectionPolicyState = MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS)
+
+        val (arrangement, _) = Arrangement()
+            .withWorkerReturning(emptyFlow())
+            .withConnectionPolicyReturning(connectionPolicyState)
+            .arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+        advanceUntilIdle()
+
+        verify(arrangement.incrementalSyncRepository)
+            .suspendFunction(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
+            .with(eq(IncrementalSyncStatus.Pending))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenPolicyUpAndDowngrade_whenWorkerTheSecondTime_thenShouldUpdateIncrementalSyncStatusToPendingAgain() =
+        runTest(TestKaliumDispatcher.default) {
+            val connectionPolicyState = MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS)
+
+            val (arrangement, _) = Arrangement()
+                .withWorkerReturning(emptyFlow())
+                .withConnectionPolicyReturning(connectionPolicyState)
+                .arrange()
+            arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+            advanceUntilIdle()
+
+            // Upgrade
+            connectionPolicyState.value = ConnectionPolicy.KEEP_ALIVE
+            advanceUntilIdle()
+
+            // Downgrade
+            connectionPolicyState.value = ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS
+            advanceUntilIdle()
+
+            verify(arrangement.incrementalSyncRepository)
+                .suspendFunction(arrangement.incrementalSyncRepository::updateIncrementalSyncState)
+                .with(eq(IncrementalSyncStatus.Pending))
+                .wasInvoked(exactly = twice)
+        }
+
     private class Arrangement {
 
         val slowSyncRepository: SlowSyncRepository = InMemorySlowSyncRepository()
@@ -188,9 +232,11 @@ class IncrementalSyncManagerTest {
         @Mock
         val incrementalSyncRepository = configure(mock(classOf<IncrementalSyncRepository>())) { stubsUnitByDefault = true }
 
-        private val incrementalSyncManager = IncrementalSyncManager(
-            slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository, TestKaliumDispatcher
-        )
+        private val incrementalSyncManager by lazy {
+            IncrementalSyncManager(
+                slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository, TestKaliumDispatcher
+            )
+        }
 
         fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {
             given(incrementalSyncWorker)

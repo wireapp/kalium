@@ -41,6 +41,11 @@ sealed class MessageContent {
         val conversationId: ConversationId?,
     ) : Regular()
 
+    data class Reaction(
+        val messageId: String,
+        val emojiSet: Set<String>
+    ): Regular()
+
     data class Knock(val hotKnock: Boolean) : Regular()
 
     data class Unknown( // messages that aren't yet handled properly but stored in db in case
@@ -72,6 +77,8 @@ sealed class MessageContent {
         val conversationId: ConversationId?,
         val time: Instant
     ) : Regular()
+
+    data class ConversationRenamed(val conversationName: String) : System()
 
     object MissedCall : System()
 

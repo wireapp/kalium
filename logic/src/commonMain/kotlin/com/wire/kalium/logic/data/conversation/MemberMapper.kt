@@ -1,14 +1,14 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.network.api.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.user.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.logic.data.user.UserId as LogicUserId
 import com.wire.kalium.persistence.dao.Member as PersistedMember
-import com.wire.kalium.network.api.UserId
 
 interface MemberMapper {
     fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Conversation.Member

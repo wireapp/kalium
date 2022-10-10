@@ -4,15 +4,15 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.conversation.ConvProtocol
-import com.wire.kalium.network.api.featureConfigs.AppLockConfigDTO
-import com.wire.kalium.network.api.featureConfigs.ClassifiedDomainsConfigDTO
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigApi
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.featureConfigs.FeatureConfigResponse
-import com.wire.kalium.network.api.featureConfigs.FeatureFlagStatusDTO
-import com.wire.kalium.network.api.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -124,7 +124,8 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.SecondFactorPasswordChallenge(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.SSO(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
-            FeatureConfigData.MLS(MLSConfigDTO(
+            FeatureConfigData.MLS(
+                MLSConfigDTO(
                 emptyList(),
                 ConvProtocol.MLS,
                 emptyList(),

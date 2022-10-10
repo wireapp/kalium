@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -28,18 +29,43 @@ class KeyPackageManagerTests {
         runTest(TestKaliumDispatcher.default) {
 
             val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(false)
                 .withLastKeyPackageCountCheck(false)
                 .withKeyPackageCountFailed()
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
+
+            verify(arrangement.refillKeyPackagesUseCase)
+                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenMLSSupportIsDisabled_whenObservingSyncFinishes_refillKeyPackagesIsNotPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(false)
+                .withLastKeyPackageCountCheck(true)
+                .withRefillKeyPackagesUseCaseSuccessful()
+                .withKeyPackageCountFailed()
+                .withUpdateLastKeyPackageCountCheckSuccessful()
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            verify(arrangement.refillKeyPackagesUseCase)
+                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
+                .wasNotInvoked()
         }
 
     @Test
     fun givenLastCheckAfterDuration_whenObservingSyncFinishes_refillKeyPackagesIsPerformed() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(true)
                 .withLastKeyPackageCountCheck(true)
                 .withRefillKeyPackagesUseCaseSuccessful()
                 .withKeyPackageCountFailed()
@@ -63,6 +89,7 @@ class KeyPackageManagerTests {
     fun givenLastCheckBeforeDuration_whenKeyPackageCountsReturnRefillTrue_refillKeyPackagesIsPerformed() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(true)
                 .withLastKeyPackageCountCheck(false)
                 .withRefillKeyPackagesUseCaseSuccessful()
                 .withKeyPackageCountReturnsRefillTrue()
@@ -85,6 +112,9 @@ class KeyPackageManagerTests {
     private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
+
+        @Mock
+        val featureSupport = mock(classOf<FeatureSupport>())
 
         @Mock
         val timestampKeyRepository = mock(classOf<TimestampKeyRepository>())
@@ -135,7 +165,14 @@ class KeyPackageManagerTests {
                 .thenReturn(MLSKeyPackageCountResult.Failure.Generic(CoreFailure.MissingClientRegistration))
         }
 
+        fun withIsMLSSupported(supported: Boolean) = apply {
+            given(featureSupport)
+                .invocation { featureSupport.isMLSSupported }
+                .thenReturn(supported)
+        }
+
         fun arrange() = this to KeyPackageManagerImpl(
+            featureSupport,
             incrementalSyncRepository,
             lazy { refillKeyPackagesUseCase },
             lazy { keyPackageCountUseCase },

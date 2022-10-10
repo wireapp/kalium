@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.asset.SendAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
+import com.wire.kalium.logic.feature.debug.BrokenState
+import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onFailure
@@ -111,16 +113,25 @@ sealed class ConversationRepository {
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
         }
 
-        fun sendFile(instance: Instance, conversationId: ConversationId, data: String, fileName: String, type: String) {
+        @Suppress("LongParameterList", "LongMethod", "ThrowsCount")
+        fun sendFile(
+            instance: Instance,
+            conversationId: ConversationId,
+            data: String,
+            fileName: String,
+            type: String,
+            invalidHash: Boolean,
+            otherAlgorithm: Boolean,
+            otherHash: Boolean
+        ) {
             val temp: File = Files.createTempFile("asset", ".data").toFile()
             val byteArray = Base64.getDecoder().decode(data)
             FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
-
+            log.info("Instance ${instance.instanceId}: Send file $fileName")
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
                     instance.coreLogic.sessionScope(result.accountInfo.userId) {
-                        log.info("Instance ${instance.instanceId}: Send file")
                         runBlocking {
                             log.info("Instance ${instance.instanceId}: Wait until alive")
                             if (syncManager.isSlowSyncOngoing()) {
@@ -136,22 +147,47 @@ sealed class ConversationRepository {
                                     log.info("${convo.name} (${convo.id})")
                                 }
                             }
-                            val sendResult = messages.sendAssetMessage(
-                                conversationId,
-                                temp.toOkioPath(),
-                                byteArray.size.toLong(),
-                                fileName, type,
-                                null,
-                                null
-                            )
-                            if (sendResult is SendAssetMessageResult.Failure) {
-                                if (sendResult.coreFailure is StorageFailure.Generic) {
-                                    val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
-                                    throw WebApplicationException(
-                                        "Instance ${instance.instanceId}: Sending failed with $rootCause"
-                                    )
-                                } else {
-                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                            val sendResult = if (invalidHash || otherAlgorithm || otherHash) {
+                                val brokenState = BrokenState(invalidHash, otherHash, otherAlgorithm)
+                                @Suppress("IMPLICIT_CAST_TO_ANY")
+                                debug.sendBrokenAssetMessage(
+                                   conversationId,
+                                   temp.toOkioPath(),
+                                   byteArray.size.toLong(),
+                                   fileName,
+                                   type,
+                                   brokenState
+                               )
+                            } else {
+                                @Suppress("IMPLICIT_CAST_TO_ANY")
+                                messages.sendAssetMessage(
+                                    conversationId,
+                                    temp.toOkioPath(),
+                                    byteArray.size.toLong(),
+                                    fileName,
+                                    type,
+                                    null,
+                                    null
+                                )
+                            }
+                            when (sendResult) {
+                                is SendAssetMessageResult.Failure -> {
+                                    if (sendResult.coreFailure is StorageFailure.Generic) {
+                                        val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
+                                        throw WebApplicationException(
+                                            "Instance ${instance.instanceId}: Sending failed with $rootCause"
+                                        )
+                                    } else {
+                                        throw WebApplicationException("Instance ${instance.instanceId}: Sending file $fileName failed")
+                                    }
+                                }
+
+                                is SendBrokenAssetMessageResult.Failure -> {
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending broken file $fileName failed")
+                                }
+
+                                else -> {
+                                    log.info("Instance ${instance.instanceId}: Sending file $fileName was successful")
                                 }
                             }
                         }

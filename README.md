@@ -11,68 +11,58 @@
 - [cryptobox-c](https://github.com/wireapp/cryptobox-c)
 - [cryptobox4j](https://github.com/wireapp/cryptobox4j)
 
+### Supported Platforms
 
-#### Building on macOS 12
+- Android (see the [Android Reloaded](https://github.com/wireapp/wire-android-reloaded) module)
+- JVM (see the [cli](https://github.com/wireapp/kalium/tree/develop/cli) module)
+- iOS (partially)
+- JavaScript (just a tiny bit)
 
-Run
+The `cli` can be executed on the terminal of any machine that 
+satisfies the dependencies mentioned above, and is capable of actions like:
+- Logging in
+- Create a group conversation
+- Add user to group conversation
+- Receive and send text messages in real time
+- Remove another client from your account remotely
+- Refill MSL key packages
 
-```
-make
-```
+#### Building dependencies on macOS 12
 
-then pass the location of the libraries in `native/libs` to the VM options like so:
+Just run `make`, which will download and compile dependencies listed above from source, 
+the output will be `$PROJECT_ROOT$/native/libs`
 
-```
--Djava.library.path=/Users/tmpz/Code/Wire/kalium/native/libs
-```
+#### Running on your machine
 
-Note that the path needs to be adjusted for your machine.
-
-##### Troubleshooting
-
-###### Unknown host CPU architecture: arm64
-`This solution won't work! an alternative solution is to use OpenJDK, but that won't work either, so PLEASE DON'T WASTE MORE TIME on it till there is a permanent and working solution for M1 machines! Otherwise, please use x86-based machines to build and run the CLI app!`
-
-If you get `Unknown host CPU architecture: arm64` on Apple Silicon (M1 Mac)
-, [follow this stack overflow answer](https://stackoverflow.com/questions/69541831/unknown-host-cpu-architecture-arm64-android-ndk-siliconm1-apple-macbook-pro)
-.
-
-Change `/Users/<your-user>/Library/Android/sdk/ndk/<your-ndk-version-number>` to
+When running any tasks that require the native libraries (`libsodium`, `cryptobox-c` 
+and `cryptobox4j`), you need to pass their location as VM options like so:
 
 ```
-#!/bin/sh
-DIR="$(cd "$(dirname "$0")" && pwd)"
-arch -x86_64 /bin/bash $DIR/build/ndk-build "$@"
+-Djava.library.path=./path/to/native/libraries/mentioned/before
 ```
 
-#### Running the tests
+For example, if you want to run the task `jvmTest` and the libraries are in `./native/libs`:
 
-In `build.gradle.kts` your test task should look something like this:
-
-```kotlin
-tasks.test {
-    useJUnitPlatform()
-    jvmArgs = jvmArgs?.plus(listOf("-Djava.library.path=/usr/local/lib/:/Users/tmpz/Code/Wire/kalium/native/libs"))
-}
 ```
-
-The path is the same as the one you have passed to the VM options, adjusted for your machine.
+./gradlew jvmTest -Djava.library.path=./native/libs
+```
 
 #### Running the CLI
 
 Note: Currently the CLI only works on the development or staging environments (see CL-61).
 
-Run the following with the native libs in the classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
+Run the following with the native libs in the
+classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
 
 ```
 ./gradlew :cli:assemble
-java -jar cli/build/libs/cli.jar login
+java -Djava.library.path=/usr/local/lib/:./native/libs -jar cli/build/libs/cli.jar login 
 ```
 
 or if you want the jar file deleted after your run:
 
 ```
-./gradlew :cli:run --args="login"
+./gradlew :cli:run --args="login" -Djava.library.path=/usr/local/lib/:./native/libs
 ```
 
 #### Detekt rules

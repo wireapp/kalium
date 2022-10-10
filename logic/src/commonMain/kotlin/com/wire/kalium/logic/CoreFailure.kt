@@ -1,6 +1,7 @@
 package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -15,6 +16,12 @@ sealed class CoreFailure {
      * The attempted operation requires that this client is registered.
      */
     object MissingClientRegistration : CoreFailure()
+
+    /**
+     * A user has no key packages available which prevents him/her from being added
+     * to an existing or new conversation.
+     */
+    data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure()
 
     data class Unknown(val rootCause: Throwable?) : CoreFailure()
 
@@ -52,6 +59,11 @@ sealed class NetworkFailure : CoreFailure() {
     }
 }
 
+class MLSFailure(internal val exception: Exception) : CoreFailure() {
+
+    val rootCause: Throwable get() = exception
+}
+
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure() {
 
     val rootCause: Throwable get() = proteusException
@@ -87,6 +99,15 @@ internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(ProteusFailure(ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR)))
+    }
+}
+
+internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
+    return try {
+        Either.Right(mlsRequest())
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        Either.Left(MLSFailure(e))
     }
 }
 

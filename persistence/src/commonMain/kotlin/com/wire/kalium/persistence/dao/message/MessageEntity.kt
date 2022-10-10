@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 
 @Suppress("LongParameterList")
 sealed class MessageEntity(
@@ -22,7 +23,8 @@ sealed class MessageEntity(
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
         val senderClientId: String,
-        val editStatus: EditStatus
+        val editStatus: EditStatus,
+        val reactions: ReactionsEntity = ReactionsEntity.EMPTY
     ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
 
     data class System(
@@ -42,6 +44,29 @@ sealed class MessageEntity(
     sealed class EditStatus {
         object NotEdited : EditStatus()
         data class Edited(val lastTimeStamp: String) : EditStatus()
+    }
+
+    enum class UploadStatus {
+        /**
+         * There was no attempt done to upload the asset's data to remote (server) storage.
+         */
+        NOT_UPLOADED,
+
+        /**
+         * The asset is currently being uploaded and will be saved internally after a successful upload
+         * @see UPLOADED
+         */
+        IN_PROGRESS,
+
+        /**
+         * The asset was uploaded and saved in the internal storage, that should be only readable by this Kalium client.
+         */
+        UPLOADED,
+
+        /**
+         * The last attempt at uploading and saving this asset's data failed.
+         */
+        FAILED
     }
 
     enum class DownloadStatus {
@@ -80,7 +105,7 @@ sealed class MessageEntity(
     }
 
     enum class ContentType {
-        TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET, UNKNOWN, FAILED_DECRYPTION
+        TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET, CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION
     }
 
     enum class MemberChangeType {
@@ -116,6 +141,7 @@ sealed class MessageEntityContent {
         //       without a name from the protobuf models
         val assetName: String? = null,
         val assetMimeType: String,
+        val assetUploadStatus: MessageEntity.UploadStatus? = null,
         val assetDownloadStatus: MessageEntity.DownloadStatus? = null,
 
         // remote data fields
@@ -154,4 +180,5 @@ sealed class MessageEntityContent {
     ) : Regular()
 
     object MissedCall : System()
+    data class ConversationRenamed(val conversationName: String) : System()
 }

@@ -13,9 +13,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.model.getPreviewAssetOrNull
-import com.wire.kalium.network.api.user.details.UserProfileDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
+import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
