@@ -629,6 +629,7 @@ abstract class UserSessionScopeCommon internal constructor(
             mlsClientProvider,
             preKeyRepository,
             userRepository,
+            userId,
             assetRepository,
             syncManager,
             slowSyncRepository,

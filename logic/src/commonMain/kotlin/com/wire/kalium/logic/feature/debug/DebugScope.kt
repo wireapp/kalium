@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
@@ -44,6 +45,7 @@ class DebugScope internal constructor(
     private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
+    private val userId: UserId,
     private val assetRepository: AssetRepository,
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
@@ -57,7 +59,7 @@ class DebugScope internal constructor(
         get() = SendBrokenAssetMessageUseCaseImpl(
             currentClientIdProvider,
             assetRepository,
-            userRepository,
+            userId,
             slowSyncRepository,
             messageSender
         )
