@@ -55,14 +55,14 @@ internal interface UserRepository {
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
-    suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
+    fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
-    suspend fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
+    fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
     suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
@@ -215,7 +215,7 @@ internal class UserDataSource internal constructor(
     override suspend fun updateLocalSelfUserHandle(handle: String) =
         userDAO.updateUserHandle(idMapper.toDaoModel(selfUserId), handle)
 
-    override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
+    override fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = idMapper.toDaoModel(selfUserId)
         return userDAO.observeAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .wrapStorageRequest()
@@ -273,7 +273,7 @@ internal class UserDataSource internal constructor(
         userDAO.updateUserAvailabilityStatus(idMapper.toDaoModel(userId), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
 
-    override suspend fun observeAllKnownUsersNotInConversation(
+    override fun observeAllKnownUsersNotInConversation(
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, List<OtherUser>>> {
         return userDAO.observeUsersNotInConversation(idMapper.toDaoModel(conversationId))

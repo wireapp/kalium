@@ -13,14 +13,14 @@ import kotlinx.coroutines.flow.map
  * @return GetAllContactsResult with list of known users
  */
 interface GetAllContactsUseCase {
-    suspend operator fun invoke(): Flow<GetAllContactsResult>
+    operator fun invoke(): Flow<GetAllContactsResult>
 }
 
 internal class GetAllContactsUseCaseImpl internal constructor(
     private val userRepository: UserRepository
 ) : GetAllContactsUseCase {
 
-    override suspend fun invoke(): Flow<GetAllContactsResult> =
+    override fun invoke(): Flow<GetAllContactsResult> =
         userRepository.observeAllKnownUsers()
             .map { it.fold(GetAllContactsResult::Failure, GetAllContactsResult::Success) }
 

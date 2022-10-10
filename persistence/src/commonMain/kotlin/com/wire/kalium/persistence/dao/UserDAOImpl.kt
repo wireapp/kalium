@@ -241,7 +241,7 @@ class UserDAOImpl internal constructor(
         userQueries.updateUserAvailabilityStatus(status, qualifiedID)
     }
 
-    override suspend fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserEntity>> =
+    override fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserEntity>> =
         userQueries.getUsersNotPartOfTheConversation(conversationId)
             .asFlow()
             .mapToList()
@@ -266,7 +266,7 @@ class UserDAOImpl internal constructor(
         userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
     }
 
-    override suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>> =
+    override fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>> =
         userQueries.selectAllUsersWithConnectionStatus(connectionState)
             .asFlow()
             .mapToList()

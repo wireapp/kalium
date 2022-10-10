@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.map
 class GetAllContactsNotInConversationUseCase internal constructor(
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Result> =
+    operator fun invoke(conversationId: ConversationId): Flow<Result> =
         userRepository
             .observeAllKnownUsersNotInConversation(conversationId)
             .map { it.fold(Result::Failure, Result::Success) }
