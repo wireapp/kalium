@@ -92,6 +92,7 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUs
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
+import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -617,6 +618,25 @@ abstract class UserSessionScopeCommon internal constructor(
             selfConversationIdProvider,
             persistMessage,
             updateKeyingMaterialThresholdProvider
+        )
+    val debug: DebugScope
+        get() = DebugScope(
+            messageRepository,
+            conversationRepository,
+            mlsConversationRepository,
+            clientRepository,
+            clientIdProvider,
+            authenticatedDataSourceSet.proteusClient,
+            mlsClientProvider,
+            preKeyRepository,
+            userRepository,
+            userId,
+            assetRepository,
+            syncManager,
+            slowSyncRepository,
+            messageSendingScheduler,
+            timeParser,
+            this
         )
     val messages: MessageScope
         get() = MessageScope(
