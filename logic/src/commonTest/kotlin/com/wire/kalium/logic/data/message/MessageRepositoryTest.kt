@@ -157,36 +157,7 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenAMessage_whenSendingReturnsSuccess_thenCorrectConversationMessageOptionShouldBeSent() = runTest {
-        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
-        val mappedId: NetworkQualifiedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
-        val timestamp = TEST_DATETIME
-
-        val (arrangement, messageRepository) = Arrangement()
-            .withMappedApiModelId(mappedId)
-            .withSuccessfulMessageDelivery(timestamp)
-            .arrange()
-
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
-            .shouldSucceed()
-
-        val expectedParameters = MessageApi.Parameters.QualifiedDefaultParameters(
-            sender = messageEnvelope.senderClientId.value,
-            recipients = mapOf(),
-            true,
-            MessagePriority.HIGH,
-            false,
-            messageEnvelope.dataBlob?.data,
-            MessageApi.QualifiedMessageOption.ReportAll
-        )
-
-        verify(arrangement.messageApi)
-            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
-            .with(eq(expectedParameters), anything())
-    }
-
-    @Test
-    fun givenAMessage_whenSendingReturnsSuccess_thenCorrectClientsMessageOptionShouldBeSent() = runTest {
+    fun givenAnEnvelopeTargetedToClients_whenSending_thenShouldCallTheAPIWithCorrectParameters() = runTest {
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
         val mappedId: NetworkQualifiedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
         val timestamp = TEST_DATETIME
@@ -209,19 +180,37 @@ class MessageRepositoryTest {
             )
         ).shouldSucceed()
 
-        val expectedParameters = MessageApi.Parameters.QualifiedDefaultParameters(
-            sender = messageEnvelope.senderClientId.value,
-            recipients = mapOf(),
-            true,
-            MessagePriority.HIGH,
-            false,
-            messageEnvelope.dataBlob?.data,
-            MessageApi.QualifiedMessageOption.IgnoreAll
-        )
+        verify(arrangement.messageApi)
+            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
+            .with(
+                matching {
+                    it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreAll
+                }, anything()
+            )
+    }
+
+    @Test
+    fun givenAnEnvelopeTargetedToAConversation_whenSending_thenShouldCallTheAPIWithCorrectParameters() = runTest {
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+        val mappedId: NetworkQualifiedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
+        val timestamp = TEST_DATETIME
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedApiModelId(mappedId)
+            .withSuccessfulMessageDelivery(timestamp)
+            .arrange()
+
+        messageRepository
+            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+            .shouldSucceed()
 
         verify(arrangement.messageApi)
             .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
-            .with(eq(expectedParameters), anything())
+            .with(
+                matching {
+                    it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.ReportAll
+                }, anything()
+            )
     }
 
     private class Arrangement {
