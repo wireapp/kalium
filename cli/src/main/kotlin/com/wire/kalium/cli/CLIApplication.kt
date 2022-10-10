@@ -12,11 +12,17 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.file
+import com.github.ajalt.clikt.parameters.types.int
+
+import com.sun.net.httpserver.HttpServer
+
 import com.wire.kalium.logger.FileLogger
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.call.CallType
+import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
@@ -28,6 +34,7 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
+import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.client.DeleteClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
@@ -40,15 +47,19 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.feature.server.GetServerConfigResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+
+import java.io.File
+import java.net.InetSocketAddress
+import java.util.Scanner
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.io.File
 
-suspend fun selectConversation(userSession: UserSessionScope): Conversation {
-    userSession.syncManager.waitUntilLive()
+suspend fun getConversations(userSession: UserSessionScope): List<Conversation> {
+   userSession.syncManager.waitUntilLive()
 
     val conversations = userSession.conversations.getConversations().let {
         when (it) {
@@ -57,14 +68,29 @@ suspend fun selectConversation(userSession: UserSessionScope): Conversation {
         }
     }
 
+   return conversations
+}
+
+suspend fun listConversations(userSession: UserSessionScope): List<Conversation> {
+    val conversations = getConversations(userSession)
+	    
     conversations.forEachIndexed { index, conversation ->
         echo("$index) ${conversation.id.value}  Name: ${conversation.name}")
     }
+    
+    return conversations
+}
+
+suspend fun selectConversation(userSession: UserSessionScope): Conversation {
+    userSession.syncManager.waitUntilLive()
+    
+    val conversations = listConversations(userSession)
 
     val selectedConversationIndex =
         prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
     return conversations[selectedConversationIndex]
 }
+
 
 suspend fun selectMember(userSession: UserSessionScope, conversationId: ConversationId): User {
 
@@ -303,6 +329,154 @@ class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
     }
 }
 
+var currentConversation: Conversation? = null
+var callsScope: CallsScope? = null
+var isMuted: Boolean = false
+
+class KeyStroke(val key: Char,
+		val handler: suspend (userSession: UserSessionScope) -> Int) {
+	suspend fun exec(userSession: UserSessionScope) = handler(userSession)
+}
+
+var strokes: Array<KeyStroke> = arrayOf(
+	KeyStroke('l', ::listConversationsHandler),
+	KeyStroke('c', ::makeCallHandler),
+	KeyStroke('a', ::answerCallHandler),
+	KeyStroke('e', ::endCallHandler),
+	KeyStroke('m', ::muteCallHandler),
+	KeyStroke('s', ::selectConversationHandler),
+	KeyStroke('q', ::quitApplication)
+)
+
+suspend fun executeStroke(userSession: UserSessionScope, key: Char) {
+	for(stroke in strokes) {
+		if (stroke.key.equals(key)) {
+			stroke.handler(userSession)
+			return
+		}
+	}
+	echo("Unknown stroke: ${key}")
+}
+
+suspend fun listConversationsHandler(userSession: UserSessionScope): Int {
+	listConversations(userSession)
+	return 0
+}
+
+suspend fun selectConversationHandler(userSession: UserSessionScope): Int {
+	currentConversation = selectConversation(userSession)
+	return 0
+}
+
+suspend fun makeCallHandler(userSession: UserSessionScope): Int {
+
+	val convType = when(currentConversation!!.type) {
+	    Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
+	    Conversation.Type.GROUP -> ConversationType.Conference
+	    else -> ConversationType.Unknown
+	}
+	callsScope!!.startCall.invoke(conversationId = currentConversation!!.id,
+				      conversationType = convType)
+	
+ 	return 0
+}
+
+suspend fun answerCallHandler(userSession: UserSessionScope): Int {
+	callsScope!!.answerCall.invoke(conversationId = currentConversation!!.id)
+	return 0
+}
+
+
+suspend fun endCallHandler(userSession: UserSessionScope): Int {
+	callsScope!!.endCall.invoke(conversationId = currentConversation!!.id)
+	return 0
+}
+
+suspend fun muteCallHandler(userSession: UserSessionScope): Int {
+	isMuted = !isMuted
+	if (isMuted)
+	   callsScope!!.muteCall(conversationId = currentConversation!!.id)
+	else
+	   callsScope!!.unMuteCall(conversationId = currentConversation!!.id)
+
+	return 0
+}
+
+suspend fun quitApplication(userSession: UserSessionScope): Int {
+	kotlin.system.exitProcess(0)
+	return 0
+}
+
+
+class ConsoleCommand : CliktCommand(name = "console") {
+    private val port by option(help = "REST API server port").int().default(0)
+    private val avsTest by option("-T").flag(default = false)
+    private val avsNoise by option("-N").flag(default = false)
+
+    private val userSession by requireObject<UserSessionScope>()
+
+    override fun run() = runBlocking {
+	val conversations = getConversations(userSession)
+	
+	currentConversation = conversations[0]
+
+	if (port > 0) {
+	    HttpServer.create(InetSocketAddress(port), 0).apply {
+                createContext("/stroke") { http ->
+		    val stroke = http.getRequestURI().getQuery()[0]
+		    echo("*** REST-stroke=${stroke}")
+		    val job = GlobalScope.launch(Dispatchers.Default) {
+			    executeStroke(userSession, stroke);
+		    }
+                    http.responseHeaders.add("Content-type", "text/plain")
+		    http.sendResponseHeaders(200, 0)
+		    val os = http.getResponseBody()
+		    // We should get the response from the stroke here....
+		    // and send it on the os...
+		    os.close()
+		}
+		createContext("/command") { http ->
+		    val command = http.getRequestURI().getQuery()
+		    echo("*** REST-COMMAND=${command}")
+		    val job = GlobalScope.launch(Dispatchers.Default) {	    
+			    //executeCommand(userSession, stroke);
+		    }
+		    http.responseHeaders.add("Content-type", "text/plain")
+		    http.sendResponseHeaders(200, 0)
+		    val os = http.getResponseBody()
+		    // We should get the response from the command here....
+		    // and send it on the os...
+		    os.close()
+	       }
+               start()
+	    }
+        }
+
+	var avsFlags: Int = 0
+	if (avsTest)
+	   avsFlags = 2
+	if (avsNoise)
+	   avsFlags = 8
+
+	callsScope = userSession.calls
+
+	while (true) {
+	    val scanner = Scanner(System.`in`)
+	    val stroke = scanner.next().single()
+
+	    echo("stroke: ${stroke}")
+
+	    val job = GlobalScope.launch(Dispatchers.Default) {
+	        executeStroke(userSession, stroke);
+	    }
+	    job.join()
+	}
+	    
+    }
+}
+
+
+
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
@@ -339,6 +513,7 @@ fun main(args: Array<String>) = CLIApplication().subcommands(
         DeleteClientCommand(),
         AddMemberToGroupCommand(),
         RemoveMemberFromGroupCommand(),
+	ConsoleCommand(),
         RefillKeyPackagesCommand()
     )
 ).main(args)
