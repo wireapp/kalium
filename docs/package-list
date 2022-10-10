@@ -4030,6 +4030,9 @@ $dokka.location:com.wire.kalium.logic/AuthenticatedDataSourceSet/userSessionWork
 $dokka.location:com.wire.kalium.logic/CoreFailure.FeatureFailure///PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-feature-failure/index.html
 $dokka.location:com.wire.kalium.logic/CoreFailure.FeatureFailure/FeatureFailure/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-feature-failure/-feature-failure.html
 $dokka.location:com.wire.kalium.logic/CoreFailure.MissingClientRegistration///PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-missing-client-registration/index.html
+$dokka.location:com.wire.kalium.logic/CoreFailure.NoKeyPackagesAvailable///PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-no-key-packages-available/index.html
+$dokka.location:com.wire.kalium.logic/CoreFailure.NoKeyPackagesAvailable/NoKeyPackagesAvailable/#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-no-key-packages-available/-no-key-packages-available.html
+$dokka.location:com.wire.kalium.logic/CoreFailure.NoKeyPackagesAvailable/userId/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-no-key-packages-available/user-id.html
 $dokka.location:com.wire.kalium.logic/CoreFailure.Unknown///PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-unknown/index.html
 $dokka.location:com.wire.kalium.logic/CoreFailure.Unknown/Unknown/#kotlin.Throwable?/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-unknown/-unknown.html
 $dokka.location:com.wire.kalium.logic/CoreFailure.Unknown/rootCause/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic/-core-failure/-unknown/root-cause.html
