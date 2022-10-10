@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
@@ -25,8 +24,9 @@ interface PreKeyRepository {
 
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
     fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto>
-
     suspend fun lastPreKeyId(): Either<StorageFailure, Int>
+    suspend fun updateOTRLastPreKeyId(newId: Int): Either<StorageFailure, Unit>
+    suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit>
 }
 
 class PreKeyDataSource(
@@ -44,18 +44,23 @@ class PreKeyDataSource(
     override suspend fun generateNewPreKeys(
         firstKeyId: Int,
         keysCount: Int
-    ): Either<CoreFailure, List<PreKeyCrypto>> =
+    ): Either<ProteusFailure, List<PreKeyCrypto>> =
         wrapCryptoRequest { proteusClient.newPreKeys(firstKeyId, keysCount) }
-            .flatMap { preKeyCryptoList ->
-                val lastKeyId = preKeyCryptoList.maxOfOrNull { it.id } ?: return@flatMap Either.Right(preKeyCryptoList)
-                wrapStorageRequest { prekeyDAO.updateOTRLastPrekeyId(lastKeyId) }
-                    .map { preKeyCryptoList }
-            }
 
-    override fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto> =
-        wrapCryptoRequest { proteusClient.newLastPreKey() }
+    override fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto> = wrapCryptoRequest {
+        proteusClient.newLastPreKey()
+    }
 
     override suspend fun lastPreKeyId(): Either<StorageFailure, Int> = wrapStorageRequest {
         prekeyDAO.lastOTRPrekeyId()
     }
+
+    override suspend fun updateOTRLastPreKeyId(newId: Int): Either<StorageFailure, Unit> = wrapStorageRequest {
+        prekeyDAO.updateOTRLastPrekeyId(newId)
+    }
+
+    override suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit> = wrapStorageRequest {
+        prekeyDAO.forceInsertOTRLastPrekeyId(newId)
+    }
+
 }
