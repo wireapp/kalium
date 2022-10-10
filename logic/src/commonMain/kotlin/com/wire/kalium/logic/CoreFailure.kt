@@ -21,7 +21,7 @@ sealed class CoreFailure {
      * A user has no key packages available which prevents him/her from being added
      * to an existing or new conversation.
      */
-    data class NoKeyPackagesAvailable(val userId: UserId): CoreFailure()
+    data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure()
 
     data class Unknown(val rootCause: Throwable?) : CoreFailure()
 
