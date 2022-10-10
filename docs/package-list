@@ -3327,6 +3327,21 @@ $dokka.location:com.wire.kalium.logic.feature.conversation/UpdateConversationMut
 $dokka.location:com.wire.kalium.logic.feature.conversation/UpdateConversationMutedStatusUseCase/invoke/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.conversation.MutedConversationStatus#kotlin.Long/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.conversation/-update-conversation-muted-status-use-case/invoke.html
 $dokka.location:com.wire.kalium.logic.feature.conversation/UpdateConversationReadDateUseCase///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.conversation/-update-conversation-read-date-use-case/index.html
 $dokka.location:com.wire.kalium.logic.feature.conversation/UpdateConversationReadDateUseCase/invoke/#com.wire.kalium.logic.data.id.QualifiedID#kotlinx.datetime.Instant/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.conversation/-update-conversation-read-date-use-case/invoke.html
+$dokka.location:com.wire.kalium.logic.feature.debug////PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/index.html
+$dokka.location:com.wire.kalium.logic.feature.debug/BrokenState///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-broken-state/index.html
+$dokka.location:com.wire.kalium.logic.feature.debug/BrokenState/BrokenState/#kotlin.Boolean#kotlin.Boolean#kotlin.Boolean/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-broken-state/-broken-state.html
+$dokka.location:com.wire.kalium.logic.feature.debug/BrokenState/invalidHash/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-broken-state/invalid-hash.html
+$dokka.location:com.wire.kalium.logic.feature.debug/BrokenState/otherAlgorithm/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-broken-state/other-algorithm.html
+$dokka.location:com.wire.kalium.logic.feature.debug/BrokenState/otherHash/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-broken-state/other-hash.html
+$dokka.location:com.wire.kalium.logic.feature.debug/DebugScope///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-debug-scope/index.html
+$dokka.location:com.wire.kalium.logic.feature.debug/DebugScope/sendBrokenAssetMessage/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-debug-scope/send-broken-asset-message.html
+$dokka.location:com.wire.kalium.logic.feature.debug/SendBrokenAssetMessageResult.Failure///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-send-broken-asset-message-result/-failure/index.html
+$dokka.location:com.wire.kalium.logic.feature.debug/SendBrokenAssetMessageResult.Failure/Failure/#com.wire.kalium.logic.CoreFailure/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-send-broken-asset-message-result/-failure/-failure.html
+$dokka.location:com.wire.kalium.logic.feature.debug/SendBrokenAssetMessageResult.Failure/coreFailure/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-send-broken-asset-message-result/-failure/core-failure.html
+$dokka.location:com.wire.kalium.logic.feature.debug/SendBrokenAssetMessageResult.Success///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-send-broken-asset-message-result/-success/index.html
+$dokka.location:com.wire.kalium.logic.feature.debug/SendBrokenAssetMessageResult///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-send-broken-asset-message-result/index.html
+$dokka.location:com.wire.kalium.logic.feature.debug/SendBrokenAssetMessageUseCase///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-send-broken-asset-message-use-case/index.html
+$dokka.location:com.wire.kalium.logic.feature.debug/SendBrokenAssetMessageUseCase/invoke/#com.wire.kalium.logic.data.id.QualifiedID#okio.Path#kotlin.Long#kotlin.String#kotlin.String#com.wire.kalium.logic.feature.debug.BrokenState/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.debug/-send-broken-asset-message-use-case/invoke.html
 $dokka.location:com.wire.kalium.logic.feature.keypackage////PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.keypackage/index.html
 $dokka.location:com.wire.kalium.logic.feature.keypackage/MLSKeyPackageCountResult.Failure.FetchClientIdFailure///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.keypackage/-m-l-s-key-package-count-result/-failure/-fetch-client-id-failure/index.html
 $dokka.location:com.wire.kalium.logic.feature.keypackage/MLSKeyPackageCountResult.Failure.FetchClientIdFailure/FetchClientIdFailure/#com.wire.kalium.logic.CoreFailure/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.keypackage/-m-l-s-key-package-count-result/-failure/-fetch-client-id-failure/-fetch-client-id-failure.html
@@ -3802,6 +3817,7 @@ $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeCommon/client/#/Po
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeCommon/connection/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature/-user-session-scope-common/connection.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeCommon/conversations/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature/-user-session-scope-common/conversations.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeCommon/coroutineContext/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature/-user-session-scope-common/coroutine-context.html
+$dokka.location:com.wire.kalium.logic.feature/UserSessionScopeCommon/debug/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature/-user-session-scope-common/debug.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeCommon/federatedIdMapper/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature/-user-session-scope-common/federated-id-mapper.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeCommon/getSecurityClassificationType/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature/-user-session-scope-common/get-security-classification-type.html
 $dokka.location:com.wire.kalium.logic.feature/UserSessionScopeCommon/isFileSharingEnabled/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature/-user-session-scope-common/is-file-sharing-enabled.html
@@ -6306,6 +6322,7 @@ com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
 com.wire.kalium.logic.feature.conversation.keyingmaterials
+com.wire.kalium.logic.feature.debug
 com.wire.kalium.logic.feature.featureConfig
 com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.message
