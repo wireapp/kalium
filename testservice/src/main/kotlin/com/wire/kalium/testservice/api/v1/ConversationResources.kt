@@ -175,7 +175,6 @@ class ConversationResources(private val instanceService: InstanceService) {
     )
     fun sendReaction(@PathParam("id") id: String, @Valid sendReactionRequest: SendReactionRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement mentions, reply and ephemeral messages here
         with(sendReactionRequest) {
             ConversationRepository.sendReaction(
                 instance,
