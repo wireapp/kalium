@@ -177,7 +177,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                         }
                     }
                     log.info("Instance $id: Device ${instance.clientId} deleted")
-                    runBlocking { logout(LogoutReason.SELF_HARD_LOGOUT) }
+                    runBlocking { logout(LogoutReason.SELF_SOFT_LOGOUT) }
                 }
             }
             log.info("Instance $id: Delete sessions in preference file")
