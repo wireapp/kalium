@@ -191,8 +191,8 @@ class LoginCommand : CliktCommand(name = "login") {
 
     private val coreLogic by requireObject<CoreLogic>()
     private var userSession: UserSessionScope? = null
-    private val email: String by option(help = "Account email").prompt("email", promptSuffix = ": ")
-    private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
+    private val email: String by option("-e", help = "Account email").prompt("email", promptSuffix = ": ")
+    private val password: String by option("-p", help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
     private val environment: String? by option(
         help = "Choose backend environment: can be production, staging or an URL to a server configuration"
     )
