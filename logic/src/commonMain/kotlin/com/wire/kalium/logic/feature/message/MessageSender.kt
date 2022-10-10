@@ -67,7 +67,7 @@ interface MessageSender {
      * @param message that will be sent
      * @see [sendPendingMessage]
      */
-    suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit>
+    suspend fun sendMessage(message: Message.Regular, messageTarget: MessageTarget = MessageTarget.Conversation): Either<CoreFailure, Unit>
 
     /**
      * Attempts to send the given Client Discovery [Message] to suitable recipients.
@@ -110,8 +110,8 @@ internal class MessageSenderImpl internal constructor(
         }
     }
 
-    override suspend fun sendMessage(message: Message.Regular): Either<CoreFailure, Unit> =
-        attemptToSend(message).map { messageRemoteTime ->
+    override suspend fun sendMessage(message: Message.Regular, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
+        attemptToSend(message, messageTarget).map { messageRemoteTime ->
             updateDatesOfMessagesWithServerTime(message, messageRemoteTime)
         }
 
@@ -136,7 +136,10 @@ internal class MessageSenderImpl internal constructor(
 
     override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
 
-    private suspend fun attemptToSend(message: Message.Regular): Either<CoreFailure, String> {
+    private suspend fun attemptToSend(
+        message: Message.Regular,
+        messageTarget: MessageTarget = MessageTarget.Conversation
+    ): Either<CoreFailure, String> {
         return conversationRepository.getConversationProtocolInfo(message.conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
                 is Conversation.ProtocolInfo.MLS -> {
@@ -145,19 +148,27 @@ internal class MessageSenderImpl internal constructor(
 
                 is Conversation.ProtocolInfo.Proteus -> {
                     // TODO(messaging): make this thread safe (per user)
-                    attemptToSendWithProteus(message)
+                    attemptToSendWithProteus(message, messageTarget)
                 }
             }
         }
-}
+    }
 
-    private suspend fun attemptToSendWithProteus(message: Message.Regular): Either<CoreFailure, String> {
+    private suspend fun attemptToSendWithProteus(
+        message: Message.Regular,
+        messageTarget: MessageTarget
+    ): Either<CoreFailure, String> {
         val conversationId = message.conversationId
-        return conversationRepository.getConversationRecipients(conversationId).flatMap { recipients ->
+        val target = when (messageTarget) {
+            is MessageTarget.Client -> Either.Right(messageTarget.recipients)
+            is MessageTarget.Conversation -> conversationRepository.getConversationRecipients(conversationId)
+        }
+
+        return target.flatMap { recipients ->
             sessionEstablisher.prepareRecipientsForNewOutgoingMessage(recipients).map { recipients }
         }.flatMap { recipients ->
             messageEnvelopeCreator.createOutgoingEnvelope(recipients, message).flatMap { envelope ->
-                trySendingProteusEnvelope(envelope, message)
+                trySendingProteusEnvelope(envelope, message, messageTarget)
             }
         }
     }
@@ -190,8 +201,12 @@ internal class MessageSenderImpl internal constructor(
      * Attempts to send a Proteus envelope
      * Will handle the failure and retry in case of [ProteusSendMessageFailure].
      */
-    private suspend fun trySendingProteusEnvelope(envelope: MessageEnvelope, message: Message.Regular): Either<CoreFailure, String> =
-        messageRepository.sendEnvelope(message.conversationId, envelope).fold({
+    private suspend fun trySendingProteusEnvelope(
+        envelope: MessageEnvelope,
+        message: Message.Regular,
+        messageTarget: MessageTarget
+    ): Either<CoreFailure, String> =
+        messageRepository.sendEnvelope(message.conversationId, envelope, messageTarget).fold({
             when (it) {
                 is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
                     attemptToSend(message)
