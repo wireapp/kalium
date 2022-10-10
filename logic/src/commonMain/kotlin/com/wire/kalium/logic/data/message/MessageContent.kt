@@ -44,7 +44,7 @@ sealed class MessageContent {
     data class Reaction(
         val messageId: String,
         val emojiSet: Set<String>
-    ): Regular()
+    ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()
 
