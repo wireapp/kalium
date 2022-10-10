@@ -2,6 +2,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
@@ -11,7 +12,9 @@ import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserToClientToEncMsgMap
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -152,6 +155,74 @@ class MessageRepositoryTest {
                 .with(matching { it.externalBlob!!.contentEquals(dataBlob.data) }, anything())
                 .wasInvoked(exactly = once)
         }
+    }
+
+    @Test
+    fun givenAMessage_whenSendingReturnsSuccess_thenCorrectConversationMessageOptionShouldBeSent() = runTest {
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+        val mappedId: NetworkQualifiedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
+        val timestamp = TEST_DATETIME
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedApiModelId(mappedId)
+            .withSuccessfulMessageDelivery(timestamp)
+            .arrange()
+
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+            .shouldSucceed()
+
+        val expectedParameters = MessageApi.Parameters.QualifiedDefaultParameters(
+            sender = messageEnvelope.senderClientId.value,
+            recipients = mapOf(),
+            true,
+            MessagePriority.HIGH,
+            false,
+            messageEnvelope.dataBlob?.data,
+            MessageApi.QualifiedMessageOption.ReportAll
+        )
+
+        verify(arrangement.messageApi)
+            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
+            .with(eq(expectedParameters), anything())
+    }
+
+    @Test
+    fun givenAMessage_whenSendingReturnsSuccess_thenCorrectClientsMessageOptionShouldBeSent() = runTest {
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+        val mappedId: NetworkQualifiedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
+        val timestamp = TEST_DATETIME
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withMappedApiModelId(mappedId)
+            .withSuccessfulMessageDelivery(timestamp)
+            .arrange()
+
+        messageRepository.sendEnvelope(
+            TEST_CONVERSATION_ID,
+            messageEnvelope,
+            MessageTarget.Client(
+                recipients = listOf(
+                    Recipient(
+                        id = TEST_USER_ID,
+                        clients = listOf(TEST_CLIENT_ID)
+                    )
+                )
+            )
+        ).shouldSucceed()
+
+        val expectedParameters = MessageApi.Parameters.QualifiedDefaultParameters(
+            sender = messageEnvelope.senderClientId.value,
+            recipients = mapOf(),
+            true,
+            MessagePriority.HIGH,
+            false,
+            messageEnvelope.dataBlob?.data,
+            MessageApi.QualifiedMessageOption.IgnoreAll
+        )
+
+        verify(arrangement.messageApi)
+            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
+            .with(eq(expectedParameters), anything())
     }
 
     private class Arrangement {
