@@ -351,7 +351,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenRecipientsForNewOutgoingMessageSucceeds_WhenSendingOutgoingMessage_ThenReturnSuccess() {
+    fun givenClientTargets_WhenSendingOutgoingMessage_ThenCallSendEnvelopeWithCorrectTargets() {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
@@ -402,7 +402,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenNoRecipientsForNewOutgoingMessageSucceeds_WhenSendingOutgoingMessage_ThenReturnSuccess() {
+    fun givenConversationTarget_WhenSendingOutgoingMessage_ThenCallSendEnvelopeWithCorrectTargets() {
         // given
         val (arrangement, messageSender) = Arrangement()
             .withSendProteusMessage()
