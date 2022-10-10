@@ -6,10 +6,8 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -17,7 +15,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -60,9 +59,9 @@ fun interface SendBrokenAssetMessageUseCase {
 
 @Suppress("LongParameterList", "MaxLineLength")
 internal class SendBrokenAssetMessageUseCaseImpl(
-    private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val assetDataSource: AssetRepository,
-    private val userRepository: UserRepository,
+    private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender
 ) : SendBrokenAssetMessageUseCase {
@@ -95,15 +94,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
         )
         lateinit var message: Message.Regular
 
-        return clientRepository.currentClientId().flatMap { currentClientId ->
-            // Get my current user
-            val selfUser = userRepository.observeSelfUser().firstOrNull()
-
-            if (selfUser == null) {
-                kaliumLogger.e("There was an error obtaining the self user object :(")
-                return@flatMap Either.Left(StorageFailure.DataNotFound)
-            }
-
+        return currentClientIdProvider().flatMap { currentClientId ->
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
 
@@ -118,7 +109,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
-                senderUserId = selfUser.id,
+                senderUserId = userId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited

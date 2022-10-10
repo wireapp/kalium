@@ -153,13 +153,13 @@ sealed class ConversationRepository {
                                 val brokenState = BrokenState(invalidHash, otherHash, otherAlgorithm)
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
                                 debug.sendBrokenAssetMessage(
-                                    conversationId,
-                                    temp.toOkioPath(),
-                                    byteArray.size.toLong(),
-                                    fileName,
-                                    type,
-                                    brokenState
-                                )
+                                   conversationId,
+                                   temp.toOkioPath(),
+                                   byteArray.size.toLong(),
+                                   fileName,
+                                   type,
+                                   brokenState
+                               )
                             } else {
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
                                 messages.sendAssetMessage(
