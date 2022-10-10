@@ -73,21 +73,22 @@ suspend fun getConversations(userSession: UserSessionScope): List<Conversation> 
 
 suspend fun listConversations(userSession: UserSessionScope): List<Conversation> {
     val conversations = getConversations(userSession)
-	    
+
     conversations.forEachIndexed { index, conversation ->
         echo("$index) ${conversation.id.value}  Name: ${conversation.name}")
     }
-    
+
     return conversations
 }
 
 suspend fun selectConversation(userSession: UserSessionScope): Conversation {
     userSession.syncManager.waitUntilLive()
-    
+
     val conversations = listConversations(userSession)
 
     val selectedConversationIndex =
         prompt("Enter conversation index", promptSuffix = ": ")?.toInt() ?: throw PrintMessage("Index must be an integer")
+
     return conversations[selectedConversationIndex]
 }
 
@@ -340,7 +341,7 @@ class KeyStroke(val key: Char,
 
 var strokes: Array<KeyStroke> = arrayOf(
 	KeyStroke('l', ::listConversationsHandler),
-	KeyStroke('c', ::makeCallHandler),
+	KeyStroke('c', ::startCallHandler),
 	KeyStroke('a', ::answerCallHandler),
 	KeyStroke('e', ::endCallHandler),
 	KeyStroke('m', ::muteCallHandler),
@@ -368,7 +369,7 @@ suspend fun selectConversationHandler(userSession: UserSessionScope): Int {
 	return 0
 }
 
-suspend fun makeCallHandler(userSession: UserSessionScope): Int {
+suspend fun startCallHandler(userSession: UserSessionScope): Int {
 
 	val convType = when(currentConversation!!.type) {
 	    Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
@@ -377,8 +378,8 @@ suspend fun makeCallHandler(userSession: UserSessionScope): Int {
 	}
 	callsScope!!.startCall.invoke(conversationId = currentConversation!!.id,
 				      conversationType = convType)
-	
- 	return 0
+
+        return 0
 }
 
 suspend fun answerCallHandler(userSession: UserSessionScope): Int {
@@ -417,8 +418,8 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
     override fun run() = runBlocking {
 	val conversations = getConversations(userSession)
-	
-	currentConversation = conversations[0]
+
+        currentConversation = conversations[0]
 
 	if (port > 0) {
 	    HttpServer.create(InetSocketAddress(port), 0).apply {
@@ -438,7 +439,7 @@ class ConsoleCommand : CliktCommand(name = "console") {
 		createContext("/command") { http ->
 		    val command = http.getRequestURI().getQuery()
 		    echo("*** REST-COMMAND=${command}")
-		    val job = GlobalScope.launch(Dispatchers.Default) {	    
+		    val job = GlobalScope.launch(Dispatchers.Default) {
 			    //executeCommand(userSession, stroke);
 		    }
 		    http.responseHeaders.add("Content-type", "text/plain")
@@ -471,7 +472,6 @@ class ConsoleCommand : CliktCommand(name = "console") {
 	    }
 	    job.join()
 	}
-	    
     }
 }
 
@@ -513,7 +513,7 @@ fun main(args: Array<String>) = CLIApplication().subcommands(
         DeleteClientCommand(),
         AddMemberToGroupCommand(),
         RemoveMemberFromGroupCommand(),
-	ConsoleCommand(),
+        ConsoleCommand(),
         RefillKeyPackagesCommand()
     )
 ).main(args)
