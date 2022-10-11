@@ -3,12 +3,16 @@ package com.wire.kalium.logic.data.call.mapper
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
@@ -38,9 +42,13 @@ interface CallMapper {
     fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type
     fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status
     fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity
+
+    fun toMessageRecipients(callClientList: CallClientList): List<Recipient>
 }
 
-class CallMapperImpl : CallMapper {
+class CallMapperImpl(
+    private val qualifiedIdMapper: QualifiedIdMapper
+) : CallMapper {
 
     override fun toCallTypeCalling(callType: CallType): CallTypeCalling {
         return when (callType) {
@@ -158,4 +166,31 @@ class CallMapperImpl : CallMapper {
         value = conversationId.value,
         domain = conversationId.domain
     )
+
+    override fun toMessageRecipients(callClientList: CallClientList): List<Recipient> {
+        val recipientsList = mutableListOf<Recipient>()
+
+        for (callClient in callClientList.clients) {
+            val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callClient.userId)
+            val clientId = ClientId(callClient.clientId)
+            val recipientIndex = recipientsList.indexOfFirst { it.id == qualifiedUserId }
+
+            if (recipientIndex == -1) {
+                recipientsList.add(
+                    Recipient(
+                        id = qualifiedUserId,
+                        clients = mutableListOf(clientId)
+                    )
+                )
+            } else {
+                recipientsList[recipientIndex] = recipientsList[recipientIndex].copy(
+                    clients = recipientsList[recipientIndex].clients.toMutableList().apply {
+                        add(clientId)
+                    }
+                )
+            }
+        }
+
+        return recipientsList
+    }
 }
