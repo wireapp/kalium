@@ -12,11 +12,8 @@ import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.HttpClientCall
-import io.ktor.client.engine.ProxyBuilder
 import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
 import io.ktor.client.plugins.auth.providers.BearerTokens
-import io.ktor.client.plugins.auth.providers.basic
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.statement.HttpReceivePipeline
 import io.ktor.client.statement.HttpResponse
@@ -38,7 +35,7 @@ interface SessionManager {
 
     suspend fun onSessionExpired()
     suspend fun onClientRemoved()
-    suspend fun proxyCredentials(): Pair<String, String>?
+    fun proxyCredentials(): Pair<String, String>
 }
 
 fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
@@ -80,28 +77,6 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
                 }
             }
         }
-        if (sessionManager.session().second.links.proxy?.needsAuthentication == true) {
-            basic {
-                credentials {
-                    sessionManager.proxyCredentials()?.first?.let {
-                        sessionManager.proxyCredentials()?.second?.let { it1 ->
-                            BasicAuthCredentials(
-                                username = it,
-                                password = it1
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        installProxy(sessionManager)
-    }
-}
-
-fun HttpClientConfig<*>.installProxy(sessionManager: SessionManager) {
-    engine {
-        proxy = sessionManager.session().second.links.proxy?.apiProxy?.let { ProxyBuilder.socks(host = it, port = 1080) }
     }
 }
 

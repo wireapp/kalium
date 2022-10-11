@@ -14,12 +14,14 @@ import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 
 class AuthenticationScope(
     private val clientLabel: String,
-    private val serverConfig: ServerConfig
+    private val serverConfig: ServerConfig,
+    proxyCredentials: (() -> Pair<String, String>)?
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
-            MapperProvider.serverConfigMapper().toDTO(serverConfig)
+            MapperProvider.serverConfigMapper().toDTO(serverConfig),
+            proxyCredentials
         )
     }
     private val loginRepository: LoginRepository

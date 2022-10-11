@@ -11,11 +11,11 @@ class AutoVersionAuthScopeUseCase(
     private val serverLinks: ServerConfig.Links,
     private val coreLogic: CoreLogicCommon
 ) {
-    suspend operator fun invoke(): Result =
+    suspend operator fun invoke(proxyCredentials: (() -> Pair<String, String>)?): Result =
         coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
             handleError(it)
         }, { serverConfig ->
-            Result.Success(coreLogic.getAuthenticationScope(serverConfig))
+            Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyCredentials))
         })
 
     private fun handleError(coreFailure: CoreFailure): Result.Failure =

@@ -17,19 +17,23 @@ interface UnauthenticatedNetworkContainer {
 
     companion object {
         fun create(
-            serverConfigDTO: ServerConfigDTO
+            serverConfigDTO: ServerConfigDTO,
+            proxyCredentials: (() -> Pair<String, String>)?
         ): UnauthenticatedNetworkContainer {
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
-                    serverConfigDTO
+                    serverConfigDTO,
+                    proxyCredentials = proxyCredentials
                 )
 
                 1 -> UnauthenticatedNetworkContainerV0(
-                    serverConfigDTO
+                    serverConfigDTO,
+                    proxyCredentials = proxyCredentials
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
                     serverConfigDTO,
+                    proxyCredentials = proxyCredentials
                 )
 
                 else -> throw error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")
@@ -45,8 +49,9 @@ internal interface UnauthenticatedNetworkClientProvider {
 internal class UnauthenticatedNetworkClientProviderImpl internal constructor(
     backendLinks: ServerConfigDTO,
     engine: HttpClientEngine = defaultHttpEngine(),
+    proxyCredentials: (() -> Pair<String, String>)?
 ) : UnauthenticatedNetworkClientProvider {
     override val unauthenticatedNetworkClient by lazy {
-        UnauthenticatedNetworkClient(engine, backendLinks)
+        UnauthenticatedNetworkClient(engine, backendLinks, proxyCredentials)
     }
 }
