@@ -3,6 +3,8 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.DecryptedMessageBundle
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.PlainData
@@ -15,10 +17,10 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -43,18 +45,29 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.NewMessageEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
@@ -181,7 +194,9 @@ class ConversationEventReceiverTest {
         val commitDelay: Long = 10
 
         val (arrangement, eventReceiver) = Arrangement()
-            .withMessageFromMLSMessageReturningProposal(commitDelay)
+            .withMLSClientProviderReturningClient()
+            .withGetConversation(TestConversation.MLS_CONVERSATION)
+            .withDecryptMessageReturningProposal(commitDelay)
             .withScheduleCommitSucceeding()
             .arrange()
 
@@ -514,6 +529,12 @@ class ConversationEventReceiverTest {
         val proteusClientProvider = mock(classOf<ProteusClientProvider>())
 
         @Mock
+        val mlsClient = mock(classOf<MLSClient>())
+
+        @Mock
+        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+
+        @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
@@ -521,6 +542,9 @@ class ConversationEventReceiverTest {
 
         @Mock
         val assetRepository = mock(classOf<AssetRepository>())
+
+        @Mock
+        val conversationDAO = mock(classOf<ConversationDAO>())
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -553,37 +577,58 @@ class ConversationEventReceiverTest {
         val persistReactionsUseCase = mock(classOf<PersistReactionUseCase>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
-            proteusClientProvider = proteusClientProvider,
-            persistMessage = persistMessage,
-            messageRepository = messageRepository,
-            assetRepository = assetRepository,
-            conversationRepository = conversationRepository,
-            mlsConversationRepository = mlsConversationRepository,
-            userRepository = userRepository,
-            callManagerImpl = lazyOf(callManager),
-            editTextHandler = MessageTextEditHandler(messageRepository),
-            lastReadContentHandler = LastReadContentHandler(
-                conversationRepository = conversationRepository,
-                selfUserId = TestUser.USER_ID,
-                selfConversationIdProvider = selfConversationIdProvider
+            NewMessageEventHandlerImpl(
+                proteusClientProvider,
+                mlsClientProvider,
+                userRepository,
+                assetRepository,
+                messageRepository,
+                userConfigRepository,
+                conversationRepository,
+                lazyOf(callManager),
+                persistMessage,
+                persistReactionsUseCase,
+                MessageTextEditHandler(messageRepository),
+                LastReadContentHandler(
+                    conversationRepository = conversationRepository,
+                    selfUserId = TestUser.USER_ID,
+                    selfConversationIdProvider = selfConversationIdProvider
+                ),
+                ClearConversationContentHandler(
+                    clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
+                    selfUserId = TestUser.USER_ID,
+                    selfConversationIdProvider = selfConversationIdProvider
+                ),
+                DeleteForMeHandler(
+                    conversationRepository = conversationRepository,
+                    messageRepository = messageRepository,
+                    selfUserId = TestUser.USER_ID,
+                    selfConversationIdProvider = selfConversationIdProvider
+                ),
+                pendingProposalScheduler,
+                protoContentMapper = protoContentMapper
             ),
-            clearConversationContentHandler = ClearConversationContentHandler(
-                clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
-                selfUserId = TestUser.USER_ID,
-                selfConversationIdProvider = selfConversationIdProvider
+            NewConversationEventHandlerImpl(conversationRepository),
+            DeletedConversationEventHandlerImpl(
+                userRepository,
+                conversationRepository,
+                ephemeralNotifications
             ),
-            deleteForMeHandler = DeleteForMeHandler(
-                conversationRepository = conversationRepository,
-                messageRepository = messageRepository,
-                selfUserId = TestUser.USER_ID,
-                selfConversationIdProvider = selfConversationIdProvider
+            MemberJoinEventHandlerImpl(
+                conversationRepository,
+                persistMessage
             ),
-            userConfigRepository = userConfigRepository,
-            ephemeralNotificationsManager = ephemeralNotifications,
-            pendingProposalScheduler = pendingProposalScheduler,
-            protoContentMapper = protoContentMapper,
-            selfUserId = TestUser.USER_ID,
-            persistReaction = persistReactionsUseCase
+            MemberLeaveEventHandlerImpl(
+                conversationDAO,
+                userRepository,
+                persistMessage
+            ),
+            MemberChangeEventHandlerImpl(conversationRepository),
+            MLSWelcomeEventHandlerImpl(mlsClientProvider, conversationDAO),
+            RenamedConversationEventHandlerImpl(
+                conversationRepository,
+                persistMessage
+            )
         )
 
         init {
@@ -698,11 +743,18 @@ class ConversationEventReceiverTest {
                 .thenReturn(result)
         }
 
-        fun withMessageFromMLSMessageReturningProposal(commitDelay: Long = 15) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::messageFromMLSMessage)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(DecryptedMessageBundle(TestConversation.GROUP_ID, null, commitDelay)))
+        fun withMLSClientProviderReturningClient() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getMLSClient)
+                .whenInvokedWith(anything())
+                .then { Either.Right(mlsClient) }
+        }
+
+        fun withDecryptMessageReturningProposal(commitDelay: Long = 15) = apply {
+            given(mlsClient)
+                .function(mlsClient::decryptMessage)
+                .whenInvokedWith(anything<String>(), anything<ByteArray>())
+                .thenReturn(DecryptedMessageBundle(null, commitDelay, null))
         }
 
         fun withScheduleCommitSucceeding() = apply {

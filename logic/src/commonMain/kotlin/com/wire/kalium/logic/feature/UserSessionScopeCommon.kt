@@ -156,6 +156,21 @@ import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.NewMessageEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
@@ -533,32 +548,64 @@ abstract class UserSessionScopeCommon internal constructor(
             reactionRepository
         )
 
+    private val newMessageHandler: NewMessageEventHandlerImpl = NewMessageEventHandlerImpl(
+        authenticatedDataSourceSet.proteusClientProvider,
+        mlsClientProvider,
+        userRepository,
+        assetRepository,
+        messageRepository,
+        userConfigRepository,
+        conversationRepository,
+        callManager,
+        persistMessage,
+        persistReaction,
+        MessageTextEditHandler(messageRepository),
+        LastReadContentHandler(conversationRepository, userId, selfConversationIdProvider),
+        ClearConversationContentHandler(
+            ClearConversationContentImpl(conversationRepository, assetRepository),
+            userId,
+            selfConversationIdProvider,
+        ),
+        DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+        pendingProposalScheduler
+    )
+
+    private val newConversationHandler: NewConversationEventHandler get() = NewConversationEventHandlerImpl(conversationRepository)
+    private val deletedConversationHandler: DeletedConversationEventHandler
+        get() = DeletedConversationEventHandlerImpl(
+        userRepository,
+        conversationRepository,
+        EphemeralNotificationsManager
+    )
+    private val memberJoinHandler: MemberJoinEventHandler get() = MemberJoinEventHandlerImpl(conversationRepository, persistMessage)
+    private val memberLeaveHandler: MemberLeaveEventHandler
+        get() = MemberLeaveEventHandlerImpl(
+        authenticatedDataSourceSet.userDatabaseProvider.conversationDAO,
+        userRepository,
+        persistMessage
+    )
+    private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
+    private val mlsWelcomeHandler: MLSWelcomeEventHandler
+        get() = MLSWelcomeEventHandlerImpl(
+        mlsClientProvider,
+        authenticatedDataSourceSet.userDatabaseProvider.conversationDAO
+    )
+    private val renamedConversationHandler: RenamedConversationEventHandler
+        get() = RenamedConversationEventHandlerImpl(
+        conversationRepository,
+        persistMessage
+    )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
-        val conversationRepository = conversationRepository
-        val messageRepository = messageRepository
-        val assetRepository = assetRepository
         ConversationEventReceiverImpl(
-            proteusClientProvider = authenticatedDataSourceSet.proteusClientProvider,
-            persistMessage = persistMessage,
-            persistReaction = persistReaction,
-            messageRepository = messageRepository,
-            assetRepository = assetRepository,
-            conversationRepository = conversationRepository,
-            mlsConversationRepository = mlsConversationRepository,
-            userRepository = userRepository,
-            callManagerImpl = callManager,
-            editTextHandler = MessageTextEditHandler(messageRepository),
-            lastReadContentHandler = LastReadContentHandler(conversationRepository, userId, selfConversationIdProvider),
-            clearConversationContentHandler = ClearConversationContentHandler(
-                ClearConversationContentImpl(conversationRepository, assetRepository),
-                userId,
-                selfConversationIdProvider,
-            ),
-            deleteForMeHandler = DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
-            userConfigRepository = userConfigRepository,
-            ephemeralNotificationsManager = EphemeralNotificationsManager,
-            pendingProposalScheduler = pendingProposalScheduler,
-            userId
+            newMessageHandler,
+            newConversationHandler,
+            deletedConversationHandler,
+            memberJoinHandler,
+            memberLeaveHandler,
+            memberChangeHandler,
+            mlsWelcomeHandler,
+            renamedConversationHandler
         )
     }
 
