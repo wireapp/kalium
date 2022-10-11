@@ -43,6 +43,4 @@ internal open class ConversationApiV2 internal constructor(
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
     }
-
-
 }
