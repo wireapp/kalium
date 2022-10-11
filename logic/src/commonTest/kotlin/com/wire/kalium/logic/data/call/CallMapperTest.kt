@@ -6,6 +6,8 @@ import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -16,11 +18,14 @@ import kotlin.test.assertEquals
 
 class CallMapperTest {
 
+    private lateinit var qualifiedIdMapper: QualifiedIdMapper
+
     private lateinit var callMapper: CallMapper
 
     @BeforeTest
     fun setUp() {
-        callMapper = CallMapperImpl()
+        qualifiedIdMapper = QualifiedIdMapperImpl(selfUserId = TestCall.CALLER_ID)
+        callMapper = CallMapperImpl(qualifiedIdMapper = qualifiedIdMapper)
     }
 
     @Test
