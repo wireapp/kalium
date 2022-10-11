@@ -16,6 +16,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -43,7 +44,7 @@ interface CallMapper {
     fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status
     fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity
 
-    fun toMessageRecipients(callClientList: CallClientList): List<Recipient>
+    fun toClientMessageTarget(callClientList: CallClientList): MessageTarget.Client
 }
 
 class CallMapperImpl(
@@ -167,7 +168,7 @@ class CallMapperImpl(
         domain = conversationId.domain
     )
 
-    override fun toMessageRecipients(callClientList: CallClientList): List<Recipient> {
+    override fun toClientMessageTarget(callClientList: CallClientList): MessageTarget.Client {
         val recipientsList = mutableListOf<Recipient>()
 
         for (callClient in callClientList.clients) {
@@ -191,6 +192,8 @@ class CallMapperImpl(
             }
         }
 
-        return recipientsList
+        return MessageTarget.Client(
+            recipients = recipientsList
+        )
     }
 }

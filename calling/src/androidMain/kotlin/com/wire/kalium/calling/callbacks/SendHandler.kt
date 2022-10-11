@@ -11,7 +11,7 @@ fun interface SendHandler : Callback {
         conversationId: String,
         userIdSelf: String,
         clientIdSelf: String,
-        userIdDestination: String?,
+        targetRecipientsJson: String?,
         clientIdDestination: String?,
         data: Pointer?,
         length: Size_t,
