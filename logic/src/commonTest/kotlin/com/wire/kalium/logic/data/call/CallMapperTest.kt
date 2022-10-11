@@ -5,16 +5,20 @@ import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CallMapperTest {
 
@@ -238,5 +242,42 @@ class CallMapperTest {
         assertEquals(VideoStateCalling.PAUSED, resultPaused)
         assertEquals(VideoStateCalling.SCREENSHARE, resultScreenShare)
         assertEquals(VideoStateCalling.UNKNOWN, resultUnknown)
+    }
+
+    @Test
+    fun givenACallClientList_whenMappingToMessageTarget_thenReturnCorrectMessageTargetClients() = runTest {
+        // given
+        val callClientList = CallClientList(
+            clients = listOf(
+                CallClient(
+                    userId = TestCall.CALLER_ID.toString(),
+                    clientId = TestCall.CLIENT_ID_1
+                ),
+                CallClient(
+                    userId = TestCall.CALLER_ID.toString(),
+                    clientId = TestCall.CLIENT_ID_2
+                )
+            )
+        )
+        val expectedMessageTarget = MessageTarget.Client(
+            recipients = listOf(
+                Recipient(
+                    id = TestCall.CALLER_ID,
+                    clients = listOf(
+                        ClientId(TestCall.CLIENT_ID_1),
+                        ClientId(TestCall.CLIENT_ID_2)
+                    )
+                )
+            )
+        )
+
+        // when
+        val result = callMapper.toClientMessageTarget(callClientList)
+
+        // then
+        assertEquals(
+            expectedMessageTarget.recipients,
+            result.recipients
+        )
     }
 }
