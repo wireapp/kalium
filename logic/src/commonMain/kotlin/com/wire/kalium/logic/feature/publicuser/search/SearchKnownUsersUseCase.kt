@@ -46,17 +46,17 @@ internal class SearchKnownUsersUseCaseImpl(
                 searchUsersOptions = searchUsersOptions
             )
         }
-            .map { SearchUsersResult.Success(excludeSelfUser(it)) }
+            .map { SearchUsersResult.Success(excludeSelfUserAndDeletedUsers(it)) }
             .flowOn(dispatcher.io)
     }
 
     private fun isUserLookingForHandle(searchQuery: String) = searchQuery.startsWith('@')
 
     // TODO: we should think about the way to exclude the self user on TABLE level
-    private suspend fun excludeSelfUser(searchResult: UserSearchResult): UserSearchResult {
+    private suspend fun excludeSelfUserAndDeletedUsers(searchResult: UserSearchResult): UserSearchResult {
         val selfUser = userRepository.getSelfUser()
 
-        return searchResult.copy(result = searchResult.result.filter { it.id != selfUser?.id })
+        return searchResult.copy(result = searchResult.result.filter { it.id != selfUser?.id && !it.deleted })
     }
 
 }
