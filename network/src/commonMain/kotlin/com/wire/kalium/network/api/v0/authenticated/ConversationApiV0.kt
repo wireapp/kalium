@@ -89,7 +89,7 @@ internal open class ConversationApiV0 internal constructor(
         request: AddConversationMembersRequest,
         conversationId: ConversationId
     ): NetworkResponse<ConversationMemberAddedDTO> = try {
-        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/v2") {
             setBody(request)
         }.let { response ->
             when (response.status) {
