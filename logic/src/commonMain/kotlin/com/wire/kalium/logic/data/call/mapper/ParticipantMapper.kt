@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.call.mapper
 
-import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallMember
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.VideoStateChecker

@@ -7,7 +7,6 @@ import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent

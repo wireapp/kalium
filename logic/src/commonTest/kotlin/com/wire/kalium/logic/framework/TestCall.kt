@@ -22,8 +22,8 @@ object TestCall {
         value = "convId",
         domain = "domainId"
     )
-    val CLIENT_ID_1 = "clientId1"
-    val CLIENT_ID_2 = "clientId2"
+    const val CLIENT_ID_1 = "clientId1"
+    const val CLIENT_ID_2 = "clientId2"
 
     fun qualifiedIdEntity(conversationId: ConversationId = CONVERSATION_ID) =
         QualifiedIDEntity(

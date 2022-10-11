@@ -4,7 +4,6 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
-import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Participant
