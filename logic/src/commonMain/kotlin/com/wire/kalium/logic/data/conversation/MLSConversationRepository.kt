@@ -331,40 +331,22 @@ class MLSConversationDataSource(
         }
 
     private suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit> =
-        keyPackageRepository.claimKeyPackages(members).flatMap { keyPackages ->
-            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                val clientKeyPackageList = keyPackages
-                    .map {
-                        Pair(
-                            CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
-                            it.keyPackage.decodeBase64Bytes()
-                        )
-                    }
-
-                mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
-                    wrapMLSRequest {
-                        mlsClient.createConversation(
-                            idMapper.toCryptoModel(groupID),
-                            publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
-                        )
-                    }
-                }.flatMap {
-                    retryOnCommitFailure(groupID) {
-                        wrapMLSRequest {
-                            mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
-                        }.flatMap { commitBundle ->
-                            commitBundle?.let {
-                                sendCommitBundle(groupID, it).flatMap {
-                                    wrapStorageRequest {
-                                        conversationDAO.updateConversationGroupState(
-                                            ConversationEntity.GroupState.ESTABLISHED,
-                                            idMapper.toGroupIDEntity(groupID)
-                                        )
-                                    }
-                                }
-                            } ?: Either.Right(Unit)
-                        }
-                    }
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
+                wrapMLSRequest {
+                    mlsClient.createConversation(
+                        idMapper.toCryptoModel(groupID),
+                        publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
+                    )
+                }
+            }.flatMap {
+                addMemberToMLSGroup(groupID, members)
+            }.flatMap {
+                wrapStorageRequest {
+                    conversationDAO.updateConversationGroupState(
+                        ConversationEntity.GroupState.ESTABLISHED,
+                        idMapper.toGroupIDEntity(groupID)
+                    )
                 }
             }
         }
@@ -414,7 +396,9 @@ class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
             }.flatMap {
-                operation()
+                syncManager.waitUntilLiveOrFailure().flatMap {
+                    operation()
+                }
             }
         }
     }

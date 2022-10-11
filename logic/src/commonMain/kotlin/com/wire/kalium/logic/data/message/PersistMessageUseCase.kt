@@ -47,6 +47,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Empty -> false
             is MessageContent.Ignored -> false
             is MessageContent.LastRead -> false
+            is MessageContent.Reaction -> false
             is MessageContent.Cleared -> false
             is MessageContent.ConversationRenamed -> true
         }

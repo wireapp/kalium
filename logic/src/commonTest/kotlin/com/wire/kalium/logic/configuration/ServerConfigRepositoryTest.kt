@@ -11,6 +11,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
+import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.tools.ApiVersionDTO
@@ -260,6 +261,51 @@ class ServerConfigRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenStoredConfigLinksAndVersionInfoData_whenAddingNewOne_thenCommonApiShouldBeCalculatedAndConfigShouldBeStored() {
+        val expectedServerConfig = newServerConfig(1)
+        val expectedServerConfigDTO = newServerConfigDTO(1)
+        val expectedVersionInfo = ServerConfig.VersionInfo(
+            expectedServerConfig.metaData.federation,
+            listOf(expectedServerConfig.metaData.commonApiVersion.version),
+            expectedServerConfig.metaData.domain,
+            null
+        )
+        val (arrangement, repository) = Arrangement()
+            .withConfigForNewRequest(expectedServerConfig)
+            .withCalculateApiVersion(expectedServerConfigDTO.metaData)
+            .arrange()
+
+        repository
+            .storeConfig(expectedServerConfig.links, expectedVersionInfo)
+            .shouldSucceed { assertEquals(it, expectedServerConfig) }
+
+        verify(arrangement.backendMetaDataUtil)
+            .function(arrangement.backendMetaDataUtil::calculateApiVersion)
+            .with(any(), any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::configByLinks)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::insert)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::updateApiVersion)
+            .with(any(), any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::setFederationToTrue)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.serverConfigDAO)
+            .function(arrangement.serverConfigDAO::configById)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         val SERVER_CONFIG_URL = "https://test.test/test.json"
         val SERVER_CONFIG_RESPONSE = newServerConfigDTO(1)
@@ -276,8 +322,11 @@ class ServerConfigRepositoryTest {
         @Mock
         val versionApi = mock(classOf<VersionApi>())
 
+        @Mock
+        val backendMetaDataUtil = mock(classOf<BackendMetaDataUtil>())
+
         private var serverConfigRepository: ServerConfigRepository =
-            ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi)
+            ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi, true, backendMetaDataUtil)
 
         val serverConfigEntity = newServerConfigEntity(1)
         val expectedServerConfig = newServerConfig(1).copy(
@@ -364,6 +413,14 @@ class ServerConfigRepositoryTest {
                 .whenInvokedWith(any())
                 .then { newServerConfigEntity }
 
+            return this
+        }
+
+        fun withCalculateApiVersion(result: ServerConfigDTO.MetaData): Arrangement {
+            given(backendMetaDataUtil)
+                .function(backendMetaDataUtil::calculateApiVersion)
+                .whenInvokedWith(any(), any(), any(), any())
+                .thenReturn(result)
             return this
         }
 
