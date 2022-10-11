@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 
 interface ParticipantMapper {
     fun fromCallMemberToParticipant(member: CallMember): Participant
-    fun fromCallMemberToCallClient(member: CallMember): CallClient
 }
 
 class ParticipantMapperImpl(
@@ -30,16 +29,6 @@ class ParticipantMapperImpl(
             isMuted = isMuted == 1,
             isCameraOn = isCameraOn,
             isSharingScreen = isSharingScreen
-        )
-    }
-
-    override fun fromCallMemberToCallClient(member: CallMember): CallClient = with(member) {
-        CallClient(
-            userId = QualifiedID(
-                value = userId.removeDomain(),
-                domain = userId.getDomain()
-            ).toString(),
-            clientId = clientId
         )
     }
 

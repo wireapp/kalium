@@ -31,7 +31,6 @@ class OnParticipantListChanged internal constructor(
 
         callingScope.launch {
             val participants = mutableListOf<Participant>()
-            val clients = mutableListOf<CallClient>()
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationIdString)
 
             participantsChange.members.map { member ->
@@ -45,8 +44,6 @@ class OnParticipantListChanged internal constructor(
                     )
                     participants.add(updatedParticipant)
                 }
-
-                clients.add(participantMapper.fromCallMemberToCallClient(member))
             }
 
             callRepository.updateCallParticipants(
