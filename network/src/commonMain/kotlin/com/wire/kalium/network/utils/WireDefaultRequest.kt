@@ -44,7 +44,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
             if (isProxyRequired) {
                 if (proxyCredentials == null) throw error("Credentials not exist")
                 val (userName, password) = proxyCredentials()!!
-                val credentials = "java.net.socks.username:$userName java.net.socks.password:$password".toByteArray().encodeBase64()
+                val credentials = "$userName:$password".toByteArray().encodeBase64()
                 header(HttpHeaders.ProxyAuthorization, "Basic $credentials")
             }
         }
