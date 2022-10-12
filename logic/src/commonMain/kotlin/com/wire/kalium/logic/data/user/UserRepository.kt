@@ -19,6 +19,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -54,14 +55,14 @@ internal interface UserRepository {
     suspend fun getSelfUser(): SelfUser?
     suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
     suspend fun updateLocalSelfUserHandle(handle: String)
-    suspend fun getAllKnownUsers(): Either<StorageFailure, List<OtherUser>>
+    fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
-    suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>>
+    fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
     suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
@@ -214,14 +215,15 @@ internal class UserDataSource internal constructor(
     override suspend fun updateLocalSelfUserHandle(handle: String) =
         userDAO.updateUserHandle(idMapper.toDaoModel(selfUserId), handle)
 
-    override suspend fun getAllKnownUsers(): Either<StorageFailure, List<OtherUser>> {
-        return wrapStorageRequest {
-            val selfUserId = idMapper.toDaoModel(selfUserId)
-
-            userDAO.getAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
-                .filter { it.id != selfUserId }
-                .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
-        }
+    override fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
+        val selfUserId = idMapper.toDaoModel(selfUserId)
+        return userDAO.observeAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
+            .wrapStorageRequest()
+            .mapRight { users ->
+                users
+                    .filter { it.id != selfUserId && !it.deleted }
+                    .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
+            }
     }
 
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
@@ -271,11 +273,16 @@ internal class UserDataSource internal constructor(
         userDAO.updateUserAvailabilityStatus(idMapper.toDaoModel(userId), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
 
-    override suspend fun getAllKnownUsersNotInConversation(conversationId: ConversationId): Either<StorageFailure, List<OtherUser>> {
-        return wrapStorageRequest {
-            userDAO.getUsersNotInConversation(idMapper.toDaoModel(conversationId))
-                .map { publicUserMapper.fromDaoModelToPublicUser(it) }
-        }
+    override fun observeAllKnownUsersNotInConversation(
+        conversationId: ConversationId
+    ): Flow<Either<StorageFailure, List<OtherUser>>> {
+        return userDAO.observeUsersNotInConversation(idMapper.toDaoModel(conversationId))
+            .wrapStorageRequest()
+            .mapRight { users ->
+                users
+                    .filter { !it.deleted }
+                    .map { publicUserMapper.fromDaoModelToPublicUser(it) }
+            }
     }
 
     override suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>> {
