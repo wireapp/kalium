@@ -452,4 +452,8 @@ class ConversationDAOImpl(
         }
     }
 
+    override suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity> {
+        return memberQueries.selectConversationsByMember(userId).executeAsList().map { it.conversation }
+    }
+
 }
