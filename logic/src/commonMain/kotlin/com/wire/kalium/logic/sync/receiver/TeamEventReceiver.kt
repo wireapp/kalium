@@ -1,19 +1,29 @@
 package com.wire.kalium.logic.sync.receiver
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 interface TeamEventReceiver : EventReceiver<Event.Team>
 
-class TeamEventReceiverImpl(
+internal class TeamEventReceiverImpl(
     private val teamRepository: TeamRepository,
     private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
+    private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
 ) : TeamEventReceiver {
 
@@ -33,12 +43,38 @@ class TeamEventReceiverImpl(
         )
             .onFailure { kaliumLogger.e("$TAG - failure on member join event: $it") }
 
-    private suspend fun handleMemberLeave(event: Event.Team.MemberLeave) =
+    private suspend fun handleMemberLeave(event: Event.Team.MemberLeave) {
+        val userId = UserId(event.memberId, selfUserId.domain)
         teamRepository.removeTeamMember(
             teamId = event.teamId,
             userId = event.memberId,
-        ).onSuccess { conversationRepository.deleteUserFromConversations(UserId(event.memberId, selfUserId.domain)) }
+        )
+            .onSuccess {
+                val knownUser = userRepository.getKnownUser(userId).first()
+                if (knownUser?.name != null) {
+                    val conversationIds = conversationRepository.getConversationIdsByUserId(userId)
+                    conversationIds.onSuccess {
+                        val time = Clock.System.now().toEpochMilliseconds()
+                        it.forEach { conversationId ->
+                            val message = Message.System(
+                                id = uuid4().toString(), // We generate a random uuid for this new system message
+                                content = MessageContent.TeamMemberRemoved(knownUser.name),
+                                conversationId = conversationId,
+                                date = Instant.fromEpochMilliseconds(time).toString(),
+                                senderUserId = selfUserId,
+                                status = Message.Status.SENT,
+                                visibility = Message.Visibility.VISIBLE
+                            )
+                            persistMessage(message)
+
+                        }
+
+                    }
+                }
+            }
+            .onSuccess { conversationRepository.deleteUserFromConversations(userId) }
             .onFailure { kaliumLogger.e("$TAG - failure on member leave event: $it") }
+    }
 
     private suspend fun handleMemberUpdate(event: Event.Team.MemberUpdate) =
         teamRepository.updateMemberRole(

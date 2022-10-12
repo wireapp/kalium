@@ -50,5 +50,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Reaction -> false
             is MessageContent.Cleared -> false
             is MessageContent.ConversationRenamed -> true
+            is MessageContent.TeamMemberRemoved -> false
         }
 }
