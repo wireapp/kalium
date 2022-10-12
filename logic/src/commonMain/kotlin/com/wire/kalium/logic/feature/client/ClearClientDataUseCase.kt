@@ -34,7 +34,7 @@ internal class ClearClientDataUseCaseImpl internal constructor(
 
     private suspend fun clearCrypto(): Either<CoreFailure, Boolean> =
         wrapCryptoRequest {
-            proteusClientProvider.clear()
+            proteusClientProvider.clearLocalFiles()
         }.flatMap {
             mlsClientProvider.getMLSClient()
                 .flatMap { mlsClient ->
