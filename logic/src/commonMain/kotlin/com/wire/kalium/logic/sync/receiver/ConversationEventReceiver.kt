@@ -155,9 +155,13 @@ internal class ConversationEventReceiverImpl(
             idMapper.toCryptoQualifiedIDId(event.senderUserId),
             CryptoClientId(event.senderClientId.value)
         )
-        wrapCryptoRequest {
-            proteusClientProvider.getOrCreate().decrypt(decodedContentBytes, cryptoSessionId)
-        }.map { PlainMessageBlob(it) }
+        proteusClientProvider.getOrError()
+            .flatMap {
+                wrapCryptoRequest {
+                    it.decrypt(decodedContentBytes, cryptoSessionId)
+                }
+            }
+            .map { PlainMessageBlob(it) }
             .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event) }
             .onFailure {
                 when (it) {

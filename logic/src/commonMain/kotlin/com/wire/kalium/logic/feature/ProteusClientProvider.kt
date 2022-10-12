@@ -4,7 +4,6 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusClientImpl
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -41,7 +40,7 @@ class ProteusClientProviderImpl(private val rootProteusPath: String) : ProteusCl
 
     override suspend fun getOrError(): Either<CoreFailure, ProteusClient> {
         return mutex.withLock {
-             _proteusClient?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+             _proteusClient?.let { Either.Right(it) } ?: Either.Left(CoreFailure.MissingClientRegistration)
         }
     }
 }

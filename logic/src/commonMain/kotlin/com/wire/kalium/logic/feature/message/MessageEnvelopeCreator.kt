@@ -9,6 +9,7 @@ import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.ClientPayload
@@ -23,6 +24,7 @@ import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
@@ -58,14 +60,19 @@ class MessageEnvelopeCreatorImpl(
             recipient.clients.foldToEitherWhileRight(mutableListOf<ClientPayload>()) { client, clientAccumulator ->
                 val session = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipient.id), CryptoClientId(client.value))
 
-                wrapCryptoRequest { proteusClientProvider.getOrCreate().encrypt(encodedContent.data, session) }
+                proteusClientProvider.getOrError()
+                    .flatMap { proteusClient ->
+                        wrapCryptoRequest {
+                            proteusClient.encrypt(encodedContent.data, session)
+                        }
+                    }
                     .map { EncryptedMessageBlob(it) }
                     .fold({
                         // when encryption fails because of SESSION_NOT_FOUND, we just skip the client
                         // the reason is that the client might be buggy from the backend side and have no preKey
                         // in that case we just skip the client and send the message to the rest of the clients
                         // the only valid way to fitch client pryKey if the server response that we are missing clients
-                        if (it.proteusException.code == ProteusException.Code.SESSION_NOT_FOUND) {
+                        if (it is ProteusFailure && it.proteusException.code == ProteusException.Code.SESSION_NOT_FOUND) {
                             Either.Right(clientAccumulator)
                         } else {
                             Either.Left(it)

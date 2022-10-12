@@ -570,9 +570,9 @@ class ConversationEventReceiverTest {
 
         init {
             given(proteusClientProvider)
-                .suspendFunction(proteusClientProvider::getOrCreate)
+                .suspendFunction(proteusClientProvider::getOrError)
                 .whenInvoked()
-                .thenReturn(proteusClient)
+                .thenReturn(Either.Right(proteusClient))
         }
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {

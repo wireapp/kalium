@@ -5,7 +5,6 @@ import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.createSessions
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.IdMapper
@@ -53,16 +52,17 @@ internal class SessionEstablisherImpl internal constructor(
                 .flatMap { preKeyInfoList -> establishSessions(preKeyInfoList) }
         }
 
-    private suspend fun establishSessions(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Either<ProteusFailure, Unit> =
-        wrapCryptoRequest {
-            proteusClientProvider.getOrCreate().createSessions(
-                getMapOfSessionIdsToPreKeysAndIgnoreNull(preKeyInfoList)
-            )
-        }
+    private suspend fun establishSessions(preKeyInfoList: List<QualifiedUserPreKeyInfo>): Either<CoreFailure, Unit> =
+        proteusClientProvider.getOrError()
+            .flatMap { proteusClient ->
+                wrapCryptoRequest {
+                    proteusClient.createSessions(getMapOfSessionIdsToPreKeysAndIgnoreNull(preKeyInfoList))
+                }
+            }
 
     private suspend fun getAllMissingClients(
         detailedContacts: List<Recipient>
-    ): Either<ProteusFailure, Map<UserId, List<ClientId>>> =
+    ): Either<CoreFailure, MutableMap<UserId, List<ClientId>>> =
         detailedContacts.foldToEitherWhileRight(mutableMapOf<UserId, List<ClientId>>()) { recipient, userAccumulator ->
             getMissingClientsForRecipients(recipient).map { missingClients ->
                 if (missingClients.isNotEmpty()) {
@@ -74,7 +74,7 @@ internal class SessionEstablisherImpl internal constructor(
 
     private suspend fun getMissingClientsForRecipients(
         recipient: Recipient
-    ): Either<ProteusFailure, List<ClientId>> =
+    ): Either<CoreFailure, MutableList<ClientId>> =
         recipient.clients.foldToEitherWhileRight(mutableListOf<ClientId>()) { client, clientIdAccumulator ->
             doesSessionExist(recipient.id, client).map { sessionExists ->
                 if (!sessionExists) {
@@ -87,11 +87,14 @@ internal class SessionEstablisherImpl internal constructor(
     private suspend fun doesSessionExist(
         recipientUserId: UserId,
         client: ClientId
-    ): Either<ProteusFailure, Boolean> =
-        wrapCryptoRequest {
-            val cryptoSessionID = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipientUserId), CryptoClientId(client.value))
-            proteusClientProvider.getOrCreate().doesSessionExist(cryptoSessionID)
-        }
+    ): Either<CoreFailure, Boolean> =
+        proteusClientProvider.getOrError()
+            .flatMap { proteusClient ->
+                val cryptoSessionID = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipientUserId), CryptoClientId(client.value))
+                wrapCryptoRequest {
+                    proteusClient.doesSessionExist(cryptoSessionID)
+                }
+            }
 }
 
 internal interface CryptoSessionMapper {

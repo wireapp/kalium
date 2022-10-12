@@ -50,9 +50,9 @@ class SessionEstablisherTest {
 
     init {
         given(proteusClientProvider)
-            .suspendFunction(proteusClientProvider::getOrCreate)
+            .suspendFunction(proteusClientProvider::getOrError)
             .whenInvoked()
-            .thenReturn(proteusClient)
+            .thenReturn(Either.Right(proteusClient))
     }
 
     @BeforeTest

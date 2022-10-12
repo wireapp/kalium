@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestMessage
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
@@ -49,9 +50,9 @@ class MessageEnvelopeCreatorTest {
 
     init {
         given(proteusClientProvider)
-            .suspendFunction(proteusClientProvider::getOrCreate)
+            .suspendFunction(proteusClientProvider::getOrError)
             .whenInvoked()
-            .thenReturn(proteusClient)
+            .thenReturn(Either.Right(proteusClient))
     }
 
     @BeforeTest
