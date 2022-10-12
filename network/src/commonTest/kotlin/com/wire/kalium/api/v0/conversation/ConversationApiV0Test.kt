@@ -7,6 +7,7 @@ import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.MemberUpdateRequestJson
+import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
@@ -188,11 +189,30 @@ class ConversationApiV0Test : ApiTest {
         conversationApi.updateConversationMemberRole(conversationId, userId, memberRole)
     }
 
+    @Test
+    fun whenAddingMemberToGroup_thenTheMemberShouldBeAddedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val userId = UserId("userId", "userDomain")
+        val request = AddConversationMembersRequest(listOf(userId), "Member")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            "", statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_MEMBERS}/$PATH_V2")
+            }
+        )
+        val conversationApi = ConversationApiV0(networkClient)
+        conversationApi.addMember(request, conversationId)
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_CONVERSATIONS_LIST_V2 = "/conversations/list/v2"
         const val PATH_CONVERSATIONS_IDS = "/conversations/list-ids"
         const val PATH_SELF = "/self"
+        const val PATH_MEMBERS = "members"
+        const val PATH_V2 = "v2"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.validGroup.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.valid
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
