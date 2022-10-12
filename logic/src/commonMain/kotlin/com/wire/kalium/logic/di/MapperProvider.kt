@@ -117,7 +117,8 @@ internal object MapperProvider {
     fun clientMapper(): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper())
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl(idMapper())
     fun protoContentMapper(): ProtoContentMapper = ProtoContentMapperImpl()
-    fun callMapper(): CallMapper = CallMapperImpl()
+    fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
+    fun callMapper(selfUserId: UserId): CallMapper = CallMapperImpl(qualifiedIdMapper(selfUserId))
     fun activeSpeakerMapper(): ActiveSpeakerMapper = ActiveSpeakerMapperImpl()
     fun connectionStatusMapper(): ConnectionStatusMapper = ConnectionStatusMapperImpl()
     fun featureConfigMapper(): FeatureConfigMapper = FeatureConfigMapperImpl()
@@ -125,7 +126,6 @@ internal object MapperProvider {
     fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl()
     fun userTypeEntityMapper(): UserEntityTypeMapper = UserEntityTypeMapperImpl()
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
-    fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
     fun federatedIdMapper(
         userId: UserId,
         qualifiedIdMapper: QualifiedIdMapper,
