@@ -218,7 +218,8 @@ class EventMapper(
     ) = Event.Team.MemberLeave(
         id = id,
         teamId = event.teamId,
-        memberId = event.teamMember.nonQualifiedUserId
+        memberId = event.teamMember.nonQualifiedUserId,
+        timestampIso = event.time
     )
 
     private fun teamMemberUpdate(

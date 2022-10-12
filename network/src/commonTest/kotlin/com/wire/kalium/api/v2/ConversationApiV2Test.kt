@@ -3,7 +3,9 @@ package com.wire.kalium.api.v2
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
 import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
+import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -32,8 +34,27 @@ class ConversationApiV2Test : ApiTest {
         )
     }
 
+    @Test
+    fun whenAddingMemberToGroup_thenTheMemberShouldBeAddedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val userId = UserId("userId", "userDomain")
+        val request = AddConversationMembersRequest(listOf(userId), "Member")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            "", statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS")
+            }
+        )
+        val conversationApi = ConversationApiV2(networkClient)
+        conversationApi.addMember(request, conversationId)
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS_LIST = "/conversations/list"
+        const val PATH_CONVERSATIONS = "/conversations"
+        const val PATH_MEMBERS = "members"
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds
         val CONVERSATION_DETAILS_RESPONSE = ConversationDetailsResponse.validGetDetailsForIds
     }

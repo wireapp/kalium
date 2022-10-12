@@ -7,20 +7,15 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestAsset.dummyUploadedAssetId
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
@@ -41,7 +36,6 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import okio.Path
@@ -145,10 +139,12 @@ class SendAssetMessageUseCaseTest {
         // Then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+            .with(
+                matching {
                 val content = it.content
                 content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
-            })
+            }
+            )
             .wasInvoked(exactly = twice)
     }
 
@@ -169,16 +165,21 @@ class SendAssetMessageUseCaseTest {
         // Then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+            .with(
+                matching {
                 val content = it.content
                 content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOAD_IN_PROGRESS
-            })
+            }
+            )
             .wasInvoked(exactly = once)
         verify(arrangement.updateUploadStatus)
             .suspendFunction(arrangement.updateUploadStatus::invoke)
-            .with(matching {
+            .with(
+                matching {
                 it == Message.UploadStatus.FAILED_UPLOAD
-            }, any(), any())
+            },
+                any(), any()
+            )
             .wasInvoked(exactly = once)
     }
 
@@ -201,10 +202,12 @@ class SendAssetMessageUseCaseTest {
         // Then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+            .with(
+                matching {
                 val content = it.content
                 content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOADED
-            })
+            }
+            )
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(any())
@@ -220,13 +223,10 @@ class SendAssetMessageUseCaseTest {
         val messageSender = mock(classOf<MessageSender>())
 
         @Mock
-        private val clientRepository = mock(classOf<ClientRepository>())
+        private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
         private val assetDataSource = mock(classOf<AssetRepository>())
-
-        @Mock
-        private val userRepository = mock(classOf<UserRepository>())
 
         @Mock
         private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
@@ -237,20 +237,6 @@ class SendAssetMessageUseCaseTest {
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
-
-        private fun fakeSelfUser() = SelfUser(
-            UserId("some_id", "some_domain"),
-            "some_name",
-            "some_handle",
-            "some_email",
-            null,
-            1,
-            null,
-            ConnectionState.ACCEPTED,
-            previewPicture = UserAssetId("value1", "domain"),
-            completePicture = UserAssetId("value2", "domain"),
-            UserAvailabilityStatus.NONE
-        )
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
             fakeKaliumFileSystem.sink(dataPath).buffer().use {
@@ -265,12 +251,8 @@ class SendAssetMessageUseCaseTest {
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any(), any(), any())
                 .thenReturn(Either.Right(expectedAssetId to assetSHA256Key))
-            given(userRepository)
-                .suspendFunction(userRepository::observeSelfUser)
-                .whenInvoked()
-                .thenReturn(flowOf(fakeSelfUser()))
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
             given(slowSyncRepository)
@@ -292,16 +274,12 @@ class SendAssetMessageUseCaseTest {
         }
 
         fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::observeSelfUser)
-                .whenInvoked()
-                .thenReturn(flowOf(fakeSelfUser()))
             given(slowSyncRepository)
                 .getter(slowSyncRepository::slowSyncStatus)
                 .whenInvoked()
                 .thenReturn(completeStateFlow)
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
             given(persistMessage)
@@ -319,12 +297,8 @@ class SendAssetMessageUseCaseTest {
         }
 
         fun withPersistErrorResponse() = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::observeSelfUser)
-                .whenInvoked()
-                .thenReturn(flowOf(fakeSelfUser()))
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(Either.Right(someClientId))
             given(slowSyncRepository)
@@ -344,9 +318,9 @@ class SendAssetMessageUseCaseTest {
         fun arrange() = this to SendAssetMessageUseCaseImpl(
             persistMessage,
             updateUploadStatus,
-            clientRepository,
+            currentClientIdProvider,
             assetDataSource,
-            userRepository,
+            QualifiedID("some-id", "some-domain"),
             slowSyncRepository,
             messageSender
         )
