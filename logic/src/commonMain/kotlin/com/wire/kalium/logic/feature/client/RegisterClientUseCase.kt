@@ -17,6 +17,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
@@ -74,27 +75,34 @@ class RegisterClientUseCaseImpl(
             generateProteusPreKeys(preKeysToSend, password, capabilities, clientType).fold({
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
-                clientRepository.registerClient(registerClientParam).flatMap { client ->
-                    if (featureSupport.isMLSSupported) {
-                        createMLSClient(client)
-                    } else {
-                        Either.Right(client)
-                    }
-                }.flatMap { client ->
-                    clientRepository.persistClientId(client.id).map { client }
-                }.fold({ failure ->
-                    if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
-                        when {
-                            failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
-                            failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
-                            failure.kaliumException.isInvalidCredentials() -> RegisterClientResult.Failure.InvalidCredentials
-                            failure.kaliumException.isBadRequest() -> RegisterClientResult.Failure.InvalidCredentials
-                            else -> RegisterClientResult.Failure.Generic(failure)
+                clientRepository.registerClient(registerClientParam)
+                    .flatMap { client ->
+                        val client = if (featureSupport.isMLSSupported) {
+                            createMLSClient(client)
+                        } else {
+                            Either.Right(client)
                         }
-                    else RegisterClientResult.Failure.Generic(failure)
-                }, { client ->
-                    RegisterClientResult.Success(client)
-                })
+                        client.map { it to registerClientParam.preKeys.maxOfOrNull { it.id } }
+                    }.flatMap { (client, otrLastKeyId) ->
+                        clientRepository.persistClientId(client.id)
+                            .onSuccess {
+                                otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
+                            }.map { client }
+                    }.fold({ failure ->
+                        if (failure is NetworkFailure.ServerMiscommunication &&
+                            failure.kaliumException is KaliumException.InvalidRequestError
+                        )
+                            when {
+                                failure.kaliumException.isTooManyClients() -> RegisterClientResult.Failure.TooManyClients
+                                failure.kaliumException.isMissingAuth() -> RegisterClientResult.Failure.PasswordAuthRequired
+                                failure.kaliumException.isInvalidCredentials() -> RegisterClientResult.Failure.InvalidCredentials
+                                failure.kaliumException.isBadRequest() -> RegisterClientResult.Failure.InvalidCredentials
+                                else -> RegisterClientResult.Failure.Generic(failure)
+                            }
+                        else RegisterClientResult.Failure.Generic(failure)
+                    }, { client ->
+                        RegisterClientResult.Success(client)
+                    })
             })
         }
 

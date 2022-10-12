@@ -9,6 +9,8 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
+import com.wire.kalium.persistence.dao.PrekeyDAO
+import com.wire.kalium.persistence.dao.PrekeyDAOImpl
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
@@ -111,6 +113,9 @@ class UserDatabaseProvider internal constructor(
 
     val reactionDAO: ReactionDAO
         get() = ReactionDAOImpl(database.reactionsQueries)
+
+    val prekeyDAO: PrekeyDAO
+        get() = PrekeyDAOImpl(database.metadataQueries)
 
     /**
      * drops DB connection and delete the DB file
