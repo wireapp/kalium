@@ -81,7 +81,7 @@ suspend fun selectMember(userSession: UserSessionScope, conversationId: Conversa
 }
 
 suspend fun selectConnection(userSession: UserSessionScope): OtherUser {
-    val connections = userSession.users.getAllKnownUsers().let {
+    val connections = userSession.users.getAllKnownUsers().first().let {
         when (it) {
             is GetAllContactsResult.Failure -> throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
             is GetAllContactsResult.Success -> it.allContacts
@@ -132,7 +132,7 @@ class CreateGroupCommand : CliktCommand(name = "create-group") {
             by option(help = "Protocol for sending messages").enum<ConversationOptions.Protocol>().default(ConversationOptions.Protocol.MLS)
 
     override fun run() = runBlocking {
-        val users = userSession.users.getAllKnownUsers().let {
+        val users = userSession.users.getAllKnownUsers().first().let {
             when (it) {
                 is GetAllContactsResult.Failure -> throw PrintMessage("Failed to retrieve connections: ${it.storageFailure}")
                 is GetAllContactsResult.Success -> it.allContacts

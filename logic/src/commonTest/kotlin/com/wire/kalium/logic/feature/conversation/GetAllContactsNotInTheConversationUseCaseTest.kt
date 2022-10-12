@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -14,6 +15,7 @@ import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -23,31 +25,35 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
     @Test
     fun givenSuccessFullResult_whenGettingUsersNotPartofTheConversation_ThenReturnTheResult() = runTest {
-        //given
+        // given
         val (_, getAllContactsNotInTheConversation) = Arrangement()
             .withSuccessFullGetUsersNotPartOfConversation()
             .arrange()
 
-        //when
-        val result = getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain"))
-
-        //then
-        assertIs<Result.Success>(result)
-        assertTrue { result.contactsNotInConversation == Arrangement.mockAllContacts }
+        // when
+        getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain")).test {
+            // then
+            val result = awaitItem()
+            assertIs<Result.Success>(result)
+            assertTrue { result.contactsNotInConversation == Arrangement.mockAllContacts }
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
     fun givenFailure_whenGettingUsersNotPartofTheConversation_ThenReturnTheResult() = runTest {
-        //given
+        // given
         val (_, getAllContactsNotInTheConversation) = Arrangement()
             .withFailureGetUsersNotPartOfConversation()
             .arrange()
 
-        //when
-        val result = getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain"))
-
-        //then
-        assertIs<Result.Failure>(result)
+        // when
+        getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain")).test {
+            // then
+            val result = awaitItem()
+            assertIs<Result.Failure>(result)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     private class Arrangement {
@@ -96,11 +102,13 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
         fun withSuccessFullGetUsersNotPartOfConversation(allContacts: List<OtherUser> = mockAllContacts): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getAllKnownUsersNotInConversation)
+                .function(userRepository::observeAllKnownUsersNotInConversation)
                 .whenInvokedWith(anything())
                 .thenReturn(
-                    Either.Right(
-                        allContacts
+                    flowOf(
+                        Either.Right(
+                            allContacts
+                        )
                     )
                 )
             return this
@@ -108,11 +116,9 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
         fun withFailureGetUsersNotPartOfConversation(): Arrangement {
             given(userRepository)
-                .suspendFunction(userRepository::getAllKnownUsersNotInConversation)
+                .function(userRepository::observeAllKnownUsersNotInConversation)
                 .whenInvokedWith(anything())
-                .thenReturn(
-                    Either.Left(StorageFailure.DataNotFound)
-                )
+                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
 
             return this
         }
