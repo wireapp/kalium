@@ -2,7 +2,6 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
