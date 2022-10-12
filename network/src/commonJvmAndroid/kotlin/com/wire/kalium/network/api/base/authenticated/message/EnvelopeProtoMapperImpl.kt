@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.base.authenticated.message
 
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserEntry
@@ -26,19 +27,24 @@ class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
                 entries = userEntries
             )
         }
+
+        // TODO(messaging): Handle different report types, etc.
         val strategy = when (envelopeParameters.messageOption) {
             is MessageApi.QualifiedMessageOption.IgnoreAll -> {
-                QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll(ClientMismatchStrategy.IgnoreAll()),
+                QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll(ClientMismatchStrategy.IgnoreAll())
             }
             is MessageApi.QualifiedMessageOption.ReportAll -> {
-                QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll()),
+                QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll())
+            }
+            else -> {
+                kaliumLogger.w("[EnvelopeProtoMapper] - Other types not being handled yet.")
+                QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll())
             }
         }
         return QualifiedNewOtrMessage(
             recipients = qualifiedEntries,
             sender = otrClientIdMapper.toOtrClientId(envelopeParameters.sender),
             blob = envelopeParameters.externalBlob?.let { ByteArr(it) },
-            // TODO(messaging): Handle different report types, etc.
             clientMismatchStrategy = strategy,
             nativePush = envelopeParameters.nativePush,
             transient = envelopeParameters.transient
