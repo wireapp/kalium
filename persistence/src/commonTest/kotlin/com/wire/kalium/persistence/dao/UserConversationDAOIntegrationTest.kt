@@ -66,15 +66,21 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             )
         )
 
-        // when
-        val result = userDAO.getUsersNotInConversation(conversationId)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            // when
+            userDAO.observeUsersNotInConversation(conversationId).test {
+                val result = awaitItem()
+                // then
+                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 
-        // then
-        assertTrue { result == (allUsers - userThatIsPartOfConversation) }
     }
 
     @Test
     fun givenAllTheUserArePartOfConversation_WHenGettingUsersNotPartOfConversation_ThenReturnEmptyResult() = runTest {
+        // given
         userDAO.upsertUsers(listOf(user1, user2))
 
         val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
@@ -90,24 +96,36 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             )
         )
 
-        val result = userDAO.getUsersNotInConversation(conversationId)
-
-        assertTrue { result.isEmpty() }
+        // when
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            userDAO.observeUsersNotInConversation(conversationId).test {
+                // then
+                val result = awaitItem()
+                assertTrue { result.isEmpty() }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
     }
 
     @Test
     fun givenConversationHasNoMembers_WhenGettingUsersNotPartOfConversation_ThenReturnAllTheUsers() = runTest {
+        // given
         userDAO.upsertUsers(listOf(user1, user2))
 
         val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
 
-        createTestConversation(
-            conversationId, emptyList()
-        )
+        createTestConversation(conversationId, emptyList())
 
-        val result = userDAO.getUsersNotInConversation(conversationId)
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            // when
+            userDAO.observeUsersNotInConversation(conversationId).test {
+                // then
+                val result = awaitItem()
+                assertTrue { result == listOf(user1, user2) }
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 
-        assertTrue { result == listOf(user1, user2) }
     }
 
     @Test

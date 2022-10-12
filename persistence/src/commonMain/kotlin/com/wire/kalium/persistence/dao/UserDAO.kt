@@ -131,7 +131,7 @@ interface UserDAO {
      */
     suspend fun updateUser(user: UserEntity)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
-    suspend fun getAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): List<UserEntity>
+    fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
     fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
     suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
@@ -149,7 +149,7 @@ interface UserDAO {
     suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
-    suspend fun getUsersNotInConversation(conversationId: QualifiedIDEntity): List<UserEntity>
+    fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserEntity>>
     suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
     suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
