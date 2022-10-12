@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -23,6 +24,7 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -105,6 +107,10 @@ class GetMessageAssetUseCaseTest {
         @Mock
         private val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
 
+        private val testScope = TestScope()
+
+        private val testDispatcher = TestKaliumDispatcher
+
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
         private var encryptionKey = AES256Key(ByteArray(1))
@@ -143,7 +149,8 @@ class GetMessageAssetUseCaseTest {
             )
         }
 
-        val getMessageAssetUseCase = GetMessageAssetUseCaseImpl(assetDataSource, messageRepository, updateAssetMessageDownloadStatus)
+        val getMessageAssetUseCase =
+            GetMessageAssetUseCaseImpl(assetDataSource, messageRepository, updateAssetMessageDownloadStatus, testScope, testDispatcher)
 
         fun withSuccessfulFlow(
             conversationId: ConversationId,

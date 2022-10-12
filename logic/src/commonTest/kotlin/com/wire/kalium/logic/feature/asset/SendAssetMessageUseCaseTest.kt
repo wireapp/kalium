@@ -20,8 +20,10 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestAsset.dummyUploadedAssetId
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
@@ -36,6 +38,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import okio.Path
@@ -238,6 +241,10 @@ class SendAssetMessageUseCaseTest {
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
+        private val testScope = TestScope()
+
+        private val testDispatcher = TestKaliumDispatcher
+
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
             fakeKaliumFileSystem.sink(dataPath).buffer().use {
                 it.write(data)
@@ -322,7 +329,9 @@ class SendAssetMessageUseCaseTest {
             assetDataSource,
             QualifiedID("some-id", "some-domain"),
             slowSyncRepository,
-            messageSender
+            messageSender,
+            testScope,
+            testDispatcher
         )
     }
 
