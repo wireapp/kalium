@@ -1342,6 +1342,21 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAnUserId_WhenGettingConversationIds_ShouldReturnSuccess() = runTest {
+        val userId = UserId("user_id", "user_domain")
+        val (arrange, conversationRepository) = Arrangement().withConversationIdsByUserId(listOf(TestConversation.ID)).arrange()
+
+        val result = conversationRepository.getConversationIdsByUserId(userId)
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::getConversationIdsByUserId)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -1578,6 +1593,15 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::whoDeletedMeInConversation)
                 .whenInvokedWith(any(), any())
                 .thenReturn(author)
+        }
+
+        fun withConversationIdsByUserId(conversationIds: List<ConversationId>) = apply {
+            val conversationIdEntities = conversationIds.map { MapperProvider.idMapper().toDaoModel(it) }
+
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationIdsByUserId)
+                .whenInvokedWith(any())
+                .thenReturn(conversationIdEntities)
         }
 
         fun arrange() = this to conversationRepository

@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.PrekeyDAO
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
@@ -99,7 +100,10 @@ class PreKeyRepositoryTest {
         @Mock
         val proteusClient: ProteusClient = mock(ProteusClient::class)
 
-        private val preKeyRepository = PreKeyDataSource(preKeyApi, proteusClient)
+        @Mock
+        val prekeyDAO: PrekeyDAO = mock(PrekeyDAO::class)
+
+        private val preKeyRepository = PreKeyDataSource(preKeyApi, proteusClient, prekeyDAO)
 
         fun withGetRemoteUsersPreKeySuccess(preKeyMap: DomainToUserIdToClientsToPreKeyMap) = apply {
             given(preKeyApi)

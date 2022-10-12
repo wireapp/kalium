@@ -17,6 +17,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED_FROM_TEAM
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -328,6 +329,7 @@ class MessageDAOImpl(
         is MessageEntityContent.FailedDecryption -> FAILED_DECRYPTION
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
         is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
+        is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
     }
 
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
