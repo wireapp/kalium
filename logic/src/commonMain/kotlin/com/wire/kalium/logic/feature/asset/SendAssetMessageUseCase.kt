@@ -22,12 +22,16 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
+import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import okio.Path
 
@@ -62,7 +66,9 @@ internal class SendAssetMessageUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val scope: CoroutineScope,
+    private val dispatcher: KaliumDispatcher,
 ) : SendAssetMessageUseCase {
     private lateinit var currentAssetMessageContent: AssetMessageMetadata
     override suspend fun invoke(
@@ -93,8 +99,9 @@ internal class SendAssetMessageUseCaseImpl(
             assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after asset upload
         )
         lateinit var message: Message.Regular
+        lateinit var uploadResult: SendAssetMessageResult
 
-        return currentClientIdProvider().flatMap { currentClientId ->
+        currentClientIdProvider().flatMap { currentClientId ->
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
 
@@ -115,18 +122,16 @@ internal class SendAssetMessageUseCaseImpl(
             )
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
-            persistMessage(message).flatMap {
-                Either.Right(Unit)
-            }.onFailure {
-                kaliumLogger.e("Asset persist method failed")
-                updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
-                Either.Left(it)
-            }.flatMap {
-                uploadAssetAndUpdateMessage(message, conversationId)
+            persistMessage(message).map {
+                val uploadJob = scope.launch(dispatcher.io) {
+                    uploadResult = uploadAssetAndUpdateMessage(message, conversationId).fold({
+                        SendAssetMessageResult.Failure(it)
+                    }, { SendAssetMessageResult.Success })
+                }
+                uploadJob.join()
             }
-        }.fold({
-            SendAssetMessageResult.Failure(it)
-        }, { SendAssetMessageResult.Success })
+        }
+        return uploadResult
     }
 
     private suspend fun uploadAssetAndUpdateMessage(message: Message.Regular, conversationId: ConversationId): Either<CoreFailure, Unit> =
@@ -136,7 +141,9 @@ internal class SendAssetMessageUseCaseImpl(
             currentAssetMessageContent.assetDataPath,
             currentAssetMessageContent.otrKey,
             currentAssetMessageContent.assetName.fileExtension()
-        ).flatMap { (assetId, sha256) ->
+        ).onFailure {
+            updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+        }.flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist and
             // update the message on the DB layer to display the changes on the Conversation screen
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)

@@ -113,14 +113,18 @@ class MessageScope internal constructor(
             assetRepository,
             userId,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            scope,
+            dispatcher
         )
 
     val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
             messageRepository,
-            updateAssetMessageDownloadStatus
+            updateAssetMessageDownloadStatus,
+            scope,
+            dispatcher
         )
 
     val getRecentMessages: GetRecentMessagesUseCase

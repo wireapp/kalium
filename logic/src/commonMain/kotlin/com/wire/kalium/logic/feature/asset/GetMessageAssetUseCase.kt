@@ -13,6 +13,9 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import okio.Path
 
 interface GetMessageAssetUseCase {
@@ -34,6 +37,8 @@ internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val messageRepository: MessageRepository,
     private val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase,
+    private val scope: CoroutineScope,
+    private val dispatcher: KaliumDispatcher
 ) : GetMessageAssetUseCase {
     override suspend fun invoke(
         conversationId: ConversationId,
@@ -67,29 +72,34 @@ internal class GetMessageAssetUseCaseImpl(
             // Start progress bar for generic assets
             if (!wasDownloaded) updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
 
-            assetDataSource.fetchPrivateDecodedAsset(
-                assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
-                assetName = assetMetadata.assetName,
-                assetToken = assetMetadata.assetToken,
-                encryptionKey = assetMetadata.encryptionKey
-            ).fold({
-                kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
-                // This should be called if there is an issue while downloading the asset
-                updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
-                MessageAssetResult.Failure(it)
-            }, { decodedAssetPath ->
-                // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while running
-                // this specific use case. Otherwise, recursive loop as described above kicks in.
-                if (!wasDownloaded)
-                    updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
+            lateinit var downloadResult: MessageAssetResult
 
-                MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
-            })
+            val downloadJob = scope.launch(dispatcher.io) {
+                assetDataSource.fetchPrivateDecodedAsset(
+                    assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
+                    assetName = assetMetadata.assetName,
+                    assetToken = assetMetadata.assetToken,
+                    encryptionKey = assetMetadata.encryptionKey
+                ).fold({
+                    kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
+                    // This should be called if there is an issue while downloading the asset
+                    updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
+                    downloadResult = MessageAssetResult.Failure(it)
+                }, { decodedAssetPath ->
+                    // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while running
+                    // this specific use case. Otherwise, recursive loop as described above kicks in.
+                    if (!wasDownloaded)
+                        updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
+
+                    downloadResult = MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
+                })
+            }
+            downloadJob.join()
+            downloadResult
         })
 }
 
 sealed class MessageAssetResult {
     class Success(val decodedAssetPath: Path, val assetSize: Long) : MessageAssetResult()
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
-
 }
