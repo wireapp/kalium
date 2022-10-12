@@ -54,21 +54,18 @@ internal class TeamEventReceiverImpl(
                 if (knownUser?.name != null) {
                     val conversationIds = conversationRepository.getConversationIdsByUserId(userId)
                     conversationIds.onSuccess {
-                        val time = Clock.System.now().toEpochMilliseconds()
                         it.forEach { conversationId ->
                             val message = Message.System(
                                 id = uuid4().toString(), // We generate a random uuid for this new system message
                                 content = MessageContent.TeamMemberRemoved(knownUser.name),
                                 conversationId = conversationId,
-                                date = Instant.fromEpochMilliseconds(time).toString(),
-                                senderUserId = selfUserId,
+                                date = event.timestampIso,
+                                senderUserId = userId,
                                 status = Message.Status.SENT,
                                 visibility = Message.Visibility.VISIBLE
                             )
                             persistMessage(message)
-
                         }
-
                     }
                 }
             }
