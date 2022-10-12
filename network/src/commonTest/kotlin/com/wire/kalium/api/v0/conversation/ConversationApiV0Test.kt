@@ -199,7 +199,7 @@ class ConversationApiV0Test : ApiTest {
             "", statusCode = HttpStatusCode.OK,
             assertion = {
                 assertPost()
-                assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_MEMBERS}/$PATH_V2")
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/$PATH_V2")
             }
         )
         val conversationApi = ConversationApiV0(networkClient)
