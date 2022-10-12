@@ -22,6 +22,7 @@ import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
+import com.wire.kalium.logic.feature.server.ServerConfigForAccountUseCase
 import com.wire.kalium.logic.feature.server.StoreServerConfigUseCase
 import com.wire.kalium.logic.feature.server.StoreServerConfigUseCaseImpl
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
@@ -128,4 +129,8 @@ class GlobalKaliumScope(
         )
     val deleteSession: DeleteSessionUseCase
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
+
+    val serverConfigForAccounts: ServerConfigForAccountUseCase
+        get() =
+            ServerConfigForAccountUseCase(serverConfigRepository)
 }

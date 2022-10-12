@@ -282,7 +282,7 @@ class ServerConfigRepositoryTest {
 
         verify(arrangement.backendMetaDataUtil)
             .function(arrangement.backendMetaDataUtil::calculateApiVersion)
-            .with(any(), any(), any())
+            .with(any(), any(), any(), any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
             .function(arrangement.serverConfigDAO::configByLinks)
@@ -419,7 +419,7 @@ class ServerConfigRepositoryTest {
         fun withCalculateApiVersion(result: ServerConfigDTO.MetaData): Arrangement {
             given(backendMetaDataUtil)
                 .function(backendMetaDataUtil::calculateApiVersion)
-                .whenInvokedWith(any(), any(), any())
+                .whenInvokedWith(any(), any(), any(), any())
                 .thenReturn(result)
             return this
         }
