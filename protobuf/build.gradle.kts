@@ -87,13 +87,22 @@ codegenProject.tasks
         compileTasks.forEach { compileTask ->
             compileTask.dependsOn(this)
         }
+        // Always generate protobuf files. So we make sure they exist.
+        outputs.upToDateWhen {
+            false
+        }
         doLast {
-            outputSourceDirectorySet.srcDirs.forEach {
+            outputSourceDirectorySet.srcDirs.forEach { generatedDirectory ->
                 generatedFilesBaseDir.mkdirs()
-                val targetDirectory = File(generatedFilesBaseDir, it.name)
-                val movingSucceeded = it.renameTo(targetDirectory)
+                val targetDirectory = File(generatedFilesBaseDir, generatedDirectory.name)
+                // Delete already existing files
+                targetDirectory.deleteRecursively()
+
+                // Move generated files to target directory
+                val movingSucceeded = generatedDirectory.renameTo(targetDirectory)
+
                 require(movingSucceeded) {
-                    "Failed to move Generated protobuf files from '${it.absolutePath}' " +
+                    "Failed to move Generated protobuf files from '${generatedDirectory.absolutePath}' " +
                             "to destination directory '${targetDirectory.absolutePath}'"
                 }
             }
