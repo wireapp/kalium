@@ -16,7 +16,8 @@ internal fun newTestServer(id: Int) = ServerConfig(
         teams = "https://server$id-teamsUrl.de",
         website = "https://server$id-websiteUrl.de",
         title = "server$id-title",
-        false
+        false,
+        ServerConfig.Proxy(true, "apiProxy")
     ),
     metaData = ServerConfig.MetaData(
         commonApiVersion = CommonApiVersionType.Valid(id),
@@ -35,7 +36,8 @@ internal fun newServerConfig(id: Int, federationEnabled: Boolean = false) = Serv
         teams = "https://server$id-teamsUrl.de",
         website = "https://server$id-websiteUrl.de",
         title = "server$id-title",
-        false
+        false,
+        ServerConfig.Proxy(true, "apiProxy")
     ),
     metaData = ServerConfig.MetaData(
         commonApiVersion = CommonApiVersionType.Valid(id),
@@ -54,7 +56,8 @@ internal fun newServerConfigEntity(id: Int) = ServerConfigEntity(
         teams = "https://server$id-teamsUrl.de",
         website = "https://server$id-websiteUrl.de",
         title = "server$id-title",
-        false
+        false,
+        ServerConfigEntity.Proxy(true, "apiProxy")
     ),
     metaData = ServerConfigEntity.MetaData(
         apiVersion = id,
@@ -73,7 +76,8 @@ internal fun newServerConfigDTO(id: Int) = ServerConfigDTO(
         teams = "https://server$id-teamsUrl.de",
         website = "https://server$id-websiteUrl.de",
         title = "server$id-title",
-        false
+        false,
+        ServerConfigDTO.Proxy(true, "apiProxy")
     ),
     ServerConfigDTO.MetaData(
         false,

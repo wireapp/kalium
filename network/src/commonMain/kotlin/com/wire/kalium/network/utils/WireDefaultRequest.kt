@@ -16,7 +16,7 @@ import io.ktor.utils.io.core.toByteArray
 
 fun HttpClientConfig<*>.installWireDefaultRequest(
     serverConfigDTO: ServerConfigDTO,
-    proxyCredentials: (() -> Pair<String, String>?)?
+    proxyCredentials: (() -> Pair<String, String>?)? = null
 ) {
     val isProxyRequired = serverConfigDTO.links.proxy != null
 

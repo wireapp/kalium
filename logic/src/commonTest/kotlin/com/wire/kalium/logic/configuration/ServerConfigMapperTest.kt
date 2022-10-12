@@ -49,7 +49,8 @@ class ServerConfigMapperTest {
                         links.teams,
                         links.website,
                         links.title,
-                        links.isOnPremises
+                        links.isOnPremises,
+                        ServerConfigDTO.Proxy(links.proxy?.needsAuthentication, links.proxy?.apiProxy)
                     ),
                     ServerConfigDTO.MetaData(
                         metaData.federation,
@@ -78,7 +79,8 @@ class ServerConfigMapperTest {
                         links.teams,
                         links.website,
                         links.title,
-                        links.isOnPremises
+                        links.isOnPremises,
+                        ServerConfig.Proxy(links.proxy?.needsAuthentication, links.proxy?.apiProxy)
                     ),
                     ServerConfig.MetaData(
                         metaData.federation,
@@ -107,7 +109,8 @@ class ServerConfigMapperTest {
                         links.teams,
                         links.website,
                         links.title,
-                        links.isOnPremises
+                        links.isOnPremises,
+                        ServerConfigEntity.Proxy(links.proxy?.needsAuthentication, links.proxy?.apiProxy)
                     ),
                     ServerConfigEntity.MetaData(
                         metaData.federation,

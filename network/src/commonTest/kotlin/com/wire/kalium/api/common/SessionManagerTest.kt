@@ -75,5 +75,7 @@ class SessionManagerTest {
         override suspend fun onSessionExpired() = TODO("Not yet implemented")
 
         override suspend fun onClientRemoved() = TODO("Not yet implemented")
+        override fun proxyCredentials(): Pair<String, String>? = TODO("Not yet implemented")
+
     }
 }

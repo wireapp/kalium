@@ -16,7 +16,7 @@ import io.ktor.client.engine.HttpClientEngine
 class UnauthenticatedNetworkContainerV0 constructor(
     backendLinks: ServerConfigDTO,
     engine: HttpClientEngine = defaultHttpEngine(),
-    proxyCredentials: (() -> Pair<String, String>)?
+    proxyCredentials: (() -> Pair<String, String>)? = null
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
         backendLinks,
