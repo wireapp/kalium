@@ -287,7 +287,7 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails().map { it.map(conversationMapper::fromDaoModel) }
+        conversationDAO.getAllConversationDetails().map { it.map(conversationMapper::fromDaoModelToDetails) }
 
     /**
      * Gets a flow that allows observing of
@@ -600,24 +600,29 @@ internal class ConversationDataSource internal constructor(
             val conversationEntity = conversationMapper.fromApiModelToDaoModel(
                 conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, teamId
             )
-            val conversation = conversationMapper.fromDaoModel(conversationEntity)
+            val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
 
             wrapStorageRequest {
                 conversationDAO.insertConversation(conversationEntity)
             }.flatMap {
-                when (conversation.protocol) {
+                when (protocol) {
                     is Conversation.ProtocolInfo.Proteus -> persistMembersFromConversationResponse(conversationResponse)
                     is Conversation.ProtocolInfo.MLS -> persistMembersFromConversationResponseMLS(
                         conversationResponse, usersList
                     )
                 }
             }.flatMap {
-                when (conversation.protocol) {
-                    is Conversation.ProtocolInfo.Proteus -> Either.Right(conversation)
+                when (protocol) {
+                    is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
                     is Conversation.ProtocolInfo.MLS ->
                         mlsConversationRepository
-                            .establishMLSGroup(conversation.protocol.groupId)
-                            .flatMap { Either.Right(conversation) }
+                            .establishMLSGroup(protocol.groupId)
+                }
+            }.flatMap {
+                wrapStorageRequest {
+                    conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
+                        conversationMapper.fromDaoModel(it)
+                    }
                 }
             }
         }

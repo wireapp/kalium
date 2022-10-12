@@ -22,8 +22,8 @@ SELECT * FROM Member WHERE conversation LIKE ('%' || :searchQuery || '%');
 
 selectConversationByMember:
 SELECT * FROM Member
-JOIN Conversation ON Conversation.qualified_id = Member.conversation
-WHERE Conversation.type = 'ONE_ON_ONE' AND Member.user = ?
+JOIN ConversationDetails ON ConversationDetails.qualifiedId = Member.conversation
+WHERE ConversationDetails.type = 'ONE_ON_ONE' AND Member.user = ?
 LIMIT  1;
 
 updateMemberRole:

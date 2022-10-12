@@ -40,6 +40,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -240,7 +241,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenConversationDaoReturnsAGroupConversation_whenGettingConversationDetailsById_thenReturnAGroupConversationDetails() = runTest {
         val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP)
+            TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.GROUP)
         )
 
         given(conversationDAO)
@@ -281,7 +282,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenConversationDaoReturnsASelfConversation_whenGettingConversationDetailsById_thenReturnASelfConversationDetails() = runTest {
         val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(type = ConversationEntity.Type.SELF)
+            TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.SELF)
         )
 
         given(conversationDAO)
@@ -299,7 +300,7 @@ class ConversationRepositoryTest {
     fun givenConversationDaoReturnsAOneOneConversation_whenGettingConversationDetailsById_thenReturnAOneOneConversationDetails() = runTest {
         val conversationId = TestConversation.ENTITY_ID
         val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(id = conversationId, type = ConversationEntity.Type.ONE_ON_ONE)
+            TestConversation.VIEW_ENTITY.copy(id = conversationId, type = ConversationEntity.Type.ONE_ON_ONE)
         )
 
         given(conversationDAO)
@@ -352,7 +353,7 @@ class ConversationRepositoryTest {
     fun givenOtherMemberOfOneOneConversationIsUpdated_whenGettingConversationDetailsById_thenReturnAOneOneConversationDetails() = runTest {
         val conversationId = TestConversation.ENTITY_ID
         val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(id = conversationId, type = ConversationEntity.Type.ONE_ON_ONE)
+            TestConversation.VIEW_ENTITY.copy(id = conversationId, type = ConversationEntity.Type.ONE_ON_ONE)
         )
 
         // The other user had a name, and then this name was updated.
@@ -437,6 +438,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(anything(), anything())
             .thenDoNothing()
 
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(anything())
+            .then { TestConversation.VIEW_ENTITY }
+
         val result = conversationRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID),
@@ -447,6 +453,11 @@ class ConversationRepositoryTest {
 
         verify(conversationDAO)
             .suspendFunction(conversationDAO::insertConversation)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
             .with(anything())
             .wasInvoked(once)
 
@@ -480,6 +491,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(anything(), anything())
             .thenDoNothing()
 
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(anything())
+            .then { TestConversation.VIEW_ENTITY }
+
         val result = conversationRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID),
@@ -490,6 +506,11 @@ class ConversationRepositoryTest {
 
         verify(conversationDAO)
             .suspendFunction(conversationDAO::insertConversation)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
             .with(anything())
             .wasInvoked(once)
 
@@ -522,6 +543,11 @@ class ConversationRepositoryTest {
             .whenInvokedWith(any(), any())
             .thenDoNothing()
 
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(anything())
+            .then { TestConversation.VIEW_ENTITY }
+
         given(mlsConversationRepository)
             .suspendFunction(mlsConversationRepository::establishMLSGroup)
             .whenInvokedWith(anything())
@@ -549,6 +575,11 @@ class ConversationRepositoryTest {
             .suspendFunction(mlsConversationRepository::establishMLSGroup)
             .with(anything())
             .wasInvoked(once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .with(anything())
+            .wasInvoked(once)
     }
 
     @Test
@@ -558,7 +589,7 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationWithOtherUser)
                 .whenInvokedWith(anything())
-                .then { CONVERSATION_ENTITY }
+                .then { TestConversation.VIEW_ENTITY }
 
             given(userRepository)
                 .coroutine { userRepository.observeSelfUser() }
@@ -610,7 +641,7 @@ class ConversationRepositoryTest {
         given(conversationDAO)
             .suspendFunction(conversationDAO::getConversationByQualifiedID)
             .whenInvokedWith(any())
-            .thenReturn(TestConversation.ENTITY)
+            .thenReturn(TestConversation.VIEW_ENTITY)
 
         conversationRepository.fetchConversationIfUnknown(conversationId)
 
@@ -626,7 +657,7 @@ class ConversationRepositoryTest {
         given(conversationDAO)
             .suspendFunction(conversationDAO::getConversationByQualifiedID)
             .whenInvokedWith(any())
-            .thenReturn(TestConversation.ENTITY)
+            .thenReturn(TestConversation.VIEW_ENTITY)
 
         conversationRepository.fetchConversationIfUnknown(conversationId)
             .shouldSucceed()
@@ -988,7 +1019,7 @@ class ConversationRepositoryTest {
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
         val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(
+            TestConversation.VIEW_ENTITY.copy(
                 type = ConversationEntity.Type.GROUP,
             )
         )
@@ -1037,7 +1068,7 @@ class ConversationRepositoryTest {
     fun givenAGroupConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() = runTest {
         // given
         val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(
+            TestConversation.VIEW_ENTITY.copy(
                 type = ConversationEntity.Type.GROUP,
             )
         )
@@ -1087,7 +1118,7 @@ class ConversationRepositoryTest {
     fun givenAOneToOneConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() = runTest {
         // given
         val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(
+            TestConversation.VIEW_ENTITY.copy(
                 type = ConversationEntity.Type.ONE_ON_ONE,
             )
         )
@@ -1148,7 +1179,7 @@ class ConversationRepositoryTest {
     fun givenAOneToOneConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
         val conversationEntityFlow = flowOf(
-            TestConversation.ENTITY.copy(
+            TestConversation.VIEW_ENTITY.copy(
                 type = ConversationEntity.Type.ONE_ON_ONE,
             )
         )
@@ -1321,7 +1352,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenAConversationId_WhenTheConversationExists_ShouldReturnAConversationInstance() = runTest {
         val conversationId = ConversationId("conv_id", "conv_domain")
-        val (_, conversationRepository) = Arrangement().withExpectedConversation(TestConversation.ENTITY).arrange()
+        val (_, conversationRepository) = Arrangement().withExpectedConversation(TestConversation.VIEW_ENTITY).arrange()
 
         val result = conversationRepository.getConversationById(conversationId)
         assertNotNull(result)
@@ -1330,7 +1361,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenAConversation_WhenUpdatingTheName_ShouldReturnSuccess() = runTest {
         val conversationId = ConversationId("conv_id", "conv_domain")
-        val (arrange, conversationRepository) = Arrangement().withExpectedConversation(TestConversation.ENTITY).arrange()
+        val (arrange, conversationRepository) = Arrangement().withExpectedConversation(TestConversation.VIEW_ENTITY).arrange()
 
         val result = conversationRepository.updateConversationName(conversationId, "newName", "2022-03-30T15:36:00.000Z")
         with(result) {
@@ -1430,7 +1461,7 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationByQualifiedID)
                 .whenInvokedWith(any())
-                .thenReturn(TestConversation.GROUP_ENTITY(protocolInfo))
+                .thenReturn(TestConversation.GROUP_VIEW_ENTITY(protocolInfo))
         }
 
         fun withAddMemberAPISucceedChanged() = apply {
@@ -1565,7 +1596,7 @@ class ConversationRepositoryTest {
                 .thenReturn(expectedIsUserMember)
         }
 
-        fun withExpectedConversation(conversationEntity: ConversationEntity? = null) = apply {
+        fun withExpectedConversation(conversationEntity: ConversationViewEntity? = null) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
                 .whenInvokedWith(any())

@@ -25,17 +25,17 @@ import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationViewEntity
-import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
-import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.util.requireField
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
-    fun fromDaoModel(daoModel: ConversationEntity): Conversation
-    fun fromDaoModel(daoModel: ConversationViewEntity): ConversationDetails
+    fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
+    fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
@@ -93,65 +93,64 @@ internal class ConversationMapperImpl(
         ConvProtocol.MLS -> Protocol.MLS
     }
 
-    override fun fromDaoModel(daoModel: ConversationEntity): Conversation = Conversation(
-        id = idMapper.fromDaoModel(daoModel.id),
-        name = daoModel.name,
-        type = daoModel.type.fromDaoModelToType(),
-        teamId = daoModel.teamId?.let { TeamId(it) },
-        protocol = protocolInfoMapper.fromEntity(daoModel.protocolInfo),
-        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(daoModel.mutedStatus),
-        removedBy = daoModel.removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
-        creatorId = PlainId(daoModel.creatorId),
-        lastReadDate = daoModel.lastReadDate,
-        lastNotificationDate = daoModel.lastNotificationDate,
-        lastModifiedDate = daoModel.lastModifiedDate,
-        access = daoModel.access.map { it.toDAO() },
-        accessRole = daoModel.accessRole.map { it.toDAO() }
-    )
+    override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
+        val lastReadDateEntity: String
+        val isSelfUserMemberEntity: Boolean
+        val isCreatorEntity: Boolean
+
+        when (type) {
+            ConversationEntity.Type.SELF -> {
+                lastReadDateEntity = lastReadDate
+                isSelfUserMemberEntity = true
+                isCreatorEntity = true
+            }
+            ConversationEntity.Type.ONE_ON_ONE -> {
+                lastReadDateEntity = lastReadDate
+                isSelfUserMemberEntity = true
+                isCreatorEntity = false
+            }
+            ConversationEntity.Type.GROUP -> {
+                lastReadDateEntity = lastReadDate
+                isSelfUserMemberEntity = isMember == 1L
+                isCreatorEntity = isCreator == 1L
+            }
+            ConversationEntity.Type.CONNECTION_PENDING -> {
+                lastReadDateEntity = EPOCH_FIRST_DAY
+                isSelfUserMemberEntity = false
+                isCreatorEntity = false
+            }
+        }
+
+        Conversation(
+            id = idMapper.fromDaoModel(id),
+            name = name,
+            type = type.fromDaoModelToType(),
+            teamId = teamId?.let { TeamId(it) },
+            protocol = protocolInfoMapper.fromEntity(protocolInfo),
+            mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
+            removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
+            lastNotificationDate = lastNotificationDate,
+            lastModifiedDate = lastModifiedDate,
+            lastReadDate = lastReadDateEntity,
+            access = accessList.map { it.toDAO() },
+            accessRole = accessRoleList.map { it.toDAO() },
+            isSelfUserMember = isSelfUserMemberEntity,
+            isCreator = isCreatorEntity,
+            creatorId = PlainId(daoModel.creatorId)
+        )
+    }
 
     @Suppress("ComplexMethod", "LongMethod")
-    override fun fromDaoModel(daoModel: ConversationViewEntity): ConversationDetails = with(daoModel) {
+    override fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails = with(daoModel) {
         when (type) {
 
             ConversationEntity.Type.SELF -> {
-                ConversationDetails.Self(
-                    Conversation(
-                        id = idMapper.fromDaoModel(id),
-                        name = name,
-                        type = type.fromDaoModelToType(),
-                        teamId = teamId?.let { TeamId(it) },
-                        protocol = protocolInfoMapper.fromEntity(protocolInfo),
-                        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
-                        removedBy = null, // todo: ask how to calculate?
-                        creatorId = PlainId(creatorId),
-                        lastNotificationDate,
-                        lastModifiedDate,
-                        lastReadDate,
-                        access = accessList.map { it.toDAO() },
-                        accessRole = accessRoleList.map { it.toDAO() },
-                        isSelfUserMember = isMember == 1L
-                    )
-                )
+                ConversationDetails.Self(fromDaoModel(daoModel))
             }
 
             ConversationEntity.Type.ONE_ON_ONE -> {
                 ConversationDetails.OneOne(
-                    conversation = Conversation(
-                        id = idMapper.fromDaoModel(id),
-                        name = name,
-                        type = type.fromDaoModelToType(),
-                        teamId = teamId?.let { TeamId(it) },
-                        protocol = protocolInfoMapper.fromEntity(protocolInfo),
-                        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
-                        removedBy = null, // todo: ask how to calculate?
-                        creatorId = PlainId(creatorId),
-                        lastNotificationDate,
-                        lastModifiedDate,
-                        lastReadDate,
-                        access = accessList.map { it.toDAO() },
-                        accessRole = accessRoleList.map { it.toDAO() },
-                        isSelfUserMember = isMember == 1L
-                    ),
+                    conversation = fromDaoModel(daoModel),
                     otherUser = OtherUser(
                         id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
                         name = name,
@@ -176,22 +175,7 @@ internal class ConversationMapperImpl(
 
             ConversationEntity.Type.GROUP -> {
                 ConversationDetails.Group(
-                    conversation = Conversation(
-                        id = idMapper.fromDaoModel(id),
-                        name = name,
-                        type = type.fromDaoModelToType(),
-                        teamId = teamId?.let { TeamId(it) },
-                        protocol = protocolInfoMapper.fromEntity(protocolInfo),
-                        mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
-                        removedBy = null, // todo: ask how to calculate?
-                        creatorId = PlainId(creatorId),
-                        lastNotificationDate,
-                        lastModifiedDate,
-                        lastReadDate,
-                        access = accessList.map { it.toDAO() },
-                        accessRole = accessRoleList.map { it.toDAO() },
-                        isSelfUserMember = isMember == 1L
-                    ),
+                    conversation = fromDaoModel(daoModel),
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     hasOngoingCall = callStatus != null, // todo: we can do better!
                     unreadMessagesCount = unreadMessageCount,

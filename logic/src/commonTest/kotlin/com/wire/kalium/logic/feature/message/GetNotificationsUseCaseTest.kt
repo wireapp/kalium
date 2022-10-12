@@ -282,7 +282,8 @@ class GetNotificationsUseCaseTest {
                 listOf(
                     entityTextMessage(conversationId, otherUserId(), "0"),
                     entityTextMessage(conversationId, otherUserId(), "1"),
-                    entityTextMessage(conversationId, otherUserId(), "2",
+                    entityTextMessage(
+                        conversationId, otherUserId(), "2",
                         MessageContent.Text(mentionMessageText, listOf(MessageMention(0, 7, MY_ID)))
                     )
                 )
@@ -349,7 +350,8 @@ class GetNotificationsUseCaseTest {
                 listOf(
                     entityTextMessage(conversationId, otherUserId(), "0"),
                     entityTextMessage(conversationId, otherUserId(), "1"),
-                    entityTextMessage(conversationId, otherUserId(), "2",
+                    entityTextMessage(
+                        conversationId, otherUserId(), "2",
                         MessageContent.Text(mentionMessageText, listOf(MessageMention(0, 7, MY_ID)))
                     )
                 )
@@ -539,12 +541,13 @@ class GetNotificationsUseCaseTest {
             ProtocolInfo.Proteus,
             mutedStatus,
             null,
-            PlainId("someValue"),
             TIME_EARLIER,
             TIME_EARLIER,
             lastReadDate = "2000-01-01T12:00:00.000Z",
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+            isSelfUserMember = true,
+            isCreator = false
         )
 
         private fun entityTextMessage(

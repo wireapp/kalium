@@ -31,6 +31,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var messageDAO: MessageDAO
     private lateinit var userDAO: UserDAO
+    private lateinit var teamDAO: TeamDAO
 
     @BeforeTest
     fun setUp() {
@@ -39,53 +40,64 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO = db.conversationDAO
         messageDAO = db.messageDAO
         userDAO = db.userDAO
+        teamDAO = db.teamDAO
     }
 
     @Test
     fun givenConversation_ThenConversationCanBeInserted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
-        assertEquals(conversationEntity1, result)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertEquals(conversationEntity1.toViewEntity(user1), result)
     }
 
     @Test
     fun givenListOfConversations_ThenMultipleConversationsCanBeInsertedAtOnce() = runTest {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
-        val result1 = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
-        val result2 = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
-        assertEquals(conversationEntity1, result1)
-        assertEquals(conversationEntity2, result2)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        insertTeamUserAndMember(team, user2, conversationEntity2.id)
+        val result1 = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        val result2 = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
+        assertEquals(conversationEntity1.toViewEntity(user1), result1)
+        assertEquals(conversationEntity2.toViewEntity(user2), result2)
     }
 
     @Test
     fun givenExistingConversation_ThenConversationCanBeDeleted() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.deleteConversationByQualifiedID(conversationEntity1.id)
-        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
+        val result = try {
+            conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        } catch (npe: NullPointerException) {
+            null
+        }
         assertNull(result)
     }
 
     @Test
     fun givenExistingConversation_ThenConversationCanBeUpdated() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.updateConversation(updatedConversation1Entity)
-        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
-        assertEquals(updatedConversation1Entity, result)
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertEquals(updatedConversation1Entity.toViewEntity(user1), result)
     }
 
     @Test
     fun givenExistingConversation_ThenConversationCanBeRetrievedByGroupID() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
+        insertTeamUserAndMember(team, user2, conversationEntity2.id)
         val result =
             conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
                 .first()
-        assertEquals(conversationEntity2, result)
+        assertEquals(conversationEntity2.toViewEntity(user2), result)
     }
 
     @Test
     fun givenExistingMLSConversation_ThenConversationIdCanBeRetrievedByGroupID() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
+        insertTeamUserAndMember(team, user2, conversationEntity2.id)
         val result =
             conversationDAO.getConversationIdByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
         assertEquals(conversationEntity2.id, result)
@@ -97,7 +109,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity3)
         val result =
             conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.ESTABLISHED)
-        assertEquals(listOf(conversationEntity2), result)
+        assertEquals(listOf(conversationEntity2.toViewEntity()), result)
     }
 
     @Test
@@ -107,7 +119,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
         )
-        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
         )
@@ -116,10 +128,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
         val updatedConversation1Entity = conversationEntity1.copy(name = "Updated conversation1")
         conversationDAO.insertConversation(updatedConversation1Entity)
-        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity1.id).first()
-        assertEquals(updatedConversation1Entity, result)
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertEquals(updatedConversation1Entity.toViewEntity(user1), result)
     }
 
     @Test
@@ -207,7 +220,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mutedStatusTimestamp = 1649702788L
         )
 
-        val result = conversationDAO.observeGetConversationByQualifiedID(conversationEntity2.id).first()
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
 
         assertEquals(ConversationEntity.MutedStatus.ONLY_MENTIONS_ALLOWED, result?.mutedStatus)
     }
@@ -219,6 +232,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity3)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        insertTeamUserAndMember(team, user1, conversationEntity2.id)
+        insertTeamUserAndMember(team, user1, conversationEntity3.id)
 
         // WHEN
         // Updating the last notified date to later than last modified
@@ -232,7 +248,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // THEN
         // only conversation one should be selected for notifications
-        assertEquals(listOf(conversationEntity1, conversationEntity3), result)
+        assertEquals(listOf(conversationEntity1.toViewEntity(user1), conversationEntity3.toViewEntity()), result)
     }
 
     @Test
@@ -241,20 +257,23 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity3)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        insertTeamUserAndMember(team, user1, conversationEntity2.id)
+        insertTeamUserAndMember(team, user1, conversationEntity3.id)
 
         // WHEN
         // Updating the last notified date to later than last modified
         conversationDAO
             .updateConversationNotificationDate(
-                QualifiedIDEntity("2", "wire.com"),
+                conversationEntity2.id,
                 "2022-03-30T15:37:10.000Z"
             )
 
         val result = conversationDAO.getConversationsForNotifications().first()
         // THEN
         // The order of the conversations is not affected
-        assertEquals(conversationEntity1, result.first())
-        assertEquals(conversationEntity3, result[1])
+        assertEquals(conversationEntity1.toViewEntity(user1), result.first())
+        assertEquals(conversationEntity3.toViewEntity(user1), result[1])
 
     }
 
@@ -309,10 +328,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val expected = convAfterSync.copy(lastModifiedDate = "2022-03-30T15:36:00.000Z", lastNotificationDate = "2022-04-30T15:36:00.000Z")
         conversationDAO.insertConversation(convStored)
+        insertTeamUserAndMember(team, user1, convStored.id)
         conversationDAO.insertConversation(convAfterSync)
 
-        val actual = conversationDAO.observeGetConversationByQualifiedID(convAfterSync.id).first()
-        assertEquals(expected, actual)
+        val actual = conversationDAO.getConversationByQualifiedID(convAfterSync.id)
+        assertEquals(expected.toViewEntity(user1), actual)
     }
 
     @Test
@@ -328,11 +348,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val newAccess = listOf(ConversationEntity.Access.INVITE, ConversationEntity.Access.CODE)
         val expected = convStored.copy(access = newAccess, accessRole = newAccessRole)
         conversationDAO.insertConversation(convStored)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
 
         conversationDAO.updateAccess(convStored.id, newAccess, newAccessRole)
 
-        conversationDAO.observeGetConversationByQualifiedID(convStored.id).first().also { actual ->
-            assertEquals(expected, actual)
+        conversationDAO.getConversationByQualifiedID(convStored.id).also { actual ->
+            assertEquals(expected.toViewEntity(user1), actual)
         }
 
     }
@@ -359,6 +380,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         runTest() {
             // given
             val expectedConversationSeenDate = "2022-03-30T15:36:00.000Z"
+            teamDAO.insertTeam(team)
 
             launch(UnconfinedTestDispatcher(testScheduler)) {
                 // when
@@ -588,6 +610,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val updatedConversation = conversationEntity2
             val updatedDate = Instant.parse("2023-03-30T15:36:00.000Z")
             val updatedGroupId = (updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+            teamDAO.insertTeam(team)
             conversationDAO.insertConversation(updatedConversation)
             conversationDAO.updateKeyingMaterial(updatedGroupId, updatedDate)
 
@@ -615,6 +638,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // given
             val conversation = conversationEntity1
 
+            teamDAO.insertTeam(team)
             conversationDAO.insertConversation(conversation)
             userDAO.insertUser(user1)
 
@@ -882,22 +906,32 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenAConversation_whenChangingTheName_itReturnsTheUpdatedName() = runTest {
         // given
-        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity3)
+        insertTeamUserAndMember(team, user1, conversationEntity3.id)
 
         // when
-        conversationDAO.updateConversationName(conversationEntity1.id, "NEW-NAME", "2023-11-22T15:36:00.000Z")
-        val updatedConversation = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        conversationDAO.updateConversationName(conversationEntity3.id, "NEW-NAME", "2023-11-22T15:36:00.000Z")
+        val updatedConversation = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
 
         // then
         assertEquals("NEW-NAME", updatedConversation!!.name)
     }
 
-    private companion object {
-        val user1 = newUserEntity(id = "1")
-        val user2 = newUserEntity(id = "2")
-        val user3 = newUserEntity(id = "3")
+    private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
+        teamDAO.insertTeam(team)
+        userDAO.insertUser(user)
+        // should be inserted AFTER inserting the conversation!!!
+        conversationDAO.insertMember(Member(user.id, Member.Role.Member), conversationId)
+    }
 
+    private companion object {
         const val teamId = "teamId"
+
+        val user1 = newUserEntity(id = "1").copy(team = teamId)
+        val user2 = newUserEntity(id = "2").copy(team = teamId)
+        val user3 = newUserEntity(id = "3").copy(team = teamId)
+
+        val team = TeamEntity(teamId, "teamName", "")
 
         val conversationEntity1 = ConversationEntity(
             QualifiedIDEntity("1", "wire.com"),
@@ -993,5 +1027,59 @@ class ConversationDAOTest : BaseDatabaseTest() {
             (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
             Instant.DISTANT_FUTURE
         )
+
+        fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
+            val protocol: ConversationEntity.Protocol
+            val mlsGroupId: String?
+            val mlsLastKeyingMaterialUpdate: Long
+            val mlsGroupState: ConversationEntity.GroupState
+
+            val protocolInfoTmp = protocolInfo
+            if (protocolInfoTmp is ConversationEntity.ProtocolInfo.MLS) {
+                protocol = ConversationEntity.Protocol.MLS
+                mlsGroupId = protocolInfoTmp.groupId
+                mlsLastKeyingMaterialUpdate = protocolInfoTmp.keyingMaterialLastUpdate.epochSeconds
+                mlsGroupState = protocolInfoTmp.groupState
+            } else {
+                protocol = ConversationEntity.Protocol.PROTEUS
+                mlsGroupId = null
+                mlsLastKeyingMaterialUpdate = 0L
+                mlsGroupState = ConversationEntity.GroupState.ESTABLISHED
+            }
+
+            return ConversationViewEntity(
+                id = id,
+                name = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.name else name,
+                type = type,
+                callStatus = null,
+                previewAssetId = null,
+                mutedStatus = mutedStatus,
+                teamId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.team else teamId,
+                lastModifiedDate = lastModifiedDate,
+                lastReadDate = lastReadDate,
+                userAvailabilityStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.availabilityStatus else null,
+                userType = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.userType else null,
+                botService = null,
+                userDeleted = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.deleted else null,
+                connectionStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.connectionStatus else null,
+                otherUserId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.id else null,
+                isCreator = 0L,
+                lastNotificationDate = lastNotificationDate,
+                unreadMessageCount = 0L,
+                isMember = 1L,
+                protocolInfo = protocolInfo,
+                accessList = access,
+                accessRoleList = accessRole,
+                protocol = protocol,
+                mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                mlsEpoch = 0L,
+                mlsGroupId = mlsGroupId,
+                mlsLastKeyingMaterialUpdate = mlsLastKeyingMaterialUpdate,
+                mlsGroupState = mlsGroupState,
+                mlsProposalTimer = null,
+                mutedTime = mutedTime,
+                creatorId = creatorId,
+            )
+        }
     }
 }
