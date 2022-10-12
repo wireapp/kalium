@@ -107,7 +107,7 @@ class PreKeyRepositoryTest {
         @Mock
         val prekeyDAO: PrekeyDAO = mock(PrekeyDAO::class)
 
-        private val preKeyRepository = PreKeyDataSource(preKeyApi, proteusClient, prekeyDAO)
+        private val preKeyRepository = PreKeyDataSource(preKeyApi, proteusClientProvider, prekeyDAO)
 
         init {
             given(proteusClientProvider)
