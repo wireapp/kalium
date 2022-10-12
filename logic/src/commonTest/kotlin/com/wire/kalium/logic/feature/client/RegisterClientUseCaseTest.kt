@@ -3,8 +3,11 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -29,7 +32,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -38,134 +40,82 @@ import kotlin.test.assertSame
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterClientUseCaseTest {
 
-    @Mock
-    private val featureSupport = mock(classOf<FeatureSupport>())
-
-    @Mock
-    private val clientRepository = mock(classOf<ClientRepository>())
-
-    @Mock
-    private val preKeyRepository = mock(classOf<PreKeyRepository>())
-
-    @Mock
-    private val keyPackageRepository = mock(classOf<KeyPackageRepository>())
-
-    @Mock
-    private val mlsClientProvider = mock(classOf<MLSClientProvider>())
-
-    @Mock
-    private val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
-
-    private lateinit var registerClient: RegisterClientUseCase
-
-    @BeforeTest
-    fun setup() {
-        registerClient = RegisterClientUseCaseImpl(
-            featureSupport,
-            clientRepository,
-            preKeyRepository,
-            keyPackageRepository,
-            keyPackageLimitsProvider,
-            mlsClientProvider
-        )
-
-        given(keyPackageLimitsProvider)
-            .function(keyPackageLimitsProvider::refillAmount)
-            .whenInvoked()
-            .thenReturn(KEY_PACKAGE_LIMIT)
-
-        given(preKeyRepository)
-            .suspendFunction(preKeyRepository::generateNewPreKeys)
-            .whenInvokedWith(any(), any())
-            .then { _, _ -> Either.Right(PRE_KEYS) }
-
-        given(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
-            .whenInvoked()
-            .then { Either.Right(LAST_KEY) }
-
-        given(featureSupport)
-            .invocation { featureSupport.isMLSSupported }
-            .thenReturn(true)
-
-    }
-
     @Test
     fun givenRegistrationParams_whenRegistering_thenTheRepositoryShouldBeCalledWithCorrectParameters() = runTest {
         val params = REGISTER_PARAMETERS
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(TEST_FAILURE) }
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(TEST_FAILURE))
+            .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        verify(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::registerClient)
             .with(eq(params))
             .wasInvoked(once)
 
-        verify(preKeyRepository)
-            .suspendFunction(preKeyRepository::generateNewPreKeys)
+        verify(arrangement.preKeyRepository)
+            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
             .with(any(), any())
             .wasInvoked(exactly = once)
 
-        verify(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+        verify(arrangement.preKeyRepository)
+            .function(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryRegistrationFailsDueMissingPassword_whenRegistering_thenPasswordAuthRequiredErrorShouldBeReturned() = runTest {
-        val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(wrongPasswordFailure) }
+        val missingPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(missingPasswordFailure))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.PasswordAuthRequired>(result)
 
-        verify(preKeyRepository)
-            .suspendFunction(preKeyRepository::generateNewPreKeys)
+        verify(arrangement.preKeyRepository)
+            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
             .with(any(), any())
             .wasInvoked(exactly = once)
 
-        verify(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+        verify(arrangement.preKeyRepository)
+            .function(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryRegistrationFailsDueInvalidPassword_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
         val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(wrongPasswordFailure) }
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(wrongPasswordFailure))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
 
-        verify(preKeyRepository)
-            .suspendFunction(preKeyRepository::generateNewPreKeys)
+        verify(arrangement.preKeyRepository)
+            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
             .with(any(), any())
             .wasInvoked(exactly = once)
 
-        verify(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+        verify(arrangement.preKeyRepository)
+            .function(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryRegistrationFailsDueToGenericError_whenRegistering_thenGenericErrorShouldBeReturned() = runTest {
         val genericFailure = TEST_FAILURE
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(genericFailure) }
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(genericFailure))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
@@ -176,10 +126,10 @@ class RegisterClientUseCaseTest {
     @Test
     fun givenRepositoryRegistrationFailsDueToTooManyClientsRegistered_whenRegistering_thenTooManyClientsErrorShouldBeReturned() = runTest {
         val tooManyClientsFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.tooManyClient)
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(tooManyClientsFailure) }
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(tooManyClientsFailure))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
@@ -188,15 +138,15 @@ class RegisterClientUseCaseTest {
 
     @Test
     fun givenRepositoryRegistrationFails_whenRegistering_thenNoPersistenceShouldBeDone() = runTest {
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(TEST_FAILURE) }
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(TEST_FAILURE))
+            .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -204,30 +154,18 @@ class RegisterClientUseCaseTest {
     @Test
     fun givenMLSClientRegistrationFails_whenRegistering_thenNoPersistenceShouldBeDone() = runTest {
         val registeredClient = CLIENT
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(registeredClient) }
 
-        given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.id))
-            .then { Either.Right(MLS_CLIENT) }
-
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::getPublicKey)
-            .whenInvoked()
-            .thenReturn(MLS_PUBLIC_KEY)
-
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
-            .thenReturn(Either.Left(TEST_FAILURE))
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Right(registeredClient))
+            .withMLSClient(Either.Right(MLS_CLIENT))
+            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
+            .withRegisterMLSClient(Either.Left(TEST_FAILURE))
+            .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -235,35 +173,19 @@ class RegisterClientUseCaseTest {
     @Test
     fun givenKeyPackageUploadFails_whenRegistering_thenNoPersistenceShouldBeDone() = runTest {
         val registeredClient = CLIENT
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(registeredClient) }
 
-        given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.id))
-            .then { Either.Right(MLS_CLIENT) }
-
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::getPublicKey)
-            .whenInvoked()
-            .thenReturn(MLS_PUBLIC_KEY)
-
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
-            .thenReturn(Either.Right(Unit))
-
-        given(keyPackageRepository)
-            .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
-            .whenInvokedWith(anything(), eq(100))
-            .thenReturn(Either.Left(TEST_FAILURE))
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Right(registeredClient))
+            .withMLSClient(Either.Right(MLS_CLIENT))
+            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withUploadNewKeyPackages(Either.Left(TEST_FAILURE))
+            .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::persistClientId)
             .with(anything())
             .wasNotInvoked()
     }
@@ -271,76 +193,37 @@ class RegisterClientUseCaseTest {
     @Test
     fun givenRegisteringSucceeds_whenRegistering_thenThePersistenceShouldBeCalledWithCorrectId() = runTest {
         val registeredClient = CLIENT
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(registeredClient) }
 
-        given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.id))
-            .then { Either.Right(MLS_CLIENT) }
-
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::getPublicKey)
-            .whenInvoked()
-            .thenReturn(MLS_PUBLIC_KEY)
-
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
-            .thenReturn(Either.Right(Unit))
-
-        given(keyPackageRepository)
-            .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
-            .whenInvokedWith(anything(), eq(100))
-            .thenReturn(Either.Right(Unit))
-
-        given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
-            .whenInvokedWith(anything())
-            .then { Either.Right(Unit) }
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Right(registeredClient))
+            .withMLSClient(Either.Right(MLS_CLIENT))
+            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withUploadNewKeyPackages(Either.Right(Unit))
+            .withPersistClientId(Either.Right(Unit))
+            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .arrange()
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        verify(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::persistClientId)
             .with(eq(registeredClient.id))
             .wasInvoked(once)
     }
 
     @Test
     fun givenRegisteringSucceedsAndPersistingClientIdFails_whenRegistering_thenTheFailureShouldBePropagated() = runTest {
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(CLIENT) }
-
-        given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.id))
-            .then { Either.Right(MLS_CLIENT) }
-
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::getPublicKey)
-            .whenInvoked()
-            .thenReturn(MLS_PUBLIC_KEY)
-
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
-            .thenReturn(Either.Right(Unit))
-
-        given(keyPackageRepository)
-            .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
-            .whenInvokedWith(anything(), eq(100))
-            .thenReturn(Either.Right(Unit))
-
         val persistFailure = TEST_FAILURE
-        given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
-            .whenInvokedWith(anything())
-            .then { Either.Left(persistFailure) }
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Right(CLIENT))
+            .withMLSClient(Either.Right(MLS_CLIENT))
+            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withUploadNewKeyPackages(Either.Right(Unit))
+            .withPersistClientId(Either.Left(persistFailure))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
@@ -351,35 +234,16 @@ class RegisterClientUseCaseTest {
     @Test
     fun givenRegisteringSucceedsAndPersistingClientIdSucceeds_whenRegistering_thenSuccessShouldBePropagated() = runTest {
         val registeredClient = CLIENT
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(CLIENT) }
 
-        given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(eq(CLIENT.id))
-            .then { Either.Right(MLS_CLIENT) }
-
-        given(MLS_CLIENT)
-            .function(MLS_CLIENT::getPublicKey)
-            .whenInvoked()
-            .thenReturn(MLS_PUBLIC_KEY)
-
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerMLSClient)
-            .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
-            .thenReturn(Either.Right(Unit))
-
-        given(keyPackageRepository)
-            .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
-            .whenInvokedWith(anything(), eq(100))
-            .thenReturn(Either.Right(Unit))
-
-        given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
-            .whenInvokedWith(anything())
-            .then { Either.Right(Unit) }
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Right(registeredClient))
+            .withMLSClient(Either.Right(MLS_CLIENT))
+            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
+            .withRegisterMLSClient(Either.Right(Unit))
+            .withUploadNewKeyPackages(Either.Right(Unit))
+            .withPersistClientId(Either.Right(Unit))
+            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
@@ -390,10 +254,10 @@ class RegisterClientUseCaseTest {
     @Test
     fun givenProteusClient_whenNewPreKeysThrowException_thenReturnProteusFailure() = runTest {
         val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
-        given(preKeyRepository)
-            .suspendFunction(preKeyRepository::generateNewPreKeys)
-            .whenInvokedWith(any(), any())
-            .then { _, _ -> Either.Left(failure) }
+
+        val (arrangement, registerClient) = Arrangement()
+            .withGenerateNewPreKeys(Either.Left(failure))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
@@ -405,10 +269,9 @@ class RegisterClientUseCaseTest {
     fun givenProteusClient_whenNewLastPreKeyThrowException_thenReturnProteusFailure() = runTest {
         val failure = ProteusFailure(ProteusException("why are we still here just to suffer", 55))
 
-        given(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
-            .whenInvoked()
-            .then { Either.Left(failure) }
+        val (arrangement, registerClient) = Arrangement()
+            .withGenerateNewLastKey(Either.Left(failure))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
@@ -419,46 +282,40 @@ class RegisterClientUseCaseTest {
     @Test
     fun givenRepositoryRegistrationFailsDueBadRequest_whenRegistering_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
         val badRequestFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(badRequestFailure) }
+
+        val (arrangement, registerClient) = Arrangement()
+            .withRegisterClient(Either.Left(badRequestFailure))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials>(result)
 
-        verify(preKeyRepository)
-            .suspendFunction(preKeyRepository::generateNewPreKeys)
+        verify(arrangement.preKeyRepository)
+            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
             .with(any(), any())
             .wasInvoked(exactly = once)
 
-        verify(preKeyRepository)
-            .function(preKeyRepository::generateNewLastKey)
+        verify(arrangement.preKeyRepository)
+            .function(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenMLsSupportIsDisabled_whenRegistering_thenMLSClientIsNotRegistered() = runTest {
-        given(featureSupport)
-            .invocation { featureSupport.isMLSSupported }
-            .thenReturn(false)
-
         val registeredClient = CLIENT
-        given(clientRepository)
-            .suspendFunction(clientRepository::registerClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(CLIENT) }
 
-        given(clientRepository)
-            .suspendFunction(clientRepository::persistClientId)
-            .whenInvokedWith(anything())
-            .then { Either.Right(Unit) }
+        val (arrangement, registerClient) = Arrangement()
+            .withIsMLSSupported(false)
+            .withRegisterClient(Either.Right(registeredClient))
+            .withPersistClientId(Either.Right(Unit))
+            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
+            .arrange()
 
         val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        verify(clientRepository)
-            .suspendFunction(clientRepository::registerMLSClient)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::registerMLSClient)
             .with(any(), any())
             .wasNotInvoked()
 
@@ -491,5 +348,130 @@ class RegisterClientUseCaseTest {
         val MLS_CLIENT = mock(classOf<MLSClient>())
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val featureSupport = mock(classOf<FeatureSupport>())
+
+        @Mock
+        val clientRepository = mock(classOf<ClientRepository>())
+
+        @Mock
+        val preKeyRepository = mock(classOf<PreKeyRepository>())
+
+        @Mock
+        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+
+        @Mock
+        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+
+        @Mock
+        val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+
+        private val registerClient: RegisterClientUseCase = RegisterClientUseCaseImpl(
+            featureSupport,
+            clientRepository,
+            preKeyRepository,
+            keyPackageRepository,
+            keyPackageLimitsProvider,
+            mlsClientProvider
+        )
+
+        init {
+            given(keyPackageLimitsProvider)
+                .function(keyPackageLimitsProvider::refillAmount)
+                .whenInvoked()
+                .thenReturn(KEY_PACKAGE_LIMIT)
+
+            given(preKeyRepository)
+                .suspendFunction(preKeyRepository::generateNewPreKeys)
+                .whenInvokedWith(any(), any())
+                .then { _, _ -> Either.Right(PRE_KEYS) }
+
+            given(preKeyRepository)
+                .function(preKeyRepository::generateNewLastKey)
+                .whenInvoked()
+                .then { Either.Right(LAST_KEY) }
+
+            given(featureSupport)
+                .invocation { featureSupport.isMLSSupported }
+                .thenReturn(true)
+        }
+
+        fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::registerClient)
+                .whenInvokedWith(anything())
+                .then { result }
+        }
+
+        fun withMLSClient(result: Either<CoreFailure, MLSClient>) = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getMLSClient)
+                .whenInvokedWith(eq(CLIENT.id))
+                .then { result }
+        }
+
+        fun withGetMLSPublicKey(result: ByteArray) = apply {
+            given(MLS_CLIENT)
+                .function(MLS_CLIENT::getPublicKey)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withRegisterMLSClient(result: Either<CoreFailure, Unit>) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::registerMLSClient)
+                .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
+                .thenReturn(result)
+        }
+
+        fun withUploadNewKeyPackages(result: Either<CoreFailure, Unit>) = apply {
+            given(keyPackageRepository)
+                .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
+                .whenInvokedWith(anything(), eq(100))
+                .thenReturn(result)
+        }
+
+        fun withPersistClientId(result: Either<CoreFailure, Unit>) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::persistClientId)
+                .whenInvokedWith(anything())
+                .then { result }
+        }
+
+        fun withGenerateNewPreKeys(result: Either<CoreFailure, List<PreKeyCrypto>>) = apply {
+            given(preKeyRepository)
+                .suspendFunction(preKeyRepository::generateNewPreKeys)
+                .whenInvokedWith(any(), any())
+                .then { _, _ -> result }
+        }
+
+        fun withGenerateNewLastKey(result: Either<ProteusFailure, PreKeyCrypto>) = apply {
+            given(preKeyRepository)
+                .function(preKeyRepository::generateNewLastKey)
+                .whenInvoked()
+                .then { result }
+        }
+
+        fun withIsMLSSupported(result: Boolean) = apply {
+            given(featureSupport)
+                .invocation { featureSupport.isMLSSupported }
+                .thenReturn(result)
+        }
+
+        fun withUpdateOTRLastPreKeyId(result: Either<StorageFailure, Unit>) = apply {
+            given(preKeyRepository)
+                .suspendFunction(preKeyRepository::updateOTRLastPreKeyId)
+                .whenInvokedWith(any())
+                .then { result }
+        }
+
+        /*
+
+         */
+        fun arrange() = this to registerClient
     }
 }
