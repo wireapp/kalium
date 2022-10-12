@@ -50,13 +50,13 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.message.PersistReactionUseCase
+import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
-import com.wire.kalium.logic.data.message.PersistReactionUseCase
-import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
-import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -92,6 +92,7 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUs
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
+import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -559,7 +560,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     private val teamEventReceiver: TeamEventReceiver
-        get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userId)
+        get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)
@@ -567,7 +568,8 @@ abstract class UserSessionScopeCommon internal constructor(
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
-            authenticatedDataSourceSet.proteusClient
+            authenticatedDataSourceSet.proteusClient,
+            authenticatedDataSourceSet.userDatabaseProvider.prekeyDAO
         )
 
     private val keyPackageRepository: KeyPackageRepository
@@ -616,6 +618,25 @@ abstract class UserSessionScopeCommon internal constructor(
             selfConversationIdProvider,
             persistMessage,
             updateKeyingMaterialThresholdProvider
+        )
+    val debug: DebugScope
+        get() = DebugScope(
+            messageRepository,
+            conversationRepository,
+            mlsConversationRepository,
+            clientRepository,
+            clientIdProvider,
+            authenticatedDataSourceSet.proteusClient,
+            mlsClientProvider,
+            preKeyRepository,
+            userRepository,
+            userId,
+            assetRepository,
+            syncManager,
+            slowSyncRepository,
+            messageSendingScheduler,
+            timeParser,
+            this
         )
     val messages: MessageScope
         get() = MessageScope(

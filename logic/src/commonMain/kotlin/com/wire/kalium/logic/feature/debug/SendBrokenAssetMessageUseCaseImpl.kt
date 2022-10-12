@@ -1,4 +1,5 @@
-package com.wire.kalium.logic.feature.asset
+@file:Suppress("MaximumLineLength")
+package com.wire.kalium.logic.feature.debug
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.utils.AES256Key
@@ -7,13 +8,11 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
-import com.wire.kalium.logic.data.asset.isDisplayableMimeType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -23,24 +22,28 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
-import com.wire.kalium.logic.util.isGreaterThan
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import okio.Path
 
-fun interface SendAssetMessageUseCase {
+@Suppress("MaxLineLength")
+fun interface SendBrokenAssetMessageUseCase {
     /**
-     * Function that enables sending an asset message to a given conversation
+     * Function that can be used to send manipulated asset messages to a given conversation. Manipulation can be either a wrong
+     * checksum or a changed otrKey. This debug function can be used to test correct client behaviour. It should not be used by
+     * clients itself.
+     *
+     * In contrast to SendAssetMessageUseCase this debug function does not persist the message.
      *
      * @param conversationId the id of the conversation where the asset wants to be sent
      * @param assetDataPath the raw data of the asset to be uploaded to the backend and sent to the given conversation
      * @param assetDataSize the size of the original asset file
      * @param assetName the name of the original asset file
      * @param assetMimeType the type of the asset file
-     * @return an [SendAssetMessageResult] containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
+     * @param brokenState the type of manipulation
+     * @return an [SendBrokenAssetMessageResult] containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
      */
     @Suppress("LongParameterList")
     suspend operator fun invoke(
@@ -49,21 +52,18 @@ fun interface SendAssetMessageUseCase {
         assetDataSize: Long,
         assetName: String,
         assetMimeType: String,
-        assetWidth: Int?,
-        assetHeight: Int?
-    ): SendAssetMessageResult
+        brokenState: BrokenState
+    ): SendBrokenAssetMessageResult
 }
 
-@Suppress("LongParameterList")
-internal class SendAssetMessageUseCaseImpl(
-    private val persistMessage: PersistMessageUseCase,
-    private val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase,
+@Suppress("LongParameterList", "MaxLineLength")
+internal class SendBrokenAssetMessageUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val assetDataSource: AssetRepository,
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender
-) : SendAssetMessageUseCase {
+) : SendBrokenAssetMessageUseCase {
     private lateinit var currentAssetMessageContent: AssetMessageMetadata
     override suspend fun invoke(
         conversationId: ConversationId,
@@ -71,9 +71,8 @@ internal class SendAssetMessageUseCaseImpl(
         assetDataSize: Long,
         assetName: String,
         assetMimeType: String,
-        assetWidth: Int?,
-        assetHeight: Int?
-    ): SendAssetMessageResult {
+        brokenState: BrokenState
+    ): SendBrokenAssetMessageResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -86,8 +85,8 @@ internal class SendAssetMessageUseCaseImpl(
             assetDataPath = assetDataPath,
             assetDataSize = assetDataSize,
             assetName = assetName,
-            assetWidth = assetWidth,
-            assetHeight = assetHeight,
+            assetWidth = 0,
+            assetHeight = 0,
             otrKey = otrKey,
             sha256Key = SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)), // Sha256 will be replaced with right values after asset upload
             assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after asset upload
@@ -103,7 +102,8 @@ internal class SendAssetMessageUseCaseImpl(
                 content = MessageContent.Asset(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
-                        Message.UploadStatus.UPLOAD_IN_PROGRESS // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
+                        Message.UploadStatus.UPLOAD_IN_PROGRESS,
+                        brokenState
                     )
                 ),
                 conversationId = conversationId,
@@ -114,22 +114,17 @@ internal class SendAssetMessageUseCaseImpl(
                 editStatus = Message.EditStatus.NotEdited
             )
 
-            // We persist the asset message right away so that it can be displayed on the conversation screen loading
-            persistMessage(message).flatMap {
-                Either.Right(Unit)
-            }.onFailure {
-                kaliumLogger.e("Asset persist method failed")
-                updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
-                Either.Left(it)
-            }.flatMap {
-                uploadAssetAndUpdateMessage(message, conversationId)
-            }
+            uploadAssetAndUpdateMessage(message, brokenState)
         }.fold({
-            SendAssetMessageResult.Failure(it)
-        }, { SendAssetMessageResult.Success })
+            SendBrokenAssetMessageResult.Failure(it)
+        }, { SendBrokenAssetMessageResult.Success })
     }
 
-    private suspend fun uploadAssetAndUpdateMessage(message: Message.Regular, conversationId: ConversationId): Either<CoreFailure, Unit> =
+    @Suppress("MaxLineLength")
+    private suspend fun uploadAssetAndUpdateMessage(
+        message: Message.Regular,
+        brokenState: BrokenState
+    ): Either<CoreFailure, Unit> =
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         assetDataSource.uploadAndPersistPrivateAsset(
             currentAssetMessageContent.mimeType,
@@ -137,63 +132,57 @@ internal class SendAssetMessageUseCaseImpl(
             currentAssetMessageContent.otrKey,
             currentAssetMessageContent.assetName.fileExtension()
         ).flatMap { (assetId, sha256) ->
-            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist and
-            // update the message on the DB layer to display the changes on the Conversation screen
+            // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
             val updatedMessage = message.copy(
                 // We update the upload status to UPLOADED as the upload succeeded
-                content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED))
-            )
-            persistMessage(updatedMessage).onFailure {
-                // TODO: Should we fail the whole message sending if the updated message persistance fails? Check when implementing AR-2408
-                kaliumLogger.e(
-                    "There was an error when trying to persist the updated asset message with the information returned by the backend "
+                content = MessageContent.Asset(
+                    provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED, brokenState)
                 )
-            }.onSuccess {
-                // Finally we try to send the Asset Message to the recipients of the given conversation
-                prepareAndSendAssetMessage(message, conversationId)
-            }
+            )
+            prepareAndSendAssetMessage(updatedMessage)
         }.flatMap {
             Either.Right(Unit)
         }.onFailure {
-            // TODO: Should we update the upload status as FAILED_UPLOAD even if the upload succeeded? Decide when implementing AR-2408
-            updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
             Either.Left(it)
         }
 
     @Suppress("LongParameterList")
     private suspend fun prepareAndSendAssetMessage(
-        message: Message,
-        conversationId: ConversationId
+        message: Message.Regular
     ): Either<CoreFailure, Unit> =
-        messageSender.sendPendingMessage(conversationId, message.id).onFailure {
+        messageSender.sendMessage(message).onFailure {
             kaliumLogger.e("There was an error when trying to send the asset on the conversation")
         }
 
-    @Suppress("LongParameterList")
-    private fun provideAssetMessageContent(assetMessageMetadata: AssetMessageMetadata, uploadStatus: Message.UploadStatus): AssetContent {
+    @Suppress("LongParameterList", "MaxLineLength")
+    private fun provideAssetMessageContent(
+        assetMessageMetadata: AssetMessageMetadata,
+        uploadStatus: Message.UploadStatus,
+        brokenState: BrokenState,
+    ): AssetContent {
         with(assetMessageMetadata) {
+            val manipulatedSha256KeyData = if (brokenState.invalidHash) {
+                ByteArray(DEFAULT_BYTE_ARRAY_SIZE)
+            } else if (brokenState.otherHash) {
+                SHA256Key(ByteArray(DEFAULT_BYTE_ARRAY_SIZE)).data
+            } else {
+                sha256Key.data
+            }
             return AssetContent(
                 sizeInBytes = assetDataSize,
                 name = assetName,
                 mimeType = mimeType,
-                metadata = when {
-                    isDisplayableMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
-                        AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
-                    }
-                    else -> null
-                },
+                metadata = null,
                 remoteData = AssetContent.RemoteData(
-                    otrKey = otrKey.data,
-                    sha256 = sha256Key.data,
+                    otrKey = if (brokenState.otherAlgorithm) otrKey.data + 1 else otrKey.data,
+                    sha256 = manipulatedSha256KeyData,
                     assetId = assetId.key,
                     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
                     assetDomain = assetId.domain,
                     assetToken = assetId.assetToken
                 ),
-                // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
-                // will only be treated as "SAVED_INTERNALLY"
-                downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
+                downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY,
                 uploadStatus = uploadStatus
             )
         }
@@ -204,9 +193,9 @@ internal class SendAssetMessageUseCaseImpl(
     }
 }
 
-sealed class SendAssetMessageResult {
-    object Success : SendAssetMessageResult()
-    class Failure(val coreFailure: CoreFailure) : SendAssetMessageResult()
+sealed class SendBrokenAssetMessageResult {
+    object Success : SendBrokenAssetMessageResult()
+    class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
 }
 
 private data class AssetMessageMetadata(
@@ -220,4 +209,10 @@ private data class AssetMessageMetadata(
     val assetHeight: Int?,
     val otrKey: AES256Key,
     val sha256Key: SHA256Key
+)
+
+data class BrokenState(
+    val invalidHash: Boolean,
+    val otherHash: Boolean,
+    val otherAlgorithm: Boolean
 )

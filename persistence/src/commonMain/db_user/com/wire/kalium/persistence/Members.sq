@@ -26,6 +26,11 @@ JOIN ConversationDetails ON ConversationDetails.qualifiedId = Member.conversatio
 WHERE ConversationDetails.type = 'ONE_ON_ONE' AND Member.user = ?
 LIMIT  1;
 
+selectConversationsByMember:
+SELECT * FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Member.user = ?;
+
 updateMemberRole:
 UPDATE Member
 SET role = ?

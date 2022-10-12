@@ -79,7 +79,8 @@ object TestEvent {
     fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
         eventId,
         teamId = "teamId",
-        memberId = "memberId"
+        memberId = "memberId",
+        timestampIso = "2022-03-30T15:36:00.000Z"
     )
 
     fun teamMemberUpdate(eventId: String = "eventId", permissionCode: Int) = Event.Team.MemberUpdate(

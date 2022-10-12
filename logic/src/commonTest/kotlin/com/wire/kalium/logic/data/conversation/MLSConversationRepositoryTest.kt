@@ -62,6 +62,7 @@ class MLSConversationRepositoryTest {
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetConversationByGroupIdSuccessful()
+            .withCommitPendingProposalsReturningNothing()
             .withGetAllMembersSuccessful()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
@@ -103,6 +104,7 @@ class MLSConversationRepositoryTest {
     fun givenMlsClientMismatchError_whenCallingEstablishMLSGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetConversationByGroupIdSuccessful()
+            .withCommitPendingProposalsReturningNothing()
             .withGetAllMembersSuccessful()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()

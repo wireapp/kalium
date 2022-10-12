@@ -18,6 +18,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -915,6 +916,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // then
         assertEquals("NEW-NAME", updatedConversation!!.name)
+    }
+
+    @Test
+    fun givenAnUserId_whenFetchingConversationIds_itReturnsOnlyConversationWhichUserBelongsTo() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity2.id)
+
+        // when
+        val conversationIds = conversationDAO.getConversationIdsByUserId(member1.user)
+
+        // then
+        assertContentEquals(listOf(conversationEntity1.id), conversationIds)
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
