@@ -86,8 +86,8 @@ internal class GetMessageAssetUseCaseImpl(
                     updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
                     downloadResult = MessageAssetResult.Failure(it)
                 }, { decodedAssetPath ->
-                    // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while running
-                    // this specific use case. Otherwise, recursive loop as described above kicks in.
+                    // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while
+                    // running this specific use case. Otherwise, recursive loop as described above kicks in.
                     if (!wasDownloaded)
                         updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
 

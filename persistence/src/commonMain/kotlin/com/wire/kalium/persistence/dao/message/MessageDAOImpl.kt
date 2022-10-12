@@ -14,10 +14,10 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED_FROM_TEAM
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED_FROM_TEAM
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -335,7 +335,6 @@ class MessageDAOImpl(
     override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
 
     override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
-
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 }

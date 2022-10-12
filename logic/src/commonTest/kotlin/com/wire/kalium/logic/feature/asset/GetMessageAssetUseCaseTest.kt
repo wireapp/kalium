@@ -25,6 +25,7 @@ import io.mockative.matching
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -56,6 +57,7 @@ class GetMessageAssetUseCaseTest {
 
         // When
         val result = getMessageAsset(someConversationId, someMessageId)
+        advanceUntilIdle()
 
         // Then
         assertTrue(result is MessageAssetResult.Success)
@@ -73,6 +75,7 @@ class GetMessageAssetUseCaseTest {
 
         // When
         val result = getMessageAsset(someConversationId, someMessageId)
+        advanceUntilIdle()
 
         // Then
         assertTrue(result is MessageAssetResult.Failure)
@@ -91,6 +94,7 @@ class GetMessageAssetUseCaseTest {
 
         // When
         val result = getMessageAsset(someConversationId, someMessageId)
+        advanceUntilIdle()
 
         // Then
         assertTrue(result is MessageAssetResult.Failure)

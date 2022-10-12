@@ -23,7 +23,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
@@ -39,6 +38,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import okio.Path
@@ -69,6 +69,7 @@ class SendAssetMessageUseCaseTest {
         val result = sendAssetUseCase.invoke(
             conversationId, inputDataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null
         )
+        advanceUntilIdle()
 
         // Then
         assertTrue(result is SendAssetMessageResult.Success)
@@ -88,6 +89,7 @@ class SendAssetMessageUseCaseTest {
 
         // When
         val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+        advanceUntilIdle()
 
         // Then
         assertTrue(result is SendAssetMessageResult.Failure)
@@ -111,6 +113,7 @@ class SendAssetMessageUseCaseTest {
 
         // When
         sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+        advanceUntilIdle()
 
         // Then
         verify(arrangement.persistMessage)
@@ -138,15 +141,16 @@ class SendAssetMessageUseCaseTest {
 
         // When
         sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+        advanceUntilIdle()
 
         // Then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(
                 matching {
-                val content = it.content
-                content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
-            }
+                    val content = it.content
+                    content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
+                }
             )
             .wasInvoked(exactly = twice)
     }
@@ -164,23 +168,24 @@ class SendAssetMessageUseCaseTest {
 
         // When
         sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+        advanceUntilIdle()
 
         // Then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(
                 matching {
-                val content = it.content
-                content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOAD_IN_PROGRESS
-            }
+                    val content = it.content
+                    content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOAD_IN_PROGRESS
+                }
             )
             .wasInvoked(exactly = once)
         verify(arrangement.updateUploadStatus)
             .suspendFunction(arrangement.updateUploadStatus::invoke)
             .with(
                 matching {
-                it == Message.UploadStatus.FAILED_UPLOAD
-            },
+                    it == Message.UploadStatus.FAILED_UPLOAD
+                },
                 any(), any()
             )
             .wasInvoked(exactly = once)
@@ -201,15 +206,16 @@ class SendAssetMessageUseCaseTest {
 
         // When
         sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+        advanceUntilIdle()
 
         // Then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(
                 matching {
-                val content = it.content
-                content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOADED
-            }
+                    val content = it.content
+                    content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOADED
+                }
             )
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
