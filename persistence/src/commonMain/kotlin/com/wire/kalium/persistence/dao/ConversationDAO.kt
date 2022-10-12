@@ -166,5 +166,6 @@ interface ConversationDAO {
     suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
+    suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
 
 }

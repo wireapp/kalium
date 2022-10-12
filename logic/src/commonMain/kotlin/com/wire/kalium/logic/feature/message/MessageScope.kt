@@ -109,9 +109,9 @@ class MessageScope internal constructor(
         get() = SendAssetMessageUseCaseImpl(
             persistMessage,
             updateAssetMessageUploadStatus,
-            clientRepository,
+            currentClientIdProvider,
             assetRepository,
-            userRepository,
+            userId,
             slowSyncRepository,
             messageSender
         )

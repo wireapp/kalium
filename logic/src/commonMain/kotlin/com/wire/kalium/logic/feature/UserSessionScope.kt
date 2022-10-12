@@ -50,13 +50,13 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.message.PersistReactionUseCase
+import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
-import com.wire.kalium.logic.data.message.PersistReactionUseCase
-import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
-import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -560,7 +560,7 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     private val teamEventReceiver: TeamEventReceiver
-        get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userId)
+        get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(userConfigRepository, userRepository, kaliumConfigs, userId)
@@ -568,7 +568,8 @@ abstract class UserSessionScopeCommon internal constructor(
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
-            authenticatedDataSourceSet.proteusClient
+            authenticatedDataSourceSet.proteusClient,
+            authenticatedDataSourceSet.userDatabaseProvider.prekeyDAO
         )
 
     private val keyPackageRepository: KeyPackageRepository
