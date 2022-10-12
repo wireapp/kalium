@@ -26,12 +26,20 @@ class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
                 entries = userEntries
             )
         }
+        val strategy = when (envelopeParameters.messageOption) {
+            is MessageApi.QualifiedMessageOption.IgnoreAll -> {
+                QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll(ClientMismatchStrategy.IgnoreAll()),
+            }
+            is MessageApi.QualifiedMessageOption.ReportAll -> {
+                QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll()),
+            }
+        }
         return QualifiedNewOtrMessage(
             recipients = qualifiedEntries,
             sender = otrClientIdMapper.toOtrClientId(envelopeParameters.sender),
             blob = envelopeParameters.externalBlob?.let { ByteArr(it) },
             // TODO(messaging): Handle different report types, etc.
-            clientMismatchStrategy = QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll()),
+            clientMismatchStrategy = strategy,
             nativePush = envelopeParameters.nativePush,
             transient = envelopeParameters.transient
         ).encodeToByteArray()

@@ -209,7 +209,7 @@ internal class MessageSenderImpl internal constructor(
         messageRepository.sendEnvelope(message.conversationId, envelope, messageTarget).fold({
             when (it) {
                 is ProteusSendMessageFailure -> messageSendFailureHandler.handleClientsHaveChangedFailure(it).flatMap {
-                    attemptToSend(message)
+                    attemptToSend(message, messageTarget)
                 }
 
                 else -> Either.Left(it)
