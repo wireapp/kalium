@@ -4,7 +4,6 @@ import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-
 interface ProxyCredentialsStorage {
     /**
      * to save the proxy credentials after the user add and verify correct proxy config at the login

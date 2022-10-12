@@ -45,7 +45,7 @@ abstract class CoreLogicCommon(
     inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
     inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T): T =
-        getAuthenticationScope(serverConfig,null).action()
+        getAuthenticationScope(serverConfig, null).action()
 
     inline fun <T> sessionScope(userId: UserId, action: UserSessionScope.() -> T): T = getSessionScope(userId).action()
 

@@ -46,7 +46,7 @@ interface ClientRepository {
     fun persistProxyCredentials(username: String, password: String): Either<StorageFailure, Unit>
 }
 
-@Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME")
+@Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
 class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,

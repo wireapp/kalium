@@ -4,7 +4,6 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.functional.fold
 
-
 interface PersistProxyCredentialsUseCase {
     suspend operator fun invoke(username: String, password: String): Result
 }

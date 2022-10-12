@@ -20,6 +20,7 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.ProxyCredentialsStorage
 
+@Suppress("LongParameterList")
 class SessionManagerImpl(
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,

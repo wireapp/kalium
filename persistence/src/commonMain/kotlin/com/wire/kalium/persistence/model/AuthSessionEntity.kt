@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.model
 
-
 data class ServerConfigEntity(
     val id: String,
     val links: Links,
