@@ -76,4 +76,7 @@ class ClientScope(
 
     val getOrRegister: GetOrRegisterClientUseCase
         get() = GetOrRegisterClientUseCaseImpl(clientRepository, register, clearClientData, proteusClient)
+
+    val persistProxyCredentialsUseCase: PersistProxyCredentialsUseCase
+        get() = PersistProxyCredentialsUseCaseImpl(clientRepository)
 }

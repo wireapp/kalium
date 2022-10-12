@@ -35,7 +35,7 @@ interface SessionManager {
 
     suspend fun onSessionExpired()
     suspend fun onClientRemoved()
-    fun proxyCredentials(): Pair<String, String>
+    fun proxyCredentials(): Pair<String, String>?
 }
 
 fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {

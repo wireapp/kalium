@@ -39,7 +39,11 @@ actual class UserSessionScopeProviderImpl(
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
-        val sessionManager = SessionManagerImpl(globalScope.sessionRepository, userId, tokenStorage = globalPreferences.authTokenStorage)
+        val sessionManager = SessionManagerImpl(
+            globalScope.sessionRepository, userId,
+            tokenStorage = globalPreferences.authTokenStorage,
+            proxyCredentialsStorage = globalPreferences.proxyCredentialsStorage
+        )
         val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.session().second.metaData.commonApiVersion.version)
 

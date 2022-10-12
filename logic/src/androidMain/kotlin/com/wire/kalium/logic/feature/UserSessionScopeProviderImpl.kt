@@ -40,7 +40,12 @@ actual class UserSessionScopeProviderImpl(
         val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
-        val sessionManager = SessionManagerImpl(globalScope.sessionRepository, userId, globalPreferences.authTokenStorage)
+        val sessionManager = SessionManagerImpl(
+            globalScope.sessionRepository,
+            userId,
+            globalPreferences.authTokenStorage,
+            globalPreferences.proxyCredentialsStorage
+        )
         val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.session().second.metaData.commonApiVersion.version)
         val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)

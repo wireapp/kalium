@@ -16,7 +16,7 @@ import io.ktor.utils.io.core.toByteArray
 
 fun HttpClientConfig<*>.installWireDefaultRequest(
     serverConfigDTO: ServerConfigDTO,
-    proxyCredentials: (() -> Pair<String, String>)?
+    proxyCredentials: (() -> Pair<String, String>?)?
 ) {
     val isProxyRequired = serverConfigDTO.links.proxy != null
 
@@ -43,7 +43,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
 
             if (isProxyRequired) {
                 if (proxyCredentials == null) throw error("Credentials not exist")
-                val (userName, password) = proxyCredentials()
+                val (userName, password) = proxyCredentials()!!
                 val credentials = "java.net.socks.username:$userName java.net.socks.password:$password".toByteArray().encodeBase64()
                 header(HttpHeaders.ProxyAuthorization, "Basic $credentials")
             }

@@ -211,7 +211,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             qualifiedIdMapper,
             globalScope.sessionRepository
-            )
+        )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
@@ -227,6 +227,7 @@ abstract class UserSessionScopeCommon internal constructor(
                 it.teamId
             }
         }
+
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val userConfigRepository: UserConfigRepository
@@ -358,7 +359,12 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = ClientRegistrationStorageImpl(userDatabaseProvider.metadataDAO)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
+        get() = ClientDataSource(
+            clientRemoteRepository,
+            clientRegistrationStorage,
+            userDatabaseProvider.clientDAO,
+            globalPreferences.proxyCredentialsStorage
+        )
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
