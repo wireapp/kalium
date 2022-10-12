@@ -60,5 +60,9 @@ interface MessageDAO {
 
     suspend fun observeUnreadMentionsCount(conversationId: QualifiedIDEntity): Flow<Long>
 
+    suspend fun resetAssetUploadStatus()
+
+    suspend fun resetAssetDownloadStatus()
+
     val platformExtensions: MessageExtensions
 }

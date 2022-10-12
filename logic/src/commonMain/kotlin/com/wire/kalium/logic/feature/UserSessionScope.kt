@@ -50,13 +50,13 @@ import com.wire.kalium.logic.data.message.MessageDataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
+import com.wire.kalium.logic.data.message.PersistReactionUseCase
+import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
-import com.wire.kalium.logic.data.message.PersistReactionUseCase
-import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
-import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -211,7 +211,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             qualifiedIdMapper,
             globalScope.sessionRepository
-            )
+        )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
@@ -227,6 +227,7 @@ abstract class UserSessionScopeCommon internal constructor(
                 it.teamId
             }
         }
+
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val userConfigRepository: UserConfigRepository
@@ -746,6 +747,7 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
+            messageRepository.resetAssetProgressStatus()
         }
 
         launch {

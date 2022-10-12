@@ -330,5 +330,10 @@ class MessageDAOImpl(
         is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
     }
 
+    override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
+
+    override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
+
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 }
