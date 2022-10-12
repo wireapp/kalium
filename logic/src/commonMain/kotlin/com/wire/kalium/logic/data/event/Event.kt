@@ -208,7 +208,7 @@ sealed class Event(open val id: String) {
             override val teamId: String,
             val memberId: String,
             val timestampIso: String,
-            ) : Team(id, teamId) {
+        ) : Team(id, teamId) {
             override fun toString(): String {
                 return "id: ${id.obfuscateId()} " +
                         "teamId: $teamId " +
