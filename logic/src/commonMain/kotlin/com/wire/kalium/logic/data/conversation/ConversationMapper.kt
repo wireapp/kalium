@@ -135,8 +135,7 @@ internal class ConversationMapperImpl(
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
             isSelfUserMember = isSelfUserMemberEntity,
-            isCreator = isCreatorEntity,
-            creatorId = PlainId(daoModel.creatorId)
+            isCreator = isCreatorEntity
         )
     }
 

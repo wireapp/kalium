@@ -2,11 +2,10 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock

@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -22,7 +21,6 @@ import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.datetime.Instant
 
 object TestConversation {
