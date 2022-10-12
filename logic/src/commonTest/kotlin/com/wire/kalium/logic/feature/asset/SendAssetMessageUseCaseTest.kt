@@ -52,7 +52,7 @@ import kotlin.test.assertTrue
 class SendAssetMessageUseCaseTest {
 
     @Test
-    fun givenAValidSendAssetMessageRequest_whenSendingAssetMessage_thenShouldReturnASuccessResult() = runTest {
+    fun givenAValidSendAssetMessageRequest_whenSendingAssetMessage_thenShouldReturnASuccessResult() = runTest(testDispatcher.default) {
         // Given
         val assetToSend = mockedLongAssetData()
         val assetName = "some-asset.txt"
@@ -76,30 +76,31 @@ class SendAssetMessageUseCaseTest {
     }
 
     @Test
-    fun givenAValidSendAssetMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() = runTest {
-        // Given
-        val assetToSend = mockedLongAssetData()
-        val assetName = "some-asset.txt"
-        val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
-        val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val unauthorizedException = TestNetworkException.missingAuth
-        val (_, sendAssetUseCase) = Arrangement()
-            .withUploadAssetErrorResponse(unauthorizedException)
-            .arrange()
+    fun givenAValidSendAssetMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.txt"
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val unauthorizedException = TestNetworkException.missingAuth
+            val (_, sendAssetUseCase) = Arrangement()
+                .withUploadAssetErrorResponse(unauthorizedException)
+                .arrange()
 
-        // When
-        val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
-        advanceUntilIdle()
+            // When
+            val result = sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            advanceUntilIdle()
 
-        // Then
-        assertTrue(result is SendAssetMessageResult.Failure)
-        val exception = result.coreFailure
-        assertTrue(exception is NetworkFailure.ServerMiscommunication)
-        assertEquals(exception.rootCause, unauthorizedException)
-    }
+            // Then
+            assertTrue(result is SendAssetMessageResult.Failure)
+            val exception = result.coreFailure
+            assertTrue(exception is NetworkFailure.ServerMiscommunication)
+            assertEquals(exception.rootCause, unauthorizedException)
+        }
 
     @Test
-    fun givenASuccessfulSendAssetMessageRequest_whenSendingTheAsset_thenTheAssetIsPersisted() = runTest {
+    fun givenASuccessfulSendAssetMessageRequest_whenSendingTheAsset_thenTheAssetIsPersisted() = runTest(testDispatcher.default) {
         // Given
         val assetToSend = mockedLongAssetData()
         val assetName = "some-asset.txt"
@@ -127,101 +128,104 @@ class SendAssetMessageUseCaseTest {
     }
 
     @Test
-    fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() = runTest {
-        // Given
-        val assetToSend = mockedLongAssetData()
-        val assetName = "some-asset.txt"
-        val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
-        val expectedAssetId = dummyUploadedAssetId
-        val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
-        val (arrangement, sendAssetUseCase) = Arrangement()
-            .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
-            .arrange()
+    fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.txt"
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val expectedAssetId = dummyUploadedAssetId
+            val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
+            val (arrangement, sendAssetUseCase) = Arrangement()
+                .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+                .arrange()
 
-        // When
-        sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
-        advanceUntilIdle()
+            // When
+            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            advanceUntilIdle()
 
-        // Then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(
-                matching {
-                    val content = it.content
-                    content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
-                }
-            )
-            .wasInvoked(exactly = twice)
-    }
-
-    @Test
-    fun givenAnErrorAtInitialMessagePersistCall_whenCheckingTheMessageRepository_thenTheAssetUploadStatusIsMarkedAsFailed() = runTest {
-        // Given
-        val assetToSend = mockedLongAssetData()
-        val assetName = "some-asset.txt"
-        val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
-        val (arrangement, sendAssetUseCase) = Arrangement()
-            .withPersistErrorResponse()
-            .arrange()
-
-        // When
-        sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
-        advanceUntilIdle()
-
-        // Then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(
-                matching {
-                    val content = it.content
-                    content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOAD_IN_PROGRESS
-                }
-            )
-            .wasInvoked(exactly = once)
-        verify(arrangement.updateUploadStatus)
-            .suspendFunction(arrangement.updateUploadStatus::invoke)
-            .with(
-                matching {
-                    it == Message.UploadStatus.FAILED_UPLOAD
-                },
-                any(), any()
-            )
-            .wasInvoked(exactly = once)
-    }
+            // Then
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(
+                    matching {
+                        val content = it.content
+                        content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
+                    }
+                )
+                .wasInvoked(exactly = twice)
+        }
 
     @Test
-    fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsUploaded() = runTest {
-        // Given
-        val assetToSend = mockedLongAssetData()
-        val assetName = "some-asset.txt"
-        val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
-        val expectedAssetId = dummyUploadedAssetId
-        val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
-        val (arrangement, sendAssetUseCase) = Arrangement()
-            .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
-            .arrange()
+    fun givenAnErrorAtInitialMessagePersistCall_whenCheckingTheMessageRepository_thenTheAssetUploadStatusIsMarkedAsFailed() =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.txt"
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val (arrangement, sendAssetUseCase) = Arrangement()
+                .withPersistErrorResponse()
+                .arrange()
 
-        // When
-        sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
-        advanceUntilIdle()
+            // When
+            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            advanceUntilIdle()
 
-        // Then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(
-                matching {
-                    val content = it.content
-                    content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOADED
-                }
-            )
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasInvoked(exactly = twice)
-    }
+            // Then
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(
+                    matching {
+                        val content = it.content
+                        content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOAD_IN_PROGRESS
+                    }
+                )
+                .wasInvoked(exactly = once)
+            verify(arrangement.updateUploadStatus)
+                .suspendFunction(arrangement.updateUploadStatus::invoke)
+                .with(
+                    matching {
+                        it == Message.UploadStatus.FAILED_UPLOAD
+                    },
+                    any(), any()
+                )
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsUploaded() =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.txt"
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val expectedAssetId = dummyUploadedAssetId
+            val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
+            val (arrangement, sendAssetUseCase) = Arrangement()
+                .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+                .arrange()
+
+            // When
+            sendAssetUseCase.invoke(conversationId, dataPath, assetToSend.size.toLong(), assetName, "text/plain", null, null)
+            advanceUntilIdle()
+
+            // Then
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(
+                    matching {
+                        val content = it.content
+                        content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOADED
+                    }
+                )
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(any())
+                .wasInvoked(exactly = twice)
+        }
 
     private class Arrangement {
 
@@ -248,8 +252,6 @@ class SendAssetMessageUseCaseTest {
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
         private val testScope = TestScope()
-
-        private val testDispatcher = TestKaliumDispatcher
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
             fakeKaliumFileSystem.sink(dataPath).buffer().use {
@@ -343,5 +345,6 @@ class SendAssetMessageUseCaseTest {
 
     companion object {
         val fakeKaliumFileSystem = FakeKaliumFileSystem()
+        val testDispatcher = TestKaliumDispatcher
     }
 }
