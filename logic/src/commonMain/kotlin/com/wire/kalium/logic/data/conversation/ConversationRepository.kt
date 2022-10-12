@@ -152,6 +152,8 @@ interface ConversationRepository {
 
     suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit>
 
+    suspend fun getConversationIdsByUserId(userId: UserId): Either<CoreFailure, List<ConversationId>>
+
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -832,6 +834,13 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
         conversationDAO.revokeOneOnOneConversationsWithDeletedUser(idMapper.toDaoModel(userId))
+    }
+
+    override suspend fun getConversationIdsByUserId(userId: UserId): Either<CoreFailure, List<ConversationId>> {
+        return wrapStorageRequest {
+            conversationDAO.getConversationIdsByUserId(idMapper.toDaoModel(userId))
+        }
+            .map { it.map { conversationIdEntity -> idMapper.fromDaoModel(conversationIdEntity) } }
     }
 
     companion object {

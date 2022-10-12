@@ -80,6 +80,8 @@ sealed class MessageContent {
 
     data class ConversationRenamed(val conversationName: String) : System()
 
+    data class TeamMemberRemoved(val userName: String) : System()
+
     object MissedCall : System()
 
     data class Availability(val status: UserAvailabilityStatus) : Signaling()
