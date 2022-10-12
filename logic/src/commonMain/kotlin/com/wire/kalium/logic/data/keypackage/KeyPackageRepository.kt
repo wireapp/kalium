@@ -34,6 +34,7 @@ class KeyPackageDataSource(
     private val clientRepository: ClientRepository,
     private val keyPackageApi: KeyPackageApi,
     private val mlsClientProvider: MLSClientProvider,
+    private val selfUserId: UserId,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : KeyPackageRepository {
 
@@ -45,7 +46,7 @@ class KeyPackageDataSource(
                         KeyPackageApi.Param.SkipOwnClient(idMapper.toApiModel(userId), selfClientId.value)
                     )
                 }.flatMap {
-                    if (it.keyPackages.isEmpty()) {
+                    if (it.keyPackages.isEmpty() && userId != selfUserId) {
                         Either.Left(CoreFailure.NoKeyPackagesAvailable(userId))
                     } else {
                         Either.Right(it.keyPackages)
