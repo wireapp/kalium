@@ -33,10 +33,13 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         deregisterTokenUseCase()
         logoutRepository.logout()
         sessionRepository.logout(userId = userId, reason)
-        if (reason == LogoutReason.SELF_HARD_LOGOUT || reason == LogoutReason.REMOVED_CLIENT || reason == LogoutReason.DELETED_ACCOUNT) {
+
+        if (reason == LogoutReason.REMOVED_CLIENT || reason == LogoutReason.DELETED_ACCOUNT || reason == LogoutReason.SELF_HARD_LOGOUT) {
             // we put this delay here to avoid a race condition when receiving web socket events at the exact time of logging put
             delay(CLEAR_DATA_DELAY)
             clearClientDataUseCase()
+        }
+        if (reason == LogoutReason.SELF_HARD_LOGOUT) {
             clearUserDataUseCase() // this clears also current client id
         } else {
             clientRepository.clearCurrentClientId()
