@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature
 
-import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
