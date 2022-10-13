@@ -62,6 +62,25 @@ sealed class ConversationRepository {
             }
         }
 
+        fun sendReaction(
+            instance: Instance,
+            conversationId: ConversationId,
+            originalMessageId: String,
+            type: String
+        ) {
+            instance.coreLogic?.globalScope {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send reaction $type")
+                        runBlocking {
+                            messages.toggleReaction(conversationId, originalMessageId, type)
+                        }
+                    }
+                }
+            }
+        }
+
         fun sendTextMessage(instance: Instance, conversationId: ConversationId, text: String?) {
             instance.coreLogic?.globalScope {
                 val result = session.currentSession()
