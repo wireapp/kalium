@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.AuthenticatedDataSourceSet
+import com.wire.kalium.logic.feature.AuthenticatedDataSourceSet
 
 interface ClearUserDataUseCase {
     suspend operator fun invoke()

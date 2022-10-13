@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
@@ -492,6 +493,9 @@ class ConversationEventReceiverTest {
         val proteusClient = mock(classOf<ProteusClient>())
 
         @Mock
+        val proteusClientProvider = mock(classOf<ProteusClientProvider>())
+
+        @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
@@ -531,7 +535,7 @@ class ConversationEventReceiverTest {
         val persistReactionsUseCase = mock(classOf<PersistReactionUseCase>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
-            proteusClient = proteusClient,
+            proteusClientProvider = proteusClientProvider,
             persistMessage = persistMessage,
             messageRepository = messageRepository,
             assetRepository = assetRepository,
@@ -563,6 +567,13 @@ class ConversationEventReceiverTest {
             selfUserId = TestUser.USER_ID,
             persistReaction = persistReactionsUseCase
         )
+
+        init {
+            given(proteusClientProvider)
+                .suspendFunction(proteusClientProvider::getOrError)
+                .whenInvoked()
+                .thenReturn(Either.Right(proteusClient))
+        }
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
             given(proteusClient)

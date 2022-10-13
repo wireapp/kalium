@@ -1,9 +1,6 @@
 package com.wire.kalium.logic.feature
 
 import android.content.Context
-import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.ProteusClientImpl
-import com.wire.kalium.logic.AuthenticatedDataSourceSet
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
@@ -21,7 +18,6 @@ import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.kmmSettings.UserPrefProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.runBlocking
 
 @Suppress("LongParameterList")
 actual class UserSessionScopeProviderImpl(
@@ -43,8 +39,7 @@ actual class UserSessionScopeProviderImpl(
         val sessionManager = SessionManagerImpl(globalScope.sessionRepository, userId, globalPreferences.authTokenStorage)
         val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.session().second.metaData.commonApiVersion.version)
-        val proteusClient: ProteusClient = ProteusClientImpl(rootProteusPath)
-        runBlocking { proteusClient.open() }
+        val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath)
 
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, userId)
         val userIDEntity = idMapper.toDaoModel(userId)
@@ -64,7 +59,7 @@ actual class UserSessionScopeProviderImpl(
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,
             networkContainer,
-            proteusClient,
+            proteusClientProvider,
             userSessionWorkScheduler,
             userDatabaseProvider,
             userPrefProvider

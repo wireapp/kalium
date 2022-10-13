@@ -1,7 +1,6 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
@@ -94,11 +93,8 @@ class GetOrRegisterClientUseCaseTest {
         @Mock
         val clearClientDataUseCase = configure(mock(classOf<ClearClientDataUseCase>())) { stubsUnitByDefault = true }
 
-        @Mock
-        val proteusClient = configure(mock(classOf<ProteusClient>())) { stubsUnitByDefault = true }
-
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
-            clientRepository, registerClientUseCase, clearClientDataUseCase, proteusClient,
+            clientRepository, registerClientUseCase, clearClientDataUseCase
         )
 
         fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>): Arrangement {
