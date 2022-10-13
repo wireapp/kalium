@@ -45,7 +45,6 @@ import okio.Path
 import okio.buffer
 import okio.use
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
