@@ -56,7 +56,7 @@ class GetMessageAssetUseCaseTest {
             .arrange()
 
         // When
-        val result = getMessageAsset(someConversationId, someMessageId)
+        val result = getMessageAsset(someConversationId, someMessageId).await()
         advanceUntilIdle()
 
         // Then
@@ -74,7 +74,7 @@ class GetMessageAssetUseCaseTest {
             .arrange()
 
         // When
-        val result = getMessageAsset(someConversationId, someMessageId)
+        val result = getMessageAsset(someConversationId, someMessageId).await()
         advanceUntilIdle()
 
         // Then
@@ -93,7 +93,7 @@ class GetMessageAssetUseCaseTest {
             .arrange()
 
         // When
-        val result = getMessageAsset(someConversationId, someMessageId)
+        val result = getMessageAsset(someConversationId, someMessageId).await()
         advanceUntilIdle()
 
         // Then
@@ -111,7 +111,7 @@ class GetMessageAssetUseCaseTest {
         @Mock
         private val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
 
-        private val testScope = TestScope()
+        private val testScope = TestScope(testDispatcher.default)
 
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
