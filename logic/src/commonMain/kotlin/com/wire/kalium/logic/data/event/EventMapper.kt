@@ -158,6 +158,7 @@ class EventMapper(
                     ),
                 )
             }
+
             eventContentDTO.roleChange.mutedStatus != null -> {
                 Event.Conversation.MemberChanged.MemberMutedStatusChanged(
                     id = id,
@@ -167,12 +168,14 @@ class EventMapper(
                     mutedConversationStatus = mapConversationMutedStatus(eventContentDTO.roleChange.mutedStatus)
                 )
             }
+
             else -> {
                 Event.Conversation.MemberChanged.IgnoredMemberChanged(id, idMapper.fromApiModel(eventContentDTO.qualifiedConversation))
             }
         }
     }
 
+    @Suppress("MagicNumber")
     private fun mapConversationMutedStatus(status: Int?) = when (status) {
         0 -> MutedConversationStatus.AllAllowed
         1 -> MutedConversationStatus.OnlyMentionsAllowed

@@ -17,14 +17,14 @@ object TestEvent {
         "2022-03-30T15:36:00.000Z"
     )
 
-    fun memberChange(eventId: String = "eventId", member: Member) = Event.Conversation.MemberChanged(
+    fun memberChange(eventId: String = "eventId", member: Member) = Event.Conversation.MemberChanged.MemberChangedRole(
         eventId,
         TestConversation.ID,
         "2022-03-30T15:36:00.000Z",
         member
     )
 
-    fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.IgnoredMemberChanged(
+    fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.MemberChanged.IgnoredMemberChanged(
         eventId,
         TestConversation.ID,
     )
