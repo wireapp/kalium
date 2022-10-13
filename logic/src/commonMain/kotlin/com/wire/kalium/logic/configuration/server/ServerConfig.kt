@@ -143,7 +143,12 @@ class ServerConfigMapperImpl(
                 links.website,
                 links.title,
                 isOnPremises = links.isOnPremises,
-                proxy = ServerConfigDTO.Proxy(needsAuthentication = links.proxy?.needsAuthentication, links.proxy?.apiProxy)
+                proxy = links.proxy?.let {
+                    ServerConfigDTO.Proxy(
+                        needsAuthentication = it.needsAuthentication,
+                        it.apiProxy
+                    )
+                }
             ), ServerConfigDTO.MetaData(
                 federation = metaData.federation, apiVersionMapper.toDTO(metaData.commonApiVersion), metaData.domain
             )
@@ -175,9 +180,11 @@ class ServerConfigMapperImpl(
                 website = links.website,
                 title = links.title,
                 isOnPremises = links.isOnPremises,
-                proxy = ServerConfigDTO.Proxy(
-                    apiProxy = links.proxy?.apiProxy, needsAuthentication = links.proxy?.needsAuthentication
-                )
+                proxy = links.proxy?.let {
+                    ServerConfigDTO.Proxy(
+                        apiProxy = it.apiProxy, needsAuthentication = it.needsAuthentication
+                    )
+                }
             ), ServerConfigDTO.MetaData(
                 federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain
             )
@@ -198,7 +205,7 @@ class ServerConfigMapperImpl(
             teams = teams,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = ServerConfig.Proxy(proxy?.needsAuthentication, proxy?.apiProxy)
+            proxy = proxy?.let { ServerConfig.Proxy(it.needsAuthentication, it.apiProxy) }
         )
     }
 
@@ -230,7 +237,7 @@ class ServerConfigMapperImpl(
             website = website,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = ServerConfigEntity.Proxy(proxy?.needsAuthentication, proxy?.apiProxy)
+            proxy = proxy?.let { ServerConfigEntity.Proxy(it.needsAuthentication, it.apiProxy) }
         )
     }
 
@@ -259,7 +266,12 @@ class ServerConfigMapperImpl(
             website = website,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = ServerConfig.Proxy(needsAuthentication = proxy?.needsAuthentication, apiProxy = proxy?.apiProxy)
+            proxy = proxy?.let {
+                ServerConfig.Proxy(
+                    needsAuthentication = it.needsAuthentication,
+                    apiProxy = it.apiProxy
+                )
+            }
         )
     }
 

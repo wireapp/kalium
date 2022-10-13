@@ -2,6 +2,7 @@ package com.wire.kalium.api
 
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.session.SessionManager
@@ -24,7 +25,8 @@ class TestSessionManagerV0 : SessionManager {
         TODO("Not yet implemented")
     }
 
-    override fun proxyCredentials(): Pair<String, String>? = Pair("username", "password")
+    override fun proxyCredentials(): ProxyCredentialsDTO? = ProxyCredentialsDTO("username", "password")
+
 
     override suspend fun onSessionExpired() {
         TODO("Not yet implemented")
