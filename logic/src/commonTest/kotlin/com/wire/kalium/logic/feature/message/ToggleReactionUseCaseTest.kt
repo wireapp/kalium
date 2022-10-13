@@ -28,6 +28,10 @@ import kotlin.test.assertEquals
 
 class ToggleReactionUseCaseTest {
 
+    //FIXME: Mockative doesn't properly generate Mocks when there are Typealiases
+    //       with generic types, such as typealias Foo = Bar<Thing>
+    //       So ReactionRepository is mocked manually
+
     @Test
     fun givenReactionWasPreviouslyAdded_whenTogglingReaction_thenShouldRemoveItFromRepository() = runTest {
         val emojiReaction = "🫡"
