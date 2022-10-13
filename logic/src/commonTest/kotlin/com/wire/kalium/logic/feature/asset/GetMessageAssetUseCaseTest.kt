@@ -20,9 +20,12 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -57,7 +60,6 @@ class GetMessageAssetUseCaseTest {
 
         // When
         val result = getMessageAsset(someConversationId, someMessageId).await()
-        advanceUntilIdle()
 
         // Then
         assertTrue(result is MessageAssetResult.Success)
@@ -75,7 +77,6 @@ class GetMessageAssetUseCaseTest {
 
         // When
         val result = getMessageAsset(someConversationId, someMessageId).await()
-        advanceUntilIdle()
 
         // Then
         assertTrue(result is MessageAssetResult.Failure)
@@ -87,18 +88,21 @@ class GetMessageAssetUseCaseTest {
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
         val connectionFailure = NetworkFailure.NoNetworkConnection(null)
-        val (_, getMessageAsset) = Arrangement()
+        val (arrangement, getMessageAsset) = Arrangement()
             .withDownloadAssetErrorResponse(connectionFailure)
             .withSuccessfulDownloadStatusUpdate()
             .arrange()
 
         // When
         val result = getMessageAsset(someConversationId, someMessageId).await()
-        advanceUntilIdle()
 
         // Then
         assertTrue(result is MessageAssetResult.Failure)
         assertEquals(result.coreFailure::class, connectionFailure::class)
+        verify(arrangement.updateAssetMessageDownloadStatus)
+            .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
+            .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -109,7 +113,7 @@ class GetMessageAssetUseCaseTest {
         private val assetDataSource = mock(classOf<AssetRepository>())
 
         @Mock
-        private val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
+        val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
 
         private val testScope = TestScope(testDispatcher.default)
 
