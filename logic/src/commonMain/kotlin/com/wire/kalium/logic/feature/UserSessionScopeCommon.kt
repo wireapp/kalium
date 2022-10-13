@@ -582,7 +582,8 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = KeyPackageDataSource(
             clientRepository,
             authenticatedDataSourceSet.authenticatedNetworkContainer.keyPackageApi,
-            mlsClientProvider
+            mlsClientProvider,
+            userId
         )
 
     private val logoutRepository: LogoutRepository =
