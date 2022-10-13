@@ -21,7 +21,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
     val isProxyRequired = serverConfigDTO.links.proxy != null
 
     if (isProxyRequired) {
-        if (proxyCredentials == null) throw error("Credentials not exist")
+        if (proxyCredentials == null) throw error("Credentials does not exist")
         engine {
             proxy = serverConfigDTO.links.proxy?.apiProxy?.let { ProxyBuilder.socks(host = it, port = 1080) }
         }
@@ -42,7 +42,7 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
                 else apiBaseUrl.encodedPath
 
             if (isProxyRequired) {
-                if (proxyCredentials == null) throw error("Credentials not exist")
+                if (proxyCredentials == null) throw error("Credentials does not exist")
                 val (userName, password) = proxyCredentials()!!
                 val credentials = "$userName:$password".toByteArray().encodeBase64()
                 header(HttpHeaders.ProxyAuthorization, "Basic $credentials")

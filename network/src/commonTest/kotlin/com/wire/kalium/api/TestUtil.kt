@@ -15,7 +15,7 @@ val TEST_BACKEND_CONFIG =
             "https://test.wire.com",
             "Test Title",
             false,
-            ServerConfigDTO.Proxy(true, "apiProxy")
+            null
         ),
         ServerConfigDTO.MetaData(
             false,
@@ -34,7 +34,7 @@ val TEST_BACKEND_LINKS =
         "https://test.wire.com",
         "Test Title",
         false,
-        ServerConfigDTO.Proxy(true, "apiProxy")
+        null
     )
 
 val TEST_BACKEND =
