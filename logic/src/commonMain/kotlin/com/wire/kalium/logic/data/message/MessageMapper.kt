@@ -198,6 +198,7 @@ class MessageMapperImpl(
 
         is MessageContent.MissedCall -> MessageEntityContent.MissedCall
         is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
+        is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -231,6 +232,7 @@ class MessageMapperImpl(
 
         is MessageEntityContent.MissedCall -> MessageContent.MissedCall
         is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
+        is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
     }
 }
 
