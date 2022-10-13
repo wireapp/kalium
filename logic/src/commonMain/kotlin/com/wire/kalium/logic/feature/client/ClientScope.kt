@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -11,6 +10,7 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
@@ -28,7 +28,7 @@ class ClientScope(
     private val mlsClientProvider: MLSClientProvider,
     private val notificationTokenRepository: NotificationTokenRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
-    private val proteusClient: ProteusClient,
+    private val proteusClientProvider: ProteusClientProvider,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val featureSupport: FeatureSupport,
@@ -72,10 +72,10 @@ class ClientScope(
         get() = ObserveCurrentClientIdUseCaseImpl(clientRepository)
 
     val clearClientData: ClearClientDataUseCase
-        get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClient)
+        get() = ClearClientDataUseCaseImpl(mlsClientProvider, proteusClientProvider)
 
     val getOrRegister: GetOrRegisterClientUseCase
-        get() = GetOrRegisterClientUseCaseImpl(clientRepository, register, clearClientData, proteusClient)
+        get() = GetOrRegisterClientUseCaseImpl(clientRepository, register, clearClientData)
 
     val persistProxyCredentialsUseCase: PersistProxyCredentialsUseCase
         get() = PersistProxyCredentialsUseCaseImpl(clientRepository)

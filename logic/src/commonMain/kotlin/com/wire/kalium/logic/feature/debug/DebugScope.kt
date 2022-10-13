@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -14,6 +13,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -41,7 +41,7 @@ class DebugScope internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val proteusClient: ProteusClient,
+    private val proteusClientProvider: ProteusClientProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
     private val userRepository: UserRepository,
@@ -68,13 +68,13 @@ class DebugScope internal constructor(
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
 
     private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClient, preKeyRepository)
+        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
 
     private val protoContentMapper: ProtoContentMapper
         get() = ProtoContentMapperImpl()
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(proteusClient, protoContentMapper)
+        get() = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)

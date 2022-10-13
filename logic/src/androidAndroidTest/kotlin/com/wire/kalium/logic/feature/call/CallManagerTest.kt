@@ -4,6 +4,7 @@ import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
+import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -61,6 +62,8 @@ class CallManagerTest {
 
     private lateinit var callManagerImpl: CallManagerImpl
 
+    private val callMapper = CallMapperImpl(qualifiedIdMapper)
+
     @BeforeTest
     fun setUp() {
         callManagerImpl = CallManagerImpl(
@@ -73,7 +76,8 @@ class CallManagerTest {
             kaliumDispatchers = dispatcher,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
-            videoStateChecker = videoStateChecker
+            videoStateChecker = videoStateChecker,
+            callMapper = callMapper
         )
     }
 

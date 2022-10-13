@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.functional.flatMap
@@ -16,8 +15,7 @@ interface GetOrRegisterClientUseCase {
 class GetOrRegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val registerClient: RegisterClientUseCase,
-    private val clearClientData: ClearClientDataUseCase,
-    private val proteusClient: ProteusClient
+    private val clearClientData: ClearClientDataUseCase
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
@@ -34,7 +32,6 @@ class GetOrRegisterClientUseCaseImpl(
                         RegisterClientResult.Success(client)
                     } else {
                         clearClientData()
-                        proteusClient.open()
                         clientRepository.clearRetainedClientId()
                         null
                     }
