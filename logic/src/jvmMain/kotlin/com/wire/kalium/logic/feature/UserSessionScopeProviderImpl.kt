@@ -14,7 +14,7 @@ import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
-import com.wire.kalium.persistence.kmmSettings.UserPrefProvider
+import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 import java.io.File
 
@@ -41,7 +41,7 @@ actual class UserSessionScopeProviderImpl(
         val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath)
 
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(userId)
-        val userPrefProvider = UserPrefProvider(
+        val userPrefBuilder = UserPrefBuilder(
             idMapper.toDaoModel(userId),
             rootPath,
             kaliumConfigs.shouldEncryptData
@@ -54,7 +54,7 @@ actual class UserSessionScopeProviderImpl(
             proteusClientProvider,
             userSessionWorkScheduler,
             userDatabase,
-            userPrefProvider
+            userPrefBuilder
         )
         return UserSessionScope(
             userId,

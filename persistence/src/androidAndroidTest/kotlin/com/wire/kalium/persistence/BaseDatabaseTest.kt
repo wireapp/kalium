@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseProvider
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -18,7 +19,7 @@ actual open class BaseDatabaseTest actual constructor() {
         context.deleteDatabase(FileNameUtil.userDBName(userId))
     }
 
-    actual fun createDatabase(userId: UserIDEntity): UserDatabaseProvider {
+    actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
         return UserDatabaseProvider(
             ApplicationProvider.getApplicationContext(),
             userId,

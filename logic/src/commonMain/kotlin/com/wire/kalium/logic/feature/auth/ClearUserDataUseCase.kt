@@ -15,8 +15,8 @@ internal class ClearUserDataUseCaseImpl internal constructor(
     }
 
     private fun clearUserStorage() {
-        authenticatedDataSourceSet.userDatabaseProvider.nuke()
+        authenticatedDataSourceSet.userDatabaseBuilder.nuke()
         // exclude clientId clear from this step
-        authenticatedDataSourceSet.userPrefProvider.clear()
+        authenticatedDataSourceSet.userPrefBuilder.clear()
     }
 }

@@ -20,7 +20,7 @@ fun UserDatabaseProvider(
     userId: UserIDEntity,
     storePath: File,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val databasePath = storePath.resolve(DATABASE_NAME)
     val databaseExists = databasePath.exists()
 
@@ -35,7 +35,7 @@ fun UserDatabaseProvider(
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
     }
-    return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(storePath))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storePath))
 }
 
 internal actual fun nuke(

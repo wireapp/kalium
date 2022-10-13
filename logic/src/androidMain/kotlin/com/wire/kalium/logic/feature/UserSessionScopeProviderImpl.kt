@@ -16,7 +16,7 @@ import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
-import com.wire.kalium.persistence.kmmSettings.UserPrefProvider
+import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 @Suppress("LongParameterList")
@@ -43,7 +43,7 @@ actual class UserSessionScopeProviderImpl(
 
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, userId)
         val userIDEntity = idMapper.toDaoModel(userId)
-        val userPrefProvider = UserPrefProvider(
+        val userPrefBuilder = UserPrefBuilder(
             userIDEntity,
             appContext,
             kaliumConfigs.shouldEncryptData
@@ -62,7 +62,7 @@ actual class UserSessionScopeProviderImpl(
             proteusClientProvider,
             userSessionWorkScheduler,
             userDatabaseProvider,
-            userPrefProvider
+            userPrefBuilder
         )
         return UserSessionScope(
             appContext,

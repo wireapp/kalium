@@ -26,7 +26,7 @@ fun UserDatabaseProvider(
     passphrase: UserDBSecret,
     encrypt: Boolean = true,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
 
     val driver: AndroidSqliteDriver = if (encrypt) {
@@ -43,7 +43,7 @@ fun UserDatabaseProvider(
             name = dbName
         )
     }
-    return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(context, passphrase, encrypt))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(context, passphrase, encrypt))
 }
 
 internal actual fun nuke(

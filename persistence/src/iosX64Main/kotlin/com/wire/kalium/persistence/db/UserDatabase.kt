@@ -14,9 +14,9 @@ fun UserDatabaseProvider(
     userId: UserIDEntity,
     passphrase: String,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
-    return UserDatabaseProvider(
+    return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
