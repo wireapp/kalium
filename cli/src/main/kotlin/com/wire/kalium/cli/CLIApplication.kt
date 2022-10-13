@@ -189,7 +189,7 @@ class LoginCommand : CliktCommand(name = "login") {
     }
 
     private suspend fun provideVersionedAuthenticationScope(serverLinks: ServerConfig.Links): AuthenticationScope =
-        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke(null)) {
+        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke(AutoVersionAuthScopeUseCase.ProxyCredentials.None)) {
             is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
                 throw PrintMessage("failed to create authentication scope: ${result.genericFailure}")
 

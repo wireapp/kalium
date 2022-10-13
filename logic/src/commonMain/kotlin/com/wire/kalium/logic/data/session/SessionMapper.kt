@@ -1,12 +1,15 @@
 package com.wire.kalium.logic.data.session
 
+import com.wire.kalium.logic.data.auth.login.ProxyCredentialsModel
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
+import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
@@ -21,6 +24,8 @@ interface SessionMapper {
     fun toAuthTokensEntity(authSession: AuthTokens): AuthTokenEntity
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
+    fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
+    fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentialsModel?): ProxyCredentialsDTO
 }
 
 internal class SessionMapperImpl(
@@ -92,4 +97,10 @@ internal class SessionMapperImpl(
             LogoutReasonEntity.DELETED_ACCOUNT -> LogoutReason.DELETED_ACCOUNT
             LogoutReasonEntity.SESSION_EXPIRED -> LogoutReason.SESSION_EXPIRED
         }
+
+    override fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO =
+        ProxyCredentialsDTO(proxyCredentialsEntity.username, proxyCredentialsEntity.password)
+
+    override fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentialsModel?): ProxyCredentialsDTO =
+        ProxyCredentialsDTO(proxyCredentialsModel?.username, proxyCredentialsModel?.password)
 }

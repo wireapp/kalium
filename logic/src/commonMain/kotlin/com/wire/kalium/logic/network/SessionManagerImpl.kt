@@ -13,6 +13,7 @@ import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.session.SessionManager
@@ -66,12 +67,12 @@ class SessionManagerImpl(
         sessionRepository.logout(userId, LogoutReason.REMOVED_CLIENT)
     }
 
-    override fun proxyCredentials(): Pair<String, String>? =
+    override fun proxyCredentials(): ProxyCredentialsDTO? =
         wrapStorageNullableRequest { proxyCredentialsStorage.getProxyCredentials() }.nullableFold({
             null
         }, {
             if (it != null) {
-                Pair(it.username, it.password)
+                sessionMapper.fromEntityToProxyCredentialsDTO(it)
             } else {
                 null
             }

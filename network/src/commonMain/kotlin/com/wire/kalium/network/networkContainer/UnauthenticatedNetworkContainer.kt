@@ -1,6 +1,7 @@
 package com.wire.kalium.network.networkContainer
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
@@ -18,7 +19,7 @@ interface UnauthenticatedNetworkContainer {
     companion object {
         fun create(
             serverConfigDTO: ServerConfigDTO,
-            proxyCredentials: (() -> Pair<String, String>)?
+            proxyCredentials: (() -> ProxyCredentialsDTO?)?
         ): UnauthenticatedNetworkContainer {
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
@@ -49,7 +50,7 @@ internal interface UnauthenticatedNetworkClientProvider {
 internal class UnauthenticatedNetworkClientProviderImpl internal constructor(
     backendLinks: ServerConfigDTO,
     engine: HttpClientEngine = defaultHttpEngine(),
-    proxyCredentials: (() -> Pair<String, String>)?
+    proxyCredentials: (() -> ProxyCredentialsDTO?)?
 ) : UnauthenticatedNetworkClientProvider {
     override val unauthenticatedNetworkClient by lazy {
         UnauthenticatedNetworkClient(engine, backendLinks, proxyCredentials)

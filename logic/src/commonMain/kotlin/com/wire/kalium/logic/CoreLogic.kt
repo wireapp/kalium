@@ -1,6 +1,7 @@
 package com.wire.kalium.logic
 
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.auth.login.ProxyCredentialsModel
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -32,7 +33,7 @@ abstract class CoreLogicCommon(
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(serverConfig: ServerConfig, proxyCredentials: (() -> Pair<String, String>)?): AuthenticationScope =
+    fun getAuthenticationScope(serverConfig: ServerConfig, proxyCredentials: (() -> ProxyCredentialsModel?)?): AuthenticationScope =
         // TODO(logic): make it lazier
         AuthenticationScope(clientLabel, serverConfig, proxyCredentials)
 

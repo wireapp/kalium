@@ -1,5 +1,6 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
@@ -47,7 +48,7 @@ internal class AuthenticatedNetworkClient(
 internal class UnauthenticatedNetworkClient(
     engine: HttpClientEngine,
     backendLinks: ServerConfigDTO,
-    proxyCredentials: (() -> Pair<String, String>)?
+    proxyCredentials: (() -> ProxyCredentialsDTO?)?
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
         installWireDefaultRequest(backendLinks, proxyCredentials)

@@ -1,6 +1,7 @@
 package com.wire.kalium.network.session
 
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
@@ -35,7 +36,7 @@ interface SessionManager {
 
     suspend fun onSessionExpired()
     suspend fun onClientRemoved()
-    fun proxyCredentials(): Pair<String, String>?
+    fun proxyCredentials(): ProxyCredentialsDTO?
 }
 
 fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
