@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.prekey.ClientPreKeyInfo
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -40,13 +41,23 @@ class SessionEstablisherTest {
     private val proteusClient = configure(mock(ProteusClient::class)) { stubsUnitByDefault = true }
 
     @Mock
+    private val proteusClientProvider = mock(ProteusClientProvider::class)
+
+    @Mock
     private val preKeyRepository = configure(mock(PreKeyRepository::class)) { stubsUnitByDefault = true }
 
     private lateinit var sessionEstablisher: SessionEstablisher
 
+    init {
+        given(proteusClientProvider)
+            .suspendFunction(proteusClientProvider::getOrError)
+            .whenInvoked()
+            .thenReturn(Either.Right(proteusClient))
+    }
+
     @BeforeTest
     fun setup() {
-        sessionEstablisher = SessionEstablisherImpl(proteusClient, preKeyRepository)
+        sessionEstablisher = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
     }
 
     @Test
