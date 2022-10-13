@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
+import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -204,6 +205,8 @@ abstract class UserSessionScopeCommon internal constructor(
             }
         }
 
+    val callMapper: CallMapper get() = MapperProvider.callMapper(userId)
+
     val qualifiedIdMapper: QualifiedIdMapper get() = MapperProvider.qualifiedIdMapper(userId)
 
     val federatedIdMapper: FederatedIdMapper
@@ -211,7 +214,7 @@ abstract class UserSessionScopeCommon internal constructor(
             userId,
             qualifiedIdMapper,
             globalScope.sessionRepository
-            )
+        )
 
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
@@ -227,6 +230,7 @@ abstract class UserSessionScopeCommon internal constructor(
                 it.teamId
             }
         }
+
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val userConfigRepository: UserConfigRepository
@@ -343,7 +347,8 @@ abstract class UserSessionScopeCommon internal constructor(
             userRepository = userRepository,
             teamRepository = teamRepository,
             timeParser = timeParser,
-            persistMessage = persistMessage
+            persistMessage = persistMessage,
+            callMapper = callMapper
         )
     }
 
@@ -503,7 +508,8 @@ abstract class UserSessionScopeCommon internal constructor(
             messageSender = messages.messageSender,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
-            videoStateChecker = videoStateChecker
+            videoStateChecker = videoStateChecker,
+            callMapper = callMapper
         )
     }
 
