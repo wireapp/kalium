@@ -78,7 +78,11 @@ kotlin {
                 implementation(Dependencies.MultiplatformSettings.test)
             }
         }
-        val jvmMain by getting {}
+        val jvmMain by getting {
+            dependencies {
+	        implementation("net.java.dev.jna:jna:5.6.0")
+            }
+        }	
         val jvmTest by getting
         val androidMain by getting {
             dependencies {

@@ -46,6 +46,12 @@ kotlin {
                 api(Dependencies.Calling.jna)
             }
         }
+        val jvmMain by getting {
+            dependencies {
+	        implementation("net.java.dev.jna:jna:5.6.0")
+            }
+        }
+	
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
