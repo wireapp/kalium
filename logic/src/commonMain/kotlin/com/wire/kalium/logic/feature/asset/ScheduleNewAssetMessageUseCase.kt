@@ -22,7 +22,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -35,16 +34,21 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import okio.Path
 
-fun interface SendAssetMessageUseCase {
+fun interface ScheduleNewAssetMessageUseCase {
     /**
-     * Function that enables sending an asset message to a given conversation
+     * Function that enables sending an asset message to a given conversation with the strategy of fire & forget. This message is persisted
+     * locally and the asset upload is scheduled but not awaited, so returning a [ScheduleNewAssetMessageResult.Success] doesn't mean that
+     * the asset upload succeeded, but instead that the creation and persistence of the initial asset message succeeded.
      *
      * @param conversationId the id of the conversation where the asset wants to be sent
      * @param assetDataPath the raw data of the asset to be uploaded to the backend and sent to the given conversation
      * @param assetDataSize the size of the original asset file
      * @param assetName the name of the original asset file
      * @param assetMimeType the type of the asset file
-     * @return an [SendAssetMessageResult] containing a [CoreFailure] in case anything goes wrong and [Unit] in case everything succeeds
+     * @return an [ScheduleNewAssetMessageResult] containing a [CoreFailure] in case the creation and the local persistence of the original
+     * asset message went wrong or the [ScheduleNewAssetMessageResult.Success.messageId] in case the creation of the preview asset message
+     * succeeded. Note that this doesn't imply that the asset upload will succeed, it just confirms that the creation and persistence of the
+     * initial worked out.
      */
     @Suppress("LongParameterList")
     suspend operator fun invoke(
@@ -55,11 +59,11 @@ fun interface SendAssetMessageUseCase {
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?
-    ): SendAssetMessageResult
+    ): ScheduleNewAssetMessageResult
 }
 
 @Suppress("LongParameterList")
-internal class SendAssetMessageUseCaseImpl(
+internal class ScheduleNewAssetMessageUseCaseImpl(
     private val persistMessage: PersistMessageUseCase,
     private val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -69,7 +73,7 @@ internal class SendAssetMessageUseCaseImpl(
     private val messageSender: MessageSender,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
-) : SendAssetMessageUseCase {
+) : ScheduleNewAssetMessageUseCase {
     private lateinit var currentAssetMessageContent: AssetMessageMetadata
     override suspend fun invoke(
         conversationId: ConversationId,
@@ -79,7 +83,7 @@ internal class SendAssetMessageUseCaseImpl(
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?
-    ): SendAssetMessageResult {
+    ): ScheduleNewAssetMessageResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -99,9 +103,8 @@ internal class SendAssetMessageUseCaseImpl(
             assetId = UploadedAssetId("", ""), // Asset ID will be replaced with right value after asset upload
         )
         lateinit var message: Message.Regular
-        lateinit var uploadResult: SendAssetMessageResult
 
-        currentClientIdProvider().flatMap { currentClientId ->
+        return currentClientIdProvider().flatMap { currentClientId ->
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
 
@@ -122,16 +125,19 @@ internal class SendAssetMessageUseCaseImpl(
             )
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
-            persistMessage(message).map {
-                val uploadJob = scope.launch(dispatcher.io) {
-                    uploadResult = uploadAssetAndUpdateMessage(message, conversationId).fold({
-                        SendAssetMessageResult.Failure(it)
-                    }, { SendAssetMessageResult.Success })
-                }
-                uploadJob.join()
-            }
-        }
-        return uploadResult
+            persistMessage(message).fold({
+                Either.Left(it)
+                                         }, {
+                // We schedule the asset upload and return the message ID
+                scope.launch(dispatcher.io) { uploadAssetAndUpdateMessage(message, conversationId) }
+                Either.Right(Unit)
+            })
+        }.fold({
+            updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+            ScheduleNewAssetMessageResult.Failure(it)
+        }, {
+            ScheduleNewAssetMessageResult.Success(message.id)
+        })
     }
 
     private suspend fun uploadAssetAndUpdateMessage(message: Message.Regular, conversationId: ConversationId): Either<CoreFailure, Unit> =
@@ -152,7 +158,7 @@ internal class SendAssetMessageUseCaseImpl(
                 content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED))
             )
             persistMessage(updatedMessage).onFailure {
-                // TODO: Should we fail the whole message sending if the updated message persistance fails? Check when implementing AR-2408
+                // TODO: Should we fail the whole message sending if the updated message persistence fails? Check when implementing AR-2408
                 kaliumLogger.e(
                     "There was an error when trying to persist the updated asset message with the information returned by the backend "
                 )
@@ -160,12 +166,6 @@ internal class SendAssetMessageUseCaseImpl(
                 // Finally we try to send the Asset Message to the recipients of the given conversation
                 prepareAndSendAssetMessage(message, conversationId)
             }
-        }.flatMap {
-            Either.Right(Unit)
-        }.onFailure {
-            // TODO: Should we update the upload status as FAILED_UPLOAD even if the upload succeeded? Decide when implementing AR-2408
-            updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
-            Either.Left(it)
         }
 
     @Suppress("LongParameterList")
@@ -211,9 +211,9 @@ internal class SendAssetMessageUseCaseImpl(
     }
 }
 
-sealed class SendAssetMessageResult {
-    object Success : SendAssetMessageResult()
-    class Failure(val coreFailure: CoreFailure) : SendAssetMessageResult()
+sealed class ScheduleNewAssetMessageResult {
+    class Success(val messageId: String) : ScheduleNewAssetMessageResult()
+    class Failure(val coreFailure: CoreFailure) : ScheduleNewAssetMessageResult()
 }
 
 private data class AssetMessageMetadata(

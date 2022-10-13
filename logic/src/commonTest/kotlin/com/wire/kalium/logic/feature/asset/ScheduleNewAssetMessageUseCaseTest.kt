@@ -49,7 +49,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SendAssetMessageUseCaseTest {
+class ScheduleNewAssetMessageUseCaseTest {
 
     @Test
     fun givenAValidSendAssetMessageRequest_whenSendingAssetMessage_thenShouldReturnASuccessResult() = runTest(testDispatcher.default) {
@@ -72,11 +72,11 @@ class SendAssetMessageUseCaseTest {
         advanceUntilIdle()
 
         // Then
-        assertTrue(result is SendAssetMessageResult.Success)
+        assertTrue(result is ScheduleNewAssetMessageResult.Success)
     }
 
     @Test
-    fun givenAValidSendAssetMessageRequest_whenThereIsAnAssetUploadError_thenShouldCallReturnsAFailureResult() =
+    fun givenAValidSendAssetMessageRequest_whenThereIsAnAssetUploadError_thenShouldStillReturnSuccessResult() =
         runTest(testDispatcher.default) {
             // Given
             val assetToSend = mockedLongAssetData()
@@ -93,10 +93,7 @@ class SendAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
-            assertTrue(result is SendAssetMessageResult.Failure)
-            val exception = result.coreFailure
-            assertTrue(exception is NetworkFailure.ServerMiscommunication)
-            assertEquals(exception.rootCause, unauthorizedException)
+            assertTrue(result is ScheduleNewAssetMessageResult.Success)
         }
 
     @Test
@@ -251,7 +248,7 @@ class SendAssetMessageUseCaseTest {
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
-        private val testScope = TestScope()
+        private val testScope = TestScope(testDispatcher.default)
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
             fakeKaliumFileSystem.sink(dataPath).buffer().use {
@@ -330,7 +327,7 @@ class SendAssetMessageUseCaseTest {
                 .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
-        fun arrange() = this to SendAssetMessageUseCaseImpl(
+        fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
             updateUploadStatus,
             currentClientIdProvider,
