@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.call
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -76,6 +77,8 @@ class CallRepositoryTest {
         stubsUnitByDefault = true
     }
 
+    private val callMapper = CallMapperImpl(qualifiedIdMapper)
+
     private lateinit var callRepository: CallRepository
 
     @BeforeTest
@@ -88,7 +91,8 @@ class CallRepositoryTest {
             userRepository = userRepository,
             teamRepository = teamRepository,
             timeParser = TimeParserImpl(),
-            persistMessage = persistMessage
+            persistMessage = persistMessage,
+            callMapper = callMapper
         )
         given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
             .whenInvokedWith(eq("convId@domainId"))
