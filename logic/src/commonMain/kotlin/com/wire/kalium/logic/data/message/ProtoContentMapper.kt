@@ -98,7 +98,10 @@ class ProtoContentMapperImpl(
             is MessageContent.Reaction -> {
                 GenericMessage.Content.Reaction(
                     Reaction(
-                        emoji = readableContent.emojiSet.joinToString(separator = ",") { it },
+                        emoji = readableContent.emojiSet
+                            .map { it.trim() }
+                            .filter { it.isNotBlank() }
+                            .joinToString(separator = ",") { it },
                         messageId = readableContent.messageId
                     )
                 )
@@ -224,9 +227,9 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> {
                 val emoji = protoContent.value.emoji
-                // TODO: Actually handle Unicode properly
-                // We need to filter out the unicode variants for the emojis
-                val emojiSet = emoji?.split(',')?.filter { it.isNotBlank() }
+                val emojiSet = emoji?.split(',')
+                    ?.map { it.trim() }
+                    ?.filter { it.isNotBlank() }
                     ?.toSet() ?: emptySet()
                 MessageContent.Reaction(protoContent.value.messageId, emojiSet)
             }

@@ -50,7 +50,7 @@ class ClearConversationContentUseCaseTest {
 
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
-                .with(anything())
+                .with(anything(), anything())
                 .wasNotInvoked()
         }
     }
@@ -82,7 +82,7 @@ class ClearConversationContentUseCaseTest {
 
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
-                .with(anything())
+                .with(anything(), anything())
                 .wasNotInvoked()
         }
     }
@@ -115,7 +115,7 @@ class ClearConversationContentUseCaseTest {
 
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
-                .with(anything())
+                .with(anything(), anything())
                 .wasInvoked(Times(1))
         }
     }
@@ -148,7 +148,7 @@ class ClearConversationContentUseCaseTest {
 
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
-                .with(anything())
+                .with(anything(), anything())
                 .wasInvoked(Times(1))
         }
     }
@@ -198,7 +198,7 @@ class ClearConversationContentUseCaseTest {
         fun withMessageSending(isSuccessFull: Boolean): Arrangement {
             given(messageSender)
                 .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(anything())
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(if (isSuccessFull) Either.Right(Unit) else Either.Left(CoreFailure.Unknown(Throwable("an error"))))
 
             return this

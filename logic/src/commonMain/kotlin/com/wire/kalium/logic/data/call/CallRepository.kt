@@ -66,7 +66,7 @@ internal class CallDataSource(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
     private val timeParser: TimeParser,
-    private val callMapper: CallMapper = MapperProvider.callMapper(),
+    private val callMapper: CallMapper,
     private val activeSpeakerMapper: ActiveSpeakerMapper = MapperProvider.activeSpeakerMapper()
 ) : CallRepository {
 
