@@ -169,31 +169,18 @@ class CallMapperImpl(
     )
 
     override fun toClientMessageTarget(callClientList: CallClientList): MessageTarget.Client {
-        val recipientsList = mutableListOf<Recipient>()
-
-        for (callClient in callClientList.clients) {
-            val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callClient.userId)
-            val clientId = ClientId(callClient.clientId)
-            val recipientIndex = recipientsList.indexOfFirst { it.id == qualifiedUserId }
-
-            if (recipientIndex == -1) {
-                recipientsList.add(
-                    Recipient(
-                        id = qualifiedUserId,
-                        clients = mutableListOf(clientId)
-                    )
-                )
-            } else {
-                recipientsList[recipientIndex] = recipientsList[recipientIndex].copy(
-                    clients = recipientsList[recipientIndex].clients.toMutableList().apply {
-                        add(clientId)
-                    }
-                )
+        val recipients = callClientList.clients.groupingBy { it.userId }
+            .fold({ key, _ -> key to mutableListOf<ClientId>() }, { _, accumulator, element ->
+                accumulator.also { (_, list) -> list.add(ClientId(element.clientId)) }
+            }).run {
+                values.toList().map {
+                    val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(it.first)
+                    Recipient(qualifiedUserId, it.second)
+                }
             }
-        }
 
         return MessageTarget.Client(
-            recipients = recipientsList
+            recipients = recipients
         )
     }
 }
