@@ -323,13 +323,13 @@ internal class ConversationEventReceiverImpl(
     private suspend fun handleMemberChange(event: Event.Conversation.MemberChanged) {
         when (event) {
             is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
-                logger.d("Handling member muted state event: $event")
                 conversationRepository.updateMutedStatus(
                     event.conversationId,
                     event.mutedConversationStatus,
                     Clock.System.now().toEpochMilliseconds()
                 )
             }
+
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
                 // Attempt to fetch conversation details if needed, as this might be an unknown conversation
                 conversationRepository.fetchConversationIfUnknown(event.conversationId)
@@ -344,8 +344,9 @@ internal class ConversationEventReceiverImpl(
                         conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
                     }.onFailure { logger.e("$TAG - failure on member update event: $it") }
             }
+
             else -> {
-                logger.w("Ignoring member.update event, not handled yet: $event")
+                logger.w("Ignoring 'conversation.member-update' event, not handled yet: $event")
             }
         }
     }
