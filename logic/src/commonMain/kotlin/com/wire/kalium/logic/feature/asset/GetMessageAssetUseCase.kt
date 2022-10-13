@@ -77,8 +77,6 @@ internal class GetMessageAssetUseCaseImpl(
             // Start progress bar for generic assets
             if (!wasDownloaded) updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
 
-            lateinit var downloadResult: MessageAssetResult
-
             scope.async(dispatcher.io) {
                 assetDataSource.fetchPrivateDecodedAsset(
                     assetId = AssetId(assetMetadata.assetKey, assetMetadata.assetKeyDomain.orEmpty()),
@@ -89,16 +87,14 @@ internal class GetMessageAssetUseCaseImpl(
                     kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
                     // This should be called if there is an issue while downloading the asset
                     updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
-                    downloadResult = MessageAssetResult.Failure(it)
-                    downloadResult
+                    MessageAssetResult.Failure(it)
                 }, { decodedAssetPath ->
                     // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while
                     // running this specific use case. Otherwise, recursive loop as described above kicks in.
                     if (!wasDownloaded)
                         updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
 
-                    downloadResult = MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
-                    downloadResult
+                    MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize)
                 })
             }
         })
