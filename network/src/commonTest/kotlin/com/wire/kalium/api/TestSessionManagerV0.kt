@@ -25,8 +25,8 @@ class TestSessionManagerV0 : SessionManager {
         TODO("Not yet implemented")
     }
 
-    override fun proxyCredentials(): ProxyCredentialsDTO? = ProxyCredentialsDTO("username", "password")
-
+    override fun proxyCredentials(): ProxyCredentialsDTO? =
+        ProxyCredentialsDTO("username", "password")
 
     override suspend fun onSessionExpired() {
         TODO("Not yet implemented")
