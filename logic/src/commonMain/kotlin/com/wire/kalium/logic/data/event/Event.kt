@@ -5,6 +5,7 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
@@ -109,23 +110,37 @@ sealed class Event(open val id: String) {
             }
         }
 
-        open class MemberChanged(
+        sealed class MemberChanged(
             override val id: String,
             override val conversationId: ConversationId,
-            val timestampIso: String,
-            val member: Member?,
+            open val timestampIso: String,
         ) : Conversation(id, conversationId) {
-            override fun toString(): String {
-                return "id: ${id.obfuscateId()} " +
-                        "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
-                        "member: $member timestampIso: $timestampIso"
+            class MemberChangedRole(
+                override val id: String,
+                override val conversationId: ConversationId,
+                override val timestampIso: String,
+                val member: Member?,
+            ) : MemberChanged(id, conversationId, timestampIso) {
+                override fun toString(): String {
+                    return "id: ${id.obfuscateId()} " +
+                            "conversationId: ${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()} " +
+                            "member: $member timestampIso: $timestampIso"
+                }
             }
-        }
 
-        data class IgnoredMemberChanged(
-            override val id: String,
-            override val conversationId: ConversationId
-        ) : MemberChanged(id, conversationId, "", null)
+            data class MemberMutedStatusChanged(
+                override val id: String,
+                override val conversationId: ConversationId,
+                override val timestampIso: String,
+                val mutedConversationStatus: MutedConversationStatus,
+                val mutedConversationChangedTime: String
+            ) : MemberChanged(id, conversationId, timestampIso)
+
+            data class IgnoredMemberChanged(
+                override val id: String,
+                override val conversationId: ConversationId
+            ) : MemberChanged(id, conversationId, "")
+        }
 
         data class MLSWelcome(
             override val id: String,

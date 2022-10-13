@@ -321,22 +321,32 @@ internal class ConversationEventReceiverImpl(
         .onFailure { logger.e("$TAG - failure on member leave event: $it") }
 
     private suspend fun handleMemberChange(event: Event.Conversation.MemberChanged) {
-        if (event is Event.Conversation.IgnoredMemberChanged) {
-            logger.w("failure? member role is missing from event: $event")
-            return
-        } else {
-            // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-            conversationRepository.fetchConversationIfUnknown(event.conversationId)
-                .run {
-                    onSuccess {
-                        logger.v("Succeeded fetching conversation details on MemberChange Event: $event")
-                    }
-                    onFailure {
-                        logger.w("Failure fetching conversation details on MemberChange Event: $event")
-                    }
-                    // Even if unable to fetch conversation details, at least attempt updating the member
-                    conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
-                }.onFailure { logger.e("$TAG - failure on member update event: $it") }
+        when (event) {
+            is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
+                logger.d("Handling member muted state event: $event")
+                conversationRepository.updateMutedStatus(
+                    event.conversationId,
+                    event.mutedConversationStatus,
+                    Clock.System.now().toEpochMilliseconds()
+                )
+            }
+            is Event.Conversation.MemberChanged.MemberChangedRole -> {
+                // Attempt to fetch conversation details if needed, as this might be an unknown conversation
+                conversationRepository.fetchConversationIfUnknown(event.conversationId)
+                    .run {
+                        onSuccess {
+                            logger.v("Succeeded fetching conversation details on MemberChange Event: $event")
+                        }
+                        onFailure {
+                            logger.w("Failure fetching conversation details on MemberChange Event: $event")
+                        }
+                        // Even if unable to fetch conversation details, at least attempt updating the member
+                        conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
+                    }.onFailure { logger.e("$TAG - failure on member update event: $it") }
+            }
+            else -> {
+                logger.w("Ignoring member.update event, not handled yet: $event")
+            }
         }
     }
 
