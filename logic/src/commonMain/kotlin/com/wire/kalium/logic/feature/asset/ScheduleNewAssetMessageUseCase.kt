@@ -125,13 +125,10 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             )
 
             // We persist the asset message right away so that it can be displayed on the conversation screen loading
-            persistMessage(message)
-                .onSuccess {
-                    // We schedule the asset upload and return Either.Right(Unit) so later it's transformed to Success(message.id)
-                    scope.launch(dispatcher.io) { uploadAssetAndUpdateMessage(message, conversationId) }
-                }.onFailure {
-                    updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
-                }
+            persistMessage(message).onSuccess {
+                // We schedule the asset upload and return Either.Right(Unit) so later it's transformed to Success(message.id)
+                scope.launch(dispatcher.io) { uploadAssetAndUpdateMessage(message, conversationId) }
+            }
         }.fold({
             updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
             ScheduleNewAssetMessageResult.Failure(it)
