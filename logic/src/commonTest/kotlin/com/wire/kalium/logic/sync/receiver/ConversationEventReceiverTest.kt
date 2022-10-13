@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -45,7 +44,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandlerImpl
@@ -120,7 +118,8 @@ class ConversationEventReceiverTest {
                 1000, "some-image.jpg", "image/jpg", AssetContent.AssetMetadata.Image(200, 200),
                 AssetContent.RemoteData(
                     ByteArray(16), ByteArray(16), "assetid", null, null, null
-                ), Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
+                ),
+                    Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
         val coreFailure = StorageFailure.DataNotFound
@@ -138,10 +137,12 @@ class ConversationEventReceiverTest {
 
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+            .with(
+                matching {
                 it.content is MessageContent.Asset &&
                         (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
-            })
+            }
+            )
             .wasInvoked()
     }
 
@@ -327,9 +328,11 @@ class ConversationEventReceiverTest {
 
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+            .with(
+                matching {
                 it is Message.System && it.content is MessageContent.MemberChange
-            })
+            }
+            )
             .wasInvoked(exactly = once)
     }
 
@@ -551,9 +554,6 @@ class ConversationEventReceiverTest {
 
         @Mock
         val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
-
-        @Mock
-        private val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
         @Mock
         private val userRepository = mock(classOf<UserRepository>())

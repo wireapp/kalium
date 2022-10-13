@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -288,13 +290,23 @@ abstract class UserSessionScopeCommon internal constructor(
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
             userRepository,
-            mlsConversationRepository,
+            mlsClientProvider,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             timeParser,
+            userId
+        )
+
+    private val conversationGroupRepository: ConversationGroupRepository
+        get() = ConversationGroupRepositoryImpl(
+            userRepository,
+            conversationRepository,
+            mlsConversationRepository,
+            userStorage.database.conversationDAO,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userId
         )
 
@@ -453,7 +465,8 @@ abstract class UserSessionScopeCommon internal constructor(
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
         get() = JoinExistingMLSConversationsUseCase(
             featureSupport,
-            conversationRepository
+            conversationRepository,
+            conversationGroupRepository
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
@@ -573,28 +586,28 @@ abstract class UserSessionScopeCommon internal constructor(
     private val newConversationHandler: NewConversationEventHandler get() = NewConversationEventHandlerImpl(conversationRepository)
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
-        userRepository,
-        conversationRepository,
-        EphemeralNotificationsManager
-    )
+            userRepository,
+            conversationRepository,
+            EphemeralNotificationsManager
+        )
     private val memberJoinHandler: MemberJoinEventHandler get() = MemberJoinEventHandlerImpl(conversationRepository, persistMessage)
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
-        authenticatedDataSourceSet.userDatabaseProvider.conversationDAO,
-        userRepository,
-        persistMessage
-    )
+            userStorage.database.conversationDAO,
+            userRepository,
+            persistMessage
+        )
     private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
-        mlsClientProvider,
-        authenticatedDataSourceSet.userDatabaseProvider.conversationDAO
-    )
+            mlsClientProvider,
+            userStorage.database.conversationDAO
+        )
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
-        conversationRepository,
-        persistMessage
-    )
+            conversationRepository,
+            persistMessage
+        )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
@@ -666,6 +679,7 @@ abstract class UserSessionScopeCommon internal constructor(
     val conversations: ConversationScope
         get() = ConversationScope(
             conversationRepository,
+            conversationGroupRepository,
             connectionRepository,
             userRepository,
             syncManager,

@@ -2,7 +2,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
@@ -63,6 +62,7 @@ interface NewMessageEventHandler {
     suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage)
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class NewMessageEventHandlerImpl(
     private val proteusClientProvider: ProteusClientProvider,
     private val mlsClientProvider: MLSClientProvider,
@@ -217,6 +217,7 @@ internal class NewMessageEventHandlerImpl(
             } ?: Either.Left(StorageFailure.DataNotFound)
         }
 
+    @Suppress("ComplexMethod")
     private suspend fun handleContent(
         conversationId: ConversationId,
         timestampIso: String,
