@@ -80,7 +80,7 @@ class ConversationScope internal constructor(
         get() = CreateGroupConversationUseCase(conversationRepository, conversationGroupRepository, syncManager, clientRepository)
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
-        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, selfUserId, persistMessage)
+        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository)
 
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
         get() = GetOrCreateOneToOneConversationUseCase(conversationRepository, conversationGroupRepository)
@@ -110,10 +110,10 @@ class ConversationScope internal constructor(
         get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
 
     val removeMemberFromConversation: RemoveMemberFromConversationUseCase
-        get() = RemoveMemberFromConversationUseCaseImpl(conversationGroupRepository, selfUserId, persistMessage)
+        get() = RemoveMemberFromConversationUseCaseImpl(conversationGroupRepository)
 
     val leaveConversation: LeaveConversationUseCase
-        get() = LeaveConversationUseCaseImpl(conversationGroupRepository, selfUserId, persistMessage)
+        get() = LeaveConversationUseCaseImpl(conversationGroupRepository, selfUserId)
 
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)

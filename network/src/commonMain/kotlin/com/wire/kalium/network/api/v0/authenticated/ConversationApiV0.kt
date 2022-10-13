@@ -93,7 +93,8 @@ internal open class ConversationApiV0 internal constructor(
             setBody(request)
         }.let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberAddedDTO.Changed> { response }
+                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberJoinDTO> { response }
+                    .mapSuccess { ConversationMemberAddedDTO.Changed(it) }
                 HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberAddedDTO.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
@@ -113,7 +114,8 @@ internal open class ConversationApiV0 internal constructor(
             "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
         ).let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberRemovedDTO.Changed> { response }
+                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberLeaveDTO> { response }
+                    .mapSuccess { ConversationMemberRemovedDTO.Changed(it) }
                 HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberRemovedDTO.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }

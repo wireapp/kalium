@@ -116,8 +116,7 @@ class ConversationRepositoryTest {
             messageDAO,
             clientDao,
             clientApi,
-            timeParser,
-            TestUser.SELF.id
+            timeParser
         )
     }
 
@@ -1082,8 +1081,7 @@ class ConversationRepositoryTest {
                 messageDAO,
                 clientDao,
                 clientApi,
-                timeParser,
-                TestUser.SELF.id
+                timeParser
             )
 
         fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {
