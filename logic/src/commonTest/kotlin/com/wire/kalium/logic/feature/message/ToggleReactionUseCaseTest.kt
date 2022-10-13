@@ -28,7 +28,7 @@ import kotlin.test.assertEquals
 
 class ToggleReactionUseCaseTest {
 
-    //FIXME: Mockative doesn't properly generate Mocks when there are Typealiases
+    // FIXME: Mockative doesn't properly generate Mocks when there is a Typealias
     //       with generic types, such as typealias Foo = Bar<Thing>
     //       So ReactionRepository is mocked manually
 
@@ -92,7 +92,6 @@ class ToggleReactionUseCaseTest {
             }, any())
     }
 
-
     @Test
     fun givenReactionWasNotPresent_whenTogglingReaction_thenShouldRemoveItFromRepository() = runTest {
         val emojiReaction = "🫡"
@@ -150,9 +149,9 @@ class ToggleReactionUseCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(matching {
                 val content = it.content as MessageContent.Reaction
-                content.emojiSet.size == 1
-                        && content.emojiSet.first() == emojiReaction
-                        && content.messageId == TEST_MESSAGE_ID
+                content.emojiSet.size == 1 &&
+                        content.emojiSet.first() == emojiReaction &&
+                        content.messageId == TEST_MESSAGE_ID
             }, any())
     }
 
