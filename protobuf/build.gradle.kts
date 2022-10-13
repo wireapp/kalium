@@ -1,3 +1,4 @@
+import com.google.protobuf.gradle.GenerateProtoTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
@@ -28,6 +29,8 @@ android {
 }
 
 val codegenProject = project(":protobuf-codegen")
+val generatedFilesBaseDir = file("generated")
+generatedFilesBaseDir.mkdirs()
 
 kotlin {
     jvm {
@@ -56,7 +59,7 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            kotlin.srcDir(codegenProject.file("generated"))
+            kotlin.srcDir(generatedFilesBaseDir)
             dependencies {
                 api(Dependencies.Protobuf.pbandkRuntime)
             }
@@ -80,7 +83,28 @@ val compileTasks = tasks.matching { it is KotlinCompile || it is KotlinNativeCom
 codegenProject.tasks
     .matching { it.name == "generateProto" }
     .all {
+        this as GenerateProtoTask
         compileTasks.forEach { compileTask ->
             compileTask.dependsOn(this)
+        }
+        // Always generate protobuf files. So we make sure they exist.
+        outputs.upToDateWhen {
+            false
+        }
+        doLast {
+            outputSourceDirectorySet.srcDirs.forEach { generatedDirectory ->
+                generatedFilesBaseDir.mkdirs()
+                val targetDirectory = File(generatedFilesBaseDir, generatedDirectory.name)
+                // Delete already existing files
+                targetDirectory.deleteRecursively()
+
+                // Move generated files to target directory
+                val movingSucceeded = generatedDirectory.renameTo(targetDirectory)
+
+                require(movingSucceeded) {
+                    "Failed to move Generated protobuf files from '${generatedDirectory.absolutePath}' " +
+                            "to destination directory '${targetDirectory.absolutePath}'"
+                }
+            }
         }
     }

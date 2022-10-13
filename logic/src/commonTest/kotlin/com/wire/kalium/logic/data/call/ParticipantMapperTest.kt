@@ -53,20 +53,6 @@ class ParticipantMapperTest {
         assertEquals(expectedParticipant, participantMap)
     }
 
-    @Test
-    fun whenMappingToCallClient_withCallMember_thenReturnCallMember() = runTest {
-        val callClientMap = participantMapperImpl.fromCallMemberToCallClient(
-            member = DUMMY_CALL_MEMBER
-        )
-
-        val expectedCallClient = CallClient(
-            userId = "dummyId@dummyDomain",
-            clientId = "dummyClientId"
-        )
-
-        assertEquals(expectedCallClient, callClientMap)
-    }
-
     companion object {
         private val DUMMY_CALL_MEMBER = CallMember(
             userId = "dummyId@dummyDomain",
