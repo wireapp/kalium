@@ -351,7 +351,7 @@ class ConversationEventReceiverTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateMutedStatus)
-            .with(eq(event.conversationId), eq(event.mutedConversationStatus), eq(event.mutedConversationChangedTime))
+            .with(eq(event.conversationId), any(), any())
             .wasInvoked(exactly = once)
     }
 
