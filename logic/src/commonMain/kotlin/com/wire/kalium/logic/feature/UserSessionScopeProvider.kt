@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.PlatformUserStorageProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import io.ktor.util.collections.ConcurrentMap
