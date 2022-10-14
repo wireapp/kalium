@@ -2,7 +2,7 @@ package com.wire.kalium.persistence.util
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 
-internal object FileNameUtil {
+object FileNameUtil {
     fun appPrefFile() = SHARED_PREFERENCE_FILE_NAME
     fun globalDBName() = GLOBAL_DB_NAME
 

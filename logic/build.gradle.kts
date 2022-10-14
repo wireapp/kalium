@@ -68,6 +68,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(project(":persistence-test"))
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
                 implementation(Dependencies.Test.turbine)
