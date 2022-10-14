@@ -4,28 +4,25 @@ import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.PlatformUserStorageProperties
+import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
-import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
-import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
-import com.wire.kalium.util.KaliumDispatcherImpl
-import java.io.File
 
 @Suppress("LongParameterList")
-actual class UserSessionScopeProviderImpl(
+internal actual class UserSessionScopeProviderImpl(
     private val rootPath: String,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
-    private val idMapper: IdMapper
+    private val userStorageProvider: UserStorageProvider,
 ) : UserSessionScopeProviderCommon(globalCallManager) {
 
     override fun create(userId: UserId): UserSessionScope {
@@ -41,22 +38,15 @@ actual class UserSessionScopeProviderImpl(
         val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath)
 
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(userId)
-        val userPrefBuilder = UserPrefBuilder(
-            idMapper.toDaoModel(userId),
-            rootPath,
-            kaliumConfigs.shouldEncryptData
-        )
-        val userDatabase = UserDatabaseProvider(idMapper.toDaoModel(userId), File(rootStoragePath), KaliumDispatcherImpl.io)
 
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,
             networkContainer,
             proteusClientProvider,
-            userSessionWorkScheduler,
-            userDatabase,
-            userPrefBuilder
+            userSessionWorkScheduler
         )
         return UserSessionScope(
+            PlatformUserStorageProperties(rootPath, rootStoragePath),
             userId,
             userDataSource,
             globalScope,
@@ -65,6 +55,7 @@ actual class UserSessionScopeProviderImpl(
             dataStoragePaths,
             kaliumConfigs,
             featureSupport,
+            userStorageProvider,
             this
         )
     }

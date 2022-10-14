@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -20,14 +21,14 @@ import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 @Suppress("LongParameterList")
-actual class UserSessionScopeProviderImpl(
+internal actual class UserSessionScopeProviderImpl(
     private val rootPath: String,
     private val appContext: Context,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
-    private val idMapper: IdMapper
+    private val userStorageProvider: UserStorageProvider
 ) : UserSessionScopeProviderCommon(globalCallManager) {
 
     override fun create(userId: UserId): UserSessionScope {
@@ -42,27 +43,12 @@ actual class UserSessionScopeProviderImpl(
         val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath)
 
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, userId)
-        val userIDEntity = idMapper.toDaoModel(userId)
-        val userPrefBuilder = UserPrefBuilder(
-            userIDEntity,
-            appContext,
-            kaliumConfigs.shouldEncryptData
-        )
-        val userDatabaseProvider =
-            UserDatabaseProvider(
-                appContext,
-                userIDEntity,
-                SecurityHelper(globalPreferences.passphraseStorage).userDBSecret(userId),
-                kaliumConfigs.shouldEncryptData,
-                KaliumDispatcherImpl.io
-            )
+
         val userDataSource = AuthenticatedDataSourceSet(
             rootAccountPath,
             networkContainer,
             proteusClientProvider,
-            userSessionWorkScheduler,
-            userDatabaseProvider,
-            userPrefBuilder
+            userSessionWorkScheduler
         )
         return UserSessionScope(
             appContext,
@@ -74,6 +60,7 @@ actual class UserSessionScopeProviderImpl(
             dataStoragePaths,
             kaliumConfigs,
             featureSupport,
+            userStorageProvider,
             this
         )
     }
