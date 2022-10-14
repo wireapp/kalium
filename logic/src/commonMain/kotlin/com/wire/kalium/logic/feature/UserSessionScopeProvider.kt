@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.PlatformUserStorageProvider
+import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import io.ktor.util.collections.ConcurrentMap
 
@@ -11,7 +13,8 @@ interface UserSessionScopeProvider {
 }
 
 abstract class UserSessionScopeProviderCommon(
-    private val globalCallManager: GlobalCallManager
+    private val globalCallManager: GlobalCallManager,
+    private val userStorageProvider: UserStorageProvider,
 ) : UserSessionScopeProvider {
 
     private val userScopeStorage: ConcurrentMap<UserId, UserSessionScope> by lazy {
@@ -26,6 +29,7 @@ abstract class UserSessionScopeProviderCommon(
     override fun delete(userId: UserId) {
         globalCallManager.removeInMemoryCallingManagerForUser(userId)
         userScopeStorage.remove(userId)
+        userStorageProvider.clearInMemoryUserStorage(userId)
     }
 
     abstract fun create(userId: UserId): UserSessionScope
