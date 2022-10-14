@@ -23,6 +23,7 @@ import platform.Foundation.create
 import platform.Foundation.valueForKey
 import platform.posix.memcpy
 
+@Suppress("TooManyFunctions")
 actual class ProteusClientImpl actual constructor(private val rootDir: String) : ProteusClient {
 
     private var box: EncryptionContext? = null
@@ -46,9 +47,6 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
         } else {
             throw ProteusException(message = "Local files were not found", code = ProteusException.Code.LOCAL_FILES_NOT_FOUND)
         }
-    }
-
-    override suspend fun open() {
     }
 
     override fun getIdentity(): ByteArray {

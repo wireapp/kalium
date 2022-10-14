@@ -6,6 +6,7 @@ import com.wire.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 
+@Suppress("TooManyFunctions")
 actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClient {
 
     private val path: String
