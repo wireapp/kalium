@@ -2869,6 +2869,10 @@ $dokka.location:com.wire.kalium.logic.feature.call.usecase/GetAllCallsWithSorted
 $dokka.location:com.wire.kalium.logic.feature.call.usecase/GetAllCallsWithSortedParticipantsUseCase/invoke/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-get-all-calls-with-sorted-participants-use-case/invoke.html
 $dokka.location:com.wire.kalium.logic.feature.call.usecase/GetIncomingCallsUseCase///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-get-incoming-calls-use-case/index.html
 $dokka.location:com.wire.kalium.logic.feature.call.usecase/GetIncomingCallsUseCase/invoke/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-get-incoming-calls-use-case/invoke.html
+$dokka.location:com.wire.kalium.logic.feature.call.usecase/IsCallRunningUseCase.Companion///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-is-call-running-use-case/-companion/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.usecase/IsCallRunningUseCase.Companion/runningCalls/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-is-call-running-use-case/-companion/running-calls.html
+$dokka.location:com.wire.kalium.logic.feature.call.usecase/IsCallRunningUseCase///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-is-call-running-use-case/index.html
+$dokka.location:com.wire.kalium.logic.feature.call.usecase/IsCallRunningUseCase/invoke/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-is-call-running-use-case/invoke.html
 $dokka.location:com.wire.kalium.logic.feature.call.usecase/IsLastCallClosedUseCase///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-is-last-call-closed-use-case/index.html
 $dokka.location:com.wire.kalium.logic.feature.call.usecase/IsLastCallClosedUseCase/invoke/#com.wire.kalium.logic.data.id.QualifiedID#kotlin.Long/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-is-last-call-closed-use-case/invoke.html
 $dokka.location:com.wire.kalium.logic.feature.call.usecase/MuteCallUseCase///PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call.usecase/-mute-call-use-case/index.html
@@ -2970,6 +2974,7 @@ $dokka.location:com.wire.kalium.logic.feature.call/CallsScope/answerCall/#/Point
 $dokka.location:com.wire.kalium.logic.feature.call/CallsScope/endCall/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call/-calls-scope/end-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallsScope/establishedCall/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call/-calls-scope/established-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallsScope/getIncomingCalls/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call/-calls-scope/get-incoming-calls.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallsScope/isCallRunning/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call/-calls-scope/is-call-running.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallsScope/isLastCallClosed/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call/-calls-scope/is-last-call-closed.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallsScope/muteCall/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call/-calls-scope/mute-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallsScope/observeOngoingCalls/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.feature.call/-calls-scope/observe-ongoing-calls.html
