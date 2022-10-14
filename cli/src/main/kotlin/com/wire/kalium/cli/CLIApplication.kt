@@ -21,7 +21,6 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -34,7 +33,6 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
-import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.client.DeleteClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase.RegisterClientParam
@@ -59,7 +57,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 suspend fun getConversations(userSession: UserSessionScope): List<Conversation> {
-   userSession.syncManager.waitUntilLive()
+    userSession.syncManager.waitUntilLive()
 
     val conversations = userSession.conversations.getConversations().let {
         when (it) {
@@ -68,7 +66,7 @@ suspend fun getConversations(userSession: UserSessionScope): List<Conversation> 
         }
     }
 
-   return conversations
+    return conversations
 }
 
 suspend fun listConversations(userSession: UserSessionScope): List<Conversation> {
@@ -191,8 +189,12 @@ class LoginCommand : CliktCommand(name = "login") {
 
     private val coreLogic by requireObject<CoreLogic>()
     private var userSession: UserSessionScope? = null
-    private val email: String by option("-e", help = "Account email").prompt("email", promptSuffix = ": ")
-    private val password: String by option("-p", help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
+    private val email: String by option("-e", "--email", help = "Account email").prompt("email", promptSuffix = ": ")
+    private val password: String by option("-p", "--password", help = "Account password").prompt(
+        "password",
+        promptSuffix = ": ",
+        hideInput = true
+    )
     private val environment: String? by option(
         help = "Choose backend environment: can be production, staging or an URL to a server configuration"
     )
@@ -330,82 +332,94 @@ class RefillKeyPackagesCommand : CliktCommand(name = "refill-key-packages") {
     }
 }
 
-var currentConversation: Conversation? = null
-var callsScope: CallsScope? = null
-var isMuted: Boolean = false
+class ConsoleContext(
+    var currentConversation: Conversation?,
+    var isMuted: Boolean = false
+)
 
-class KeyStroke(val key: Char,
-		val handler: suspend (userSession: UserSessionScope) -> Int) {
-	suspend fun exec(userSession: UserSessionScope) = handler(userSession)
+class KeyStroke(
+    val key: Char,
+    val handler: suspend (userSession: UserSessionScope, context: ConsoleContext) -> Int
+) {
+    suspend fun exec(userSession: UserSessionScope, context: ConsoleContext) = handler(userSession, context)
 }
 
 var strokes: Array<KeyStroke> = arrayOf(
-	KeyStroke('l', ::listConversationsHandler),
-	KeyStroke('c', ::startCallHandler),
-	KeyStroke('a', ::answerCallHandler),
-	KeyStroke('e', ::endCallHandler),
-	KeyStroke('m', ::muteCallHandler),
-	KeyStroke('s', ::selectConversationHandler),
-	KeyStroke('q', ::quitApplication)
+    KeyStroke('l', ::listConversationsHandler),
+    KeyStroke('c', ::startCallHandler),
+    KeyStroke('a', ::answerCallHandler),
+    KeyStroke('e', ::endCallHandler),
+    KeyStroke('m', ::muteCallHandler),
+    KeyStroke('s', ::selectConversationHandler),
+    KeyStroke('q', ::quitApplication)
 )
 
-suspend fun executeStroke(userSession: UserSessionScope, key: Char) {
-	for(stroke in strokes) {
-		if (stroke.key.equals(key)) {
-			stroke.handler(userSession)
-			return
-		}
-	}
-	echo("Unknown stroke: ${key}")
+suspend fun executeStroke(userSession: UserSessionScope, context: ConsoleContext,  key: Char) {
+    for (stroke in strokes) {
+        if (stroke.key.equals(key)) {
+            stroke.handler(userSession, context)
+            return
+        }
+    }
+    echo("Unknown stroke: ${key}")
 }
 
-suspend fun listConversationsHandler(userSession: UserSessionScope): Int {
-	listConversations(userSession)
-	return 0
+suspend fun listConversationsHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+    listConversations(userSession)
+    return 0
 }
 
-suspend fun selectConversationHandler(userSession: UserSessionScope): Int {
-	currentConversation = selectConversation(userSession)
-	return 0
+suspend fun selectConversationHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+    context.currentConversation = selectConversation(userSession)
+    return 0
 }
 
-suspend fun startCallHandler(userSession: UserSessionScope): Int {
+suspend fun startCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+    val currentConversation = context.currentConversation ?: return -1
 
-	val convType = when(currentConversation!!.type) {
-	    Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
-	    Conversation.Type.GROUP -> ConversationType.Conference
-	    else -> ConversationType.Unknown
-	}
-	callsScope!!.startCall.invoke(conversationId = currentConversation!!.id,
-				      conversationType = convType)
+    val convType = when (currentConversation.type) {
+        Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
+        Conversation.Type.GROUP -> ConversationType.Conference
+        else -> ConversationType.Unknown
+    }
 
-        return 0
+    userSession.calls.startCall.invoke(
+        conversationId = currentConversation.id,
+        conversationType = convType
+    )
+
+    return 0
 }
 
-suspend fun answerCallHandler(userSession: UserSessionScope): Int {
-	callsScope!!.answerCall.invoke(conversationId = currentConversation!!.id)
-	return 0
+suspend fun answerCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+    val currentConversation = context.currentConversation ?: return -1
+    userSession.calls.answerCall.invoke(conversationId = currentConversation.id)
+    return 0
 }
 
 
-suspend fun endCallHandler(userSession: UserSessionScope): Int {
-	callsScope!!.endCall.invoke(conversationId = currentConversation!!.id)
-	return 0
+suspend fun endCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+    val currentConversation = context.currentConversation ?: return -1
+    userSession.calls.endCall.invoke(conversationId = currentConversation.id)
+    return 0
 }
 
-suspend fun muteCallHandler(userSession: UserSessionScope): Int {
-	isMuted = !isMuted
-	if (isMuted)
-	   callsScope!!.muteCall(conversationId = currentConversation!!.id)
-	else
-	   callsScope!!.unMuteCall(conversationId = currentConversation!!.id)
+suspend fun muteCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+    val currentConversation = context.currentConversation ?: return -1
 
-	return 0
+    context.isMuted = !context.isMuted
+
+    if (context.isMuted)
+        userSession.calls.muteCall(conversationId = currentConversation.id)
+    else
+        userSession.calls.unMuteCall(conversationId = currentConversation.id)
+
+    return 0
 }
 
-suspend fun quitApplication(userSession: UserSessionScope): Int {
-	kotlin.system.exitProcess(0)
-	return 0
+suspend fun quitApplication(userSession: UserSessionScope, context: ConsoleContext): Int {
+    kotlin.system.exitProcess(0)
+    return 0
 }
 
 
@@ -415,66 +429,63 @@ class ConsoleCommand : CliktCommand(name = "console") {
     private val avsNoise by option("-N").flag(default = false)
 
     private val userSession by requireObject<UserSessionScope>()
+    private val context = ConsoleContext(null, false)
 
     override fun run() = runBlocking {
-	val conversations = getConversations(userSession)
+        val conversations = getConversations(userSession)
+        context.currentConversation = conversations[0]
 
-        currentConversation = conversations[0]
-
-	if (port > 0) {
-	    HttpServer.create(InetSocketAddress(port), 0).apply {
+        if (port > 0) {
+            HttpServer.create(InetSocketAddress(port), 0).apply {
                 createContext("/stroke") { http ->
-		    val stroke = http.getRequestURI().getQuery()[0]
-		    echo("*** REST-stroke=${stroke}")
-		    val job = GlobalScope.launch(Dispatchers.Default) {
-			    executeStroke(userSession, stroke);
-		    }
+                    val stroke = http.getRequestURI().getQuery()[0]
+                    echo("*** REST-stroke=${stroke}")
+                    val job = GlobalScope.launch(Dispatchers.Default) {
+                        executeStroke(userSession, context, stroke);
+                    }
                     http.responseHeaders.add("Content-type", "text/plain")
-		    http.sendResponseHeaders(200, 0)
-		    val os = http.getResponseBody()
-		    // We should get the response from the stroke here....
-		    // and send it on the os...
-		    os.close()
-		}
-		createContext("/command") { http ->
-		    val command = http.getRequestURI().getQuery()
-		    echo("*** REST-COMMAND=${command}")
-		    val job = GlobalScope.launch(Dispatchers.Default) {
-			    //executeCommand(userSession, stroke);
-		    }
-		    http.responseHeaders.add("Content-type", "text/plain")
-		    http.sendResponseHeaders(200, 0)
-		    val os = http.getResponseBody()
-		    // We should get the response from the command here....
-		    // and send it on the os...
-		    os.close()
-	       }
-               start()
-	    }
+                    http.sendResponseHeaders(200, 0)
+                    val os = http.getResponseBody()
+                    // We should get the response from the stroke here....
+                    // and send it on the os...
+                    os.close()
+                }
+                createContext("/command") { http ->
+                    val command = http.getRequestURI().getQuery()
+                    echo("*** REST-COMMAND=${command}")
+                    val job = GlobalScope.launch(Dispatchers.Default) {
+                        // executeCommand(userSession, stroke);
+                    }
+                    http.responseHeaders.add("Content-type", "text/plain")
+                    http.sendResponseHeaders(200, 0)
+                    val os = http.getResponseBody()
+                    // We should get the response from the command here....
+                    // and send it on the os...
+                    os.close()
+                }
+                start()
+            }
         }
 
-	var avsFlags: Int = 0
-	if (avsTest)
-	   avsFlags = 2
-	if (avsNoise)
-	   avsFlags = 8
+        var avsFlags: Int = 0
+        if (avsTest)
+            avsFlags = 2
+        if (avsNoise)
+            avsFlags = 8
 
-	callsScope = userSession.calls
+        while (true) {
+            val scanner = Scanner(System.`in`)
+            val stroke = scanner.next().single()
 
-	while (true) {
-	    val scanner = Scanner(System.`in`)
-	    val stroke = scanner.next().single()
+            echo("stroke: ${stroke}")
 
-	    echo("stroke: ${stroke}")
-
-	    val job = GlobalScope.launch(Dispatchers.Default) {
-	        executeStroke(userSession, stroke);
-	    }
-	    job.join()
-	}
+            val job = GlobalScope.launch(Dispatchers.Default) {
+                executeStroke(userSession, context, stroke);
+            }
+            job.join()
+        }
     }
 }
-
 
 
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
