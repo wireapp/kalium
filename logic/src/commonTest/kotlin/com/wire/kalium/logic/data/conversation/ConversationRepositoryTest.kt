@@ -119,7 +119,6 @@ class ConversationRepositoryTest {
             messageDAO,
             clientDao,
             clientApi,
-            timeParser,
             TestUser.SELF.id
         )
     }
@@ -1410,9 +1409,6 @@ class ConversationRepositoryTest {
         @Mock
         private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
-        @Mock
-        val timeParser: TimeParser = mock(TimeParser::class)
-
         val conversationRepository =
             ConversationDataSource(
                 userRepository,
@@ -1422,7 +1418,6 @@ class ConversationRepositoryTest {
                 messageDAO,
                 clientDao,
                 clientApi,
-                timeParser,
                 TestUser.SELF.id
             )
 

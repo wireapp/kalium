@@ -93,32 +93,7 @@ internal class ConversationMapperImpl(
     }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
-        val lastReadDateEntity: String
-        val isSelfUserMemberEntity: Boolean
-        val isCreatorEntity: Boolean
-
-        when (type) {
-            ConversationEntity.Type.SELF -> {
-                lastReadDateEntity = lastReadDate
-                isSelfUserMemberEntity = true
-                isCreatorEntity = true
-            }
-            ConversationEntity.Type.ONE_ON_ONE -> {
-                lastReadDateEntity = lastReadDate
-                isSelfUserMemberEntity = true
-                isCreatorEntity = false
-            }
-            ConversationEntity.Type.GROUP -> {
-                lastReadDateEntity = lastReadDate
-                isSelfUserMemberEntity = isMember == 1L
-                isCreatorEntity = isCreator == 1L
-            }
-            ConversationEntity.Type.CONNECTION_PENDING -> {
-                lastReadDateEntity = EPOCH_FIRST_DAY
-                isSelfUserMemberEntity = false
-                isCreatorEntity = false
-            }
-        }
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) EPOCH_FIRST_DAY else lastReadDate
 
         Conversation(
             id = idMapper.fromDaoModel(id),
@@ -132,9 +107,7 @@ internal class ConversationMapperImpl(
             lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
-            accessRole = accessRoleList.map { it.toDAO() },
-            isSelfUserMember = isSelfUserMemberEntity,
-            isCreator = isCreatorEntity
+            accessRole = accessRoleList.map { it.toDAO() }
         )
     }
 
@@ -179,7 +152,8 @@ internal class ConversationMapperImpl(
                     unreadMessagesCount = unreadMessageCount,
                     unreadMentionsCount = 0L,
                     lastUnreadMessage = null,
-                    isSelfUserMember = isMember == 1L
+                    isSelfUserMember = isMember == 1L,
+                    isSelfUserCreator = isCreator == 1L
                 )
             }
 

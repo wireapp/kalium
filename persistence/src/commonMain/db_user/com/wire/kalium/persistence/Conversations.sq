@@ -134,6 +134,11 @@ Conversation.last_notified_message_date AS lastNotifiedMessageDate,
     AND (DateTime(message.date) >  DateTime(Conversation.last_read_date))
     AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL') AND message.visibility IS 'VISIBLE')
     AS unreadMessageCount,
+(SELECT COUNT() FROM Member
+    WHERE Member.user == (SELECT id FROM SelfUser LIMIT 1)
+    AND Member.conversation == Conversation.qualified_id
+    LIMIT 1)
+    AS isMember,
 CASE Conversation.qualified_id
 WHEN (SELECT conversation FROM Member
         WHERE Member.user =
