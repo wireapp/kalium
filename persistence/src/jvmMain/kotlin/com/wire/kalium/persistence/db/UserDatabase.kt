@@ -16,7 +16,7 @@ internal actual class PlatformDatabaseData(
     val storePath: File
 )
 
-fun UserDatabaseProvider(
+fun userDatabaseProvider(
     userId: UserIDEntity,
     storePath: File,
     dispatcher: CoroutineDispatcher

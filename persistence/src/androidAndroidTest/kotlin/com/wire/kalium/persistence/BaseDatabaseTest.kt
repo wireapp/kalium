@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDBSecret
-import com.wire.kalium.persistence.db.UserDatabaseProvider
+import com.wire.kalium.persistence.db.userDatabaseProvider
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -20,7 +20,7 @@ actual open class BaseDatabaseTest actual constructor() {
     }
 
     actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
-        return UserDatabaseProvider(
+        return userDatabaseProvider(
             ApplicationProvider.getApplicationContext(),
             userId,
             UserDBSecret("db_secret".toByteArray()),

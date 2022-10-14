@@ -20,7 +20,7 @@ internal actual class PlatformDatabaseData(
     val isEncrypted: Boolean
 )
 
-fun UserDatabaseProvider(
+fun userDatabaseProvider(
     context: Context,
     userId: UserIDEntity,
     passphrase: UserDBSecret,
