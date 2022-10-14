@@ -111,6 +111,8 @@ interface MessageRepository {
         newMessageId: String
     ): Either<CoreFailure, Unit>
 
+    suspend fun resetAssetProgressStatus()
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -319,6 +321,13 @@ class MessageDataSource(
                     throw IllegalStateException("Text message can only be updated on message having TextMessageContent set as content")
                 }
             }
+        }
+    }
+
+    override suspend fun resetAssetProgressStatus() {
+        wrapStorageRequest {
+            messageDAO.resetAssetUploadStatus()
+            messageDAO.resetAssetDownloadStatus()
         }
     }
 }

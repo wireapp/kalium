@@ -753,6 +753,7 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
+            messageRepository.resetAssetProgressStatus()
         }
 
         launch {
