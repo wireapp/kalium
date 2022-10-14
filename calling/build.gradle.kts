@@ -48,7 +48,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-	        implementation("net.java.dev.jna:jna:5.6.0")
+	        implementation(Dependencies.Calling.jna)
             }
         }
 	
