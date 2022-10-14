@@ -21,7 +21,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenProteusClient_whenCallingNewLastKey_thenItReturnsALastPreKey() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
         val lastPreKey = aliceClient.newLastPreKey()
         assertEquals(65535, lastPreKey.id)
     }
@@ -29,7 +29,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenProteusClient_whenCallingNewPreKeys_thenItReturnsAListOfPreKeys() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
         val preKeyList = aliceClient.newPreKeys(0, 10)
         assertEquals(preKeyList.size, 10)
     }
@@ -37,10 +37,10 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenIncomingPreKeyMessage_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
 
         val bobClient = createProteusClient(bob.id)
-        bobClient.open()
+        bobClient.openOrCreate()
 
         val message = "Hi Alice!"
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
@@ -52,10 +52,10 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenSessionAlreadyExists_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
 
         val bobClient = createProteusClient(bob.id)
-        bobClient.open()
+        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
@@ -72,10 +72,10 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenNoSessionExists_whenCallingCreateSession_thenSessionIsCreated() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
 
         val bobClient = createProteusClient(bob.id)
-        bobClient.open()
+        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         bobClient.createSession(aliceKey, aliceSessionId)

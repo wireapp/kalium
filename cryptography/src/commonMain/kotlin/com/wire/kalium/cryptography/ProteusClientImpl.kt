@@ -18,7 +18,10 @@ interface ProteusClient {
     fun clearLocalFiles(): Boolean
 
     @Throws(ProteusException::class, CancellationException::class)
-    suspend fun open()
+    suspend fun openOrCreate()
+
+    @Throws(ProteusException::class, CancellationException::class)
+    suspend fun openOrError()
 
     @Throws(ProteusException::class)
     fun getIdentity(): ByteArray
