@@ -24,6 +24,9 @@ android {
     packagingOptions {
         resources.pickFirsts.add("google/protobuf/*.proto")
     }
+    // Run only Instrumented tests. No need to run Unit AND Instrumented
+    // We have JVM tests if we want to run quickly on our machines
+    sourceSets.remove(sourceSets["test"])
 }
 
 kotlin {
@@ -87,7 +90,7 @@ kotlin {
                 implementation(Dependencies.Android.work)
             }
         }
-        val androidTest by getting {
+        val androidAndroidTest by getting {
             dependencies {
                 implementation(Dependencies.AndroidInstruments.androidTestRunner)
                 implementation(Dependencies.AndroidInstruments.androidTestRules)
