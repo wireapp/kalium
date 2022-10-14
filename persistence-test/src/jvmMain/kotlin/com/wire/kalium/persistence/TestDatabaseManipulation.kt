@@ -26,4 +26,3 @@ internal actual fun deleteTestGlobalDatabase() {
 private fun getGlobalDatabaseFile() = getTempDatabaseFile("TEST_GLOBAL_DATABASE.db")
 
 private fun getTempDatabaseFile(fileName: String) = Files.createTempDirectory("test-storage").toFile().resolve(fileName)
-

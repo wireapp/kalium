@@ -15,5 +15,3 @@ internal actual fun deleteTestDatabase(userId: UserIDEntity) { TODO("JavaScript 
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseProvider = TODO("JavaScript Database not yet supported")
 
 internal actual fun deleteTestGlobalDatabase() { TODO("JavaScript Database not yet supported") }
-
-
