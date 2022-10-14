@@ -21,12 +21,20 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         TODO("Not yet implemented")
     }
 
-    override suspend fun open() {
+    override suspend fun openOrCreate() {
         val engine = MemoryEngine()
         engine.init("in-memory").await()
 
         box = Cryptobox(engine)
         box.create().await()
+    }
+
+    override suspend fun openOrError() {
+        val engine = MemoryEngine()
+        engine.init("in-memory").await()
+
+        box = Cryptobox(engine)
+        box.load().await() // TODO is the use of box.load() instead of box.create() ) correct for this method?
     }
 
     override fun getIdentity(): ByteArray {

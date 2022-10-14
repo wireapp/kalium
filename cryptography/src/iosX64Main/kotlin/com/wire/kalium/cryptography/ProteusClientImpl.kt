@@ -35,9 +35,20 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
         // Delete the actual files
     }
 
-    override suspend fun open() {
+    override suspend fun openOrCreate() {
         NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
         box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
+    }
+
+    override suspend fun openOrError() {
+        if (NSFileManager.defaultManager.fileExistsAtPath(rootDir)) {
+            box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
+        } else {
+            throw ProteusException(message = "Local files were not found", code = ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+        }
+    }
+
+    override suspend fun open() {
     }
 
     override fun getIdentity(): ByteArray {
