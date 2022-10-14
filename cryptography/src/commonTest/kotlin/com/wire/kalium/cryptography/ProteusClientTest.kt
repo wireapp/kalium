@@ -1,12 +1,10 @@
 package com.wire.kalium.cryptography
 
-import com.wire.kalium.cryptography.exceptions.ProteusException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.js.ExperimentalJsExport
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
 @IgnoreIOS
@@ -84,19 +82,4 @@ class ProteusClientTest : BaseProteusClientTest() {
         assertNotNull(bobClient.encrypt("Hello World".encodeToByteArray(), aliceSessionId))
     }
 
-    @Test
-    fun givenLocalFilesDoesNotExist_whenOpeningTheClient_thenThrowProteusException() = runTest {
-        val aliceClient = createProteusClient(alice.id)
-        val exception = assertFailsWith<ProteusException> {
-            aliceClient.openOrError() // at this point files hasn't been yet created
-        }
-        assertEquals(ProteusException.Code.LOCAL_FILES_NOT_FOUND, exception.code)
-    }
-
-    @Test
-    fun givenLocalFilesExist_whenOpeningTheClient_theDoNotThrowProteusException() = runTest {
-        val aliceClient = createProteusClient(alice.id)
-        aliceClient.openOrCreate() // files are being created
-        aliceClient.openOrError()
-    }
 }

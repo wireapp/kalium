@@ -31,11 +31,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
     }
 
     override suspend fun openOrError() {
-        val engine = MemoryEngine()
-        engine.init("in-memory").await()
-
-        box = Cryptobox(engine)
-        box.load().await() // TODO is the use of box.load() instead of box.create() ) correct for this method?
+        openOrCreate() // JS cryptobox is in-memory only
     }
 
     override fun getIdentity(): ByteArray {
