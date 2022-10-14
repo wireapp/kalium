@@ -22,8 +22,8 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
-import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCase
-import com.wire.kalium.logic.feature.asset.SendAssetMessageUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
+import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
@@ -105,22 +105,26 @@ class MessageScope internal constructor(
     val getMessageById: GetMessageByIdUseCase
         get() = GetMessageByIdUseCase(messageRepository)
 
-    val sendAssetMessage: SendAssetMessageUseCase
-        get() = SendAssetMessageUseCaseImpl(
+    val sendAssetMessage: ScheduleNewAssetMessageUseCase
+        get() = ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
             updateAssetMessageUploadStatus,
             currentClientIdProvider,
             assetRepository,
             userId,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            scope,
+            dispatcher
         )
 
     val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
             messageRepository,
-            updateAssetMessageDownloadStatus
+            updateAssetMessageDownloadStatus,
+            scope,
+            dispatcher
         )
 
     val getRecentMessages: GetRecentMessagesUseCase
