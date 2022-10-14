@@ -272,7 +272,6 @@ abstract class UserSessionScopeCommon internal constructor(
             userDatabaseProvider.messageDAO,
             userDatabaseProvider.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            timeParser,
             userId
         )
 
