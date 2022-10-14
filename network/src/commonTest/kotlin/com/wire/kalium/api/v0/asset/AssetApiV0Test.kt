@@ -176,7 +176,8 @@ class AssetApiV0Test : ApiTest {
         // When
         val assetApi: AssetApi = AssetApiV0(networkClient)
         val response = assetApi.downloadAsset(assetId, ASSET_TOKEN, tempFileSink)
-        // todo: assert response
+        assertTrue(response is NetworkResponse.Error)
+        assertTrue(response.kException is KaliumException.GenericError)
     }
 
     companion object {
