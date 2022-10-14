@@ -99,8 +99,6 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             lastReadDate = "2022-03-30T15:36:00.000Z",
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-            isSelfUserMember = true,
-            isCreator = false
         )
     }
 }

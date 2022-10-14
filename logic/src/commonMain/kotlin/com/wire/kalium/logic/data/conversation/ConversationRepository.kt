@@ -17,6 +17,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
@@ -48,6 +49,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
@@ -291,6 +293,22 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .wrapStorageRequest()
             .mapRight { conversationMapper.fromDaoModelToDetails(it) }
+            .flatMapRight { conversationDetails ->
+                when (conversationDetails) {
+                    is ConversationDetails.OneOne -> observeLastUnreadMessage(conversationID)
+                        .map { conversationDetails.copy(lastUnreadMessage = it) }
+
+                    is ConversationDetails.Group -> observeLastUnreadMessage(conversationID)
+                        .map { conversationDetails.copy(lastUnreadMessage = it) }
+
+                    else -> flowOf(conversationDetails)
+                }
+            }
+            .distinctUntilChanged()
+
+    private suspend fun observeLastUnreadMessage(conversationId: ConversationId): Flow<Message?> =
+        messageDAO.observeLastUnreadMessage(idMapper.toDaoModel(conversationId))
+            .map { it?.let { messageMapper.fromEntityToMessage(it) } }
             .distinctUntilChanged()
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {

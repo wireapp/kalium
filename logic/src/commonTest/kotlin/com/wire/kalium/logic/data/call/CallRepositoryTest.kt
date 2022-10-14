@@ -202,7 +202,9 @@ class CallRepositoryTest {
                             LegalHoldStatus.ENABLED,
                             false,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -266,7 +268,9 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -325,7 +329,9 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -393,7 +399,9 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -447,7 +455,9 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
