@@ -1,10 +1,12 @@
 package com.wire.kalium.cryptography
 
+import com.wire.kalium.cryptography.exceptions.ProteusException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.js.ExperimentalJsExport
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 
 @IgnoreIOS
@@ -21,7 +23,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenProteusClient_whenCallingNewLastKey_thenItReturnsALastPreKey() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
         val lastPreKey = aliceClient.newLastPreKey()
         assertEquals(65535, lastPreKey.id)
     }
@@ -29,7 +31,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenProteusClient_whenCallingNewPreKeys_thenItReturnsAListOfPreKeys() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
         val preKeyList = aliceClient.newPreKeys(0, 10)
         assertEquals(preKeyList.size, 10)
     }
@@ -37,10 +39,10 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenIncomingPreKeyMessage_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
 
         val bobClient = createProteusClient(bob.id)
-        bobClient.open()
+        bobClient.openOrCreate()
 
         val message = "Hi Alice!"
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
@@ -52,10 +54,10 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenSessionAlreadyExists_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
 
         val bobClient = createProteusClient(bob.id)
-        bobClient.open()
+        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
@@ -72,14 +74,29 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenNoSessionExists_whenCallingCreateSession_thenSessionIsCreated() = runTest {
         val aliceClient = createProteusClient(alice.id)
-        aliceClient.open()
+        aliceClient.openOrCreate()
 
         val bobClient = createProteusClient(bob.id)
-        bobClient.open()
+        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         bobClient.createSession(aliceKey, aliceSessionId)
         assertNotNull(bobClient.encrypt("Hello World".encodeToByteArray(), aliceSessionId))
     }
 
+    @Test
+    fun givenLocalFilesDoesNotExist_whenOpeningTheClient_thenThrowProteusException() = runTest {
+        val aliceClient = createProteusClient(alice.id)
+        val exception = assertFailsWith<ProteusException> {
+            aliceClient.openOrError() // at this point files hasn't been yet created
+        }
+        assertEquals(ProteusException.Code.LOCAL_FILES_NOT_FOUND, exception.code)
+    }
+
+    @Test
+    fun givenLocalFilesExist_whenOpeningTheClient_theDoNotThrowProteusException() = runTest {
+        val aliceClient = createProteusClient(alice.id)
+        aliceClient.openOrCreate() // files are being created
+        aliceClient.openOrError()
+    }
 }
