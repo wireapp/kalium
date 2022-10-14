@@ -2,6 +2,7 @@ package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -17,14 +18,22 @@ object TestEvent {
         "2022-03-30T15:36:00.000Z"
     )
 
-    fun memberChange(eventId: String = "eventId", member: Member) = Event.Conversation.MemberChanged(
+    fun memberChange(eventId: String = "eventId", member: Member) = Event.Conversation.MemberChanged.MemberChangedRole(
         eventId,
         TestConversation.ID,
         "2022-03-30T15:36:00.000Z",
         member
     )
 
-    fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.IgnoredMemberChanged(
+    fun memberChangeMutedStatus(eventId: String = "eventId") = Event.Conversation.MemberChanged.MemberMutedStatusChanged(
+        eventId,
+        TestConversation.ID,
+        "2022-03-30T15:36:00.000Z",
+        MutedConversationStatus.AllAllowed,
+        "2022-03-30T15:36:00.000Zp"
+    )
+
+    fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.MemberChanged.IgnoredMemberChanged(
         eventId,
         TestConversation.ID,
     )
