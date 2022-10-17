@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.call
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
@@ -9,6 +10,7 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -21,7 +23,7 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
     private val callRepository = mock(classOf<CallRepository>())
 
     @Mock
-    private val participantsOrder = mock(classOf<ParticipantsOrder>())
+    private val callingParticipantsOrder = mock(classOf<CallingParticipantsOrder>())
 
     private lateinit var getAllCallsWithSortedParticipantsUseCase: GetAllCallsWithSortedParticipantsUseCase
 
@@ -29,19 +31,20 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
     fun setUp() {
         getAllCallsWithSortedParticipantsUseCase = GetAllCallsWithSortedParticipantsUseCase(
             callRepository,
-            participantsOrder
+            callingParticipantsOrder
         )
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenCallsFlowEmitsANewValue_whenUseCaseIsCollected_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
         val calls1 = listOf(call1, call2)
         val calls2 = listOf(call2)
 
-        given(participantsOrder).invocation { reorderItems(calls1.first().participants) }
+        given(callingParticipantsOrder).coroutine { reorderItems(calls1.first().participants) }
             .thenReturn(calls1.first().participants)
 
-        given(participantsOrder).invocation { reorderItems(calls2.first().participants) }
+        given(callingParticipantsOrder).coroutine { reorderItems(calls2.first().participants) }
             .thenReturn(calls2.first().participants)
 
         val callsFlow = flowOf(calls1, calls2)
