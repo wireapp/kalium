@@ -61,7 +61,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.preKeyRepository)
-            .function(arrangement.preKeyRepository::generateNewLastKey)
+            .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -83,7 +83,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.preKeyRepository)
-            .function(arrangement.preKeyRepository::generateNewLastKey)
+            .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -105,7 +105,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.preKeyRepository)
-            .function(arrangement.preKeyRepository::generateNewLastKey)
+            .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -297,7 +297,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.preKeyRepository)
-            .function(arrangement.preKeyRepository::generateNewLastKey)
+            .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
             .wasInvoked(exactly = once)
     }
 
@@ -391,7 +391,7 @@ class RegisterClientUseCaseTest {
                 .then { _, _ -> Either.Right(PRE_KEYS) }
 
             given(preKeyRepository)
-                .function(preKeyRepository::generateNewLastKey)
+                .suspendFunction(preKeyRepository::generateNewLastKey)
                 .whenInvoked()
                 .then { Either.Right(LAST_KEY) }
 
@@ -451,7 +451,7 @@ class RegisterClientUseCaseTest {
 
         fun withGenerateNewLastKey(result: Either<ProteusFailure, PreKeyCrypto>) = apply {
             given(preKeyRepository)
-                .function(preKeyRepository::generateNewLastKey)
+                .suspendFunction(preKeyRepository::generateNewLastKey)
                 .whenInvoked()
                 .then { result }
         }

@@ -9,6 +9,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -25,6 +27,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
+import io.mockative.Times
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
@@ -347,6 +350,103 @@ class MessageSenderTest {
         }
     }
 
+    @Test
+    fun givenClientTargets_WhenSendingOutgoingMessage_ThenCallSendEnvelopeWithCorrectTargets() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage()
+            .arrange()
+
+        val message = Message.Regular(
+            id = Arrangement.TEST_MESSAGE_UUID,
+            content = MessageContent.Calling(""),
+            conversationId = Arrangement.TEST_CONVERSATION_ID,
+            date = "1234",
+            senderUserId = UserId("userValue", "userDomain"),
+            senderClientId = ClientId("clientId"),
+            status = Message.Status.SENT,
+            editStatus = Message.EditStatus.NotEdited
+        )
+
+        val messageTarget = MessageTarget.Client(
+            recipients = listOf(
+                Arrangement.TEST_RECIPIENT_1,
+                Arrangement.TEST_RECIPIENT_2
+            )
+        )
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(
+                message = message,
+                messageTarget = messageTarget
+            )
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.conversationRepository)
+                .suspendFunction(arrangement.conversationRepository::getConversationRecipients)
+                .with(anything())
+                .wasInvoked(exactly = Times(0))
+
+            verify(arrangement.sessionEstablisher)
+                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
+                .with(eq(listOf(Arrangement.TEST_RECIPIENT_1, Arrangement.TEST_RECIPIENT_2)))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::sendEnvelope)
+                .with(eq(message.conversationId), anything(), eq(messageTarget))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenConversationTarget_WhenSendingOutgoingMessage_ThenCallSendEnvelopeWithCorrectTargets() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage()
+            .arrange()
+
+        val message = Message.Regular(
+            id = Arrangement.TEST_MESSAGE_UUID,
+            content = MessageContent.Calling(""),
+            conversationId = Arrangement.TEST_CONVERSATION_ID,
+            date = "1234",
+            senderUserId = UserId("userValue", "userDomain"),
+            senderClientId = ClientId("clientId"),
+            status = Message.Status.SENT,
+            editStatus = Message.EditStatus.NotEdited
+        )
+
+        val messageTarget = MessageTarget.Conversation
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(
+                message = message,
+                messageTarget = messageTarget
+            )
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.conversationRepository)
+                .suspendFunction(arrangement.conversationRepository::getConversationRecipients)
+                .with(anything())
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.sessionEstablisher)
+                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
+                .with(eq(listOf(Arrangement.TEST_RECIPIENT_1)))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::sendEnvelope)
+                .with(eq(message.conversationId), anything(), eq(messageTarget))
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -453,7 +553,7 @@ class MessageSenderTest {
         fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right("date")) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(result)
         }
 
@@ -573,8 +673,11 @@ class MessageSenderTest {
             )
             val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
             val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
+            val TEST_CONTACT_CLIENT_3 = ClientId("clientId3")
             val TEST_MEMBER_1 = UserId("value1", "domain1")
             val TEST_RECIPIENT_1 = Recipient(TEST_MEMBER_1, listOf(TEST_CONTACT_CLIENT_1, TEST_CONTACT_CLIENT_2))
+            val TEST_MEMBER_2 = UserId("value2", "domain2")
+            val TEST_RECIPIENT_2 = Recipient(TEST_MEMBER_2, listOf(TEST_CONTACT_CLIENT_3))
         }
     }
 }

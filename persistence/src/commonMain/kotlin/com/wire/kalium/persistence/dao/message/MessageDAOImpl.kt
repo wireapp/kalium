@@ -14,6 +14,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.FAILED_
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.KNOCK
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MEMBER_CHANGE
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.MISSED_CALL
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.REMOVED_FROM_TEAM
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.RESTRICTED_ASSET
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.TEXT
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType.UNKNOWN
@@ -328,7 +329,12 @@ class MessageDAOImpl(
         is MessageEntityContent.FailedDecryption -> FAILED_DECRYPTION
         is MessageEntityContent.RestrictedAsset -> RESTRICTED_ASSET
         is MessageEntityContent.ConversationRenamed -> CONVERSATION_RENAMED
+        is MessageEntityContent.TeamMemberRemoved -> REMOVED_FROM_TEAM
     }
+
+    override suspend fun resetAssetDownloadStatus() = queries.resetAssetDownloadStatus()
+
+    override suspend fun resetAssetUploadStatus() = queries.resetAssetUploadStatus()
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper)
 }

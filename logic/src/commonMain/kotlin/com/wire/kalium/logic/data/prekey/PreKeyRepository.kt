@@ -1,7 +1,6 @@
 package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.cryptography.PreKeyCrypto
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
@@ -9,6 +8,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
@@ -23,7 +23,7 @@ interface PreKeyRepository {
     ): Either<NetworkFailure, List<QualifiedUserPreKeyInfo>>
 
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
-    fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto>
+    suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto>
     suspend fun lastPreKeyId(): Either<StorageFailure, Int>
     suspend fun updateOTRLastPreKeyId(newId: Int): Either<StorageFailure, Unit>
     suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit>
@@ -31,7 +31,7 @@ interface PreKeyRepository {
 
 class PreKeyDataSource(
     private val preKeyApi: PreKeyApi,
-    private val proteusClient: ProteusClient,
+    private val proteusClientProvider: ProteusClientProvider,
     private val prekeyDAO: PrekeyDAO,
     private val preKeyListMapper: PreKeyListMapper = MapperProvider.preKeyListMapper()
 ) : PreKeyRepository {
@@ -45,10 +45,10 @@ class PreKeyDataSource(
         firstKeyId: Int,
         keysCount: Int
     ): Either<ProteusFailure, List<PreKeyCrypto>> =
-        wrapCryptoRequest { proteusClient.newPreKeys(firstKeyId, keysCount) }
+        wrapCryptoRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }
 
-    override fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto> = wrapCryptoRequest {
-        proteusClient.newLastPreKey()
+    override suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto> =
+        wrapCryptoRequest { proteusClientProvider.getOrCreate().newLastPreKey()
     }
 
     override suspend fun lastPreKeyId(): Either<StorageFailure, Int> = wrapStorageRequest {
@@ -62,5 +62,4 @@ class PreKeyDataSource(
     override suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit> = wrapStorageRequest {
         prekeyDAO.forceInsertOTRLastPrekeyId(newId)
     }
-
 }

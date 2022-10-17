@@ -2,7 +2,6 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
@@ -33,6 +32,7 @@ import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
@@ -63,7 +63,7 @@ interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here
 @Suppress("LongParameterList", "TooManyFunctions", "ComplexMethod")
 internal class ConversationEventReceiverImpl(
-    private val proteusClient: ProteusClient,
+    private val proteusClientProvider: ProteusClientProvider,
     private val persistMessage: PersistMessageUseCase,
     private val persistReaction: PersistReactionUseCase,
     private val messageRepository: MessageRepository,
@@ -155,9 +155,13 @@ internal class ConversationEventReceiverImpl(
             idMapper.toCryptoQualifiedIDId(event.senderUserId),
             CryptoClientId(event.senderClientId.value)
         )
-        wrapCryptoRequest {
-            proteusClient.decrypt(decodedContentBytes, cryptoSessionId)
-        }.map { PlainMessageBlob(it) }
+        proteusClientProvider.getOrError()
+            .flatMap {
+                wrapCryptoRequest {
+                    it.decrypt(decodedContentBytes, cryptoSessionId)
+                }
+            }
+            .map { PlainMessageBlob(it) }
             .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event) }
             .onFailure {
                 when (it) {
@@ -317,22 +321,33 @@ internal class ConversationEventReceiverImpl(
         .onFailure { logger.e("$TAG - failure on member leave event: $it") }
 
     private suspend fun handleMemberChange(event: Event.Conversation.MemberChanged) {
-        if (event is Event.Conversation.IgnoredMemberChanged) {
-            logger.w("failure? member role is missing from event: $event")
-            return
-        } else {
-            // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-            conversationRepository.fetchConversationIfUnknown(event.conversationId)
-                .run {
-                    onSuccess {
-                        logger.v("Succeeded fetching conversation details on MemberChange Event: $event")
-                    }
-                    onFailure {
-                        logger.w("Failure fetching conversation details on MemberChange Event: $event")
-                    }
-                    // Even if unable to fetch conversation details, at least attempt updating the member
-                    conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
-                }.onFailure { logger.e("$TAG - failure on member update event: $it") }
+        when (event) {
+            is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
+                conversationRepository.updateMutedStatus(
+                    event.conversationId,
+                    event.mutedConversationStatus,
+                    Clock.System.now().toEpochMilliseconds()
+                )
+            }
+
+            is Event.Conversation.MemberChanged.MemberChangedRole -> {
+                // Attempt to fetch conversation details if needed, as this might be an unknown conversation
+                conversationRepository.fetchConversationIfUnknown(event.conversationId)
+                    .run {
+                        onSuccess {
+                            logger.v("Succeeded fetching conversation details on MemberChange Event: $event")
+                        }
+                        onFailure {
+                            logger.w("Failure fetching conversation details on MemberChange Event: $event")
+                        }
+                        // Even if unable to fetch conversation details, at least attempt updating the member
+                        conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
+                    }.onFailure { logger.e("$TAG - failure on member update event: $it") }
+            }
+
+            else -> {
+                logger.w("Ignoring 'conversation.member-update' event, not handled yet: $event")
+            }
         }
     }
 

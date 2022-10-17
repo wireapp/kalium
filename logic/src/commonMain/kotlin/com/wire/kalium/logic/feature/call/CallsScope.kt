@@ -13,6 +13,7 @@ import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
@@ -57,6 +58,11 @@ class CallsScope internal constructor(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
             userRepository = userRepository
+        )
+
+    val isCallRunning: IsCallRunningUseCase
+        get() = IsCallRunningUseCase(
+            callRepository = callRepository
         )
 
     val observeOngoingCalls: ObserveOngoingCallsUseCase

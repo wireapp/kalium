@@ -71,7 +71,7 @@ class KeyPackageRepositoryTest {
 
         val (_, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
-            .withClaimKeyPackagesSuccessful()
+            .withClaimKeyPackagesSuccessful(Arrangement.USER_ID)
             .arrange()
 
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
@@ -86,13 +86,28 @@ class KeyPackageRepositoryTest {
 
         val (_, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
-            .withClaimKeyPackagesSuccessfulWithEmptyResponse()
+            .withClaimKeyPackagesSuccessfulWithEmptyResponse(Arrangement.USER_ID)
             .arrange()
 
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
 
         result.shouldFail { failure ->
             assertEquals(CoreFailure.NoKeyPackagesAvailable(Arrangement.USER_ID), failure)
+        }
+    }
+
+    @Test
+    fun givenSelfUserWithNoKeyPackages_whenClaimingKeyPackages_thenResultShouldSucceed() = runTest {
+
+        val (_, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .withClaimKeyPackagesSuccessfulWithEmptyResponse(Arrangement.SELF_USER_ID)
+            .arrange()
+
+        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.SELF_USER_ID))
+
+        result.shouldSucceed() { keyPackages ->
+            assertEquals(emptyList(), keyPackages)
         }
     }
 
@@ -130,19 +145,19 @@ class KeyPackageRepositoryTest {
                 .thenReturn(NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200))
         }
 
-        fun withClaimKeyPackagesSuccessful() = apply {
+        fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(USER_ID), SELF_CLIENT_ID.value)))
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(userId), SELF_CLIENT_ID.value)))
                 .thenReturn(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
-        fun withClaimKeyPackagesSuccessfulWithEmptyResponse() = apply {
+        fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(USER_ID), SELF_CLIENT_ID.value)))
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(MapperProvider.idMapper().toApiModel(userId), SELF_CLIENT_ID.value)))
                 .thenReturn(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
-        fun arrange() = this to KeyPackageDataSource(clientRepository, keyPackageApi, mlsClientProvider)
+        fun arrange() = this to KeyPackageDataSource(clientRepository, keyPackageApi, mlsClientProvider, SELF_USER_ID)
 
         internal companion object {
             const val KEY_PACKAGE_COUNT = 100
@@ -150,6 +165,7 @@ class KeyPackageRepositoryTest {
             val SELF_CLIENT_ID: ClientId = PlainId("client_self")
             val OTHER_CLIENT_ID: ClientId = PlainId("client_other")
             val USER_ID = UserId("user_id", "wire.com")
+            val SELF_USER_ID = UserId("self_user_id", "wire.com")
             val KEY_PACKAGES = listOf("keypackage".encodeToByteArray())
             val KEY_PACKAGES_BASE64 = KEY_PACKAGES.map { it.encodeBase64() }
             val EMPTY_CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(

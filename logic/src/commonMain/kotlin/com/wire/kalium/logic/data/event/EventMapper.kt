@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
+import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
@@ -145,19 +146,41 @@ class EventMapper(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO
     ): Event.Conversation.MemberChanged {
-        return if (eventContentDTO.roleChange.role.isNullOrEmpty()) {
-            Event.Conversation.IgnoredMemberChanged(id, idMapper.fromApiModel(eventContentDTO.qualifiedConversation))
-        } else {
-            Event.Conversation.MemberChanged(
-                id = id,
-                conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
-                timestampIso = eventContentDTO.time,
-                member = Conversation.Member(
-                    id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
-                    role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
-                ),
-            )
+        return when {
+            eventContentDTO.roleChange.role?.isNotEmpty() == true -> {
+                Event.Conversation.MemberChanged.MemberChangedRole(
+                    id = id,
+                    conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                    timestampIso = eventContentDTO.time,
+                    member = Conversation.Member(
+                        id = idMapper.fromApiModel(eventContentDTO.roleChange.qualifiedUserId),
+                        role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
+                    ),
+                )
+            }
+
+            eventContentDTO.roleChange.mutedStatus != null -> {
+                Event.Conversation.MemberChanged.MemberMutedStatusChanged(
+                    id = id,
+                    conversationId = idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                    timestampIso = eventContentDTO.time,
+                    mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef.orEmpty(),
+                    mutedConversationStatus = mapConversationMutedStatus(eventContentDTO.roleChange.mutedStatus)
+                )
+            }
+
+            else -> {
+                Event.Conversation.MemberChanged.IgnoredMemberChanged(id, idMapper.fromApiModel(eventContentDTO.qualifiedConversation))
+            }
         }
+    }
+
+    @Suppress("MagicNumber")
+    private fun mapConversationMutedStatus(status: Int?) = when (status) {
+        0 -> MutedConversationStatus.AllAllowed
+        1 -> MutedConversationStatus.OnlyMentionsAllowed
+        3 -> MutedConversationStatus.AllMuted
+        else -> MutedConversationStatus.AllAllowed
     }
 
     private fun featureConfig(
@@ -218,7 +241,8 @@ class EventMapper(
     ) = Event.Team.MemberLeave(
         id = id,
         teamId = event.teamId,
-        memberId = event.teamMember.nonQualifiedUserId
+        memberId = event.teamMember.nonQualifiedUserId,
+        timestampIso = event.time
     )
 
     private fun teamMemberUpdate(

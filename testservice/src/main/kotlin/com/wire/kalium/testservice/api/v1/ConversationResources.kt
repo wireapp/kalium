@@ -9,6 +9,7 @@ import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendImageRequest
 import com.wire.kalium.testservice.models.SendPingRequest
+import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
 import com.wire.kalium.testservice.models.SendTextResponse
 import io.swagger.annotations.Api
@@ -167,9 +168,23 @@ class ConversationResources(private val instanceService: InstanceService) {
     // POST /api/v1/instance/{instanceId}/sendButtonActionConfirmation
     // Send a confirmation to a button action.
 
-    // POST /api/v1/instance/{instanceId}/sendReaction
-    // Send a reaction to a message.
-    // Used in: web-mls
+    @POST
+    @Path("/instance/{id}/sendReaction")
+    @ApiOperation(
+        value = "Send a reaction to a message"
+    )
+    fun sendReaction(@PathParam("id") id: String, @Valid sendReactionRequest: SendReactionRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(sendReactionRequest) {
+            ConversationRepository.sendReaction(
+                instance,
+                ConversationId(conversationId, conversationDomain),
+                originalMessageId,
+                type
+            )
+        }
+        return Response.status(Response.Status.OK).entity(SendTextResponse(id, "", "")).build()
+    }
 
     @POST
     @Path("/instance/{id}/sendText")

@@ -15,14 +15,19 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -35,7 +40,7 @@ import kotlin.test.assertTrue
 class GetMessageAssetUseCaseTest {
 
     @Test
-    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedDataPath() = runTest {
+    fun givenACallToGetAMessageAsset_whenEverythingGoesWell_thenShouldReturnTheAssetDecodedDataPath() = runTest(testDispatcher.default) {
         // Given
         val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 63)
         val randomAES256Key = generateRandomAES256Key()
@@ -53,7 +58,7 @@ class GetMessageAssetUseCaseTest {
             .arrange()
 
         // When
-        val result = getMessageAsset(someConversationId, someMessageId)
+        val result = getMessageAsset(someConversationId, someMessageId).await()
 
         // Then
         assertTrue(result is MessageAssetResult.Success)
@@ -61,7 +66,7 @@ class GetMessageAssetUseCaseTest {
     }
 
     @Test
-    fun givenACallToGetAMessageAsset_whenThereIsAMessageRepositoryError_thenShouldReturnAFailureResult() = runTest {
+    fun givenACallToGetAMessageAsset_whenThereIsAMessageRepositoryError_thenShouldReturnAFailureResult() = runTest(testDispatcher.default) {
         // Given
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
@@ -70,29 +75,33 @@ class GetMessageAssetUseCaseTest {
             .arrange()
 
         // When
-        val result = getMessageAsset(someConversationId, someMessageId)
+        val result = getMessageAsset(someConversationId, someMessageId).await()
 
         // Then
         assertTrue(result is MessageAssetResult.Failure)
     }
 
     @Test
-    fun givenACallToGetAMessageAsset_whenThereIsNoInternetConnection_thenShouldReturnAFailureResult() = runTest {
+    fun givenACallToGetAMessageAsset_whenThereIsNoInternetConnection_thenShouldReturnAFailureResult() = runTest(testDispatcher.default) {
         // Given
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
         val connectionFailure = NetworkFailure.NoNetworkConnection(null)
-        val (_, getMessageAsset) = Arrangement()
+        val (arrangement, getMessageAsset) = Arrangement()
             .withDownloadAssetErrorResponse(connectionFailure)
             .withSuccessfulDownloadStatusUpdate()
             .arrange()
 
         // When
-        val result = getMessageAsset(someConversationId, someMessageId)
+        val result = getMessageAsset(someConversationId, someMessageId).await()
 
         // Then
         assertTrue(result is MessageAssetResult.Failure)
         assertEquals(result.coreFailure::class, connectionFailure::class)
+        verify(arrangement.updateAssetMessageDownloadStatus)
+            .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
+            .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -103,7 +112,9 @@ class GetMessageAssetUseCaseTest {
         private val assetDataSource = mock(classOf<AssetRepository>())
 
         @Mock
-        private val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
+        val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
+
+        private val testScope = TestScope(testDispatcher.default)
 
         private lateinit var convId: ConversationId
         private lateinit var msgId: String
@@ -143,7 +154,8 @@ class GetMessageAssetUseCaseTest {
             )
         }
 
-        val getMessageAssetUseCase = GetMessageAssetUseCaseImpl(assetDataSource, messageRepository, updateAssetMessageDownloadStatus)
+        val getMessageAssetUseCase =
+            GetMessageAssetUseCaseImpl(assetDataSource, messageRepository, updateAssetMessageDownloadStatus, testScope, testDispatcher)
 
         fun withSuccessfulFlow(
             conversationId: ConversationId,
@@ -215,5 +227,9 @@ class GetMessageAssetUseCaseTest {
             write(expectedDecodedAsset)
         }
         return inputPath
+    }
+
+    private companion object {
+        val testDispatcher = TestKaliumDispatcher
     }
 }

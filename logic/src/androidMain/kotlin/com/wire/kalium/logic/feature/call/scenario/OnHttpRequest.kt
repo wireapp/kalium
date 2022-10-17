@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -25,16 +26,18 @@ class OnHttpRequest(
     private val messageSender: MessageSender,
     private val callingScope: CoroutineScope
 ) {
+    @Suppress("LongParameterList")
     fun sendHandlerSuccess(
         context: Pointer?,
         messageString: String?,
         conversationId: ConversationId,
         avsSelfUserId: UserId,
-        avsSelfClientId: ClientId
+        avsSelfClientId: ClientId,
+        messageTarget: MessageTarget
     ) {
         callingScope.launch {
             messageString?.let { message ->
-                when (sendCallingMessage(conversationId, avsSelfUserId, avsSelfClientId, message)) {
+                when (sendCallingMessage(conversationId, avsSelfUserId, avsSelfClientId, message, messageTarget)) {
                     is Either.Right -> {
                         callingLogger.i("[OnHttpRequest] -> Success")
                         calling.wcall_resp(
@@ -62,7 +65,8 @@ class OnHttpRequest(
         conversationId: ConversationId,
         userId: UserId,
         clientId: ClientId,
-        data: String
+        data: String,
+        messageTarget: MessageTarget
     ): Either<CoreFailure, Unit> {
         val messageContent = MessageContent.Calling(data)
         val date = Clock.System.now().toString()
@@ -76,6 +80,6 @@ class OnHttpRequest(
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited
         )
-        return messageSender.sendMessage(message)
+        return messageSender.sendMessage(message, messageTarget)
     }
 }
