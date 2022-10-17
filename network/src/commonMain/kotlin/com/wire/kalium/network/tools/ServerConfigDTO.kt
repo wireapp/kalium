@@ -25,7 +25,8 @@ data class ServerConfigDTO(
 
     data class Proxy(
         val needsAuthentication: Boolean?,
-        val apiProxy: String?
+        val apiProxy: String?,
+        val port: Int?
     )
 }
 

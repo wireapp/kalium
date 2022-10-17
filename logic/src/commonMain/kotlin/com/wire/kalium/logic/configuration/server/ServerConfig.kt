@@ -78,7 +78,8 @@ data class ServerConfig(
     @Serializable
     data class Proxy(
         @SerialName("needsAuthentication") val needsAuthentication: Boolean?,
-        @SerialName("apiProxy") val apiProxy: String?
+        @SerialName("apiProxy") val apiProxy: String?,
+        @SerialName("port") val port: Int?
     )
 
     companion object {
@@ -91,7 +92,7 @@ data class ServerConfig(
             website = """https://wire.com""",
             title = "production",
             isOnPremises = false,
-            proxy = null
+            proxy = Proxy(true, "https://socks5.proxy.com", 8080)
         )
 
         val STAGING = Links(
@@ -146,7 +147,8 @@ class ServerConfigMapperImpl(
                 proxy = links.proxy?.let {
                     ServerConfigDTO.Proxy(
                         needsAuthentication = it.needsAuthentication,
-                        it.apiProxy
+                        it.apiProxy,
+                        it.port
                     )
                 }
             ), ServerConfigDTO.MetaData(
@@ -165,7 +167,7 @@ class ServerConfigMapperImpl(
             links.website,
             title,
             isOnPremises,
-            ServerConfigDTO.Proxy(links.proxy?.needsAuthentication, links.proxy?.apiProxy)
+            links.proxy?.let { ServerConfigDTO.Proxy(it.needsAuthentication, it.apiProxy, it.port) }
         )
     }
 
@@ -182,7 +184,7 @@ class ServerConfigMapperImpl(
                 isOnPremises = links.isOnPremises,
                 proxy = links.proxy?.let {
                     ServerConfigDTO.Proxy(
-                        apiProxy = it.apiProxy, needsAuthentication = it.needsAuthentication
+                        apiProxy = it.apiProxy, needsAuthentication = it.needsAuthentication, port = it.port
                     )
                 }
             ), ServerConfigDTO.MetaData(
@@ -205,12 +207,12 @@ class ServerConfigMapperImpl(
             teams = teams,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { ServerConfig.Proxy(it.needsAuthentication, it.apiProxy) }
+            proxy = proxy?.let { ServerConfig.Proxy(it.needsAuthentication, it.apiProxy, it.port) }
         )
     }
 
     override fun fromDTO(proxy: ServerConfigDTO.Proxy): ServerConfig.Proxy = with(proxy) {
-        ServerConfig.Proxy(needsAuthentication = needsAuthentication, apiProxy = apiProxy)
+        ServerConfig.Proxy(needsAuthentication = needsAuthentication, apiProxy = apiProxy, port = port)
     }
 
     override fun fromDTO(metadata: ServerConfigDTO.MetaData): ServerConfig.MetaData = with(metadata) {
@@ -237,14 +239,15 @@ class ServerConfigMapperImpl(
             website = website,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { ServerConfigEntity.Proxy(it.needsAuthentication, it.apiProxy) }
+            proxy = proxy?.let { ServerConfigEntity.Proxy(it.needsAuthentication, it.apiProxy, it.port) }
         )
     }
 
     override fun toEntity(proxy: ServerConfig.Proxy): ServerConfigEntity.Proxy = with(proxy) {
         ServerConfigEntity.Proxy(
             needsAuthentication = needsAuthentication,
-            apiProxy = apiProxy
+            apiProxy = apiProxy,
+            port = port
         )
     }
 
@@ -269,7 +272,8 @@ class ServerConfigMapperImpl(
             proxy = proxy?.let {
                 ServerConfig.Proxy(
                     needsAuthentication = it.needsAuthentication,
-                    apiProxy = it.apiProxy
+                    apiProxy = it.apiProxy,
+                    port = it.port
                 )
             }
         )
@@ -278,7 +282,8 @@ class ServerConfigMapperImpl(
     override fun fromEntity(proxy: ServerConfigEntity.Proxy): ServerConfig.Proxy = with(proxy) {
         ServerConfig.Proxy(
             needsAuthentication = needsAuthentication,
-            apiProxy = apiProxy
+            apiProxy = apiProxy,
+            port = port
         )
     }
 }

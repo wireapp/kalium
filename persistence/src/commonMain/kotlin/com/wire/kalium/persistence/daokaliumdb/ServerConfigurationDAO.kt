@@ -24,7 +24,8 @@ internal object ServerConfigMapper {
         commonApiVersion: Int,
         federation: Boolean,
         apiProxy: String?,
-        needsAuthentication: Boolean?
+        needsAuthentication: Boolean?,
+        port: Int?
     ): ServerConfigEntity = ServerConfigEntity(
         id,
         ServerConfigEntity.Links(
@@ -38,7 +39,8 @@ internal object ServerConfigMapper {
             isOnPremises = isOnPremises,
             proxy = ServerConfigEntity.Proxy(
                 needsAuthentication = needsAuthentication,
-                apiProxy = apiProxy
+                apiProxy = apiProxy,
+                port = port
             )
         ),
         ServerConfigEntity.MetaData(
@@ -75,7 +77,8 @@ interface ServerConfigurationDAO {
         val domain: String?,
         val commonApiVersion: Int,
         val apiProxy: String?,
-        val needsAuthentication: Boolean?
+        val needsAuthentication: Boolean?,
+        val port: Int?
     )
 }
 
@@ -104,7 +107,8 @@ internal class ServerConfigurationDAOImpl internal constructor(
             domain,
             commonApiVersion,
             apiProxy,
-            needsAuthentication
+            needsAuthentication,
+            port
         )
     }
 

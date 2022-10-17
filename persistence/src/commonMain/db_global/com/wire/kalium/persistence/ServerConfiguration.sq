@@ -16,6 +16,7 @@ CREATE TABLE ServerConfiguration (
     federation INTEGER AS Boolean NOT NULL,
     apiProxy TEXT,
     needsAuthentication INTEGER AS Boolean,
+    port INTEGER AS Int,
     CONSTRAINT server_config_unique UNIQUE (title, apiBaseUrl, webSocketBaseUrl)
 );
 
@@ -23,8 +24,8 @@ deleteById:
 DELETE FROM ServerConfiguration WHERE id = ?;
 
 insert:
-INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxy, needsAuthentication)
-VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?);
+INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxy, needsAuthentication, port)
+VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?);
 
 updateApiVersion:
 UPDATE ServerConfiguration SET commonApiVersion = ? WHERE id = ?;

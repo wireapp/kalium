@@ -33,7 +33,7 @@ abstract class CoreLogicCommon(
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(serverConfig: ServerConfig, proxyCredentials: (() -> ProxyCredentialsModel?)?): AuthenticationScope =
+    fun getAuthenticationScope(serverConfig: ServerConfig, proxyCredentials: ProxyCredentialsModel?): AuthenticationScope =
         // TODO(logic): make it lazier
         AuthenticationScope(clientLabel, serverConfig, proxyCredentials)
 

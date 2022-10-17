@@ -19,7 +19,7 @@ interface UnauthenticatedNetworkContainer {
     companion object {
         fun create(
             serverConfigDTO: ServerConfigDTO,
-            proxyCredentials: (() -> ProxyCredentialsDTO?)?
+            proxyCredentials: ProxyCredentialsDTO?
         ): UnauthenticatedNetworkContainer {
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
@@ -50,7 +50,7 @@ internal interface UnauthenticatedNetworkClientProvider {
 internal class UnauthenticatedNetworkClientProviderImpl internal constructor(
     backendLinks: ServerConfigDTO,
     engine: HttpClientEngine = defaultHttpEngine(),
-    proxyCredentials: (() -> ProxyCredentialsDTO?)?
+    proxyCredentials: ProxyCredentialsDTO?
 ) : UnauthenticatedNetworkClientProvider {
     override val unauthenticatedNetworkClient by lazy {
         UnauthenticatedNetworkClient(engine, backendLinks, proxyCredentials)

@@ -22,7 +22,7 @@ class AutoVersionAuthScopeUseCase(
 
                 }
                 is ProxyCredentials.UsernameAndPassword -> {
-                    Result.Success(coreLogic.getAuthenticationScope(serverConfig) { proxyCredentials.proxyCredentialsModel })
+                    Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyCredentials.proxyCredentialsModel))
                 }
             }
         })

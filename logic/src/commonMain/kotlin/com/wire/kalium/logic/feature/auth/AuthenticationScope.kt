@@ -16,13 +16,14 @@ import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 class AuthenticationScope(
     private val clientLabel: String,
     private val serverConfig: ServerConfig,
-    proxyCredentialsModel: (() -> ProxyCredentialsModel?)?
+    proxyCredentialsModel: ProxyCredentialsModel?
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
-            MapperProvider.serverConfigMapper().toDTO(serverConfig)
-        ) { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(proxyCredentialsModel?.invoke()) }
+            MapperProvider.serverConfigMapper().toDTO(serverConfig),
+            MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(proxyCredentialsModel)
+        )
     }
     private val loginRepository: LoginRepository
         get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi, clientLabel)

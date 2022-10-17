@@ -31,7 +31,7 @@ internal class AuthenticatedNetworkClient(
     installCompression: Boolean = true
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
-        installWireDefaultRequest(sessionManager.session().second) { sessionManager.proxyCredentials() }
+        installWireDefaultRequest(sessionManager.session().second, sessionManager.proxyCredentials())
         installAuth(sessionManager)
         install(ContentNegotiation) {
             mls()
@@ -48,7 +48,7 @@ internal class AuthenticatedNetworkClient(
 internal class UnauthenticatedNetworkClient(
     engine: HttpClientEngine,
     backendLinks: ServerConfigDTO,
-    proxyCredentials: (() -> ProxyCredentialsDTO?)?
+    proxyCredentials: ProxyCredentialsDTO?
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
         installWireDefaultRequest(backendLinks, proxyCredentials)
@@ -82,7 +82,7 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireDefaultRequest(sessionManager.session().second) { sessionManager.proxyCredentials() }
+            installWireDefaultRequest(sessionManager.session().second, sessionManager.proxyCredentials())
             installAuth(sessionManager)
             install(ContentNegotiation) {
                 mls()

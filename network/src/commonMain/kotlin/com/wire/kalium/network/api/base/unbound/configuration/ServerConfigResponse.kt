@@ -25,6 +25,7 @@ internal data class EndPoints(
 
 @Serializable
 data class Proxy(
-    @SerialName("needsAuthentication") val needsAuthentication: Boolean?,
-    @SerialName("apiProxy") val apiProxy: String?
+    @SerialName("needsAuthentication") val needsAuthentication: Boolean,
+    @SerialName("apiProxy") val apiProxy: String,
+    @SerialName("port") val port: Int
 )

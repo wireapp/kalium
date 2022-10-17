@@ -26,7 +26,8 @@ data class ServerConfigEntity(
 
     data class Proxy(
         val needsAuthentication: Boolean?,
-        val apiProxy: String?
+        val apiProxy: String?,
+        val port: Int?
     )
 }
 
