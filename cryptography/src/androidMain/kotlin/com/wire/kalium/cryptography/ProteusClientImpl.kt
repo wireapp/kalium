@@ -6,6 +6,7 @@ import com.wire.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 
+@Suppress("TooManyFunctions")
 actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClient {
 
     private val path: String
@@ -20,10 +21,23 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         return File(path).deleteRecursively()
     }
 
-    override suspend fun open() {
+    override suspend fun openOrCreate() {
+        val directory = File(path)
         box = wrapException {
-            File(path).mkdirs()
+            directory.mkdirs()
             CryptoBox.open(path)
+        }
+    }
+
+    override suspend fun openOrError() {
+        val directory = File(path)
+        if (directory.exists()) {
+            box = wrapException {
+                directory.mkdirs()
+                CryptoBox.open(path)
+            }
+        } else {
+            throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
         }
     }
 
