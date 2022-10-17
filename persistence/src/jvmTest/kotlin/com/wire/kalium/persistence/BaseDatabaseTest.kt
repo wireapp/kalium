@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.userDatabaseProvider
+import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
@@ -16,7 +16,7 @@ actual open class BaseDatabaseTest actual constructor() {
     }
 
     actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
-        return userDatabaseProvider(userId, userId.databaseFile, dispatcher = dispatcher)
+        return userDatabaseBuilder(userId, userId.databaseFile, dispatcher = dispatcher)
     }
 
     val UserIDEntity.databaseFile

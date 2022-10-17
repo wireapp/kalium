@@ -10,7 +10,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 
 internal actual class PlatformDatabaseData(val passphrase: String)
 
-fun userDatabaseProvider(
+fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: String,
     dispatcher: CoroutineDispatcher

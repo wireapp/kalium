@@ -2,7 +2,7 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.userDatabaseProvider
+import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -17,6 +17,6 @@ actual open class BaseDatabaseTest actual constructor() {
     }
 
     actual fun createDatabase(userId: UserIDEntity): UserDatabaseBuilder {
-        return userDatabaseProvider(userId, "123456789", dispatcher)
+        return userDatabaseBuilder(userId, "123456789", dispatcher)
     }
 }

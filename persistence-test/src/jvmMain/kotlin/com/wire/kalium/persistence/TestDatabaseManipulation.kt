@@ -2,13 +2,14 @@ package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import com.wire.kalium.persistence.db.UserDatabaseProvider
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.userDatabaseBuilder
 import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
 
-internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseProvider {
+internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
     val dbFile = getTempDatabaseFile(getTempDatabaseFileNameForUser(userId))
-    return UserDatabaseProvider(userId, dbFile, dispatcher)
+    return userDatabaseBuilder(userId, dbFile, dispatcher)
 }
 
 internal actual fun deleteTestDatabase(userId: UserIDEntity) {
