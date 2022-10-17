@@ -3,12 +3,19 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import app.cash.sqldelight.driver.native.wrapConnection
+import co.touchlab.sqliter.DatabaseConfiguration
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 
-internal actual class PlatformDatabaseData(val passphrase: String)
+sealed interface DatabaseCredentials {
+    data class Passphrase(val value: String) : DatabaseCredentials
+    object NotSet : DatabaseCredentials
+}
+
+internal actual class PlatformDatabaseData(val credentials: DatabaseCredentials)
 
 fun UserDatabaseProvider(
     userId: UserIDEntity,
@@ -20,7 +27,33 @@ fun UserDatabaseProvider(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(passphrase)
+        PlatformDatabaseData(DatabaseCredentials.Passphrase(passphrase))
+    )
+}
+
+fun InMemoryDatabaseProvider(
+    userId: UserIDEntity,
+    dispatcher: CoroutineDispatcher
+): UserDatabaseProvider {
+    val schema = UserDatabase.Schema
+    val driver = NativeSqliteDriver(
+        DatabaseConfiguration(
+            name = FileNameUtil.userDBName(userId),
+            version = schema.version,
+            inMemory = true,
+            create = { connection ->
+                wrapConnection(connection) { schema.create(it) }
+            },
+            upgrade = { connection, oldVersion, newVersion ->
+                wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
+            }
+        )
+    )
+    return UserDatabaseProvider(
+        userId,
+        driver,
+        dispatcher,
+        PlatformDatabaseData(DatabaseCredentials.NotSet)
     )
 }
 
