@@ -122,7 +122,12 @@ class ProteusException(message: String?, val code: Code): Exception(message) {
         /**
          * An unspecified error occurred.
          */
-        UNKNOWN_ERROR
+        UNKNOWN_ERROR,
+
+        /**
+         * Local files were not found.
+         */
+        LOCAL_FILES_NOT_FOUND;
     }
 
     companion object {
