@@ -61,12 +61,20 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseProvider {
+    val passphrase = "testPass".toByteArray()
     val driver = AndroidSqliteDriver(
         schema = UserDatabase.Schema,
         context = context,
-        name = null
+        name = null,
+        factory = SupportFactory(passphrase)
     )
-    return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(context, DatabaseCredentials.NotSet))
+    return UserDatabaseProvider(
+        userId, driver, dispatcher, PlatformDatabaseData(
+            context, DatabaseCredentials.Passphrase(
+                UserDBSecret(passphrase)
+            )
+        )
+    )
 }
 
 internal actual fun nuke(
