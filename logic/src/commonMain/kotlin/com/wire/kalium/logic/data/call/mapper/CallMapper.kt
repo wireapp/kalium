@@ -3,15 +3,20 @@ package com.wire.kalium.logic.data.call.mapper
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.VideoStateCalling
+import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.VideoState
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -38,9 +43,13 @@ interface CallMapper {
     fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type
     fun toCallEntityStatus(callStatus: CallStatus): CallEntity.Status
     fun fromConversationIdToQualifiedIDEntity(conversationId: ConversationId): QualifiedIDEntity
+
+    fun toClientMessageTarget(callClientList: CallClientList): MessageTarget.Client
 }
 
-class CallMapperImpl : CallMapper {
+class CallMapperImpl(
+    private val qualifiedIdMapper: QualifiedIdMapper
+) : CallMapper {
 
     override fun toCallTypeCalling(callType: CallType): CallTypeCalling {
         return when (callType) {
@@ -158,4 +167,20 @@ class CallMapperImpl : CallMapper {
         value = conversationId.value,
         domain = conversationId.domain
     )
+
+    override fun toClientMessageTarget(callClientList: CallClientList): MessageTarget.Client {
+        val recipients = callClientList.clients.groupingBy { it.userId }
+            .fold({ key, _ -> key to mutableListOf<ClientId>() }, { _, accumulator, element ->
+                accumulator.also { (_, list) -> list.add(ClientId(element.clientId)) }
+            }).run {
+                values.toList().map {
+                    val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(it.first)
+                    Recipient(qualifiedUserId, it.second)
+                }
+            }
+
+        return MessageTarget.Client(
+            recipients = recipients
+        )
+    }
 }

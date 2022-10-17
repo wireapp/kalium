@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
@@ -337,6 +338,24 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenMemberChangeEventMutedStatus_whenHandlingIt_thenShouldUpdateConversation() = runTest {
+        val event = TestEvent.memberChangeMutedStatus()
+
+        val (arrangement, eventReceiver) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateMutedStatusSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateMutedStatus)
+            .with(eq(event.conversationId), any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenMemberChangeEvent_whenHandlingIt_thenShouldUpdateMembers() = runTest {
         val updatedMember = Member(TestUser.USER_ID, Member.Role.Admin)
         val event = TestEvent.memberChange(member = updatedMember)
@@ -492,6 +511,9 @@ class ConversationEventReceiverTest {
         val proteusClient = mock(classOf<ProteusClient>())
 
         @Mock
+        val proteusClientProvider = mock(classOf<ProteusClientProvider>())
+
+        @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
@@ -531,7 +553,7 @@ class ConversationEventReceiverTest {
         val persistReactionsUseCase = mock(classOf<PersistReactionUseCase>())
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
-            proteusClient = proteusClient,
+            proteusClientProvider = proteusClientProvider,
             persistMessage = persistMessage,
             messageRepository = messageRepository,
             assetRepository = assetRepository,
@@ -563,6 +585,13 @@ class ConversationEventReceiverTest {
             selfUserId = TestUser.USER_ID,
             persistReaction = persistReactionsUseCase
         )
+
+        init {
+            given(proteusClientProvider)
+                .suspendFunction(proteusClientProvider::getOrError)
+                .whenInvoked()
+                .thenReturn(Either.Right(proteusClient))
+        }
 
         fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
             given(proteusClient)
@@ -652,6 +681,13 @@ class ConversationEventReceiverTest {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateMemberFromEvent)
                 .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withUpdateMutedStatusSucceeding() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateMutedStatus)
+                .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Right(Unit))
         }
 

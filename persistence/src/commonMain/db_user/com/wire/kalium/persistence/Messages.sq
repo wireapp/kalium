@@ -428,3 +428,13 @@ WHERE message.conversation_id IS :conversation_id
 AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 AND message.content_type IN ('TEXT')
 AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);
+
+resetAssetUploadStatus:
+UPDATE MessageAssetContent
+SET asset_upload_status = 'FAILED'
+WHERE asset_upload_status = 'IN_PROGRESS';
+
+resetAssetDownloadStatus:
+UPDATE MessageAssetContent
+SET asset_download_status = 'FAILED'
+WHERE asset_download_status = 'IN_PROGRESS';

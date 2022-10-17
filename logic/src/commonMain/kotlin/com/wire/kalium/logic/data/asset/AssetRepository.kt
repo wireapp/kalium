@@ -7,6 +7,7 @@ import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.EncryptionFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
@@ -22,6 +23,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import kotlinx.coroutines.flow.firstOrNull
+import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import com.wire.kalium.network.api.base.model.AssetId as NetworkAssetId
@@ -204,36 +206,42 @@ internal class AssetDataSource(
                 // Backend sends asset messages with empty asset tokens
                 assetApi.downloadAsset(assetId, assetToken?.ifEmpty { null }, tempFileSink)
             }.flatMap {
-                val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
+                try {
+                    val encryptedAssetDataSource = kaliumFileSystem.source(tempFile)
 
-                // Decrypt and persist decoded asset onto a persistent asset path
-                val decodedAssetPath = kaliumFileSystem.providePersistentAssetPath(buildFileName(assetId.value, assetName.fileExtension()))
+                    // Decrypt and persist decoded asset onto a persistent asset path
+                    val decodedAssetPath =
+                        kaliumFileSystem.providePersistentAssetPath(buildFileName(assetId.value, assetName.fileExtension()))
 
-                val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
+                    val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
 
-                // Public assets are stored already decrypted on the backend, hence no decryption is needed
-                val assetDataSize = if (encryptionKey != null) {
-                    decryptFileWithAES256(encryptedAssetDataSource, decodedAssetSink, encryptionKey)
-                } else
-                    kaliumFileSystem.writeData(decodedAssetSink, encryptedAssetDataSource)
+                    // Public assets are stored already decrypted on the backend, hence no decryption is needed
+                    val assetDataSize = if (encryptionKey != null) {
+                        decryptFileWithAES256(encryptedAssetDataSource, decodedAssetSink, encryptionKey)
+                    } else
+                        kaliumFileSystem.writeData(decodedAssetSink, encryptedAssetDataSource)
 
-                // Delete temp path now that the decoded asset has been persisted correctly
-                encryptedAssetDataSource.close()
-                kaliumFileSystem.delete(tempFile)
+                    // Delete temp path now that the decoded asset has been persisted correctly
+                    encryptedAssetDataSource.close()
+                    kaliumFileSystem.delete(tempFile)
 
-                if (assetDataSize == -1L)
-                    Either.Left(EncryptionFailure())
+                    if (assetDataSize == -1L)
+                        Either.Left(EncryptionFailure())
 
-                wrapStorageRequest {
-                    assetDao.insertAsset(
-                        assetMapper.fromUserAssetToDaoModel(
-                            assetId,
-                            decodedAssetPath,
-                            assetDataSize
+                    wrapStorageRequest {
+                        assetDao.insertAsset(
+                            assetMapper.fromUserAssetToDaoModel(
+                                assetId,
+                                decodedAssetPath,
+                                assetDataSize
+                            )
                         )
-                    )
+                    }
+                    Either.Right(decodedAssetPath)
+                } catch (e: IOException) {
+                    kaliumLogger.e("Something went wrong when handling the Asset paths on the file system", e)
+                    Either.Left(StorageFailure.DataNotFound)
                 }
-                Either.Right(decodedAssetPath)
             }
         }, {
             Either.Right(it.dataPath.toPath())

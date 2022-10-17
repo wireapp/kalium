@@ -3,7 +3,7 @@ package com.wire.kalium.testservice.managed
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.feature.asset.SendAssetMessageResult
+import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.GetConversationsUseCase
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
@@ -39,6 +39,25 @@ sealed class ConversationRepository {
                         log.info("Instance ${instance.instanceId}: Delete message everywhere")
                         runBlocking {
                             messages.deleteMessage(conversationId, messageId, deleteForEveryone)
+                        }
+                    }
+                }
+            }
+        }
+
+        fun sendReaction(
+            instance: Instance,
+            conversationId: ConversationId,
+            originalMessageId: String,
+            type: String
+        ) {
+            instance.coreLogic?.globalScope {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send reaction $type")
+                        runBlocking {
+                            messages.toggleReaction(conversationId, originalMessageId, type)
                         }
                     }
                 }
@@ -154,7 +173,7 @@ sealed class ConversationRepository {
                                 )
                             }
                             when (sendResult) {
-                                is SendAssetMessageResult.Failure -> {
+                                is ScheduleNewAssetMessageResult.Failure -> {
                                     if (sendResult.coreFailure is StorageFailure.Generic) {
                                         val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
                                         throw WebApplicationException(
@@ -220,7 +239,7 @@ sealed class ConversationRepository {
                                 width,
                                 height
                             )
-                            if (sendResult is SendAssetMessageResult.Failure) {
+                            if (sendResult is ScheduleNewAssetMessageResult.Failure) {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {
                                     val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
                                     throw WebApplicationException(

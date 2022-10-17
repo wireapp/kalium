@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
+import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -89,7 +90,12 @@ interface MessageRepository {
      * @return [Either.Left] of a [ProteusSendMessageFailure] if the server rejected the message
      * @return [Either.Left] of other [CoreFailure] for more generic cases
      */
-    suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<CoreFailure, String>
+    suspend fun sendEnvelope(
+        conversationId: ConversationId,
+        envelope: MessageEnvelope,
+        messageTarget: MessageTarget
+    ): Either<CoreFailure, String>
+
     suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
@@ -104,6 +110,8 @@ interface MessageRepository {
         oldMessageId: String,
         newMessageId: String
     ): Either<CoreFailure, Unit>
+
+    suspend fun resetAssetProgressStatus()
 
     val extensions: MessageRepositoryExtensions
 }
@@ -231,19 +239,29 @@ class MessageDataSource(
             messageDAO.updateMessagesAddMillisToDate(millis, idMapper.toDaoModel(conversationId), MessageEntity.Status.PENDING)
         }
 
-    override suspend fun sendEnvelope(conversationId: ConversationId, envelope: MessageEnvelope): Either<CoreFailure, String> {
+    override suspend fun sendEnvelope(
+        conversationId: ConversationId,
+        envelope: MessageEnvelope,
+        messageTarget: MessageTarget
+    ): Either<CoreFailure, String> {
         val recipientMap = envelope.recipients.associate { recipientEntry ->
             idMapper.toApiModel(recipientEntry.userId) to recipientEntry.clientPayloads.associate { clientPayload ->
                 clientPayload.clientId.value to clientPayload.payload.data
             }
         }
+
+        val messageOption = when (messageTarget) {
+            is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
+            is MessageTarget.Conversation -> MessageApi.QualifiedMessageOption.ReportAll
+        }
+
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
                 // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
                 MessageApi.Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap, true, MessagePriority.HIGH, false, envelope.dataBlob?.data,
-                    MessageApi.QualifiedMessageOption.ReportAll
+                    messageOption
                 ),
                 idMapper.toApiModel(conversationId),
             )
@@ -303,6 +321,13 @@ class MessageDataSource(
                     throw IllegalStateException("Text message can only be updated on message having TextMessageContent set as content")
                 }
             }
+        }
+    }
+
+    override suspend fun resetAssetProgressStatus() {
+        wrapStorageRequest {
+            messageDAO.resetAssetUploadStatus()
+            messageDAO.resetAssetDownloadStatus()
         }
     }
 }

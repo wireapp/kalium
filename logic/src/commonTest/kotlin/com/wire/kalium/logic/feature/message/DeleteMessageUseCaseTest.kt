@@ -63,7 +63,8 @@ class DeleteMessageUseCaseTest {
             .with(
                 matching { message ->
                     message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
-                }
+                },
+                anything()
             )
             .wasInvoked(exactly = once)
         verify(arrangement.messageRepository)
@@ -92,7 +93,7 @@ class DeleteMessageUseCaseTest {
         // then
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(anything())
+            .with(anything(), anything())
             .wasNotInvoked()
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
@@ -131,7 +132,8 @@ class DeleteMessageUseCaseTest {
             .with(
                 matching { message ->
                     message.conversationId == TestUser.SELF.id && message.content == deletedForMeContent
-                }
+                },
+                anything()
             )
             .wasInvoked(exactly = once)
 
@@ -169,7 +171,7 @@ class DeleteMessageUseCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(matching { message ->
                 message.conversationId == TestUser.SELF.id && message.content == deletedForMeContent
-            })
+            }, anything())
             .wasInvoked(exactly = once)
 
         verify(arrangement.assetRepository)
@@ -219,7 +221,7 @@ class DeleteMessageUseCaseTest {
         fun withSendMessageSucceed() = apply {
             given(messageSender)
                 .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(anything())
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
 
