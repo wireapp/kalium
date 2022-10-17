@@ -2,6 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.DefaultDatabaseTestValues
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -108,9 +109,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenExistingMLSConversation_ThenConversationCanBeRetrievedByGroupState() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity3)
+        insertTeamUserAndMember(team, user2, conversationEntity2.id)
         val result =
             conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.ESTABLISHED)
-        assertEquals(listOf(conversationEntity2.toViewEntity()), result)
+        assertEquals(listOf(conversationEntity2.toViewEntity(user2)), result)
     }
 
     @Test
@@ -934,11 +936,101 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertContentEquals(listOf(conversationEntity1.id), conversationIds)
     }
 
+    @Test
+    fun givenSelfUserIsNotMemberOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity3)
+        teamDAO.insertTeam(team)
+        userDAO.insertUser(user2)
+        conversationDAO.insertMember(Member(user2.id, Member.Role.Member), conversationEntity3.id)
+
+        // when
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
+
+        // then
+        assertEquals(0L, result?.isMember)
+    }
+
+    @Test
+    fun givenSelfUserIsCreatorOfConversation_whenGettingConversationDetails_itReturnsCorrectDetails() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity3.copy(creatorId = DefaultDatabaseTestValues.userId.value))
+        teamDAO.insertTeam(team)
+        userDAO.insertUser(user2)
+        insertTeamUserAndMember(team, user2, conversationEntity3.id)
+
+        // when
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
+
+        // then
+        assertEquals(1L, result?.isCreator)
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
         // should be inserted AFTER inserting the conversation!!!
-        conversationDAO.insertMember(Member(user.id, Member.Role.Member), conversationId)
+        conversationDAO.insertMembersWithQualifiedId(
+            listOf(
+                Member(user.id, Member.Role.Member),
+                Member(DefaultDatabaseTestValues.userId, Member.Role.Member) // adding SelfUser as a member too
+            ),
+            conversationId
+        )
+    }
+
+    private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
+        val protocol: ConversationEntity.Protocol
+        val mlsGroupId: String?
+        val mlsLastKeyingMaterialUpdate: Long
+        val mlsGroupState: ConversationEntity.GroupState
+
+        val protocolInfoTmp = protocolInfo
+        if (protocolInfoTmp is ConversationEntity.ProtocolInfo.MLS) {
+            protocol = ConversationEntity.Protocol.MLS
+            mlsGroupId = protocolInfoTmp.groupId
+            mlsLastKeyingMaterialUpdate = protocolInfoTmp.keyingMaterialLastUpdate.epochSeconds
+            mlsGroupState = protocolInfoTmp.groupState
+        } else {
+            protocol = ConversationEntity.Protocol.PROTEUS
+            mlsGroupId = null
+            mlsLastKeyingMaterialUpdate = 0L
+            mlsGroupState = ConversationEntity.GroupState.ESTABLISHED
+        }
+
+        return ConversationViewEntity(
+            id = id,
+            name = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.name else name,
+            type = type,
+            callStatus = null,
+            previewAssetId = null,
+            mutedStatus = mutedStatus,
+            teamId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.team else teamId,
+            lastModifiedDate = lastModifiedDate,
+            lastReadDate = lastReadDate,
+            userAvailabilityStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.availabilityStatus else null,
+            userType = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.userType else null,
+            botService = null,
+            userDeleted = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.deleted else null,
+            connectionStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.connectionStatus else null,
+            otherUserId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.id else null,
+            isCreator = 0L,
+            lastNotificationDate = lastNotificationDate,
+            unreadMessageCount = 0L,
+            isMember = 1L,
+            protocolInfo = protocolInfo,
+            accessList = access,
+            accessRoleList = accessRole,
+            protocol = protocol,
+            mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+            mlsEpoch = 0L,
+            mlsGroupId = mlsGroupId,
+            mlsLastKeyingMaterialUpdate = mlsLastKeyingMaterialUpdate,
+            mlsGroupState = mlsGroupState,
+            mlsProposalTimer = null,
+            mutedTime = mutedTime,
+            creatorId = creatorId,
+        )
     }
 
     private companion object {
@@ -1044,59 +1136,5 @@ class ConversationDAOTest : BaseDatabaseTest() {
             (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
             Instant.DISTANT_FUTURE
         )
-
-        fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
-            val protocol: ConversationEntity.Protocol
-            val mlsGroupId: String?
-            val mlsLastKeyingMaterialUpdate: Long
-            val mlsGroupState: ConversationEntity.GroupState
-
-            val protocolInfoTmp = protocolInfo
-            if (protocolInfoTmp is ConversationEntity.ProtocolInfo.MLS) {
-                protocol = ConversationEntity.Protocol.MLS
-                mlsGroupId = protocolInfoTmp.groupId
-                mlsLastKeyingMaterialUpdate = protocolInfoTmp.keyingMaterialLastUpdate.epochSeconds
-                mlsGroupState = protocolInfoTmp.groupState
-            } else {
-                protocol = ConversationEntity.Protocol.PROTEUS
-                mlsGroupId = null
-                mlsLastKeyingMaterialUpdate = 0L
-                mlsGroupState = ConversationEntity.GroupState.ESTABLISHED
-            }
-
-            return ConversationViewEntity(
-                id = id,
-                name = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.name else name,
-                type = type,
-                callStatus = null,
-                previewAssetId = null,
-                mutedStatus = mutedStatus,
-                teamId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.team else teamId,
-                lastModifiedDate = lastModifiedDate,
-                lastReadDate = lastReadDate,
-                userAvailabilityStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.availabilityStatus else null,
-                userType = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.userType else null,
-                botService = null,
-                userDeleted = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.deleted else null,
-                connectionStatus = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.connectionStatus else null,
-                otherUserId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.id else null,
-                isCreator = 0L,
-                lastNotificationDate = lastNotificationDate,
-                unreadMessageCount = 0L,
-                isMember = 1L,
-                protocolInfo = protocolInfo,
-                accessList = access,
-                accessRoleList = accessRole,
-                protocol = protocol,
-                mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-                mlsEpoch = 0L,
-                mlsGroupId = mlsGroupId,
-                mlsLastKeyingMaterialUpdate = mlsLastKeyingMaterialUpdate,
-                mlsGroupState = mlsGroupState,
-                mlsProposalTimer = null,
-                mutedTime = mutedTime,
-                creatorId = creatorId,
-            )
-        }
     }
 }

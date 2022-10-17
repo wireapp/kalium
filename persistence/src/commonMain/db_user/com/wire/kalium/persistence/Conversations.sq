@@ -135,17 +135,10 @@ Conversation.last_notified_message_date AS lastNotifiedMessageDate,
     AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL') AND message.visibility IS 'VISIBLE')
     AS unreadMessageCount,
 (SELECT COUNT() FROM Member
-    WHERE Member.user == (SELECT id FROM SelfUser LIMIT 1)
+    WHERE Member.user == (SELECT SelfUser.id FROM SelfUser LIMIT 1)
     AND Member.conversation == Conversation.qualified_id
     LIMIT 1)
     AS isMember,
-CASE Conversation.qualified_id
-WHEN (SELECT conversation FROM Member
-        WHERE Member.user =
-        (SELECT Conversation.qualified_id FROM Conversation
-         WHERE Conversation.type IS "SELF")) THEN 0
-    ELSE 1
-    END AS isMember,
 Conversation.protocol,
 Conversation.mls_cipher_suite,
 Conversation.mls_epoch,
@@ -162,7 +155,7 @@ Conversation.last_modified_date
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"
-    AND Member.user IS NOT (SELECT Conversation.qualified_id FROM Conversation WHERE Conversation.type IS "SELF")
+    AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
 LEFT JOIN User ON User.qualified_id = Member.user
 LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
     AND (Connection.status = 'SENT'
