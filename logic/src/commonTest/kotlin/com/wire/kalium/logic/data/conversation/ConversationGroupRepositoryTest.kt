@@ -14,9 +14,9 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
@@ -470,7 +470,7 @@ class ConversationGroupRepositoryTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(
                     NetworkResponse.Success(
-                        ConversationMemberAddedDTO.Unchanged,
+                        ConversationMemberAddedResponse.Unchanged,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )
@@ -508,7 +508,7 @@ class ConversationGroupRepositoryTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(
                     NetworkResponse.Success(
-                        ConversationMemberRemovedDTO.Unchanged,
+                        ConversationMemberRemovedResponse.Unchanged,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )

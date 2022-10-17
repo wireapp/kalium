@@ -11,9 +11,9 @@ import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -144,7 +144,7 @@ object TestConversation {
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
-        ConversationMemberAddedDTO.Changed(
+        ConversationMemberAddedResponse.Changed(
             EventContentDTO.Conversation.MemberJoinDTO(
                 NETWORK_ID,
                 NETWORK_USER_ID1,
@@ -155,7 +155,7 @@ object TestConversation {
         )
 
     val REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE =
-        ConversationMemberRemovedDTO.Changed(
+        ConversationMemberRemovedResponse.Changed(
             EventContentDTO.Conversation.MemberLeaveDTO(
                 NETWORK_ID,
                 NETWORK_USER_ID1,

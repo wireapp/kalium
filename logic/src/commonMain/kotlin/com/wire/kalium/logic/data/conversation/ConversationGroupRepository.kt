@@ -18,8 +18,8 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -132,7 +132,7 @@ internal class ConversationGroupRepositoryImpl(
                 addParticipantRequest, idMapper.toApiModel(conversationId)
             )
         }.onSuccess { response ->
-            if (response is ConversationMemberAddedDTO.Changed) {
+            if (response is ConversationMemberAddedResponse.Changed) {
                 memberJoinEventHandler.handle(eventMapper.conversationMemberJoin("", response.event))
             }
         }.map {
@@ -168,7 +168,7 @@ internal class ConversationGroupRepositoryImpl(
         wrapApiRequest {
             conversationApi.removeMember(idMapper.toApiModel(userId), idMapper.toApiModel(conversationId))
         }.onSuccess { response ->
-            if (response is ConversationMemberRemovedDTO.Changed) {
+            if (response is ConversationMemberRemovedResponse.Changed) {
                 memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave("", response.event))
             }
         }.map { }
