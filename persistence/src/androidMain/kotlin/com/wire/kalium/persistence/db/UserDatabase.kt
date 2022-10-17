@@ -56,7 +56,7 @@ fun UserDatabaseProvider(
     return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(context, credentials))
 }
 
-fun InMemoryUserDatabaseProvider(
+fun inMemoryDatabase(
     context: Context,
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher

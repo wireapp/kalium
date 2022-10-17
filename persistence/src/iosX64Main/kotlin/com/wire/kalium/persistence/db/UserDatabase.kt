@@ -31,7 +31,7 @@ fun UserDatabaseProvider(
     )
 }
 
-fun InMemoryDatabaseProvider(
+fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseProvider {

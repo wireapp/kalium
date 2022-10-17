@@ -40,7 +40,7 @@ private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
     Properties(1).apply { put("foreign_keys", "true") }
 )
 
-fun InMemoryUserDatabaseProvider(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseProvider {
+fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseProvider {
     val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY)
     UserDatabase.Schema.create(driver)
     return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")))

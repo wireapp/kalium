@@ -5,13 +5,13 @@ import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
-import com.wire.kalium.persistence.db.InMemoryUserDatabaseProvider
+import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.TestDispatcher
 
 internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseProvider {
-    return InMemoryUserDatabaseProvider(
+    return inMemoryDatabase(
         ApplicationProvider.getApplicationContext(),
         userId,
         dispatcher = dispatcher
