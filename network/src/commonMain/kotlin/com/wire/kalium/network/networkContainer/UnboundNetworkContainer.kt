@@ -19,7 +19,7 @@ private interface UnboundNetworkClientProvider {
 
 internal class UnboundNetworkClientProviderImpl(
     val developmentApiEnabled: Boolean,
-    engine: HttpClientEngine = defaultHttpEngine()
+    engine: HttpClientEngine = defaultHttpEngine(null)
 ) : UnboundNetworkClientProvider {
     override val unboundNetworkClient by lazy {
         UnboundNetworkClient(engine)
