@@ -3,7 +3,6 @@ package com.wire.kalium.logic.test_util
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 
 object TestKaliumDispatcher : KaliumDispatcher {
 
