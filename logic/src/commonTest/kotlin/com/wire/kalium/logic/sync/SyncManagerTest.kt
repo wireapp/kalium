@@ -2,7 +2,7 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -10,6 +10,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -139,8 +141,8 @@ class SyncManagerTest {
 
     @Suppress("unused")
     private class Arrangement {
-
-        val slowSyncRepository: SlowSyncRepository = InMemorySlowSyncRepository()
+        val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
+        val slowSyncRepository: SlowSyncRepository = SlowSyncRepositoryImpl(database.provider.metadataDAO)
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
