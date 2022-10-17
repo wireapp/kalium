@@ -58,7 +58,7 @@ Conversation.last_notified_message_date AS lastNotifiedMessageDate,
     AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL') AND message.visibility IS 'VISIBLE')
     AS unreadMessageCount,
 (SELECT COUNT() FROM Member
-    WHERE Member.user == (SELECT id FROM SelfUser LIMIT 1)
+    WHERE Member.user == (SELECT SelfUser.id FROM SelfUser LIMIT 1)
     AND Member.conversation == Conversation.qualified_id
     LIMIT 1)
     AS isMember,
@@ -78,7 +78,7 @@ Conversation.last_modified_date
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"
-    AND Member.user IS NOT (SELECT Conversation.qualified_id FROM Conversation WHERE Conversation.type IS "SELF")
+    AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
 LEFT JOIN User ON User.qualified_id = Member.user
 LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
     AND (Connection.status = 'SENT'
@@ -87,4 +87,3 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          AND Conversation.type IS "CONNECTION_PENDING")
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
 LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS "STILL_ONGOING" ORDER BY created_at DESC LIMIT 1);
-
