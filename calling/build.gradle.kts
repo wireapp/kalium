@@ -43,7 +43,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 api(Dependencies.Calling.avs)
-                api(Dependencies.Calling.jna)
+                api(Dependencies.Calling.androidJna)
             }
         }
         val jvmMain by getting {

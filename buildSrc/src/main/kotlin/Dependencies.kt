@@ -188,6 +188,7 @@ object Dependencies {
     object Calling {
         const val avs = "com.wire:avs:${Versions.avs}"
         const val jna = "net.java.dev.jna:jna:${Versions.jna}"
+        const val androidJna = "net.java.dev.jna:jna:${Versions.jna}@aar"
     }
 
     object Logging {
