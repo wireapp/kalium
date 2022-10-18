@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
@@ -89,7 +90,6 @@ suspend fun selectConversation(userSession: UserSessionScope): Conversation {
 
     return conversations[selectedConversationIndex]
 }
-
 
 suspend fun selectMember(userSession: UserSessionScope, conversationId: ConversationId): User {
 
@@ -291,11 +291,9 @@ class AddMemberToGroupCommand : CliktCommand(name = "add-member") {
     override fun run(): Unit = runBlocking {
         val selectedConversation = selectConversation(userSession)
         val selectedConnection = selectConnection(userSession)
+        val result = userSession.conversations.addMemberToConversationUseCase(selectedConversation.id, listOf(selectedConnection.id))
 
-        when (val result = userSession.conversations.addMemberToConversationUseCase(
-            selectedConversation.id,
-            listOf(selectedConnection.id)
-        )) {
+        when (result) {
             is AddMemberToConversationUseCase.Result.Success -> echo("Added user successfully")
             is AddMemberToConversationUseCase.Result.Failure -> throw PrintMessage("Add user failed: $result")
         }
@@ -310,10 +308,7 @@ class RemoveMemberFromGroupCommand : CliktCommand(name = "remove-member") {
         val selectedConversation = selectConversation(userSession)
         val selectedMember = selectMember(userSession, selectedConversation.id)
 
-        when (val result = userSession.conversations.removeMemberFromConversation(
-            selectedConversation.id,
-            selectedMember.id
-        )) {
+        when (val result = userSession.conversations.removeMemberFromConversation(selectedConversation.id, selectedMember.id)) {
             is RemoveMemberFromConversationUseCase.Result.Success -> echo("Removed user successfully")
             is RemoveMemberFromConversationUseCase.Result.Failure -> throw PrintMessage("Remove user failed: $result")
         }
@@ -354,14 +349,14 @@ var strokes: Array<KeyStroke> = arrayOf(
     KeyStroke('q', ::quitApplication)
 )
 
-suspend fun executeStroke(userSession: UserSessionScope, context: ConsoleContext,  key: Char) {
+suspend fun executeStroke(userSession: UserSessionScope, context: ConsoleContext, key: Char) {
     for (stroke in strokes) {
         if (stroke.key.equals(key)) {
             stroke.handler(userSession, context)
             return
         }
     }
-    echo("Unknown stroke: ${key}")
+    echo("Unknown stroke: $key")
 }
 
 suspend fun listConversationsHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
@@ -397,7 +392,6 @@ suspend fun answerCallHandler(userSession: UserSessionScope, context: ConsoleCon
     return 0
 }
 
-
 suspend fun endCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
     val currentConversation = context.currentConversation ?: return -1
     userSession.calls.endCall.invoke(conversationId = currentConversation.id)
@@ -422,7 +416,6 @@ suspend fun quitApplication(userSession: UserSessionScope, context: ConsoleConte
     return 0
 }
 
-
 class ConsoleCommand : CliktCommand(name = "console") {
     private val port by option(help = "REST API server port").int().default(0)
     private val avsTest by option("-T").flag(default = false)
@@ -439,12 +432,12 @@ class ConsoleCommand : CliktCommand(name = "console") {
             HttpServer.create(InetSocketAddress(port), 0).apply {
                 createContext("/stroke") { http ->
                     val stroke = http.getRequestURI().getQuery()[0]
-                    echo("*** REST-stroke=${stroke}")
+                    echo("*** REST-stroke=$stroke")
                     val job = GlobalScope.launch(Dispatchers.Default) {
-                        executeStroke(userSession, context, stroke);
+                        executeStroke(userSession, context, stroke)
                     }
                     http.responseHeaders.add("Content-type", "text/plain")
-                    http.sendResponseHeaders(200, 0)
+                    http.sendResponseHeaders(OK_STATUS, 0)
                     val os = http.getResponseBody()
                     // We should get the response from the stroke here....
                     // and send it on the os...
@@ -452,12 +445,12 @@ class ConsoleCommand : CliktCommand(name = "console") {
                 }
                 createContext("/command") { http ->
                     val command = http.getRequestURI().getQuery()
-                    echo("*** REST-COMMAND=${command}")
+                    echo("*** REST-COMMAND=$command")
                     val job = GlobalScope.launch(Dispatchers.Default) {
                         // executeCommand(userSession, stroke);
                     }
                     http.responseHeaders.add("Content-type", "text/plain")
-                    http.sendResponseHeaders(200, 0)
+                    http.sendResponseHeaders(OK_STATUS, 0)
                     val os = http.getResponseBody()
                     // We should get the response from the command here....
                     // and send it on the os...
@@ -469,24 +462,29 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
         var avsFlags: Int = 0
         if (avsTest)
-            avsFlags = 2
+            avsFlags = AVS_FLAG_TEST
         if (avsNoise)
-            avsFlags = 8
+            avsFlags = AVS_FLAG_NOISE
 
         while (true) {
             val scanner = Scanner(System.`in`)
             val stroke = scanner.next().single()
 
-            echo("stroke: ${stroke}")
+            echo("stroke: $stroke")
 
             val job = GlobalScope.launch(Dispatchers.Default) {
-                executeStroke(userSession, context, stroke);
+                executeStroke(userSession, context, stroke)
             }
             job.join()
         }
     }
-}
 
+    companion object {
+        const val OK_STATUS = 200
+        const val AVS_FLAG_TEST = 2
+        const val AVS_FLAG_NOISE = 8
+    }
+}
 
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
