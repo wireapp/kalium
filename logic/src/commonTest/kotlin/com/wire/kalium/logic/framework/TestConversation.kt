@@ -11,11 +11,14 @@ import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
@@ -141,19 +144,25 @@ object TestConversation {
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
-        ConversationMemberAddedDTO.Changed(
-            "conversation.member-join",
-            qualifiedConversationId = NETWORK_ID,
-            fromUser = NETWORK_USER_ID1,
-            time = "2022-03-30T15:36:00.000Z"
+        ConversationMemberAddedResponse.Changed(
+            EventContentDTO.Conversation.MemberJoinDTO(
+                NETWORK_ID,
+                NETWORK_USER_ID1,
+                "2022-03-30T15:36:00.000Z",
+                ConversationMembers(emptyList(), emptyList()),
+                NETWORK_ID.value
+            )
         )
 
     val REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE =
-        ConversationMemberRemovedDTO.Changed(
-            "conversation.member-leave",
-            qualifiedConversationId = NETWORK_ID,
-            fromUser = NETWORK_USER_ID1,
-            time = "2022-03-30T15:36:00.000Z"
+        ConversationMemberRemovedResponse.Changed(
+            EventContentDTO.Conversation.MemberLeaveDTO(
+                NETWORK_ID,
+                NETWORK_USER_ID1,
+                "2022-03-30T15:36:00.000Z",
+                ConversationUsers(emptyList(), emptyList()),
+                NETWORK_USER_ID1.value
+            )
         )
 
     val GROUP_ID = GroupID("mlsGroupId")
