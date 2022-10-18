@@ -1,3 +1,4 @@
+@file:Suppress("FunctionNaming")
 package com.wire.kalium.calling
 
 import com.sun.jna.Library

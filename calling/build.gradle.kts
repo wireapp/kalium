@@ -51,7 +51,7 @@ kotlin {
 	        implementation(Dependencies.Calling.jna)
             }
         }
-	
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))

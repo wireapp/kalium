@@ -86,7 +86,7 @@ kotlin {
             dependencies {
 	        implementation(Dependencies.Calling.jna)
             }
-        }	
+        }
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
