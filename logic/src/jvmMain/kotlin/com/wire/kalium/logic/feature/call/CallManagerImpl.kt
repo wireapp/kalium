@@ -87,7 +87,7 @@ class CallManagerImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-    private val callMapper: CallMapper = MapperProvider.callMapper(),
+    private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker
