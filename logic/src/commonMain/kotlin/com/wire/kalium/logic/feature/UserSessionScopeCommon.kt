@@ -64,7 +64,7 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
@@ -388,7 +388,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val incrementalSyncRepository: IncrementalSyncRepository by lazy { InMemoryIncrementalSyncRepository() }
 
-    private val slowSyncRepository: SlowSyncRepository by lazy { InMemorySlowSyncRepository() }
+    private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userDatabaseProvider.metadataDAO) }
 
     private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
@@ -720,7 +720,9 @@ abstract class UserSessionScopeCommon internal constructor(
             userRepository,
             flowManagerService,
             mediaManagerService,
-            syncManager
+            syncManager,
+            qualifiedIdMapper,
+            clientIdProvider
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
@@ -753,6 +755,7 @@ abstract class UserSessionScopeCommon internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
+            messageRepository.resetAssetProgressStatus()
         }
 
         launch {

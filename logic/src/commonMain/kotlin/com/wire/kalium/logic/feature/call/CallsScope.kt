@@ -1,12 +1,19 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallingParticipantsOrder
+import com.wire.kalium.logic.data.call.CallingParticipantsOrderImpl
+import com.wire.kalium.logic.data.call.ParticipantsFilterImpl
+import com.wire.kalium.logic.data.call.ParticipantsOrderByNameImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
@@ -33,11 +40,13 @@ class CallsScope internal constructor(
     private val userRepository: UserRepository,
     private val flowManagerService: FlowManagerService,
     private val mediaManagerService: MediaManagerService,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val currentClientIdProvider: CurrentClientIdProvider
 ) {
 
     val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase
-        get() = GetAllCallsWithSortedParticipantsUseCase(callRepository, participantsOrder)
+        get() = GetAllCallsWithSortedParticipantsUseCase(callRepository, callingParticipantsOrder)
 
     val establishedCall: ObserveEstablishedCallsUseCase
         get() = ObserveEstablishedCallsUseCase(
@@ -49,6 +58,11 @@ class CallsScope internal constructor(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
             userRepository = userRepository
+        )
+
+    val isCallRunning: IsCallRunningUseCase
+        get() = IsCallRunningUseCase(
+            callRepository = callRepository
         )
 
     val observeOngoingCalls: ObserveOngoingCallsUseCase
@@ -78,7 +92,13 @@ class CallsScope internal constructor(
 
     val observeSpeaker: ObserveSpeakerUseCase get() = ObserveSpeakerUseCase(mediaManagerService)
 
-    val participantsOrder: ParticipantsOrder get() = ParticipantsOrderImpl()
+    private val callingParticipantsOrder: CallingParticipantsOrder
+        get() = CallingParticipantsOrderImpl(
+            userRepository = userRepository,
+            currentClientIdProvider = currentClientIdProvider,
+            participantsFilter = ParticipantsFilterImpl(qualifiedIdMapper),
+            participantsOrderByName = ParticipantsOrderByNameImpl()
+        )
 
     val isLastCallClosed: IsLastCallClosedUseCase get() = IsLastCallClosedUseCaseImpl(callRepository)
 
