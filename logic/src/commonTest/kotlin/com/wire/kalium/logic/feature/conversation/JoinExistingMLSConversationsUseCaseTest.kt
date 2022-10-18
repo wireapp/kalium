@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -42,8 +43,8 @@ class JoinExistingMLSConversationsUseCaseTest {
 
             joinExistingMLSConversationsUseCase().shouldSucceed()
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::requestToJoinMLSGroup)
+            verify(arrangement.conversationGroupRepository)
+                .suspendFunction(arrangement.conversationGroupRepository::requestToJoinMLSGroup)
                 .with(eq(Arrangement.MLS_CONVERSATION1))
                 .wasNotInvoked()
         }
@@ -59,13 +60,13 @@ class JoinExistingMLSConversationsUseCaseTest {
 
             joinExistingMLSConversationsUseCase().shouldSucceed()
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::requestToJoinMLSGroup)
+            verify(arrangement.conversationGroupRepository)
+                .suspendFunction(arrangement.conversationGroupRepository::requestToJoinMLSGroup)
                 .with(eq(Arrangement.MLS_CONVERSATION1))
                 .wasInvoked(once)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::requestToJoinMLSGroup)
+            verify(arrangement.conversationGroupRepository)
+                .suspendFunction(arrangement.conversationGroupRepository::requestToJoinMLSGroup)
                 .with(eq(Arrangement.MLS_CONVERSATION2))
                 .wasInvoked(once)
         }
@@ -88,8 +89,8 @@ class JoinExistingMLSConversationsUseCaseTest {
             .with(eq(Arrangement.MLS_CONVERSATION1.id))
             .wasInvoked(once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::requestToJoinMLSGroup)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::requestToJoinMLSGroup)
             .with(eq(Arrangement.MLS_CONVERSATION1))
             .wasInvoked(twice)
 
@@ -114,7 +115,10 @@ class JoinExistingMLSConversationsUseCaseTest {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
-        fun arrange() = this to JoinExistingMLSConversationsUseCase(featureSupport, conversationRepository)
+        @Mock
+        val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
+
+        fun arrange() = this to JoinExistingMLSConversationsUseCase(featureSupport, conversationRepository, conversationGroupRepository)
 
         @Suppress("MaxLineLength")
         fun withGetConversationsByGroupStateSuccessful(conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) =
@@ -140,16 +144,16 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
         fun withRequestToJoinMLSGroupSuccessful() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::requestToJoinMLSGroup)
+            given(conversationGroupRepository)
+                .suspendFunction(conversationGroupRepository::requestToJoinMLSGroup)
                 .whenInvokedWith(anything())
                 .then { Either.Right(Unit) }
         }
 
         fun withRequestToJoinMLSGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::requestToJoinMLSGroup)
+            given(conversationGroupRepository)
+                .suspendFunction(conversationGroupRepository::requestToJoinMLSGroup)
                 .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
                 .then { Either.Left(failure) }
         }

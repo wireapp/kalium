@@ -1,13 +1,15 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
-import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
+import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.configure
@@ -224,7 +226,8 @@ class IncrementalSyncManagerTest {
 
     private class Arrangement {
 
-        val slowSyncRepository: SlowSyncRepository = InMemorySlowSyncRepository()
+        val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
+        val slowSyncRepository: SlowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
 
         @Mock
         val incrementalSyncWorker = mock(classOf<IncrementalSyncWorker>())

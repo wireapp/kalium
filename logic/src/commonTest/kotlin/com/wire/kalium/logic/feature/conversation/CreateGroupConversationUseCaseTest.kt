@@ -6,6 +6,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -86,8 +87,8 @@ class CreateGroupConversationUseCaseTest {
 
         createGroupConversation(name, members, conversationOptions)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::createGroupConversation)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::createGroupConversation)
             .with(eq(name), eq(members), eq(conversationOptions))
             .wasInvoked(exactly = once)
     }
@@ -141,6 +142,9 @@ class CreateGroupConversationUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
+        val conversationGroupRepository = mock(ConversationGroupRepository::class)
+
+        @Mock
         val clientRepository = mock(ClientRepository::class)
 
         @Mock
@@ -149,7 +153,7 @@ class CreateGroupConversationUseCaseTest {
         }
 
         private val createGroupConversation = CreateGroupConversationUseCase(
-            conversationRepository, syncManager, clientRepository
+            conversationRepository, conversationGroupRepository, syncManager, clientRepository
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -170,8 +174,8 @@ class CreateGroupConversationUseCaseTest {
             withCreateGroupConversationReturning(Either.Right(conversation))
 
         private fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::createGroupConversation)
+            given(conversationGroupRepository)
+                .suspendFunction(conversationGroupRepository::createGroupConversation)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(result)
         }
