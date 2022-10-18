@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.MemberChangeResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -21,12 +21,12 @@ interface AddMemberToConversationUseCase {
 }
 
 class AddMemberToConversationUseCaseImpl(
-    private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId,
     private val persistMessage: PersistMessageUseCase
 ) : AddMemberToConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>): AddMemberToConversationUseCase.Result {
-        return conversationRepository.addMembers(userIdList, conversationId).fold({
+        return conversationGroupRepository.addMembers(userIdList, conversationId).fold({
             AddMemberToConversationUseCase.Result.Failure(it)
         }, {
             if (it is MemberChangeResult.Changed) {

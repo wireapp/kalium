@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.MemberChangeResult
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
@@ -35,8 +35,8 @@ class RemoveMemberFromConversationUseCaseTest {
 
         assertIs<RemoveMemberFromConversationUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteMember)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::deleteMember)
             .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
 
@@ -56,8 +56,8 @@ class RemoveMemberFromConversationUseCaseTest {
 
         assertIs<RemoveMemberFromConversationUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteMember)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::deleteMember)
             .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
 
@@ -76,15 +76,15 @@ class RemoveMemberFromConversationUseCaseTest {
         val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
         assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteMember)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::deleteMember)
             .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
 
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -92,14 +92,14 @@ class RemoveMemberFromConversationUseCaseTest {
         var selfUserId = UserId("my-own-user-id", "my-domain")
 
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
-            conversationRepository,
+            conversationGroupRepository,
             selfUserId,
             persistMessage
         )
 
         fun withRemoveMemberGroupIs(either: Either<CoreFailure, MemberChangeResult>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::deleteMember)
+            given(conversationGroupRepository)
+                .suspendFunction(conversationGroupRepository::deleteMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(either)
         }

@@ -1,10 +1,8 @@
-package com.wire.kalium.logic.sync.full
+package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
-import com.wire.kalium.logic.sync.SyncCriteriaProvider
-import com.wire.kalium.logic.sync.SyncCriteriaResolution
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import io.mockative.Mock
@@ -156,7 +154,7 @@ class SlowSyncManagerTest {
     private class Arrangement {
 
         @Mock
-        val syncCriteriaProvider: SyncCriteriaProvider = mock(classOf<SyncCriteriaProvider>())
+        val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock(classOf<SlowSyncCriteriaProvider>())
 
         @Mock
         val slowSyncRepository: SlowSyncRepository = configure(mock(classOf<SlowSyncRepository>())) { stubsUnitByDefault = true }
@@ -165,8 +163,8 @@ class SlowSyncManagerTest {
         val slowSyncWorker: SlowSyncWorker = mock(classOf<SlowSyncWorker>())
 
         fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
-            given(syncCriteriaProvider)
-                .suspendFunction(syncCriteriaProvider::syncCriteriaFlow)
+            given(slowSyncCriteriaProvider)
+                .suspendFunction(slowSyncCriteriaProvider::syncCriteriaFlow)
                 .whenInvoked()
                 .thenReturn(criteriaFlow)
         }
@@ -181,7 +179,7 @@ class SlowSyncManagerTest {
         }
 
         private val slowSyncManager = SlowSyncManager(
-            syncCriteriaProvider,
+            slowSyncCriteriaProvider,
             slowSyncRepository,
             slowSyncWorker,
             TestKaliumDispatcher

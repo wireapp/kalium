@@ -194,7 +194,7 @@ object TestConversation {
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
         ProtocolInfo.MLS(
-            GroupID("group_id"),
+            GROUP_ID,
             ProtocolInfo.MLS.GroupState.PENDING_JOIN,
             0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),

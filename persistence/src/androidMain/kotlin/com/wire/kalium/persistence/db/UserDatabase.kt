@@ -25,13 +25,13 @@ internal actual class PlatformDatabaseData(
     val databaseCredentials: DatabaseCredentials
 )
 
-fun UserDatabaseProvider(
+fun userDatabaseBuilder(
     context: Context,
     userId: UserIDEntity,
     passphrase: UserDBSecret,
     encrypt: Boolean = true,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
 
     val driver: AndroidSqliteDriver = if (encrypt) {
@@ -53,14 +53,14 @@ fun UserDatabaseProvider(
     } else {
         DatabaseCredentials.NotSet
     }
-    return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(context, credentials))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(context, credentials))
 }
 
 fun inMemoryDatabase(
     context: Context,
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val passphrase = "testPass".toByteArray()
     val driver = AndroidSqliteDriver(
         schema = UserDatabase.Schema,
@@ -68,7 +68,7 @@ fun inMemoryDatabase(
         name = null,
         factory = SupportFactory(passphrase)
     )
-    return UserDatabaseProvider(
+    return UserDatabaseBuilder(
         userId, driver, dispatcher, PlatformDatabaseData(
             context, DatabaseCredentials.Passphrase(
                 UserDBSecret(passphrase)

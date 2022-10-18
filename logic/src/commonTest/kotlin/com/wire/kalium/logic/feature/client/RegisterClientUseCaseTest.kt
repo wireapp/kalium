@@ -468,10 +468,6 @@ class RegisterClientUseCaseTest {
                 .whenInvokedWith(any())
                 .then { result }
         }
-
-        /*
-
-         */
         fun arrange() = this to registerClient
     }
 }
