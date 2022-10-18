@@ -395,7 +395,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val incrementalSyncRepository: IncrementalSyncRepository by lazy { InMemoryIncrementalSyncRepository() }
 
-    private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userDatabaseProvider.metadataDAO) }
+    private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
 
     private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
