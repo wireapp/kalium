@@ -6155,6 +6155,61 @@ $dokka.location:com.wire.kalium.protobuf.messages/Tweet/plus/#pbandk.Message?/Po
 $dokka.location:com.wire.kalium.protobuf.messages/Tweet/protoSize/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.messages/-tweet/proto-size.html
 $dokka.location:com.wire.kalium.protobuf.messages/Tweet/unknownFields/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.messages/-tweet/unknown-fields.html
 $dokka.location:com.wire.kalium.protobuf.messages/Tweet/username/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.messages/-tweet/username.html
+$dokka.location:com.wire.kalium.protobuf.mls////PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle.Companion///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/-companion/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle.Companion/decodeWith/#pbandk.MessageDecoder/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/-companion/decode-with.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle.Companion/descriptor/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/-companion/descriptor.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle/CommitBundle/#pbandk.ByteArr#pbandk.ByteArr?#com.wire.kalium.protobuf.mls.GroupInfoBundle#kotlin.collections.Map[kotlin.Int,pbandk.UnknownField]/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/-commit-bundle.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle/commit/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/commit.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle/descriptor/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/descriptor.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle/groupInfoBundle/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/group-info-bundle.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle/plus/#pbandk.Message?/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/plus.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle/protoSize/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/proto-size.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle/unknownFields/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/unknown-fields.html
+$dokka.location:com.wire.kalium.protobuf.mls/CommitBundle/welcome/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-commit-bundle/welcome.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle.Companion///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/-companion/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle.Companion/decodeWith/#pbandk.MessageDecoder/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/-companion/decode-with.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle.Companion/descriptor/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/-companion/descriptor.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle/GroupInfoBundle/#com.wire.kalium.protobuf.mls.GroupInfoType#com.wire.kalium.protobuf.mls.RatchetTreeType#pbandk.ByteArr#kotlin.collections.Map[kotlin.Int,pbandk.UnknownField]/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/-group-info-bundle.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle/descriptor/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/descriptor.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle/groupInfo/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/group-info.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle/groupInfoType/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/group-info-type.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle/plus/#pbandk.Message?/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/plus.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle/protoSize/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/proto-size.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle/ratchetTreeType/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/ratchet-tree-type.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoBundle/unknownFields/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-bundle/unknown-fields.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.Companion///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-companion/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.Companion/fromName/#kotlin.String/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-companion/from-name.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.Companion/fromValue/#kotlin.Int/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-companion/from-value.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.Companion/values/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-companion/values.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.GROUP_INFO///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-g-r-o-u-p_-i-n-f-o/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.GROUP_INFO_JWE///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-g-r-o-u-p_-i-n-f-o_-j-w-e/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.PUBLIC_GROUP_STATE///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-p-u-b-l-i-c_-g-r-o-u-p_-s-t-a-t-e/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.UNRECOGNIZED///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-u-n-r-e-c-o-g-n-i-z-e-d/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType.UNRECOGNIZED/UNRECOGNIZED/#kotlin.Int/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/-u-n-r-e-c-o-g-n-i-z-e-d/-u-n-r-e-c-o-g-n-i-z-e-d.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType/equals/#kotlin.Any?/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/equals.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType/hashCode/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/hash-code.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType/name/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/name.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType/toString/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/to-string.html
+$dokka.location:com.wire.kalium.protobuf.mls/GroupInfoType/value/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-group-info-type/value.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.Companion///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-companion/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.Companion/fromName/#kotlin.String/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-companion/from-name.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.Companion/fromValue/#kotlin.Int/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-companion/from-value.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.Companion/values/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-companion/values.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.DELTA///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-d-e-l-t-a/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.FULL///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-f-u-l-l/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.REFERENCE///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-r-e-f-e-r-e-n-c-e/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.UNRECOGNIZED///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-u-n-r-e-c-o-g-n-i-z-e-d/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType.UNRECOGNIZED/UNRECOGNIZED/#kotlin.Int/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/-u-n-r-e-c-o-g-n-i-z-e-d/-u-n-r-e-c-o-g-n-i-z-e-d.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType///PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/index.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType/equals/#kotlin.Any?/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/equals.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType/hashCode/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/hash-code.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType/name/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/name.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType/toString/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/to-string.html
+$dokka.location:com.wire.kalium.protobuf.mls/RatchetTreeType/value/#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.mls/-ratchet-tree-type/value.html
 $dokka.location:com.wire.kalium.protobuf.otr////PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.otr/index.html
 $dokka.location:com.wire.kalium.protobuf.otr//orDefault/com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreAll?#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.otr/or-default.html
 $dokka.location:com.wire.kalium.protobuf.otr//orDefault/com.wire.kalium.protobuf.otr.ClientMismatchStrategy.IgnoreOnly?#/PointingToDeclaration/protobuf/protobuf/com.wire.kalium.protobuf.otr/or-default.html
@@ -6481,4 +6536,5 @@ com.wire.kalium.network.utils
 module:protobuf
 com.wire.kalium.protobuf
 com.wire.kalium.protobuf.messages
+com.wire.kalium.protobuf.mls
 com.wire.kalium.protobuf.otr
