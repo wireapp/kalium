@@ -201,7 +201,6 @@ abstract class UserSessionScopeCommon internal constructor(
         platformUserStorageProperties,
         kaliumConfigs.shouldEncryptData
     )
-//     private val userStorage.database: UserDatabaseBuilder = authenticatedDataSourceSet.userStorage.database
 
     // TODO: extract client id provider to it's own class and test it
     private var _clientId: ClientId? = null
