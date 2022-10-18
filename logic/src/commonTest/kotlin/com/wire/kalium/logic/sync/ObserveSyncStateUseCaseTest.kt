@@ -17,7 +17,7 @@ class ObserveSyncStateUseCaseTest {
     @BeforeTest
     fun setup() {
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
-        slowSyncRepository = SlowSyncRepositoryImpl(database.provider.metadataDAO)
+        slowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
         incrementalSyncRepository = InMemoryIncrementalSyncRepository()
         observeSyncState = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
     }

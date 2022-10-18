@@ -3,11 +3,11 @@ package com.wire.kalium.persistence
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.db.inMemoryDatabase
-import com.wire.kalium.persistence.db.UserDatabaseProvider
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
 
-internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseProvider {
+internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
     return inMemoryDatabase(userId, dispatcher)
 }
 

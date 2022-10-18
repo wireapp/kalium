@@ -5,6 +5,8 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.PlatformUserStorageProperties
+import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -12,6 +14,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
 actual class UserSessionScope internal constructor(
+    override val platformUserStorageProperties: PlatformUserStorageProperties,
     userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     globalScope: GlobalKaliumScope,
@@ -20,7 +23,8 @@ actual class UserSessionScope internal constructor(
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
     featureSupport: FeatureSupport,
-    userSessionScopeProvider: UserSessionScopeProvider
+    userStorageProvider: UserStorageProvider,
+    userSessionScopeProvider: UserSessionScopeProvider,
 ) : UserSessionScopeCommon(
     userId,
     authenticatedDataSourceSet,
@@ -30,8 +34,10 @@ actual class UserSessionScope internal constructor(
     dataStoragePaths,
     kaliumConfigs,
     featureSupport,
-    userSessionScopeProvider
+    userSessionScopeProvider,
+    userStorageProvider
 ) {
+
     override val clientConfig: ClientConfig get() = ClientConfigImpl()
 
     init {

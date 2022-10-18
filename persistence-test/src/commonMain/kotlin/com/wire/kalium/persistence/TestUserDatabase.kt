@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.UserDatabaseProvider
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 
@@ -10,11 +10,11 @@ class TestUserDatabase(
     private val dispatcher: TestDispatcher = StandardTestDispatcher()
 ) {
 
-    val provider: UserDatabaseProvider
+    val builder: UserDatabaseBuilder
 
     init {
         deleteTestDatabase(userId)
-        provider = createTestDatabase(userId, dispatcher)
+        builder = createTestDatabase(userId, dispatcher)
     }
 
     fun delete() {
@@ -26,4 +26,4 @@ internal fun getTempDatabaseFileNameForUser(userId: UserIDEntity) = "TEMP-TEST-D
 
 internal expect fun deleteTestDatabase(userId: UserIDEntity)
 
-internal expect fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseProvider
+internal expect fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder

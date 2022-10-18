@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.db.UserDatabaseProvider
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -13,7 +13,7 @@ class ConnectionDaoTest : BaseDatabaseTest() {
     private val connection1 = connectionEntity("1")
     private val connection2 = connectionEntity("2")
 
-    lateinit var db: UserDatabaseProvider
+    lateinit var db: UserDatabaseBuilder
 
     @BeforeTest
     fun setUp() {
