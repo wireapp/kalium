@@ -1,8 +1,9 @@
 package com.wire.kalium.logic.data.conversation
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -15,7 +16,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -128,9 +128,9 @@ class ConversationRepositoryTest {
 
         conversationRepository.insertConversationFromEvent(event)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::hasEstablishedMLSGroup)
-            .with(eq(GROUP_ID))
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::conversationExists)
+            .with(eq(RAW_GROUP_ID))
             .wasInvoked(once)
 
         verify(arrangement.conversationDAO)
@@ -225,113 +225,6 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<ConversationDetails.OneOne>>(awaitItem())
             awaitComplete()
         }
-    }
-
-    @Test
-    fun givenSelfUserBelongsToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withSelfUserFlow(flowOf(TestUser.SELF))
-            .withExpectedConversation(TestConversation.VIEW_ENTITY)
-            .withCreateNewConversation(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
-            .arrange()
-
-        val result = conversationRepository.createGroupConversation(
-            GROUP_NAME,
-            listOf(TestUser.USER_ID),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
-        )
-
-        result.shouldSucceed { }
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertConversation)
-            .with(anything())
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getConversationByQualifiedID)
-            .with(anything())
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-            .with(anything(), anything())
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenSelfUserDoesNotBelongToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
-
-        val selfUserWithoutTeam = TestUser.SELF.copy(teamId = null)
-
-        val (arrangement, conversationRepository) = Arrangement()
-            .withSelfUserFlow(flowOf(selfUserWithoutTeam))
-            .withExpectedConversation(TestConversation.VIEW_ENTITY)
-            .withCreateNewConversation(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
-            .arrange()
-
-        val result = conversationRepository.createGroupConversation(
-            GROUP_NAME,
-            listOf(TestUser.USER_ID),
-            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
-        )
-
-        result.shouldSucceed { }
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertConversation)
-            .with(anything())
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getConversationByQualifiedID)
-            .with(anything())
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-            .with(anything(), anything())
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenMLSProtocolIsUsed_whenCallingCreateGroupConversation_thenMLSGroupIsEstablished() = runTest {
-        val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
-
-        val (arrangement, conversationRepository) = Arrangement()
-            .withSelfUserFlow(flowOf(TestUser.SELF))
-            .withExpectedConversation(TestConversation.VIEW_ENTITY)
-            .withCreateNewConversation(NetworkResponse.Success(conversationResponse, emptyMap(), 201))
-            .withEstablishMLSGroupResult(Either.Right(Unit))
-            .arrange()
-
-        val result = conversationRepository.createGroupConversation(
-            GROUP_NAME,
-            listOf(TestUser.USER_ID),
-            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
-        )
-
-        result.shouldSucceed { }
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertConversation)
-            .with(anything())
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-            .with(anything(), anything())
-            .wasInvoked(once)
-
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
-            .with(anything())
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getConversationByQualifiedID)
-            .with(anything())
-            .wasInvoked(once)
     }
 
     @Test
@@ -437,182 +330,6 @@ class ConversationRepositoryTest {
 
         conversationRepository.fetchConversationIfUnknown(conversationId)
             .shouldSucceed()
-    }
-
-    @Test
-    fun givenAConversationAndAPISucceedsWithChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
-            .withFetchUsersIfUnknownByIdsSuccessful()
-            .withAddMemberAPISucceedChanged()
-            .arrange()
-
-        conversationRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
-            .shouldSucceed()
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAConversationAndAPISucceedsWithoutChange_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
-            .withFetchUsersIfUnknownByIdsSuccessful()
-            .withAddMemberAPISucceedUnchanged()
-            .arrange()
-
-        conversationRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
-            .shouldSucceed()
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAConversationAndAPIFailed_whenAddingMembersToConversation_thenShouldNotSucceed() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
-            .withAddMemberAPIFailed()
-            .arrange()
-
-        conversationRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
-            .shouldFail()
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-            .with(any(), any())
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenAnMLSConversationAndAPISucceeds_whenAddMemberFromConversation_thenShouldSucceed() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(MLS_PROTOCOL_INFO)
-            .withAddMemberAPISucceedChanged()
-            .withSuccessfulAddMemberToMLSGroup()
-            .arrange()
-
-        conversationRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
-            .shouldSucceed { it is MemberChangeResult.Changed }
-
-        // this function called in the mlsRepo
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
-            .with(anything(), anything())
-            .wasNotInvoked()
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
-            .with(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAConversationAndAPISucceedsWithChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceedChanged()
-            .withSuccessfulMemberDeletion()
-            .arrange()
-
-        conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
-            .shouldSucceed { it is MemberChangeResult.Changed }
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAConversationAndAPISucceedsWithoutChange_whenRemovingMemberFromConversation_thenShouldSucceed() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceedUnchanged()
-            .withSuccessfulMemberDeletion()
-            .arrange()
-
-        conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
-            .shouldSucceed { it is MemberChangeResult.Unchanged }
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenAConversationAndAPIFailed_whenRemovingMemberFromConversation_thenShouldFail() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(PROTEUS_PROTOCOL_INFO)
-            .withDeleteMemberAPIFailed()
-            .withSuccessfulMemberDeletion()
-            .arrange()
-
-        conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
-            .shouldFail()
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
-            .with(anything(), anything())
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenAnMLSConversationAndAPISucceeds_whenRemovingLeavingConversation_thenShouldSucceed() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(MLS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceedChanged()
-            .withSuccessfulMemberDeletion()
-            .withSuccessfulLeaveMLSGroup()
-            .arrange()
-
-        conversationRepository.deleteMember(TestUser.SELF.id, TestConversation.ID)
-            .shouldSucceed { it is MemberChangeResult.Changed }
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::leaveGroup)
-            .with(eq(GROUP_ID))
-            .wasInvoked(exactly = once)
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
-            .with(any(), any())
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenAnMLSConversationAndAPISucceeds_whenRemoveMemberFromConversation_thenShouldSucceed() = runTest {
-        val (arrangement, conversationRepository) = Arrangement()
-            .withConversationProtocolIs(MLS_PROTOCOL_INFO)
-            .withDeleteMemberAPISucceedChanged()
-            .withSuccessfulMemberDeletion()
-            .withSuccessfulRemoveMemberFromMLSGroup()
-            .arrange()
-
-        conversationRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
-            .shouldSucceed { it is MemberChangeResult.Changed }
-
-        // this function called in the mlsRepo
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
-            .with(anything(), anything())
-            .wasNotInvoked()
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
-            .with(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
-            .wasInvoked(exactly = once)
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::leaveGroup)
-            .with(any())
-            .wasNotInvoked()
     }
 
     @Suppress("LongMethod")
@@ -998,7 +715,10 @@ class ConversationRepositoryTest {
         val userRepository: UserRepository = mock(UserRepository::class)
 
         @Mock
-        val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
+        val mlsClient: MLSClient = mock(MLSClient::class)
+
+        @Mock
+        val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
 
         @Mock
         val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
@@ -1018,7 +738,7 @@ class ConversationRepositoryTest {
         val conversationRepository =
             ConversationDataSource(
                 userRepository,
-                mlsConversationRepository,
+                mlsClientProvider,
                 conversationDAO,
                 conversationApi,
                 messageDAO,
@@ -1043,6 +763,17 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Unit)
 
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getMLSClient)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(mlsClient))
+        }
+
+        fun withHasEstablishedMLSGroup(isClient: Boolean) = apply {
+            given(mlsClient)
+                .function(mlsClient::conversationExists)
+                .whenInvokedWith(anything())
+                .thenReturn(isClient)
         }
 
         fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {
@@ -1064,13 +795,6 @@ class ConversationRepositoryTest {
                 .suspendFunction(userRepository::getSelfUser)
                 .whenInvoked()
                 .thenReturn(selfUser)
-        }
-
-        fun withHasEstablishedMLSGroup(doesHave: Boolean) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::hasEstablishedMLSGroup)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(doesHave))
         }
 
         fun withFetchConversationsIds(response: NetworkResponse<ConversationPagingResponse>) = apply {
@@ -1250,27 +974,6 @@ class ConversationRepositoryTest {
                 .thenReturn(Unit)
         }
 
-        fun withSuccessfulLeaveMLSGroup() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::leaveGroup)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withSuccessfulAddMemberToMLSGroup() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::addMemberToMLSGroup)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withSuccessfulRemoveMemberFromMLSGroup() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::removeMembersFromMLSGroup)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
         fun withSuccessfulConversationDeletion() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::deleteConversationByQualifiedID)
@@ -1316,13 +1019,6 @@ class ConversationRepositoryTest {
                 .thenReturn(response)
         }
 
-        fun withEstablishMLSGroupResult(result: Either<CoreFailure, Unit>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::establishMLSGroup)
-                .whenInvokedWith(anything())
-                .then { result }
-        }
-
         fun withWhoDeletedMe(deletionAuthor: UserId?) = apply {
             val author = deletionAuthor?.let { MapperProvider.idMapper().toDaoModel(it) }
             given(conversationDAO)
@@ -1346,16 +1042,6 @@ class ConversationRepositoryTest {
     companion object {
         private const val RAW_GROUP_ID = "mlsGroupId"
         val GROUP_ID = GroupID(RAW_GROUP_ID)
-        val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
-        val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo
-            .MLS(
-                RAW_GROUP_ID,
-                groupState = ConversationEntity.GroupState.ESTABLISHED,
-                0UL,
-                Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            )
-
         const val GROUP_NAME = "Group Name"
 
         val CONVERSATION_ID = TestConversation.ID
