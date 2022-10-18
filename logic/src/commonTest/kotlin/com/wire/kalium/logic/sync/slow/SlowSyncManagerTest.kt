@@ -154,7 +154,7 @@ class SlowSyncManagerTest {
     private class Arrangement {
 
         @Mock
-        val syncCriteriaProvider: SyncCriteriaProvider = mock(classOf<SyncCriteriaProvider>())
+        val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock(classOf<SlowSyncCriteriaProvider>())
 
         @Mock
         val slowSyncRepository: SlowSyncRepository = configure(mock(classOf<SlowSyncRepository>())) { stubsUnitByDefault = true }
@@ -163,8 +163,8 @@ class SlowSyncManagerTest {
         val slowSyncWorker: SlowSyncWorker = mock(classOf<SlowSyncWorker>())
 
         fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
-            given(syncCriteriaProvider)
-                .suspendFunction(syncCriteriaProvider::syncCriteriaFlow)
+            given(slowSyncCriteriaProvider)
+                .suspendFunction(slowSyncCriteriaProvider::syncCriteriaFlow)
                 .whenInvoked()
                 .thenReturn(criteriaFlow)
         }
@@ -179,7 +179,7 @@ class SlowSyncManagerTest {
         }
 
         private val slowSyncManager = SlowSyncManager(
-            syncCriteriaProvider,
+            slowSyncCriteriaProvider,
             slowSyncRepository,
             slowSyncWorker,
             TestKaliumDispatcher

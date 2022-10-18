@@ -127,7 +127,7 @@ class SlowSyncCriteriaProviderTest {
         @Mock
         private val logoutRepository = mock(classOf<LogoutRepository>())
 
-        private val syncCriteriaProvider = SlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
+        private val syncCriteriaProvider = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
         fun withObserveClientReturning(flow: Flow<ClientId?>) = apply {
             given(clientRepository)

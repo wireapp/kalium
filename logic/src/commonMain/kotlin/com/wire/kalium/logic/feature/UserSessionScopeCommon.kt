@@ -134,8 +134,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
-import com.wire.kalium.logic.sync.slow.SyncCriteriaProvider
-import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProviderImpl
+import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
+import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -408,8 +408,8 @@ abstract class UserSessionScopeCommon internal constructor(
             featureConfigEventReceiver
         )
 
-    private val syncCriteriaProvider: SyncCriteriaProvider
-        get() = SlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
+    private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
+        get() = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
@@ -454,7 +454,7 @@ abstract class UserSessionScopeCommon internal constructor(
     }
 
     private val slowSyncManager: SlowSyncManager by lazy {
-        SlowSyncManager(syncCriteriaProvider, slowSyncRepository, slowSyncWorker)
+        SlowSyncManager(slowSyncCriteriaProvider, slowSyncRepository, slowSyncWorker)
     }
 
     private val incrementalSyncWorker: IncrementalSyncWorker by lazy {

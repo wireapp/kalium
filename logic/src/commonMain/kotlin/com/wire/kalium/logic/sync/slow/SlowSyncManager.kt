@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Starts and stops SlowSync based on a set of criteria,
- * defined in [SyncCriteriaProvider].
+ * defined in [SlowSyncCriteriaProvider].
  * Once the criteria are met, this Manager will
  * take care of running SlowSync.
  *
@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
  * @see IncrementalSyncManager
  */
 internal class SlowSyncManager(
-    private val syncCriteriaProvider: SyncCriteriaProvider,
+    private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val slowSyncWorker: SlowSyncWorker,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
@@ -54,7 +54,7 @@ internal class SlowSyncManager(
 
     private fun startMonitoring() {
         scope.launch(coroutineExceptionHandler) {
-            syncCriteriaProvider
+            slowSyncCriteriaProvider
                 .syncCriteriaFlow()
                 .distinctUntilChanged()
                 // Collect latest will cancel whatever is running inside the collector when a new value is emitted

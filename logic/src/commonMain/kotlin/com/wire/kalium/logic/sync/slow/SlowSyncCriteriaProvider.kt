@@ -33,7 +33,7 @@ internal interface SyncCriteriaResolution {
  * Ingests multiple signals across the logic module
  * to signal if Sync should start or not.
  */
-internal interface SyncCriteriaProvider {
+internal interface SlowSyncCriteriaProvider {
 
     /**
      * Returns a flow that says whether Sync
@@ -42,10 +42,10 @@ internal interface SyncCriteriaProvider {
     suspend fun syncCriteriaFlow(): Flow<SyncCriteriaResolution>
 }
 
-internal class SlowSyncCriteriaProviderImpl(
+internal class SlowSlowSyncCriteriaProviderImpl(
     private val clientRepository: ClientRepository,
     private val logoutRepository: LogoutRepository
-) : SyncCriteriaProvider {
+) : SlowSyncCriteriaProvider {
 
     /**
      * Returns a flow that starts with null until a Logout happens.
