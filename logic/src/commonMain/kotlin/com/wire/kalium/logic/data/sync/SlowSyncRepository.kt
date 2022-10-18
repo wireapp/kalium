@@ -26,15 +26,15 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
 
     override suspend fun setLastSlowSyncCompletionInstant(instant: Instant) {
         logger.i("Updating last slow sync instant: $instant")
-        metadataDao.insertValue(value = instant.toString(), key = LAST_FULL_SYNC_INSTANT_KEY)
+        metadataDao.insertValue(value = instant.toString(), key = LAST_SLOW_SYNC_INSTANT_KEY)
     }
 
     override suspend fun clearLastSlowSyncCompletionInstant() {
-        metadataDao.deleteValue(key = LAST_FULL_SYNC_INSTANT_KEY)
+        metadataDao.deleteValue(key = LAST_SLOW_SYNC_INSTANT_KEY)
     }
 
     override suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?> =
-        metadataDao.valueByKeyFlow(key = LAST_FULL_SYNC_INSTANT_KEY)
+        metadataDao.valueByKeyFlow(key = LAST_SLOW_SYNC_INSTANT_KEY)
             .map { instantString ->
                 instantString?.let { Instant.parse(it) }
             }
@@ -45,6 +45,6 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
     }
 
     private companion object {
-        const val LAST_FULL_SYNC_INSTANT_KEY = "lastFullSyncInstant"
+        const val LAST_SLOW_SYNC_INSTANT_KEY = "lastSlowSyncInstant"
     }
 }

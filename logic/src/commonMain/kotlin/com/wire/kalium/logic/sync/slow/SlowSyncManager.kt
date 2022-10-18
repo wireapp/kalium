@@ -1,12 +1,10 @@
-package com.wire.kalium.logic.sync.full
+package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.SyncCriteriaProvider
-import com.wire.kalium.logic.sync.SyncCriteriaResolution
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.util.KaliumDispatcher
@@ -22,7 +20,7 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Starts and stops SlowSync based on a set of criteria,
- * defined in [SyncCriteriaProvider].
+ * defined in [SlowSyncCriteriaProvider].
  * Once the criteria are met, this Manager will
  * take care of running SlowSync.
  *
@@ -33,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
  * @see IncrementalSyncManager
  */
 internal class SlowSyncManager(
-    private val syncCriteriaProvider: SyncCriteriaProvider,
+    private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val slowSyncWorker: SlowSyncWorker,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
@@ -56,7 +54,7 @@ internal class SlowSyncManager(
 
     private fun startMonitoring() {
         scope.launch(coroutineExceptionHandler) {
-            syncCriteriaProvider
+            slowSyncCriteriaProvider
                 .syncCriteriaFlow()
                 .distinctUntilChanged()
                 // Collect latest will cancel whatever is running inside the collector when a new value is emitted
