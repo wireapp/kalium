@@ -6418,11 +6418,11 @@ com.wire.kalium.logic.featureFlags
 com.wire.kalium.logic.functional
 com.wire.kalium.logic.network
 com.wire.kalium.logic.sync
-com.wire.kalium.logic.sync.full
 com.wire.kalium.logic.sync.incremental
 com.wire.kalium.logic.sync.periodic
 com.wire.kalium.logic.sync.receiver
 com.wire.kalium.logic.sync.receiver.message
+com.wire.kalium.logic.sync.slow
 com.wire.kalium.logic.util
 module:network
 com.wire.kalium.network
