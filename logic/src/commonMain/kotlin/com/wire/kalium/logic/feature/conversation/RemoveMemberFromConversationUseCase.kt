@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.MemberChangeResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -29,13 +29,13 @@ interface RemoveMemberFromConversationUseCase {
 }
 
 class RemoveMemberFromConversationUseCaseImpl(
-    private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId,
     private val persistMessage: PersistMessageUseCase
 ) : RemoveMemberFromConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdToRemove: UserId): RemoveMemberFromConversationUseCase.Result {
         // Call the endpoint to delete the member from given conversation and remove the members connection from DB
-        return conversationRepository.deleteMember(userIdToRemove, conversationId).fold({
+        return conversationGroupRepository.deleteMember(userIdToRemove, conversationId).fold({
             RemoveMemberFromConversationUseCase.Result.Failure(it)
         }, {
             if (it is MemberChangeResult.Changed) {

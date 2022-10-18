@@ -2,7 +2,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.MemberChangeResult
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
@@ -35,8 +35,8 @@ class AddMemberToConversationUseCaseTest {
 
         assertIs<AddMemberToConversationUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::addMembers)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::addMembers)
             .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
 
@@ -56,8 +56,8 @@ class AddMemberToConversationUseCaseTest {
 
         assertIs<AddMemberToConversationUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::addMembers)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::addMembers)
             .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
 
@@ -76,15 +76,15 @@ class AddMemberToConversationUseCaseTest {
         val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
         assertIs<AddMemberToConversationUseCase.Result.Failure>(result)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::addMembers)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::addMembers)
             .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
 
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -92,14 +92,14 @@ class AddMemberToConversationUseCaseTest {
         var selfUserId = UserId("my-own-user-id", "my-domain")
 
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
-            conversationRepository,
+            conversationGroupRepository,
             selfUserId,
             persistMessage
         )
 
         fun withAddMembers(either: Either<CoreFailure, MemberChangeResult>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::addMembers)
+            given(conversationGroupRepository)
+                .suspendFunction(conversationGroupRepository::addMembers)
                 .whenInvokedWith(any(), any())
                 .thenReturn(either)
         }
