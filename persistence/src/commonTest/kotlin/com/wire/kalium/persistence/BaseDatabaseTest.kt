@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.UserDatabaseProvider
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.TestDispatcher
 
 expect open class BaseDatabaseTest() {
@@ -13,7 +13,7 @@ expect open class BaseDatabaseTest() {
 
     fun createDatabase(
         userId: UserIDEntity = DefaultDatabaseTestValues.userId
-    ): UserDatabaseProvider
+    ): UserDatabaseBuilder
 
 }
 

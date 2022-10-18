@@ -64,7 +64,7 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamDataSource
@@ -73,6 +73,8 @@ import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.di.PlatformUserStorageProperties
+import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
@@ -162,7 +164,6 @@ import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.db.UserDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -186,14 +187,20 @@ abstract class UserSessionScopeCommon internal constructor(
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
-    private val globalPreferences: GlobalPrefProvider,
+    protected val globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val featureSupport: FeatureSupport,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider,
+    userStorageProvider: UserStorageProvider
 ) : CoroutineScope {
+    protected abstract val platformUserStorageProperties: PlatformUserStorageProperties
 
-    private val userDatabaseProvider: UserDatabaseProvider = authenticatedDataSourceSet.userDatabaseProvider
+    private val userStorage = userStorageProvider.getOrCreate(
+        userId,
+        platformUserStorageProperties,
+        kaliumConfigs.shouldEncryptData
+    )
 
     // TODO: extract client id provider to it's own class and test it
     private var _clientId: ClientId? = null
@@ -233,7 +240,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(authenticatedDataSourceSet.userPrefProvider.userConfigStorage)
+        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage)
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
@@ -255,7 +262,7 @@ abstract class UserSessionScopeCommon internal constructor(
             keyPackageRepository,
             mlsClientProvider,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userDatabaseProvider.conversationDAO,
+            userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             syncManager,
             mlsPublicKeysRepository
@@ -267,10 +274,10 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = ConversationDataSource(
             userRepository,
             mlsConversationRepository,
-            userDatabaseProvider.conversationDAO,
+            userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
-            userDatabaseProvider.messageDAO,
-            userDatabaseProvider.clientDAO,
+            userStorage.database.messageDAO,
+            userStorage.database.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             userId
         )
@@ -279,14 +286,14 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = MessageDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userDatabaseProvider.messageDAO
+            userStorage.database.messageDAO
         )
 
     private val userRepository: UserRepository
         get() = UserDataSource(
-            userDatabaseProvider.userDAO,
-            userDatabaseProvider.metadataDAO,
-            userDatabaseProvider.clientDAO,
+            userStorage.database.userDAO,
+            userStorage.database.metadataDAO,
+            userStorage.database.clientDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.selfApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             globalScope.sessionRepository,
@@ -295,12 +302,12 @@ abstract class UserSessionScopeCommon internal constructor(
         )
 
     internal val pushTokenRepository: PushTokenRepository
-        get() = PushTokenDataSource(userDatabaseProvider.metadataDAO)
+        get() = PushTokenDataSource(userStorage.database.metadataDAO)
 
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
-            userDatabaseProvider.userDAO,
-            userDatabaseProvider.teamDAO,
+            userStorage.database.userDAO,
+            userStorage.database.teamDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.teamsApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userId,
@@ -308,11 +315,11 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
-            userDatabaseProvider.conversationDAO,
-            userDatabaseProvider.connectionDAO,
+            userStorage.database.conversationDAO,
+            userStorage.database.connectionDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.connectionApi,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
-            userDatabaseProvider.userDAO,
+            userStorage.database.userDAO,
             userId,
             selfTeamId,
             conversationRepository
@@ -320,15 +327,15 @@ abstract class UserSessionScopeCommon internal constructor(
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedDataSourceSet.authenticatedNetworkContainer.userSearchApi,
-        userDatabaseProvider.conversationDAO,
-        userDatabaseProvider.userDAO,
-        userDatabaseProvider.metadataDAO
+        userStorage.database.conversationDAO,
+        userStorage.database.userDAO,
+        userStorage.database.metadataDAO
     )
 
     private val publicUserRepository: SearchUserRepository
         get() = SearchUserRepositoryImpl(
-            userDatabaseProvider.userDAO,
-            userDatabaseProvider.metadataDAO,
+            userStorage.database.userDAO,
+            userStorage.database.metadataDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.userDetailsApi,
             userSearchApiWrapper
         )
@@ -340,7 +347,7 @@ abstract class UserSessionScopeCommon internal constructor(
         CallDataSource(
             callApi = authenticatedDataSourceSet.authenticatedNetworkContainer.callApi,
             qualifiedIdMapper = qualifiedIdMapper,
-            callDAO = userDatabaseProvider.callDAO,
+            callDAO = userStorage.database.callDAO,
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             teamRepository = teamRepository,
@@ -358,10 +365,10 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
 
     private val clientRegistrationStorage: ClientRegistrationStorage
-        get() = ClientRegistrationStorageImpl(userDatabaseProvider.metadataDAO)
+        get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userDatabaseProvider.clientDAO)
+        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userStorage.database.clientDAO)
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
@@ -381,13 +388,13 @@ abstract class UserSessionScopeCommon internal constructor(
     private val assetRepository: AssetRepository
         get() = AssetDataSource(
             assetApi = authenticatedDataSourceSet.authenticatedNetworkContainer.assetApi,
-            assetDao = userDatabaseProvider.assetDAO,
+            assetDao = userStorage.database.assetDAO,
             kaliumFileSystem = kaliumFileSystem
         )
 
     private val incrementalSyncRepository: IncrementalSyncRepository by lazy { InMemoryIncrementalSyncRepository() }
 
-    private val slowSyncRepository: SlowSyncRepository by lazy { InMemorySlowSyncRepository() }
+    private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
 
     private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
@@ -462,7 +469,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val eventRepository: EventRepository
         get() = EventDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi,
-            userDatabaseProvider.metadataDAO,
+            userStorage.database.metadataDAO,
             clientRepository
         )
 
@@ -519,7 +526,7 @@ abstract class UserSessionScopeCommon internal constructor(
         globalCallManager.getMediaManager()
     }
 
-    private val reactionRepository = ReactionRepositoryImpl(userId, userDatabaseProvider.reactionDAO)
+    private val reactionRepository = ReactionRepositoryImpl(userId, userStorage.database.reactionDAO)
     private val persistReaction: PersistReactionUseCase
         get() = PersistReactionUseCaseImpl(
             reactionRepository
@@ -573,7 +580,7 @@ abstract class UserSessionScopeCommon internal constructor(
         get() = PreKeyDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.preKeyApi,
             authenticatedDataSourceSet.proteusClientProvider,
-            authenticatedDataSourceSet.userDatabaseProvider.prekeyDAO
+            userStorage.database.prekeyDAO
         )
 
     private val keyPackageRepository: KeyPackageRepository
@@ -676,9 +683,9 @@ abstract class UserSessionScopeCommon internal constructor(
             globalScope.sessionRepository,
             globalScope.serverConfigRepository,
             userId,
-            userDatabaseProvider.metadataDAO,
+            userStorage.database.metadataDAO,
         )
-    private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(authenticatedDataSourceSet)
+    private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,
