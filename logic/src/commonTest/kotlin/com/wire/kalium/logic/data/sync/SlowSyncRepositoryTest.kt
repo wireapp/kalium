@@ -22,7 +22,7 @@ class SlowSyncRepositoryTest {
     @BeforeTest
     fun setup() {
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"), testDispatcher)
-        slowSyncRepository = SlowSyncRepositoryImpl(database.provider.metadataDAO)
+        slowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
     }
 
     @Test

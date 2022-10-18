@@ -142,7 +142,7 @@ class SyncManagerTest {
     @Suppress("unused")
     private class Arrangement {
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
-        val slowSyncRepository: SlowSyncRepository = SlowSyncRepositoryImpl(database.provider.metadataDAO)
+        val slowSyncRepository: SlowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
