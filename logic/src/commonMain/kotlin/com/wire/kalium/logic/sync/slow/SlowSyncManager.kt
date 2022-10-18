@@ -1,12 +1,10 @@
-package com.wire.kalium.logic.sync.full
+package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.sync.SyncCriteriaProvider
-import com.wire.kalium.logic.sync.SyncCriteriaResolution
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.util.KaliumDispatcher

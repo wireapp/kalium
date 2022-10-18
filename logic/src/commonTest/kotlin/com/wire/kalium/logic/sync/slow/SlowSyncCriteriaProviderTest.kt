@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.slow
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -19,7 +19,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-class SyncCriteriaProviderTest {
+class SlowSyncCriteriaProviderTest {
 
     @Test
     fun givenClientIsNull_whenCollectingStartCriteriaFlow_thenShouldBeMissingCriteria() = runTest {
@@ -127,7 +127,7 @@ class SyncCriteriaProviderTest {
         @Mock
         private val logoutRepository = mock(classOf<LogoutRepository>())
 
-        private val syncCriteriaProvider = SyncCriteriaProviderImpl(clientRepository, logoutRepository)
+        private val syncCriteriaProvider = SlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
         fun withObserveClientReturning(flow: Flow<ClientId?>) = apply {
             given(clientRepository)

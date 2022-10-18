@@ -1,11 +1,11 @@
-package com.wire.kalium.logic.sync
+package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
-import com.wire.kalium.logic.sync.SyncCriteriaResolution.MissingRequirement
-import com.wire.kalium.logic.sync.SyncCriteriaResolution.Ready
+import com.wire.kalium.logic.sync.slow.SyncCriteriaResolution.MissingRequirement
+import com.wire.kalium.logic.sync.slow.SyncCriteriaResolution.Ready
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -42,7 +42,7 @@ internal interface SyncCriteriaProvider {
     suspend fun syncCriteriaFlow(): Flow<SyncCriteriaResolution>
 }
 
-internal class SyncCriteriaProviderImpl(
+internal class SlowSyncCriteriaProviderImpl(
     private val clientRepository: ClientRepository,
     private val logoutRepository: LogoutRepository
 ) : SyncCriteriaProvider {
@@ -61,26 +61,26 @@ internal class SyncCriteriaProviderImpl(
             handleLogoutReason(logoutReason)
                 ?: handleClientId(clientId)
                 // All criteria are satisfied. We're ready to start sync!
-                ?: SyncCriteriaResolution.Ready
+                ?: Ready
         }
 
     /**
      * Handles the [clientId], returning a
-     * [SyncCriteriaResolution.MissingRequirement] if appropriate,
+     * [MissingRequirement] if appropriate,
      * or null otherwise.
      */
     private fun handleClientId(clientId: ClientId?) = if (clientId == null) {
-        SyncCriteriaResolution.MissingRequirement("Client is not registered")
+        MissingRequirement("Client is not registered")
     } else {
         null
     }
 
     /**
      * Handles the current [logoutReason], returning a
-     * [SyncCriteriaResolution.MissingRequirement] if appropriate,
+     * [MissingRequirement] if appropriate,
      * or null otherwise.
      */
-    private fun handleLogoutReason(logoutReason: LogoutReason?): SyncCriteriaResolution.MissingRequirement? =
+    private fun handleLogoutReason(logoutReason: LogoutReason?): MissingRequirement? =
         when (logoutReason) {
             LogoutReason.SELF_SOFT_LOGOUT -> "Logout: SELF_SOFT_LOGOUT"
             LogoutReason.SELF_HARD_LOGOUT -> "Logout: SELF_HARD_LOGOUT"
@@ -88,6 +88,6 @@ internal class SyncCriteriaProviderImpl(
             LogoutReason.REMOVED_CLIENT -> "Logout: REMOVED_CLIENT"
             LogoutReason.DELETED_ACCOUNT -> "Logout: DELETED_ACCOUNT"
             null -> null
-        }?.let { SyncCriteriaResolution.MissingRequirement(it) }
+        }?.let { MissingRequirement(it) }
 
 }

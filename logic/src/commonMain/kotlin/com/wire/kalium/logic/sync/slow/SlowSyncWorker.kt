@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.sync.full
+package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
