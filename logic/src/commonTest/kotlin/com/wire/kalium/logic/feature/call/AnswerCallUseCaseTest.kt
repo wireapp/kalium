@@ -25,7 +25,7 @@ class AnswerCallUseCaseTest {
     @BeforeTest
     fun setUp() {
         answerCallUseCase = AnswerCallUseCaseImpl(
-            callManager = lazy{ callManager }
+            callManager = lazy { callManager }
         )
     }
 

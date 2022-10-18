@@ -2,9 +2,7 @@ package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
-import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
-import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
@@ -18,7 +16,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import io.ktor.util.collections.ConcurrentMap
-import kotlinx.coroutines.Dispatchers
 
 actual class GlobalCallManager {
 
@@ -30,7 +27,6 @@ actual class GlobalCallManager {
         Calling.INSTANCE.apply {
             wcall_setup()
 	    wcall_run()
-            //wcall_init(env = ENVIRONMENT_DEFAULT)
             wcall_set_log_handler(
                 logHandler = LogHandlerImpl,
                 arg = null
