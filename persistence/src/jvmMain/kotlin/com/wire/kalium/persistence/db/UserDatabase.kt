@@ -16,11 +16,11 @@ internal actual class PlatformDatabaseData(
     val storePath: File?
 )
 
-fun UserDatabaseProvider(
+fun userDatabaseBuilder(
     userId: UserIDEntity,
     storePath: File,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val databasePath = storePath.resolve(DATABASE_NAME)
     val databaseExists = databasePath.exists()
 
@@ -32,7 +32,7 @@ fun UserDatabaseProvider(
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
     }
-    return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(storePath))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storePath))
 }
 
 private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
@@ -40,10 +40,10 @@ private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
     Properties(1).apply { put("foreign_keys", "true") }
 )
 
-fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseProvider {
+fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseBuilder {
     val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY)
     UserDatabase.Schema.create(driver)
-    return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")))
 }
 
 internal actual fun nuke(

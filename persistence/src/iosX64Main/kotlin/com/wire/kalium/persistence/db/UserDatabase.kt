@@ -17,13 +17,13 @@ sealed interface DatabaseCredentials {
 
 internal actual class PlatformDatabaseData(val credentials: DatabaseCredentials)
 
-fun UserDatabaseProvider(
+fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: String,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
-    return UserDatabaseProvider(
+    return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
@@ -34,7 +34,7 @@ fun UserDatabaseProvider(
 fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val schema = UserDatabase.Schema
     val driver = NativeSqliteDriver(
         DatabaseConfiguration(
@@ -49,7 +49,7 @@ fun inMemoryDatabase(
             }
         )
     )
-    return UserDatabaseProvider(
+    return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,

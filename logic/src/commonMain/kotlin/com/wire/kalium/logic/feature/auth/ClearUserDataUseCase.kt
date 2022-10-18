@@ -1,13 +1,13 @@
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.feature.AuthenticatedDataSourceSet
+import com.wire.kalium.logic.di.UserStorage
 
 interface ClearUserDataUseCase {
     suspend operator fun invoke()
 }
 
 internal class ClearUserDataUseCaseImpl internal constructor(
-    private val authenticatedDataSourceSet: AuthenticatedDataSourceSet
+    private val userStorage: UserStorage
 ) : ClearUserDataUseCase {
 
     override suspend operator fun invoke() {
@@ -15,8 +15,8 @@ internal class ClearUserDataUseCaseImpl internal constructor(
     }
 
     private fun clearUserStorage() {
-        authenticatedDataSourceSet.userDatabaseProvider.nuke()
+        userStorage.database.nuke()
         // exclude clientId clear from this step
-        authenticatedDataSourceSet.userPrefProvider.clear()
+        userStorage.preferences.clear()
     }
 }

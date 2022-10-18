@@ -1,31 +1,28 @@
 package com.wire.kalium.persistence.kmmSettings
 
-import android.content.Context
 import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage
 import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorageImpl
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.config.UserConfigStorageImpl
 import com.wire.kalium.persistence.dao.UserIDEntity
 
-actual class UserPrefProvider(
+actual class UserPrefBuilder(
     userId: UserIDEntity,
-    context: Context,
+    rootPath: String,
     shouldEncryptData: Boolean = true
 ) {
-    private val encryptedSettingsHolder =
+
+    private val kaliumPref =
         KaliumPreferencesSettings(
-            EncryptedSettingsHolder(
-                context,
-                options = SettingOptions.UserSettings(shouldEncryptData = shouldEncryptData, userIDEntity = userId)
-            ).encryptedSettings
+            EncryptedSettingsHolder(rootPath, SettingOptions.UserSettings(shouldEncryptData, userId)).encryptedSettings
         )
 
     actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage
-        get() = LastRetrievedNotificationEventStorageImpl(encryptedSettingsHolder)
-
-    actual val userConfigStorage: UserConfigStorage = UserConfigStorageImpl(encryptedSettingsHolder)
+        get() = LastRetrievedNotificationEventStorageImpl(kaliumPref)
+    actual val userConfigStorage: UserConfigStorage = UserConfigStorageImpl(kaliumPref)
 
     actual fun clear() {
-        encryptedSettingsHolder.nuke()
+        kaliumPref.nuke()
     }
+
 }

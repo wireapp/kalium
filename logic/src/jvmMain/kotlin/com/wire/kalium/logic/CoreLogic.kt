@@ -50,7 +50,7 @@ actual class CoreLogic(
             kaliumConfigs,
             globalPreferences.value,
             globalCallManager,
-            idMapper
+            userStorageProvider
         )
     }
 }

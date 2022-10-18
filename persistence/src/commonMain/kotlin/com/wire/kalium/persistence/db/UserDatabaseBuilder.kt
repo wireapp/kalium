@@ -47,7 +47,7 @@ value class UserDBSecret(val value: ByteArray)
  */
 internal expect class PlatformDatabaseData
 
-class UserDatabaseProvider internal constructor(
+class UserDatabaseBuilder internal constructor(
     private val userId: UserIDEntity,
     private val sqlDriver: SqlDriver,
     dispatcher: CoroutineDispatcher,
