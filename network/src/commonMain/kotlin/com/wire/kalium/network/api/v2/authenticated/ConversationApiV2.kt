@@ -2,7 +2,7 @@ package com.wire.kalium.network.api.v2.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
 import com.wire.kalium.network.api.base.model.ConversationId
@@ -30,13 +30,13 @@ internal open class ConversationApiV2 internal constructor(
     override suspend fun addMember(
         request: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedDTO> = try {
+    ): NetworkResponse<ConversationMemberAddedResponse> = try {
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
             setBody(request)
         }.let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberAddedDTO.Changed> { response }
-                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberAddedDTO.Unchanged, response)
+                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberAddedResponse.Changed> { response }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
         }
