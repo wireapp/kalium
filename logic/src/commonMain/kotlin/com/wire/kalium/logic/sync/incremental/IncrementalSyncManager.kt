@@ -8,7 +8,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncExceptionHandler
-import com.wire.kalium.logic.sync.full.SlowSyncManager
+import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
