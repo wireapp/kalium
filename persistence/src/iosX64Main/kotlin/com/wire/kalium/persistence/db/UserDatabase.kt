@@ -34,7 +34,7 @@ fun userDatabaseBuilder(
 fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val schema = UserDatabase.Schema
     val driver = NativeSqliteDriver(
         DatabaseConfiguration(
@@ -49,7 +49,7 @@ fun inMemoryDatabase(
             }
         )
     )
-    return UserDatabaseProvider(
+    return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
