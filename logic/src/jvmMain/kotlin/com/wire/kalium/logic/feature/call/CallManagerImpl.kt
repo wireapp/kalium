@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
@@ -60,23 +59,6 @@ import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 
 import com.sun.jna.Pointer
-
-interface CallManager {
-    suspend fun onCallingMessageReceived(message: Message.Regular, content: MessageContent.Calling)
-    suspend fun startCall(
-        conversationId: ConversationId,
-        callType: CallType,
-        conversationType: ConversationType,
-        isAudioCbr: Boolean
-    ) // TODO(calling): Audio CBR
-
-    suspend fun answerCall(conversationId: ConversationId)
-    suspend fun endCall(conversationId: ConversationId)
-    suspend fun rejectCall(conversationId: ConversationId)
-    suspend fun muteCall(shouldMute: Boolean)
-    suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState)
-    suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList)
-}
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class CallManagerImpl internal constructor(

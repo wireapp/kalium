@@ -1,6 +1,8 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
