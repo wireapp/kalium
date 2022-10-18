@@ -36,6 +36,7 @@ import io.mockative.configure
 import io.mockative.eq
 import io.mockative.fun2
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
@@ -208,6 +209,11 @@ class ConversationGroupRepositoryTest {
         verify(conversationDAO)
             .suspendFunction(conversationDAO::insertConversation)
             .with(anything())
+            .wasInvoked(once)
+
+        verify(conversationDAO)
+            .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+            .with(matching { it.isNotEmpty() }, anything())
             .wasInvoked(once)
 
         verify(mlsConversationRepository)

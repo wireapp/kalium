@@ -88,7 +88,8 @@ internal class ConversationGroupRepositoryImpl(
                     is Conversation.ProtocolInfo.Proteus ->
                         persistMembersFromConversationResponse(conversationResponse)
                     is Conversation.ProtocolInfo.MLS ->
-                        mlsConversationRepository.establishMLSGroup(conversation.protocol.groupId, usersList)
+                        persistMembersFromConversationResponse(conversationResponse)
+                            .flatMap { mlsConversationRepository.establishMLSGroup(conversation.protocol.groupId, usersList) }
                 }
             }.map { conversation }
         }
