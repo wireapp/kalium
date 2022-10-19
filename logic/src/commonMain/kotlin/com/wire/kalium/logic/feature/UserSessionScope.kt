@@ -67,9 +67,9 @@ import com.wire.kalium.logic.data.publicuser.SearchUserRepositoryImpl
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.team.TeamDataSource
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserDataSource
@@ -137,13 +137,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
-import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
-import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
-import com.wire.kalium.logic.sync.slow.SlowSyncManager
-import com.wire.kalium.logic.sync.slow.SlowSyncWorker
-import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.sync.incremental.EventGatherer
 import com.wire.kalium.logic.sync.incremental.EventGathererImpl
 import com.wire.kalium.logic.sync.incremental.EventProcessor
@@ -178,6 +173,11 @@ import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandl
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
+import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
+import com.wire.kalium.logic.sync.slow.SlowSyncManager
+import com.wire.kalium.logic.sync.slow.SlowSyncWorker
+import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -190,7 +190,6 @@ import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
 
-expect class UserSessionScope : UserSessionScopeCommon
 fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
 }
@@ -200,19 +199,20 @@ fun interface SelfTeamIdProvider {
 }
 
 @Suppress("LongParameterList")
-abstract class UserSessionScopeCommon internal constructor(
+class UserSessionScope internal constructor(
     private val userId: UserId,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
-    protected val globalPreferences: GlobalPrefProvider,
+    private val globalPreferences: GlobalPrefProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val featureSupport: FeatureSupport,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    userStorageProvider: UserStorageProvider
+    userStorageProvider: UserStorageProvider,
+    private val clientConfig: ClientConfig,
+    platformUserStorageProperties: PlatformUserStorageProperties
 ) : CoroutineScope {
-    protected abstract val platformUserStorageProperties: PlatformUserStorageProperties
 
     private val userStorage = userStorageProvider.getOrCreate(
         userId,
@@ -243,7 +243,7 @@ abstract class UserSessionScopeCommon internal constructor(
     private val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val selfConversationIdProvider: SelfConversationIdProvider by lazy { SelfConversationIdProviderImpl(conversationRepository) }
 
-    // TODO: make atomic
+    // TODO(refactor): Extract to Provider class and make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
     private var _teamId: Either<CoreFailure, TeamId?> = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
 
@@ -392,10 +392,6 @@ abstract class UserSessionScopeCommon internal constructor(
             callMapper = callMapper
         )
     }
-
-    // TODO: Refactor. These should be passed in the constructor to
-    //       avoid depending on not-yet-initialized fields
-    protected abstract val clientConfig: ClientConfig
 
     private val clientRemoteRepository: ClientRemoteRepository
         get() = ClientRemoteDataSource(authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi, clientConfig)
@@ -825,7 +821,7 @@ abstract class UserSessionScopeCommon internal constructor(
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
-    fun onInit() {
+    init {
         launch {
             // TODO: Add a public start function to the Managers
             incrementalSyncManager
