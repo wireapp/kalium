@@ -15,7 +15,7 @@ import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
-fun UserSessionScope(
+internal fun UserSessionScope(
     applicationContext: Context,
     userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,

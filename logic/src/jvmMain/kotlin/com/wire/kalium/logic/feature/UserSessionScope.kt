@@ -13,7 +13,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
-fun UserSessionScope(
+internal fun UserSessionScope(
     platformUserStorageProperties: PlatformUserStorageProperties,
     userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
@@ -25,7 +25,7 @@ fun UserSessionScope(
     featureSupport: FeatureSupport,
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
-) : UserSessionScope {
+): UserSessionScope {
 
     val clientConfig: ClientConfig = ClientConfigImpl()
 
