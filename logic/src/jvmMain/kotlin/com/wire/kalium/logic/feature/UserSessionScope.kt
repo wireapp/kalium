@@ -13,8 +13,8 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
-actual class UserSessionScope internal constructor(
-    override val platformUserStorageProperties: PlatformUserStorageProperties,
+fun UserSessionScope(
+    platformUserStorageProperties: PlatformUserStorageProperties,
     userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     globalScope: GlobalKaliumScope,
@@ -25,22 +25,22 @@ actual class UserSessionScope internal constructor(
     featureSupport: FeatureSupport,
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
-) : UserSessionScopeCommon(
-    userId,
-    authenticatedDataSourceSet,
-    globalScope,
-    globalCallManager,
-    globalPreferences,
-    dataStoragePaths,
-    kaliumConfigs,
-    featureSupport,
-    userSessionScopeProvider,
-    userStorageProvider
-) {
+) : UserSessionScope {
 
-    override val clientConfig: ClientConfig get() = ClientConfigImpl()
+    val clientConfig: ClientConfig = ClientConfigImpl()
 
-    init {
-        onInit()
-    }
+    return UserSessionScope(
+        userId,
+        authenticatedDataSourceSet,
+        globalScope,
+        globalCallManager,
+        globalPreferences,
+        dataStoragePaths,
+        kaliumConfigs,
+        featureSupport,
+        userSessionScopeProvider,
+        userStorageProvider,
+        clientConfig,
+        platformUserStorageProperties
+    )
 }
