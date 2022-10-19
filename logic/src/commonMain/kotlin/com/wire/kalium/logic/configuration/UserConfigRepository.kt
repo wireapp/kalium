@@ -16,6 +16,8 @@ interface UserConfigRepository {
     fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
     fun isMLSEnabled(): Either<StorageFailure, Boolean>
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    fun isConferenceCallingEnabledFlow(): Flow<Either<StorageFailure, Boolean>>
 }
 
 class UserConfigDataSource(
@@ -57,4 +59,16 @@ class UserConfigDataSource(
 
     override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
+
+    override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistConferenceCalling(enabled)
+        }
+
+    override fun isConferenceCallingEnabledFlow(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigStorage.isConferenceCallingEnabledFlow().wrapStorageRequest().map {
+            it.map { isEnabled ->
+                isEnabled
+            }
+        }
 }
