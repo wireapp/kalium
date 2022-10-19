@@ -636,5 +636,5 @@ WireRuleSet:
         active: true
         excludes: [ '**/build/**', '**/*Test/**', '**/protobuf/**' ]
     DocumentedPublicUseCases:
-        active: true
+        active: true # TODO: applied as now incrementally, document retroactively
         excludes: [ '**/build/**', '**/*Test/**' ]
