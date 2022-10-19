@@ -5,6 +5,8 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentialsModel
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.di.PlatformUserStorageProvider
+import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -18,7 +20,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 expect class CoreLogic : CoreLogicCommon
 
-abstract class CoreLogicCommon(
+abstract class CoreLogicCommon internal constructor (
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
     protected val rootPath: String,
@@ -28,6 +30,7 @@ abstract class CoreLogicCommon(
     protected abstract val globalPreferences: Lazy<GlobalPrefProvider>
     protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
+    protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)

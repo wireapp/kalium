@@ -16,10 +16,10 @@ import kotlin.test.assertTrue
 class ReactionRepositoryTest {
 
     private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID)
-    private val reactionsDao = userDatabase.provider.reactionDAO
-    private val conversationDao = userDatabase.provider.conversationDAO
-    private val userDao = userDatabase.provider.userDAO
-    private val messageDao = userDatabase.provider.messageDAO
+    private val reactionsDao = userDatabase.builder.reactionDAO
+    private val conversationDao = userDatabase.builder.conversationDAO
+    private val userDao = userDatabase.builder.userDAO
+    private val messageDao = userDatabase.builder.messageDAO
 
     private val reactionRepository = ReactionRepositoryImpl(SELF_USER_ID, reactionsDao)
 

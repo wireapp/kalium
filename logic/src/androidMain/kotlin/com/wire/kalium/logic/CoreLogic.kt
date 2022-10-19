@@ -25,8 +25,6 @@ actual class CoreLogic(
     kaliumConfigs: KaliumConfigs
 ) : CoreLogicCommon(clientLabel, rootPath, kaliumConfigs = kaliumConfigs) {
 
-    // TODO: no need to have session repo as singleton any more
-
     override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
         GlobalPrefProvider(appContext)
     }
@@ -64,7 +62,7 @@ actual class CoreLogic(
             kaliumConfigs,
             globalPreferences.value,
             globalCallManager,
-            idMapper
+            userStorageProvider
         )
     }
 }

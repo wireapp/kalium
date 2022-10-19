@@ -218,12 +218,12 @@ exceptions:
 formatting:
     active: true
     android: false
-    excludes: [ '**/build/**', '**/protobuf-codegen/**', '**/cryptography/externals/**']
+    excludes: [ '**/build/**', '**/protobuf/**', '**/cryptography/externals/**' ]
     AnnotationOnSeparateLine:
         active: false
         autoCorrect: true
     ChainWrapping:
-        active: true
+        active: false
         autoCorrect: true
     CommentSpacing:
         active: true
@@ -634,4 +634,7 @@ style:
 WireRuleSet:
     EnforceSerializableFields:
         active: true
-        excludes: [ '**/build/**', '**/*Test/**']
+        excludes: [ '**/build/**', '**/*Test/**', '**/protobuf/**' ]
+    DocumentedPublicUseCases:
+        active: true # TODO: applied as now incrementally, document retroactively
+        excludes: [ '**/build/**', '**/*Test/**' ]
