@@ -21,9 +21,7 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -34,8 +32,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateC
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -743,8 +739,7 @@ class ConversationRepositoryTest {
                 conversationApi,
                 messageDAO,
                 clientDao,
-                clientApi,
-                TestUser.SELF.id
+                clientApi
             )
 
         init {
@@ -874,103 +869,6 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::updateConversationMemberRole)
                 .whenInvokedWith(any(), any(), any())
-                .thenReturn(Unit)
-        }
-
-        fun withConversationProtocolIs(protocolInfo: ConversationEntity.ProtocolInfo) = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationByQualifiedID)
-                .whenInvokedWith(any())
-                .thenReturn(TestConversation.GROUP_VIEW_ENTITY(protocolInfo))
-        }
-
-        fun withAddMemberAPISucceedChanged() = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::addMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(
-                    NetworkResponse.Success(
-                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
-                )
-        }
-
-        fun withAddMemberAPISucceedUnchanged() = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::addMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(
-                    NetworkResponse.Success(
-                        ConversationMemberAddedDTO.Unchanged,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
-                )
-        }
-
-        fun withAddMemberAPIFailed() = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::addMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
-                )
-
-        }
-
-        fun withDeleteMemberAPISucceedChanged() = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::removeMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(
-                    NetworkResponse.Success(
-                        TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
-                )
-        }
-
-        fun withDeleteMemberAPISucceedUnchanged() = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::removeMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(
-                    NetworkResponse.Success(
-                        ConversationMemberRemovedDTO.Unchanged,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
-                )
-        }
-
-        fun withDeleteMemberAPIFailed() = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::removeMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
-                )
-
-        }
-
-        fun withFetchUsersIfUnknownByIdsSuccessful() = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withSuccessfulMemberDeletion() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::deleteMemberByQualifiedID)
-                .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
         }
 

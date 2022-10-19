@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.CommitBundleEventReceiverImpl
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
@@ -274,6 +275,12 @@ abstract class UserSessionScopeCommon internal constructor(
         )
     }
 
+    private val commitBundleEventReceiver: CommitBundleEventReceiverImpl
+        get() = CommitBundleEventReceiverImpl(
+            memberJoinHandler,
+            memberLeaveHandler
+        )
+
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
             keyPackageRepository,
@@ -282,7 +289,8 @@ abstract class UserSessionScopeCommon internal constructor(
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             syncManager,
-            mlsPublicKeysRepository
+            mlsPublicKeysRepository,
+            commitBundleEventReceiver
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
@@ -295,8 +303,7 @@ abstract class UserSessionScopeCommon internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            userId
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
@@ -304,6 +311,8 @@ abstract class UserSessionScopeCommon internal constructor(
             userRepository,
             conversationRepository,
             mlsConversationRepository,
+            memberJoinHandler,
+            memberLeaveHandler,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userId
@@ -560,27 +569,28 @@ abstract class UserSessionScopeCommon internal constructor(
             reactionRepository
         )
 
-    private val newMessageHandler: NewMessageEventHandlerImpl = NewMessageEventHandlerImpl(
-        authenticatedDataSourceSet.proteusClientProvider,
-        mlsClientProvider,
-        userRepository,
-        assetRepository,
-        messageRepository,
-        userConfigRepository,
-        conversationRepository,
-        callManager,
-        persistMessage,
-        persistReaction,
-        MessageTextEditHandler(messageRepository),
-        LastReadContentHandler(conversationRepository, userId, selfConversationIdProvider),
-        ClearConversationContentHandler(
-            ClearConversationContentImpl(conversationRepository, assetRepository),
-            userId,
-            selfConversationIdProvider,
-        ),
-        DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
-        pendingProposalScheduler
-    )
+    private val newMessageHandler: NewMessageEventHandlerImpl
+        get() = NewMessageEventHandlerImpl(
+            authenticatedDataSourceSet.proteusClientProvider,
+            mlsClientProvider,
+            userRepository,
+            assetRepository,
+            messageRepository,
+            userConfigRepository,
+            conversationRepository,
+            callManager,
+            persistMessage,
+            persistReaction,
+            MessageTextEditHandler(messageRepository),
+            LastReadContentHandler(conversationRepository, userId, selfConversationIdProvider),
+            ClearConversationContentHandler(
+                ClearConversationContentImpl(conversationRepository, assetRepository),
+                userId,
+                selfConversationIdProvider,
+            ),
+            DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+            pendingProposalScheduler
+        )
 
     private val newConversationHandler: NewConversationEventHandler get() = NewConversationEventHandlerImpl(conversationRepository)
     private val deletedConversationHandler: DeletedConversationEventHandler

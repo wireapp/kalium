@@ -151,7 +151,6 @@ internal class ConversationDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
-    private val selfUserId: UserId,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -545,6 +544,8 @@ internal class ConversationDataSource internal constructor(
             .wrapStorageRequest()
 
     override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {
+        val selfUserId = userRepository.observeSelfUser().first().id
+
         conversationDAO.whoDeletedMeInConversation(
             idMapper.toDaoModel(conversationId),
             idMapper.toStringDaoModel(selfUserId)
