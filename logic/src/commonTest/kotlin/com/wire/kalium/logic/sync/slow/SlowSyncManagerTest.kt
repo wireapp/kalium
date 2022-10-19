@@ -11,6 +11,7 @@ import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
@@ -93,6 +94,28 @@ class SlowSyncManagerTest {
         verify(arrangement.slowSyncRepository)
             .function(arrangement.slowSyncRepository::updateSlowSyncStatus)
             .with(eq(SlowSyncStatus.Complete))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCriteriaAreMet_whenStepsAreOver_thenShouldUpdateLastCompletedDate() = runTest(TestKaliumDispatcher.default) {
+        val initialTime = Clock.System.now()
+
+        val (arrangement, _) = Arrangement()
+            .withSatisfiedCriteria()
+            .withSlowSyncWorkerReturning(emptyFlow())
+            .arrange()
+
+        advanceUntilIdle()
+
+        val completedTime = Clock.System.now()
+        verify(arrangement.slowSyncRepository)
+            .function(arrangement.slowSyncRepository::setLastSlowSyncCompletionInstant)
+            .with(
+                matching<Instant?> {
+                    it != null && initialTime <= it && it <= completedTime
+                }
+            )
             .wasInvoked(exactly = once)
     }
 
