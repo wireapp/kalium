@@ -37,11 +37,13 @@ internal object ServerConfigMapper {
             website = websiteUrl,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = ServerConfigEntity.Proxy(
-                needsAuthentication = needsAuthentication,
-                apiProxy = apiProxy,
-                port = port
-            )
+            proxy = apiProxy?.let {
+                ServerConfigEntity.Proxy(
+                    needsAuthentication = needsAuthentication,
+                    apiProxy = apiProxy,
+                    port = port
+                )
+            }
         ),
         ServerConfigEntity.MetaData(
             federation = federation,
