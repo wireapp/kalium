@@ -1,9 +1,7 @@
 package com.wire.detekt.rules
 
-import io.gitlab.arturbosch.detekt.api.CodeSmell
 import io.gitlab.arturbosch.detekt.api.Config
 import io.gitlab.arturbosch.detekt.api.Debt
-import io.gitlab.arturbosch.detekt.api.Entity
 import io.gitlab.arturbosch.detekt.api.Issue
 import io.gitlab.arturbosch.detekt.api.Rule
 import io.gitlab.arturbosch.detekt.api.Severity
@@ -52,14 +50,9 @@ class EnforceSerializableFields(config: Config = Config.empty) : Rule(config) {
             kClass.getValueParameters()
         }
 
-
     private fun isSerializableAnnotationWithoutArgs(ktAnnotationEntry: KtAnnotationEntry) =
         ktAnnotationEntry.text?.startsWith(SERIALIZABLE_CLASS_ANNOTATION) == true &&
                 ktAnnotationEntry.getValueArgumentsInParentheses().isEmpty()
-
-    private fun report(classOrObject: KtClassOrObject, message: String) {
-        report(CodeSmell(issue, Entity.atName(classOrObject), message))
-    }
 
     companion object {
         private const val DEBT_IN_MINUTES_PER_MISSING_ANNOTATION = 3
