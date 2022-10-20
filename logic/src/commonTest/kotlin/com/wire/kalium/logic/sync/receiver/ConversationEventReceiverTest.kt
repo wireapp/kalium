@@ -84,6 +84,7 @@ import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
+// TODO(refactor): Split into smaller specialised chunks and test specific receivers instead of the whole ConversationEventReceiver
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationEventReceiverTest {
 
@@ -119,7 +120,7 @@ class ConversationEventReceiverTest {
                 AssetContent.RemoteData(
                     ByteArray(16), ByteArray(16), "assetid", null, null, null
                 ),
-                    Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
+                Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
         val coreFailure = StorageFailure.DataNotFound
@@ -139,9 +140,9 @@ class ConversationEventReceiverTest {
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(
                 matching {
-                it.content is MessageContent.Asset &&
-                        (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
-            }
+                    it.content is MessageContent.Asset &&
+                            (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+                }
             )
             .wasInvoked()
     }
@@ -330,8 +331,8 @@ class ConversationEventReceiverTest {
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(
                 matching {
-                it is Message.System && it.content is MessageContent.MemberChange
-            }
+                    it is Message.System && it.content is MessageContent.MemberChange
+                }
             )
             .wasInvoked(exactly = once)
     }
