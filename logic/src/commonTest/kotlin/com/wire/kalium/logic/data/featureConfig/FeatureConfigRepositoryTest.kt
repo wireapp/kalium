@@ -40,7 +40,7 @@ class FeatureConfigRepositoryTest {
                 ClassifiedDomainsConfigModel(listOf()),
                 Status.ENABLED
             ),
-            ConfigsStatusModel(Status.ENABLED),
+            ConferenceCallingModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),

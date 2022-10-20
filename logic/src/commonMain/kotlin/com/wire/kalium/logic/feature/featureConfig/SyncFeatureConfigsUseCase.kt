@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
+import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSModel
@@ -39,6 +40,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             checkFileSharingStatus(it.fileSharingModel)
             checkMLSStatus(it.mlsModel)
             checkClassifiedDomainsStatus(it.classifiedDomainsModel)
+            checkConferenceCalling(it.conferenceCallingModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -54,6 +56,11 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 kaliumLogger.d("$networkFailure")
             }
         }
+
+    private fun checkConferenceCalling(model: ConferenceCallingModel) {
+        val conferenceCallingEnabled = model.status == Status.ENABLED
+        userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
+    }
 
     private fun checkClassifiedDomainsStatus(model: ClassifiedDomainsModel) {
         val classifiedDomainsEnabled = model.status == Status.ENABLED
