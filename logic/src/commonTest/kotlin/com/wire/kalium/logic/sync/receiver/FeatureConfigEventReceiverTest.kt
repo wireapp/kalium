@@ -2,6 +2,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -97,6 +98,40 @@ class FeatureConfigEventReceiverTest {
             .with(eq(false), eq(true))
     }
 
+    @Test
+    fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToTrue() = runTest {
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withSettingConferenceCallingEnabledSuccessfull()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangement.newConferenceCallingUpdatedEvent(
+                ConferenceCallingModel(Status.ENABLED)
+            )
+        )
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(true))
+    }
+
+    @Test
+    fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToFalse() = runTest {
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withSettingConferenceCallingEnabledSuccessfull()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangement.newConferenceCallingUpdatedEvent(
+                ConferenceCallingModel(Status.DISABLED)
+            )
+        )
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(false))
+    }
+
     private class Arrangement {
 
         val kaliumConfigs = KaliumConfigs()
@@ -128,6 +163,13 @@ class FeatureConfigEventReceiverTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withSettingConferenceCallingEnabledSuccessfull() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::setConferenceCallingEnabled)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun newMLSUpdatedEvent(
             model: MLSModel
         ) = Event.FeatureConfig.MLSUpdated("eventId", model)
@@ -135,6 +177,10 @@ class FeatureConfigEventReceiverTest {
         fun newFileSharingUpdatedEvent(
             model: ConfigsStatusModel
         ) = Event.FeatureConfig.FileSharingUpdated("eventId", model)
+
+        fun newConferenceCallingUpdatedEvent(
+            model: ConferenceCallingModel
+        ) = Event.FeatureConfig.ConferenceCallingUpdated("eventId", model)
 
         fun arrange() = this to featureConfigEventReceiver
     }
