@@ -352,6 +352,7 @@ internal class NewMessageEventHandlerImpl(
             is Message.Regular -> when (val content = message.content) {
                 // Persist Messages - > lists
                 is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
+                is MessageContent.Knock -> persistMessage(message)
                 is MessageContent.Reaction -> persistReaction(message, content)
                 is MessageContent.Asset -> handleAssetMessage(message)
                 is MessageContent.DeleteMessage -> handleDeleteMessage(content, message)
@@ -374,7 +375,6 @@ internal class NewMessageEventHandlerImpl(
                 is MessageContent.Cleared -> clearConversationContentHandler.handle(message, content)
                 is MessageContent.Empty -> TODO()
                 is MessageContent.RestrictedAsset -> TODO()
-                is MessageContent.Knock -> TODO()
             }
 
             is Message.System -> when (message.content) {
