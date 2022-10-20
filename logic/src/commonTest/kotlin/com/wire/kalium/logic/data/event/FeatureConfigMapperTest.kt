@@ -84,6 +84,15 @@ class FeatureConfigMapperTest {
         assertEquals(Status.ENABLED, model.status)
     }
 
+    @Test
+    fun givenApiModelResponse_whenMappingConferenceCallingToModel_thenShouldBeMappedCorrectly() {
+        val (arrangement, mapper) = Arrangement().arrange()
+
+        val model = mapper.fromDTO(arrangement.featureConfigResponse.conferenceCalling)
+
+        assertEquals(Status.ENABLED, model.status)
+    }
+
     private class Arrangement {
         val featureConfigResponse = FeatureConfigResponse(
             FeatureConfigData.AppLock(

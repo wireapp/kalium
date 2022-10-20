@@ -47,6 +47,16 @@ interface UserConfigStorage {
      * get the saved flag to know if MLS enabled or not
      */
     fun isMLSEnabled(): Boolean
+
+    /**
+     * save flag from user settings to enable or disable Conference Calling
+     */
+    fun persistConferenceCalling(enabled: Boolean)
+
+    /**
+     * get the saved flag to know if Conference Calling is enabled or not
+     */
+    fun isConferenceCallingEnabled(): Boolean
 }
 
 @Serializable
@@ -123,9 +133,18 @@ internal class UserConfigStorageImpl internal constructor(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
+    override fun persistConferenceCalling(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
+    }
+
+    override fun isConferenceCallingEnabled(): Boolean =
+        kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
+
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val ENABLE_MLS = "enable_mls"
+        const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
+        const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
     }
 }

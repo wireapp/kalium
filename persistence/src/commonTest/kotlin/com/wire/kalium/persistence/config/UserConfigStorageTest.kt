@@ -44,4 +44,13 @@ class UserConfigStorageTest {
             userConfigStorage.isClassifiedDomainsEnabledFlow().first()
         )
     }
+
+    @Test
+    fun givenAConferenceCallingStatusValue_whenPersistingIt_saveAndThenRestoreTheValueLocally() = runTest {
+        userConfigStorage.persistConferenceCalling(true)
+        assertEquals(
+            true,
+            userConfigStorage.isConferenceCallingEnabled()
+        )
+    }
 }
