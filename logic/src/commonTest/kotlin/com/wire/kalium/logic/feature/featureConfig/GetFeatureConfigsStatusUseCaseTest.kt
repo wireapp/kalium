@@ -88,6 +88,11 @@ class GetFeatureConfigsStatusUseCaseTest {
             .function(arrangement.userConfigRepository::setMLSEnabled)
             .with(eq(false))
             .wasInvoked(exactly = once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(true))
+            .wasInvoked(exactly = once)
     }
 
     @Test
