@@ -13,9 +13,11 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -58,25 +60,35 @@ internal class SlowSyncManager(
         startMonitoring()
     }
 
+    private suspend fun isSlowSyncNeededFlow(): Flow<Boolean> = slowSyncRepository.observeLastSlowSyncCompletionInstant()
+        .map { lastTimeSlowSyncWasPerformed ->
+            lastTimeSlowSyncWasPerformed?.let {
+                val currentTime = Clock.System.now()
+                logger.i("Last SlowSync was performed on '$lastTimeSlowSyncWasPerformed'")
+                val nextSlowSyncDateTime = lastTimeSlowSyncWasPerformed + MIN_TIME_BETWEEN_SLOW_SYNCS
+                logger.i("Next SlowSync should be performed on '$nextSlowSyncDateTime'")
+                currentTime > nextSlowSyncDateTime
+            } ?: true
+        }
+
     private fun startMonitoring() {
         scope.launch(coroutineExceptionHandler) {
             slowSyncCriteriaProvider
                 .syncCriteriaFlow()
+                .combine(isSlowSyncNeededFlow())
                 .distinctUntilChanged()
-                .combine(slowSyncRepository.observeLastSlowSyncCompletionInstant())
                 // Collect latest will cancel whatever is running inside the collector when a new value is emitted
-                .collectLatest { (syncCriteriaResolution, lastTimeSlowSyncWasPerformed) ->
-                    handleCriteriaResolution(syncCriteriaResolution, lastTimeSlowSyncWasPerformed)
+                .collectLatest { (syncCriteriaResolution, isSlowSyncNeeded) ->
+                    handleCriteriaResolution(syncCriteriaResolution, isSlowSyncNeeded)
                 }
         }
     }
 
-    private suspend fun handleCriteriaResolution(syncCriteriaResolution: SyncCriteriaResolution, lastTimeSlowSyncWasPerformed: Instant?) {
+    private suspend fun handleCriteriaResolution(syncCriteriaResolution: SyncCriteriaResolution, isSlowSyncNeeded: Boolean) {
         if (syncCriteriaResolution is SyncCriteriaResolution.Ready) {
             // START SYNC IF NEEDED
             logger.i("SlowSync criteria ready, checking if SlowSync is needed or already performed")
-            logger.i("Last SlowSync was performed on '$lastTimeSlowSyncWasPerformed'")
-            if (isSlowSyncNeeded(lastTimeSlowSyncWasPerformed)) {
+            if (isSlowSyncNeeded) {
                 logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
                 performSlowSync()
                 logger.i("SlowSync completed. Updating last completion instant")
@@ -90,15 +102,6 @@ internal class SlowSyncManager(
             logger.i("SlowSync Stopped as criteria are not met: $syncCriteriaResolution")
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
         }
-    }
-
-    private fun isSlowSyncNeeded(lastTimeSlowSyncWasPerformed: Instant?): Boolean {
-        return lastTimeSlowSyncWasPerformed?.let {
-            val currentTime = Clock.System.now()
-            val nextSlowSyncDateTime = lastTimeSlowSyncWasPerformed + MIN_TIME_BETWEEN_SLOW_SYNCS
-            logger.i("Next SlowSync should be performed on '$nextSlowSyncDateTime'")
-            currentTime > nextSlowSyncDateTime
-        } ?: true
     }
 
     private suspend fun performSlowSync() {
