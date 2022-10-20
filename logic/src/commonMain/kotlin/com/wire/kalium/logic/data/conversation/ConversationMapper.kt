@@ -25,10 +25,11 @@ import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationViewEntity
-import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
-import kotlinx.datetime.Instant
+import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.util.requireField
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
@@ -55,6 +56,8 @@ interface ConversationMapper {
         unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne
+
+    fun toDaoModel(conversation: Conversation): ConversationEntity
 }
 
 @Suppress("TooManyFunctions")
@@ -347,6 +350,17 @@ internal class ConversationMapperImpl(
         ConversationOptions.Protocol.PROTEUS -> ConvProtocol.PROTEUS
         ConversationOptions.Protocol.MLS -> ConvProtocol.MLS
     }
+
+    override fun toDaoModel(conversation: Conversation): ConversationEntity = with(conversation) {
+//         ConversationEntity(
+//             id = idMapper.toDaoModel(conversation.id),
+//             name = name,
+//             type = ConversationEntity.Type.valueOf(type.ordinal.toString()),
+//
+//         )
+        TODO("Not yet implemented")
+    }
+
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
