@@ -122,7 +122,8 @@ class CallManagerImpl internal constructor(
                 selfUserId,
                 selfClientId,
                 messageSender,
-                scope
+                scope,
+                callMapper
             ).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
             incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope).keepingStrongReference(),
