@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anyInstanceOf
 import io.mockative.classOf
 import io.mockative.configure
@@ -117,6 +118,23 @@ class SlowSyncManagerTest {
                 }
             )
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenItWasCompletedRecently_whenCriteriaAreMet_thenShouldNotUpdateLastCompletedDate() = runTest(TestKaliumDispatcher.default) {
+        val initialTime = Clock.System.now()
+
+        val (arrangement, _) = Arrangement()
+            .withSatisfiedCriteria()
+            .withLastSlowSyncPerformedAt(flowOf(initialTime))
+            .arrange()
+
+        advanceUntilIdle()
+
+        verify(arrangement.slowSyncRepository)
+            .function(arrangement.slowSyncRepository::setLastSlowSyncCompletionInstant)
+            .with(any<Instant?>())
+            .wasNotInvoked()
     }
 
     @Test

@@ -79,11 +79,12 @@ internal class SlowSyncManager(
             if (isSlowSyncNeeded(lastTimeSlowSyncWasPerformed)) {
                 logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
                 performSlowSync()
+                logger.i("SlowSync completed. Updating last completion instant")
+                slowSyncRepository.setLastSlowSyncCompletionInstant(Clock.System.now())
             } else {
                 logger.i("No need to perform SlowSync. Marking as Complete")
             }
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
-            slowSyncRepository.setLastSlowSyncCompletionInstant(Clock.System.now())
         } else {
             // STOP SYNC
             logger.i("SlowSync Stopped as criteria are not met: $syncCriteriaResolution")
