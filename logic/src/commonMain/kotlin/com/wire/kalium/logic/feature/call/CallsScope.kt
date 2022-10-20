@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.call.CallingParticipantsOrderImpl
@@ -18,6 +19,8 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveIsConferenceCallingEnabledUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveIsConferenceCallingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveSpeakerUseCase
@@ -42,7 +45,8 @@ class CallsScope internal constructor(
     private val mediaManagerService: MediaManagerService,
     private val syncManager: SyncManager,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val currentClientIdProvider: CurrentClientIdProvider
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val userConfigRepository: UserConfigRepository
 ) {
 
     val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase
@@ -103,4 +107,7 @@ class CallsScope internal constructor(
     val isLastCallClosed: IsLastCallClosedUseCase get() = IsLastCallClosedUseCaseImpl(callRepository)
 
     val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager, KaliumDispatcherImpl)
+
+    val isConferenceCallingEnabled: ObserveIsConferenceCallingEnabledUseCase
+        get() = ObserveIsConferenceCallingEnabledUseCaseImpl(userConfigRepository)
 }

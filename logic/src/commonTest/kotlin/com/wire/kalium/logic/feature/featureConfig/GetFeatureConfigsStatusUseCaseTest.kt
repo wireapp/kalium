@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.featureConfig.AppLockConfigModel
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsConfigModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
+import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
@@ -48,7 +49,7 @@ class GetFeatureConfigsStatusUseCaseTest {
                 ClassifiedDomainsConfigModel(listOf()),
                 Status.ENABLED
             ),
-            ConfigsStatusModel(Status.ENABLED),
+            ConferenceCallingModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
@@ -165,6 +166,10 @@ class GetFeatureConfigsStatusUseCaseTest {
             given(userConfigRepository)
                 .function(userConfigRepository::setClassifiedDomainsStatus)
                 .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+            given(userConfigRepository)
+                .function(userConfigRepository::setConferenceCallingEnabled)
+                .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
             given(featureConfigRepository)
                 .suspendFunction(featureConfigRepository::getFeatureConfigs).whenInvoked()

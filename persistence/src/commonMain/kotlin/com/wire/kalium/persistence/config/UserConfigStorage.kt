@@ -47,6 +47,16 @@ interface UserConfigStorage {
      * get the saved flag to know if MLS enabled or not
      */
     fun isMLSEnabled(): Boolean
+
+    /**
+     * save flag from user settings to enable or disable Conference Calling
+     */
+    fun persistConferenceCalling(enabled: Boolean)
+
+    /**
+     * get the saved flag to know if Conference Calling is enabled or not
+     */
+    fun isConferenceCallingEnabledFlow(): Flow<Boolean>
 }
 
 @Serializable
@@ -70,6 +80,9 @@ internal class UserConfigStorageImpl internal constructor(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isClassifiedDomainsEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val isConferenceCallingEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -123,9 +136,26 @@ internal class UserConfigStorageImpl internal constructor(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
+    override fun persistConferenceCalling(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
+            .also {
+                isConferenceCallingEnabledFlow.tryEmit(Unit)
+            }
+    }
+
+    override fun isConferenceCallingEnabledFlow(): Flow<Boolean> =
+        isConferenceCallingEnabledFlow
+            .map {
+                kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
+            }.onStart {
+                emit(kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE))
+            }.distinctUntilChanged()
+
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val ENABLE_MLS = "enable_mls"
+        const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
+        const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
     }
 }
