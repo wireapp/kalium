@@ -11,7 +11,7 @@ interface ObserveIsConferenceCallingEnabledUseCase {
     operator fun invoke(): Flow<Boolean>
 }
 
-class ObserveIsConferenceCallingEnabledUseCaseImpl(
+internal class ObserveIsConferenceCallingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : ObserveIsConferenceCallingEnabledUseCase {
 
