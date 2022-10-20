@@ -56,7 +56,7 @@ interface UserConfigStorage {
     /**
      * get the saved flag to know if Conference Calling is enabled or not
      */
-    fun isConferenceCallingEnabledFlow(): Flow<Boolean>
+    fun isConferenceCallingEnabled(): Boolean
 }
 
 @Serializable
@@ -80,9 +80,6 @@ internal class UserConfigStorageImpl internal constructor(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isClassifiedDomainsEnabledFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
-    private val isConferenceCallingEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -138,18 +135,10 @@ internal class UserConfigStorageImpl internal constructor(
 
     override fun persistConferenceCalling(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
-            .also {
-                isConferenceCallingEnabledFlow.tryEmit(Unit)
-            }
     }
 
-    override fun isConferenceCallingEnabledFlow(): Flow<Boolean> =
-        isConferenceCallingEnabledFlow
-            .map {
-                kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
-            }.onStart {
-                emit(kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE))
-            }.distinctUntilChanged()
+    override fun isConferenceCallingEnabled(): Boolean =
+        kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
 
     private companion object {
         const val FILE_SHARING = "file_sharing"

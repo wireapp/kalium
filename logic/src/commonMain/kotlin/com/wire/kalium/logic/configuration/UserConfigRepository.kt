@@ -17,7 +17,7 @@ interface UserConfigRepository {
     fun isMLSEnabled(): Either<StorageFailure, Boolean>
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    fun isConferenceCallingEnabledFlow(): Flow<Either<StorageFailure, Boolean>>
+    fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
 }
 
 class UserConfigDataSource(
@@ -65,10 +65,8 @@ class UserConfigDataSource(
             userConfigStorage.persistConferenceCalling(enabled)
         }
 
-    override fun isConferenceCallingEnabledFlow(): Flow<Either<StorageFailure, Boolean>> =
-        userConfigStorage.isConferenceCallingEnabledFlow().wrapStorageRequest().map {
-            it.map { isEnabled ->
-                isEnabled
-            }
+    override fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean> =
+        wrapStorageRequest {
+            userConfigStorage.isConferenceCallingEnabled()
         }
 }

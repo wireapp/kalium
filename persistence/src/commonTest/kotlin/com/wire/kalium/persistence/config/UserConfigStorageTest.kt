@@ -50,7 +50,7 @@ class UserConfigStorageTest {
         userConfigStorage.persistConferenceCalling(true)
         assertEquals(
             true,
-            userConfigStorage.isConferenceCallingEnabledFlow().first()
+            userConfigStorage.isConferenceCallingEnabled()
         )
     }
 }

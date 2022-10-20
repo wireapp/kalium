@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.feature.call.usecase
 
-import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
@@ -8,22 +7,21 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ObserveIsConferenceCallingEnabledUseCaseTest {
+class IsConferenceCallingEnabledUseCaseTest {
 
     @Mock
     val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-    private lateinit var observeIsConferenceCallingEnabled: ObserveIsConferenceCallingEnabledUseCase
+    private lateinit var observeIsConferenceCallingEnabled: IsConferenceCallingEnabledUseCase
 
     @BeforeTest
     fun setUp() {
-        observeIsConferenceCallingEnabled = ObserveIsConferenceCallingEnabledUseCaseImpl(
+        observeIsConferenceCallingEnabled = IsConferenceCallingEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository
         )
     }
@@ -31,45 +29,36 @@ class ObserveIsConferenceCallingEnabledUseCaseTest {
     @Test
     fun givenAnStorageErrorOccurred_whenInvokingObserveIsConferenceCallingEnabled_thenReturnFalse() = runTest {
         given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabledFlow)
+            .function(userConfigRepository::isConferenceCallingEnabled)
             .whenInvoked()
-            .thenReturn(flowOf(Either.Left(StorageFailure.Generic(Throwable("error")))))
+            .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
         val result = observeIsConferenceCallingEnabled()
 
-        result.test {
-            assertEquals(false, awaitItem())
-            awaitComplete()
-        }
+        assertEquals(false, result)
     }
 
     @Test
     fun givenUserTeamDoesntHaveConferenceCallingEnabled_whenInvokingObserveIsConferenceCallingEnabled_thenReturnFalse() = runTest {
         given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabledFlow)
+            .function(userConfigRepository::isConferenceCallingEnabled)
             .whenInvoked()
-            .thenReturn(flowOf(Either.Right(false)))
+            .thenReturn(Either.Right(false))
 
         val result = observeIsConferenceCallingEnabled()
 
-        result.test {
-            assertEquals(false, awaitItem())
-            awaitComplete()
-        }
+        assertEquals(false, result)
     }
 
     @Test
     fun givenUserTeamHaveConferenceCallingEnabled_whenInvokingObserveIsConferenceCallingEnabled_thenReturnTrue() = runTest {
         given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabledFlow)
+            .function(userConfigRepository::isConferenceCallingEnabled)
             .whenInvoked()
-            .thenReturn(flowOf(Either.Right(true)))
+            .thenReturn(Either.Right(true))
 
         val result = observeIsConferenceCallingEnabled()
 
-        result.test {
-            assertEquals(true, awaitItem())
-            awaitComplete()
-        }
+        assertEquals(true, result)
     }
 }
