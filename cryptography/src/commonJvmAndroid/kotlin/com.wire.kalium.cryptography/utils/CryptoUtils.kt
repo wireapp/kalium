@@ -2,7 +2,6 @@ package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
 import io.ktor.util.encodeBase64
-import okio.BufferedSink
 import okio.HashingSink
 import okio.Sink
 import okio.Source
@@ -62,3 +61,8 @@ actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
     AESDecrypt(secretKey).decryptFile(encryptedDataSource, decryptedDataSink)
 
 actual fun generateRandomAES256Key(): AES256Key = AESEncrypt().generateRandomAES256Key()
+
+actual fun encryptFileWithChaCha20(dataSource: Source, outputSink: Sink, key: ChaCha20Key, salt: PlainData, hashedUserId: PlainData): Long =
+    ChaCha20().encryptFile(dataSource, outputSink, key, salt, hashedUserId)
+
+actual fun decryptFileWithChaCha20(encryptedDataSource: Source, outputSink: Sink, key: ChaCha20Key, salt: PlainData): Long =ChaCha20().decryptFile(encryptedDataSource, outputSink, key,salt)
