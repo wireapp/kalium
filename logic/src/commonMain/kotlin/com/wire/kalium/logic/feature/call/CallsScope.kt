@@ -108,6 +108,5 @@ class CallsScope internal constructor(
 
     val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager, KaliumDispatcherImpl)
 
-    val IsEligibleToStartCall: IsEligibleToStartCallUseCase
-        get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
+    val IsEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
 }

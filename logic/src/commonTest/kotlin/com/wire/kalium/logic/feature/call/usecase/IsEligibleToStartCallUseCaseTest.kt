@@ -80,78 +80,80 @@ class IsEligibleToStartCallUseCaseTest {
     }
 
     @Test
-    fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartGroupCallWithOtherEstablishedCall_thenReturnUnavailable() = runTest {
-        // given
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallConversationId)
-            .whenInvoked()
-            .thenReturn(establishedCallConversationId)
+    fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartGroupCallWithOtherEstablishedCall_thenReturnUnavailable() =
+        runTest {
+            // given
+            given(callRepository)
+                .suspendFunction(callRepository::establishedCallConversationId)
+                .whenInvoked()
+                .thenReturn(establishedCallConversationId)
 
-        given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
-            .whenInvoked()
-            .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
+            given(userConfigRepository)
+                .function(userConfigRepository::isConferenceCallingEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
-        // when
-        val result = isEligibleToStartCall(
-            conversationId,
-            Conversation.Type.GROUP
-        )
+            // when
+            val result = isEligibleToStartCall(
+                conversationId,
+                Conversation.Type.GROUP
+            )
 
-        // then
-        assertEquals(result, ConferenceCallingResult.Disabled.Unavailable)
-    }
-
-    @Test
-    fun givenUserIsEligibleToStartCall_whenVerifyingIfUserIsEligibleToStartGroupCallWithOtherEstablishedCall_thenReturnOngoingCall() = runTest {
-        // given
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallConversationId)
-            .whenInvoked()
-            .thenReturn(establishedCallConversationId)
-
-        given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
-            .whenInvoked()
-            .thenReturn(Either.Right(true))
-
-        // when
-        val result = isEligibleToStartCall(
-            conversationId,
-            Conversation.Type.GROUP
-        )
-
-        // then
-        assertEquals(result, ConferenceCallingResult.Disabled.OngoingCall)
-    }
+            // then
+            assertEquals(result, ConferenceCallingResult.Disabled.Unavailable)
+        }
 
     @Test
-    fun givenUserIsEligibleToStartCall_whenVerifyingIfUserIsEligibleToStartGroupCallWithSameEstablishedCall_thenReturnEstablished() = runTest {
-        // given
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallConversationId)
-            .whenInvoked()
-            .thenReturn(conversationId)
+    fun givenUserIsEligibleToStartCall_whenVerifyingIfUserIsEligibleToStartGroupCallWithOtherEstablishedCall_thenReturnOngoingCall() =
+        runTest {
+            // given
+            given(callRepository)
+                .suspendFunction(callRepository::establishedCallConversationId)
+                .whenInvoked()
+                .thenReturn(establishedCallConversationId)
 
-        given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
-            .whenInvoked()
-            .thenReturn(Either.Right(true))
+            given(userConfigRepository)
+                .function(userConfigRepository::isConferenceCallingEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(true))
 
-        // when
-        val result = isEligibleToStartCall(
-            conversationId,
-            Conversation.Type.GROUP
-        )
+            // when
+            val result = isEligibleToStartCall(
+                conversationId,
+                Conversation.Type.GROUP
+            )
 
-        // then
-        assertEquals(result, ConferenceCallingResult.Disabled.Established)
-    }
+            // then
+            assertEquals(result, ConferenceCallingResult.Disabled.OngoingCall)
+        }
 
+    @Test
+    fun givenUserIsEligibleToStartCall_whenVerifyingIfUserIsEligibleToStartGroupCallWithSameEstablishedCall_thenReturnEstablished() =
+        runTest {
+            // given
+            given(callRepository)
+                .suspendFunction(callRepository::establishedCallConversationId)
+                .whenInvoked()
+                .thenReturn(conversationId)
+
+            given(userConfigRepository)
+                .function(userConfigRepository::isConferenceCallingEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(true))
+
+            // when
+            val result = isEligibleToStartCall(
+                conversationId,
+                Conversation.Type.GROUP
+            )
+
+            // then
+            assertEquals(result, ConferenceCallingResult.Disabled.Established)
+        }
 
     private companion object {
         val conversationId = ConversationId(
-            value ="convValue",
+            value = "convValue",
             domain = "convDomain"
         )
         val establishedCallConversationId = ConversationId(
