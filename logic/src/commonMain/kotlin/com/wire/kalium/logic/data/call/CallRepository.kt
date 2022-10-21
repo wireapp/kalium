@@ -45,6 +45,7 @@ interface CallRepository {
     suspend fun incomingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
+    suspend fun establishedCallConversationId(): ConversationId?
     suspend fun createCall(conversationId: ConversationId, status: CallStatus, callerId: String, isMuted: Boolean, isCameraOn: Boolean)
     suspend fun updateCallStatusById(conversationIdString: String, status: CallStatus)
     fun updateIsMutedById(conversationId: String, isMuted: Boolean)
@@ -339,6 +340,14 @@ internal class CallDataSource(
     override suspend fun updateOpenCallsToClosedStatus() {
         callDAO.updateOpenCallsToClosedStatus()
     }
+
+    override suspend fun establishedCallConversationId(): ConversationId? =
+        callDAO
+            .observeEstablishedCalls()
+            .combineWithCallsMetadata()
+            .first()
+            .firstOrNull()
+            ?.conversationId
 
     private suspend fun persistMissedCallMessageIfNeeded(
         conversationId: ConversationId
