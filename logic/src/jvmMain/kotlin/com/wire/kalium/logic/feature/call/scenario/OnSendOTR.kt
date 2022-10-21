@@ -31,6 +31,7 @@ class OnSendOTR(
     private val callingScope: CoroutineScope,
     private val callMapper: CallMapper
 ) : SendHandler {
+    @Suppress("TooGenericExceptionCaught")
     override fun onSend(
         context: Pointer?,
         remoteConversationIdString: String,
