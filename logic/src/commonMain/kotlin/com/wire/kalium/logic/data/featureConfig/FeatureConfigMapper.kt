@@ -13,6 +13,7 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.ClassifiedDomains): ClassifiedDomainsModel
     fun fromDTO(data: FeatureConfigData.SelfDeletingMessages): SelfDeletingMessagesModel
     fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel
+    fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel
 }
 
 class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -21,7 +22,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             FeatureConfigModel(
                 appLockModel = fromDTO(featureConfigResponse.appLock),
                 classifiedDomainsModel = fromDTO(featureConfigResponse.classifiedDomains),
-                conferenceCallingModel = ConfigsStatusModel(fromDTO(conferenceCalling.status)),
+                conferenceCallingModel = fromDTO(conferenceCalling),
                 conversationGuestLinksModel = ConfigsStatusModel(fromDTO(conversationGuestLinks.status)),
                 digitalSignaturesModel = ConfigsStatusModel(fromDTO(digitalSignatures.status)),
                 fileSharingModel = fromDTO(fileSharing),
@@ -75,5 +76,10 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel =
         ConfigsStatusModel(
             fromDTO(data.status)
+        )
+
+    override fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel =
+        ConferenceCallingModel(
+            status = fromDTO(data.status)
         )
 }

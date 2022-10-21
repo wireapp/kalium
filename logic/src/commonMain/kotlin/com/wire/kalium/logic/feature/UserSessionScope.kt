@@ -795,7 +795,8 @@ class UserSessionScope internal constructor(
             mediaManagerService,
             syncManager,
             qualifiedIdMapper,
-            clientIdProvider
+            clientIdProvider,
+            userConfigRepository
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
