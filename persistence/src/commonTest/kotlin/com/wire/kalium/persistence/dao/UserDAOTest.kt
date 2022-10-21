@@ -2,7 +2,7 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.db.UserDatabaseProvider
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -26,7 +26,7 @@ class UserDAOTest : BaseDatabaseTest() {
     private val user2 = newUserEntity(id = "2")
     private val user3 = newUserEntity(id = "3")
 
-    lateinit var db: UserDatabaseProvider
+    lateinit var db: UserDatabaseBuilder
 
     @BeforeTest
     fun setUp() {

@@ -1,15 +1,18 @@
 package com.wire.kalium.api.v2
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.conversation.ConversationDetailsResponse
 import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class ConversationApiV2Test : ApiTest {
     @Test
@@ -41,14 +44,16 @@ class ConversationApiV2Test : ApiTest {
         val request = AddConversationMembersRequest(listOf(userId), "Member")
 
         val networkClient = mockAuthenticatedNetworkClient(
-            "", statusCode = HttpStatusCode.OK,
+            EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK,
             assertion = {
                 assertPost()
                 assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS")
             }
         )
         val conversationApi = ConversationApiV2(networkClient)
-        conversationApi.addMember(request, conversationId)
+        val response = conversationApi.addMember(request, conversationId)
+
+        assertTrue(response.isSuccessful())
     }
 
     private companion object {

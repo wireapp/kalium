@@ -1,9 +1,14 @@
 package com.wire.kalium.logic.data.sync
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.UserIDEntity
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -12,37 +17,39 @@ import kotlin.time.Duration.Companion.seconds
 class SlowSyncRepositoryTest {
 
     private lateinit var slowSyncRepository: SlowSyncRepository
+    private val testDispatcher = TestKaliumDispatcher.default
 
     @BeforeTest
     fun setup() {
-        slowSyncRepository = InMemorySlowSyncRepository()
+        val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"), testDispatcher)
+        slowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
     }
 
     @Test
-    fun givenInstantIsUpdated_whenGettingTheLastSlowSyncInstant_thenShouldReturnTheNewState() = runTest {
+    fun givenInstantIsUpdated_whenGettingTheLastSlowSyncInstant_thenShouldReturnTheNewState() = runTest(testDispatcher) {
         val instant = Clock.System.now()
+
         slowSyncRepository.setLastSlowSyncCompletionInstant(instant)
-
-        val currentInstant = slowSyncRepository.lastFullSyncInstant.value
-
-        assertEquals(instant, currentInstant)
+        assertEquals(instant, slowSyncRepository.observeLastSlowSyncCompletionInstant().first())
     }
 
     @Test
-    fun givenLastInstantWasNeverSet_whenGettingLastInstant_thenTheStateIsNull() = runTest {
+    fun givenLastInstantWasNeverSet_whenGettingLastInstant_thenTheStateIsNull() = runTest(testDispatcher) {
         // Empty Given
 
-        val state = slowSyncRepository.lastFullSyncInstant
+        val lastSyncInstant = slowSyncRepository.observeLastSlowSyncCompletionInstant().first()
 
-        assertNull(state.value)
+        assertNull(lastSyncInstant)
     }
 
+    // TODO: Re-enable once we can update Turbine to 0.11.0+ (Requires Kotlin 1.6.21+)
+    @Ignore
     @Test
-    fun givenAnInstantIsUpdated_whenObservingTheLastSlowSyncInstant_thenTheNewStateIsPropagatedForObservers() = runTest {
+    fun givenAnInstantIsUpdated_whenObservingTheLastSlowSyncInstant_thenTheNewStateIsPropagatedForObservers() = runTest(testDispatcher) {
         val firstInstant = Clock.System.now()
-        slowSyncRepository.setLastSlowSyncCompletionInstant(firstInstant)
-
-        slowSyncRepository.lastFullSyncInstant.test {
+        slowSyncRepository.observeLastSlowSyncCompletionInstant().test {
+            awaitItem() // Ignore first item
+            slowSyncRepository.setLastSlowSyncCompletionInstant(firstInstant)
             assertEquals(firstInstant, awaitItem())
 
             val secondInstant = firstInstant.plus(10.seconds)

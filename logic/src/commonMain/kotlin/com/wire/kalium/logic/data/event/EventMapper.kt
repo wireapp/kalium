@@ -28,35 +28,38 @@ class EventMapper(
     private val roleMapper: ConversationRoleMapper,
     private val userTypeMapper: DomainUserTypeMapper,
 ) {
-    @Suppress("ComplexMethod")
     fun fromDTO(eventResponse: EventResponse): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
         return eventResponse.payload?.map { eventContentDTO ->
-            when (eventContentDTO) {
-                is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO)
-                is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO)
-                is EventContentDTO.Conversation.MemberJoinDTO -> conversationMemberJoin(id, eventContentDTO)
-                is EventContentDTO.Conversation.MemberLeaveDTO -> conversationMemberLeave(id, eventContentDTO)
-                is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO)
-                is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
-                is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
-                is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
-                is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO)
-                is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO)
-                is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
-                is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
-                is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id) // TODO: update it after logic code is merged
-                is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
-                is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO)
-                is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO)
-                is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
-                is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO)
-                is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO)
-                is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO)
-            }
+            fromEventContentDTO(id, eventContentDTO)
         } ?: listOf()
     }
+
+    @Suppress("ComplexMethod")
+    fun fromEventContentDTO(id: String, eventContentDTO: EventContentDTO): Event =
+        when (eventContentDTO) {
+            is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO)
+            is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO)
+            is EventContentDTO.Conversation.MemberJoinDTO -> conversationMemberJoin(id, eventContentDTO)
+            is EventContentDTO.Conversation.MemberLeaveDTO -> conversationMemberLeave(id, eventContentDTO)
+            is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO)
+            is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO)
+            is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO)
+            is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO)
+            is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO)
+            is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO)
+            is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
+            is EventContentDTO.User.NewClientDTO, EventContentDTO.Unknown -> Event.Unknown(id)
+            is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id) // TODO: update it after logic code is merged
+            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO)
+            is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO)
+            is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO)
+            is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO)
+            is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO)
+            is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO)
+            is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO)
+        }
 
     private fun welcomeMessage(
         id: String,
@@ -120,7 +123,7 @@ class EventMapper(
         eventContentDTO.data
     )
 
-    private fun conversationMemberJoin(
+    fun conversationMemberJoin(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberJoinDTO
     ) = Event.Conversation.MemberJoin(
@@ -131,7 +134,7 @@ class EventMapper(
         timestampIso = eventContentDTO.time
     )
 
-    private fun conversationMemberLeave(
+    fun conversationMemberLeave(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberLeaveDTO
     ) = Event.Conversation.MemberLeave(
@@ -200,6 +203,11 @@ class EventMapper(
         is FeatureConfigData.ClassifiedDomains -> Event.FeatureConfig.ClassifiedDomainsUpdated(
             id,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ClassifiedDomains)
+        )
+
+        is FeatureConfigData.ConferenceCalling -> Event.FeatureConfig.ConferenceCallingUpdated(
+            id,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConferenceCalling)
         )
 
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id)

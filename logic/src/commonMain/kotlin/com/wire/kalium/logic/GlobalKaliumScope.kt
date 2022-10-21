@@ -58,7 +58,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
  * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
 
-class GlobalKaliumScope(
+class GlobalKaliumScope internal constructor(
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
     private val globalPreferences: Lazy<GlobalPrefProvider>,
     private val kaliumConfigs: KaliumConfigs,

@@ -1,8 +1,7 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 
 interface LeaveConversationUseCase {
@@ -18,13 +17,11 @@ interface LeaveConversationUseCase {
 }
 
 class LeaveConversationUseCaseImpl(
-    private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId,
-    private val persistMessage: PersistMessageUseCase
 ) : LeaveConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId): RemoveMemberFromConversationUseCase.Result {
-        // Call the endpoint to delete the member from given conversation and remove the members connection from DB
-        return RemoveMemberFromConversationUseCaseImpl(conversationRepository, selfUserId, persistMessage).invoke(
+        return RemoveMemberFromConversationUseCaseImpl(conversationGroupRepository).invoke(
             conversationId,
             selfUserId
         )

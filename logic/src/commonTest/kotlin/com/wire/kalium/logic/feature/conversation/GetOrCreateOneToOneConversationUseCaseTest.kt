@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
@@ -25,12 +26,16 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     @Mock
     private val conversationRepository = mock(classOf<ConversationRepository>())
 
+    @Mock
+    private val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
+
     private lateinit var getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
 
     @BeforeTest
     fun setUp() {
         getOrCreateOneToOneConversationUseCase = GetOrCreateOneToOneConversationUseCase(
-            conversationRepository = conversationRepository
+            conversationRepository = conversationRepository,
+            conversationGroupRepository = conversationGroupRepository
         )
     }
 
@@ -43,7 +48,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             .thenReturn(Either.Right(CONVERSATION))
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::createGroupConversation)
+            .suspendFunction(conversationGroupRepository::createGroupConversation)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(Either.Right(CONVERSATION))
         // when
@@ -51,8 +56,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::createGroupConversation)
+        verify(conversationGroupRepository)
+            .suspendFunction(conversationGroupRepository::createGroupConversation)
             .with(anything(), anything(), anything())
             .wasNotInvoked()
 
@@ -69,8 +74,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             .coroutine { getOneToOneConversationWithOtherUser(USER_ID) }
             .then { Either.Left(StorageFailure.DataNotFound) }
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::createGroupConversation)
+        given(conversationGroupRepository)
+            .suspendFunction(conversationGroupRepository::createGroupConversation)
             .whenInvokedWith(anything(), anything(), anything())
             .thenReturn(Either.Right(CONVERSATION))
         // when
@@ -78,7 +83,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(conversationRepository)
+        verify(conversationGroupRepository)
             .coroutine { createGroupConversation(usersList = MEMBER) }
             .wasInvoked()
     }

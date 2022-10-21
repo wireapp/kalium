@@ -1,9 +1,11 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.InMemorySlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.persistence.TestUserDatabase
+import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlin.test.BeforeTest
 
 class ObserveSyncStateUseCaseTest {
@@ -14,7 +16,8 @@ class ObserveSyncStateUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        slowSyncRepository = InMemorySlowSyncRepository()
+        val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
+        slowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
         incrementalSyncRepository = InMemoryIncrementalSyncRepository()
         observeSyncState = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
     }
