@@ -17,8 +17,8 @@ import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipa
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.GetIncomingCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase
-import com.wire.kalium.logic.feature.call.usecase.IsConferenceCallingEnabledUseCase
-import com.wire.kalium.logic.feature.call.usecase.IsConferenceCallingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.IsEligibleToStartCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
@@ -110,6 +110,5 @@ class CallsScope internal constructor(
 
     val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager, KaliumDispatcherImpl)
 
-    val isConferenceCallingEnabled: IsConferenceCallingEnabledUseCase
-        get() = IsConferenceCallingEnabledUseCaseImpl(userConfigRepository)
+    val isEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
 }
