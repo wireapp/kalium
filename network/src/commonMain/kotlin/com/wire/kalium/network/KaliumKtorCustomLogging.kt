@@ -87,7 +87,6 @@ public class KaliumKtorCustomLogging private constructor(
 
     private suspend fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
         if (level.info) {
-            kaliumLogger.v("REQUEST: ${Url(request.url)} ")
             kaliumLogger.v("REQUEST: ${obfuscatePath(Url(request.url))} ")
             kaliumLogger.v("METHOD: ${request.method}")
         }
