@@ -4,6 +4,7 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import app.cash.sqldelight.logs.LogSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.CoroutineDispatcher
@@ -27,13 +28,17 @@ fun userDatabaseBuilder(
     // Make sure all intermediate directories exist
     storePath.mkdirs()
 
-    val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}")
+    val driver: SqlDriver = LogSqliteDriver(sqlDriver("jdbc:sqlite:${databasePath.absolutePath}")) {
+        println("LogSqliteDriver:$it")
+    }
 
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
     }
     return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storePath))
 }
+
+
 
 private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
     driverUri,
