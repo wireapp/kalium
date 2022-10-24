@@ -62,7 +62,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val aliceKeyPackage = aliceClient.generateKeyPackages(1).first()
         val clientKeyPackageList = listOf(Pair(ALICE1.qualifiedClientId, aliceKeyPackage))
         bobClient.createConversation(MLS_CONVERSATION_ID)
-        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)!!.welcome
+        val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)!!.welcome!!
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
         assertEquals(MLS_CONVERSATION_ID, conversationId)

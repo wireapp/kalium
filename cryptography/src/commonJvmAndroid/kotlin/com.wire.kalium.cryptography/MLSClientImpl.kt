@@ -1,11 +1,15 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.CiphersuiteName
+import com.wire.crypto.ClientId
 import com.wire.crypto.ConversationConfiguration
+import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.Invitee
+import com.wire.crypto.MlsPublicGroupStateEncryptionType
+import com.wire.crypto.MlsRatchetTreeType
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import java.io.File
@@ -18,9 +22,14 @@ private class Callbacks : CoreCryptoCallbacks {
         return true
     }
 
-    override fun clientIdBelongsToOneOf(clientId: List<UByte>, otherClients: List<List<UByte>>): Boolean {
+    override fun userAuthorize(conversationId: ConversationId, externalClientId: ClientId, existingClients: List<ClientId>): Boolean {
+        // We always return true because our BE is currently enforcing that this constraint is always true
+        return true
+    }
+
+    override fun clientIsExistingGroupUser(clientId: List<UByte>, existingClients: List<List<UByte>>): Boolean {
         val userId = toClientID(clientId)?.userId ?: return false
-        return otherClients.find {
+        return existingClients.find {
             toClientID(it)?.userId == userId
         } != null
     }
@@ -134,7 +143,7 @@ actual class MLSClientImpl actual constructor(
     override fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): AddMemberCommitBundle? {
+    ): CommitBundle? {
         if (members.isEmpty()) {
             return null
         }
@@ -143,7 +152,7 @@ actual class MLSClientImpl actual constructor(
             Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
         }
 
-        return toAddMemberCommitBundle(coreCrypto.addClientsToConversation(toUByteList(groupId.decodeBase64Bytes()), invitees))
+        return toCommitBundle(coreCrypto.addClientsToConversation(toUByteList(groupId.decodeBase64Bytes()), invitees))
     }
 
     override fun removeMember(
@@ -161,17 +170,35 @@ actual class MLSClientImpl actual constructor(
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
         fun toByteArray(value: List<UByte>) = value.toUByteArray().asByteArray()
+
+        fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
+            toByteArray(value.commit),
+            toByteArray(value.welcome),
+            toPublicGroupStateBundle(value.publicGroupState)
+        )
+
         fun toCommitBundle(value: com.wire.crypto.CommitBundle) = CommitBundle(
             toByteArray(value.commit),
             value.welcome?.let { toByteArray(it) },
-            toByteArray(value.publicGroupState)
+            toPublicGroupStateBundle(value.publicGroupState)
         )
 
-        fun toAddMemberCommitBundle(value: com.wire.crypto.MemberAddedMessages) = AddMemberCommitBundle(
-            toByteArray(value.commit),
-            toByteArray(value.welcome),
-            toByteArray(value.publicGroupState)
+        fun toPublicGroupStateBundle(value: com.wire.crypto.PublicGroupStateBundle) = PublicGroupStateBundle(
+            toEncryptionType(value.encryptionType),
+            toRatchetTreeType(value.ratchetTreeType),
+            toByteArray(value.payload)
         )
+
+        fun toEncryptionType(value: MlsPublicGroupStateEncryptionType) = when (value) {
+            MlsPublicGroupStateEncryptionType.PLAINTEXT -> PublicGroupStateEncryptionType.PLAINTEXT
+            MlsPublicGroupStateEncryptionType.JWE_ENCRYPTED -> PublicGroupStateEncryptionType.JWE_ENCRYPTED
+        }
+
+        fun toRatchetTreeType(value: MlsRatchetTreeType) = when (value) {
+            MlsRatchetTreeType.FULL -> RatchetTreeType.FULL
+            MlsRatchetTreeType.DELTA -> RatchetTreeType.DELTA
+            MlsRatchetTreeType.BY_REF -> RatchetTreeType.BY_REF
+        }
 
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message?.let { toByteArray(it) },

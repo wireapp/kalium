@@ -1,7 +1,7 @@
 
 <img src="/.idea/icon.png" alt="Kalium Logo" style="max-width:100%;">
 
-# kalium
+# Kalium
 [![JVM & JS Tests](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml/badge.svg)](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml)
 [![codecov](https://codecov.io/gh/wireapp/kalium/branch/develop/graph/badge.svg?token=UWQ1P7DY7I)](https://codecov.io/gh/wireapp/kalium)
 
@@ -51,8 +51,6 @@ For example, if you want to run the task `jvmTest` and the libraries are in `./n
 ```
 
 #### Running the CLI
-
-Note: Currently the CLI only works on the development or staging environments (see CL-61).
 
 Run the following with the native libs in the
 classpath (-Djava.library.path=/usr/local/lib/:./native/libs):

@@ -1,8 +1,10 @@
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.cryptography.AddMemberCommitBundle
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.PublicGroupStateBundle
+import com.wire.kalium.cryptography.PublicGroupStateEncryptionType
+import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
@@ -740,7 +742,7 @@ class MLSConversationRepositoryTest {
             given(mlsClient)
                 .function(mlsClient::addMember)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(ADD_MEMBER_COMMIT_BUNDLE)
+                .thenReturn(COMMIT_BUNDLE)
         }
 
         fun withJoinConversationSuccessful() = apply {
@@ -891,9 +893,12 @@ class MLSConversationRepositoryTest {
             )
             val WELCOME = "welcome".encodeToByteArray()
             val COMMIT = "commit".encodeToByteArray()
-            val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
+            val PUBLIC_GROUP_STATE = PublicGroupStateBundle(
+                PublicGroupStateEncryptionType.PLAINTEXT,
+                RatchetTreeType.FULL,
+                "public_group_state".encodeToByteArray()
+            )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
-            val ADD_MEMBER_COMMIT_BUNDLE = AddMemberCommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
