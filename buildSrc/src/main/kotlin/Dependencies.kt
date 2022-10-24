@@ -34,7 +34,7 @@ object Versions {
     const val turbine = "0.7.0"
     const val avs = "8.2.16"
     const val jna = "5.6.0"
-    const val mlsClient = "0.5.2"
+    const val coreCrypto = "0.6.0-pre1"
     const val desugarJdk = "1.1.5"
     const val kermit = "1.0.0"
     const val detekt = "1.19.0"
@@ -121,8 +121,8 @@ object Dependencies {
         const val cryptoboxAndroid = "com.wire:cryptobox-android:${Versions.cryptoboxAndroid}"
         const val cryptobox4j = "com.wire:cryptobox4j:${Versions.cryptobox4j}"
         const val javaxCrypto = "androidx.security:security-crypto-ktx:${Versions.javaxCrypto}"
-        const val mlsClientJvm = "com.wire:core-crypto-jvm:${Versions.mlsClient}"
-        const val mlsClientAndroid = "com.wire:core-crypto-android:${Versions.mlsClient}"
+        const val coreCryptoJvm = "com.wire:core-crypto-jvm:${Versions.coreCrypto}"
+        const val coreCryptoAndroid = "com.wire:core-crypto-android:${Versions.coreCrypto}"
     }
 
     object Cli {
