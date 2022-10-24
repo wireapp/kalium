@@ -102,7 +102,7 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(Dependencies.Cryptography.cryptobox4j)
-                implementation(Dependencies.Cryptography.mlsClientJvm)
+                implementation(Dependencies.Cryptography.coreCryptoJvm)
             }
         }
         val jvmTest by getting
@@ -118,7 +118,7 @@ kotlin {
             dependencies {
                 implementation(Dependencies.Cryptography.cryptoboxAndroid)
                 implementation(Dependencies.Cryptography.javaxCrypto)
-                implementation(Dependencies.Cryptography.mlsClientAndroid)
+                implementation(Dependencies.Cryptography.coreCryptoAndroid)
             }
         }
         val androidAndroidTest by getting {
