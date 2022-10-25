@@ -13,7 +13,7 @@ internal fun newServerConfig(id: Int) = ServerConfigEntity(
         website = "https://server$id-websiteUrl.de",
         title = "server$id-title",
         isOnPremises = false,
-        ServerConfigEntity.Proxy(true, "apiProxy")
+        ServerConfigEntity.Proxy(true, "apiProxy",8888)
     ),
     ServerConfigEntity.MetaData(
         federation = false,
