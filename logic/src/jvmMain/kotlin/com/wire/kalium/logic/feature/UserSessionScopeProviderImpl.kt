@@ -35,7 +35,7 @@ internal actual class UserSessionScopeProviderImpl(
         val sessionManager = SessionManagerImpl(globalScope.sessionRepository, userId, tokenStorage = globalPreferences.authTokenStorage)
         val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.session().second.metaData.commonApiVersion.version)
-        val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath)
+        val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath, userId, globalPreferences.passphraseStorage, kaliumConfigs)
 
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(userId)
 

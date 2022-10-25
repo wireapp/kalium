@@ -19,6 +19,7 @@ data class KaliumConfigs(
     var isMLSSupportEnabled: Boolean = true,
     // Disabling db-encryption will crash on android-api level below 30
     val shouldEncryptData: Boolean = true,
+    val encryptProteusStorage: Boolean = false,
     val lowerKeyPackageLimits: Boolean = false,
     val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
     val customUrlScheme: String = "",
