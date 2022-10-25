@@ -24,7 +24,7 @@ import platform.Foundation.valueForKey
 import platform.posix.memcpy
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(private val rootDir: String) : ProteusClient {
+actual class ProteusClientImpl actual constructor(private val rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
 
     private var box: EncryptionContext? = null
 
