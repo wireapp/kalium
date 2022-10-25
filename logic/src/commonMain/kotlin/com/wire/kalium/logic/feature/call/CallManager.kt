@@ -24,5 +24,3 @@ interface CallManager {
     suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState)
     suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList)
 }
-
-expect class CallManagerImpl : CallManager

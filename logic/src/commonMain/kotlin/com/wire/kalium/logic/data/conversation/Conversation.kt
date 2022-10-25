@@ -22,14 +22,11 @@ data class Conversation(
     val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val removedBy: UserId?,
-    val creatorId: PlainId,
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>,
-    val isSelfUserMember: Boolean = true,
-    val isCreator: Boolean = false
+    val accessRole: List<AccessRole>
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
@@ -142,8 +139,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadMessagesCount: Long = 0L,
         val unreadMentionsCount: Long = 0L,
         val lastUnreadMessage: Message?,
-        val isSelfUserMember: Boolean = true,
-        val isSelfCreated: Boolean = false
+        val isSelfUserMember: Boolean,
+        val isSelfUserCreator: Boolean
     ) : ConversationDetails(conversation)
 
     data class Connection(
@@ -164,14 +161,11 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             protocol = protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             removedBy = null,
-            creatorId = PlainId(""),
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
-            accessRole = accessRole,
-            isSelfUserMember = false,
-            isCreator = false
+            accessRole = accessRole
         )
     )
 }
