@@ -43,9 +43,15 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 api(Dependencies.Calling.avs)
-                api(Dependencies.Calling.jna)
+                api(Dependencies.Calling.androidJna)
             }
         }
+        val jvmMain by getting {
+            dependencies {
+	        implementation(Dependencies.Calling.jna)
+            }
+        }
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))

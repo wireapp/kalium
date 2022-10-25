@@ -1,6 +1,7 @@
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.call.CallManager
 
 interface AnswerCallUseCase {
     suspend operator fun invoke(conversationId: ConversationId)

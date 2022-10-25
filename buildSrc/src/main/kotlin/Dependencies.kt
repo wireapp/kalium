@@ -33,7 +33,7 @@ object Versions {
     const val pbandk = "0.14.1"
     const val turbine = "0.7.0"
     const val avs = "8.2.16"
-    const val jna = "5.6.0@aar"
+    const val jna = "5.6.0"
     const val coreCrypto = "0.6.0-pre1"
     const val desugarJdk = "1.1.5"
     const val kermit = "1.0.0"
@@ -188,6 +188,7 @@ object Dependencies {
     object Calling {
         const val avs = "com.wire:avs:${Versions.avs}"
         const val jna = "net.java.dev.jna:jna:${Versions.jna}"
+        const val androidJna = "net.java.dev.jna:jna:${Versions.jna}@aar"
     }
 
     object Logging {
