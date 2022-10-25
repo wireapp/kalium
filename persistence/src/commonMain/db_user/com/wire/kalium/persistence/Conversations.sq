@@ -76,7 +76,7 @@ UPDATE Conversation
 SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
 
-CREATE VIEW IF NOT EXISTS ConversatonDetails AS
+CREATE VIEW IF NOT EXISTS ConversationDetails AS
 SELECT
 Conversation.qualified_id AS qualifiedId,
 CASE (Conversation.type)
@@ -124,8 +124,8 @@ CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.qualified_id
     WHEN "CONNECTION_PENDING" THEN connection_user.qualified_id
     END AS otherUserId,
-CASE (Conversation.creator_id)
-    WHEN (SELECT Conversation.qualified_id FROM Conversation WHERE Conversation.type IS "SELF") THEN 1
+CASE
+    WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
     ELSE 0
     END AS isCreator,
 Conversation.last_notified_message_date AS lastNotifiedMessageDate,
@@ -134,13 +134,11 @@ Conversation.last_notified_message_date AS lastNotifiedMessageDate,
     AND (DateTime(message.date) >  DateTime(Conversation.last_read_date))
     AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL') AND message.visibility IS 'VISIBLE')
     AS unreadMessageCount,
-CASE Conversation.qualified_id
-WHEN (SELECT conversation FROM Member
-        WHERE Member.user =
-        (SELECT Conversation.qualified_id FROM Conversation
-         WHERE Conversation.type IS "SELF")) THEN 0
-    ELSE 1
-    END AS isMember,
+(SELECT COUNT() FROM Member
+    WHERE Member.user == (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+    AND Member.conversation == Conversation.qualified_id
+    LIMIT 1)
+    AS isMember,
 Conversation.protocol,
 Conversation.mls_cipher_suite,
 Conversation.mls_epoch,
@@ -148,11 +146,16 @@ Conversation.mls_group_id,
 Conversation.mls_last_keying_material_update,
 Conversation.mls_group_state,
 Conversation.access_list,
-Conversation.access_role_list
+Conversation.access_role_list,
+Conversation.team_id,
+Conversation.mls_proposal_timer,
+Conversation.muted_time,
+Conversation.creator_id,
+Conversation.last_modified_date
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"
-    AND Member.user IS NOT (SELECT Conversation.qualified_id FROM Conversation WHERE Conversation.type IS "SELF")
+    AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
 LEFT JOIN User ON User.qualified_id = Member.user
 LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
     AND (Connection.status = 'SENT'
@@ -163,7 +166,7 @@ LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.q
 LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS "STILL_ONGOING" ORDER BY created_at DESC LIMIT 1);
 
 selectAllConversationDetails:
-SELECT * FROM ConversatonDetails
+SELECT * FROM ConversationDetails
 WHERE type IS NOT "SELF" AND
 (type IS "GROUP" AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
 OR (type IS NOT "GROUP" AND otherUserId IS NOT NULL)) -- show other conversation- todo: problem here! if the sync wasn't succesful the the user seems to be null!
@@ -171,22 +174,22 @@ AND (protocol IS "PROTEUS" OR (protocol IS "MLS" AND mls_group_state IS "ESTABLI
 ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
 
 selectAllConversations:
-SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
+SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
 
 selectByQualifiedId:
-SELECT * FROM Conversation WHERE qualified_id = ?;
+SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectByGroupId:
-SELECT * FROM Conversation WHERE mls_group_id = ?;
+SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
 
 selectByGroupState:
-SELECT * FROM Conversation WHERE mls_group_state = ? AND protocol = ?;
+SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND protocol = ?;
 
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
 selectConversationsWithUnnotifiedMessages:
-SELECT * FROM Conversation WHERE muted_status != 'ALL_MUTED' AND (last_notified_message_date ISNULL OR DateTime(last_modified_date) > DateTime(last_notified_message_date));
+SELECT * FROM ConversationDetails WHERE mutedStatus != 'ALL_MUTED' AND (lastNotifiedMessageDate ISNULL OR DateTime(last_modified_date) > DateTime(lastNotifiedMessageDate));
 
 updateConversationMutingStatus:
 UPDATE Conversation
