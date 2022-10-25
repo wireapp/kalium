@@ -11,7 +11,7 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
     // TODO: Emit steps to display progress as backup is imported
     override suspend fun importFromFile(filePath: String) {
         sqlDriver.execute("""BEGIN""")
-        sqlDriver.execute("""ATTACH '/Users/Mateusz/AndroidStudioProjects/kalium/persistence/src/iosX64Test/backup' AS backupDb""")
+        sqlDriver.execute("""ATTACH '/Users/Mateusz/AndroidStudioProjects/kalium/persistence/src/commonTest/kotlin/com/wire/kalium/persistence/main.db' AS backupDb""")
         sqlDriver.execute("""INSERT OR IGNORE INTO Conversation SELECT * FROM backupDb.conversation""")
 //         migrateTable("Team")
 //         migrateTable("User")

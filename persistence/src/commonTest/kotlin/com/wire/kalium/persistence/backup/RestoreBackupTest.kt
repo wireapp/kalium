@@ -130,7 +130,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         println("database path of back up :${databasePath(backup)}/main.db")
         println("database path of user database:${databasePath()}/main.db")
 
-        currentDatabase.backupImporter.importFromFile("/Users/Mateusz/AndroidStudioProjects/kalium/persistence/src/iosX64Test/main.db")
+        currentDatabase.backupImporter.importFromFile("/Users/Mateusz/AndroidStudioProjects/kalium/persistence/src/commonTest/kotlin/com/wire/kalium/persistence/main.db")
 //         currentDatabase.backupImporter.importFromFile("/var/folders/b1/2qw84dsd7bb48qw_3yz9vll80000gp/T/test-storage3850219063162656586/test-backupDomain-backupValue.db/main.db")
     }
 
