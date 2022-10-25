@@ -92,7 +92,7 @@ data class ServerConfig(
             website = """https://wire.com""",
             title = "production",
             isOnPremises = false,
-            proxy = Proxy(true, "83.234.14.198", 4145)
+            proxy = null
         )
 
         val STAGING = Links(

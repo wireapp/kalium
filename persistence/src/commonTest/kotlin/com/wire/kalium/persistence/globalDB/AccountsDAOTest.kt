@@ -182,7 +182,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
                 website = "website",
                 title = "title",
                 isOnPremises = false,
-                ServerConfigEntity.Proxy(true, "apiProxy",8888)
+                ServerConfigEntity.Proxy(true, "apiProxy", 8888)
             ),
             metaData = ServerConfigEntity.MetaData(
                 federation = false,

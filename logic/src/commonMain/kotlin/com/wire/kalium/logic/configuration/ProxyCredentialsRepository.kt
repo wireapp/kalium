@@ -5,7 +5,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.client.ProxyCredentialsStorage
 
-
 interface ProxyCredentialsRepository {
     fun persistProxyCredentials(username: String, password: String): Either<StorageFailure, Unit>
 }

@@ -4,6 +4,10 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.ProxyCredentialsRepository
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * use case to persist the proxy credentials that been added from user while login, so it will be used
+ * to authenticate the proxy for the rest of the API calls in the app
+ */
 interface PersistProxyCredentialsUseCase {
     suspend operator fun invoke(username: String, password: String): Result
 }
