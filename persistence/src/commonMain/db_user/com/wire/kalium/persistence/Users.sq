@@ -63,7 +63,7 @@ WHERE qualified_id = ?;
 
 markUserAsDeleted:
 UPDATE User
-SET team = NULL , user_type = ?, deleted = 1
+SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, user_type = ?, deleted = 1
 WHERE qualified_id = ?;
 
 insertOrIgnoreUserId:

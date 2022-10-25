@@ -28,4 +28,11 @@ object TestConversationDetails {
         lastUnreadMessage = null
     )
 
+    val CONVERSATION_GROUP = ConversationDetails.Group(
+        conversation = TestConversation.GROUP(),
+        unreadMessagesCount = 0,
+        legalHoldStatus = LegalHoldStatus.ENABLED,
+        lastUnreadMessage = null
+    )
+
 }

@@ -31,10 +31,16 @@ SELECT * FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;
 
+selectGroupConversationsByMember:
+SELECT * FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Member.user = ? AND Conversation.type = 'GROUP';
+
 updateMemberRole:
 UPDATE Member
 SET role = ?
 WHERE user = ? AND conversation = ?;
 
-deleteUserFromConversations:
-DELETE FROM Member WHERE user = ?;
+deleteUserFromConversation:
+DELETE FROM Member
+WHERE user = ? AND conversation = ?;

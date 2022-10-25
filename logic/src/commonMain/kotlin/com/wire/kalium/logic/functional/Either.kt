@@ -48,6 +48,15 @@ sealed class Either<out L, out R> {
      * @see Right
      */
     fun <R> right(b: R) = Right(b)
+
+
+    companion object {
+        fun <L> left(l: L): Either<L, Nothing> = Left(l)
+        fun <R> right(r: R): Either<Nothing, R> = Right(r)
+        fun <L, A, B, C> map2(e1: Either<L, A>, e2: Either<L, B>, f: (A, B) -> C): Either<L, C> =
+            e1.fold(::left) { a -> e2.fold(::left) { b -> right(f(a, b)) } }
+
+    }
 }
 
 
@@ -183,3 +192,6 @@ inline fun <T, L, R> Iterable<T>.foldToEitherWhileRight(initialValue: R, fn: (it
         acc.flatMap { accumulatedValue -> fn(item, accumulatedValue) }
     }
 }
+
+fun <L, A, B, C> Either<L, A>.map2(other: Either<L, B>, f: (A, B) -> C): Either<L, C> =
+    Either.map2(this, other, f)
