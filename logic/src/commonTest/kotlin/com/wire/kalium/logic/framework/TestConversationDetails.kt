@@ -32,7 +32,9 @@ object TestConversationDetails {
         conversation = TestConversation.GROUP(),
         unreadMessagesCount = 0,
         legalHoldStatus = LegalHoldStatus.ENABLED,
-        lastUnreadMessage = null
+        lastUnreadMessage = null,
+        isSelfUserCreator = true,
+        isSelfUserMember = true,
     )
 
 }
