@@ -3,9 +3,8 @@ package com.wire.kalium.cryptography
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import kotlin.coroutines.cancellation.CancellationException
 
-@Suppress("StringTemplate")
 data class CryptoSessionId(val userId: CryptoUserID, val cryptoClientId: CryptoClientId) {
-    val value: String = "${userId}_${cryptoClientId}"
+    val value: String = "${userId}_$cryptoClientId"
 }
 
 data class PreKeyCrypto(
