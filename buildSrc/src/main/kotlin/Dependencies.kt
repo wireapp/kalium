@@ -16,7 +16,7 @@ object Versions {
     const val javaxCrypto = "1.1.0-alpha03"
     const val kover = "0.4.4"
     const val ktor = "2.0.0-beta-1"
-    const val okio = "3.0.0"
+    const val okio = "3.2.0"
     const val okHttp = "4.9.3"
     const val mockative = "1.2.6"
     const val androidWork = "2.7.1"
@@ -38,6 +38,7 @@ object Versions {
     const val desugarJdk = "1.1.5"
     const val kermit = "1.0.0"
     const val detekt = "1.19.0"
+    const val libsodium = "0.8.5"
 }
 
 object Plugins {
@@ -123,6 +124,7 @@ object Dependencies {
         const val javaxCrypto = "androidx.security:security-crypto-ktx:${Versions.javaxCrypto}"
         const val mlsClientJvm = "com.wire:core-crypto-jvm:${Versions.mlsClient}"
         const val mlsClientAndroid = "com.wire:core-crypto-android:${Versions.mlsClient}"
+        const val libsodiumBindingsMP = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings:${Versions.libsodium}"
     }
 
     object Cli {
