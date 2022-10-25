@@ -569,9 +569,10 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun insertConversationFromMigration(conversations: List<Conversation>): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
-            conversations.forEach { conversation ->
+            val conversationEntities = conversations.map { conversation ->
                 conversationMapper.toDaoModel(conversation)
             }
+            conversationDAO.insertConversations(conversationEntities)
         }
     }
 

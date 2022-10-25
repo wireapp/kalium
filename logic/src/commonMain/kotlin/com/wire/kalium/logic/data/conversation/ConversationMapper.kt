@@ -306,7 +306,7 @@ internal class ConversationMapperImpl(
         ConversationEntity(
             id = idMapper.toDaoModel(conversation.id),
             name = name,
-            type = ConversationEntity.Type.valueOf(type.ordinal.toString()),
+            type = type.toDAO(),
             teamId = null,
             protocolInfo = ProtocolInfo.Proteus,
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
@@ -393,4 +393,11 @@ private fun ConversationEntity.AccessRole.toDAO(): Conversation.AccessRole = whe
     ConversationEntity.AccessRole.GUEST -> Conversation.AccessRole.GUEST
     ConversationEntity.AccessRole.SERVICE -> Conversation.AccessRole.SERVICE
     ConversationEntity.AccessRole.EXTERNAL -> Conversation.AccessRole.EXTERNAL
+}
+
+private fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
+    Conversation.Type.SELF -> ConversationEntity.Type.SELF
+    Conversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
+    Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
+    Conversation.Type.CONNECTION_PENDING -> ConversationEntity.Type.CONNECTION_PENDING
 }
