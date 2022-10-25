@@ -97,7 +97,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
 
     override suspend fun encrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
         return wrapException {
-            var encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId.value, toUByteList(message)))
+            val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId.value, toUByteList(message)))
             coreCrypto.proteusSessionSave(sessionId.value)
             encryptedMessage
         }
@@ -116,6 +116,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun <T> wrapException(b: () -> T): T {
         try {
             return b()

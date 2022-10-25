@@ -39,7 +39,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
     }
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-        return client.createSession(preKeyCrypto,  sessionId)
+        return client.createSession(preKeyCrypto, sessionId)
     }
 
     override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
