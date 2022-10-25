@@ -2,6 +2,8 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.logic.configuration.GlobalConfigDataSource
 import com.wire.kalium.logic.configuration.GlobalConfigRepository
+import com.wire.kalium.logic.configuration.ProxyCredentialsDataSource
+import com.wire.kalium.logic.configuration.ProxyCredentialsRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
@@ -16,6 +18,8 @@ import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
+import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCase
+import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
 import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
@@ -133,4 +137,12 @@ class GlobalKaliumScope internal constructor(
     val serverConfigForAccounts: ServerConfigForAccountUseCase
         get() =
             ServerConfigForAccountUseCase(serverConfigRepository)
+
+    private val proxyCredentialsRepository: ProxyCredentialsRepository
+        get() =
+            ProxyCredentialsDataSource(globalPreferences.value.proxyCredentialsStorage)
+
+    val persistProxyCredentialsUseCase: PersistProxyCredentialsUseCase
+        get() = PersistProxyCredentialsUseCaseImpl(proxyCredentialsRepository)
+
 }

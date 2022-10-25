@@ -16,13 +16,13 @@ import io.ktor.client.engine.HttpClientEngine
 
 class UnauthenticatedNetworkContainerV0 constructor(
     backendLinks: ServerConfigDTO,
-    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links),
-    proxyCredentials: ProxyCredentialsDTO? = null
+    proxyCredentials: ProxyCredentialsDTO?,
+    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links, proxyCredentials),
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
         backendLinks,
+        proxyCredentials,
         engine,
-        proxyCredentials
     ) {
     override val loginApi: LoginApi get() = LoginApiV0(unauthenticatedNetworkClient)
     override val registerApi: RegisterApi get() = RegisterApiV0(unauthenticatedNetworkClient)

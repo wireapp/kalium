@@ -44,7 +44,7 @@ import io.ktor.client.engine.HttpClientEngine
 
 internal class AuthenticatedNetworkContainerV0 internal constructor(
     private val sessionManager: SessionManager,
-    engine: HttpClientEngine = defaultHttpEngine(sessionManager.session().second.links)
+    engine: HttpClientEngine = defaultHttpEngine(sessionManager.session().second.links, sessionManager.proxyCredentials())
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,

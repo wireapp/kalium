@@ -405,7 +405,6 @@ class UserSessionScope internal constructor(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
-            globalPreferences.proxyCredentialsStorage
         )
 
     private val messageSendFailureHandler: MessageSendFailureHandler

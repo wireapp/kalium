@@ -1,7 +1,7 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.configuration.ProxyCredentialsRepository
 import com.wire.kalium.logic.functional.fold
 
 interface PersistProxyCredentialsUseCase {
@@ -9,11 +9,11 @@ interface PersistProxyCredentialsUseCase {
 }
 
 class PersistProxyCredentialsUseCaseImpl(
-    private val clientRepository: ClientRepository
+    private val proxyCredentialsRepository: ProxyCredentialsRepository
 ) : PersistProxyCredentialsUseCase {
 
     override suspend operator fun invoke(username: String, password: String): Result =
-        clientRepository.persistProxyCredentials(username, password).fold({
+        proxyCredentialsRepository.persistProxyCredentials(username, password).fold({
             Result.Failure.Generic(it)
         }, {
             Result.Success

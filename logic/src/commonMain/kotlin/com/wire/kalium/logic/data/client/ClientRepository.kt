@@ -16,7 +16,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
-import com.wire.kalium.persistence.client.ProxyCredentialsStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
@@ -43,7 +42,6 @@ interface ClientRepository {
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
-    fun persistProxyCredentials(username: String, password: String): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -51,7 +49,6 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
-    private val proxyCredentialsStorage: ProxyCredentialsStorage,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val clientMapper: ClientMapper = MapperProvider.clientMapper()
@@ -142,7 +139,4 @@ class ClientDataSource(
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }
-
-    override fun persistProxyCredentials(username: String, password: String): Either<StorageFailure, Unit> =
-        wrapStorageRequest { proxyCredentialsStorage.saveProxyCredentials(username, password) }
 }

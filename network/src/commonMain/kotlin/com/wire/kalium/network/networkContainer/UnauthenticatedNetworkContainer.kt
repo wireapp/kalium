@@ -49,10 +49,10 @@ internal interface UnauthenticatedNetworkClientProvider {
 
 internal class UnauthenticatedNetworkClientProviderImpl internal constructor(
     backendLinks: ServerConfigDTO,
-    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links),
-    proxyCredentials: ProxyCredentialsDTO?
+    proxyCredentials: ProxyCredentialsDTO?,
+    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links, proxyCredentials),
 ) : UnauthenticatedNetworkClientProvider {
     override val unauthenticatedNetworkClient by lazy {
-        UnauthenticatedNetworkClient(engine, backendLinks, proxyCredentials)
+        UnauthenticatedNetworkClient(engine, backendLinks)
     }
 }

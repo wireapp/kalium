@@ -1,6 +1,5 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
@@ -31,7 +30,7 @@ internal class AuthenticatedNetworkClient(
     installCompression: Boolean = true
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
-        installWireDefaultRequest(sessionManager.session().second, sessionManager.proxyCredentials())
+        installWireDefaultRequest(sessionManager.session().second)
         installAuth(sessionManager)
         install(ContentNegotiation) {
             mls()
@@ -47,11 +46,10 @@ internal class AuthenticatedNetworkClient(
  */
 internal class UnauthenticatedNetworkClient(
     engine: HttpClientEngine,
-    backendLinks: ServerConfigDTO,
-    proxyCredentials: ProxyCredentialsDTO?
+    backendLinks: ServerConfigDTO
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
-        installWireDefaultRequest(backendLinks, proxyCredentials)
+        installWireDefaultRequest(backendLinks)
     }
 }
 
@@ -82,7 +80,7 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireDefaultRequest(sessionManager.session().second, sessionManager.proxyCredentials())
+            installWireDefaultRequest(sessionManager.session().second)
             installAuth(sessionManager)
             install(ContentNegotiation) {
                 mls()

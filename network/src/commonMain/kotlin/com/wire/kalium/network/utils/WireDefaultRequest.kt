@@ -1,6 +1,5 @@
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.shouldAddApiVersion
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClientConfig
@@ -11,15 +10,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.encodedPath
-import io.ktor.util.encodeBase64
-import io.ktor.utils.io.core.toByteArray
 
-fun HttpClientConfig<*>.installWireDefaultRequest(
-    serverConfigDTO: ServerConfigDTO,
-    proxyCredentials: ProxyCredentialsDTO? = null
-) {
-    val isProxyRequired = serverConfigDTO.links.proxy != null
-
+fun HttpClientConfig<*>.installWireDefaultRequest(serverConfigDTO: ServerConfigDTO) {
     defaultRequest {
         header(HttpHeaders.ContentType, ContentType.Application.Json)
         with(serverConfigDTO) {
@@ -33,13 +25,6 @@ fun HttpClientConfig<*>.installWireDefaultRequest(
                 if (shouldAddApiVersion(metaData.commonApiVersion.version))
                     apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
                 else apiBaseUrl.encodedPath
-
-            if (isProxyRequired && serverConfigDTO.links.proxy?.needsAuthentication == true) {
-                if (proxyCredentials == null) throw error("Credentials does not exist")
-                val credentials =
-                    "${proxyCredentials.username}:${proxyCredentials.password}".toByteArray().encodeBase64()
-                header(HttpHeaders.ProxyAuthorization, "Basic $credentials")
-            }
         }
     }
 }
