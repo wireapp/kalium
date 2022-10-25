@@ -29,13 +29,14 @@ import kotlin.contracts.contract
  * @see Left
  * @see Right
  */
+
+@Suppress("TooManyFunctions")
 sealed class Either<out L, out R> {
     /** * Represents the left side of [Either] class which by convention is a "Failure". */
     data class Left<out L>(val value: L) : Either<L, Nothing>()
 
     /** * Represents the right side of [Either] class which by convention is a "Success". */
     data class Right<out R>(val value: R) : Either<Nothing, R>()
-
 
     /**
      * Creates a Left type.
@@ -49,7 +50,6 @@ sealed class Either<out L, out R> {
      */
     fun <R> right(b: R) = Right(b)
 
-
     companion object {
         fun <L> left(l: L): Either<L, Nothing> = Left(l)
         fun <R> right(r: R): Either<Nothing, R> = Right(r)
@@ -59,14 +59,12 @@ sealed class Either<out L, out R> {
     }
 }
 
-
 /**
  * Applies fnL if this is a Left or fnR if this is a Right.
  * @see Left
  * @see Right
  */
 inline fun <L, R, T : Any> Either<L, R>.fold(fnL: (L) -> T, fnR: (R) -> T): T = nullableFold(fnL, fnR)!!
-
 
 /**
  * Applies fnL if this is a Left or fnR if this is a Right.
@@ -78,7 +76,6 @@ inline fun <L, R, T> Either<L, R>.nullableFold(fnL: (L) -> T?, fnR: (R) -> T?): 
         is Left -> fnL(value)
         is Right -> fnR(value)
     }
-
 
 /**
  * Returns true if this is a Right, false otherwise.

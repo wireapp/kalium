@@ -23,18 +23,20 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
 ) {
     suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> {
         return conversationRepository.observeIsUserMember(conversationId, selfUserId)
-            .combine(conversationRepository.observeConversationDetailsById(conversationId)) { eitherIsSelfMember, eitherConversationDetails ->
+            .combine(conversationRepository.observeConversationDetailsById(conversationId)) { eitherIsSelfMember, eitherConversation ->
                 Either.map2(
                     eitherIsSelfMember,
-                    eitherConversationDetails
+                    eitherConversation
                 ) { isSelfMember, conversationDetails ->
                     when (conversationDetails) {
                         is ConversationDetails.Connection -> InteractionAvailability.DISABLED
-                        is ConversationDetails.Group -> if (isSelfMember) InteractionAvailability.ENABLED else InteractionAvailability.NOT_MEMBER
+                        is ConversationDetails.Group -> if (isSelfMember) InteractionAvailability.ENABLED
+                        else InteractionAvailability.NOT_MEMBER
                         is ConversationDetails.OneOne -> {
                             when {
                                 conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
-                                conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED -> InteractionAvailability.BLOCKED_USER
+                                conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED ->
+                                    InteractionAvailability.BLOCKED_USER
                                 else -> InteractionAvailability.ENABLED
                             }
                         }
