@@ -303,8 +303,7 @@ class UserSessionScope internal constructor(
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
-            timeParser,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
@@ -796,7 +795,8 @@ class UserSessionScope internal constructor(
             mediaManagerService,
             syncManager,
             qualifiedIdMapper,
-            clientIdProvider
+            clientIdProvider,
+            userConfigRepository
         )
 
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)

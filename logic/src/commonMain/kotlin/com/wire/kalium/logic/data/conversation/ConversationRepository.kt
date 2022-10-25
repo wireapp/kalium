@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
@@ -26,7 +27,6 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -43,17 +43,13 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DelicateKaliumApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlin.coroutines.cancellation.CancellationException
 
 interface ConversationRepository {
     @DelicateKaliumApi("this function does not get values from cache")
@@ -155,7 +151,6 @@ internal class ConversationDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
-    private val timeParser: TimeParser,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -275,21 +270,32 @@ internal class ConversationDataSource internal constructor(
     }
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
-        conversationDAO.getAllConversationDetails().map { it.map(conversationMapper::fromDaoModel) }
+        conversationDAO.getAllConversationDetails().map { it.map(conversationMapper::fromDaoModelToDetails) }
 
     /**
      * Gets a flow that allows observing of
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeGetConversationByQualifiedID(idMapper.toDaoModel(conversationID))
             .wrapStorageRequest()
-            .flatMapLatest {
-                it.fold(
-                    { flowOf(Either.Left(it)) },
-                    { getConversationDetailsFlow(conversationMapper.fromDaoModel(it)) }
-                )
+            .mapRight { conversationMapper.fromDaoModelToDetails(it) }
+            .flatMapRight { conversationDetails ->
+                when (conversationDetails) {
+                    is ConversationDetails.OneOne -> observeLastUnreadMessage(conversationID)
+                        .map { conversationDetails.copy(lastUnreadMessage = it) }
+
+                    is ConversationDetails.Group -> observeLastUnreadMessage(conversationID)
+                        .map { conversationDetails.copy(lastUnreadMessage = it) }
+
+                    else -> flowOf(conversationDetails)
+                }
             }
+            .distinctUntilChanged()
+
+    private suspend fun observeLastUnreadMessage(conversationId: ConversationId): Flow<Message?> =
+        messageDAO.observeLastUnreadMessage(idMapper.toDaoModel(conversationId))
+            .map { it?.let { messageMapper.fromEntityToMessage(it) } }
+            .distinctUntilChanged()
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
@@ -307,122 +313,6 @@ internal class ConversationDataSource internal constructor(
             fetchConversation(conversationID)
         } else {
             Either.Right(Unit)
-        }
-    }
-
-    private suspend fun getConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> =
-        when (conversation.type) {
-            Conversation.Type.SELF -> flowOf(Either.Right(ConversationDetails.Self(conversation)))
-            // TODO(user-metadata): get actual legal hold status
-            Conversation.Type.GROUP -> getGroupConversationDetailsFlow(conversation)
-            Conversation.Type.CONNECTION_PENDING, Conversation.Type.ONE_ON_ONE -> getOneToOneConversationDetailsFlow(conversation)
-        }
-
-    private suspend fun observeLastUnreadMessage(conversation: Conversation): Flow<Message?> =
-        messageDAO.observeLastUnreadMessage(idMapper.toDaoModel(conversation.id))
-            .map { it?.let { messageMapper.fromEntityToMessage(it) } }
-            .distinctUntilChanged()
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun getGroupConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
-        return userRepository.observeSelfUser() // todo : why are we observing self user if we have it injected in the constructor
-            .flatMapLatest { selfUser ->
-                combine(
-                    observeUnreadMessageCount(conversation),
-                    observeLastUnreadMessage(conversation),
-                    observeUnreadMentionsCount(conversation)
-                ) { unreadMessageCount: Long, lastUnreadMessage: Message?, unreadMentionsCount: Long ->
-                    Either.Right(
-                        ConversationDetails.Group(
-                            conversation = conversation,
-                            legalHoldStatus = LegalHoldStatus.DISABLED,
-                            unreadMessagesCount = unreadMessageCount,
-                            unreadMentionsCount = unreadMentionsCount,
-                            lastUnreadMessage = lastUnreadMessage,
-                        )
-                    )
-                }
-            }.distinctUntilChanged()
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun getOneToOneConversationDetailsFlow(conversation: Conversation): Flow<Either<StorageFailure, ConversationDetails>> {
-        return observeConversationMembers(conversation.id)
-            .combine(userRepository.observeSelfUser()) { members, selfUser ->
-                selfUser to members.firstOrNull { item -> item.id != selfUser.id }
-            }
-            .flatMapLatest { (selfUser, otherMember) ->
-                val otherUserFlow = if (otherMember != null) userRepository.getKnownUser(otherMember.id) else flowOf(otherMember)
-                otherUserFlow
-                    .wrapStorageRequest()
-                    .mapRight { selfUser to it }
-            }
-            .flatMapLatest {
-                it.fold(
-                    { storageFailure ->
-                        logMemberDetailsError(conversation, storageFailure)
-                        flowOf(Either.Left(storageFailure))
-                    },
-                    { (selfUser, otherUser) ->
-                        combine(
-                            observeUnreadMessageCount(conversation),
-                            observeLastUnreadMessage(conversation),
-                            observeUnreadMentionsCount(conversation)
-                        ) { unreadMessageCount: Long, lastUnreadMessage: Message?, unreadMentionsCount: Long ->
-                            Either.Right(
-                                conversationMapper.toConversationDetailsOneToOne(
-                                    conversation = conversation,
-                                    otherUser = otherUser,
-                                    selfUser = selfUser,
-                                    unreadMessageCount = unreadMessageCount,
-                                    unreadMentionsCount = unreadMentionsCount,
-                                    lastUnreadMessage = lastUnreadMessage
-                                )
-                            )
-                        }
-                    }
-                )
-            }.distinctUntilChanged()
-    }
-
-    private suspend fun observeUnreadMessageCount(conversation: Conversation): Flow<Long> {
-        return if (conversation.supportsUnreadMessageCount) {
-            messageDAO.observeUnreadMessageCount(idMapper.toDaoModel(conversation.id))
-        } else {
-            flowOf(0L)
-        }
-    }
-
-    private suspend fun observeUnreadMentionsCount(conversation: Conversation): Flow<Long> {
-        return if (conversation.supportsUnreadMessageCount) {
-            messageDAO.observeUnreadMentionsCount(idMapper.toDaoModel(conversation.id))
-        } else {
-            flowOf(0L)
-        }
-    }
-
-    // TODO: as for now lastModifiedDate and lastReadDate is saved as String
-    // in ISO format, using a timestamp would make it possible to just do a comparance
-    // on if the timestamp is bigger inside the domain model or on a Instant object
-    private fun hasNewMessages(conversation: Conversation) =
-        with(conversation) {
-            if (lastModifiedDate != null) {
-                timeParser.isTimeBefore(lastReadDate, lastModifiedDate)
-            } else {
-                false
-            }
-        }
-
-    private fun logMemberDetailsError(conversation: Conversation, error: StorageFailure): Unit = when (error) {
-        is StorageFailure.DataNotFound ->
-            kaliumLogger.withFeatureId(CONVERSATIONS).e("DataNotFound when fetching conversation members: $error")
-
-        is StorageFailure.Generic -> {
-            if (error.rootCause !is CancellationException) {
-                // Ignore CancellationException
-            } else {
-                kaliumLogger.withFeatureId(CONVERSATIONS).e("Failure getting other 1:1 user for $conversation", error.rootCause)
-            }
         }
     }
 

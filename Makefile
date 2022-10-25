@@ -14,15 +14,17 @@ ifeq ($(OS),darwin)
   LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.dylib
   LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.dylib
   LIBSODIUM_ARTIFACT_FILE := libsodium.dylib
+  AVS_ARTIFACT_FILE := avs.framework
 endif
 ifeq ($(OS),linux)
   LIBNAME_FLAG=-soname
   LIBCRYPTOBOX_ARTIFACT_FILE := libcryptobox.so
   LIBCRYPTOBOX_JNI_ARTIFACT_FILE := libcryptobox-jni.so
   LIBSODIUM_ARTIFACT_FILE := libsodium.so
+  AVS_ARTIFACT_FILE := avs.framework
 endif
 
-all: install-rust prepare-native cryptobox-c libsodium cryptobox4j copy-all-libs
+all: install-rust prepare-native cryptobox-c libsodium cryptobox4j avs-download copy-all-libs
 
 .PHONY: install-rust
 install-rust:
@@ -88,8 +90,28 @@ cryptobox4j-compile: cryptobox4j-clone
 		-Wl,${LIBNAME_FLAG},${LIBCRYPTOBOX_JNI_ARTIFACT_FILE} \
 		-o build/lib/${LIBCRYPTOBOX_JNI_ARTIFACT_FILE}
 
+.PHONY: avs-download-osx
+avs-download-osx: prepare-native
+	@echo "Download AVS for OSX"
+	cd native && \
+	mkdir avs && \
+	cd avs && \
+	curl -L https://github.com/wireapp/wire-avs/releases/download/8.2.16/avs.framework.osx.8.2.16.zip --output avs.framework.zip && \
+	unzip avs.framework.zip && \
+	mv Carthage/Build/iOS/avs.framework .
+
+.PHONY: avs-download
+avs-download:
+ifeq ($(OS),darwin)
+avs-download: avs-download-osx
+endif
+ifeq ($(OS),linux)
+avs-download: avs-download-osx
+endif
+
 copy-all-libs:
 	cd native && \
 	cp cryptobox4j/build/lib/${LIBCRYPTOBOX_JNI_ARTIFACT_FILE} libs/ && \
 	cp cryptobox-c/target/release/${LIBCRYPTOBOX_ARTIFACT_FILE} libs/ && \
-	cp libsodium/src/libsodium/.libs/${LIBSODIUM_ARTIFACT_FILE} libs/
+	cp libsodium/src/libsodium/.libs/${LIBSODIUM_ARTIFACT_FILE} libs/ && \
+	cp -R avs/${AVS_ARTIFACT_FILE} libs/

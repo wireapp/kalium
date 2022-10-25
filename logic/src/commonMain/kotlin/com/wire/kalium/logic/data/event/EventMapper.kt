@@ -205,6 +205,11 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ClassifiedDomains)
         )
 
+        is FeatureConfigData.ConferenceCalling -> Event.FeatureConfig.ConferenceCallingUpdated(
+            id,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConferenceCalling)
+        )
+
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id)
     }
 

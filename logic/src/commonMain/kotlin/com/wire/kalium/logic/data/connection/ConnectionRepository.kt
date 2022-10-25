@@ -230,8 +230,7 @@ internal class ConnectionDataSource(
                         lastModifiedDate = connection.lastUpdate,
                         lastReadDate = connection.lastUpdate,
                         access = emptyList(),
-                        accessRole = emptyList(),
-                        isCreator = false
+                        accessRole = emptyList()
                     )
                 )
             }

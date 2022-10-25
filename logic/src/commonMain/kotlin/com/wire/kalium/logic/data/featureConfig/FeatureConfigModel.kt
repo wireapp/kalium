@@ -5,7 +5,7 @@ import com.wire.kalium.logic.data.id.PlainId
 data class FeatureConfigModel(
     val appLockModel: AppLockModel,
     val classifiedDomainsModel: ClassifiedDomainsModel,
-    val conferenceCallingModel: ConfigsStatusModel,
+    val conferenceCallingModel: ConferenceCallingModel,
     val conversationGuestLinksModel: ConfigsStatusModel,
     val digitalSignaturesModel: ConfigsStatusModel,
     val fileSharingModel: ConfigsStatusModel,
@@ -57,5 +57,9 @@ data class SelfDeletingMessagesConfigModel(
 
 data class MLSModel(
     val allowedUsers: List<PlainId>,
+    val status: Status
+)
+
+data class ConferenceCallingModel(
     val status: Status
 )
