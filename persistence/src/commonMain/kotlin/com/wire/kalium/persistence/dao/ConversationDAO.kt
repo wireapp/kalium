@@ -21,8 +21,7 @@ data class ConversationEntity(
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>,
-    val isCreator: Boolean = false
+    val accessRole: List<AccessRole>
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -88,7 +87,17 @@ data class ConversationViewEntity(
     val isMember: Long,
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,
-    val accessRoleList: List<ConversationEntity.AccessRole>
+    val accessRoleList: List<ConversationEntity.AccessRole>,
+    val protocol: ConversationEntity.Protocol,
+    val mlsCipherSuite: ConversationEntity.CipherSuite,
+    val mlsEpoch: Long,
+    val mlsGroupId: String?,
+    val mlsLastKeyingMaterialUpdate: Long,
+    val mlsGroupState: ConversationEntity.GroupState,
+    val mlsProposalTimer: String?,
+    val mutedTime: Long,
+    val creatorId: String,
+    val removedBy: UserIDEntity? = null, // TODO how to calculate?
 )
 
 // TODO: rename to MemberEntity
@@ -118,14 +127,14 @@ interface ConversationDAO {
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: String)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: String)
     suspend fun updateAllConversationsNotificationDate(date: String)
-    suspend fun getAllConversations(): Flow<List<ConversationEntity>>
+    suspend fun getAllConversations(): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>>
-    suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
-    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
-    suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationEntity?
-    suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?>
+    suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
+    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
+    suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationViewEntity?
+    suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
-    suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
+    suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
     suspend fun updateMember(member: Member, conversationID: QualifiedIDEntity)
@@ -147,7 +156,7 @@ interface ConversationDAO {
         mutedStatusTimestamp: Long
     )
 
-    suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>>
+    suspend fun getConversationsForNotifications(): Flow<List<ConversationViewEntity>>
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,

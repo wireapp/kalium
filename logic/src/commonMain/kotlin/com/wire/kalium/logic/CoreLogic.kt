@@ -5,7 +5,9 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentialsModel
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.di.PlatformRootPathsProvider
 import com.wire.kalium.logic.di.PlatformUserStorageProvider
+import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -31,6 +33,8 @@ abstract class CoreLogicCommon internal constructor (
     protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
+
+    val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)
