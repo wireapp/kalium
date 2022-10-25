@@ -109,6 +109,11 @@ class ConversationGroupRepositoryTest {
             .thenDoNothing()
 
         given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(any())
+            .thenReturn(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+
+        given(conversationDAO)
             .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
             .whenInvokedWith(anything(), anything())
             .thenDoNothing()
@@ -145,6 +150,11 @@ class ConversationGroupRepositoryTest {
         given(userRepository)
             .coroutine { userRepository.observeSelfUser() }
             .then { flowOf(selfUserWithoutTeam) }
+
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(any())
+            .thenReturn(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
 
         given(conversationDAO)
             .suspendFunction(conversationDAO::insertConversation)
@@ -191,6 +201,16 @@ class ConversationGroupRepositoryTest {
         given(conversationDAO)
             .suspendFunction(conversationDAO::insertConversation)
             .whenInvokedWith(anything())
+            .thenDoNothing()
+
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::getConversationByQualifiedID)
+            .whenInvokedWith(any())
+            .thenReturn(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+
+        given(conversationDAO)
+            .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+            .whenInvokedWith(any(), any())
             .thenDoNothing()
 
         given(mlsConversationRepository)
@@ -454,7 +474,7 @@ class ConversationGroupRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationByQualifiedID)
                 .whenInvokedWith(any())
-                .thenReturn(TestConversation.GROUP_ENTITY(protocolInfo))
+                .thenReturn(TestConversation.GROUP_VIEW_ENTITY(protocolInfo))
         }
 
         fun withAddMemberAPISucceedChanged() = apply {

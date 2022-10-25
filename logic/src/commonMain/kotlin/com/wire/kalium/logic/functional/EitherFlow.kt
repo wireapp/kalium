@@ -48,3 +48,36 @@ fun <L, R> Flow<Either<L, R>>.mapToRightOr(value: R): Flow<R> = map { it.getOrEl
  */
 fun <L, R, T> Flow<Either<L, R>>.flatMapRightWithEither(block: suspend (R) -> Flow<Either<L, T>>): Flow<Either<L, T>> =
     flatMapLatest { it.fold({ l -> flowOf(Either.Left(l)) }) { r -> block(r) } }
+
+/**
+ * [flatMapLatest] the Flow<Either<L, R>> into Flow<Either<L, T>>.
+ * @param block function to run on Either.Right value and that returns Flow<T>
+ *
+ * Usecase for it:
+ * we have 2 functions, one of it returns Flow<Either>, and the second - just Flow<Result> and is depends on the Right value from the first
+ * and we need to combine Right value from the first and the result from the second, or emit 1 error (Either.Left) if it occurs.
+ * Use that fun to have better code style.
+ *
+ * Example1:
+ *
+ * fun getUserId(): Either<Error, ID>
+ * fun getFriendsFroUser(userId: ID): Flow<List<String>>
+ *
+ * data class MeWithFriends(val myId: ID, val friends: List<String>)
+ *
+ * val observeMeWithFriends: Flow<Either<Error, MeWithFriends>>  =
+ *       getUserId().flatMapRight { id -> getFriendsFroUser(id).map { MeWithFriends(id, it) }}
+ *
+ * Example2:
+ *
+ * fun getUserId(): Either<Error, ID>
+ * fun getMyFriends(): Flow<List<String>>
+ *
+ * data class MeWithFriends(val myId: ID, val friends: List<String>)
+ *
+ * val observeMeWithFriends: Flow<Either<Error, MeWithFriends>>  =
+ *       getUserId().flatMapRight { id -> getMyFriends().map { MeWithFriends(id, it) }}
+ *
+ */
+fun <L, R, T> Flow<Either<L, R>>.flatMapRight(block: suspend (R) -> Flow<T>): Flow<Either<L, T>> =
+    flatMapLatest { it.fold({ l -> flowOf(Either.Left(l)) }) { r -> block(r).map { t -> Either.Right(t) } } }
