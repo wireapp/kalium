@@ -45,7 +45,10 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
         if (NSFileManager.defaultManager.fileExistsAtPath(rootDir)) {
             box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
         } else {
-            throw ProteusException(message = "Local files were not found", code = ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            throw ProteusException(
+                message = "Local files were not found",
+                code = ProteusException.Code.LOCAL_FILES_NOT_FOUND
+            )
         }
     }
 
@@ -138,7 +141,11 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
             } else {
                 memScoped {
                     val errorPtr: ObjCObjectVar<NSError?> = alloc()
-                    decrypted = session?.createClientSessionAndReturnPlaintextFor(toSessionId(sessionId), toData(message), errorPtr.ptr)!!
+                    decrypted = session?.createClientSessionAndReturnPlaintextFor(
+                        toSessionId(sessionId),
+                        toData(message),
+                        errorPtr.ptr
+                    )!!
                     errorPtr.value?.let { error ->
                         throw toException(error)
                     }

@@ -51,8 +51,6 @@ interface ProteusClient {
     suspend fun encryptWithPreKey(message: ByteArray, preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId): ByteArray
 }
 
-expect class ProteusClientImpl(rootDir: String) : ProteusClient
-
 suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, Map<String, PreKeyCrypto>>>) {
     preKeysCrypto.forEach { domainMap ->
         val domain = domainMap.key
@@ -66,3 +64,5 @@ suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, 
         }
     }
 }
+
+expect class ProteusClientImpl(rootDir: String, databaseKey: String? = null) : ProteusClient
