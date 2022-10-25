@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.functional
 
 import com.wire.kalium.logic.functional.Either.Left
@@ -30,7 +32,6 @@ import kotlin.contracts.contract
  * @see Right
  */
 
-@Suppress("TooManyFunctions")
 sealed class Either<out L, out R> {
     /** * Represents the left side of [Either] class which by convention is a "Failure". */
     data class Left<out L>(val value: L) : Either<L, Nothing>()
