@@ -81,6 +81,7 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), message) }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun <T> wrapException(b: () -> T): T {
         try {
             return b()
