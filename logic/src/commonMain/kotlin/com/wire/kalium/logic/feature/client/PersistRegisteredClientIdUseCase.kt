@@ -18,7 +18,7 @@ interface PersistRegisteredClientIdUseCase {
     suspend operator fun invoke(clientId: ClientId): PersistRegisteredClientIdResult
 }
 
-class PersistRegisteredClientIdUseCaseImpl(
+internal class PersistRegisteredClientIdUseCaseImpl(
     private val clientRepository: ClientRepository
 ) : PersistRegisteredClientIdUseCase {
 
