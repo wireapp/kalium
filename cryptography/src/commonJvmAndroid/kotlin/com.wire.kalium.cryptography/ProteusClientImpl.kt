@@ -1,6 +1,6 @@
 package com.wire.kalium.cryptography
 
-actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: String?) : ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
 
     private var client: ProteusClient = databaseKey?.let {
         ProteusClientCoreCryptoImpl(rootDir, it)

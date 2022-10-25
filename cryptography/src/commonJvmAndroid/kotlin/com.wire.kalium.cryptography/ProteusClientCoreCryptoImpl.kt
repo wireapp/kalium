@@ -8,7 +8,7 @@ import io.ktor.util.encodeBase64
 import java.io.File
 
 @Suppress("TooManyFunctions")
-class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, private val databaseKey: String) : ProteusClient {
+class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, private val databaseKey: ProteusDBSecret) : ProteusClient {
 
     private val path: String = "$rootDir/$KEYSTORE_NAME"
     private lateinit var coreCrypto: CoreCrypto
@@ -22,7 +22,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         coreCrypto = wrapException {
             File(rootDir).mkdirs()
             // TODO client ID is not relevant for proteus but must be provided atm
-            val coreCrypto = CoreCrypto(path, databaseKey, CLIENT_ID.toString(), null)
+            val coreCrypto = CoreCrypto(path, databaseKey.value, CLIENT_ID.toString(), null)
             coreCrypto.proteusInit()
             coreCrypto
         }
@@ -33,7 +33,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         if (directory.exists()) {
             coreCrypto = wrapException {
                 // TODO client ID is not relevant for proteus but must be provided atm
-                val coreCrypto = CoreCrypto(path, databaseKey, CLIENT_ID.toString(), null)
+                val coreCrypto = CoreCrypto(path, databaseKey.value, CLIENT_ID.toString(), null)
                 coreCrypto.proteusInit()
                 coreCrypto
             }

@@ -75,7 +75,7 @@ class ProteusClientProviderImpl(
 
     private fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
-            ProteusClientImpl(rootProteusPath, SecurityHelper(passphraseStorage).mlsDBSecret(userId).value)
+            ProteusClientImpl(rootProteusPath, SecurityHelper(passphraseStorage).proteusDBSecret(userId))
         } else {
             ProteusClientImpl(rootProteusPath)
         }

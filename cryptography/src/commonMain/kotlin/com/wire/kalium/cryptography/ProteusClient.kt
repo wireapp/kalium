@@ -65,4 +65,4 @@ suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, 
     }
 }
 
-expect class ProteusClientImpl(rootDir: String, databaseKey: String? = null) : ProteusClient
+expect class ProteusClientImpl(rootDir: String, databaseKey: ProteusDBSecret? = null) : ProteusClient
