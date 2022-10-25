@@ -80,7 +80,3 @@ expect fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink:
  * @return the AES256 secret key encapsulated in a [AES256Key] object
  */
 expect fun generateRandomAES256Key(): AES256Key
-
-expect fun encryptFileWithChaCha20(dataSource: Source, outputSink: Sink, key: ChaCha20Key, salt: PlainData, hashedUserId: PlainData): Long
-
-expect fun decryptFileWithChaCha20(encryptedDataSource: Source, outputSink: Sink, key: ChaCha20Key, salt: PlainData): Long
