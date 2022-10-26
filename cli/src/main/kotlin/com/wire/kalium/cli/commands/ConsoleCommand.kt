@@ -31,18 +31,14 @@ class ConsoleCommand : CliktCommand(name = "console") {
     class KeyStroke(
         val key: Char,
         val handler: suspend (userSession: UserSessionScope, context: ConsoleContext) -> Int
-    ) {
-        suspend fun exec(userSession: UserSessionScope, context: ConsoleContext) = handler(userSession, context)
-    }
+    )
 
     private val port by option(help = "REST API server port").int().default(0)
     private val avsTest by option("-T").flag(default = false)
     private val avsNoise by option("-N").flag(default = false)
-
     private val userSession by requireObject<UserSessionScope>()
     private val context = ConsoleContext(null, false)
-
-    var strokes: Array<KeyStroke> = arrayOf(
+    private var strokes: Array<KeyStroke> = arrayOf(
         KeyStroke('l', ::listConversationsHandler),
         KeyStroke('c', ::startCallHandler),
         KeyStroke('a', ::answerCallHandler),
@@ -59,27 +55,27 @@ class ConsoleCommand : CliktCommand(name = "console") {
         if (port > 0) {
             HttpServer.create(InetSocketAddress(port), 0).apply {
                 createContext("/stroke") { http ->
-                    val stroke = http.getRequestURI().getQuery()[0]
+                    val stroke = http.requestURI.query[0]
                     echo("*** REST-stroke=$stroke")
                     val job = GlobalScope.launch(Dispatchers.Default) {
                         executeStroke(userSession, context, stroke)
                     }
                     http.responseHeaders.add("Content-type", "text/plain")
                     http.sendResponseHeaders(OK_STATUS, 0)
-                    val os = http.getResponseBody()
+                    val os = http.responseBody
                     // We should get the response from the stroke here....
                     // and send it on the os...
                     os.close()
                 }
                 createContext("/command") { http ->
-                    val command = http.getRequestURI().getQuery()
+                    val command = http.requestURI.query
                     echo("*** REST-COMMAND=$command")
                     val job = GlobalScope.launch(Dispatchers.Default) {
                         // executeCommand(userSession, stroke);
                     }
                     http.responseHeaders.add("Content-type", "text/plain")
                     http.sendResponseHeaders(OK_STATUS, 0)
-                    val os = http.getResponseBody()
+                    val os = http.responseBody
                     // We should get the response from the command here....
                     // and send it on the os...
                     os.close()
@@ -109,7 +105,7 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
     private suspend fun executeStroke(userSession: UserSessionScope, context: ConsoleContext, key: Char) {
         for (stroke in strokes) {
-            if (stroke.key.equals(key)) {
+            if (stroke.key == key) {
                 stroke.handler(userSession, context)
                 return
             }
@@ -171,7 +167,6 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
     private suspend fun quitApplication(userSession: UserSessionScope, context: ConsoleContext): Int {
         kotlin.system.exitProcess(0)
-        return 0
     }
 
     companion object {
