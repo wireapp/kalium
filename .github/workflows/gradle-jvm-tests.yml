@@ -30,6 +30,13 @@ jobs:
           ./gradlew jvmTest koverMergedXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
+      - name: Archive Test Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+            name: results
+            path: ./**/build/reports/tests/**
+
       - name: Install Pip for test result publishing
         run: |
           sudo apt-get update
