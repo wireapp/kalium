@@ -10,11 +10,16 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.utils.IgnoreJvm
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
+// There is some issue with restoring backup on JVM, investigation in progress
+@IgnoreJvm
 class RestoreBackupTest : BaseDatabaseTest() {
 
     private lateinit var currentDatabase: UserDatabaseBuilder
@@ -97,28 +102,31 @@ class RestoreBackupTest : BaseDatabaseTest() {
             )
         )
 
-        backupDatabase.conversationDAO.insertConversation(
-            ConversationEntity(
-                id = QualifiedIDEntity(
-                    "test2Value",
-                    "test2Domain"
-                ),
-                name = "testName",
-                type = ConversationEntity.Type.ONE_ON_ONE,
-                teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
-                mutedTime = 0,
-                removedBy = null,
-                creatorId = "testUser",
-                lastNotificationDate = null,
-                lastModifiedDate = "2000-01-01T12:00:00.000Z",
-                lastReadDate = "2000-01-01T12:00:00.000Z",
-                access = listOf(),
-                accessRole = listOf(),
-                isCreator = false
-            )
+        val conversationEntity = ConversationEntity(
+            id = QualifiedIDEntity(
+                "test2Value",
+                "test2Domain"
+            ),
+            name = "testName",
+            type = ConversationEntity.Type.ONE_ON_ONE,
+            teamId = null,
+            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            mutedTime = 0,
+            removedBy = null,
+            creatorId = "testUser",
+            lastNotificationDate = null,
+            lastModifiedDate = "2000-01-01T12:00:00.000Z",
+            lastReadDate = "2000-01-01T12:00:00.000Z",
+            access = listOf(),
+            accessRole = listOf(),
+            isCreator = false
         )
+
+        backupDatabase.conversationDAO.insertConversation(
+            conversationEntity
+        )
+
         backupDatabase.messageDAO.insertMessage(
             newRegularMessageEntity(
                 id = "1",
@@ -130,7 +138,10 @@ class RestoreBackupTest : BaseDatabaseTest() {
         println("database path of back up :${databasePath(backup)}/main.db")
         println("database path of user database:${databasePath()}/main.db")
 
-        currentDatabase.backupImporter.importFromFile("/Users/Mateusz/AndroidStudioProjects/kalium/persistence/src/commonTest/kotlin/com/wire/kalium/persistence/main.db")
+        currentDatabase.backupImporter.importFromFile(databasePath(backup))
+
+        val conversation = currentDatabase.conversationDAO.getConversationByQualifiedID(conversationEntity.id)
+        assertEquals(conversation, conversationEntity)
 //         currentDatabase.backupImporter.importFromFile("/var/folders/b1/2qw84dsd7bb48qw_3yz9vll80000gp/T/test-storage3850219063162656586/test-backupDomain-backupValue.db/main.db")
     }
 

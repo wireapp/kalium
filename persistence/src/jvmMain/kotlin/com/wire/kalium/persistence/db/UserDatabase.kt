@@ -29,7 +29,7 @@ fun userDatabaseBuilder(
     storePath.mkdirs()
 
     val driver: SqlDriver = LogSqliteDriver(sqlDriver("jdbc:sqlite:${databasePath.absolutePath}")) {
-        println("LogSqliteDriver:$it")
+//         println("LogSqliteDriver:$it")
     }
 
     if (!databaseExists) {

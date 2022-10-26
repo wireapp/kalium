@@ -10,14 +10,20 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
 
     // TODO: Emit steps to display progress as backup is imported
     override suspend fun importFromFile(filePath: String) {
+        println("FILE_PATH_ANDROID:$filePath")
+        sqlDriver.execute("""ATTACH '$filePath' AS backupDb""")
         sqlDriver.execute("""BEGIN""")
-        sqlDriver.execute("""ATTACH '/Users/Mateusz/AndroidStudioProjects/kalium/persistence/src/commonTest/kotlin/com/wire/kalium/persistence/main.db' AS backupDb""")
-        sqlDriver.execute("""INSERT OR IGNORE INTO Conversation SELECT * FROM backupDb.conversation""")
+        val test = sqlDriver.executeQuery(null, "SELECT name FROM sqlite_temp_master WHERE type='table'", 0, null)
+        while (test.next()) {
+            println("SQLITE_MASTER_CURSOR:${test.getString(0)}")
+        }
+        sqlDriver.execute("""INSERT OR IGNORE INTO Conversation SELECT * FROM backupDb.Conversation""")
+
 //         migrateTable("Team")
 //         migrateTable("User")
 //         migrateTable("SelfUser")
 //         migrateTable("Metadata")
-     //   migrateTable("Conversation")
+        //   migrateTable("Conversation")
 //         migrateTable("Connection")
 //         migrateTable("Member")
 //         migrateTable("Client")
@@ -35,6 +41,7 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
 //         migrateTable("MessageUnknownContent")
 //         migrateTable("Reaction")
 
+        sqlDriver.execute("""COMMIT""")
         sqlDriver.execute("""DETACH $BACKUP_DB_ALIAS""")
     }
 
