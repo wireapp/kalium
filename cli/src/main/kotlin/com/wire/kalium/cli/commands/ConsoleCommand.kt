@@ -21,102 +21,36 @@ import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
 import java.util.Scanner
 
-class ConsoleContext(
-    var currentConversation: Conversation?,
-    var isMuted: Boolean = false
-)
+class ConsoleCommand : CliktCommand(name = "console") {
 
-class KeyStroke(
-    val key: Char,
-    val handler: suspend (userSession: UserSessionScope, context: ConsoleContext) -> Int
-) {
-    suspend fun exec(userSession: UserSessionScope, context: ConsoleContext) = handler(userSession, context)
-}
-
-var strokes: Array<KeyStroke> = arrayOf(
-    KeyStroke('l', ::listConversationsHandler),
-    KeyStroke('c', ::startCallHandler),
-    KeyStroke('a', ::answerCallHandler),
-    KeyStroke('e', ::endCallHandler),
-    KeyStroke('m', ::muteCallHandler),
-    KeyStroke('s', ::selectConversationHandler),
-    KeyStroke('q', ::quitApplication)
-)
-
-suspend fun executeStroke(userSession: UserSessionScope, context: ConsoleContext, key: Char) {
-    for (stroke in strokes) {
-        if (stroke.key.equals(key)) {
-            stroke.handler(userSession, context)
-            return
-        }
-    }
-    TermUi.echo("Unknown stroke: $key")
-}
-
-suspend fun listConversationsHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
-    userSession.listConversations()
-    return 0
-}
-
-suspend fun selectConversationHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
-    context.currentConversation = userSession.selectConversation()
-    return 0
-}
-
-suspend fun startCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
-    val currentConversation = context.currentConversation ?: return -1
-
-    val convType = when (currentConversation.type) {
-        Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
-        Conversation.Type.GROUP -> ConversationType.Conference
-        else -> ConversationType.Unknown
-    }
-
-    userSession.calls.startCall.invoke(
-        conversationId = currentConversation.id,
-        conversationType = convType
+    class ConsoleContext(
+        var currentConversation: Conversation?,
+        var isMuted: Boolean = false
     )
 
-    return 0
-}
+    class KeyStroke(
+        val key: Char,
+        val handler: suspend (userSession: UserSessionScope, context: ConsoleContext) -> Int
+    ) {
+        suspend fun exec(userSession: UserSessionScope, context: ConsoleContext) = handler(userSession, context)
+    }
 
-suspend fun answerCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
-    val currentConversation = context.currentConversation ?: return -1
-    userSession.calls.answerCall.invoke(conversationId = currentConversation.id)
-    return 0
-}
-
-suspend fun endCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
-    val currentConversation = context.currentConversation ?: return -1
-    userSession.calls.endCall.invoke(conversationId = currentConversation.id)
-    return 0
-}
-
-suspend fun muteCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
-    val currentConversation = context.currentConversation ?: return -1
-
-    context.isMuted = !context.isMuted
-
-    if (context.isMuted)
-        userSession.calls.muteCall(conversationId = currentConversation.id)
-    else
-        userSession.calls.unMuteCall(conversationId = currentConversation.id)
-
-    return 0
-}
-
-suspend fun quitApplication(userSession: UserSessionScope, context: ConsoleContext): Int {
-    kotlin.system.exitProcess(0)
-    return 0
-}
-
-class ConsoleCommand : CliktCommand(name = "console") {
     private val port by option(help = "REST API server port").int().default(0)
     private val avsTest by option("-T").flag(default = false)
     private val avsNoise by option("-N").flag(default = false)
 
     private val userSession by requireObject<UserSessionScope>()
     private val context = ConsoleContext(null, false)
+
+    var strokes: Array<KeyStroke> = arrayOf(
+        KeyStroke('l', ::listConversationsHandler),
+        KeyStroke('c', ::startCallHandler),
+        KeyStroke('a', ::answerCallHandler),
+        KeyStroke('e', ::endCallHandler),
+        KeyStroke('m', ::muteCallHandler),
+        KeyStroke('s', ::selectConversationHandler),
+        KeyStroke('q', ::quitApplication)
+    )
 
     override fun run() = runBlocking {
         val conversations = getConversations(userSession)
@@ -171,6 +105,73 @@ class ConsoleCommand : CliktCommand(name = "console") {
             }
             job.join()
         }
+    }
+
+    private suspend fun executeStroke(userSession: UserSessionScope, context: ConsoleContext, key: Char) {
+        for (stroke in strokes) {
+            if (stroke.key.equals(key)) {
+                stroke.handler(userSession, context)
+                return
+            }
+        }
+        TermUi.echo("Unknown stroke: $key")
+    }
+
+    private suspend fun listConversationsHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+        userSession.listConversations()
+        return 0
+    }
+
+    private suspend fun selectConversationHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+        context.currentConversation = userSession.selectConversation()
+        return 0
+    }
+
+    private suspend fun startCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+        val currentConversation = context.currentConversation ?: return -1
+
+        val convType = when (currentConversation.type) {
+            Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
+            Conversation.Type.GROUP -> ConversationType.Conference
+            else -> ConversationType.Unknown
+        }
+
+        userSession.calls.startCall.invoke(
+            conversationId = currentConversation.id,
+            conversationType = convType
+        )
+
+        return 0
+    }
+
+    private suspend fun answerCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+        val currentConversation = context.currentConversation ?: return -1
+        userSession.calls.answerCall.invoke(conversationId = currentConversation.id)
+        return 0
+    }
+
+    private suspend fun endCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+        val currentConversation = context.currentConversation ?: return -1
+        userSession.calls.endCall.invoke(conversationId = currentConversation.id)
+        return 0
+    }
+
+    private suspend fun muteCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+        val currentConversation = context.currentConversation ?: return -1
+
+        context.isMuted = !context.isMuted
+
+        if (context.isMuted)
+            userSession.calls.muteCall(conversationId = currentConversation.id)
+        else
+            userSession.calls.unMuteCall(conversationId = currentConversation.id)
+
+        return 0
+    }
+
+    private suspend fun quitApplication(userSession: UserSessionScope, context: ConsoleContext): Int {
+        kotlin.system.exitProcess(0)
+        return 0
     }
 
     companion object {
