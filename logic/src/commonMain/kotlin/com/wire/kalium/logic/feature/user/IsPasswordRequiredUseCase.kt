@@ -18,7 +18,7 @@ class IsPasswordRequiredUseCase internal constructor(
     })
 
     internal suspend fun eitherInvoke(): Either<StorageFailure, Boolean> = sessionRepository.ssoId(selfUserId).map {
-        it == null || it.subject != null
+        it?.subject == null
     }
 
     sealed class Result {

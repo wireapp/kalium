@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
@@ -23,7 +24,8 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val clearClientDataUseCase: ClearClientDataUseCase,
     private val clearUserDataUseCase: ClearUserDataUseCase,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val pushTokenRepository: PushTokenRepository
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
@@ -50,6 +52,10 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 clientRepository.clearCurrentClientId()
             }
         }
+
+        // After logout we need to mark the Firebase token as invalid locally so that we can register a new one on the next login.
+        pushTokenRepository.setUpdateFirebaseTokenFlag(true)
+
         logoutRepository.onLogout(reason)
         userSessionScopeProvider.get(userId)?.cancel()
         userSessionScopeProvider.delete(userId)
