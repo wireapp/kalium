@@ -3,10 +3,10 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -90,7 +90,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
         // then
         val messageResult = (result?.content as MessageEntityContent.Text)
         assertIs<MessageEntity.Regular>(result)
-        println("testTotalMentions3 -> E: 2 | R: ${messageResult.mentions.size}")
+        kaliumLogger.d("testTotalMentions -> E: 2 | R: ${messageResult.mentions.size}")
         assertEquals(
             2,
             messageResult.mentions.size
@@ -121,7 +121,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
 //             2,
 //             messageResult.mentions.size
 //         )
-        println("testTotalMentions3 -> E: ${SELF_USER_ID} | R: ${messageResult.mentions.first().userId}")
+        kaliumLogger.d("testTotalMentions2 -> E: ${SELF_USER_ID} | R: ${messageResult.mentions.first().userId}")
         assertEquals(
             SELF_USER_ID,
             messageResult.mentions.first().userId
@@ -152,7 +152,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
 //             SELF_USER_ID,
 //             messageResult.mentions.first().userId
 //         )
-        println("testTotalMentions3 -> E: ${OTHER_USER_2.id} | R: ${messageResult.mentions.last().userId}")
+        kaliumLogger.d("testTotalMentions3 -> E: ${OTHER_USER_2.id} | R: ${messageResult.mentions.last().userId}")
         assertEquals(
             OTHER_USER_2.id,
             messageResult.mentions.last().userId
