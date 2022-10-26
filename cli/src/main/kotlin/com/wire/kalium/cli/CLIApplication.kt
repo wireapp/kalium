@@ -491,7 +491,7 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
     private val logOutputFile by option(help = "output file for logs").file(canBeDir = false)
     private val developmentApiEnabled by option(help = "use development API if supported by backend").flag(default = false)
-    private val encryptProteusStorage by option(help = "use encrypted storage for proteus sessions and identity").flag(default = true)
+    private val encryptProteusStorage by option(help = "use encrypted storage for proteus sessions and identity").flag(default = false)
     private val fileLogger: FileLogger by lazy { FileLogger(logOutputFile ?: File("kalium.log")) }
 
     override fun run() = runBlocking {
