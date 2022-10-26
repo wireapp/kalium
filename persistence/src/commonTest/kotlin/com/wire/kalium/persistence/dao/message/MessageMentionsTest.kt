@@ -123,8 +123,8 @@ class MessageMentionsTest : BaseDatabaseTest() {
 //         )
         kaliumLogger.i("testTotalMentions2 -> E: ${SELF_USER_ID} | R: ${messageResult.mentions.first().userId}")
         assertEquals(
-            SELF_USER_ID,
-            messageResult.mentions.first().userId
+            SELF_USER_ID.value,
+            messageResult.mentions.first().userId.value
         )
 //         assertEquals(
 //             OTHER_USER_2.id,
@@ -154,8 +154,8 @@ class MessageMentionsTest : BaseDatabaseTest() {
 //         )
         kaliumLogger.i("testTotalMentions3 -> E: ${OTHER_USER_2.id} | R: ${messageResult.mentions.last().userId}")
         assertEquals(
-            OTHER_USER_2.id,
-            messageResult.mentions.last().userId
+            OTHER_USER_2.id.value,
+            messageResult.mentions.last().userId.value
         )
     }
 
