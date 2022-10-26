@@ -34,7 +34,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
     @Test
     fun givenMentionsAreInserted_whenGettingMessageByConversationIdAndVisibility_thenCorrectMentionsAreReturned() = runTest {
         testTotalMentions {
-            messageDAO.getMessagesByConversationAndVisibility(TEST_MESSAGE.conversationId,1, 0)
+            messageDAO.getMessagesByConversationAndVisibility(TEST_MESSAGE.conversationId, 1, 0)
                 .first()
                 .first()
         }
