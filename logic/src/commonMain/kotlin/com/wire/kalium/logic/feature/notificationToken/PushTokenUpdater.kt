@@ -1,20 +1,22 @@
 package com.wire.kalium.logic.feature.notificationToken
 
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.api.base.model.PushTokenBody
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class PushTokenUpdater(
     private val clientRepository: ClientRepository,
     private val notificationTokenRepository: NotificationTokenRepository,
