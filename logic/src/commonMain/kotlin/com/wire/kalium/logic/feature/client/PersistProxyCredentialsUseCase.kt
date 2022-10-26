@@ -17,7 +17,6 @@ interface PersistProxyCredentialsUseCase {
             class Generic(val failure: StorageFailure) : Failure()
         }
     }
-
 }
 
 class PersistProxyCredentialsUseCaseImpl(
@@ -30,7 +29,4 @@ class PersistProxyCredentialsUseCaseImpl(
         }, {
             PersistProxyCredentialsUseCase.PersistProxyCredentialsResult.Success
         })
-
 }
-
-
