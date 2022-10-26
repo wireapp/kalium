@@ -19,6 +19,7 @@ sealed class AuthenticationResult {
     ) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
+        object SocketError : Failure()
         object InvalidCredentials : Failure()
         object InvalidUserIdentifier : Failure()
         class Generic(val genericFailure: CoreFailure) : Failure()
@@ -63,15 +64,16 @@ internal class LoginUseCaseImpl internal constructor(
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
         }.map { (authTokens, ssoId) -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id) }
-        .fold({
-            when (it) {
-                is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
-                is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
-                else -> AuthenticationResult.Failure.Generic(it)
-            }
-        }, {
-            it
-        })
+            .fold({
+                when (it) {
+                    is NetworkFailure.SocketError -> AuthenticationResult.Failure.SocketError
+                    is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
+                    is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
+                    else -> AuthenticationResult.Failure.Generic(it)
+                }
+            }, {
+                it
+            })
     }
 
     private fun handleServerMiscommunication(error: NetworkFailure.ServerMiscommunication): AuthenticationResult.Failure {

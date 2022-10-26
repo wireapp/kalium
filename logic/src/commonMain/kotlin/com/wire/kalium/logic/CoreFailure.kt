@@ -43,6 +43,8 @@ sealed class NetworkFailure : CoreFailure() {
      */
     class NoNetworkConnection(val cause: Throwable?) : NetworkFailure()
 
+    class SocketError(val cause: Throwable?) : NetworkFailure()
+
     /**
      * Server internal error, or we can't parse the response,
      * or anything API-related that is out of control from the user.
@@ -82,10 +84,14 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
         is NetworkResponse.Error -> {
             kaliumLogger.e(result.kException.stackTraceToString())
             val exception = result.kException
-            if (exception is KaliumException.GenericError && exception.cause is IOException) {
-                Either.Left(NetworkFailure.NoNetworkConnection(exception))
+            if (exception.cause?.message?.lowercase()?.contains("socks") == true) {
+                Either.Left(NetworkFailure.SocketError(exception.cause))
             } else {
-                Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+                if (exception is KaliumException.GenericError && exception.cause is IOException) {
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                } else {
+                    Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+                }
             }
         }
     }
