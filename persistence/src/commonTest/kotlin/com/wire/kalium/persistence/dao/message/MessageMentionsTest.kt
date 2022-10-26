@@ -14,7 +14,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageMentionsTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
