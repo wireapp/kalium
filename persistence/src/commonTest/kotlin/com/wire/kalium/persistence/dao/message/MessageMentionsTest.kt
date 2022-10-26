@@ -40,8 +40,40 @@ class MessageMentionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenMentionsAreInserted_whenGettingMessageByConversationIdAndVisibility_thenCorrectMentionsAreReturned2() = runTest {
+        testTotalMentions2 {
+            messageDAO.getMessagesByConversationAndVisibility(TEST_MESSAGE.conversationId, 1, 0)
+                .first()
+                .first()
+        }
+    }
+
+    @Test
+    fun givenMentionsAreInserted_whenGettingMessageByConversationIdAndVisibility_thenCorrectMentionsAreReturned3() = runTest {
+        testTotalMentions3 {
+            messageDAO.getMessagesByConversationAndVisibility(TEST_MESSAGE.conversationId, 1, 0)
+                .first()
+                .first()
+        }
+    }
+
+    @Test
     fun givenMentionsAreInserted_whenGettingMessageById_thenCorrectMentionsAreReturned() = runTest {
         testTotalMentions {
+            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
+        }
+    }
+
+    @Test
+    fun givenMentionsAreInserted_whenGettingMessageById_thenCorrectMentionsAreReturned2() = runTest {
+        testTotalMentions2 {
+            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
+        }
+    }
+
+    @Test
+    fun givenMentionsAreInserted_whenGettingMessageById_thenCorrectMentionsAreReturned3() = runTest {
+        testTotalMentions3 {
             messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
         }
     }
@@ -62,10 +94,62 @@ class MessageMentionsTest : BaseDatabaseTest() {
             2,
             messageResult.mentions.size
         )
+//         assertEquals(
+//             SELF_USER_ID,
+//             messageResult.mentions.first().userId
+//         )
+//         assertEquals(
+//             OTHER_USER_2.id,
+//             messageResult.mentions.last().userId
+//         )
+    }
+
+    private suspend fun testTotalMentions2(
+        queryMessageEntity: suspend () -> MessageEntity?
+    ) {
+        // given
+        insertInitialData()
+
+        // when
+        val result = queryMessageEntity()
+
+        // then
+        val messageResult = (result?.content as MessageEntityContent.Text)
+        assertIs<MessageEntity.Regular>(result)
+//         assertEquals(
+//             2,
+//             messageResult.mentions.size
+//         )
         assertEquals(
             SELF_USER_ID,
             messageResult.mentions.first().userId
         )
+//         assertEquals(
+//             OTHER_USER_2.id,
+//             messageResult.mentions.last().userId
+//         )
+    }
+
+    private suspend fun testTotalMentions3(
+        queryMessageEntity: suspend () -> MessageEntity?
+    ) {
+        // given
+        insertInitialData()
+
+        // when
+        val result = queryMessageEntity()
+
+        // then
+        val messageResult = (result?.content as MessageEntityContent.Text)
+        assertIs<MessageEntity.Regular>(result)
+//         assertEquals(
+//             2,
+//             messageResult.mentions.size
+//         )
+//         assertEquals(
+//             SELF_USER_ID,
+//             messageResult.mentions.first().userId
+//         )
         assertEquals(
             OTHER_USER_2.id,
             messageResult.mentions.last().userId
