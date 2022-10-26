@@ -631,9 +631,9 @@ class UserSessionScope internal constructor(
         get() = UserEventReceiverImpl(
             connectionRepository,
             logout,
-            clientRepository,
             userRepository,
-            userId
+            userId,
+            clientIdProvider
         )
 
     private val teamEventReceiver: TeamEventReceiver

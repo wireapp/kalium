@@ -29,7 +29,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
     override suspend operator fun invoke(reason: LogoutReason) {
-        logoutRepository.onLogout(reason)
         deregisterTokenUseCase()
         logoutRepository.logout()
         sessionRepository.logout(userId = userId, reason)
@@ -51,6 +50,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 clientRepository.clearCurrentClientId()
             }
         }
+        logoutRepository.onLogout(reason)
         userSessionScopeProvider.get(userId)?.cancel()
         userSessionScopeProvider.delete(userId)
     }
