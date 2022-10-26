@@ -307,7 +307,7 @@ internal class ConversationMapperImpl(
             id = idMapper.toDaoModel(conversation.id),
             name = name,
             type = type.toDAO(),
-            teamId = null,
+            teamId = conversation.teamId.toString(),
             protocolInfo = ProtocolInfo.Proteus,
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             mutedTime = 0,
