@@ -207,7 +207,19 @@ IFNULL(
         AND Reaction.sender_id = SelfUser.id
     ),
     '[]'
-) AS selfReactionsJson
+) AS selfReactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT(
+        '{"start":' || start || ', "length":' || length ||
+        ', "userId":{"value":"' || substr(user_id, 0, instr(user_id, '@')) || '"' ||
+        ',"domain":"' || substr(user_id, instr(user_id, '@')+1, length(user_id)) || '"' ||
+        '}' || '}') || ']'
+    FROM MessageMention
+    WHERE MessageMention.message_id = Message.id
+        AND MessageMention.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS mentions
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
