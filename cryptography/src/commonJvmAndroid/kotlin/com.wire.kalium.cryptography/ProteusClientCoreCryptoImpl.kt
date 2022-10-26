@@ -18,6 +18,10 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         return File(path).deleteRecursively()
     }
 
+    override fun needsMigration(): Boolean {
+        return cryptoBoxFilesExists()
+    }
+
     override suspend fun openOrCreate() {
         coreCrypto = wrapException {
             File(rootDir).mkdirs()

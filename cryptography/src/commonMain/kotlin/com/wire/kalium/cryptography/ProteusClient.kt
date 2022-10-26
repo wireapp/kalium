@@ -17,6 +17,8 @@ interface ProteusClient {
     @Throws(ProteusException::class)
     fun clearLocalFiles(): Boolean
 
+    fun needsMigration(): Boolean
+
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun openOrCreate()
 
