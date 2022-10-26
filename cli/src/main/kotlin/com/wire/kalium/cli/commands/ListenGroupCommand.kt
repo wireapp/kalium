@@ -1,7 +1,8 @@
-package com.wire.kalium.cli
+package com.wire.kalium.cli.commands
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
+import com.wire.kalium.cli.selectConversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.UserSessionScope
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +15,7 @@ class ListenGroupCommand : CliktCommand(name = "listen-group") {
     private val userSession by requireObject<UserSessionScope>()
 
     override fun run() = runBlocking {
-        val conversationID = selectConversation(userSession).id
+        val conversationID = userSession.selectConversation().id
 
         GlobalScope.launch(Dispatchers.Default) {
             userSession.messages.getRecentMessages(conversationID, limit = 1).collect {

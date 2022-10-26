@@ -1,4 +1,4 @@
-package com.wire.kalium.cli
+package com.wire.kalium.cli.commands
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
@@ -8,6 +8,9 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import com.sun.net.httpserver.HttpServer
+import com.wire.kalium.cli.getConversations
+import com.wire.kalium.cli.listConversations
+import com.wire.kalium.cli.selectConversation
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.feature.UserSessionScope
@@ -51,12 +54,12 @@ suspend fun executeStroke(userSession: UserSessionScope, context: ConsoleContext
 }
 
 suspend fun listConversationsHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
-    listConversations(userSession)
+    userSession.listConversations()
     return 0
 }
 
 suspend fun selectConversationHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
-    context.currentConversation = selectConversation(userSession)
+    context.currentConversation = userSession.selectConversation()
     return 0
 }
 

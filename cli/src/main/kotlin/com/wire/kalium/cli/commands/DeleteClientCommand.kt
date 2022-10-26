@@ -1,4 +1,4 @@
-package com.wire.kalium.cli
+package com.wire.kalium.cli.commands
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
