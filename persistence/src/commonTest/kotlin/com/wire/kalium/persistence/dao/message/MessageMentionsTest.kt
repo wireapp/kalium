@@ -90,6 +90,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
         // then
         val messageResult = (result?.content as MessageEntityContent.Text)
         assertIs<MessageEntity.Regular>(result)
+        println("testTotalMentions3 -> E: 2 | R: ${messageResult.mentions.size}")
         assertEquals(
             2,
             messageResult.mentions.size
@@ -120,6 +121,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
 //             2,
 //             messageResult.mentions.size
 //         )
+        println("testTotalMentions3 -> E: ${SELF_USER_ID} | R: ${messageResult.mentions.first().userId}")
         assertEquals(
             SELF_USER_ID,
             messageResult.mentions.first().userId
@@ -150,6 +152,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
 //             SELF_USER_ID,
 //             messageResult.mentions.first().userId
 //         )
+        println("testTotalMentions3 -> E: ${OTHER_USER_2.id} | R: ${messageResult.mentions.last().userId}")
         assertEquals(
             OTHER_USER_2.id,
             messageResult.mentions.last().userId
