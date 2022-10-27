@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestEvent
@@ -100,13 +101,16 @@ class UserEventReceiverTest {
         @Mock
         val userRepository = mock(classOf<UserRepository>())
 
+        @Mock
+        private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            connectionRepository, logoutUseCase, clientRepository, userRepository, USER_ID
+            connectionRepository, logoutUseCase, userRepository, USER_ID, currentClientIdProvider
         )
 
         fun withCurrentClientIdIs(clientId: ClientId) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::currentClientId)
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(Either.Right(clientId))
         }
