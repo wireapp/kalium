@@ -88,9 +88,10 @@ class MessageMentionsTest : BaseDatabaseTest() {
         val result = queryMessageEntity()
 
         // then
+        println("testTotalMentions -> Start")
         val messageResult = (result?.content as MessageEntityContent.Text)
         assertIs<MessageEntity.Regular>(result)
-        kaliumLogger.i("testTotalMentions -> E: 2 | R: ${messageResult.mentions.size}")
+        println("testTotalMentions -> E: 2 | R: ${messageResult.mentions.size}")
         assertEquals(
             2,
             messageResult.mentions.size
@@ -115,13 +116,14 @@ class MessageMentionsTest : BaseDatabaseTest() {
         val result = queryMessageEntity()
 
         // then
+        println("testTotalMentions2 -> Start")
         val messageResult = (result?.content as MessageEntityContent.Text)
         assertIs<MessageEntity.Regular>(result)
 //         assertEquals(
 //             2,
 //             messageResult.mentions.size
 //         )
-        kaliumLogger.i("testTotalMentions2 -> E: ${SELF_USER_ID} | R: ${messageResult.mentions.first().userId}")
+        println("testTotalMentions2 -> E: ${SELF_USER_ID} | R: ${messageResult.mentions.first().userId}")
         assertEquals(
             SELF_USER_ID.value,
             messageResult.mentions.first().userId.value
@@ -142,6 +144,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
         val result = queryMessageEntity()
 
         // then
+        println("testTotalMentions3 -> Start")
         val messageResult = (result?.content as MessageEntityContent.Text)
         assertIs<MessageEntity.Regular>(result)
 //         assertEquals(
@@ -152,7 +155,7 @@ class MessageMentionsTest : BaseDatabaseTest() {
 //             SELF_USER_ID,
 //             messageResult.mentions.first().userId
 //         )
-        kaliumLogger.i("testTotalMentions3 -> E: ${OTHER_USER_2.id} | R: ${messageResult.mentions.last().userId}")
+        println("testTotalMentions3 -> E: ${OTHER_USER_2.id} | R: ${messageResult.mentions.last().userId}")
         assertEquals(
             OTHER_USER_2.id.value,
             messageResult.mentions.last().userId.value
