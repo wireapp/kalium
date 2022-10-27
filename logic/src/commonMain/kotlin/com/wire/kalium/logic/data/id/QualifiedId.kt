@@ -11,16 +11,6 @@ data class QualifiedID(
     @SerialName("domain")
     val domain: String
 ) {
-
-    init {
-        require(!value.contains('@')) {
-            "QualifiedID.value should not contain '@' (value=$value; domain=$domain)"
-        }
-        require(!domain.contains('@')) {
-            "QualifiedID.domain should not contain '@' (value=$value; domain=$domain)"
-        }
-    }
-
     companion object {
         const val WIRE_PRODUCTION_DOMAIN = "wire.com"
     }
