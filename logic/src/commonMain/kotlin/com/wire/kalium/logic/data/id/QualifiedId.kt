@@ -14,10 +14,10 @@ data class QualifiedID(
 
     init {
         require(!value.contains('@')) {
-            "QualifiedId.value should not contain '@'"
+            "QualifiedID.value should not contain '@' (value=$value; domain=$domain)"
         }
         require(!domain.contains('@')) {
-            "QualifiedId.domain should not contain '@'"
+            "QualifiedID.domain should not contain '@' (value=$value; domain=$domain)"
         }
     }
 

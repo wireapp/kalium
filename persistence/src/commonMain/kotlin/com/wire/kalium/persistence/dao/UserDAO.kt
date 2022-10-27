@@ -11,10 +11,10 @@ data class QualifiedIDEntity(
 ) {
     init {
         require(!value.contains('@')) {
-            "QualifiedIDEntity.value should not contain '@'"
+            "QualifiedIDEntity.value should not contain '@' (value=$value; domain=$domain)"
         }
         require(!domain.contains('@')) {
-            "QualifiedIDEntity.domain should not contain '@'"
+            "QualifiedIDEntity.domain should not contain '@' (value=$value; domain=$domain)"
         }
     }
 }
