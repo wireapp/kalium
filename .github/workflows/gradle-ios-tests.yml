@@ -39,7 +39,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-            name: results
+            name: test-reports
             path: ./**/build/reports/tests/**
 
       - name: Publish Unit Test Results
