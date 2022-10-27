@@ -3,7 +3,6 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -40,40 +39,8 @@ class MessageMentionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMentionsAreInserted_whenGettingMessageByConversationIdAndVisibility_thenCorrectMentionsAreReturned2() = runTest {
-        testTotalMentions2 {
-            messageDAO.getMessagesByConversationAndVisibility(TEST_MESSAGE.conversationId, 1, 0)
-                .first()
-                .first()
-        }
-    }
-
-    @Test
-    fun givenMentionsAreInserted_whenGettingMessageByConversationIdAndVisibility_thenCorrectMentionsAreReturned3() = runTest {
-        testTotalMentions3 {
-            messageDAO.getMessagesByConversationAndVisibility(TEST_MESSAGE.conversationId, 1, 0)
-                .first()
-                .first()
-        }
-    }
-
-    @Test
     fun givenMentionsAreInserted_whenGettingMessageById_thenCorrectMentionsAreReturned() = runTest {
         testTotalMentions {
-            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
-        }
-    }
-
-    @Test
-    fun givenMentionsAreInserted_whenGettingMessageById_thenCorrectMentionsAreReturned2() = runTest {
-        testTotalMentions2 {
-            messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
-        }
-    }
-
-    @Test
-    fun givenMentionsAreInserted_whenGettingMessageById_thenCorrectMentionsAreReturned3() = runTest {
-        testTotalMentions3 {
             messageDAO.getMessageById(TEST_MESSAGE.id, TEST_MESSAGE.conversationId).first()
         }
     }
@@ -88,77 +55,19 @@ class MessageMentionsTest : BaseDatabaseTest() {
         val result = queryMessageEntity()
 
         // then
-        println("testTotalMentions -> Start")
         val messageResult = (result?.content as MessageEntityContent.Text)
         assertIs<MessageEntity.Regular>(result)
-        println("testTotalMentions -> E: 2 | R: ${messageResult.mentions.size}")
         assertEquals(
             2,
             messageResult.mentions.size
         )
-//         assertEquals(
-//             SELF_USER_ID,
-//             messageResult.mentions.first().userId
-//         )
-//         assertEquals(
-//             OTHER_USER_2.id,
-//             messageResult.mentions.last().userId
-//         )
-    }
-
-    private suspend fun testTotalMentions2(
-        queryMessageEntity: suspend () -> MessageEntity?
-    ) {
-        // given
-        insertInitialData()
-
-        // when
-        val result = queryMessageEntity()
-
-        // then
-        println("testTotalMentions2 -> Start")
-        val messageResult = (result?.content as MessageEntityContent.Text)
-        assertIs<MessageEntity.Regular>(result)
-//         assertEquals(
-//             2,
-//             messageResult.mentions.size
-//         )
-        println("testTotalMentions2 -> E: ${SELF_USER_ID} | R: ${messageResult.mentions.first().userId}")
         assertEquals(
-            SELF_USER_ID.value,
-            messageResult.mentions.first().userId.value
+            SELF_USER_ID,
+            messageResult.mentions.first().userId
         )
-//         assertEquals(
-//             OTHER_USER_2.id,
-//             messageResult.mentions.last().userId
-//         )
-    }
-
-    private suspend fun testTotalMentions3(
-        queryMessageEntity: suspend () -> MessageEntity?
-    ) {
-        // given
-        insertInitialData()
-
-        // when
-        val result = queryMessageEntity()
-
-        // then
-        println("testTotalMentions3 -> Start")
-        val messageResult = (result?.content as MessageEntityContent.Text)
-        assertIs<MessageEntity.Regular>(result)
-//         assertEquals(
-//             2,
-//             messageResult.mentions.size
-//         )
-//         assertEquals(
-//             SELF_USER_ID,
-//             messageResult.mentions.first().userId
-//         )
-        println("testTotalMentions3 -> E: ${OTHER_USER_2.id} | R: ${messageResult.mentions.last().userId}")
         assertEquals(
-            OTHER_USER_2.id.value,
-            messageResult.mentions.last().userId.value
+            OTHER_USER_2.id,
+            messageResult.mentions.last().userId
         )
     }
 
