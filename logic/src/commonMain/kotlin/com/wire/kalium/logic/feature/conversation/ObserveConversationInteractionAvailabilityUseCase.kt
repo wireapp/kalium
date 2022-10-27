@@ -24,27 +24,27 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
     suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> {
         return conversationRepository.observeIsUserMember(conversationId, selfUserId)
             .combine(conversationRepository.observeConversationDetailsById(conversationId)) { eitherIsSelfMember, eitherConversation ->
-                Either.map2(
-                    eitherIsSelfMember,
-                    eitherConversation
-                ) { isSelfMember, conversationDetails ->
-                    when (conversationDetails) {
-                        is ConversationDetails.Connection -> InteractionAvailability.DISABLED
-                        is ConversationDetails.Group -> if (isSelfMember) InteractionAvailability.ENABLED
-                        else InteractionAvailability.NOT_MEMBER
-                        is ConversationDetails.OneOne -> {
-                            when {
-                                conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
-                                conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED ->
-                                    InteractionAvailability.BLOCKED_USER
-                                else -> InteractionAvailability.ENABLED
+                eitherIsSelfMember.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { isSelfMember ->
+                    eitherConversation.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { conversationDetails ->
+                        val availability = when (conversationDetails) {
+                            is ConversationDetails.Connection -> InteractionAvailability.DISABLED
+                            is ConversationDetails.Group -> if (isSelfMember) InteractionAvailability.ENABLED
+                            else InteractionAvailability.NOT_MEMBER
+                            is ConversationDetails.OneOne -> {
+                                when {
+                                    conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
+                                    conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED ->
+                                        InteractionAvailability.BLOCKED_USER
+                                    else -> InteractionAvailability.ENABLED
+                                }
                             }
+                            is ConversationDetails.Self -> InteractionAvailability.DISABLED
                         }
-                        is ConversationDetails.Self -> InteractionAvailability.DISABLED
-                    }
-                }
+                        IsInteractionAvailableResult.Success(availability)
+                    })
+
+                })
             }
-            .map { it.fold({ IsInteractionAvailableResult.Failure(it) }, { IsInteractionAvailableResult.Success(it) }) }
     }
 }
 
