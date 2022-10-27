@@ -766,7 +766,8 @@ class UserSessionScope internal constructor(
             client.deregisterNativePushToken,
             client.clearClientData,
             clearUserData,
-            userSessionScopeProvider
+            userSessionScopeProvider,
+            pushTokenRepository
         )
 
     private val featureConfigRepository: FeatureConfigRepository
