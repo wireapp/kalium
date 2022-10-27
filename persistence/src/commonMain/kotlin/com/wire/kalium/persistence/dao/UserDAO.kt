@@ -8,7 +8,16 @@ import kotlinx.serialization.Serializable
 data class QualifiedIDEntity(
     @SerialName("value") val value: String,
     @SerialName("domain") val domain: String
-)
+) {
+    init {
+        require(!value.contains('@')) {
+            "QualifiedIDEntity.value should not contain '@'"
+        }
+        require(!domain.contains('@')) {
+            "QualifiedIDEntity.domain should not contain '@'"
+        }
+    }
+}
 
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
