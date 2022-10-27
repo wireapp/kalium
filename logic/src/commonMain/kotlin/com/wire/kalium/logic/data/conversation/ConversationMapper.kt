@@ -312,7 +312,7 @@ internal class ConversationMapperImpl(
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             mutedTime = 0,
             removedBy = null,
-            creatorId = conversation.creatorId.toString(),
+            creatorId = "",
             lastNotificationDate = "",
             lastModifiedDate = "",
             lastReadDate = "",
