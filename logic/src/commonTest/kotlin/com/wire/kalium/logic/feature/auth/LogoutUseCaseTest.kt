@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -40,8 +41,11 @@ class LogoutUseCaseTest {
             .withClearCurrentClientIdResult(Either.Right(Unit))
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
             .arrange()
+
         logoutUseCase.invoke(reason)
+
         verify(arrangement.deregisterTokenUseCase)
             .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
             .wasInvoked(exactly = once)
@@ -66,6 +70,10 @@ class LogoutUseCaseTest {
             .function(arrangement.userSessionScopeProvider::delete)
             .with(any())
             .wasInvoked(exactly = once)
+        verify(arrangement.pushTokenRepository)
+            .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+            .with(eq(true))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -79,8 +87,11 @@ class LogoutUseCaseTest {
             .withClearCurrentClientIdResult(Either.Right(Unit))
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
             .arrange()
+
         logoutUseCase.invoke(reason)
+
         verify(arrangement.deregisterTokenUseCase)
             .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
             .wasInvoked(exactly = once)
@@ -108,6 +119,10 @@ class LogoutUseCaseTest {
             .function(arrangement.userSessionScopeProvider::delete)
             .with(any())
             .wasInvoked(exactly = once)
+        verify(arrangement.pushTokenRepository)
+            .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+            .with(eq(true))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -132,6 +147,9 @@ class LogoutUseCaseTest {
         @Mock
         val userSessionScopeProvider = configure(mock(classOf<UserSessionScopeProvider>())) { stubsUnitByDefault = true }
 
+        @Mock
+        val pushTokenRepository = mock(classOf<PushTokenRepository>())
+
         private val logoutUseCase: LogoutUseCase = LogoutUseCaseImpl(
             logoutRepository,
             sessionRepository,
@@ -140,7 +158,8 @@ class LogoutUseCaseTest {
             deregisterTokenUseCase,
             clearClientDataUseCase,
             clearUserDataUseCase,
-            userSessionScopeProvider
+            userSessionScopeProvider,
+            pushTokenRepository
         )
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {
@@ -197,6 +216,13 @@ class LogoutUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(result)
             return this
+        }
+
+        suspend fun withFirebaseTokenUpdate() = apply {
+            given(pushTokenRepository)
+                .suspendFunction(pushTokenRepository::setUpdateFirebaseTokenFlag)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = this to logoutUseCase
