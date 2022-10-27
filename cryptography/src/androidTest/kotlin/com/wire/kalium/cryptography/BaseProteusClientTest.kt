@@ -14,4 +14,3 @@ actual open class BaseProteusClientTest {
         return ProteusClientImpl(proteusStore.value, databaseKey)
     }
 }
-
