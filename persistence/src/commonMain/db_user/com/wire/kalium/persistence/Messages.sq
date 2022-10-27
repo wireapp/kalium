@@ -211,8 +211,8 @@ IFNULL(
 IFNULL(
     (SELECT '[' || GROUP_CONCAT(
         '{"start":' || start || ', "length":' || length ||
-        ', "userId":{"value":"' || substr(user_id, 0, instr(user_id, '@')) || '"' ||
-        ',"domain":"' || substr(user_id, instr(user_id, '@')+1, length(user_id)) || '"' ||
+        ', "userId":{"value":"' || replace(substr(user_id, 0, instr(user_id, '@')), '@', '') || '"' ||
+        ',"domain":"' || replace(substr(user_id, instr(user_id, '@')+1, length(user_id)), '@', '') || '"' ||
         '}' || '}') || ']'
     FROM MessageMention
     WHERE MessageMention.message_id = Message.id
