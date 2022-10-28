@@ -114,8 +114,6 @@ class NewConversationEventHandlerTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-
-
         fun arrange() = this to newConversationEventHandler
     }
 
