@@ -154,7 +154,7 @@ object TestConversation {
         "creator",
         ConversationMembersResponse(
             ConversationMemberDTO.Self(MapperProvider.idMapper().toApiModel(TestUser.SELF.id), "wire_admin"),
-            emptyList()
+            listOf(ConversationMemberDTO.Other(MapperProvider.idMapper().toApiModel(TestUser.OTHER.id), conversationRole = "wire_member"))
         ),
         ConversationRepositoryTest.GROUP_NAME,
         NETWORK_ID,

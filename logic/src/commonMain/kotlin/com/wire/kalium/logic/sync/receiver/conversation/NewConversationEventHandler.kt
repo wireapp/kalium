@@ -29,7 +29,7 @@ internal class NewConversationEventHandlerImpl(
         .flatMap {
             conversationRepository.updateConversationModifiedDate(event.conversationId, Clock.System.now().toString())
         }
-        .onSuccess {
+        .flatMap {
             userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { idMapper.fromApiModel(it.id) }.toSet())
         }
         .onFailure { logger.e("failure on new conversation event: $it") }
