@@ -41,6 +41,7 @@ CREATE TABLE MessageTextContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       text_body TEXT,
+      quoted_message_id TEXT,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
