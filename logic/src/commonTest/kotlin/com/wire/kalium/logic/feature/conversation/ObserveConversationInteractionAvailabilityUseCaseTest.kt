@@ -24,9 +24,8 @@ import kotlin.test.assertIs
 class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     @Test
-    fun givenAConversationId_whenUserIsAGroupMember_thenInteractionShouldBeEnabled() = runTest {
+    fun givenUserIsAGroupMember_whenInvokingInteractionForConversation_thenInteractionShouldBeEnabled() = runTest {
         val conversationId = TestConversation.ID
-        val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
             .withGroupConversation(isMember = true)
@@ -47,9 +46,8 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     }
 
     @Test
-    fun givenAConversationId_whenUserIsNoLongerAGroupMember_thenInteractionShouldBeEnabled() = runTest {
+    fun givenUserIsNoLongerAGroupMember_whenInvokingInteractionForConversation_thenInteractionShouldBeEnabled() = runTest {
         val conversationId = TestConversation.ID
-        val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
             .withGroupConversation(isMember = false)
@@ -70,9 +68,8 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     }
 
     @Test
-    fun givenAConversationId_whenGroupDetailsReturnsError_thenInteractionShouldReturnFailure() = runTest {
+    fun givenGroupDetailsReturnsError_whenInvokingInteractionForConversation_thenInteractionShouldReturnFailure() = runTest {
         val conversationId = TestConversation.ID
-        val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
             .withGroupConversationError()
@@ -93,9 +90,8 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     }
 
     @Test
-    fun givenAConversationId_whenOtherUserIsBlocked_thenInteractionShouldBeDisabled() = runTest {
+    fun givenOtherUserIsBlocked_whenInvokingInteractionForConversation_thenInteractionShouldBeDisabled() = runTest {
         val conversationId = TestConversation.ID
-        val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
             .withBlockedUserConversation()
@@ -116,9 +112,8 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     }
 
     @Test
-    fun givenAConversationId_whenOtherUserIsDeleted_thenInteractionShouldBeDisabled() = runTest {
+    fun givenOtherUserIsDeleted_whenInvokingInteractionForConversation_thenInteractionShouldBeDisabled() = runTest {
         val conversationId = TestConversation.ID
-        val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
             .withDeletedUserConversation()
