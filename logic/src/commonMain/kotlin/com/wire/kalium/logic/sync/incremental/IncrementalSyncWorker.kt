@@ -35,6 +35,7 @@ internal class IncrementalSyncWorkerImpl(
         }
         launch {
             eventGatherer.gatherEvents().cancellable().collect {
+                // TODO make sure that event process is not cancel in a midway
                 eventProcessor.processEvent(it)
             }
             // When events are all consumed, cancel the source job to complete the channelFlow

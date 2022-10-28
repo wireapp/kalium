@@ -635,9 +635,9 @@ class UserSessionScope internal constructor(
         get() = UserEventReceiverImpl(
             connectionRepository,
             logout,
-            clientRepository,
             userRepository,
-            userId
+            userId,
+            clientIdProvider
         )
 
     private val teamEventReceiver: TeamEventReceiver
@@ -766,7 +766,8 @@ class UserSessionScope internal constructor(
             client.deregisterNativePushToken,
             client.clearClientData,
             clearUserData,
-            userSessionScopeProvider
+            userSessionScopeProvider,
+            pushTokenRepository
         )
 
     private val featureConfigRepository: FeatureConfigRepository
