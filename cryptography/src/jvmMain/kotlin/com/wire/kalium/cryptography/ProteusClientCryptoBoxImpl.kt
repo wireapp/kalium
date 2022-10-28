@@ -21,6 +21,10 @@ class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
         return File(path).deleteRecursively()
     }
 
+    override fun needsMigration(): Boolean {
+        return false
+    }
+
     override suspend fun openOrCreate() {
         val directory = File(path)
         box = wrapException {

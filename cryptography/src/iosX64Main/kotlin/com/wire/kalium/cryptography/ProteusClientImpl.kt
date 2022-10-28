@@ -36,6 +36,10 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String, d
         // Delete the actual files
     }
 
+    override fun needsMigration(): Boolean {
+        return false
+    }
+
     override suspend fun openOrCreate() {
         NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
         box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
