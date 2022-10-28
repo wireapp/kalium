@@ -10,6 +10,10 @@ actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: 
         return client.clearLocalFiles()
     }
 
+    override fun needsMigration(): Boolean {
+        return client.needsMigration()
+    }
+
     override suspend fun openOrCreate() {
         client.openOrCreate()
     }

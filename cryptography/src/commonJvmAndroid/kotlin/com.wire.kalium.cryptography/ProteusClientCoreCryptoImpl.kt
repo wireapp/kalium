@@ -18,27 +18,61 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         return File(path).deleteRecursively()
     }
 
+    override fun needsMigration(): Boolean {
+        return cryptoBoxFilesExists()
+    }
+
     override suspend fun openOrCreate() {
         coreCrypto = wrapException {
             File(rootDir).mkdirs()
             // TODO client ID is not relevant for proteus but must be provided atm
             val coreCrypto = CoreCrypto(path, databaseKey.value, CLIENT_ID.toString(), null)
+            migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
             coreCrypto
         }
     }
 
     override suspend fun openOrError() {
-        val directory = File(path)
+        val directory = File(rootDir)
         if (directory.exists()) {
             coreCrypto = wrapException {
                 // TODO client ID is not relevant for proteus but must be provided atm
                 val coreCrypto = CoreCrypto(path, databaseKey.value, CLIENT_ID.toString(), null)
+                migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
                 coreCrypto
             }
         } else {
             throw ProteusException("Local files were not found", ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+        }
+    }
+
+    private fun cryptoBoxFilesExists(): Boolean =
+        CRYPTO_BOX_FILES.any {
+            File(rootDir).resolve(it).exists()
+        }
+
+    private fun deleteCryptoBoxFiles(): Boolean =
+        CRYPTO_BOX_FILES.fold(true) { acc, file ->
+            acc && File(rootDir).resolve(file).deleteRecursively()
+        }
+
+    private fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto) {
+        if (cryptoBoxFilesExists()) {
+            migrateFromCryptoBox(coreCrypto)
+        }
+    }
+
+    private fun migrateFromCryptoBox(coreCrypto: CoreCrypto) {
+        kaliumLogger.i("migrating from crypto box at: $rootDir")
+        coreCrypto.proteusCryptoboxMigrate(rootDir)
+        kaliumLogger.i("migration successful")
+
+        if (deleteCryptoBoxFiles()) {
+            kaliumLogger.i("successfully deleted old crypto box files")
+        } else {
+            kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
         }
     }
 
@@ -137,6 +171,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
             PreKeyCrypto(id, data.encodeBase64())
 
         val CLIENT_ID = CryptoQualifiedID("2380b74d-f321-4c11-b7dd-552a74502e30", "wire.com")
+        val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
         const val KEYSTORE_NAME = "keystore"
     }
 }
