@@ -7,7 +7,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClient {
+class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -112,6 +112,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun <T> wrapException(b: () -> T): T {
         try {
             return b()

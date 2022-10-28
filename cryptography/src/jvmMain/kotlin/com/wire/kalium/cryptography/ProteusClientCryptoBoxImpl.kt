@@ -7,7 +7,7 @@ import java.io.File
 import java.util.Base64
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClient {
+class ProteusClientCryptoBoxImpl constructor(rootDir: String) : ProteusClient {
 
     private val path: String
     private lateinit var box: CryptoBox
@@ -81,6 +81,7 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         return wrapException { box.encryptFromPreKeys(sessionId.value, toPreKey(preKeyCrypto), message) }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun <T> wrapException(b: () -> T): T {
         try {
             return b()
