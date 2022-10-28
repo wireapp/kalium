@@ -57,6 +57,7 @@ private class ConversationMapper {
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
             unreadMessageCount = unreadMessageCount,
+            unreadMentionsCount = unreadMentionsCount,
             isMember = isMember,
         )
     }
@@ -101,6 +102,7 @@ private class ConversationMapper {
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
                 unreadMessageCount = unreadMessageCount,
+                unreadMentionsCount = unreadMentionsCount,
                 isMember = isMember,
             )
         }
