@@ -34,7 +34,6 @@ class MLSMessageApiV3Test : ApiTest {
             assertTrue(response.isSuccessful())
         }
 
-
     private companion object {
         const val PATH_COMMIT_BUNDLES = "mls/commit-bundles"
         val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
