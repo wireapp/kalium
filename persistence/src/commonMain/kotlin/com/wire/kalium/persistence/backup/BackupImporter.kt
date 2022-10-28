@@ -10,43 +10,39 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
 
     // TODO: Emit steps to display progress as backup is imported
     override suspend fun importFromFile(filePath: String) {
-        println("FILE_PATH_ANDROID:$filePath")
-        sqlDriver.execute("""ATTACH '$filePath' AS backupDb""")
-        sqlDriver.execute("""BEGIN""")
-        val test = sqlDriver.executeQuery(null, "SELECT name FROM sqlite_temp_master WHERE type='table'", 0, null)
-        while (test.next()) {
-            println("SQLITE_MASTER_CURSOR:${test.getString(0)}")
+        sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS""", 1) {
+            bindString(1, filePath)
         }
-        sqlDriver.execute("""INSERT OR IGNORE INTO Conversation SELECT * FROM backupDb.Conversation""")
+        sqlDriver.execute("""BEGIN""")
 
-//         migrateTable("Team")
-//         migrateTable("User")
+        migrateTable("Team")
+        migrateTable("User")
 //         migrateTable("SelfUser")
-//         migrateTable("Metadata")
-        //   migrateTable("Conversation")
-//         migrateTable("Connection")
-//         migrateTable("Member")
-//         migrateTable("Client")
-//         migrateTable("Message")
-//         migrateTable("Asset")
-//         migrateTable("Call")
-//         migrateTable("MessageAssetContent")
-//         migrateTable("MessageConversationChangedContent")
-//         migrateTable("MessageFailedToDecryptContent")
-//         migrateTable("MessageMemberChangeContent")
-//         migrateTable("MessageMention")
-//         migrateTable("MessageMissedCallContent")
-//         migrateTable("MessageRestrictedAssetContent")
-//         migrateTable("MessageTextContent")
-//         migrateTable("MessageUnknownContent")
-//         migrateTable("Reaction")
+        migrateTable("Metadata")
+        migrateTable("Conversation")
+        migrateTable("Connection")
+        migrateTable("Member")
+        migrateTable("Client")
+        migrateTable("Message")
+        migrateTable("Asset")
+        migrateTable("Call")
+        migrateTable("MessageAssetContent")
+        migrateTable("MessageConversationChangedContent")
+        migrateTable("MessageFailedToDecryptContent")
+        migrateTable("MessageMemberChangeContent")
+        migrateTable("MessageMention")
+        migrateTable("MessageMissedCallContent")
+        migrateTable("MessageRestrictedAssetContent")
+        migrateTable("MessageTextContent")
+        migrateTable("MessageUnknownContent")
+        migrateTable("Reaction")
 
         sqlDriver.execute("""COMMIT""")
         sqlDriver.execute("""DETACH $BACKUP_DB_ALIAS""")
     }
 
     private fun migrateTable(tableName: String) {
-        sqlDriver.execute("""INSERT OR IGNORE INTO $tableName SELECT * FROM backupDb.conversation""")
+        sqlDriver.execute("""INSERT OR IGNORE INTO $tableName SELECT * FROM $BACKUP_DB_ALIAS.$tableName""")
     }
 
     private fun SqlDriver.execute(command: String) = execute(null, command, 0)

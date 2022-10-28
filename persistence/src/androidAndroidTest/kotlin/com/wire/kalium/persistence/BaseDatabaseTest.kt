@@ -32,9 +32,6 @@ actual open class BaseDatabaseTest actual constructor() {
 
     actual fun databasePath(userId: UserIDEntity): String {
         val context: Context = ApplicationProvider.getApplicationContext()
-//         val path: String = mContext.getDatabasePath(mName).getPath()
-//         val databasePath = File(path)
-//         val databasesDirectory: File = File(mContext.getDatabasePath(mName).getParent())
         return context.getDatabasePath(FileNameUtil.userDBName(userId)).absolutePath
     }
 
