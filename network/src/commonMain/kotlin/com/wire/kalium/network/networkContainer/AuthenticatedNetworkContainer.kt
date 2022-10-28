@@ -21,6 +21,7 @@ import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicK
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
+import com.wire.kalium.network.api.v3.authenticated.networkContainer.AuthenticatedNetworkContainerV3
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -79,6 +80,11 @@ interface AuthenticatedNetworkContainer {
                 2 -> AuthenticatedNetworkContainerV2(
                     sessionManager
                 )
+
+                3 -> AuthenticatedNetworkContainerV3(
+                    sessionManager
+                )
+
                 else -> throw error("Unsupported version: $version")
             }
         }

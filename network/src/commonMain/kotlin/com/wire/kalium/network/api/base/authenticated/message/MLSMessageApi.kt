@@ -19,6 +19,14 @@ interface MLSMessageApi {
     value class Message(val value: ByteArray)
 
     /**
+     * An commitBundle originated CommitBundleProtoBuf object.
+     * The CommitBundleProtobuf object contains a welcomeMessage [can be null], a commit message
+     * and the groupState.
+     */
+    @JvmInline
+    value class CommitBundle(val value: ByteArray)
+
+    /**
      * Send an MLS message to a MLS group. The destination group is encoded into the message itself.
      *
      * @param message MLS Message
@@ -31,5 +39,13 @@ interface MLSMessageApi {
      * @param message MLS welcome Message
      */
     suspend fun sendWelcomeMessage(message: WelcomeMessage): NetworkResponse<Unit>
+
+
+    /**
+     * Send an MLS commit bundle to a MLS group. The destination group is encoded into the message itself.
+     *
+     * @param bundle
+     */
+    suspend fun sendCommitBundle(bundle: CommitBundle): NetworkResponse<SendMLSMessageResponse>
 
 }
