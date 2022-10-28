@@ -1,15 +1,20 @@
 package com.wire.kalium.cryptography.utils
 
+import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.backup.Backup
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import org.junit.Test
 import java.security.SecureRandom
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class ChaCha20UtilsTest {
 
     @Test
-    fun `test chacha20`() {
+    fun `test chacha20`() = runTest{
         val fakeData = "Some file data to be encrypted".toByteArray()
         val arrangement = Arrangement()
             .arrange()
@@ -25,24 +30,27 @@ internal class ChaCha20UtilsTest {
             val encryptedOutputSink = fakeFileSystem.sink(encryptedOutputPath)
             val decryptedDataOutputSink = fakeFileSystem.sink(decryptedOutputPath)
 
-            val key = ChaCha20Utils().generateRandomChaCha20Key()
-
-            val salt = ByteArray(12)
+            val salt = ByteArray(16)
             SecureRandom().nextBytes(salt)
-            val hashedUserId = PlainData(calcSHA256("some-random-user-id".toByteArray()))
-            val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, key, PlainData(salt), hashedUserId)
+
+            val password = "some password"
+            val userId = CryptoUserID("some-user-id", "some-domain.com")
+            val passphrase = Backup.Passphrase(password, userId)
+            val backup = Backup(PlainData(salt), passphrase)
+
+            val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
             val outputContent = fakeFileSystem.read(encryptedOutputPath) {
                 readByteArray()
             }.decodeToString()
 
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
-            val decryptedContent = ChaCha20Utils().decryptFile(encryptedDataSource, decryptedDataOutputSink, key, PlainData(salt))
+            val decryptedDataSize = ChaCha20Utils().decryptFile(encryptedDataSource, decryptedDataOutputSink, passphrase)
 
             val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
                 readByteArray()
             }.decodeToString()
 
-            assertTrue(outputSize > 1)
+            assertEquals(decryptedDataSize, fakeData.size.toLong())
         }
     }
 
