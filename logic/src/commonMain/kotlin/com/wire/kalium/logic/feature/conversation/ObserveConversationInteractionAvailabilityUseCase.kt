@@ -22,8 +22,10 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
             eitherConversation.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { conversationDetails ->
                 val availability = when (conversationDetails) {
                     is ConversationDetails.Connection -> InteractionAvailability.DISABLED
-                    is ConversationDetails.Group -> if (conversationDetails.isSelfUserMember) InteractionAvailability.ENABLED
-                    else InteractionAvailability.NOT_MEMBER
+                    is ConversationDetails.Group -> {
+                        if (conversationDetails.isSelfUserMember) InteractionAvailability.ENABLED
+                        else InteractionAvailability.NOT_MEMBER
+                    }
                     is ConversationDetails.OneOne -> {
                         when {
                             conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
