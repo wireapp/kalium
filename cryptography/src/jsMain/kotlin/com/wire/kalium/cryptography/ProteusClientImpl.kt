@@ -14,7 +14,7 @@ import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClient {
+actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
 
     private lateinit var box: Cryptobox
 
