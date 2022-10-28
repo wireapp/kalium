@@ -84,6 +84,7 @@ data class ConversationViewEntity(
     val isCreator: Long,
     val lastNotificationDate: String?,
     val unreadMessageCount: Long,
+    val unreadMentionsCount: Long,
     val isMember: Long,
     val protocolInfo: ConversationEntity.ProtocolInfo,
     val accessList: List<ConversationEntity.Access>,
