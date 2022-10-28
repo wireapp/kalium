@@ -175,7 +175,7 @@ internal class UserDataSource internal constructor(
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map(idMapper::toDaoModel)
         val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map(idMapper::toDaoModel))
-        qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it } }
+        qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it && !userEntity.name.isNullOrBlank() } }
     }.flatMap { missingIds ->
         if (missingIds.isEmpty()) Either.Right(Unit)
         else fetchUsersByIds(missingIds.map { idMapper.fromDaoModel(it) }.toSet())

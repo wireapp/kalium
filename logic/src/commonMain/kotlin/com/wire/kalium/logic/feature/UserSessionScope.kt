@@ -588,7 +588,11 @@ class UserSessionScope internal constructor(
             pendingProposalScheduler
         )
 
-    private val newConversationHandler: NewConversationEventHandler get() = NewConversationEventHandlerImpl(conversationRepository)
+    private val newConversationHandler: NewConversationEventHandler
+        get() = NewConversationEventHandlerImpl(
+            conversationRepository,
+            userRepository
+        )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
             userRepository,
