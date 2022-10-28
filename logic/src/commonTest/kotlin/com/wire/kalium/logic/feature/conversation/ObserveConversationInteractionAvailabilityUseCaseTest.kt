@@ -30,18 +30,12 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
-            .withExistingMembership()
-            .withGroupConversation()
+            .withGroupConversation(isMember = true)
             .arrange()
 
         observeConversationInteractionAvailability(conversationId).test {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.ENABLED), interactionResult)
-
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
 
             verify(arrangement.conversationRepository)
                 .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
@@ -59,47 +53,12 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
-            .withNonExistingMembership()
-            .withGroupConversation()
+            .withGroupConversation(isMember = false)
             .arrange()
 
         observeConversationInteractionAvailability(conversationId).test {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.NOT_MEMBER), interactionResult)
-
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
-
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
-
-            awaitComplete()
-        }
-
-    }
-
-    @Test
-    fun givenAConversationId_whenIsMemberReturnsError_thenInteractionShouldReturnFailure() = runTest {
-        val conversationId = TestConversation.ID
-        val selfUser = TestUser.SELF
-
-        val (arrangement, observeConversationInteractionAvailability) = Arrangement()
-            .withExistingMembershipError()
-            .withGroupConversation()
-            .arrange()
-
-        observeConversationInteractionAvailability(conversationId).test {
-            val interactionResult = awaitItem()
-            assertIs<IsInteractionAvailableResult.Failure>(interactionResult)
-
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
 
             verify(arrangement.conversationRepository)
                 .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
@@ -117,18 +76,12 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
-            .withExistingMembership()
             .withGroupConversationError()
             .arrange()
 
         observeConversationInteractionAvailability(conversationId).test {
             val interactionResult = awaitItem()
             assertIs<IsInteractionAvailableResult.Failure>(interactionResult)
-
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
 
             verify(arrangement.conversationRepository)
                 .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
@@ -146,18 +99,12 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
-            .withExistingMembership()
             .withBlockedUserConversation()
             .arrange()
 
         observeConversationInteractionAvailability(conversationId).test {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.BLOCKED_USER), interactionResult)
-
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
 
             verify(arrangement.conversationRepository)
                 .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
@@ -175,18 +122,12 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val selfUser = TestUser.SELF
 
         val (arrangement, observeConversationInteractionAvailability) = Arrangement()
-            .withExistingMembership()
             .withDeletedUserConversation()
             .arrange()
 
         observeConversationInteractionAvailability(conversationId).test {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.DELETED_USER), interactionResult)
-
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
 
             verify(arrangement.conversationRepository)
                 .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
@@ -203,13 +144,13 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
 
         val observeConversationInteractionAvailability: ObserveConversationInteractionAvailabilityUseCase =
-            ObserveConversationInteractionAvailabilityUseCase(conversationRepository, TestUser.SELF.id)
+            ObserveConversationInteractionAvailabilityUseCase(conversationRepository)
 
-        fun withGroupConversation() = apply {
+        fun withGroupConversation(isMember: Boolean) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::observeConversationDetailsById)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(Either.Right(TestConversationDetails.CONVERSATION_GROUP)))
+                .thenReturn(flowOf(Either.Right(TestConversationDetails.CONVERSATION_GROUP.copy(isSelfUserMember = isMember))))
         }
 
         fun withGroupConversationError() = apply {
@@ -251,27 +192,6 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
                         )
                     )
                 )
-        }
-
-        fun withExistingMembership() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(flowOf(Either.Right(true)))
-        }
-
-        fun withNonExistingMembership() = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::observeIsUserMember).whenInvokedWith(any(), any())
-                .thenReturn(
-                    flowOf(Either.Right(false))
-                )
-        }
-
-        fun withExistingMembershipError() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(flowOf(Either.Left(CoreFailure.Unknown(null))))
         }
 
         fun arrange() = this to observeConversationInteractionAvailability

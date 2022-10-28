@@ -7,42 +7,39 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.mapRight
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
-/** TODO
+/**
  * Use case that check if self user is able to interact in conversation
  * @param conversationId the id of the conversation where user checks his interaction availability
  * @return an [IsInteractionAvailableResult] containing Success or Failure cases
  */
 class ObserveConversationInteractionAvailabilityUseCase internal constructor(
-    private val conversationRepository: ConversationRepository,
-    private val selfUserId: UserId,
+    private val conversationRepository: ConversationRepository
 ) {
     suspend operator fun invoke(conversationId: ConversationId): Flow<IsInteractionAvailableResult> {
-        return conversationRepository.observeIsUserMember(conversationId, selfUserId)
-            .combine(conversationRepository.observeConversationDetailsById(conversationId)) { eitherIsSelfMember, eitherConversation ->
-                eitherIsSelfMember.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { isSelfMember ->
-                    eitherConversation.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { conversationDetails ->
-                        val availability = when (conversationDetails) {
-                            is ConversationDetails.Connection -> InteractionAvailability.DISABLED
-                            is ConversationDetails.Group -> if (isSelfMember) InteractionAvailability.ENABLED
-                            else InteractionAvailability.NOT_MEMBER
-                            is ConversationDetails.OneOne -> {
-                                when {
-                                    conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
-                                    conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED ->
-                                        InteractionAvailability.BLOCKED_USER
-                                    else -> InteractionAvailability.ENABLED
-                                }
-                            }
-                            is ConversationDetails.Self -> InteractionAvailability.DISABLED
+        return conversationRepository.observeConversationDetailsById(conversationId).map { eitherConversation ->
+            eitherConversation.fold({ failure -> IsInteractionAvailableResult.Failure(failure) }, { conversationDetails ->
+                val availability = when (conversationDetails) {
+                    is ConversationDetails.Connection -> InteractionAvailability.DISABLED
+                    is ConversationDetails.Group -> if (conversationDetails.isSelfUserMember) InteractionAvailability.ENABLED
+                    else InteractionAvailability.NOT_MEMBER
+                    is ConversationDetails.OneOne -> {
+                        when {
+                            conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
+                            conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED ->
+                                InteractionAvailability.BLOCKED_USER
+                            else -> InteractionAvailability.ENABLED
                         }
-                        IsInteractionAvailableResult.Success(availability)
-                    })
-
-                })
-            }
+                    }
+                    is ConversationDetails.Self -> InteractionAvailability.DISABLED
+                }
+                IsInteractionAvailableResult.Success(availability)
+            })
+        }
     }
 }
 
