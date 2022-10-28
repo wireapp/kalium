@@ -202,7 +202,9 @@ class CallRepositoryTest {
                             LegalHoldStatus.ENABLED,
                             false,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -266,7 +268,9 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -325,7 +329,9 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -393,7 +399,9 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -447,7 +455,9 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null
+                            lastUnreadMessage = null,
+                            isSelfUserMember = true,
+                            isSelfUserCreator = true
                         )
                     )
                 )
@@ -1203,6 +1213,49 @@ class CallRepositoryTest {
                 list[1]
             )
         }
+    }
+
+    @Test
+    fun givenAnEstablishedCall_whenRequestingEstablishedCallConversationId_thenReturnTheEstablishedCallConversationId() = runTest {
+        // given
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    conversationId.toString() to createCallMetadata().copy(
+                        isMuted = false,
+                        conversationName = "ONE_ON_ONE Name",
+                        conversationType = Conversation.Type.ONE_ON_ONE,
+                        callerName = "otherUsername",
+                        callerTeamName = "team_1"
+                    )
+                )
+            )
+        )
+
+        val callEntity = createCallEntity().copy(
+            status = CallEntity.Status.ESTABLISHED,
+            callerId = "callerId@domain",
+            conversationType = ConversationEntity.Type.ONE_ON_ONE
+        )
+
+        val expectedCall = provideCall(
+            id = conversationId,
+            status = CallStatus.ESTABLISHED
+        )
+
+        given(callDAO)
+            .suspendFunction(callDAO::observeEstablishedCalls)
+            .whenInvoked()
+            .thenReturn(flowOf(listOf(callEntity)))
+
+        // when
+        val establishedCallConversationId = callRepository.establishedCallConversationId()
+
+        // then
+        assertEquals(
+            conversationId,
+            establishedCallConversationId
+        )
     }
 
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(

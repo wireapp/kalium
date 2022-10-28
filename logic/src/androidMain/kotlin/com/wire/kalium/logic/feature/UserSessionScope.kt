@@ -14,13 +14,9 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-/**
- * This class is only for platform specific variables,
- * and it should only override functions/variables from UserSessionScopeCommon
- */
 @Suppress("LongParameterList")
-actual class UserSessionScope internal constructor(
-    private val applicationContext: Context,
+internal fun UserSessionScope(
+    applicationContext: Context,
     userId: UserId,
     authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     globalScope: GlobalKaliumScope,
@@ -31,24 +27,24 @@ actual class UserSessionScope internal constructor(
     featureSupport: FeatureSupport,
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider
-) : UserSessionScopeCommon(
-    userId,
-    authenticatedDataSourceSet,
-    globalScope,
-    globalCallManager,
-    globalPreferences,
-    dataStoragePaths,
-    kaliumConfigs,
-    featureSupport,
-    userSessionScopeProvider,
-    userStorageProvider
-) {
-    override val platformUserStorageProperties: PlatformUserStorageProperties
-        get() = PlatformUserStorageProperties(applicationContext, SecurityHelper(globalPreferences.passphraseStorage))
+): UserSessionScope {
+    val platformUserStorageProperties =
+        PlatformUserStorageProperties(applicationContext, SecurityHelper(globalPreferences.passphraseStorage))
 
-    override val clientConfig: ClientConfig get() = ClientConfigImpl(applicationContext)
+    val clientConfig: ClientConfig = ClientConfigImpl(applicationContext)
 
-    init {
-        onInit()
-    }
+    return UserSessionScope(
+        userId,
+        authenticatedDataSourceSet,
+        globalScope,
+        globalCallManager,
+        globalPreferences,
+        dataStoragePaths,
+        kaliumConfigs,
+        featureSupport,
+        userSessionScopeProvider,
+        userStorageProvider,
+        clientConfig,
+        platformUserStorageProperties
+    )
 }

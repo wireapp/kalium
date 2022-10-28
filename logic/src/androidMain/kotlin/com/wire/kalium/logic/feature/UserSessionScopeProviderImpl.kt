@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.FeatureSupportImpl
@@ -17,7 +18,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
 internal actual class UserSessionScopeProviderImpl(
-    private val rootPath: String,
+    private val rootPathsProvider: RootPathsProvider,
     private val appContext: Context,
     private val globalScope: GlobalKaliumScope,
     private val kaliumConfigs: KaliumConfigs,
@@ -27,15 +28,15 @@ internal actual class UserSessionScopeProviderImpl(
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider) {
 
     override fun create(userId: UserId): UserSessionScope {
-        val rootAccountPath = "$rootPath/${userId.domain}/${userId.value}"
-        val rootProteusPath = "$rootAccountPath/proteus"
+        val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
+        val rootProteusPath = rootPathsProvider.rootProteusPath(userId)
         val rootFileSystemPath = AssetsStorageFolder("${appContext.filesDir}/${userId.domain}/${userId.value}")
         val rootCachePath = CacheFolder("${appContext.cacheDir}/${userId.domain}/${userId.value}")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath)
         val sessionManager = SessionManagerImpl(globalScope.sessionRepository, userId, globalPreferences.authTokenStorage)
         val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.session().second.metaData.commonApiVersion.version)
-        val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath)
+        val proteusClientProvider = ProteusClientProviderImpl(rootProteusPath, userId, globalPreferences.passphraseStorage, kaliumConfigs)
 
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(appContext, userId)
 
