@@ -2,6 +2,8 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Suppress("LongParameterList")
 sealed class MessageEntity(
@@ -113,10 +115,11 @@ sealed class MessageEntity(
         VISIBLE, DELETED, HIDDEN
     }
 
+    @Serializable
     data class Mention(
-        val start: Int,
-        val length: Int,
-        val userId: QualifiedIDEntity
+        @SerialName("start") val start: Int,
+        @SerialName("length") val length: Int,
+        @SerialName("userId") val userId: QualifiedIDEntity
     )
 }
 
