@@ -36,5 +36,10 @@ UPDATE Member
 SET role = ?
 WHERE user = ? AND conversation = ?;
 
-deleteUserFromConversations:
-DELETE FROM Member WHERE user = ?;
+deleteUserFromGroupConversations:
+DELETE FROM Member
+WHERE conversation IN (
+    SELECT conversation FROM Member
+    JOIN Conversation ON Conversation.qualified_id = Member.conversation
+    WHERE Member.user = ? AND Conversation.type = 'GROUP'
+) AND Member.user = ?;
