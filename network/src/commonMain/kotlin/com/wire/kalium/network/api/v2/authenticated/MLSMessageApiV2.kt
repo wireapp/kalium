@@ -4,7 +4,6 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
-import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
@@ -34,11 +33,6 @@ internal open class MLSMessageApiV2 internal constructor(
                 setBody(message.value)
             }
         }
-
-    override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> =
-        NetworkResponse.Error(
-            APINotSupported("MLS: sendCommitBundle api is only available on API V3")
-        )
 
     private companion object {
         const val PATH_MESSAGE = "mls/messages"
