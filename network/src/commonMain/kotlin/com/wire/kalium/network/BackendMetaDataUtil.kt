@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO

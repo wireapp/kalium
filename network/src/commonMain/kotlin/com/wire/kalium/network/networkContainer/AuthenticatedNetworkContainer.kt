@@ -27,6 +27,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
+@Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
 
     val logoutApi: LogoutApi

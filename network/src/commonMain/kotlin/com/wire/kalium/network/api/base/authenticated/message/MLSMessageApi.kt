@@ -40,7 +40,6 @@ interface MLSMessageApi {
      */
     suspend fun sendWelcomeMessage(message: WelcomeMessage): NetworkResponse<Unit>
 
-
     /**
      * Send an MLS commit bundle to a MLS group. The destination group is encoded into the message itself.
      *
