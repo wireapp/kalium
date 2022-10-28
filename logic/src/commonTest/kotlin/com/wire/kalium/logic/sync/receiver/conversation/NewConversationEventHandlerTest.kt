@@ -42,7 +42,6 @@ class NewConversationEventHandlerTest {
             .withFetchUsersIfUnknownIds(members)
             .arrange()
 
-
         eventHandler.handle(event)
 
         verify(arrangement.conversationRepository)
