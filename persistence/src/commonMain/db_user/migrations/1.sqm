@@ -1,4 +1,4 @@
-DROP VIEW ConversatonDetails;
+DROP VIEW ConversationDetails;
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
 SELECT
 Conversation.qualified_id AS qualifiedId,
