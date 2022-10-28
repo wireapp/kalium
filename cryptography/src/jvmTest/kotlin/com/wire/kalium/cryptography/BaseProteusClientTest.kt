@@ -6,7 +6,8 @@ actual open class BaseProteusClientTest {
 
     actual fun createProteusClient(userId: CryptoUserID): ProteusClient {
         val root = Files.createTempDirectory("proteus").toFile()
-        return ProteusClientImpl(root.resolve(userId.value).absolutePath)
+        val keyStore = root.resolve("keystore-${userId.value}")
+        return ProteusClientImpl(keyStore.absolutePath)
     }
 
 }
