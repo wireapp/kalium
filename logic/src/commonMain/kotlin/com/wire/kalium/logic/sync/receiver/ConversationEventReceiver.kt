@@ -7,7 +7,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.NewMessageEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 
 interface ConversationEventReceiver : EventReceiver<Event.Conversation>
