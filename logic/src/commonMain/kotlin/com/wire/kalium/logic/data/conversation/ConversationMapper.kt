@@ -141,7 +141,7 @@ internal class ConversationMapperImpl(
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                     unreadMessagesCount = unreadMessageCount,
-                    unreadMentionsCount = 0L,
+                    unreadMentionsCount = unreadMentionsCount,
                     lastUnreadMessage = null
                 )
             }
@@ -152,7 +152,7 @@ internal class ConversationMapperImpl(
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     hasOngoingCall = callStatus != null, // todo: we can do better!
                     unreadMessagesCount = unreadMessageCount,
-                    unreadMentionsCount = 0L,
+                    unreadMentionsCount = unreadMentionsCount,
                     lastUnreadMessage = null,
                     isSelfUserMember = isMember == 1L,
                     isSelfUserCreator = isCreator == 1L
@@ -262,6 +262,7 @@ internal class ConversationMapperImpl(
         creatorClient = options.creatorClientId
     )
 
+    // TODO looks like could be removed
     override fun toConversationDetailsOneToOne(
         conversation: Conversation,
         otherUser: OtherUser,
