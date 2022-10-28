@@ -7,7 +7,7 @@ import com.wire.kalium.logic.data.user.UserId
 
 internal sealed interface MessageUnpackResult {
 
-    object ProtocolMessage : MessageUnpackResult
+    object ProtocolSignalingMessage : MessageUnpackResult
 
     data class ApplicationMessage(
         val conversationId: ConversationId,

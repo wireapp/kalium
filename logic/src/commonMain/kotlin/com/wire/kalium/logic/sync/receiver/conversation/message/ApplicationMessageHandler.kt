@@ -34,6 +34,7 @@ internal interface ApplicationMessageHandler {
         content: ProtoContent.Readable
     )
 
+    @Suppress("LongParameterList")
     suspend fun handleDecryptionError(
         eventId: String,
         conversationId: ConversationId,
@@ -275,6 +276,7 @@ internal class ApplicationMessageHandlerImpl(
         } else logger.i(message = "Delete message sender is not verified: $message")
     }
 
+    @Suppress("LongParameterList")
     override suspend fun handleDecryptionError(
         eventId: String,
         conversationId: ConversationId,
