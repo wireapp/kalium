@@ -24,7 +24,6 @@ class NewMessageEventHandlerTest {
         @Mock
         private val applicationMessageHandler = mock(classOf<ApplicationMessageHandler>())
 
-
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
             proteusMessageUnpacker, mlsMessageUnpacker, applicationMessageHandler
         )

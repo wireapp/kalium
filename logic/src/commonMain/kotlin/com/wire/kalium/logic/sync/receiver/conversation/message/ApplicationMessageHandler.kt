@@ -257,7 +257,7 @@ internal class ApplicationMessageHandlerImpl(
         if (isSenderVerified(content.messageId, message.conversationId, message.senderUserId)) {
             messageRepository.getMessageById(message.conversationId, content.messageId)
                 .onSuccess { messageToRemove ->
-                    (messageToRemove.content as? com.wire.kalium.logic.data.message.MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+                    (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
                         assetRepository.deleteAssetLocally(
                             AssetId(
                                 assetToRemove.assetId,

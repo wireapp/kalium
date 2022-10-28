@@ -69,7 +69,6 @@ internal class ProteusMessageUnpackerImpl(
             }
     }
 
-
     private fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
         event: Event.Conversation.NewMessage

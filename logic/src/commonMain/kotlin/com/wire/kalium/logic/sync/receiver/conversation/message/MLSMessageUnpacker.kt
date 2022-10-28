@@ -4,11 +4,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.conversation.ApplicationMessage
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.*
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -23,7 +19,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.wrapMLSRequest
-import io.ktor.util.decodeBase64Bytes
+import io.ktor.util.*
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.seconds
@@ -37,7 +33,7 @@ internal class MLSMessageUnpackerImpl(
     private val conversationRepository: ConversationRepository,
     private val pendingProposalScheduler: PendingProposalScheduler,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
-            private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : MLSMessageUnpacker {
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)

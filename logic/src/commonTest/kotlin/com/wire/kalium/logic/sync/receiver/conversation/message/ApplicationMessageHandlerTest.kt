@@ -136,7 +136,6 @@ class ApplicationMessageHandlerTest {
             )
         )
 
-
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
             given(persistMessage)
                 .suspendFunction(persistMessage::invoke)
