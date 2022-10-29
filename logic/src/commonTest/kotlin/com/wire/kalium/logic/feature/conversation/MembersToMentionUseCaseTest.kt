@@ -58,8 +58,8 @@ class MembersToMentionUseCaseTest {
 
 
     @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithSpacesSearchQuery_thenReturnAnEmptyList() = runTest {
-        val searchQuery = "     "
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithWhiteSpaceSearchQuery_thenReturnAnEmptyList() = runTest {
+        val searchQuery = " "
 
         val result = membersToMention(CONVERSATION_ID, searchQuery)
 

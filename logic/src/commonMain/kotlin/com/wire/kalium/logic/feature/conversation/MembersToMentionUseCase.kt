@@ -20,6 +20,9 @@ class MembersToMentionUseCase internal constructor(
         if (searchQuery.isEmpty())
             return usersToSearch
 
+        if (searchQuery.first().isWhitespace())
+            return listOf()
+
         val rules: List<(MemberDetails) -> Boolean> = listOf(
             { it.user.name?.startsWith(searchQuery, true) == true },
             {
