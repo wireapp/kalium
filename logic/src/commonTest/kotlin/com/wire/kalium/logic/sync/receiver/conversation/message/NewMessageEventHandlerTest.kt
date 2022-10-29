@@ -59,7 +59,7 @@ class NewMessageEventHandlerTest {
         val mlsMessageUnpacker = mock(classOf<MLSMessageUnpacker>())
 
         @Mock
-        val applicationMessageHandler = configure(mock(classOf<ApplicationMessageHandler>())){
+        val applicationMessageHandler = configure(mock(classOf<ApplicationMessageHandler>())) {
             stubsUnitByDefault = true
         }
 
