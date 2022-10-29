@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
