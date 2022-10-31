@@ -2,7 +2,6 @@ package com.wire.kalium.cryptography.utils
 
 import com.ionspin.kotlin.crypto.LibsodiumInitializer
 import com.ionspin.kotlin.crypto.secretstream.SecretStream
-import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_HEADERBYTES
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 import com.wire.kalium.cryptography.backup.Backup
@@ -11,7 +10,6 @@ import okio.Buffer
 import okio.Sink
 import okio.Source
 import okio.buffer
-import okio.use
 
 @OptIn(ExperimentalUnsignedTypes::class)
 internal class ChaCha20Utils {
@@ -21,14 +19,15 @@ internal class ChaCha20Utils {
         backupDataSource: Source,
         outputSink: Sink,
         backup: Backup
-    ): Long {
+    ): Pair<Long, UByteArray> {
 
         initializeLibsodiumIfNeeded()
-
         var encryptedDataSize = 0L
+        var authenticationHeader: UByteArray = ubyteArrayOf()
+
         try {
             val chaCha20Key = backup.provideChaCha20Key()
-            val hashedUserId = backup.provideHashedUserId()
+            val hashedUserId = backup.provideHashedUserId().toByteArray()
             val backupHeader = backup.provideHeaderBuffer(hashedUserId).also {
                 if (it.isEmpty()) throw IllegalStateException("Backup header is empty")
             }
@@ -40,6 +39,7 @@ internal class ChaCha20Utils {
 
             val stateAndHeader = SecretStream.xChaCha20Poly1305InitPush(chaCha20Key)
             val state = stateAndHeader.state
+            authenticationHeader = stateAndHeader.header
 
             val contentBuffer = Buffer()
             var byteCount: Long
@@ -52,13 +52,19 @@ internal class ChaCha20Utils {
                     crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
                 } else crypto_secretstream_xchacha20poly1305_TAG_FINAL
 
-                SecretStream.xChaCha20Poly1305Push(
+                val dataToEncrypt = contentBuffer.readByteArray(byteCount)
+                val uByteDataToEncrypt = dataToEncrypt.toUByteArray()
+
+                val encryptedData = SecretStream.xChaCha20Poly1305Push(
                     state,
-                    contentBuffer.readByteArray(byteCount).toUByteArray(),
-                    byteArrayOf().toUByteArray(),
+                    uByteDataToEncrypt,
+                    authenticationHeader,
                     appendingTag.toUByte()
                 )
-                encryptedDataSize += byteCount
+                val tempWriteBuffer = Buffer()
+                tempWriteBuffer.write(encryptedData.toByteArray())
+                outputSink.write(tempWriteBuffer, tempWriteBuffer.size)
+                encryptedDataSize += encryptedData.size
             }
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while encrypting the backup data with ChaCha20:\n $e}")
@@ -66,7 +72,7 @@ internal class ChaCha20Utils {
             backupDataSource.close()
             outputSink.close()
         }
-        return encryptedDataSize
+        return encryptedDataSize to authenticationHeader
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -74,37 +80,41 @@ internal class ChaCha20Utils {
     suspend fun decryptFile(
         encryptedDataSource: Source,
         decryptedDataSink: Sink,
-        passphrase: Backup.Passphrase
+        passphrase: Backup.Passphrase,
+        authenticationHeader: UByteArray
     ): Long {
 
         initializeLibsodiumIfNeeded()
         var decryptedDataSize = 0L
+
         try {
-            val fileHeaderBuffer = encryptedDataSource.buffer().use {
-                it.readByteArray(FILE_HEADER_SIZE)
-            }
-            val salt = fileHeaderBuffer.copyOfRange(7, 23)
-            val backup = Backup(PlainData(salt), passphrase)
-            val expectedHashedUserId = backup.provideHashedUserId()
-            val storedHashedUserId = fileHeaderBuffer.copyOfRange(24, 55)
+            val headerBuffer = Buffer()
+            encryptedDataSource.read(headerBuffer, FILE_HEADER_SIZE)
+            val fileHeaderBuffer = headerBuffer.readByteArray()
+            val salt = fileHeaderBuffer.copyOfRange(7, 23).toUByteArray()
+            val backup = Backup(salt, passphrase)
+            val expectedHashedUserId = backup.provideHashedUserId().toByteArray()
+            val storedHashedUserId = fileHeaderBuffer.copyOfRange(23, 55)
             check(expectedHashedUserId.contentEquals(storedHashedUserId)) {
                 "The hashed user id in the backup file header does not match the expected one"
             }
             val key = backup.provideChaCha20Key()
 
-            val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, fileHeaderBuffer.toUByteArray())
-            SecretStream.xChaCha20Poly1305Pull(secretStreamState.state, fileHeaderBuffer.toUByteArray())
+            val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, authenticationHeader)
 
             val contentBuffer = Buffer()
             var byteCount: Long
             while (encryptedDataSource.read(contentBuffer, BUFFER_SIZE).also { byteCount = it } != -1L) {
+                val encryptedData = contentBuffer.readByteArray(byteCount).toUByteArray()
                 val (decryptedData, tag) = SecretStream.xChaCha20Poly1305Pull(
                     secretStreamState.state,
-                    contentBuffer.readByteArray(byteCount).toUByteArray(),
-                    byteArrayOf().toUByteArray()
+                    encryptedData,
+                    authenticationHeader
                 ).let { it.decryptedData.toByteArray() to it.tag.toInt() }
 
-                decryptedDataSink.buffer().write(decryptedData)
+                val tempReadBuffer = Buffer()
+                tempReadBuffer.write(decryptedData)
+                decryptedDataSink.write(tempReadBuffer, tempReadBuffer.size)
                 decryptedDataSize += decryptedData.size
 
                 // Stop reading the file if we reach the end of the stream
