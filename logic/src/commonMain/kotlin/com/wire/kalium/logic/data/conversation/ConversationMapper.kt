@@ -54,6 +54,8 @@ interface ConversationMapper {
         unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne
+
+    fun toDaoModel(conversation: Conversation): ConversationEntity
 }
 
 @Suppress("TooManyFunctions")
@@ -107,7 +109,8 @@ internal class ConversationMapperImpl(
             lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
-            accessRole = accessRoleList.map { it.toDAO() }
+            accessRole = accessRoleList.map { it.toDAO() },
+            creatorId = creatorId
         )
     }
 
@@ -289,6 +292,25 @@ internal class ConversationMapperImpl(
         ConversationOptions.Protocol.MLS -> ConvProtocol.MLS
     }
 
+    override fun toDaoModel(conversation: Conversation): ConversationEntity = with(conversation) {
+        ConversationEntity(
+            id = idMapper.toDaoModel(conversation.id),
+            name = name,
+            type = type.toDAO(),
+            teamId = conversation.teamId.toString(),
+            protocolInfo = protocolInfoMapper.toEntity(conversation.protocol),
+            mutedStatus = conversationStatusMapper.toMutedStatusDaoModel(conversation.mutedStatus),
+            mutedTime = 0,
+            removedBy = null,
+            creatorId = creatorId.orEmpty(),
+            lastNotificationDate = "",
+            lastModifiedDate = "",
+            lastReadDate = "",
+            access = conversation.access.map { it.toDAO() },
+            accessRole = conversation.accessRole.map { it.toDAO() }
+        )
+    }
+
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
             ConvProtocol.MLS -> ProtocolInfo.MLS(
@@ -361,4 +383,26 @@ private fun ConversationEntity.AccessRole.toDAO(): Conversation.AccessRole = whe
     ConversationEntity.AccessRole.GUEST -> Conversation.AccessRole.GUEST
     ConversationEntity.AccessRole.SERVICE -> Conversation.AccessRole.SERVICE
     ConversationEntity.AccessRole.EXTERNAL -> Conversation.AccessRole.EXTERNAL
+}
+
+private fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
+    Conversation.Type.SELF -> ConversationEntity.Type.SELF
+    Conversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
+    Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
+    Conversation.Type.CONNECTION_PENDING -> ConversationEntity.Type.CONNECTION_PENDING
+}
+
+private fun Conversation.AccessRole.toDAO(): ConversationEntity.AccessRole = when (this) {
+    Conversation.AccessRole.TEAM_MEMBER -> ConversationEntity.AccessRole.TEAM_MEMBER
+    Conversation.AccessRole.NON_TEAM_MEMBER -> ConversationEntity.AccessRole.NON_TEAM_MEMBER
+    Conversation.AccessRole.GUEST -> ConversationEntity.AccessRole.GUEST
+    Conversation.AccessRole.SERVICE -> ConversationEntity.AccessRole.SERVICE
+    Conversation.AccessRole.EXTERNAL -> ConversationEntity.AccessRole.EXTERNAL
+}
+
+private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this) {
+    Conversation.Access.PRIVATE -> ConversationEntity.Access.PRIVATE
+    Conversation.Access.INVITE -> ConversationEntity.Access.INVITE
+    Conversation.Access.LINK -> ConversationEntity.Access.LINK
+    Conversation.Access.CODE -> ConversationEntity.Access.CODE
 }

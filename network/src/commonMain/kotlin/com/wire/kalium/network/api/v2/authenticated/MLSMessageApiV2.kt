@@ -14,7 +14,7 @@ import io.ktor.http.contentType
 
 internal open class MLSMessageApiV2 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
-) : MLSMessageApiV0(authenticatedNetworkClient) {
+) : MLSMessageApiV0() {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
