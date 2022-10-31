@@ -4,6 +4,7 @@ import com.ionspin.kotlin.crypto.LibsodiumInitializer
 import com.ionspin.kotlin.crypto.secretstream.SecretStream
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
+import com.ionspin.kotlin.crypto.util.encodeToUByteArray
 import com.wire.kalium.cryptography.backup.Backup
 import com.wire.kalium.cryptography.kaliumLogger
 import okio.Buffer
@@ -19,11 +20,11 @@ internal class ChaCha20Utils {
         backupDataSource: Source,
         outputSink: Sink,
         backup: Backup
-    ): Pair<Long, UByteArray> {
+    ): Long {
 
         initializeLibsodiumIfNeeded()
         var encryptedDataSize = 0L
-        var authenticationHeader: UByteArray = ubyteArrayOf()
+        val additionalInformation: UByteArray = backup.backupVersion.encodeToUByteArray()
 
         try {
             val chaCha20Key = backup.provideChaCha20Key()
@@ -39,7 +40,6 @@ internal class ChaCha20Utils {
 
             val stateAndHeader = SecretStream.xChaCha20Poly1305InitPush(chaCha20Key)
             val state = stateAndHeader.state
-            authenticationHeader = stateAndHeader.header
 
             val contentBuffer = Buffer()
             var byteCount: Long
@@ -58,7 +58,7 @@ internal class ChaCha20Utils {
                 val encryptedData = SecretStream.xChaCha20Poly1305Push(
                     state,
                     uByteDataToEncrypt,
-                    authenticationHeader,
+                    additionalInformation,
                     appendingTag.toUByte()
                 )
                 val tempWriteBuffer = Buffer()
@@ -72,7 +72,7 @@ internal class ChaCha20Utils {
             backupDataSource.close()
             outputSink.close()
         }
-        return encryptedDataSize to authenticationHeader
+        return encryptedDataSize
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -80,8 +80,7 @@ internal class ChaCha20Utils {
     suspend fun decryptFile(
         encryptedDataSource: Source,
         decryptedDataSink: Sink,
-        passphrase: Backup.Passphrase,
-        authenticationHeader: UByteArray
+        passphrase: Backup.Passphrase
     ): Long {
 
         initializeLibsodiumIfNeeded()
@@ -93,6 +92,7 @@ internal class ChaCha20Utils {
             val fileHeaderBuffer = headerBuffer.readByteArray()
             val salt = fileHeaderBuffer.copyOfRange(7, 23).toUByteArray()
             val backup = Backup(salt, passphrase)
+            val additionalInformation: UByteArray = backup.backupVersion.encodeToUByteArray()
             val expectedHashedUserId = backup.provideHashedUserId().toByteArray()
             val storedHashedUserId = fileHeaderBuffer.copyOfRange(23, 55)
             check(expectedHashedUserId.contentEquals(storedHashedUserId)) {
@@ -100,7 +100,7 @@ internal class ChaCha20Utils {
             }
             val key = backup.provideChaCha20Key()
 
-            val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, authenticationHeader)
+            val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, additionalInformation)
 
             val contentBuffer = Buffer()
             var byteCount: Long
@@ -109,7 +109,7 @@ internal class ChaCha20Utils {
                 val (decryptedData, tag) = SecretStream.xChaCha20Poly1305Pull(
                     secretStreamState.state,
                     encryptedData,
-                    authenticationHeader
+                    additionalInformation
                 ).let { it.decryptedData.toByteArray() to it.tag.toInt() }
 
                 val tempReadBuffer = Buffer()
@@ -130,15 +130,15 @@ internal class ChaCha20Utils {
         }
         return decryptedDataSize
     }
+    private suspend fun initializeLibsodiumIfNeeded() {
+        if (!LibsodiumInitializer.isInitialized()) {
+            LibsodiumInitializer.initialize()
+        }
+    }
 
     private companion object {
         const val BUFFER_SIZE = 4096L
         const val FILE_HEADER_SIZE = 64L
     }
 
-    private suspend fun initializeLibsodiumIfNeeded() {
-        if (!LibsodiumInitializer.isInitialized()) {
-            LibsodiumInitializer.initialize()
-        }
-    }
 }

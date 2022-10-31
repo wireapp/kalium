@@ -58,10 +58,10 @@ internal class ChaCha20UtilsTest {
             val saltDecoded = salt.toByteArray().decodeToString()
             kaliumLogger.d("Salt: $saltDecoded")
 
-            val (outputSize, authenticationHeader) = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
+            val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
 
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
-            val decryptedDataSize = ChaCha20Utils().decryptFile(encryptedDataSource, decryptedDataOutputSink, passphrase, authenticationHeader)
+            val decryptedDataSize = ChaCha20Utils().decryptFile(encryptedDataSource, decryptedDataOutputSink, passphrase)
 
             val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
                 readByteArray()
