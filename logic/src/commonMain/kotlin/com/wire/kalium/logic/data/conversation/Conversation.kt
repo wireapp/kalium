@@ -26,7 +26,8 @@ data class Conversation(
     val lastModifiedDate: String?,
     val lastReadDate: String,
     val access: List<Access>,
-    val accessRole: List<AccessRole>
+    val accessRole: List<AccessRole>,
+    val creatorId: String?
 ) {
 
     fun isTeamGroup(): Boolean = (teamId != null)
@@ -165,7 +166,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             lastModifiedDate = lastModifiedDate,
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
-            accessRole = accessRole
+            accessRole = accessRole,
+            creatorId = null
         )
     )
 }

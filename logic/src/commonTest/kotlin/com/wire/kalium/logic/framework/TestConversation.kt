@@ -44,6 +44,7 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
     )
     val SELF = Conversation(
         ID.copy(value = "SELF ID"),
@@ -58,6 +59,7 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -73,6 +75,7 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
     )
 
     fun GROUP_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationEntity(
@@ -138,6 +141,7 @@ object TestConversation {
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -260,7 +264,8 @@ object TestConversation {
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        lastReadDate = "2022-03-30T15:36:00.000Z"
+        lastReadDate = "2022-03-30T15:36:00.000Z",
+        creatorId = null
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -281,6 +286,7 @@ object TestConversation {
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        lastReadDate = "2022-03-30T15:36:00.000Z"
+        lastReadDate = "2022-03-30T15:36:00.000Z",
+        creatorId = null
     )
 }

@@ -30,7 +30,7 @@ internal class PersistMigratedConversationUseCaseImpl(
     val logger by lazy { kaliumLogger.withFeatureId(CONVERSATIONS) }
 
     override suspend fun invoke(conversations: List<Conversation>): Boolean {
-        return conversationRepository.insertConversationFromMigration(conversations).fold({
+        return conversationRepository.insertConversations(conversations).fold({
             logger.e("Error while persisting migrated conversations $it")
             false
         }) { true }
