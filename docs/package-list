@@ -4284,8 +4284,9 @@ $dokka.location:com.wire.kalium.logic.sync.periodic/UpdateApiVersionsWorker.Comp
 $dokka.location:com.wire.kalium.logic.sync.periodic/UpdateApiVersionsWorker///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.periodic/-update-api-versions-worker/index.html
 $dokka.location:com.wire.kalium.logic.sync.periodic/UpdateApiVersionsWorker/UpdateApiVersionsWorker/#com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.periodic/-update-api-versions-worker/-update-api-versions-worker.html
 $dokka.location:com.wire.kalium.logic.sync.periodic/UpdateApiVersionsWorker/doWork/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.periodic/-update-api-versions-worker/do-work.html
+$dokka.location:com.wire.kalium.logic.sync.receiver.conversation.message////PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation.message/index.html
+$dokka.location:com.wire.kalium.logic.sync.receiver.conversation.message//hasValidRemoteData/com.wire.kalium.logic.data.message.AssetContent#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation.message/has-valid-remote-data.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation////PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/index.html
-$dokka.location:com.wire.kalium.logic.sync.receiver.conversation//hasValidRemoteData/com.wire.kalium.logic.data.message.AssetContent#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/has-valid-remote-data.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/DeletedConversationEventHandler///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-deleted-conversation-event-handler/index.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/DeletedConversationEventHandler/handle/#com.wire.kalium.logic.data.event.Event.Conversation.DeletedConversation/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-deleted-conversation-event-handler/handle.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/MLSWelcomeEventHandler///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-m-l-s-welcome-event-handler/index.html
@@ -4298,9 +4299,6 @@ $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/MemberLeaveEven
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/MemberLeaveEventHandler/handle/#com.wire.kalium.logic.data.event.Event.Conversation.MemberLeave/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-member-leave-event-handler/handle.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/NewConversationEventHandler///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-new-conversation-event-handler/index.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/NewConversationEventHandler/handle/#com.wire.kalium.logic.data.event.Event.Conversation.NewConversation/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-new-conversation-event-handler/handle.html
-$dokka.location:com.wire.kalium.logic.sync.receiver.conversation/NewMessageEventHandler///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-new-message-event-handler/index.html
-$dokka.location:com.wire.kalium.logic.sync.receiver.conversation/NewMessageEventHandler/handleNewMLSMessage/#com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-new-message-event-handler/handle-new-m-l-s-message.html
-$dokka.location:com.wire.kalium.logic.sync.receiver.conversation/NewMessageEventHandler/handleNewProteusMessage/#com.wire.kalium.logic.data.event.Event.Conversation.NewMessage/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-new-message-event-handler/handle-new-proteus-message.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/RenamedConversationEventHandler///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-renamed-conversation-event-handler/index.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.conversation/RenamedConversationEventHandler/handle/#com.wire.kalium.logic.data.event.Event.Conversation.RenamedConversation/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.conversation/-renamed-conversation-event-handler/handle.html
 $dokka.location:com.wire.kalium.logic.sync.receiver.message////PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.receiver.message/index.html
@@ -6740,6 +6738,7 @@ com.wire.kalium.logic.sync.incremental
 com.wire.kalium.logic.sync.periodic
 com.wire.kalium.logic.sync.receiver
 com.wire.kalium.logic.sync.receiver.conversation
+com.wire.kalium.logic.sync.receiver.conversation.message
 com.wire.kalium.logic.sync.receiver.message
 com.wire.kalium.logic.sync.slow
 com.wire.kalium.logic.util
