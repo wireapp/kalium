@@ -14,7 +14,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
-internal class KeyPackageApiV2 internal constructor(
+internal open class KeyPackageApiV2 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : KeyPackageApiV0(authenticatedNetworkClient) {
 

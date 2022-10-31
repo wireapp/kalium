@@ -7,9 +7,13 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
+import com.wire.kalium.persistence.util.JsonSerializer
+import kotlinx.serialization.decodeFromString
 
 @Suppress("LongParameterList")
 object MessageMapper {
+
+    private val serializer = JsonSerializer()
 
     private fun createMessageEntity(
         id: String,
@@ -106,7 +110,8 @@ object MessageMapper {
         failedToDecryptData: ByteArray?,
         conversationName: String?,
         allReactionsJson: String?,
-        selfReactionsJson: String?
+        selfReactionsJson: String?,
+        mentions: String
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -114,7 +119,7 @@ object MessageMapper {
         } else when (contentType) {
             MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
                 messageBody = text ?: "",
-                mentions = listOf()
+                mentions = messageMentionsFromJsonString(mentions)
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
@@ -179,4 +184,9 @@ object MessageMapper {
     private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
         "Field $fieldName null when unpacking message content"
     }
+
+    private fun messageMentionsFromJsonString(messageMentions: String?): List<MessageEntity.Mention> =
+        messageMentions?.let {
+            serializer.decodeFromString(it)
+        } ?: emptyList()
 }
