@@ -66,6 +66,8 @@ class ConversationScope internal constructor(
 
     val observeUserListById: ObserveUserListByIdUseCase
         get() = ObserveUserListByIdUseCase(userRepository)
+    val persistMigratedConversation: PersistMigratedConversationUseCase
+        get() = PersistMigratedConversationUseCaseImpl(conversationRepository)
 
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
