@@ -1,5 +1,6 @@
 package com.wire.kalium.network.session
 
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
@@ -39,7 +40,7 @@ interface SessionManager {
     fun proxyCredentials(): ProxyCredentialsDTO?
 }
 
-fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
+fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi) {
     install("Add_WWW-Authenticate_Header") {
         addWWWAuthenticateHeaderIfNeeded()
     }
@@ -57,7 +58,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
                 BearerTokens(accessToken = access, refreshToken = refresh)
             }
             refreshTokens {
-                when (val response = AccessTokenApiV0(client).getToken(oldTokens!!.refreshToken)) {
+                when (val response = accessTokenApi(client).getToken(oldTokens!!.refreshToken)) {
                     is NetworkResponse.Success -> {
                         response.value.first.let { newAccessToken -> access = newAccessToken.value }
                         response.value.second?.let { newRefreshToken -> refresh = newRefreshToken.value }
