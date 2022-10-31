@@ -28,7 +28,7 @@ fun userDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(DatabaseCredentials.NotSet)
+        PlatformDatabaseData(DatabaseCredentials.Passphrase(passphrase))
     )
 }
 

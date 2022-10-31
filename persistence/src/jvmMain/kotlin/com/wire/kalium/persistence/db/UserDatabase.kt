@@ -28,9 +28,7 @@ fun userDatabaseBuilder(
     // Make sure all intermediate directories exist
     storePath.mkdirs()
 
-    val driver: SqlDriver = LogSqliteDriver(sqlDriver("jdbc:sqlite:${databasePath.absolutePath}")) {
-//         println("LogSqliteDriver:$it")
-    }
+    val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}")
 
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
