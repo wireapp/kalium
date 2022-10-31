@@ -57,7 +57,7 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
 
     override val messageApi: MessageApi get() = MessageApiV0(networkClient, provideEnvelopeProtoMapper())
 
-    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV0(networkClient)
+    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV0()
 
     override val conversationApi: ConversationApi get() = ConversationApiV0(networkClient)
 

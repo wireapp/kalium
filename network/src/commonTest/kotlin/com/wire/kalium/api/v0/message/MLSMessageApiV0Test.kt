@@ -1,62 +1,45 @@
 package com.wire.kalium.api.v0.message
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
-import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.isSuccessful
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 @ExperimentalCoroutinesApi
 class MLSMessageApiV0Test : ApiTest {
 
     @Test
-    fun givenMessage_whenSendingMessage_theRequestShouldBeConfiguredCorrectly() =
+    fun givenMessage_whenSendingMessage_theRequestShouldFail() =
         runTest {
-            val networkClient = mockAuthenticatedNetworkClient(
-                SendMLSMessageResponseJson.validMessageSentJson.rawJson,
-                statusCode = HttpStatusCode.Created,
-                assertion =
-                {
-                    assertPost()
-                    assertContentType(ContentType.Message.Mls)
-                    assertPathEqual(PATH_MESSAGE)
-                }
-            )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0(networkClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()
             val response = mlsMessageApi.sendMessage(MESSAGE)
-            assertTrue(response.isSuccessful())
+            (response.isSuccessful())
         }
 
     @Test
-    fun givenWelcomeMessage_whenSendingWelcomeMessage_theRequestShouldBeConfiguredCorrectly() =
+    fun givenWelcomeMessage_whenSendingWelcomeMessage_theRequestShouldFail() =
         runTest {
-            val networkClient = mockAuthenticatedNetworkClient(
-                SendMLSMessageResponseJson.validMessageSentJson.rawJson,
-                statusCode = HttpStatusCode.Created,
-                assertion =
-                {
-                    assertPost()
-                    assertContentType(ContentType.Message.Mls)
-                    assertPathEqual(PATH_WELCOME_MESSAGE)
-                }
-            )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0(networkClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()
             val response = mlsMessageApi.sendWelcomeMessage(WELCOME_MESSAGE)
-            assertTrue(response.isSuccessful())
+            assertFalse(response.isSuccessful())
+        }
+
+    @Test
+    fun givenCommitBundle_whenSendingBundle_theRequestShouldFail() =
+        runTest {
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()
+            val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+            assertFalse(response.isSuccessful())
         }
 
     private companion object {
-        const val PATH_MESSAGE = "/mls/messages"
-        const val PATH_WELCOME_MESSAGE = "/mls/welcome"
         val MESSAGE = MLSMessageApi.Message("ApplicationMessage".encodeToByteArray())
         val WELCOME_MESSAGE = MLSMessageApi.WelcomeMessage("WelcomeMessage".encodeToByteArray())
+        val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
     }
 
 }

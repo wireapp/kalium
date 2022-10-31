@@ -7,7 +7,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 
-class MLSPublicKeyApiV2 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) :
+internal open class MLSPublicKeyApiV2 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) :
     MLSPublicKeyApiV0(authenticatedNetworkClient) {
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
