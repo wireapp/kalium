@@ -36,8 +36,6 @@ fun userDatabaseBuilder(
     return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storePath))
 }
 
-
-
 private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
     driverUri,
     Properties(1).apply { put("foreign_keys", "true") }
