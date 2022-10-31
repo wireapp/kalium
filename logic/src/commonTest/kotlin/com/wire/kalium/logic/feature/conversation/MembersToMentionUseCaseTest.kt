@@ -56,7 +56,6 @@ class MembersToMentionUseCaseTest {
         assertEquals(members, result)
     }
 
-
     @Test
     fun givenAListOfMembers_whenRequestingMembersToMentionWithWhiteSpaceSearchQuery_thenReturnAnEmptyList() = runTest {
         val searchQuery = " "
