@@ -40,7 +40,6 @@ class MembersToMentionUseCase internal constructor(
         rules.forEach { rule ->
             val matches = usersToSearch.filter { rule(it) }
                 .filter { !foundUsers.contains(it) }
-                .filter { it.user.handle != null }
                 .sortedBy { it.user.name }
             foundUsers = foundUsers.union(matches)
             usersToMention += matches
