@@ -21,7 +21,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenProteusEvent_whenHandling_shouldAskProteusUnpackerToDecrypt() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withProteusUnpackerReturning(Either.Right(MessageUnpackResult.ProtocolSignalingMessage))
+            .withProteusUnpackerReturning(Either.Right(MessageUnpackResult.HandshakeMessage))
             .arrange()
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
@@ -37,7 +37,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenMLSEvent_whenHandling_shouldAskMLSUnpackerToDecrypt() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withMLSUnpackerReturning(Either.Right(MessageUnpackResult.ProtocolSignalingMessage))
+            .withMLSUnpackerReturning(Either.Right(MessageUnpackResult.HandshakeMessage))
             .arrange()
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(Clock.System.now())

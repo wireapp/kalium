@@ -44,7 +44,7 @@ internal class MLSMessageUnpackerImpl(
 
     override suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, MessageUnpackResult> =
         messageFromMLSMessage(event).map { bundle ->
-            if (bundle == null) return@map MessageUnpackResult.ProtocolSignalingMessage
+            if (bundle == null) return@map MessageUnpackResult.HandshakeMessage
 
             bundle.commitDelay?.let {
                 handlePendingProposal(
@@ -66,7 +66,7 @@ internal class MLSMessageUnpackerImpl(
                     senderClientId = it.senderClientID,
                     content = protoContent
                 )
-            } ?: MessageUnpackResult.ProtocolSignalingMessage
+            } ?: MessageUnpackResult.HandshakeMessage
         }
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
