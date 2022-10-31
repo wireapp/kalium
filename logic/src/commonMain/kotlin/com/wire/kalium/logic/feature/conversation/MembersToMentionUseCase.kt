@@ -38,7 +38,10 @@ class MembersToMentionUseCase internal constructor(
         var foundUsers: Set<MemberDetails> = emptySet()
         val usersToMention = mutableListOf<MemberDetails>()
         rules.forEach { rule ->
-            val matches = usersToSearch.filter { rule(it) }.filter { !foundUsers.contains(it) }.sortedBy { it.user.name }
+            val matches = usersToSearch.filter { rule(it) }
+                .filter { !foundUsers.contains(it) }
+                .filter { it.user.handle != null }
+                .sortedBy { it.user.name }
             foundUsers = foundUsers.union(matches)
             usersToMention += matches
         }
