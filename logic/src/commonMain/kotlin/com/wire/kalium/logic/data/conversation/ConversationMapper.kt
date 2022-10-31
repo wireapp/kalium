@@ -128,7 +128,7 @@ internal class ConversationMapperImpl(
                         accentId = 0,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                         availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
-                        deleted = type != ConversationEntity.Type.GROUP && otherUserId != null,
+                        deleted = userDeleted ?: false,
                         botService = botService?.let { BotService(it.id, it.provider) },
                         handle = null,
                         completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
@@ -158,23 +158,23 @@ internal class ConversationMapperImpl(
             }
 
             ConversationEntity.Type.CONNECTION_PENDING -> {
+                val otherUser = OtherUser(
+                    id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
+                    name = name,
+                    accentId = 0,
+                    userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+                    availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
+                    deleted = userDeleted ?: false,
+                    botService = botService?.let { BotService(it.id, it.provider) },
+                    handle = null,
+                    completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                    previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
+                    teamId = teamId?.let { TeamId(it) }
+                )
+
                 ConversationDetails.Connection(
                     conversationId = idMapper.fromDaoModel(id),
-                    otherUser = otherUserId?.let {
-                        OtherUser(
-                            id = idMapper.fromDaoModel(it),
-                            name = name,
-                            accentId = 0,
-                            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                            availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
-                            deleted = type != ConversationEntity.Type.GROUP && otherUserId != null,
-                            botService = botService?.let { BotService(it.id, it.provider) },
-                            handle = null,
-                            completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                            previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                            teamId = teamId?.let { TeamId(it) }
-                        )
-                    },
+                    otherUser = otherUser,
                     userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                     lastModifiedDate = lastModifiedDate.orEmpty(),
                     connection = Connection(
@@ -185,19 +185,7 @@ internal class ConversationMapperImpl(
                         qualifiedToId = otherUserId.let { idMapper.fromDaoModel(it!!) },
                         status = connectionStatusMapper.fromDaoModel(connectionStatus),
                         toId = "", // todo
-                        fromUser = OtherUser(
-                            id = idMapper.fromDaoModel(otherUserId.requireField("otherUserID in OneOnOne")),
-                            name = name,
-                            accentId = 0,
-                            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                            availabilityStatus = userAvailabilityStatusMapper.fromDaoAvailabilityStatusToModel(userAvailabilityStatus),
-                            deleted = type != ConversationEntity.Type.GROUP && otherUserId != null,
-                            botService = botService?.let { BotService(it.id, it.provider) },
-                            handle = null,
-                            completePicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                            previewPicture = previewAssetId?.let { idMapper.fromDaoModel(it) },
-                            teamId = teamId?.let { TeamId(it) }
-                        )
+                        fromUser = otherUser
                     ),
                     protocolInfo = protocolInfoMapper.fromEntity(protocolInfo),
                     access = accessList.map { it.toDAO() },
