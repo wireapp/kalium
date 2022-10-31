@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.backup
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.IgnoreJvm
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -195,7 +197,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
 
             val uniqueUserMembers = backupDatabaseDataGenerator.generateMembers(2)
             val userConversationAmount = 5
-            val userConversations = userDatabaseDataGenerator.generateAndInsertGroupConversations(
+            userDatabaseDataGenerator.generateAndInsertGroupConversations(
                 conversationAmount = userConversationAmount,
                 membersGenerate = {
                     overlappingBackupMembers + uniqueUserMembers
@@ -208,19 +210,23 @@ class RestoreBackupTest : BaseDatabaseTest() {
             // then
             val restoredConversations = userDatabaseBuilder.conversationDAO.getAllConversations().first()
             assertEquals(userConversationAmount + backupConversationAmount, restoredConversations.size)
-            assertTrue(userConversations.containsAll(backupConversations))
+            assertTrue(restoredConversations.containsAll(backupConversations))
 
             val expectedMemberAmount = overlappingBackupMembers.size + uniqueUserMembers.size
 
-            var totalRestoredMembers = 0
+            val restoredMembers = mutableListOf<Member>()
+
             restoredConversations.forEach { conversationEntity ->
                 val members = userDatabaseBuilder.conversationDAO.getAllMembers(conversationEntity.id).first()
-                totalRestoredMembers += members.size
+
+                members.forEach { member ->
+                    if (!restoredMembers.contains(member)) {
+                        restoredMembers.add(member)
+                    }
+                }
             }
-
-            assertEquals(expectedMemberAmount, totalRestoredMembers)
+            assertEquals(expectedMemberAmount, restoredMembers.size)
         }
-
 
     @Test
     fun givenBackupHasTeamsAndUserHasNoTeams_whenRestoringBackup_thenTeamsAreRestored() = runTest {
@@ -257,13 +263,12 @@ class RestoreBackupTest : BaseDatabaseTest() {
     @Test
     fun givenBackupHasUniqueConversationWithCallsAndUser_whenRestoringBackup_thenBothCallsArePresents() = runTest {
         // given
-        val backupConversationAmount = 100
-
+        val backupConversationAmount = 3
         val conversationsWithCallToBackup = backupDatabaseDataGenerator.generateAndInsertConversationsWithCall(
             conversationAmount = backupConversationAmount
         )
 
-        val userConversationAmount = 50
+        val userConversationAmount = 2
         userDatabaseDataGenerator.generateAndInsertConversationsWithCall(
             conversationAmount = userConversationAmount,
         )
@@ -277,15 +282,10 @@ class RestoreBackupTest : BaseDatabaseTest() {
         val calls = conversationsWithCallToBackup.map { it.second }
 
         assertTrue(conversationsAfterBackup.containsAll(conversations))
-        assertEquals(backupConversationAmount + userConversationAmount, conversations.size)
+        assertEquals(backupConversationAmount + userConversationAmount, conversationsAfterBackup.size)
 
         val allCalls = userDatabaseBuilder.callDAO.observeCalls().first()
-        assertEquals(calls, allCalls)
-
-        conversationsWithCallToBackup.forEach { (conversation, call) ->
-            val status = userDatabaseBuilder.callDAO.getCallStatusByConversationId(conversation.id)
-            assertEquals(status, call.status)
-        }
+        assertTrue(allCalls.containsAll(calls))
     }
 
     @Test
@@ -364,15 +364,82 @@ class RestoreBackupTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenBackupHasOverlappingUsersWithUserAlongWithUniqueOne_whenRestoringBackup_thenOnlyUniqueOnesAReRestored() = runTest {
+    fun givenBackupHasOverlappingUsersWithUserAlongWithUniqueOnes_whenRestoringBackup_thenOnlyUniqueOnesAReRestored() = runTest {
         // given
-        val uniqueUsers = userDatabaseDataGenerator.generateAndInsertUsers(10)
-        val userToBackup = backupDatabaseDataGenerator.generateAndInsertUsers(10)
+        val uniqueUsersAmount = 10
+        val uniqueBackupUsersAmount = 10
 
-        uniqueUsers.forEach {
-            backupDatabaseBuilder.userDAO.insertUser()
+        val uniqueUsers = userDatabaseDataGenerator.generateAndInsertUsers(uniqueUsersAmount)
+        val uniqueBackupUsers = backupDatabaseDataGenerator.generateAndInsertUsers(uniqueBackupUsersAmount)
+
+        uniqueBackupUsers.forEach { userEntity ->
+            backupDatabaseBuilder.userDAO.insertUser(userEntity)
         }
 
+        // when
+        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+
+        // then
+        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
+        assertEquals(restoredUsers,  uniqueUsers + uniqueBackupUsers)
+        assertEquals(uniqueUsersAmount + uniqueBackupUsersAmount, restoredUsers.size)
+    }
+
+    @Test
+    fun givenBackupHasAssetsButUserNot_whenRestoringBackup_thenBackupAssetsAreRestored() = runTest {
+        // given
+        val assetsToBackup = backupDatabaseDataGenerator.generateAndInsertAssets(10)
+
+        // when
+        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+
+        // then
+        assetsToBackup.forEach { restoredAssetEntity ->
+            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(restoredAssetEntity.key).first()
+            assertTrue(asset != null)
+            assertEquals(asset, restoredAssetEntity)
+        }
+    }
+
+    @Test
+    fun givenUserHasAssetButBackupNot_whenRestoringBackup_thenUserAssetAreRestored() = runTest {
+        // given
+        val assetsToRestore = userDatabaseDataGenerator.generateAndInsertAssets(10)
+
+        // when
+        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+
+        // then
+        assetsToRestore.forEach { restoredAssetEntity ->
+            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(restoredAssetEntity.key).first()
+
+            assertTrue(asset != null)
+            assertEquals(asset, restoredAssetEntity)
+        }
+    }
+
+    @Test
+    fun givenUserHasUniqueAssetsAlongWithBackup_whenRestoringBackup_thenThoseAssetsAreRestored() = runTest {
+        // given
+        val assetsToRestore = userDatabaseDataGenerator.generateAndInsertAssets(10)
+        val backupAssets = backupDatabaseDataGenerator.generateAndInsertAssets(10)
+
+        // when
+        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+
+        // then
+        assetsToRestore.forEach { restoredAssetEntity ->
+            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(restoredAssetEntity.key).first()
+
+            assertTrue(asset != null)
+            assertEquals(asset, restoredAssetEntity)
+        }
+        backupAssets.forEach { backupAssetEntity ->
+            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(backupAssetEntity.key).first()
+
+            assertTrue(asset != null)
+            assertEquals(asset, backupAssetEntity)
+        }
     }
 
     private suspend fun insertOverlappingConversations(amount: Int): List<ConversationEntity> {
@@ -416,7 +483,5 @@ class RestoreBackupTest : BaseDatabaseTest() {
 
         return conversationAdded
     }
-
 }
-
 

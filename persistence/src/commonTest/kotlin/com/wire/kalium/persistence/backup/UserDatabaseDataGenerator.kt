@@ -10,6 +10,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -29,6 +30,7 @@ class UserDatabaseDataGenerator(
     private var generatedMessagesCount = 0
     private var generatedCallsCount = 0
     private var generatedTeamCount = 0
+    private var generatedAssetsCount = 0
 
     private suspend fun generateAndInsertRegularMessages(
         amount: Int,
@@ -65,12 +67,13 @@ class UserDatabaseDataGenerator(
 
     private fun generateUser(): UserEntity {
         val userPrefix = "${databasePrefix}User${generatedUsersCount}"
+
         generatedUsersCount += 1
 
         return UserEntity(
             id = UserIDEntity("${userPrefix}Value", "${userPrefix}Domain"),
             availabilityStatus = UserAvailabilityStatusEntity.values()[generatedUsersCount % UserAvailabilityStatusEntity.values().size],
-            userType = UserTypeEntity.OWNER,
+            userType = UserTypeEntity.values()[generatedUsersCount % UserTypeEntity.values().size],
             deleted = generatedUsersCount % 2 == 0,
             name = "${userPrefix}Name",
             handle = "${userPrefix}Handle",
@@ -340,7 +343,7 @@ class UserDatabaseDataGenerator(
     }
 
     private suspend fun generateAndInsertConversationMembers(conversationId: QualifiedIDEntity, membersPerGroup: Int) {
-        for (index in generatedUsersCount..membersPerGroup) {
+        for (index in generatedUsersCount + 1..membersPerGroup) {
             val userEntity = generateUser()
             userDatabaseBuilder.conversationDAO.insertMember(Member(userEntity.id, Member.Role.Member), conversationId)
         }
@@ -349,7 +352,7 @@ class UserDatabaseDataGenerator(
     fun generateMembers(amount: Int): List<Member> {
         val members = mutableListOf<Member>()
 
-        for (index in generatedUsersCount..amount) {
+        for (index in generatedUsersCount + 1..amount) {
             val userEntity = generateUser()
 
             members.add(Member(userEntity.id, Member.Role.Member))
@@ -359,13 +362,50 @@ class UserDatabaseDataGenerator(
     }
 
     suspend fun generateAndInsertUsers(amount: Int): List<UserEntity> {
-        for (index in generatedUsersCount..amount) {
+        for (index in generatedUsersCount + 1..amount) {
             val user = generateUser()
 
             userDatabaseBuilder.userDAO.insertUser(user)
         }
 
         return userDatabaseBuilder.userDAO.getAllUsers().first()
+    }
+
+    fun generateUsers(amount: Int): List<UserEntity> {
+        val generatedUsers = mutableListOf<UserEntity>()
+
+        for (index in generatedUsersCount + 1..amount) {
+            val user = generateUser()
+            generatedUsers.add(user)
+        }
+
+        return generatedUsers
+    }
+
+    suspend fun generateAndInsertAssets(amount: Int): MutableList<AssetEntity> {
+        val assetPrefix = "${databasePrefix}Asset${generatedAssetsCount}"
+
+        val generatedAssets = mutableListOf<AssetEntity>()
+
+        for (index in generatedAssetsCount + 1..amount) {
+
+            val generatedAsset = AssetEntity(
+                key = "${assetPrefix}Key${index}",
+                domain = "${assetPrefix}Domain${index}",
+                dataPath = "${assetPrefix}DataPath${index}",
+                dataSize = 256,
+                assetToken = null,
+                downloadedDate = null
+            )
+
+            userDatabaseBuilder.assetDAO.insertAsset(generatedAsset)
+
+            generatedAssetsCount += 1
+
+            generatedAssets.add(generatedAsset)
+        }
+
+        return generatedAssets
     }
 
 
