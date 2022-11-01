@@ -204,7 +204,4 @@ interface MLSClient {
     ): CommitBundle
 }
 
-@JvmInline
-value class MlsDBSecret(val value: String)
-
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

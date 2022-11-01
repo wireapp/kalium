@@ -28,6 +28,10 @@ jobs:
         run: |
           ./gradlew :cli:build -Djava.library.path=$LD_LIBRARY_PATH
 
+      - name: Verify DB Migrations
+        run: |
+          ./gradlew :persistence:verifySqlDelightMigration
+
       - name: Test with Gradle
         run: |
           ./gradlew jvmTest koverMergedXmlReport -Djava.library.path=$LD_LIBRARY_PATH

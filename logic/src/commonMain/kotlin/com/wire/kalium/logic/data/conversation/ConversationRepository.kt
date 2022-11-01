@@ -139,6 +139,7 @@ interface ConversationRepository {
     suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit>
 
     suspend fun getConversationIdsByUserId(userId: UserId): Either<CoreFailure, List<ConversationId>>
+    suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
 
 }
 
@@ -564,6 +565,15 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getConversationIdsByUserId(idMapper.toDaoModel(userId))
         }
             .map { it.map { conversationIdEntity -> idMapper.fromDaoModel(conversationIdEntity) } }
+    }
+
+    override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            val conversationEntities = conversations.map { conversation ->
+                conversationMapper.toDaoModel(conversation)
+            }
+            conversationDAO.insertConversations(conversationEntities)
+        }
     }
 
     companion object {
