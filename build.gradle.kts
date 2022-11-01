@@ -58,13 +58,7 @@ allprojects {
         google()
         mavenCentral()
         mavenLocal()
-        maven {
-            url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
-            credentials {
-                username = getLocalProperty("github.package_registry.user", System.getenv("GITHUB_USER"))
-                password = getLocalProperty("github.package_registry.token", System.getenv("GITHUB_TOKEN"))
-            }
-        }
+        maven(url = "https://raw.githubusercontent.com/wireapp/wire-maven/main/releases")
     }
 }
 
