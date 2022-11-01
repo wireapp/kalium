@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.first
  * @param userRepository Retrieves the self user
  * @constructor Creates an instance of the usecase
  */
+@Suppress("ReturnCount")
 class MembersToMentionUseCase internal constructor(
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val userRepository: UserRepository
