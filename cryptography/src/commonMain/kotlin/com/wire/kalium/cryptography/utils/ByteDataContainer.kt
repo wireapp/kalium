@@ -27,8 +27,6 @@ class SHA256Key(data: ByteArray) : ByteDataContainer(data)
 
 class AES256Key(data: ByteArray) : ByteDataContainer(data)
 
-class ChaCha20Key(data: ByteArray) : ByteDataContainer(data)
-
 class EncryptedData(data: ByteArray) : ByteDataContainer(data)
 
 class PlainData(data: ByteArray) : ByteDataContainer(data)
