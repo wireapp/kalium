@@ -66,7 +66,7 @@ internal class ChaCha20UtilsTest {
             val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
 
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
-            val decryptedDataSize = ChaCha20Utils().decryptFile(encryptedDataSource, decryptedDataOutputSink, passphrase)
+            val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase)
 
             val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
                 readByteArray()
@@ -104,7 +104,7 @@ internal class ChaCha20UtilsTest {
             val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
 
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
-            val decryptedDataSize = ChaCha20Utils().decryptFile(encryptedDataSource, decryptedDataOutputSink, passphrase)
+            val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase)
 
             val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
                 readByteArray()

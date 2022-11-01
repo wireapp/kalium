@@ -55,7 +55,7 @@ internal class ChaCha20Utils {
             var byteCount: Long
             while (backupDataSource.read(inputContentBuffer, ENCRYPT_BUFFER_SIZE).also { byteCount = it } != -1L) {
                 // We need to inform the end of the encryption stream with the TAG_FINAL
-                val appendingTag = if (byteCount < ENCRYPT_BUFFER_SIZE) {
+                val appendingTag = if (byteCount < ENCRYPT_BUFFER_SIZE) { // TODO: Find a better way to detect the end of the stream
                     crypto_secretstream_xchacha20poly1305_TAG_FINAL
                 } else
                     crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
@@ -85,7 +85,7 @@ internal class ChaCha20Utils {
 
     @Suppress("TooGenericExceptionCaught")
     @Throws(Exception::class)
-    suspend fun decryptFile(
+    suspend fun decryptBackupFile(
         encryptedDataSource: Source,
         decryptedDataSink: Sink,
         passphrase: Backup.Passphrase
@@ -117,9 +117,11 @@ internal class ChaCha20Utils {
             val chaChaHeader = chaChaHeaderBuffer.readByteArray().toUByteArray()
             val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, chaChaHeader)
 
+            // Decrypt the backup file data reading it in chunks
             val contentBuffer = Buffer()
             var byteCount: Long
             val decryptionBufferSize = ENCRYPT_BUFFER_SIZE + crypto_secretstream_xchacha20poly1305_ABYTES
+
             while (encryptedDataSource.read(contentBuffer, decryptionBufferSize).also { byteCount = it } != -1L) {
                 val encryptedData = contentBuffer.readByteArray(byteCount).toUByteArray()
                 val (decryptedData, tag) = SecretStream.xChaCha20Poly1305Pull(
