@@ -61,8 +61,8 @@ allprojects {
         maven {
             url = uri("https://maven.pkg.github.com/wireapp/core-crypto")
             credentials {
-                username = getLocalProperty("github.package_registry.user", System.getenv("GITHUB_USER"))
-                password = getLocalProperty("github.package_registry.token", System.getenv("GITHUB_TOKEN"))
+                username = property("github.package_registry.user") as? String ?: System.getenv("GITHUB_USER")
+                password = property("github.package_registry.token") as? String ?: System.getenv("GITHUB_TOKEN")
             }
         }
     }
