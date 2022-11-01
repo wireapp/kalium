@@ -5,10 +5,29 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.flow.first
 
+/**
+ * This usecase returns a list of members to mention for a given conversation based on a search done with searchQuery
+ * The result should ordered respecting this order of priorities:
+ * 1. Full name starts with the query
+ * 2. Any of the tokens in the name starts with the query
+ * 3. The handle starts with the query
+ * 4. The full name contains the query
+ * 5. The handle contains the query
+ *
+ * @param observeConversationMembers Returns members of a given conversation.
+ * @param userRepository Retrieves the self user
+ * @constructor Creates an instance of the usecase
+ */
 class MembersToMentionUseCase internal constructor(
     private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val userRepository: UserRepository
 ) {
+    /**
+     * search for members to mention in a conversation
+     * @param conversationId conversation to search in
+     * @param searchQuery string used to search for members
+     * @return a List of [MemberDetails] of a conversation for the given string
+     */
     suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> {
         val conversationMembers = observeConversationMembers(conversationId).first()
 
