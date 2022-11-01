@@ -30,6 +30,7 @@ internal class ChaCha20UtilsTest {
         val passphrase = Backup.Passphrase(password, userId)
         val backup = Backup(salt.toUByteArray(), passphrase)
         val chachakey = backup.provideChaCha20Key()
+        println("ChaCha20 key: ${chachakey.toHexString()}")
         kaliumLogger.d("ChaCha20 key: ${chachakey.toHexString()}")
         assertTrue(chachakey.isNotEmpty())
     }

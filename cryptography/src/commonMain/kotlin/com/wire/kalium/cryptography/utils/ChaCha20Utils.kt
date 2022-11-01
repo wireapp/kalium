@@ -2,9 +2,11 @@ package com.wire.kalium.cryptography.utils
 
 import com.ionspin.kotlin.crypto.LibsodiumInitializer
 import com.ionspin.kotlin.crypto.secretstream.SecretStream
+import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_HEADERBYTES
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 import com.ionspin.kotlin.crypto.util.encodeToUByteArray
+import com.ionspin.kotlin.crypto.util.toHexString
 import com.wire.kalium.cryptography.backup.Backup
 import com.wire.kalium.cryptography.kaliumLogger
 import okio.Buffer
@@ -40,6 +42,11 @@ internal class ChaCha20Utils {
 
             val stateAndHeader = SecretStream.xChaCha20Poly1305InitPush(chaCha20Key)
             val state = stateAndHeader.state
+
+            println("header: ${stateAndHeader.header.toHexString()}")
+
+            outputBuffer.write(stateAndHeader.header.toByteArray())
+            outputBuffer.flush()
 
             val contentBuffer = Buffer()
             var byteCount: Long
@@ -98,9 +105,18 @@ internal class ChaCha20Utils {
             check(expectedHashedUserId.contentEquals(storedHashedUserId)) {
                 "The hashed user id in the backup file header does not match the expected one"
             }
+
+//             println("decoded salt: ${salt.toByteArray().decodeToString()}")
+
             val key = backup.provideChaCha20Key()
 
-            val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, additionalInformation)
+            val chaChaHeaderBuffer = Buffer()
+            encryptedDataSource.read(chaChaHeaderBuffer, crypto_secretstream_xchacha20poly1305_HEADERBYTES.toLong())
+            val chaChaHeader = chaChaHeaderBuffer.readByteArray().toUByteArray()
+
+            println("header: ${chaChaHeader.toHexString()}")
+
+            val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, chaChaHeader)
 
             val contentBuffer = Buffer()
             var byteCount: Long
@@ -138,7 +154,7 @@ internal class ChaCha20Utils {
 
     private companion object {
         const val BUFFER_SIZE = 4096L
-        const val FILE_HEADER_SIZE = 64L
+        const val FILE_HEADER_SIZE = 63L
     }
 
 }
