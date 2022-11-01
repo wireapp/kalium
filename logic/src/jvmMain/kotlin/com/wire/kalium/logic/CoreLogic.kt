@@ -45,12 +45,12 @@ actual class CoreLogic(
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
-            rootPath,
+            rootPathsProvider,
             getGlobalScope(),
             kaliumConfigs,
             globalPreferences.value,
             globalCallManager,
-            idMapper
+            userStorageProvider
         )
     }
 }

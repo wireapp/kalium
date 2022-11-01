@@ -3,6 +3,7 @@ package com.wire.kalium.api.v2
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.api.v2.authenticated.MLSMessageApiV2
 import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.isSuccessful
@@ -11,6 +12,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
@@ -52,11 +54,20 @@ class MLSMessageApiV2Test : ApiTest {
             assertTrue(response.isSuccessful())
         }
 
+    @Test
+    fun givenCommitBundle_whenSendingBundle_theRequestShouldFail() =
+        runTest {
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()
+            val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+            assertFalse(response.isSuccessful())
+        }
+
     private companion object {
         const val PATH_MESSAGE = "/mls/messages"
         const val PATH_WELCOME_MESSAGE = "/mls/welcome"
         val MESSAGE = MLSMessageApi.Message("ApplicationMessage".encodeToByteArray())
         val WELCOME_MESSAGE = MLSMessageApi.WelcomeMessage("WelcomeMessage".encodeToByteArray())
+        val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
     }
 
 }

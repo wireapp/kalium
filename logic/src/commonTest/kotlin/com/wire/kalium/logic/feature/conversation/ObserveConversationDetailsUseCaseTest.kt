@@ -60,7 +60,9 @@ class ObserveConversationDetailsUseCaseTest {
                     conversation,
                     LegalHoldStatus.DISABLED,
                     unreadMessagesCount = 0,
-                    lastUnreadMessage = null
+                    lastUnreadMessage = null,
+                    isSelfUserMember = true,
+                    isSelfUserCreator = true
                 )
             ),
             Either.Right(
@@ -68,7 +70,9 @@ class ObserveConversationDetailsUseCaseTest {
                     conversation.copy(name = "New Name"),
                     LegalHoldStatus.DISABLED,
                     unreadMessagesCount = 0,
-                    lastUnreadMessage = null
+                    lastUnreadMessage = null,
+                    isSelfUserMember = true,
+                    isSelfUserCreator = true
                 )
             )
         )

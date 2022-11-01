@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -21,6 +22,7 @@ import kotlinx.datetime.Clock
  */
 class CreateGroupConversationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository,
     private val syncManager: SyncManager,
     private val clientRepository: ClientRepository
 ) {
@@ -34,7 +36,7 @@ class CreateGroupConversationUseCase internal constructor(
         syncManager.waitUntilLiveOrFailure().flatMap {
             clientRepository.currentClientId()
         }.flatMap { clientId ->
-            conversationRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId.value))
+            conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId.value))
         }.flatMap { conversation ->
             conversationRepository.updateConversationModifiedDate(conversation.id, Clock.System.now().toString())
                 .map { conversation }

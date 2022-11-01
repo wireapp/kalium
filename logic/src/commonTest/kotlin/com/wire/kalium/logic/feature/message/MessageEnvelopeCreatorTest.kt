@@ -247,7 +247,7 @@ class MessageEnvelopeCreatorTest {
         /**
          * A content size so big it would alone go over the 256KB limit in the backend
          */
-        const val SUPER_BIG_CONTENT_SIZE = 300 * 1024
+        const val SUPER_BIG_CONTENT_SIZE = 260 * 1024
         val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
         val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
         val TEST_MEMBER_1 = UserId("value1", "domain1")

@@ -46,7 +46,9 @@ class ObserveConversationListDetailsUseCaseTest {
                 groupConversation,
                 LegalHoldStatus.DISABLED,
                 unreadMessagesCount = 0,
-                lastUnreadMessage = null
+                lastUnreadMessage = null,
+                isSelfUserMember = true,
+                isSelfUserCreator = true
             )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -79,7 +81,9 @@ class ObserveConversationListDetailsUseCaseTest {
             conversation = groupConversation,
             legalHoldStatus = LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null
+            lastUnreadMessage = null,
+            isSelfUserMember = true,
+            isSelfUserCreator = true
         )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -114,7 +118,9 @@ class ObserveConversationListDetailsUseCaseTest {
                 groupConversation,
                 LegalHoldStatus.DISABLED,
                 unreadMessagesCount = 0,
-                lastUnreadMessage = null
+                lastUnreadMessage = null,
+                isSelfUserMember = true,
+                isSelfUserCreator = true
             )
         )
 
@@ -168,7 +174,9 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null
+            lastUnreadMessage = null,
+            isSelfUserMember = true,
+            isSelfUserCreator = true
         )
 
         val selfConversation = TestConversation.SELF
@@ -203,7 +211,9 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null
+            lastUnreadMessage = null,
+            isSelfUserMember = true,
+            isSelfUserCreator = true
         )
 
         val firstConversationsList = listOf(groupConversation)
@@ -232,7 +242,9 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null
+            lastUnreadMessage = null,
+            isSelfUserMember = true,
+            isSelfUserCreator = true
         )
 
         val firstConversationsList = listOf(groupConversation)

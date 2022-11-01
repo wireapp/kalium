@@ -82,7 +82,11 @@ kotlin {
                 implementation(Dependencies.MultiplatformSettings.test)
             }
         }
-        val jvmMain by getting {}
+        val jvmMain by getting {
+            dependencies {
+	        implementation(Dependencies.Calling.jna)
+            }
+        }
         val jvmTest by getting
         val androidMain by getting {
             dependencies {

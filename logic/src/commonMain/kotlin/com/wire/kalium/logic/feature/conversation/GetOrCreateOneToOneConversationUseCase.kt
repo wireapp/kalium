@@ -3,12 +3,14 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
 class GetOrCreateOneToOneConversationUseCase(
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository
 ) {
 
     suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
@@ -16,7 +18,7 @@ class GetOrCreateOneToOneConversationUseCase(
         return conversationRepository.getOneToOneConversationWithOtherUser(otherUserId)
             .fold({ conversationFailure ->
                 if (conversationFailure is StorageFailure.DataNotFound) {
-                    conversationRepository.createGroupConversation(usersList = listOf(otherUserId))
+                    conversationGroupRepository.createGroupConversation(usersList = listOf(otherUserId))
                         .fold(
                             CreateConversationResult::Failure,
                             CreateConversationResult::Success

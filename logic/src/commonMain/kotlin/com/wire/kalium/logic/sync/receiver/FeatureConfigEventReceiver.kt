@@ -52,6 +52,11 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                 userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, event.model.config.domains)
             }
 
+            is Event.FeatureConfig.ConferenceCallingUpdated -> {
+                val conferenceCallingEnabled = event.model.status == Status.ENABLED
+                userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
+            }
+
             is Event.FeatureConfig.UnknownFeatureUpdated -> kaliumLogger.w("Ignoring unknown feature config update")
         }
     }
