@@ -7,12 +7,21 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-internal interface PushTokenRepository {
+interface PushTokenRepository {
+    /**
+     * Method responsible to observe the flag indicating if the firebase token should be registered via the ClientRepository.registerToken
+     * next time the token changes.
+     * @return [Flow] of [Boolean] that indicates if the firebase token should be registered.
+     */
     suspend fun observeUpdateFirebaseTokenFlag(): Flow<Boolean>
+
+    /**
+     * Method responsible to set the flag indicating if the firebase token should be registered via the ClientRepository.registerToken
+     */
     suspend fun setUpdateFirebaseTokenFlag(shouldUpdate: Boolean): Either<StorageFailure, Unit>
 }
 
-internal class PushTokenDataSource internal constructor(private val metadataDAO: MetadataDAO) : PushTokenRepository {
+class PushTokenDataSource internal constructor(private val metadataDAO: MetadataDAO) : PushTokenRepository {
 
     override suspend fun setUpdateFirebaseTokenFlag(shouldUpdate: Boolean) =
         wrapStorageRequest { metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPDATE_FIREBASE_TOKEN_KEY) }

@@ -24,7 +24,7 @@ import platform.Foundation.valueForKey
 import platform.posix.memcpy
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(private val rootDir: String) : ProteusClient {
+actual class ProteusClientImpl actual constructor(private val rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
 
     private var box: EncryptionContext? = null
 
@@ -36,6 +36,10 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
         // Delete the actual files
     }
 
+    override fun needsMigration(): Boolean {
+        return false
+    }
+
     override suspend fun openOrCreate() {
         NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
         box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
@@ -45,7 +49,10 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
         if (NSFileManager.defaultManager.fileExistsAtPath(rootDir)) {
             box = EncryptionContext(NSURL.fileURLWithPath(rootDir))
         } else {
-            throw ProteusException(message = "Local files were not found", code = ProteusException.Code.LOCAL_FILES_NOT_FOUND)
+            throw ProteusException(
+                message = "Local files were not found",
+                code = ProteusException.Code.LOCAL_FILES_NOT_FOUND
+            )
         }
     }
 
@@ -138,7 +145,11 @@ actual class ProteusClientImpl actual constructor(private val rootDir: String) :
             } else {
                 memScoped {
                     val errorPtr: ObjCObjectVar<NSError?> = alloc()
-                    decrypted = session?.createClientSessionAndReturnPlaintextFor(toSessionId(sessionId), toData(message), errorPtr.ptr)!!
+                    decrypted = session?.createClientSessionAndReturnPlaintextFor(
+                        toSessionId(sessionId),
+                        toData(message),
+                        errorPtr.ptr
+                    )!!
                     errorPtr.value?.let { error ->
                         throw toException(error)
                     }

@@ -166,9 +166,15 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandlerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.NewMessageEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
+import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
@@ -565,15 +571,18 @@ class UserSessionScope internal constructor(
             reactionRepository
         )
 
-    private val newMessageHandler: NewMessageEventHandlerImpl
-        get() = NewMessageEventHandlerImpl(
-            authenticatedDataSourceSet.proteusClientProvider,
-            mlsClientProvider,
+    private val mlsUnpacker: MLSMessageUnpacker
+        get() = MLSMessageUnpackerImpl(mlsClientProvider, conversationRepository, pendingProposalScheduler)
+
+    private val proteusUnpacker: ProteusMessageUnpacker
+        get() = ProteusMessageUnpackerImpl(authenticatedDataSourceSet.proteusClientProvider)
+
+    private val applicationMessageHandler: ApplicationMessageHandler
+        get() = ApplicationMessageHandlerImpl(
             userRepository,
             assetRepository,
             messageRepository,
             userConfigRepository,
-            conversationRepository,
             callManager,
             persistMessage,
             persistReaction,
@@ -585,7 +594,13 @@ class UserSessionScope internal constructor(
                 selfConversationIdProvider,
             ),
             DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
-            pendingProposalScheduler
+        )
+
+    private val newMessageHandler: NewMessageEventHandlerImpl
+        get() = NewMessageEventHandlerImpl(
+            proteusUnpacker,
+            mlsUnpacker,
+            applicationMessageHandler
         )
 
     private val newConversationHandler: NewConversationEventHandler get() = NewConversationEventHandlerImpl(conversationRepository)
@@ -631,9 +646,9 @@ class UserSessionScope internal constructor(
         get() = UserEventReceiverImpl(
             connectionRepository,
             logout,
-            clientRepository,
             userRepository,
-            userId
+            userId,
+            clientIdProvider
         )
 
     private val teamEventReceiver: TeamEventReceiver
@@ -762,7 +777,8 @@ class UserSessionScope internal constructor(
             client.deregisterNativePushToken,
             client.clearClientData,
             clearUserData,
-            userSessionScopeProvider
+            userSessionScopeProvider,
+            pushTokenRepository
         )
 
     private val featureConfigRepository: FeatureConfigRepository

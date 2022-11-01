@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.functional
 
 import com.wire.kalium.logic.functional.Either.Left
@@ -29,13 +31,13 @@ import kotlin.contracts.contract
  * @see Left
  * @see Right
  */
+
 sealed class Either<out L, out R> {
     /** * Represents the left side of [Either] class which by convention is a "Failure". */
     data class Left<out L>(val value: L) : Either<L, Nothing>()
 
     /** * Represents the right side of [Either] class which by convention is a "Success". */
     data class Right<out R>(val value: R) : Either<Nothing, R>()
-
 
     /**
      * Creates a Left type.
@@ -48,8 +50,8 @@ sealed class Either<out L, out R> {
      * @see Right
      */
     fun <R> right(b: R) = Right(b)
-}
 
+}
 
 /**
  * Applies fnL if this is a Left or fnR if this is a Right.
@@ -57,7 +59,6 @@ sealed class Either<out L, out R> {
  * @see Right
  */
 inline fun <L, R, T : Any> Either<L, R>.fold(fnL: (L) -> T, fnR: (R) -> T): T = nullableFold(fnL, fnR)!!
-
 
 /**
  * Applies fnL if this is a Left or fnR if this is a Right.
@@ -69,7 +70,6 @@ inline fun <L, R, T> Either<L, R>.nullableFold(fnL: (L) -> T?, fnR: (R) -> T?): 
         is Left -> fnL(value)
         is Right -> fnR(value)
     }
-
 
 /**
  * Returns true if this is a Right, false otherwise.
