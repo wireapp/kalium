@@ -33,7 +33,7 @@ actual fun defaultHttpEngine(
 
         val proxy = Proxy(
             Proxy.Type.SOCKS,
-            serverConfigDTOProxy.proxyPort.let { InetSocketAddress.createUnresolved(serverConfigDTOProxy.apiProxy, it) }
+            InetSocketAddress.createUnresolved(serverConfigDTOProxy?.apiProxy, serverConfigDTOProxy!!.proxyPort)
         )
 
         val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).proxy(proxy)
