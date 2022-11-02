@@ -50,7 +50,12 @@ class ProtoContentMapperImpl(
 
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
-            is MessageContent.Text -> GenericMessage.Content.Text(Text(content = readableContent.value))
+            is MessageContent.Text -> GenericMessage.Content.Text(
+                Text(
+                    content = readableContent.value,
+                    mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) })
+            )
+
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
             is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
