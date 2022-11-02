@@ -6,11 +6,13 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentialsModel
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
+import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCase
 import com.wire.kalium.logic.functional.fold
 
 class AutoVersionAuthScopeUseCase(
     private val serverLinks: ServerConfig.Links,
-    private val coreLogic: CoreLogicCommon
+    private val coreLogic: CoreLogicCommon,
+    private val persistProxyCredentials: PersistProxyCredentialsUseCase
 ) {
     suspend operator fun invoke(proxyCredentials: ProxyCredentials): Result =
         coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
@@ -22,6 +24,9 @@ class AutoVersionAuthScopeUseCase(
 
                 }
                 is ProxyCredentials.UsernameAndPassword -> {
+                    with(proxyCredentials.proxyCredentialsModel) {
+                        persistProxyCredentials(username, password)
+                    }
                     Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyCredentials.proxyCredentialsModel))
                 }
             }

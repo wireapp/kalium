@@ -22,7 +22,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 expect class CoreLogic : CoreLogicCommon
 
-abstract class CoreLogicCommon internal constructor (
+abstract class CoreLogicCommon internal constructor(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
     protected val rootPath: String,
@@ -64,5 +64,5 @@ abstract class CoreLogicCommon internal constructor (
     val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
 
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
-        AutoVersionAuthScopeUseCase(serverLinks, this)
+        AutoVersionAuthScopeUseCase(serverLinks, this, getGlobalScope().persistProxyCredentialsUseCase)
 }

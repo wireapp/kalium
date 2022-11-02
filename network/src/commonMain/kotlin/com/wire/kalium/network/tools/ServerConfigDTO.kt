@@ -30,6 +30,10 @@ data class ServerConfigDTO(
     )
 }
 
+fun isProxyRequired(serverConfigDTOProxy: ServerConfigDTO.Proxy?): Boolean {
+    return serverConfigDTOProxy != null
+}
+
 sealed class ApiVersionDTO(open val version: Int) {
 
     sealed class Invalid(override val version: Int) : ApiVersionDTO(version) {

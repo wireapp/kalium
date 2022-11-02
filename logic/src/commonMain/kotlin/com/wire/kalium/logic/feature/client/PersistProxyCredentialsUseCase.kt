@@ -19,7 +19,7 @@ interface PersistProxyCredentialsUseCase {
     }
 }
 
-class PersistProxyCredentialsUseCaseImpl(
+internal class PersistProxyCredentialsUseCaseImpl(
     private val proxyCredentialsRepository: ProxyCredentialsRepository
 ) : PersistProxyCredentialsUseCase {
 

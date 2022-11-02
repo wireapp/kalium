@@ -2,6 +2,7 @@ package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.OkHttpClient
@@ -18,24 +19,21 @@ actual fun defaultHttpEngine(
     // OkHttp doesn't support configuring ping intervals dynamically,
     // so they must be set when creating the Engine
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
-    val isProxyRequired = serverConfigDTOProxy != null
-    if (isProxyRequired) {
-        if (isProxyRequired && serverConfigDTOProxy?.isProxyNeedsAuthentication == true) {
+    if (isProxyRequired(serverConfigDTOProxy)) {
+        if (serverConfigDTOProxy?.isProxyNeedsAuthentication == true) {
             if (proxyCredentials == null) throw error("Credentials does not exist")
-
-            val username = proxyCredentials.username
-            val password = proxyCredentials.password
 
             val proxy = Proxy(
                 Proxy.Type.SOCKS,
                 serverConfigDTOProxy.proxyPort.let { InetSocketAddress.createUnresolved(serverConfigDTOProxy.apiProxy, it) }
             )
-
-            Authenticator.setDefault(object : Authenticator() {
-                override fun getPasswordAuthentication(): PasswordAuthentication {
-                    return PasswordAuthentication(username, password?.toCharArray())
-                }
-            })
+            with(proxyCredentials) {
+                Authenticator.setDefault(object : Authenticator() {
+                    override fun getPasswordAuthentication(): PasswordAuthentication {
+                        return PasswordAuthentication(username, password?.toCharArray())
+                    }
+                })
+            }
 
             val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).proxy(proxy)
                 .build()
