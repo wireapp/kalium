@@ -84,7 +84,7 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
         is NetworkResponse.Error -> {
             kaliumLogger.e(result.kException.stackTraceToString())
             val exception = result.kException
-            if (exception.cause?.message?.contains("socks",true) == true) {
+            if (exception.cause?.message?.contains("socks", true) == true) {
                 Either.Left(NetworkFailure.SocketError(exception.cause))
             } else {
                 if (exception is KaliumException.GenericError && exception.cause is IOException) {
