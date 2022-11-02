@@ -41,7 +41,7 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
             driver,
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter,
-                portAdapter = IntColumnAdapter
+                proxyPortAdapter = IntColumnAdapter
             ),
             AccountsAdapter = Accounts.Adapter(
                 idAdapter = QualifiedIDAdapter,
