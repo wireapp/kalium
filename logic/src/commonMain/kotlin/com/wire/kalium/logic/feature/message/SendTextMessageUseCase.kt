@@ -30,7 +30,11 @@ class SendTextMessageUseCase internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId, text: String, mentions: List<MessageMention> = listOf()): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        text: String,
+        mentions: List<MessageMention> = listOf()
+    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
