@@ -35,6 +35,13 @@ jobs:
       - name: iOS Tests
         run: ./gradlew iOSOnlyAffectedTest
 
+      - name: Archive Test Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+            name: test-reports
+            path: ./**/build/reports/tests/**
+
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
         if: always()

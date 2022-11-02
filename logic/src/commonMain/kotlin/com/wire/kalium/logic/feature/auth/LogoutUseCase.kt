@@ -31,7 +31,6 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
     override suspend operator fun invoke(reason: LogoutReason) {
-        logoutRepository.onLogout(reason)
         deregisterTokenUseCase()
         logoutRepository.logout()
         sessionRepository.logout(userId = userId, reason)
@@ -57,6 +56,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         // After logout we need to mark the Firebase token as invalid locally so that we can register a new one on the next login.
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
 
+        logoutRepository.onLogout(reason)
         userSessionScopeProvider.get(userId)?.cancel()
         userSessionScopeProvider.delete(userId)
     }

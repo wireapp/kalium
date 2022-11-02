@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.cryptography.MlsDBSecret
+import com.wire.kalium.cryptography.ProteusDBSecret
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
@@ -23,6 +24,9 @@ internal class SecurityHelper(private val passphraseStorage: PassphraseStorage) 
 
     fun mlsDBSecret(userId: UserId): MlsDBSecret =
         MlsDBSecret(getOrGeneratePassPhrase("${MLS_DB_PASSPHRASE_PREFIX}_$userId"))
+
+    fun proteusDBSecret(userId: UserId): ProteusDBSecret =
+        ProteusDBSecret(getOrGeneratePassPhrase("${PROTEUS_DB_PASSPHRASE_PREFIX}_$userId"))
 
     private fun getOrGeneratePassPhrase(alias: String): String =
         getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
@@ -56,5 +60,6 @@ internal class SecurityHelper(private val passphraseStorage: PassphraseStorage) 
         const val GLOBAL_DB_PASSPHRASE_ALIAS = "global_db_passphrase_alias"
         const val USER_DB_PASSPHRASE_PREFIX = "user_db_secret_alias"
         const val MLS_DB_PASSPHRASE_PREFIX = "mls_db_secret_alias"
+        const val PROTEUS_DB_PASSPHRASE_PREFIX = "proteus_db_secret_alias"
     }
 }

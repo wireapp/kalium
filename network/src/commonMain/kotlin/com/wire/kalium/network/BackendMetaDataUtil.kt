@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber")
+
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
@@ -5,7 +7,7 @@ import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 
 val SupportedApiVersions = setOf(0, 1)
-val DevelopmentApiVersions = setOf(2)
+val DevelopmentApiVersions = setOf(2, 3)
 
 interface BackendMetaDataUtil {
     fun calculateApiVersion(

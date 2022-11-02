@@ -98,8 +98,9 @@ val sensitiveJsonKeys by lazy {
         "set-cookie",
         "location",
         "x-amz-meta-user",
-        "Sec-WebSocket-Key",
-        "sec-websocket-accept"
+        "sec-websocket-key",
+        "sec-websocket-accept",
+        "sec-websocket-version"
     )
 }
 private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
