@@ -28,7 +28,7 @@ actual fun defaultHttpEngine(
 
             val proxy = Proxy(
                 Proxy.Type.SOCKS,
-                serverConfigDTOLinks.proxy.port?.let { InetSocketAddress.createUnresolved(serverConfigDTOLinks.proxy.apiProxy, it) }
+                serverConfigDTOLinks.proxy.port.let { InetSocketAddress.createUnresolved(serverConfigDTOLinks.proxy.apiProxy, it) }
             )
 
             Authenticator.setDefault(object : Authenticator() {

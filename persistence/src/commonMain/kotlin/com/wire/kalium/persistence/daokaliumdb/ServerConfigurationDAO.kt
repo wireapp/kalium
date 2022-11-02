@@ -39,9 +39,9 @@ internal object ServerConfigMapper {
             isOnPremises = isOnPremises,
             proxy = apiProxy?.let {
                 ServerConfigEntity.Proxy(
-                    needsAuthentication = needsAuthentication,
+                    needsAuthentication = needsAuthentication!!,
                     apiProxy = apiProxy,
-                    port = port
+                    port = port!!
                 )
             }
         ),

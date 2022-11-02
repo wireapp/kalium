@@ -77,9 +77,9 @@ data class ServerConfig(
 
     @Serializable
     data class Proxy(
-        @SerialName("needsAuthentication") val needsAuthentication: Boolean?,
-        @SerialName("apiProxy") val apiProxy: String?,
-        @SerialName("port") val port: Int?
+        @SerialName("needsAuthentication") val needsAuthentication: Boolean,
+        @SerialName("apiProxy") val apiProxy: String,
+        @SerialName("port") val port: Int
     )
 
     companion object {
