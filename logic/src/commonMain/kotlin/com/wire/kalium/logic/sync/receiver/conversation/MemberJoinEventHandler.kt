@@ -20,7 +20,6 @@ interface MemberJoinEventHandler {
 internal class MemberJoinEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
-
     private val persistMessage: PersistMessageUseCase
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
