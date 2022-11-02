@@ -22,11 +22,6 @@ actual fun defaultHttpEngine(
     if (isProxyRequired(serverConfigDTOProxy)) {
         if (serverConfigDTOProxy?.isProxyNeedsAuthentication == true) {
             if (proxyCredentials == null) throw error("Credentials does not exist")
-
-            val proxy = Proxy(
-                Proxy.Type.SOCKS,
-                serverConfigDTOProxy.proxyPort.let { InetSocketAddress.createUnresolved(serverConfigDTOProxy.apiProxy, it) }
-            )
             with(proxyCredentials) {
                 Authenticator.setDefault(object : Authenticator() {
                     override fun getPasswordAuthentication(): PasswordAuthentication {
@@ -34,12 +29,18 @@ actual fun defaultHttpEngine(
                     }
                 })
             }
-
-            val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).proxy(proxy)
-                .build()
-            preconfigured = client
-            webSocketFactory = KaliumWebSocketFactory(client)
         }
+
+        val proxy = Proxy(
+            Proxy.Type.SOCKS,
+            serverConfigDTOProxy.proxyPort.let { InetSocketAddress.createUnresolved(serverConfigDTOProxy.apiProxy, it) }
+        )
+
+        val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).proxy(proxy)
+            .build()
+        preconfigured = client
+        webSocketFactory = KaliumWebSocketFactory(client)
+
     } else {
         val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).build()
         preconfigured = client
