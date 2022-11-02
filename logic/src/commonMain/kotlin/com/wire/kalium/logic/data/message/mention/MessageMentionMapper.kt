@@ -1,16 +1,9 @@
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.logic.data.message.mention
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Mention
 import com.wire.kalium.protobuf.messages.QualifiedUserId
-
-data class MessageMention(
-    val start: Int,
-    val length: Int,
-    val userId: UserId
-)
 
 interface MessageMentionMapper {
     fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention

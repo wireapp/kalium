@@ -38,8 +38,8 @@ import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
-import com.wire.kalium.logic.data.message.MessageMentionMapper
-import com.wire.kalium.logic.data.message.MessageMentionMapperImpl
+import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
+import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SendMessageFailureMapper
