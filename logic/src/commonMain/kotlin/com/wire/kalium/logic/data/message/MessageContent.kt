@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
@@ -43,7 +44,7 @@ sealed class MessageContent {
     data class Reaction(
         val messageId: String,
         val emojiSet: Set<String>
-    ): Regular()
+    ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()
 
