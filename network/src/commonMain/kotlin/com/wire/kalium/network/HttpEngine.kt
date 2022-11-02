@@ -5,6 +5,6 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
 expect fun defaultHttpEngine(
-    serverConfigDTOLinks: ServerConfigDTO.Links?,
+    serverConfigDTOProxy: ServerConfigDTO.Proxy?,
     proxyCredentials: ProxyCredentialsDTO? = null
 ): HttpClientEngine
