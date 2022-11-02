@@ -168,8 +168,8 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
                     commonApiVersion = metaData.apiVersion,
                     isOnPremises = false,
                     apiProxy = links.proxy?.apiProxy,
-                    needsAuthentication = links.proxy?.needsAuthentication,
-                    port = links.proxy?.port
+                    isProxyNeedsAuthentication = links.proxy?.isProxyNeedsAuthentication,
+                    proxyPort = links.proxy?.proxyPort
                 )
             )
         }

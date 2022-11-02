@@ -50,7 +50,7 @@ class ServerConfigMapperTest {
                         links.website,
                         links.title,
                         links.isOnPremises,
-                        links.proxy?.let { ServerConfigDTO.Proxy(it.needsAuthentication, it.apiProxy, it.port) }
+                        links.proxy?.let { ServerConfigDTO.Proxy(it.isProxyNeedsAuthentication, it.apiProxy, it.proxyPort) }
                     ),
                     ServerConfigDTO.MetaData(
                         metaData.federation,
@@ -80,7 +80,7 @@ class ServerConfigMapperTest {
                         links.website,
                         links.title,
                         links.isOnPremises,
-                        links.proxy?.let { ServerConfig.Proxy(it.needsAuthentication, it.apiProxy, it.port) }
+                        links.proxy?.let { ServerConfig.Proxy(it.isProxyNeedsAuthentication, it.apiProxy, it.proxyPort) }
                     ),
                     ServerConfig.MetaData(
                         metaData.federation,
@@ -111,7 +111,7 @@ class ServerConfigMapperTest {
                         links.title,
                         links.isOnPremises,
                         links.proxy?.let {
-                            ServerConfigEntity.Proxy(it.needsAuthentication, it.apiProxy, it.port)
+                            ServerConfigEntity.Proxy(it.isProxyNeedsAuthentication, it.apiProxy, it.proxyPort)
                         }
                     ),
                     ServerConfigEntity.MetaData(

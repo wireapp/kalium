@@ -39,9 +39,9 @@ internal object ServerConfigMapper {
             isOnPremises = isOnPremises,
             proxy = apiProxy?.let {
                 ServerConfigEntity.Proxy(
-                    needsAuthentication = needsAuthentication!!,
+                    isProxyNeedsAuthentication = needsAuthentication!!,
                     apiProxy = apiProxy,
-                    port = port!!
+                    proxyPort = port!!
                 )
             }
         ),
@@ -79,8 +79,8 @@ interface ServerConfigurationDAO {
         val domain: String?,
         val commonApiVersion: Int,
         val apiProxy: String?,
-        val needsAuthentication: Boolean?,
-        val port: Int?
+        val isProxyNeedsAuthentication: Boolean?,
+        val proxyPort: Int?
     )
 }
 
@@ -109,8 +109,8 @@ internal class ServerConfigurationDAOImpl internal constructor(
             domain,
             commonApiVersion,
             apiProxy,
-            needsAuthentication,
-            port
+            isProxyNeedsAuthentication,
+            proxyPort
         )
     }
 

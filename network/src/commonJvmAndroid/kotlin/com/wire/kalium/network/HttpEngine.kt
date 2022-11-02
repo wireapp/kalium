@@ -20,7 +20,7 @@ actual fun defaultHttpEngine(
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
     val isProxyRequired = serverConfigDTOLinks?.proxy != null
     if (isProxyRequired) {
-        if (isProxyRequired && serverConfigDTOLinks?.proxy?.needsAuthentication == true) {
+        if (isProxyRequired && serverConfigDTOLinks?.proxy?.isProxyNeedsAuthentication == true) {
             if (proxyCredentials == null) throw error("Credentials does not exist")
 
             val username = proxyCredentials.username
@@ -28,7 +28,7 @@ actual fun defaultHttpEngine(
 
             val proxy = Proxy(
                 Proxy.Type.SOCKS,
-                serverConfigDTOLinks.proxy.port.let { InetSocketAddress.createUnresolved(serverConfigDTOLinks.proxy.apiProxy, it) }
+                serverConfigDTOLinks.proxy.proxyPort.let { InetSocketAddress.createUnresolved(serverConfigDTOLinks.proxy.apiProxy, it) }
             )
 
             Authenticator.setDefault(object : Authenticator() {
