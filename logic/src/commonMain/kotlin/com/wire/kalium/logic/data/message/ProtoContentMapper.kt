@@ -4,6 +4,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
