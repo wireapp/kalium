@@ -47,7 +47,6 @@ class NewConversationEventHandlerTest {
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
-            .withPersistMembersSucceeding()
             .arrange()
 
         eventHandler.handle(event)
@@ -79,7 +78,6 @@ class NewConversationEventHandlerTest {
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
-            .withPersistMembersSucceeding()
             .withSelfUserTeamId(Either.Right(teamId))
             .arrange()
 
@@ -112,13 +110,6 @@ class NewConversationEventHandlerTest {
                 .suspendFunction(conversationRepository::updateConversationModifiedDate)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
-        }
-
-        fun withPersistMembersSucceeding() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::persistMembers)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
         }
 
         fun withPersistingConversations(result: Either<StorageFailure, Unit>) = apply {

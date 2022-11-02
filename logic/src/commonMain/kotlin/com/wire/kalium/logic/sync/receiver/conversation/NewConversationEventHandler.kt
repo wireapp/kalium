@@ -25,20 +25,12 @@ internal class NewConversationEventHandlerImpl(
     private val userRepository: UserRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
 ) : NewConversationEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> = conversationRepository
         .persistConversations(listOf(event.conversation), selfTeamIdProvider().getOrNull()?.value, originatedFromEvent = true)
         .flatMap { conversationRepository.updateConversationModifiedDate(event.conversationId, Clock.System.now().toString()) }
-        .flatMap {
-            val members = memberMapper.fromApiModel(event.conversation.members)
-            conversationRepository.persistMembers(
-                listOf(members.self)
-                    .plus(members.otherMembers), event.conversationId
-            )
-        }
         .flatMap {
             userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { idMapper.fromApiModel(it.id) }
                 .toSet())
