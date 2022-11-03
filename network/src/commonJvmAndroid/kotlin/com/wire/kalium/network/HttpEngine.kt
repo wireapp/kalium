@@ -20,7 +20,7 @@ actual fun defaultHttpEngine(
     // so they must be set when creating the Engine
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
     if (isProxyRequired(serverConfigDTOProxy)) {
-        if (serverConfigDTOProxy?.isProxyNeedsAuthentication == true) {
+        if (serverConfigDTOProxy?.needsAuthentication == true) {
             if (proxyCredentials == null) throw error("Credentials does not exist")
             with(proxyCredentials) {
                 Authenticator.setDefault(object : Authenticator() {
@@ -33,7 +33,7 @@ actual fun defaultHttpEngine(
 
         val proxy = Proxy(
             Proxy.Type.SOCKS,
-            InetSocketAddress.createUnresolved(serverConfigDTOProxy?.apiProxy, serverConfigDTOProxy!!.proxyPort)
+            InetSocketAddress.createUnresolved(serverConfigDTOProxy?.proxyApi, serverConfigDTOProxy!!.proxyPort)
         )
 
         val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).proxy(proxy)

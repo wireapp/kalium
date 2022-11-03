@@ -14,8 +14,8 @@ CREATE TABLE ServerConfiguration (
     domain TEXT UNIQUE,
     commonApiVersion INTEGER AS Int NOT NULL,
     federation INTEGER AS Boolean NOT NULL,
-    apiProxy TEXT,
-    isPorxyNeedsAuthentication INTEGER AS Boolean,
+    proxyApi TEXT,
+    proxyNeedsAuthentication INTEGER AS Boolean,
     proxyPort INTEGER AS Int,
     CONSTRAINT server_config_unique UNIQUE (title, apiBaseUrl, webSocketBaseUrl)
 );
@@ -24,7 +24,7 @@ deleteById:
 DELETE FROM ServerConfiguration WHERE id = ?;
 
 insert:
-INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxy, isPorxyNeedsAuthentication, proxyPort)
+INSERT OR IGNORE INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, proxyApi, proxyNeedsAuthentication, proxyPort)
 VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?);
 
 updateApiVersion:

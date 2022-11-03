@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.data.session
 
-import com.wire.kalium.logic.data.auth.login.ProxyCredentialsModel
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
@@ -25,7 +25,7 @@ interface SessionMapper {
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
-    fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentialsModel?): ProxyCredentialsDTO
+    fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials?): ProxyCredentialsDTO
 }
 
 internal class SessionMapperImpl(
@@ -101,6 +101,6 @@ internal class SessionMapperImpl(
     override fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO =
         ProxyCredentialsDTO(proxyCredentialsEntity.username, proxyCredentialsEntity.password)
 
-    override fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentialsModel?): ProxyCredentialsDTO =
+    override fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials?): ProxyCredentialsDTO =
         ProxyCredentialsDTO(proxyCredentialsModel?.username, proxyCredentialsModel?.password)
 }

@@ -39,7 +39,7 @@ class ServerConfigApiImpl internal constructor(
                 title = it.title,
                 isOnPremises = true,
                 proxy = it.proxy?.let { proxy ->
-                    ServerConfigDTO.Proxy(proxy.isProxyNeedsAuthentication, proxy.apiProxy, proxy.proxyPort)
+                    ServerConfigDTO.Proxy(proxy.needsAuthentication, proxy.proxyApi, proxy.proxyPort)
                 }
             )
         }

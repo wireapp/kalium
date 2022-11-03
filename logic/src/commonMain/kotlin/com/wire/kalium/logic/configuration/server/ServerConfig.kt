@@ -77,8 +77,8 @@ data class ServerConfig(
 
     @Serializable
     data class Proxy(
-        @SerialName("needsAuthentication") val isProxyNeedsAuthentication: Boolean,
-        @SerialName("apiProxy") val apiProxy: String,
+        @SerialName("needsAuthentication") val needsAuthentication: Boolean,
+        @SerialName("apiProxy") val proxyApi: String,
         @SerialName("port") val proxyPort: Int
     )
 
@@ -146,8 +146,8 @@ class ServerConfigMapperImpl(
                 isOnPremises = links.isOnPremises,
                 proxy = links.proxy?.let {
                     ServerConfigDTO.Proxy(
-                        isProxyNeedsAuthentication = it.isProxyNeedsAuthentication,
-                        it.apiProxy,
+                        needsAuthentication = it.needsAuthentication,
+                        it.proxyApi,
                         it.proxyPort
                     )
                 }
@@ -167,7 +167,7 @@ class ServerConfigMapperImpl(
             links.website,
             title,
             isOnPremises,
-            links.proxy?.let { ServerConfigDTO.Proxy(it.isProxyNeedsAuthentication, it.apiProxy, it.proxyPort) }
+            links.proxy?.let { ServerConfigDTO.Proxy(it.needsAuthentication, it.proxyApi, it.proxyPort) }
         )
     }
 
@@ -184,7 +184,7 @@ class ServerConfigMapperImpl(
                 isOnPremises = links.isOnPremises,
                 proxy = links.proxy?.let {
                     ServerConfigDTO.Proxy(
-                        apiProxy = it.apiProxy, isProxyNeedsAuthentication = it.isProxyNeedsAuthentication, proxyPort = it.proxyPort
+                        proxyApi = it.proxyApi, needsAuthentication = it.needsAuthentication, proxyPort = it.proxyPort
                     )
                 }
             ), ServerConfigDTO.MetaData(
@@ -207,12 +207,12 @@ class ServerConfigMapperImpl(
             teams = teams,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { ServerConfig.Proxy(it.isProxyNeedsAuthentication, it.apiProxy, it.proxyPort) }
+            proxy = proxy?.let { ServerConfig.Proxy(it.needsAuthentication, it.proxyApi, it.proxyPort) }
         )
     }
 
     override fun fromDTO(proxy: ServerConfigDTO.Proxy): ServerConfig.Proxy = with(proxy) {
-        ServerConfig.Proxy(isProxyNeedsAuthentication = isProxyNeedsAuthentication, apiProxy = apiProxy, proxyPort = proxyPort)
+        ServerConfig.Proxy(needsAuthentication = needsAuthentication, proxyApi = proxyApi, proxyPort = proxyPort)
     }
 
     override fun fromDTO(metadata: ServerConfigDTO.MetaData): ServerConfig.MetaData = with(metadata) {
@@ -239,14 +239,14 @@ class ServerConfigMapperImpl(
             website = website,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { ServerConfigEntity.Proxy(it.isProxyNeedsAuthentication, it.apiProxy, it.proxyPort) }
+            proxy = proxy?.let { ServerConfigEntity.Proxy(it.needsAuthentication, it.proxyApi, it.proxyPort) }
         )
     }
 
     override fun toEntity(proxy: ServerConfig.Proxy): ServerConfigEntity.Proxy = with(proxy) {
         ServerConfigEntity.Proxy(
-            isProxyNeedsAuthentication = isProxyNeedsAuthentication,
-            apiProxy = apiProxy,
+            needsAuthentication = needsAuthentication,
+            proxyApi = proxyApi,
             proxyPort = proxyPort
         )
     }
@@ -271,8 +271,8 @@ class ServerConfigMapperImpl(
             isOnPremises = isOnPremises,
             proxy = proxy?.let {
                 ServerConfig.Proxy(
-                    isProxyNeedsAuthentication = it.isProxyNeedsAuthentication,
-                    apiProxy = it.apiProxy,
+                    needsAuthentication = it.needsAuthentication,
+                    proxyApi = it.proxyApi,
                     proxyPort = it.proxyPort
                 )
             }
@@ -281,8 +281,8 @@ class ServerConfigMapperImpl(
 
     override fun fromEntity(proxy: ServerConfigEntity.Proxy): ServerConfig.Proxy = with(proxy) {
         ServerConfig.Proxy(
-            isProxyNeedsAuthentication = isProxyNeedsAuthentication,
-            apiProxy = apiProxy,
+            needsAuthentication = needsAuthentication,
+            proxyApi = proxyApi,
             proxyPort = proxyPort
         )
     }

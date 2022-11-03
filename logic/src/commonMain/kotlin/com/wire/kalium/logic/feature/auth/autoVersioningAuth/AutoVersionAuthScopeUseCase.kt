@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.auth.autoVersioningAuth
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.CoreLogicCommon
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.data.auth.login.ProxyCredentialsModel
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCase
@@ -14,20 +14,20 @@ class AutoVersionAuthScopeUseCase(
     private val coreLogic: CoreLogicCommon,
     private val persistProxyCredentials: PersistProxyCredentialsUseCase
 ) {
-    suspend operator fun invoke(proxyCredentials: ProxyCredentials): Result =
+    suspend operator fun invoke(proxyAuthentication: ProxyAuthentication): Result =
         coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
             handleError(it)
         }, { serverConfig ->
-            when (proxyCredentials) {
-                is ProxyCredentials.None -> {
+            when (proxyAuthentication) {
+                is ProxyAuthentication.None -> {
                     Result.Success(coreLogic.getAuthenticationScope(serverConfig, null))
 
                 }
-                is ProxyCredentials.UsernameAndPassword -> {
-                    with(proxyCredentials.proxyCredentialsModel) {
+                is ProxyAuthentication.UsernameAndPassword -> {
+                    with(proxyAuthentication.proxyCredentials) {
                         persistProxyCredentials(username, password)
                     }
-                    Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyCredentials.proxyCredentialsModel))
+                    Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyAuthentication.proxyCredentials))
                 }
             }
         })
@@ -49,10 +49,10 @@ class AutoVersionAuthScopeUseCase(
         }
     }
 
-    sealed interface ProxyCredentials {
+    sealed interface ProxyAuthentication {
 
-        object None : ProxyCredentials
+        object None : ProxyAuthentication
 
-        class UsernameAndPassword(val proxyCredentialsModel: ProxyCredentialsModel) : ProxyCredentials
+        class UsernameAndPassword(val proxyCredentials: ProxyCredentials) : ProxyAuthentication
     }
 }

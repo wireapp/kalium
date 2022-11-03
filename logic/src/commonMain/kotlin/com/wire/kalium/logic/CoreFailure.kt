@@ -84,6 +84,7 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
         is NetworkResponse.Error -> {
             kaliumLogger.e(result.kException.stackTraceToString())
             val exception = result.kException
+            //todo SocketException is platform specific so need to wrap it in our own exceptions
             if (exception.cause?.message?.contains("socks", true) == true) {
                 Either.Left(NetworkFailure.SocketError(exception.cause))
             } else {
