@@ -38,7 +38,7 @@ class ObserveConversationMembersUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        observeConversationMembers = ObserveConversationMembersUseCase(
+        observeConversationMembers = ObserveConversationMembersUseCaseImpl(
             conversationRepository,
             userRepository,
         )
