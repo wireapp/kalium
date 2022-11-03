@@ -30,7 +30,7 @@ internal class AuthenticatedNetworkClient(
     installCompression: Boolean = true
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
-        installWireDefaultRequest(sessionManager.session().second,)
+        installWireDefaultRequest(sessionManager.session().second)
         installAuth(sessionManager)
         install(ContentNegotiation) {
             mls()
@@ -46,7 +46,7 @@ internal class AuthenticatedNetworkClient(
  */
 internal class UnauthenticatedNetworkClient(
     engine: HttpClientEngine,
-    backendLinks: ServerConfigDTO,
+    backendLinks: ServerConfigDTO
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine) {
         installWireDefaultRequest(backendLinks)

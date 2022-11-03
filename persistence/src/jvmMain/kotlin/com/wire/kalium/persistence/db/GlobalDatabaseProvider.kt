@@ -40,7 +40,8 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
         database = GlobalDatabase(
             driver,
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
-                commonApiVersionAdapter = IntColumnAdapter
+                commonApiVersionAdapter = IntColumnAdapter,
+                proxyPortAdapter = IntColumnAdapter
             ),
             AccountsAdapter = Accounts.Adapter(
                 idAdapter = QualifiedIDAdapter,
@@ -57,6 +58,7 @@ actual class GlobalDatabaseProvider(private val storePath: File) {
 
     actual val accountsDAO: AccountsDAO
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries)
+
     actual fun nuke(): Boolean {
         return storePath.resolve(dbName).delete()
     }

@@ -407,7 +407,11 @@ class UserSessionScope internal constructor(
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userStorage.database.clientDAO)
+        get() = ClientDataSource(
+            clientRemoteRepository,
+            clientRegistrationStorage,
+            userStorage.database.clientDAO,
+        )
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)

@@ -166,7 +166,10 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
                     federation = metaData.federation,
                     domain = metaData.domain,
                     commonApiVersion = metaData.apiVersion,
-                    isOnPremises = false
+                    isOnPremises = false,
+                    proxyApi = links.proxy?.proxyApi,
+                    proxyNeedsAuthentication = links.proxy?.needsAuthentication,
+                    proxyPort = links.proxy?.proxyPort
                 )
             )
         }

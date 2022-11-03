@@ -25,7 +25,8 @@ actual class GlobalDatabaseProvider(passphrase: String) {
             AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter),
             CurrentAccountAdapter = CurrentAccount.Adapter(QualifiedIDAdapter),
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
-                commonApiVersionAdapter = IntColumnAdapter
+                commonApiVersionAdapter = IntColumnAdapter,
+                proxyPortAdapter = IntColumnAdapter
             )
         )
 
