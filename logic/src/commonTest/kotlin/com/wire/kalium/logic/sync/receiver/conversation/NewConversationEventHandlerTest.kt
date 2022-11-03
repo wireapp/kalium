@@ -1,9 +1,16 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import io.mockative.Mock
@@ -24,24 +31,34 @@ import kotlin.test.Test
 class NewConversationEventHandlerTest {
 
     @Test
-    fun givenNewConversationEvent_whenHandlingIt_thenInsertConversationFromEventShouldBeCalled() = runTest {
+    fun givenNewConversationOriginatedFromEvent_whenHandlingIt_thenPersistConversationShouldBeCalled() = runTest {
         val event = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
             timestampIso = "timestamp",
-            conversation = TestConversation.CONVERSATION_RESPONSE
+            conversation = TestConversation.CONVERSATION_RESPONSE,
         )
+        val members = event.conversation.members.otherMembers.map { MapperProvider.idMapper().fromApiModel(it.id) }.toSet()
+        val teamIdValue = "teamId"
+        val teamId = TeamId(teamIdValue)
 
         val (arrangement, eventHandler) = Arrangement()
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withInsertConversationFromEventReturning(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(Unit))
+            .withFetchUsersIfUnknownIds(members)
+            .withSelfUserTeamId(Either.Right(teamId))
             .arrange()
 
         eventHandler.handle(event)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::insertConversationFromEvent)
-            .with(eq(event))
+            .suspendFunction(arrangement.conversationRepository::persistConversations)
+            .with(eq(listOf(event.conversation)), eq(teamIdValue), eq(true))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersIfUnknownByIds)
+            .with(eq(members))
             .wasInvoked(exactly = once)
     }
 
@@ -54,9 +71,14 @@ class NewConversationEventHandlerTest {
             conversation = TestConversation.CONVERSATION_RESPONSE
         )
 
+        val members = event.conversation.members.otherMembers.map { MapperProvider.idMapper().fromApiModel(it.id) }.toSet()
+        val teamId = TestTeam.TEAM_ID
+
         val (arrangement, eventHandler) = Arrangement()
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withInsertConversationFromEventReturning(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(Unit))
+            .withFetchUsersIfUnknownIds(members)
+            .withSelfUserTeamId(Either.Right(teamId))
             .arrange()
 
         eventHandler.handle(event)
@@ -71,7 +93,17 @@ class NewConversationEventHandlerTest {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
-        private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(conversationRepository)
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
+
+        @Mock
+        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+
+        private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
+            conversationRepository,
+            userRepository,
+            selfTeamIdProvider
+        )
 
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
@@ -80,11 +112,25 @@ class NewConversationEventHandlerTest {
                 .thenReturn(result)
         }
 
-        fun withInsertConversationFromEventReturning(result: Either<StorageFailure, Unit>) = apply {
+        fun withPersistingConversations(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::insertConversationFromEvent)
-                .whenInvokedWith(any())
+                .suspendFunction(conversationRepository::persistConversations)
+                .whenInvokedWith(any(), any(), any())
                 .thenReturn(result)
+        }
+
+        suspend fun withFetchUsersIfUnknownIds(members: Set<QualifiedID>) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
+                .whenInvokedWith(eq(members))
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { either }
         }
 
         fun arrange() = this to newConversationEventHandler
