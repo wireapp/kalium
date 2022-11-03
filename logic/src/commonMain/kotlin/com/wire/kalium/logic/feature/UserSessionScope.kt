@@ -303,8 +303,9 @@ class UserSessionScope internal constructor(
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
-            userRepository,
+            userId,
             mlsClientProvider,
+            selfTeamId,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
@@ -607,14 +608,24 @@ class UserSessionScope internal constructor(
             applicationMessageHandler
         )
 
-    private val newConversationHandler: NewConversationEventHandler get() = NewConversationEventHandlerImpl(conversationRepository)
+    private val newConversationHandler: NewConversationEventHandler
+        get() = NewConversationEventHandlerImpl(
+            conversationRepository,
+            userRepository,
+            selfTeamId,
+        )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
             userRepository,
             conversationRepository,
             EphemeralNotificationsManager
         )
-    private val memberJoinHandler: MemberJoinEventHandler get() = MemberJoinEventHandlerImpl(conversationRepository, persistMessage)
+    private val memberJoinHandler: MemberJoinEventHandler
+        get() = MemberJoinEventHandlerImpl(
+            conversationRepository,
+            userRepository,
+            persistMessage
+        )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
             userStorage.database.conversationDAO,
