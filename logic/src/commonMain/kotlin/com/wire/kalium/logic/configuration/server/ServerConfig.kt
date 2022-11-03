@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.logic.configuration.server
 
 import com.wire.kalium.network.tools.ApiVersionDTO
@@ -190,7 +191,6 @@ class ServerConfigMapperImpl(
 
     override fun toDTO(proxy: ServerConfigEntity.Proxy): ServerConfigDTO.Proxy =
         with(proxy) { ServerConfigDTO.Proxy(needsAuthentication, proxyApi, proxyPort) }
-
 
     override fun fromDTO(wireServer: ServerConfigDTO): ServerConfig = with(wireServer) {
         ServerConfig(id = id, links = fromDTO(links), metaData = fromDTO(metaData))

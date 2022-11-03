@@ -86,7 +86,7 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
         is NetworkResponse.Error -> {
             kaliumLogger.e(result.kException.stackTraceToString())
             val exception = result.kException
-            //todo SocketException is platform specific so need to wrap it in our own exceptions
+            // todo SocketException is platform specific so need to wrap it in our own exceptions
             if (exception.cause?.message?.contains(SOCKS_EXCEPTION, true) == true) {
                 Either.Left(NetworkFailure.ProxyError(exception.cause))
             } else {

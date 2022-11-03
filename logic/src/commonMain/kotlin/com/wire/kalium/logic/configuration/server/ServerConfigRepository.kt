@@ -140,7 +140,7 @@ internal class ServerConfigDataSource(
                         federation = metadata.federation,
                         domain = metadata.domain,
                         commonApiVersion = metadata.commonApiVersion.version,
-                        proxyApi = links.proxy?.apiProxy,
+                        proxyApi = links.proxy?.proxyApi,
                         proxyNeedsAuthentication = links.proxy?.needsAuthentication,
                         proxyPort = links.proxy?.proxyPort
                     )
