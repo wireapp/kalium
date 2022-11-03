@@ -13,7 +13,9 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
@@ -76,14 +78,14 @@ import com.wire.kalium.persistence.dao.Member as MemberEntity
 class ConversationRepositoryTest {
 
     @Test
-    fun givenNewConversationEvent_whenCallingInsertConversationFromEvent_thenConversationShouldBePersisted() = runTest {
+    fun givenNewConversationEvent_whenCallingPersistConversation_thenConversationShouldBePersisted() = runTest {
         val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE)
         val selfUserFlow = flowOf(TestUser.SELF)
         val (arrangement, conversationRepository) = Arrangement()
             .withSelfUserFlow(selfUserFlow)
             .arrange()
 
-        conversationRepository.insertConversationFromEvent(event)
+        conversationRepository.persistConversations(listOf(event.conversation), "teamId")
 
         with(arrangement) {
             verify(conversationDAO)
@@ -122,7 +124,7 @@ class ConversationRepositoryTest {
             .withHasEstablishedMLSGroup(true)
             .arrange()
 
-        conversationRepository.insertConversationFromEvent(event)
+        conversationRepository.persistConversations(listOf(event.conversation), "teamId", originatedFromEvent = true)
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::conversationExists)
@@ -717,6 +719,9 @@ class ConversationRepositoryTest {
         val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
 
         @Mock
+        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
+
+        @Mock
         val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
 
         @Mock
@@ -733,8 +738,9 @@ class ConversationRepositoryTest {
 
         val conversationRepository =
             ConversationDataSource(
-                userRepository,
+                TestUser.USER_ID,
                 mlsClientProvider,
+                selfTeamIdProvider,
                 conversationDAO,
                 conversationApi,
                 messageDAO,
@@ -762,6 +768,11 @@ class ConversationRepositoryTest {
                 .suspendFunction(mlsClientProvider::getMLSClient)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(mlsClient))
+
+                given(selfTeamIdProvider)
+                    .suspendFunction(selfTeamIdProvider::invoke)
+                    .whenInvoked()
+                    .then { Either.Right(TestTeam.TEAM_ID) }
         }
 
         fun withHasEstablishedMLSGroup(isClient: Boolean) = apply {
