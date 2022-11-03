@@ -66,7 +66,7 @@ internal class LoginUseCaseImpl internal constructor(
         }.map { (authTokens, ssoId) -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id) }
             .fold({
                 when (it) {
-                    is NetworkFailure.SocketError -> AuthenticationResult.Failure.SocketError
+                    is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
                     is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it)
                     is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
                     else -> AuthenticationResult.Failure.Generic(it)

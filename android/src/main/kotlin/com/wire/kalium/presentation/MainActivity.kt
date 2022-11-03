@@ -82,7 +82,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun provideAuthScope(coreLogic: CoreLogic, backendLinks: ServerConfig.Links): AuthenticationScope =
-        when (val result = coreLogic.versionedAuthenticationScope(backendLinks).invoke(AutoVersionAuthScopeUseCase.ProxyAuthentication.None)) {
+        when (val result = coreLogic.versionedAuthenticationScope(backendLinks).invoke()) {
             is AutoVersionAuthScopeUseCase.Result.Failure.Generic -> throw error("Generic failure")
             AutoVersionAuthScopeUseCase.Result.Failure.TooNewVersion -> throw error("Too new version")
             AutoVersionAuthScopeUseCase.Result.Failure.UnknownServerVersion -> throw error("Unknown server version")

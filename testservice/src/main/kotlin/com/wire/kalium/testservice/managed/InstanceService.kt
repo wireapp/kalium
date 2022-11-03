@@ -204,7 +204,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
     }
 
     private suspend fun provideVersionedAuthenticationScope(coreLogic: CoreLogic, serverLinks: ServerConfig.Links): AuthenticationScope =
-        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke(AutoVersionAuthScopeUseCase.ProxyAuthentication.None)) {
+        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke()) {
             is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
                 throw WebApplicationException("failed to create authentication scope: ${result.genericFailure}")
 

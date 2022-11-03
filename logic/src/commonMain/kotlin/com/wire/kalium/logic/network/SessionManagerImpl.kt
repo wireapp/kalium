@@ -68,7 +68,7 @@ class SessionManagerImpl(
     }
 
     override fun proxyCredentials(): ProxyCredentialsDTO? =
-        wrapStorageNullableRequest { proxyCredentialsStorage.getProxyCredentials() }.nullableFold({
+        wrapStorageNullableRequest { proxyCredentialsStorage.fetch() }.nullableFold({
             null
         }, {
             if (it != null) {

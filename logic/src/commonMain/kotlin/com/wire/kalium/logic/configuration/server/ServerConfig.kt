@@ -118,6 +118,8 @@ interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
     fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
     fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO
+    fun toDTO(proxy: ServerConfig.Proxy): ServerConfigDTO.Proxy
+    fun toDTO(proxy: ServerConfigEntity.Proxy): ServerConfigDTO.Proxy
     fun fromDTO(wireServer: ServerConfigDTO): ServerConfig
     fun fromDTO(links: ServerConfigDTO.Links): ServerConfig.Links
     fun fromDTO(proxy: ServerConfigDTO.Proxy): ServerConfig.Proxy
@@ -144,13 +146,7 @@ class ServerConfigMapperImpl(
                 links.website,
                 links.title,
                 isOnPremises = links.isOnPremises,
-                proxy = links.proxy?.let {
-                    ServerConfigDTO.Proxy(
-                        needsAuthentication = it.needsAuthentication,
-                        it.proxyApi,
-                        it.proxyPort
-                    )
-                }
+                proxy = links.proxy?.let { toDTO(it) }
             ), ServerConfigDTO.MetaData(
                 federation = metaData.federation, apiVersionMapper.toDTO(metaData.commonApiVersion), metaData.domain
             )
@@ -167,7 +163,7 @@ class ServerConfigMapperImpl(
             links.website,
             title,
             isOnPremises,
-            links.proxy?.let { ServerConfigDTO.Proxy(it.needsAuthentication, it.proxyApi, it.proxyPort) }
+            links.proxy?.let { toDTO(it) }
         )
     }
 
@@ -182,16 +178,19 @@ class ServerConfigMapperImpl(
                 website = links.website,
                 title = links.title,
                 isOnPremises = links.isOnPremises,
-                proxy = links.proxy?.let {
-                    ServerConfigDTO.Proxy(
-                        proxyApi = it.proxyApi, needsAuthentication = it.needsAuthentication, proxyPort = it.proxyPort
-                    )
-                }
+                proxy = links.proxy?.let { toDTO(it) }
             ), ServerConfigDTO.MetaData(
                 federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain
             )
         )
     }
+
+    override fun toDTO(proxy: ServerConfig.Proxy): ServerConfigDTO.Proxy =
+        with(proxy) { ServerConfigDTO.Proxy(needsAuthentication, proxyApi, proxyPort) }
+
+    override fun toDTO(proxy: ServerConfigEntity.Proxy): ServerConfigDTO.Proxy =
+        with(proxy) { ServerConfigDTO.Proxy(needsAuthentication, proxyApi, proxyPort) }
+
 
     override fun fromDTO(wireServer: ServerConfigDTO): ServerConfig = with(wireServer) {
         ServerConfig(id = id, links = fromDTO(links), metaData = fromDTO(metaData))
@@ -207,7 +206,7 @@ class ServerConfigMapperImpl(
             teams = teams,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { ServerConfig.Proxy(it.needsAuthentication, it.proxyApi, it.proxyPort) }
+            proxy = proxy?.let { fromDTO(it) }
         )
     }
 
@@ -239,7 +238,7 @@ class ServerConfigMapperImpl(
             website = website,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { ServerConfigEntity.Proxy(it.needsAuthentication, it.proxyApi, it.proxyPort) }
+            proxy = proxy?.let { toEntity(it) }
         )
     }
 
@@ -269,13 +268,7 @@ class ServerConfigMapperImpl(
             website = website,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let {
-                ServerConfig.Proxy(
-                    needsAuthentication = it.needsAuthentication,
-                    proxyApi = it.proxyApi,
-                    proxyPort = it.proxyPort
-                )
-            }
+            proxy = proxy?.let { fromEntity(it) }
         )
     }
 

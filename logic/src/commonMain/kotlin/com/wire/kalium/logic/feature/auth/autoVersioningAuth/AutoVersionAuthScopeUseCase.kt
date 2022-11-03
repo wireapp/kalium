@@ -6,26 +6,24 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCase
 import com.wire.kalium.logic.functional.fold
 
 class AutoVersionAuthScopeUseCase(
     private val serverLinks: ServerConfig.Links,
     private val coreLogic: CoreLogicCommon,
-    private val persistProxyCredentials: PersistProxyCredentialsUseCase
 ) {
-    suspend operator fun invoke(proxyAuthentication: ProxyAuthentication): Result =
+    suspend operator fun invoke(proxyAuthentication: ProxyAuthentication = ProxyAuthentication.None): Result =
         coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
             handleError(it)
         }, { serverConfig ->
             when (proxyAuthentication) {
                 is ProxyAuthentication.None -> {
-                    Result.Success(coreLogic.getAuthenticationScope(serverConfig, null))
+                    Result.Success(coreLogic.getAuthenticationScope(serverConfig))
 
                 }
                 is ProxyAuthentication.UsernameAndPassword -> {
                     with(proxyAuthentication.proxyCredentials) {
-                        persistProxyCredentials(username, password)
+                        coreLogic.persistProxyCredentialsUseCase(username, password)
                     }
                     Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyAuthentication.proxyCredentials))
                 }
