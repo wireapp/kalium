@@ -87,8 +87,7 @@ public class KaliumKtorCustomLogging private constructor(
 
     private suspend fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
         if (level.info) {
-            kaliumLogger.v("REQUEST: ${obfuscatePath(Url(request.url))} ")
-            kaliumLogger.v("METHOD: ${request.method}")
+            kaliumLogger.v("REQUEST: ${obfuscatePath(Url(request.url))} - METHOD: ${request.method}")
         }
 
         val content = request.body as OutgoingContent
@@ -110,9 +109,9 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun logResponse(response: HttpResponse) {
         if (level.info) {
-            kaliumLogger.v("RESPONSE: ${response.status}")
-            kaliumLogger.v("METHOD: ${response.call.request.method}")
-            kaliumLogger.v("FROM: ${obfuscatePath(response.call.request.url)}")
+            kaliumLogger.v("RESPONSE: ${response.status} - " +
+                    "FROM: ${obfuscatePath(response.call.request.url)} - " +
+                    "METHOD: ${response.call.request.method}")
         }
 
         if (level.headers) {
