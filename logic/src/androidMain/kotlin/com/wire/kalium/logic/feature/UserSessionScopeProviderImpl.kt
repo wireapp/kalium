@@ -58,6 +58,7 @@ internal actual class UserSessionScopeProviderImpl(
             globalScope,
             globalCallManager,
             globalPreferences,
+            sessionManager,
             dataStoragePaths,
             kaliumConfigs,
             featureSupport,

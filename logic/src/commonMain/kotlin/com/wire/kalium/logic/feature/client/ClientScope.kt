@@ -17,6 +17,8 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 
 @Suppress("LongParameterList")
@@ -30,9 +32,10 @@ class ClientScope(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionRepository: SessionRepository,
+    private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
     private val selfUserId: UserId,
     private val featureSupport: FeatureSupport,
-    private val clientIdProvider: CurrentClientIdProvider,
+    private val clientIdProvider: CurrentClientIdProvider
 ) {
     val register: RegisterClientUseCase
         get() = RegisterClientUseCaseImpl(
@@ -78,5 +81,11 @@ class ClientScope(
         get() = PersistRegisteredClientIdUseCaseImpl(clientRepository)
 
     val getOrRegister: GetOrRegisterClientUseCase
-        get() = GetOrRegisterClientUseCaseImpl(clientRepository, register, clearClientData, persistRegisteredClientIdUseCase)
+        get() = GetOrRegisterClientUseCaseImpl(
+            clientRepository,
+            register,
+            clearClientData,
+            persistRegisteredClientIdUseCase,
+            upgradeCurrentSessionUseCase
+        )
 }

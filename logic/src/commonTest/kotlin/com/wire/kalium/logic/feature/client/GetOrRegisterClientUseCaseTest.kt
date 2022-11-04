@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -92,10 +93,13 @@ class GetOrRegisterClientUseCaseTest {
         val clearClientDataUseCase = configure(mock(classOf<ClearClientDataUseCase>())) { stubsUnitByDefault = true }
 
         @Mock
+        val upgradeCurrentSessionUseCase = mock(classOf<UpgradeCurrentSessionUseCase>())
+
+        @Mock
         val persistRegisteredClientIdUseCase = mock(classOf<PersistRegisteredClientIdUseCase>())
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
-            clientRepository, registerClientUseCase, clearClientDataUseCase, persistRegisteredClientIdUseCase
+            clientRepository, registerClientUseCase, clearClientDataUseCase, persistRegisteredClientIdUseCase, upgradeCurrentSessionUseCase
         )
 
         fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>): Arrangement {
