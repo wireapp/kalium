@@ -5,59 +5,58 @@ import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_ALG_DEFAULT
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.utils.initializeLibsodiumIfNeeded
+import okio.Buffer
 
 @OptIn(ExperimentalUnsignedTypes::class)
-class Backup(private val salt: UByteArray, private val passphrase: Passphrase) {
+class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Passphrase) {
 
-    // ChaCha20 SecretKey used to encrypt derived from the passphrase (salt + provided password)
-    suspend fun generateChaCha20Key(): UByteArray {
-        initializeLibsodiumIfNeeded()
-        return PasswordHash.pwhash(
-            PWD_HASH_OUTPUT_BYTES,
-            passphrase.password,
-            salt,
-            OPSLIMIT_INTERACTIVE_VALUE,
-            MEMLIMIT_INTERACTIVE_VALUE,
-            crypto_pwhash_ALG_DEFAULT
-        )
+    suspend fun provideHeaderBuffer(): ByteArray {
+        val hashedUserId = hashUserId(userId, salt)
+        return Header(salt, hashedUserId).toByteArray()
     }
 
-    suspend fun hashUserId(): UByteArray {
-        initializeLibsodiumIfNeeded()
-        return PasswordHash.pwhash(
-            PWD_HASH_OUTPUT_BYTES,
-            passphrase.userId.value,
-            salt,
-            OPSLIMIT_INTERACTIVE_VALUE,
-            MEMLIMIT_INTERACTIVE_VALUE,
-            crypto_pwhash_ALG_DEFAULT
-        )
-    }
+    data class Passphrase(val password: String)
 
-    fun provideHeaderBuffer(hashedUserId: UByteArray): ByteArray = format.encodeToByteArray() + extraGap +
-            VERSION.encodeToByteArray() + salt.toByteArray() + hashedUserId.toByteArray() + OPSLIMIT_INTERACTIVE_VALUE.toUInt32ByteArray() +
-            MEMLIMIT_INTERACTIVE_VALUE.toUInt32ByteArray()
+    data class Header(val salt: UByteArray, val hashedUserId: UByteArray) {
+        constructor(data: Buffer): this(data.extractSalt(), data.extractHashedUserId())
 
-    data class Passphrase(
-        val password: String,
-        val userId: CryptoUserID
-    )
+        fun toByteArray(): ByteArray {
+            val buffer = Buffer()
+            buffer.write(format.encodeToByteArray())
+            buffer.write(extraGap)
+            buffer.write(version.encodeToByteArray())
+            buffer.write(salt.toByteArray())
+            buffer.write(hashedUserId.toByteArray())
+            buffer.writeInt(OPSLIMIT_INTERACTIVE_VALUE)
+            buffer.writeInt(MEMLIMIT_INTERACTIVE_VALUE)
 
-    class BackupHeaderData(val data: ByteArray) {
+            return buffer.readByteArray()
+        }
 
-        fun extractSalt(): ByteArray = data.copyOfRange(HEADER_SALT_START_INDEX, HEADER_SALT_END_INDEX)
-        fun extractHashedUserId(): ByteArray = data.copyOfRange(HEADER_HASHED_ID_START_INDEX, HEADER_HASHED_ID_END_INDEX)
+        private companion object {
+
+            private fun Buffer.extractSalt(): UByteArray {
+                readByteArray(BACKUP_HEADER_FORMAT_LENGTH)
+                readByte()
+                readByteArray(BACKUP_HEADER_VERSION_LENGTH)
+                return readByteArray(BACKUP_HEADER_SALT_LENGTH).toUByteArray()
+            }
+
+            private fun Buffer.extractHashedUserId(): UByteArray = readByteArray(PWD_HASH_OUTPUT_BYTES.toLong()).toUByteArray()
+        }
     }
 
     companion object {
         // Defined by given specs on: https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/59867179/Exporting+history+v2
         private const val MEMLIMIT_INTERACTIVE_VALUE = 33554432
-        private const val OPSLIMIT_INTERACTIVE_VALUE = 4UL
+        private const val OPSLIMIT_INTERACTIVE_VALUE = 4
         private const val PWD_HASH_OUTPUT_BYTES = 32
-        private const val HEADER_SALT_START_INDEX = 7
-        private const val HEADER_SALT_END_INDEX = 23
-        private const val HEADER_HASHED_ID_START_INDEX = 23
-        private const val HEADER_HASHED_ID_END_INDEX = 55
+        private const val BACKUP_HEADER_EXTRA_GAP_LENGTH = 1L
+        private const val BACKUP_HEADER_FORMAT_LENGTH = 4L
+        private const val BACKUP_HEADER_VERSION_LENGTH = 2L
+        private const val BACKUP_HEADER_SALT_LENGTH = 16L
+        private const val BACKUP_HEADER_OPSLIMIT_INTERACTIVE_LENGTH = 4L
+        private const val BACKUP_HEADER_MEMLIMIT_INTERACTIVE_LENGTH = 4L
 
         private val extraGap = byteArrayOf(0x00)
 
@@ -65,28 +64,36 @@ class Backup(private val salt: UByteArray, private val passphrase: Passphrase) {
         private const val format = "WBUX"
 
         // Current Wire Backup version
-        const val VERSION = "03"
+        const val version = "03"
 
         val BACKUP_FILE_HEADER_LENGTH: Long
-            get() = format.encodeToByteArray().size + extraGap.size + VERSION.encodeToByteArray().size +
-                    crypto_pwhash_SALTBYTES + PWD_HASH_OUTPUT_BYTES.toLong() + OPSLIMIT_INTERACTIVE_VALUE.toUInt32ByteArray().size +
-                    MEMLIMIT_INTERACTIVE_VALUE.toUInt32ByteArray().size
+            get() = BACKUP_HEADER_FORMAT_LENGTH + BACKUP_HEADER_EXTRA_GAP_LENGTH + BACKUP_HEADER_VERSION_LENGTH +
+                    crypto_pwhash_SALTBYTES + PWD_HASH_OUTPUT_BYTES.toLong() + BACKUP_HEADER_OPSLIMIT_INTERACTIVE_LENGTH +
+                    BACKUP_HEADER_MEMLIMIT_INTERACTIVE_LENGTH
 
-        fun ULong.toUInt32ByteArray(): ByteArray {
-            val value = this.toLong()
-            val bytes = ByteArray(4)
-            bytes[3] = (value and 0xFFFF).toByte()
-            bytes[2] = ((value ushr 8) and 0xFFFF).toByte()
-            bytes[1] = ((value ushr 16) and 0xFFFF).toByte()
-            bytes[0] = ((value ushr 24) and 0xFFFF).toByte()
-            return bytes
+        // ChaCha20 SecretKey used to encrypt derived from the passphrase (salt + provided password)
+        internal suspend fun generateChaCha20Key(passphrase: Passphrase, salt: UByteArray): UByteArray {
+            initializeLibsodiumIfNeeded()
+            return PasswordHash.pwhash(
+                PWD_HASH_OUTPUT_BYTES,
+                passphrase.password,
+                salt,
+                OPSLIMIT_INTERACTIVE_VALUE.toULong(),
+                MEMLIMIT_INTERACTIVE_VALUE,
+                crypto_pwhash_ALG_DEFAULT
+            )
         }
 
-        fun Int.toUInt32ByteArray(): ByteArray {
-            val value = this
-            val bytes = ByteArray(4)
-            for (i in 0..3) bytes[i] = (value shr (i * 8)).toByte()
-            return bytes
+        internal suspend fun hashUserId(userId: CryptoUserID, salt: UByteArray): UByteArray {
+            initializeLibsodiumIfNeeded()
+            return PasswordHash.pwhash(
+                PWD_HASH_OUTPUT_BYTES,
+                userId.value,
+                salt,
+                OPSLIMIT_INTERACTIVE_VALUE.toULong(),
+                MEMLIMIT_INTERACTIVE_VALUE,
+                crypto_pwhash_ALG_DEFAULT
+            )
         }
     }
 }

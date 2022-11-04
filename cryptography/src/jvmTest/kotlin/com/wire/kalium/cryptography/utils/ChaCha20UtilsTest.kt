@@ -26,15 +26,13 @@ internal class ChaCha20UtilsTest {
 
     @Test
     @OptIn(ExperimentalUnsignedTypes::class)
-    fun `given some dummy backup object data, when generating the ChaCha20 secret key, it is a valid one`() = runTest {
+    fun `given some passphrase, when generating the ChaCha20 secret key, it is a valid one`() = runTest {
         val salt = generateSalt()
 
         val password = "some password"
-        val userId = CryptoUserID("some-user-id", "some-domain.com")
-        val passphrase = Backup.Passphrase(password, userId)
-        val backup = Backup(salt.toUByteArray(), passphrase)
+        val passphrase = Backup.Passphrase(password)
 
-        val chaCha20Key = backup.generateChaCha20Key()
+        val chaCha20Key = Backup.generateChaCha20Key(passphrase, salt)
 
         assertTrue(chaCha20Key.isNotEmpty())
         assertTrue(chaCha20Key.size == 32)
@@ -60,19 +58,19 @@ internal class ChaCha20UtilsTest {
             val salt = generateSalt()
             val password = "some password"
             val userId = CryptoUserID("some-user-id", "some-domain.com")
-            val passphrase = Backup.Passphrase(password, userId)
-            val backup = Backup(salt, passphrase)
+            val passphrase = Backup.Passphrase(password)
+            val backup = Backup(salt, userId, passphrase)
 
             val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
 
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
-            val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase)
+            val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
 
             val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
                 readByteArray()
             }
 
-            assertEquals(decryptedOutputContent.decodeToString(), fakeData.decodeToString())
+            assertEquals(fakeData.decodeToString(), decryptedOutputContent.decodeToString())
             assertTrue(outputSize > 0)
             assertEquals(decryptedDataSize, fakeData.size.toLong())
         }
@@ -98,13 +96,13 @@ internal class ChaCha20UtilsTest {
             val salt = generateSalt()
             val password = "some password"
             val userId = CryptoUserID("some-user-id", "some-domain.com")
-            val passphrase = Backup.Passphrase(password, userId)
-            val backup = Backup(salt, passphrase)
+            val passphrase = Backup.Passphrase(password)
+            val backup = Backup(salt, userId, passphrase)
 
             val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
 
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
-            val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase)
+            val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
 
             val decryptedOutputContent = fakeFileSystem.read(decryptedOutputPath) {
                 readByteArray()

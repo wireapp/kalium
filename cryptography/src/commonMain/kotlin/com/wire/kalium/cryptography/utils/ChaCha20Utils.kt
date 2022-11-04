@@ -7,6 +7,7 @@ import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_HEADERBYTES
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
+import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.backup.Backup
 import com.wire.kalium.cryptography.backup.Backup.Companion.BACKUP_FILE_HEADER_LENGTH
 import com.wire.kalium.cryptography.kaliumLogger
@@ -32,9 +33,8 @@ internal class ChaCha20Utils {
         val additionalInformation: UByteArray = ubyteArrayOf()
 
         try {
-            val chaCha20Key = backup.generateChaCha20Key()
-            val hashedUserId = backup.hashUserId()
-            val backupHeader = backup.provideHeaderBuffer(hashedUserId).also {
+            val chaCha20Key = Backup.generateChaCha20Key(backup.passphrase, backup.salt)
+            val backupHeader = backup.provideHeaderBuffer().also {
                 if (it.isEmpty()) throw IllegalStateException("Backup header is empty")
             }
 
@@ -60,18 +60,16 @@ internal class ChaCha20Utils {
                 } else
                     crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 
-                val dataToEncrypt = inputContentBuffer.readByteArray(byteCount)
-                val uByteDataToEncrypt = dataToEncrypt.toUByteArray()
-
+                val dataToEncrypt = inputContentBuffer.readByteArray(byteCount).toUByteArray()
                 val encryptedData = SecretStream.xChaCha20Poly1305Push(
                     state,
-                    uByteDataToEncrypt,
+                    dataToEncrypt,
                     additionalInformation,
                     appendingTag.toUByte()
                 )
-                val tempWriteBuffer = Buffer()
-                tempWriteBuffer.write(encryptedData.toByteArray())
-                outputSink.write(tempWriteBuffer, tempWriteBuffer.size)
+                val chunkWriteBuffer = Buffer()
+                outputBuffer.write(encryptedData.toByteArray())
+                outputSink.write(chunkWriteBuffer, chunkWriteBuffer.size)
                 encryptedDataSize += encryptedData.size
             }
         } catch (e: Exception) {
@@ -88,7 +86,8 @@ internal class ChaCha20Utils {
     suspend fun decryptBackupFile(
         encryptedDataSource: Source,
         decryptedDataSink: Sink,
-        passphrase: Backup.Passphrase
+        passphrase: Backup.Passphrase,
+        userId: CryptoUserID
     ): Long {
 
         initializeLibsodiumIfNeeded()
@@ -97,19 +96,19 @@ internal class ChaCha20Utils {
         try {
             val headerBuffer = Buffer()
             encryptedDataSource.read(headerBuffer, BACKUP_FILE_HEADER_LENGTH)
-            val fileHeaderBuffer = Backup.BackupHeaderData(headerBuffer.readByteArray())
-            val salt = fileHeaderBuffer.extractSalt().toUByteArray()
-            val backup = Backup(salt, passphrase)
             val additionalInformation: UByteArray = ubyteArrayOf()
+            val fileHeaderBuffer = Backup.Header(headerBuffer)
+            headerBuffer.clear()
+            val salt = fileHeaderBuffer.salt
 
             // Sanity checks
-            val expectedHashedUserId = backup.hashUserId()
-            val storedHashedUserId = fileHeaderBuffer.extractHashedUserId()
+            val expectedHashedUserId = Backup.hashUserId(userId, salt)
+            val storedHashedUserId = fileHeaderBuffer.hashedUserId
             check(expectedHashedUserId.contentEquals(storedHashedUserId.toUByteArray())) {
                 "The hashed user id in the backup file header does not match the expected one"
             }
 
-            val key = backup.generateChaCha20Key().toUByteArray()
+            val key = Backup.generateChaCha20Key(passphrase, salt).toUByteArray()
 
             // ChaCha20 header is needed to validate the encrypted data hasn't been tampered with different authentication
             val chaChaHeaderBuffer = Buffer()
