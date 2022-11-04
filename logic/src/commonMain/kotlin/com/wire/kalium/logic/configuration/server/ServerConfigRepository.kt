@@ -18,8 +18,8 @@ import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.BackendMetaDataUtilImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
-import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
+import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
@@ -139,7 +139,10 @@ internal class ServerConfigDataSource(
                         title = links.title,
                         federation = metadata.federation,
                         domain = metadata.domain,
-                        commonApiVersion = metadata.commonApiVersion.version
+                        commonApiVersion = metadata.commonApiVersion.version,
+                        proxyApi = links.proxy?.proxyApi,
+                        proxyNeedsAuthentication = links.proxy?.needsAuthentication,
+                        proxyPort = links.proxy?.proxyPort
                     )
                 )
                 newId

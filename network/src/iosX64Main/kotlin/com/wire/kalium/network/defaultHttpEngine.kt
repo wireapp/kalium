@@ -1,9 +1,14 @@
 package com.wire.kalium.network
 
-import io.ktor.client.engine.*
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.tools.ServerConfigDTO
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 
-actual fun defaultHttpEngine(): HttpClientEngine {
+actual fun defaultHttpEngine(
+    serverConfigDTOProxy: ServerConfigDTO.Proxy?,
+    proxyCredentials: ProxyCredentialsDTO?
+): HttpClientEngine {
     return Darwin.create {
         pipelining = true
     }

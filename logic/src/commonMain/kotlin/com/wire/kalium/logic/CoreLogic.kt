@@ -1,6 +1,9 @@
 package com.wire.kalium.logic
 
+import com.wire.kalium.logic.configuration.ProxyCredentialsDataSource
+import com.wire.kalium.logic.configuration.ProxyCredentialsRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -13,6 +16,8 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCase
+import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
@@ -21,7 +26,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 expect class CoreLogic : CoreLogicCommon
 
-abstract class CoreLogicCommon internal constructor (
+abstract class CoreLogicCommon internal constructor(
     // TODO: can client label be replaced with clientConfig.deviceName() ?
     protected val clientLabel: String,
     protected val rootPath: String,
@@ -39,9 +44,9 @@ abstract class CoreLogicCommon internal constructor (
         GlobalKaliumScope(globalDatabase, globalPreferences, kaliumConfigs, userSessionScopeProvider)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
-    fun getAuthenticationScope(serverConfig: ServerConfig): AuthenticationScope =
+    fun getAuthenticationScope(serverConfig: ServerConfig, proxyCredentials: ProxyCredentials? = null): AuthenticationScope =
         // TODO(logic): make it lazier
-        AuthenticationScope(clientLabel, serverConfig)
+        AuthenticationScope(clientLabel, serverConfig, proxyCredentials)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
@@ -61,6 +66,13 @@ abstract class CoreLogicCommon internal constructor (
     protected abstract val globalWorkScheduler: GlobalWorkScheduler
 
     val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
+
+    private val proxyCredentialsRepository: ProxyCredentialsRepository
+        get() =
+            ProxyCredentialsDataSource(globalPreferences.value.proxyCredentialsStorage)
+
+    internal val persistProxyCredentialsUseCase: PersistProxyCredentialsUseCase
+        get() = PersistProxyCredentialsUseCaseImpl(proxyCredentialsRepository)
 
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(serverLinks, this)
