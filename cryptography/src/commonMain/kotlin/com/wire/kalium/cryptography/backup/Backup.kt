@@ -18,7 +18,7 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
     data class Passphrase(val password: String)
 
     data class Header(val salt: UByteArray, val hashedUserId: UByteArray) {
-        constructor(data: Buffer): this(data.extractSalt(), data.extractHashedUserId())
+        constructor(data: Buffer) : this(data.extractSalt(), data.extractHashedUserId())
 
         fun toByteArray(): ByteArray {
             val buffer = Buffer()

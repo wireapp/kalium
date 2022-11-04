@@ -41,7 +41,6 @@ internal class ChaCha20Utils {
             // We append all the metadata unencrypted to the beginning of the backup file data
             val outputBuffer = outputSink.buffer()
             outputBuffer.write(backupHeader)
-            outputBuffer.flush()
 
             val stateAndHeader = SecretStream.xChaCha20Poly1305InitPush(chaCha20Key)
             val state = stateAndHeader.state
@@ -49,7 +48,6 @@ internal class ChaCha20Utils {
 
             // We write the ChaCha20 generated header prior to the encrypted backup file data
             outputBuffer.write(chachaHeader)
-            outputBuffer.flush()
 
             val inputContentBuffer = Buffer()
             var byteCount: Long
