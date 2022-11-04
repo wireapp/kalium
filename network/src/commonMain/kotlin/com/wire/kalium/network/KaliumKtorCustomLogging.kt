@@ -1,8 +1,9 @@
 package com.wire.kalium.network
 
-import com.wire.kalium.network.utils.obfuscateAndLogMessage
+import com.wire.kalium.network.utils.obfuscatedJsonMessage
 import com.wire.kalium.network.utils.obfuscatePath
 import com.wire.kalium.network.utils.sensitiveJsonKeys
+import com.wire.kalium.network.utils.toJsonElement
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpClientPlugin
@@ -86,88 +87,105 @@ public class KaliumKtorCustomLogging private constructor(
     }
 
     private suspend fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
-        if (level.info) {
-            kaliumLogger.v("REQUEST: ${obfuscatePath(Url(request.url))} - METHOD: ${request.method}")
-        }
+
+        val properties = mutableMapOf<String, Any>(
+            "method" to request.method.value,
+            "endpoint" to obfuscatePath(Url(request.url)),
+        )
 
         val content = request.body as OutgoingContent
 
-        if (level.headers) {
-            kaliumLogger.v("COMMON HEADERS")
-            logHeaders(request.headers.entries())
+        when {
+            level.info -> {
+                val jsonElement = properties.toJsonElement()
+                kaliumLogger.v("REQUEST: $jsonElement")
+            }
+            level.headers -> {
 
-            kaliumLogger.v("CONTENT HEADERS")
-            content.contentLength?.let { logger.logHeader(HttpHeaders.ContentLength, it.toString()) }
-            content.contentType?.let { logger.logHeader(HttpHeaders.ContentType, it.toString()) }
-            logHeaders(content.headers.entries())
+                val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
+                content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
+                content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
+                obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
+
+                properties["headers"] = obfuscatedHeaders.toMap()
+
+                val jsonElement = properties.toJsonElement()
+
+                kaliumLogger.v("REQUEST: $jsonElement")
+            }
+            level.body -> {
+                return logRequestBody(content)
+            }
         }
-
-        return if (level.body) {
-            logRequestBody(content)
-        } else null
+        return null
     }
 
     private fun logResponse(response: HttpResponse) {
-        if (level.info) {
-            kaliumLogger.v("RESPONSE: ${response.status} - " +
-                    "FROM: ${obfuscatePath(response.call.request.url)} - " +
-                    "METHOD: ${response.call.request.method}")
+
+        val properties = mutableMapOf<String, Any>(
+            "method" to response.call.request.method.value,
+            "endpoint" to obfuscatePath(response.call.request.url),
+            "status" to response.status.value,
+        )
+
+        when {
+            level.info -> {
+                // Intentionally left empty
+            }
+            level.headers -> {
+                val obfuscatedHeaders = obfuscatedHeaders(response.headers.entries().map { it.key to it.value }).toMutableMap()
+                properties["headers"] = obfuscatedHeaders.toMap()
+            }
         }
 
-        if (level.headers) {
-            kaliumLogger.v("COMMON HEADERS")
-            logHeaders(response.headers.entries())
+        val jsonElement = properties.toJsonElement()
+        val logString = "RESPONSE: $jsonElement"
+
+        if (response.status.value < 400) {
+            kaliumLogger.v(logString)
+        }
+        else if (response.status.value < 500) {
+            kaliumLogger.w(logString)
+        }
+        else {
+            kaliumLogger.e(logString)
         }
     }
+    private fun obfuscatedHeaders(headers: List<Pair<String, List<String>>>): Map<String, String> =
+        headers.associate {
+            if (sensitiveJsonKeys.contains(it.first.lowercase())) {
+                it.first to "***"
+            } else {
+                it.first to it.second.joinToString(",")
+            }
+        }
 
     private suspend fun logResponseBody(contentType: ContentType?, content: ByteReadChannel): Unit = with(logger) {
-        kaliumLogger.v("BODY Content-Type: $contentType")
-        kaliumLogger.v("BODY START")
-        val message = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "[response body omitted]"
-        obfuscateAndLogMessage(message)
-        kaliumLogger.v("BODY END")
+        val text = content.tryReadText(contentType?.charset() ?: Charsets.UTF_8) ?: "\"response body omitted\""
+        kaliumLogger.v("RESPONSE BODY: {\"Content-Type\":\"${contentType}\", \"Content\":${obfuscatedJsonMessage(text)}}")
     }
 
     private fun logRequestException(context: HttpRequestBuilder, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("REQUEST ${obfuscatePath(Url(context.url))} failed with exception: $cause")
+            kaliumLogger.v("REQUEST FAILURE: {\"endpoint\":\"${obfuscatePath(Url(context.url))}\", \"cause\":\"$cause\"}")
         }
     }
 
     private fun logResponseException(request: HttpRequest, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("RESPONSE ${obfuscatePath(request.url)} failed with exception: $cause")
-        }
-    }
-
-    private fun logHeaders(headers: Set<Map.Entry<String, List<String>>>) {
-        val sortedHeaders = headers.toList().sortedBy { it.key }
-
-        sortedHeaders.forEach { (key, values) ->
-            logger.logHeader(key, values.joinToString("; "))
-        }
-    }
-
-    private fun Logger.logHeader(key: String, value: String) {
-        if (sensitiveJsonKeys.contains(key.lowercase())) {
-            kaliumLogger.v("-> $key: *******")
-        } else {
-            kaliumLogger.v("-> $key: $value")
+            kaliumLogger.v("RESPONSE FAILURE: {\"endpoint\":\"${obfuscatePath(request.url)}\", \"cause\":\"$cause\"}")
         }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
     private suspend fun logRequestBody(content: OutgoingContent): OutgoingContent? {
-        kaliumLogger.v("BODY Content-Type: ${content.contentType}")
 
         val charset = content.contentType?.charset() ?: Charsets.UTF_8
 
         val channel = ByteChannel()
         GlobalScope.launch(Dispatchers.Unconfined) {
-            val text = channel.tryReadText(charset) ?: "[request body omitted]"
-            kaliumLogger.v("BODY START")
-            obfuscateAndLogMessage(text)
-            kaliumLogger.v("BODY END")
+            val text = channel.tryReadText(charset) ?: "\"request body omitted\""
+            kaliumLogger.v("REQUEST BODY: {\"Content-Type\":\"${content.contentType}\", \"content\":${obfuscatedJsonMessage(text)}}")
         }
 
         return content.observe(channel)

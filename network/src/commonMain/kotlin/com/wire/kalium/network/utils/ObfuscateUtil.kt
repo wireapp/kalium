@@ -2,52 +2,71 @@
 
 package com.wire.kalium.network.utils
 
+import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logger.obfuscateUrlPath
-import com.wire.kalium.network.kaliumLogger
 import io.ktor.http.Url
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
-fun obfuscateAndLogMessage(text: String) {
+fun obfuscatedJsonMessage(text: String): String {
+    var obfuscatedMessage = ""
     try {
         val obj = (Json.decodeFromString(text) as JsonElement)
-        if (obj.jsonArray.size > 0) {
-            obj.jsonArray.map {
-                logObfuscatedJsonElement(it)
-            }
-        } else {
-            logObfuscatedJsonElement(obj)
-        }
+        obfuscatedMessage = obfuscatedJsonElement(obj).toString()
     } catch (e: Exception) {
-        "error the body content while logging "
+        obfuscatedMessage = "\"Error while obfuscating. Content probably not json.\""
     }
+    return obfuscatedMessage
 }
 
-fun logObfuscatedJsonElement(obj: JsonElement) {
-    obj.jsonObject.entries.toMutableSet().map {
-        when {
-            sensitiveJsonKeys.contains(it.key.lowercase()) -> {
-                kaliumLogger.v("${it.key} : ******")
-            }
-
-            sensitiveJsonIdKeys.contains(it.key.lowercase()) -> {
-                kaliumLogger.v("${it.key} : ${it.value.toString().obfuscateId()}")
-            }
-
-            sensitiveJsonObjects.contains(it.key.lowercase()) -> {
-                logObfuscatedJsonElement(it.value)
-            }
-
-            else -> {
-                kaliumLogger.v("${it.key} : ${it.value}")
+fun obfuscatedJsonElement(element: JsonElement): JsonElement =
+    when(element) {
+        is JsonPrimitive, JsonNull -> element
+        is JsonArray -> {
+            if (element.jsonArray.size > 0) {
+                element.jsonArray.map { obfuscatedJsonElement(it) }.toJsonElement()
+            } else {
+                element
             }
         }
+
+        is JsonObject -> {
+            element.jsonObject.entries.associate {
+                when {
+                    sensitiveJsonKeys.contains(it.key.lowercase()) -> {
+                        val value = "${it.value}".trim('"')
+                        it.key to "${value.obfuscateId()}"
+                    }
+
+                    domainJsonKeys.contains(it.key.lowercase()) -> {
+                        val value = "${it.value}".trim('"')
+                        it.key to "${value.obfuscateDomain()}"
+                    }
+
+                    sensitiveJsonIdKeys.contains(it.key.lowercase()) -> {
+                        val value = "${it.value}".trim('"')
+                        it.key to "${value.obfuscateId()}"
+                    }
+
+                    sensitiveJsonObjects.contains(it.key.lowercase()) -> {
+                        it.key to obfuscatedJsonElement(it.value)
+                    }
+
+                    else -> {
+                        it.key to it.value
+                    }
+                }
+            }.toJsonElement()
+        }
     }
-}
 
 fun obfuscatePath(url: Url): String {
     var requestToLog = url.host
@@ -66,7 +85,7 @@ fun obfuscatePath(url: Url): String {
         }
     }
 
-    return requestToLog
+    return requestToLog.trimEnd('&')
 }
 
 fun deleteSensitiveItemsFromJson(text: String): String {
@@ -103,7 +122,8 @@ val sensitiveJsonKeys by lazy {
         "sec-websocket-version"
     )
 }
-private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team") }
-private val sensitiveJsonObjects by lazy { listOf("qualified_id") }
+private val sensitiveJsonIdKeys by lazy { listOf("conversation", "id", "user", "team", "creator_client") }
+private val domainJsonKeys by lazy { listOf("domain") }
+private val sensitiveJsonObjects by lazy { listOf("qualified_id", "qualified_ids", "qualified_users") }
 private val notSensitiveJsonKeys by lazy { listOf("type", "time") }
 private val notSensitiveJsonArray by lazy { listOf("payload") }

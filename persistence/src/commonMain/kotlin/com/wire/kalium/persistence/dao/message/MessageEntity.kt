@@ -46,6 +46,13 @@ sealed class MessageEntity(
     sealed class EditStatus {
         object NotEdited : EditStatus()
         data class Edited(val lastTimeStamp: String) : EditStatus()
+
+        override fun toString(): String {
+            return when (this){
+                is NotEdited -> "NOT_EDITED"
+                is Edited -> "EDITED_AT: ${this.lastTimeStamp}"
+            }
+        }
     }
 
     enum class UploadStatus {

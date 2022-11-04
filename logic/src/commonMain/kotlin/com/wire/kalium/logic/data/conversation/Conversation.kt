@@ -12,6 +12,7 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
+import com.wire.kalium.network.utils.toJsonElement
 import kotlinx.datetime.Instant
 
 data class Conversation(
@@ -110,11 +111,24 @@ data class Conversation(
             object Member : Role()
             object Admin : Role()
             data class Unknown(val name: String) : Role()
+
+            override fun toString(): String {
+                return when(this) {
+                    is Member -> "member"
+                    is Admin -> "admin"
+                    is Unknown -> this.name
+                }
+            }
         }
 
         override fun toString(): String {
-            return "id: ${id.value.obfuscateId()}@${id.domain.obfuscateDomain()} role: $role"
+            return "${this.toMap().toJsonElement()}"
         }
+
+        fun toMap(): Map<String, String> =  mapOf(
+            "id" to "${id.value.obfuscateId()}@${id.domain.obfuscateDomain()}",
+            "role" to "$role"
+        )
     }
 
 }

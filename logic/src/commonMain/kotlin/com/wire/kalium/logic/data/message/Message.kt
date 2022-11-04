@@ -5,6 +5,8 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Suppress("LongParameterList")
 sealed class Message(
@@ -30,43 +32,109 @@ sealed class Message(
         val reactions: Reactions = Reactions.EMPTY
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
-            val contentString: String
+            var properties: MutableMap<String, String>
+            val typeKey = "type"
             when (content) {
-                is MessageContent.Text, is MessageContent.TextEdited, is MessageContent.Calling, is MessageContent.DeleteMessage -> {
-                    contentString = ""
+                is MessageContent.Text -> {
+                    properties = mutableMapOf(
+                        typeKey  to "text"
+                    )
+                }
+
+                is MessageContent.TextEdited -> {
+                    properties = mutableMapOf(
+                        typeKey  to "textEdit"
+                    )
+                }
+
+                is MessageContent.Calling -> {
+                    properties = mutableMapOf(
+                        typeKey  to "calling"
+                    )
+                }
+
+                is MessageContent.DeleteMessage -> {
+                    properties = mutableMapOf(
+                        typeKey to "delete"
+                    )
                 }
 
                 is MessageContent.Asset -> {
-                    contentString = "content: sizeInBytes:${content.value.sizeInBytes}, mimeType: ${
-                        content.value.mimeType}, metaData : ${content.value.metadata}, downloadStatus: ${content.value.downloadStatus}, " +
-                            "uploadStatus: ${content.value.uploadStatus}}, remoteData - otrKeySize: ${content.value.remoteData.otrKey.size}"
+                    properties = mutableMapOf(
+                        typeKey to "asset",
+                        "sizeInBytes" to "${content.value.sizeInBytes}",
+                        "mimeType" to "${content.value.mimeType}",
+                        "metaData" to "${content.value.metadata}",
+                        "downloadStatus" to "${content.value.downloadStatus}",
+                        "uploadStatus" to "${content.value.uploadStatus}",
+                        "otrKeySize" to "${content.value.remoteData.otrKey.size}",
+                    )
                 }
 
                 is MessageContent.RestrictedAsset -> {
-                    contentString = "content:{sizeInBytes:${content.sizeInBytes} ," +
-                            " mimeType:${content.mimeType}"
+                     properties = mutableMapOf(
+                         typeKey to "restrictedAsset",
+                        "sizeInBytes" to "${content.sizeInBytes}",
+                        "mimeType" to "${content.mimeType}",
+                    )
                 }
 
                 is MessageContent.DeleteForMe -> {
-                    contentString = "content:{messageId:${content.messageId.obfuscateId()}"
+                    properties = mutableMapOf(
+                        typeKey to "deleteForMe",
+                        "messageId" to "${content.messageId.obfuscateId()}",
+                    )
                 }
 
                 is MessageContent.LastRead -> {
-                    contentString = "content:{time:${content.time}"
+                    properties = mutableMapOf(
+                        typeKey to "lastRead",
+                        "time" to "${content.time}",
+                    )
                 }
 
                 is MessageContent.FailedDecryption -> {
-                    contentString = "content:{size:${content.encodedData?.size}"
+                    properties = mutableMapOf(
+                        typeKey to "failedDecryption",
+                        "size" to "${content.encodedData?.size}",
+                    )
+                }
+
+                is MessageContent.Reaction -> {
+                    val empty = if (content.emojiSet.isEmpty()) {
+                        "empty"
+                    } else {
+                        "not_empty"
+                    }
+
+                    properties = mutableMapOf(
+                        typeKey to "reactions",
+                        "emojiSet" to empty
+                    )
                 }
 
                 else -> {
-                    contentString = "content:$content"
+                    properties = mutableMapOf(
+                        typeKey to "unknown",
+                        "content" to "$content",
+                    )
                 }
             }
-            return "id: ${id.obfuscateId()} " +
-                    "$contentString  conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
-                    "date:$date  senderUserId:${senderUserId.value.obfuscateId()}  status:$status visibility:$visibility " +
-                    "senderClientId${senderClientId.value.obfuscateId()}  editStatus:$editStatus"
+
+            val standardProperties = mapOf<String, String>(
+                "id" to id.obfuscateId(),
+                "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                "date" to date,
+                "senderUserId" to senderUserId.value.obfuscateId(),
+                "status" to "$status",
+                "visibility" to "$visibility",
+                "senderClientId" to senderClientId.value.obfuscateId(),
+                "editStatus" to "$editStatus"
+            )
+
+            properties.putAll(standardProperties)
+
+            return Json.encodeToString(properties.toMap())
         }
     }
 
@@ -80,23 +148,39 @@ sealed class Message(
         override val visibility: Visibility = Visibility.VISIBLE
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
         override fun toString(): String {
-            var contentString = ""
+
+            var properties: MutableMap<String, String>
+            val typeKey = "type"
             when (content) {
                 is MessageContent.MemberChange -> {
-                    content.members.map {
-                        contentString += "${it.value.obfuscateId()}@${it.domain.obfuscateDomain()}"
-                    }
+                    properties = mutableMapOf(
+                        typeKey to "memberChange",
+                        "members" to content.members.fold("") { acc, member ->
+                            return "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                        }
+                    )
                 }
 
                 else -> {
-                    contentString = content.toString()
+                    properties = mutableMapOf(
+                        typeKey to "system",
+                        "content" to content.toString()
+                    )
                 }
             }
 
-            return "id:${id.obfuscateId()} " +
-                    "content:$contentString " +
-                    "conversationId:${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}*** " +
-                    "date:$date  senderUserId:${senderUserId.value.obfuscateId()}  status:$status  visibility:$visibility"
+            val standardProperties = mapOf<String, String>(
+                "id" to id.obfuscateId(),
+                "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
+                "date" to date,
+                "senderUserId" to senderUserId.value.obfuscateId(),
+                "status" to "$status",
+                "visibility" to "$visibility",
+            )
+
+            properties.putAll(standardProperties)
+
+            return Json.encodeToString(properties.toMap())
         }
     }
 
