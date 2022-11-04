@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.client.ProxyCredentialsStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.mockative.Mock
 import io.mockative.any
@@ -64,11 +65,17 @@ class ClientRepositoryTest {
     @Mock
     private val userMapper = mock(classOf<UserMapper>())
 
+    @Mock
+    private val proxyCredentialsStorage = configure(mock(classOf<ProxyCredentialsStorage>())) {
+        stubsUnitByDefault = true
+    }
+
     private lateinit var clientRepository: ClientRepository
 
     @BeforeTest
     fun setup() {
-        clientRepository = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userMapper)
+        clientRepository =
+            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userMapper)
     }
 
     @Test

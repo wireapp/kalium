@@ -113,7 +113,8 @@ internal interface ApiTest {
 
         return UnauthenticatedNetworkContainerV0(
             backendLinks = TEST_BACKEND,
-            engine = mockEngine
+            engine = mockEngine,
+            proxyCredentials = null
         ).unauthenticatedNetworkClient
     }
 
@@ -147,7 +148,8 @@ internal interface ApiTest {
         }
         return UnauthenticatedNetworkContainerV0(
             backendLinks = TEST_BACKEND,
-            engine = mockEngine
+            engine = mockEngine,
+            proxyCredentials = null
         ).unauthenticatedNetworkClient
     }
 

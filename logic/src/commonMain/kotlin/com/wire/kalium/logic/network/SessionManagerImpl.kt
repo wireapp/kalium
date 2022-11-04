@@ -9,18 +9,24 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.nullableFold
+import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.client.ProxyCredentialsStorage
 
+@Suppress("LongParameterList")
 class SessionManagerImpl(
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
     private val tokenStorage: AuthTokenStorage,
+    private val proxyCredentialsStorage: ProxyCredentialsStorage,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
@@ -60,4 +66,15 @@ class SessionManagerImpl(
     override suspend fun onClientRemoved() {
         sessionRepository.logout(userId, LogoutReason.REMOVED_CLIENT)
     }
+
+    override fun proxyCredentials(): ProxyCredentialsDTO? =
+        wrapStorageNullableRequest { proxyCredentialsStorage.fetch() }.nullableFold({
+            null
+        }, {
+            if (it != null) {
+                sessionMapper.fromEntityToProxyCredentialsDTO(it)
+            } else {
+                null
+            }
+        })
 }

@@ -7,17 +7,6 @@
 
 ## How to build
 
-### GitHub Packages authentication
-
-In `local.properties` add:
-```
-github.package_registry.user=<github_username>
-github.package_registry.token=<github_token>
-```
-The github token need include the `packages:read` scope. See [GitHub packages docs](https://docs.github.com/en/packages/learn-github-packages/introduction-to-github-packages#authenticating-to-github-packages) for more details and [Creating a personal access token ](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
-
-alternatively the credentials are also read from your environment if `GITHUB_USER` and `GITHUB_TOKEN` exists.
-
 ### Dependencies
 
 - JDK 11 (ex: openjdk-11-jdk on Ubuntu)

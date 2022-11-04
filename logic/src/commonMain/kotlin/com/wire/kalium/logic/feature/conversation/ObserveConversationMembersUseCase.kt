@@ -11,13 +11,17 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
-class ObserveConversationMembersUseCase internal constructor(
+interface ObserveConversationMembersUseCase {
+    suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>>
+}
+
+class ObserveConversationMembersUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository
-) {
+) : ObserveConversationMembersUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>> {
+    override suspend operator fun invoke(conversationId: ConversationId): Flow<List<MemberDetails>> {
         return conversationRepository.observeConversationMembers(conversationId).map { members ->
             members.map { member ->
                 userRepository.observeUser(member.id).filterNotNull().map {
