@@ -48,6 +48,7 @@ internal class ChaCha20Utils {
 
             // We write the ChaCha20 generated header prior to the encrypted backup file data
             outputBuffer.write(chachaHeader)
+            outputBuffer.flush()
 
             val inputContentBuffer = Buffer()
             var byteCount: Long
