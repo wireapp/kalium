@@ -182,4 +182,8 @@ class MessageScope internal constructor(
             timeParser,
             EphemeralNotificationsManager
         )
+
+    val persistMigratedMessage: PersistMigratedMessagesUseCase
+        get() = PersistMigratedMessagesUseCaseImpl(persistMessage)
+
 }
