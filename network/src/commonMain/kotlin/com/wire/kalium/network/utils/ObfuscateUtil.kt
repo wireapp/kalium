@@ -28,7 +28,7 @@ fun obfuscatedJsonMessage(text: String): String {
 }
 
 fun obfuscatedJsonElement(element: JsonElement): JsonElement =
-    when(element) {
+    when (element) {
         is JsonPrimitive, JsonNull -> element
         is JsonArray -> {
             if (element.jsonArray.size > 0) {

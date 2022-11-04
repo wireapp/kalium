@@ -6,7 +6,6 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-
 // See: https://github.com/Kotlin/kotlinx.serialization/issues/746#issuecomment-737000705
 
 fun Any?.toJsonElement(): JsonElement {

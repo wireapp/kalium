@@ -48,7 +48,7 @@ sealed class MessageEntity(
         data class Edited(val lastTimeStamp: String) : EditStatus()
 
         override fun toString(): String {
-            return when (this){
+            return when (this) {
                 is NotEdited -> "NOT_EDITED"
                 is Edited -> "EDITED_AT: ${this.lastTimeStamp}"
             }

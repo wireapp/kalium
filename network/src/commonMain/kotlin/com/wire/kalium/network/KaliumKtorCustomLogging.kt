@@ -21,6 +21,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.HttpResponsePipeline
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.charset
 import io.ktor.http.content.OutgoingContent
@@ -141,13 +142,11 @@ public class KaliumKtorCustomLogging private constructor(
         val jsonElement = properties.toJsonElement()
         val logString = "RESPONSE: $jsonElement"
 
-        if (response.status.value < 400) {
+        if (response.status.value < HttpStatusCode.BadRequest.value) {
             kaliumLogger.v(logString)
-        }
-        else if (response.status.value < 500) {
+        } else if (response.status.value < HttpStatusCode.InternalServerError.value) {
             kaliumLogger.w(logString)
-        }
-        else {
+        } else {
             kaliumLogger.e(logString)
         }
     }

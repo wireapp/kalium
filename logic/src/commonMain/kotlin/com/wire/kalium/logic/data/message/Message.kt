@@ -31,25 +31,26 @@ sealed class Message(
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY
     ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+        @Suppress("LongMethod")
         override fun toString(): String {
-            var properties: MutableMap<String, String>
+            val properties: MutableMap<String, String>
             val typeKey = "type"
             when (content) {
                 is MessageContent.Text -> {
                     properties = mutableMapOf(
-                        typeKey  to "text"
+                        typeKey to "text"
                     )
                 }
 
                 is MessageContent.TextEdited -> {
                     properties = mutableMapOf(
-                        typeKey  to "textEdit"
+                        typeKey to "textEdit"
                     )
                 }
 
                 is MessageContent.Calling -> {
                     properties = mutableMapOf(
-                        typeKey  to "calling"
+                        typeKey to "calling"
                     )
                 }
 
@@ -63,7 +64,7 @@ sealed class Message(
                     properties = mutableMapOf(
                         typeKey to "asset",
                         "sizeInBytes" to "${content.value.sizeInBytes}",
-                        "mimeType" to "${content.value.mimeType}",
+                        "mimeType" to content.value.mimeType,
                         "metaData" to "${content.value.metadata}",
                         "downloadStatus" to "${content.value.downloadStatus}",
                         "uploadStatus" to "${content.value.uploadStatus}",
@@ -75,14 +76,14 @@ sealed class Message(
                      properties = mutableMapOf(
                          typeKey to "restrictedAsset",
                         "sizeInBytes" to "${content.sizeInBytes}",
-                        "mimeType" to "${content.mimeType}",
+                        "mimeType" to content.mimeType,
                     )
                 }
 
                 is MessageContent.DeleteForMe -> {
                     properties = mutableMapOf(
                         typeKey to "deleteForMe",
-                        "messageId" to "${content.messageId.obfuscateId()}",
+                        "messageId" to content.messageId.obfuscateId(),
                     )
                 }
 
@@ -121,7 +122,7 @@ sealed class Message(
                 }
             }
 
-            val standardProperties = mapOf<String, String>(
+            val standardProperties = mapOf(
                 "id" to id.obfuscateId(),
                 "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
                 "date" to date,
@@ -169,7 +170,7 @@ sealed class Message(
                 }
             }
 
-            val standardProperties = mapOf<String, String>(
+            val standardProperties = mapOf(
                 "id" to id.obfuscateId(),
                 "conversationId" to "${conversationId.value.obfuscateId()}@${conversationId.domain.obfuscateDomain()}",
                 "date" to date,

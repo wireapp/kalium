@@ -112,20 +112,19 @@ data class Conversation(
             object Admin : Role()
             data class Unknown(val name: String) : Role()
 
-            override fun toString(): String {
-                return when(this) {
+            override fun toString(): String =
+                when (this) {
                     is Member -> "member"
                     is Admin -> "admin"
                     is Unknown -> this.name
                 }
-            }
         }
 
         override fun toString(): String {
             return "${this.toMap().toJsonElement()}"
         }
 
-        fun toMap(): Map<String, String> =  mapOf(
+        fun toMap(): Map<String, String> = mapOf(
             "id" to "${id.value.obfuscateId()}@${id.domain.obfuscateDomain()}",
             "role" to "$role"
         )
