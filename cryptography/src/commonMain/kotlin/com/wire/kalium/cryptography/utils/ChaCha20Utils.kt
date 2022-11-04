@@ -68,7 +68,7 @@ internal class ChaCha20Utils {
                     appendingTag.toUByte()
                 )
                 val chunkWriteBuffer = Buffer()
-                outputBuffer.write(encryptedData.toByteArray())
+                chunkWriteBuffer.write(encryptedData.toByteArray())
                 outputSink.write(chunkWriteBuffer, chunkWriteBuffer.size)
                 encryptedDataSize += encryptedData.size
             }
@@ -112,9 +112,10 @@ internal class ChaCha20Utils {
 
             // ChaCha20 header is needed to validate the encrypted data hasn't been tampered with different authentication
             val chaChaHeaderBuffer = Buffer()
-            encryptedDataSource.read(chaChaHeaderBuffer, crypto_secretstream_xchacha20poly1305_HEADERBYTES.toLong())
+            val dataRead = encryptedDataSource.read(chaChaHeaderBuffer, crypto_secretstream_xchacha20poly1305_HEADERBYTES.toLong())
             val chaChaHeader = chaChaHeaderBuffer.readByteArray().toUByteArray()
             val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, chaChaHeader)
+            kaliumLogger.d("ChaCha20 header read: $dataRead bytes")
 
             // Decrypt the backup file data reading it in chunks
             val contentBuffer = Buffer()
