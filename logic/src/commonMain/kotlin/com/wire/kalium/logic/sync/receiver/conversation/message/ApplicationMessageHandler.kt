@@ -153,7 +153,7 @@ internal class ApplicationMessageHandlerImpl(
     // TODO(qol): split this function so it's easier to maintain
     @Suppress("ComplexMethod", "LongMethod")
     private suspend fun processMessage(message: Message) {
-        logger.i(message = "Message received: $message")
+        logger.i(message = "Message received: { \"message\" : $message }")
 
         when (message) {
             is Message.Regular -> when (val content = message.content) {
