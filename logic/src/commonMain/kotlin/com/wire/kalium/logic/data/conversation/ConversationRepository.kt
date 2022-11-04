@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 
 interface ConversationRepository {
     @DelicateKaliumApi("this function does not get values from cache")
@@ -146,7 +147,7 @@ interface ConversationRepository {
 
     suspend fun getConversationIdsByUserId(userId: UserId): Either<CoreFailure, List<ConversationId>>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
-
+    suspend fun changeConversationName(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -565,6 +566,14 @@ internal class ConversationDataSource internal constructor(
                 conversationMapper.toDaoModel(conversation)
             }
             conversationDAO.insertConversations(conversationEntities)
+        }
+    }
+
+    override suspend fun changeConversationName(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            conversationApi.updateConversationName(idMapper.toApiModel(conversationId), conversationName)
+        }.flatMap {
+            updateConversationName(conversationId, conversationName, Clock.System.now().toString())
         }
     }
 
