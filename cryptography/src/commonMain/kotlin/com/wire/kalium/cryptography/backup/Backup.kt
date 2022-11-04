@@ -6,19 +6,26 @@ import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.utils.initializeLibsodiumIfNeeded
 import okio.Buffer
+import okio.BufferedSource
 
 @OptIn(ExperimentalUnsignedTypes::class)
 class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Passphrase) {
 
     suspend fun provideHeaderBuffer(): ByteArray {
         val hashedUserId = hashUserId(userId, salt)
-        return Header(salt, hashedUserId).toByteArray()
+        return Header(format, version, salt, hashedUserId, OPSLIMIT_INTERACTIVE_VALUE, MEMLIMIT_INTERACTIVE_VALUE).toByteArray()
     }
 
     data class Passphrase(val password: String)
 
-    data class Header(val salt: UByteArray, val hashedUserId: UByteArray) {
-        constructor(data: Buffer) : this(data.extractSalt(), data.extractHashedUserId())
+    data class Header(
+        val format: String,
+        val version: String,
+        val salt: UByteArray,
+        val hashedUserId: UByteArray,
+        val opslimit: Int,
+        val memlimit: Int
+    ) {
 
         fun toByteArray(): ByteArray {
             val buffer = Buffer()
@@ -27,22 +34,39 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
             buffer.write(version.encodeToByteArray())
             buffer.write(salt.toByteArray())
             buffer.write(hashedUserId.toByteArray())
-            buffer.writeInt(OPSLIMIT_INTERACTIVE_VALUE)
-            buffer.writeInt(MEMLIMIT_INTERACTIVE_VALUE)
+            buffer.writeInt(opslimit)
+            buffer.writeInt(memlimit)
 
             return buffer.readByteArray()
         }
 
-        private companion object {
+        companion object {
 
-            private fun Buffer.extractSalt(): UByteArray {
-                readByteArray(BACKUP_HEADER_FORMAT_LENGTH)
-                readByte()
-                readByteArray(BACKUP_HEADER_VERSION_LENGTH)
-                return readByteArray(BACKUP_HEADER_SALT_LENGTH).toUByteArray()
+            fun BufferedSource.readBackupHeader(): Header {
+                try {
+                    // We read the backup header and execute some sanity checks
+                    val format = readUtf8(BACKUP_HEADER_FORMAT_LENGTH).also {
+                        if (it != format) throw IllegalStateException("Backup format is not valid")
+                    }
+                    // We skip the extra gap
+                    skip(BACKUP_HEADER_EXTRA_GAP_LENGTH)
+
+                    val version = readUtf8(BACKUP_HEADER_VERSION_LENGTH).also {
+                        if (it != version) throw IllegalStateException("Backup version is not valid")
+                    }
+
+                    return Header(
+                        format = format,
+                        version = version,
+                        salt = readByteArray(crypto_pwhash_SALTBYTES.toLong()).toUByteArray(),
+                        hashedUserId = readByteArray(PWD_HASH_OUTPUT_BYTES.toLong()).toUByteArray(),
+                        opslimit = readInt(),
+                        memlimit = readInt()
+                    )
+                } catch (e: Exception) {
+                    throw IllegalStateException("Backup provided can't be read", e)
+                }
             }
-
-            private fun Buffer.extractHashedUserId(): UByteArray = readByteArray(PWD_HASH_OUTPUT_BYTES.toLong()).toUByteArray()
         }
     }
 
@@ -54,9 +78,6 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
         private const val BACKUP_HEADER_EXTRA_GAP_LENGTH = 1L
         private const val BACKUP_HEADER_FORMAT_LENGTH = 4L
         private const val BACKUP_HEADER_VERSION_LENGTH = 2L
-        private const val BACKUP_HEADER_SALT_LENGTH = 16L
-        private const val BACKUP_HEADER_OPSLIMIT_INTERACTIVE_LENGTH = 4L
-        private const val BACKUP_HEADER_MEMLIMIT_INTERACTIVE_LENGTH = 4L
 
         private val extraGap = byteArrayOf(0x00)
 
@@ -65,11 +86,6 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
 
         // Current Wire Backup version
         const val version = "03"
-
-        val BACKUP_FILE_HEADER_LENGTH: Long
-            get() = BACKUP_HEADER_FORMAT_LENGTH + BACKUP_HEADER_EXTRA_GAP_LENGTH + BACKUP_HEADER_VERSION_LENGTH +
-                    crypto_pwhash_SALTBYTES + PWD_HASH_OUTPUT_BYTES.toLong() + BACKUP_HEADER_OPSLIMIT_INTERACTIVE_LENGTH +
-                    BACKUP_HEADER_MEMLIMIT_INTERACTIVE_LENGTH
 
         // ChaCha20 SecretKey used to encrypt derived from the passphrase (salt + provided password)
         internal suspend fun generateChaCha20Key(passphrase: Passphrase, salt: UByteArray): UByteArray {
