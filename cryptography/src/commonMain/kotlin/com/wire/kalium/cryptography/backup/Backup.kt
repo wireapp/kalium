@@ -7,6 +7,7 @@ import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.utils.initializeLibsodiumIfNeeded
 import okio.Buffer
 import okio.BufferedSource
+import okio.IOException
 
 @OptIn(ExperimentalUnsignedTypes::class)
 class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Passphrase) {
@@ -41,7 +42,8 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
         }
 
         companion object {
-
+            
+            @Throws(IOException::class)
             fun BufferedSource.readBackupHeader(): Header {
                 try {
                     // We read the backup header and execute some sanity checks
@@ -63,8 +65,8 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
                         opslimit = readInt(),
                         memlimit = readInt()
                     )
-                } catch (e: Exception) {
-                    throw IllegalStateException("Backup provided can't be read", e)
+                } catch (e: IOException) {
+                    throw IOException("Backup provided can't be read", e)
                 }
             }
         }
