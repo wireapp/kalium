@@ -708,6 +708,24 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversation_WhenChangingNameConversation_ShouldReturnSuccess() = runTest {
+        val newConversationName = "new_name"
+        val (arrange, conversationRepository) = Arrangement()
+            .withConversationRenameApiCall(newConversationName)
+            .withConversationRenameCall(newConversationName)
+            .arrange()
+
+        val result = conversationRepository.changeConversationName(CONVERSATION_ID, newConversationName)
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationName)
+                .with(any(), eq(newConversationName), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -769,10 +787,10 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(mlsClient))
 
-                given(selfTeamIdProvider)
-                    .suspendFunction(selfTeamIdProvider::invoke)
-                    .whenInvoked()
-                    .then { Either.Right(TestTeam.TEAM_ID) }
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(TestTeam.TEAM_ID) }
         }
 
         fun withHasEstablishedMLSGroup(isClient: Boolean) = apply {
@@ -943,6 +961,20 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::getConversationIdsByUserId)
                 .whenInvokedWith(any())
                 .thenReturn(conversationIdEntities)
+        }
+
+        fun withConversationRenameCall(newName: String = "newName") = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateConversationName)
+                .whenInvokedWith(any(), eq(newName), any())
+                .thenReturn(Unit)
+        }
+
+        fun withConversationRenameApiCall(newName: String = "newName") = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateConversationName)
+                .whenInvokedWith(any(), eq(newName))
+                .thenReturn(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
         }
 
         fun arrange() = this to conversationRepository
