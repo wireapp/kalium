@@ -1,19 +1,14 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
-import kotlinx.datetime.Clock
 
 /**
- * Renames a conversation by it's ID.
+ * Renames a conversation by its ID.
  */
 interface RenameConversationUseCase {
     /**
@@ -33,22 +28,8 @@ internal class RenameConversationUseCaseImpl(
             .fold({
                 RenamingResult.Failure(it)
             }, {
-                generateSystemMessage(conversationId, conversationName)
                 RenamingResult.Success
             })
-    }
-
-    private suspend fun generateSystemMessage(conversationId: ConversationId, conversationName: String): Either<CoreFailure, Unit> {
-        val message = Message.System(
-            id = uuid4().toString(),
-            conversationId = conversationId,
-            content = MessageContent.ConversationRenamed(conversationName),
-            date = Clock.System.now().toString(),
-            senderUserId = selfUserId,
-            status = Message.Status.SENT,
-            visibility = Message.Visibility.VISIBLE
-        )
-        return persistMessage(message)
     }
 }
 
