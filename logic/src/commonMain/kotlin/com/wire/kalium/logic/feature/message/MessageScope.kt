@@ -188,6 +188,6 @@ class MessageScope internal constructor(
         )
 
     val persistMigratedMessage: PersistMigratedMessagesUseCase
-        get() = PersistMigratedMessagesUseCaseImpl(applicationMessageHandler, proteusMessageUnpacker)
+        get() = PersistMigratedMessagesUseCaseImpl(applicationMessageHandler, proteusMessageUnpacker, protoContentMapper)
 
 }
