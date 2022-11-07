@@ -12,6 +12,7 @@ import com.wire.kalium.cryptography.backup.Backup
 import com.wire.kalium.cryptography.backup.Backup.Header.Companion.readBackupHeader
 import com.wire.kalium.cryptography.kaliumLogger
 import okio.Buffer
+import okio.BufferedSource
 import okio.Sink
 import okio.Source
 import okio.buffer
@@ -89,11 +90,10 @@ internal class ChaCha20Utils {
         initializeLibsodiumIfNeeded()
         var decryptedDataSize = 0L
         val decryptionBufferedSink = decryptedDataSink.buffer()
-        val encryptedDataBufferedSource = encryptedDataSource.buffer()
 
         try {
             val additionalInformation: UByteArray = Backup.version.encodeToByteArray().toUByteArray()
-            val fileHeaderBuffer = encryptedDataBufferedSource.readBackupHeader()
+            val fileHeaderBuffer = encryptedDataSource.readBackupHeader()
             val salt = fileHeaderBuffer.salt
 
             // Sanity checks
@@ -106,9 +106,10 @@ internal class ChaCha20Utils {
             val key = Backup.generateChaCha20Key(passphrase, salt).toUByteArray()
 
             // ChaCha20 header is needed to validate the encrypted data hasn't been tampered with different authentication
-            val chaChaHeader = encryptedDataBufferedSource.readByteArray(crypto_secretstream_xchacha20poly1305_HEADERBYTES.toLong())
+            val chaChaHeaderBuffer = Buffer()
+            encryptedDataSource.read(chaChaHeaderBuffer, crypto_secretstream_xchacha20poly1305_HEADERBYTES.toLong())
+            val chaChaHeader = chaChaHeaderBuffer.readByteArray()
             val secretStreamState = SecretStream.xChaCha20Poly1305InitPull(key, chaChaHeader.toUByteArray())
-            encryptedDataBufferedSource.buffer.clear()
 
             // Decrypt the backup file data reading it in chunks
             val contentBuffer = Buffer()
@@ -134,7 +135,7 @@ internal class ChaCha20Utils {
         } catch (e: Exception) {
             kaliumLogger.e("There was an error while decrypting the backup data with ChaCha20:\n $e}")
         } finally {
-            encryptedDataBufferedSource.close()
+            encryptedDataSource.close()
             decryptionBufferedSink.close()
         }
         return decryptedDataSize
