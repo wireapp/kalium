@@ -42,7 +42,7 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
         }
 
         companion object {
-            
+
             @Throws(IOException::class)
             fun BufferedSource.readBackupHeader(): Header {
                 try {
