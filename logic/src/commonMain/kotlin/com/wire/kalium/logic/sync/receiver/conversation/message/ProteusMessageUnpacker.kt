@@ -10,6 +10,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -27,6 +28,7 @@ import io.ktor.utils.io.core.toByteArray
 internal interface ProteusMessageUnpacker {
 
     suspend fun unpackProteusMessage(event: Event.Conversation.NewMessage): Either<CoreFailure, MessageUnpackResult>
+    suspend fun unpackMigratedProteusMessage(migratedMessage: MigratedMessage): Either<CoreFailure, MessageUnpackResult>
 
 }
 
@@ -51,7 +53,7 @@ internal class ProteusMessageUnpackerImpl(
                 }
             }
             .map { PlainMessageBlob(it) }
-            .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event) }
+            .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent) }
             .onFailure {
                 when (it) {
                     is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
@@ -69,14 +71,47 @@ internal class ProteusMessageUnpackerImpl(
             }
     }
 
+    override suspend fun unpackMigratedProteusMessage(migratedMessage: MigratedMessage): Either<CoreFailure, MessageUnpackResult> {
+        val decodedContentBytes = Base64.decodeFromBase64(migratedMessage.content.toByteArray())
+        val cryptoSessionId = CryptoSessionId(
+            idMapper.toCryptoQualifiedIDId(migratedMessage.senderUserId),
+            CryptoClientId(migratedMessage.senderClientId.value)
+        )
+        return proteusClientProvider.getOrError()
+            .flatMap {
+                wrapCryptoRequest {
+                    it.decrypt(decodedContentBytes, cryptoSessionId)
+                }
+            }
+            .map { PlainMessageBlob(it) }
+            .flatMap { plainMessageBlob ->
+                getReadableMessageContent(plainMessageBlob, migratedMessage.encryptedProto?.let { EncryptedData(it) })
+            }
+            .onFailure {
+                when (it) {
+                    is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
+                    is ProteusFailure -> logger.e("ProteusFailure when processing message: $it", it.proteusException)
+                    else -> logger.e("Failure when processing message: $it")
+                }
+            }.map { readableContent ->
+                MessageUnpackResult.ApplicationMessage(
+                    conversationId = migratedMessage.conversationId,
+                    timestampIso = migratedMessage.timestampIso,
+                    senderUserId = migratedMessage.senderUserId,
+                    senderClientId = migratedMessage.senderClientId,
+                    content = readableContent
+                )
+            }
+    }
+
     private fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
-        event: Event.Conversation.NewMessage
+        encryptedData: EncryptedData?
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
         is ProtoContent.Readable -> Either.Right(protoContent)
-        is ProtoContent.ExternalMessageInstructions -> event.encryptedExternalContent?.let {
+        is ProtoContent.ExternalMessageInstructions -> encryptedData?.let {
             logger.d("Solving external content '$protoContent', EncryptedData='$it'")
-            solveExternalContentForProteusMessage(protoContent, event.encryptedExternalContent)
+            solveExternalContentForProteusMessage(protoContent, encryptedData)
         } ?: run {
             val rootCause = IllegalArgumentException("Null external content when processing external message instructions.")
             Either.Left(CoreFailure.Unknown(rootCause))
