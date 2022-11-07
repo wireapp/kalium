@@ -49,14 +49,14 @@ class MemberChangeEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
-            .withUpdateMutedStatusSucceeding()
+            .withUpdateMutedStatusLocally(Either.Right(Unit))
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
         eventHandler.handle(event)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMutedStatus)
+            .suspendFunction(arrangement.conversationRepository::updateMutedStatusLocally)
             .with(eq(event.conversationId), any(), any())
             .wasInvoked(exactly = once)
     }
@@ -156,6 +156,13 @@ class MemberChangeEventHandlerTest {
                 .suspendFunction(conversationRepository::updateMutedStatus)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateMutedStatusLocally)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(result)
         }
 
         fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
