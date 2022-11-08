@@ -93,12 +93,17 @@ interface ConversationRepository {
     suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
 
-    suspend fun updateMutedStatus(
+    suspend fun updateMutedStatusLocally(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
         mutedStatusTimestamp: Long
-    ): Either<CoreFailure, Unit>
+    ): Either<StorageFailure, Unit>
 
+    suspend fun updateMutedStatusRemotely(
+        conversationId: ConversationId,
+        mutedStatus: MutedConversationStatus,
+        mutedStatusTimestamp: Long
+    ): Either<NetworkFailure, Unit>
     suspend fun getConversationsForNotifications(): Flow<List<Conversation>>
     suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
@@ -470,26 +475,27 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    /**
-     * Updates the conversation muting options status and the timestamp of the applied change, both remotely and local
-     */
-    override suspend fun updateMutedStatus(
+    override suspend fun updateMutedStatusLocally(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
         mutedStatusTimestamp: Long
-    ): Either<CoreFailure, Unit> = wrapApiRequest {
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        conversationDAO.updateConversationMutedStatus(
+            conversationId = idMapper.toDaoModel(conversationId),
+            mutedStatus = conversationStatusMapper.toMutedStatusDaoModel(mutedStatus),
+            mutedStatusTimestamp = mutedStatusTimestamp
+        )
+    }
+
+    override suspend fun updateMutedStatusRemotely(
+        conversationId: ConversationId,
+        mutedStatus: MutedConversationStatus,
+        mutedStatusTimestamp: Long
+    ): Either<NetworkFailure, Unit> = wrapApiRequest {
         conversationApi.updateConversationMemberState(
             memberUpdateRequest = conversationStatusMapper.toMutedStatusApiModel(mutedStatus, mutedStatusTimestamp),
             conversationId = idMapper.toApiModel(conversationId)
         )
-    }.flatMap {
-        wrapStorageRequest {
-            conversationDAO.updateConversationMutedStatus(
-                conversationId = idMapper.toDaoModel(conversationId),
-                mutedStatus = conversationStatusMapper.toMutedStatusDaoModel(mutedStatus),
-                mutedStatusTimestamp = mutedStatusTimestamp
-            )
-        }
     }
 
     /**
