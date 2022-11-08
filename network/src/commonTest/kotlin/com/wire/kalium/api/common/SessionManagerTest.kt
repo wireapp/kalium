@@ -68,7 +68,8 @@ class SessionManagerTest {
     }
 
     private fun createFakeSessionManager() = object : SessionManager {
-        override fun session(): Pair<SessionDTO, ServerConfigDTO> = testCredentials to TEST_BACKEND_CONFIG
+        override fun session(): SessionDTO = testCredentials
+        override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
 
         override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
             testCredentials

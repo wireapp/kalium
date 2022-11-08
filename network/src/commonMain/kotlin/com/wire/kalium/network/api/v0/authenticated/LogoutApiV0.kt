@@ -22,7 +22,7 @@ internal open class LogoutApiV0 internal constructor(
 
     override suspend fun logout(): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post("$PATH_ACCESS/$PATH_LOGOUT") {
-            header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=${sessionManager.session().first.refreshToken}")
+            header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=${sessionManager.session().refreshToken}")
         }
     }
 
