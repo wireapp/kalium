@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -34,8 +33,8 @@ class RestoreBackupTest : BaseDatabaseTest() {
         userDatabaseDataGenerator = UserDatabaseDataGenerator(
             userDatabaseBuilder = userDatabaseBuilder,
             databasePrefix = "user"
-        )
 
+        )
         // TODO: using UserIDEntity is not correct, because the file will contain another user id
         // which we do want to preserve when restoring from the user database
         deleteDatabase(backupUserIdEntity)
@@ -75,7 +74,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         }
 
     @Test
-    fun givenBackupHasUnqiueConversationsAndSomeOverLappingWithUser_whenRestoringBackup_thenOnlyUnqiueConversationAreRestored() = runTest {
+    fun givenBackupHasUniqueConversationsAndSomeOverlappingWithUser_whenRestoringBackup_thenOnlyUniqueConversationsAreRestored() = runTest {
         // given
         val uniqueUserConversationAmount = 25
         val userConversations = userDatabaseDataGenerator.generateAndInsertConversations(
@@ -451,7 +450,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
 
             val conversationType = ConversationEntity.Type.values()[index % ConversationEntity.Type.values().size]
 
-            val invalidatedConversationType =
+            val sanitizedConversationType =
                 if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
                     ConversationEntity.Type.values()[(index + 1) % ConversationEntity.Type.values().size]
                 else conversationType
@@ -459,7 +458,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             val overlappingConversation = ConversationEntity(
                 id = overLappingId,
                 name = overLappingName,
-                type = invalidatedConversationType,
+                type = sanitizedConversationType,
                 teamId = null,
                 protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                 mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
