@@ -8,7 +8,6 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 
 /**
  * Persist migrated messages from old datasource
