@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.v0.unauthenticated.networkContainer
 
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
@@ -15,11 +16,13 @@ import io.ktor.client.engine.HttpClientEngine
 
 class UnauthenticatedNetworkContainerV0 constructor(
     backendLinks: ServerConfigDTO,
-    engine: HttpClientEngine = defaultHttpEngine(),
+    proxyCredentials: ProxyCredentialsDTO?,
+    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links.proxy, proxyCredentials),
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
         backendLinks,
-        engine
+        proxyCredentials,
+        engine,
     ) {
     override val loginApi: LoginApi get() = LoginApiV0(unauthenticatedNetworkClient)
     override val registerApi: RegisterApi get() = RegisterApiV0(unauthenticatedNetworkClient)

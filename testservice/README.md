@@ -22,6 +22,45 @@ Run fat jar:
 java -jar testservice/build/libs/testservice-*.jar server testservice/config.yml
 ```
 
+## Installation
+
+### Linux
+
+Create log directory and give it the right user permissions:
+```
+mkdir -p /var/log/kalium-testservice
+chmod <user>:<user> /var/log/kalium-testservice
+```
+
+Install systemd service as user:
+```
+mkdir -p ${HOME}/.config/systemd/user/
+```
+
+Create file `${HOME}/.config/systemd/user/kalium-testservice.service` with following content:
+```
+[Unit]
+Description=kalium-testservice
+After=network.target
+[Service]
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+TimeoutStartSec=8
+WorkingDirectory=${WORKSPACE}
+Environment="PATH=/usr/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+ExecStart=java -Djava.library.path=${WORKSPACE}/native/libs/ -jar ${WORKSPACE}/testservice/build/libs/testservice-0.0.1-SNAPSHOT.jar server ${WORKSPACE}/testservice/config.yml
+Restart=always
+[Install]
+WantedBy=default.target
+```
+
+Restart service:
+```
+systemctl --user daemon-reload
+systemctl --user restart kalium-testservice
+```
+
 ## Random number generation
 
 On Linux systems with no peripherals (like mouse, etc.) attached the entropy generation

@@ -3,24 +3,57 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import app.cash.sqldelight.driver.native.wrapConnection
+import co.touchlab.sqliter.DatabaseConfiguration
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 
-internal actual class PlatformDatabaseData(val passphrase: String)
+sealed interface DatabaseCredentials {
+    data class Passphrase(val value: String) : DatabaseCredentials
+    object NotSet : DatabaseCredentials
+}
 
-fun UserDatabaseProvider(
+internal actual class PlatformDatabaseData(val credentials: DatabaseCredentials)
+
+fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: String,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
-    return UserDatabaseProvider(
+    return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(passphrase)
+        PlatformDatabaseData(DatabaseCredentials.Passphrase(passphrase))
+    )
+}
+
+fun inMemoryDatabase(
+    userId: UserIDEntity,
+    dispatcher: CoroutineDispatcher
+): UserDatabaseBuilder {
+    val schema = UserDatabase.Schema
+    val driver = NativeSqliteDriver(
+        DatabaseConfiguration(
+            name = FileNameUtil.userDBName(userId),
+            version = schema.version,
+            inMemory = true,
+            create = { connection ->
+                wrapConnection(connection) { schema.create(it) }
+            },
+            upgrade = { connection, oldVersion, newVersion ->
+                wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
+            }
+        )
+    )
+    return UserDatabaseBuilder(
+        userId,
+        driver,
+        dispatcher,
+        PlatformDatabaseData(DatabaseCredentials.NotSet)
     )
 }
 

@@ -13,33 +13,41 @@ import java.util.Properties
 private const val DATABASE_NAME = "main.db"
 
 internal actual class PlatformDatabaseData(
-    val storePath: File
+    val storePath: File?
 )
 
-fun UserDatabaseProvider(
+fun userDatabaseBuilder(
     userId: UserIDEntity,
     storePath: File,
     dispatcher: CoroutineDispatcher
-): UserDatabaseProvider {
+): UserDatabaseBuilder {
     val databasePath = storePath.resolve(DATABASE_NAME)
     val databaseExists = databasePath.exists()
 
     // Make sure all intermediate directories exist
     storePath.mkdirs()
 
-    val driver: SqlDriver = JdbcSqliteDriver(
-        "jdbc:sqlite:${databasePath.absolutePath}",
-        Properties(1).apply { put("foreign_keys", "true") }
-    )
+    val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}")
 
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
     }
-    return UserDatabaseProvider(userId, driver, dispatcher, PlatformDatabaseData(storePath))
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storePath))
+}
+
+private fun sqlDriver(driverUri: String): SqlDriver = JdbcSqliteDriver(
+    driverUri,
+    Properties(1).apply { put("foreign_keys", "true") }
+)
+
+fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseBuilder {
+    val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY)
+    UserDatabase.Schema.create(driver)
+    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")))
 }
 
 internal actual fun nuke(
     userId: UserIDEntity,
     database: UserDatabase,
     platformDatabaseData: PlatformDatabaseData
-): Boolean = platformDatabaseData.storePath.resolve(DATABASE_NAME).delete()
+): Boolean = platformDatabaseData.storePath?.resolve(DATABASE_NAME)?.delete() ?: false

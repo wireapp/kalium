@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.network.utils.toJsonElement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -36,13 +37,21 @@ data class Connection(
     val fromUser: OtherUser? = null
 ) {
     override fun toString(): String {
-        return "Connection( conversationId: ${conversationId.obfuscateId()}, from:${from.obfuscateId()}," +
-                " lastUpdate:$lastUpdate," +
-                " qualifiedConversationId:${qualifiedConversationId.value.obfuscateId()}" +
-                "@${qualifiedConversationId.domain.obfuscateDomain()}, " +
-                "qualifiedToId:${qualifiedToId.value.obfuscateId()}@${qualifiedToId.domain.obfuscateDomain()}, " +
-                "status:$status, toId:${toId.obfuscateId()} " +
-                "fromUser:${fromUser?.id?.value?.obfuscateId()}@ ${fromUser?.id?.domain?.obfuscateDomain()} "
+        return "${this.toMap().toJsonElement()}"
+    }
+
+    fun toMap(): Map<String, String> {
+        val qId = qualifiedConversationId
+        return mapOf(
+            "conversationId" to conversationId.obfuscateId(),
+            "from" to from.obfuscateId(),
+            "lastUpdate" to lastUpdate,
+            "qualifiedConversationId" to "${qId.value.obfuscateId()}@${qId.domain.obfuscateDomain()}",
+            "qualifiedToId" to "${qualifiedToId.value.obfuscateId()}@${qualifiedToId.domain.obfuscateDomain()}",
+            "status" to status.name,
+            "toId" to toId.obfuscateId(),
+            "fromUser" to "${fromUser?.id?.value?.obfuscateId() ?: "null"}@${fromUser?.id?.domain?.obfuscateDomain() ?: "null"}"
+        )
     }
 }
 

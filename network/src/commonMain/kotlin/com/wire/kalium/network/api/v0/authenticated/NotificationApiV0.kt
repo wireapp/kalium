@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.serialization.decodeFromString
+
 internal open class NotificationApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
     private val authenticatedWebSocketClient: AuthenticatedWebSocketClient,
@@ -115,6 +116,7 @@ internal open class NotificationApiV0 internal constructor(
                     is Frame.Binary -> {
                         // assuming here the byteArray is an ASCII character set
                         val jsonString = io.ktor.utils.io.core.String(frame.data)
+
                         logger.v("Binary frame content: '${deleteSensitiveItemsFromJson(jsonString)}'")
                         val event = KtxSerializer.json.decodeFromString<EventResponse>(jsonString)
                         emit(WebSocketEvent.BinaryPayloadReceived(event))

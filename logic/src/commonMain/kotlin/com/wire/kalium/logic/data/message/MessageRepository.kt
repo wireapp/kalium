@@ -6,6 +6,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -110,6 +111,8 @@ interface MessageRepository {
         oldMessageId: String,
         newMessageId: String
     ): Either<CoreFailure, Unit>
+
+    suspend fun resetAssetProgressStatus()
 
     val extensions: MessageRepositoryExtensions
 }
@@ -319,6 +322,13 @@ class MessageDataSource(
                     throw IllegalStateException("Text message can only be updated on message having TextMessageContent set as content")
                 }
             }
+        }
+    }
+
+    override suspend fun resetAssetProgressStatus() {
+        wrapStorageRequest {
+            messageDAO.resetAssetUploadStatus()
+            messageDAO.resetAssetDownloadStatus()
         }
     }
 }

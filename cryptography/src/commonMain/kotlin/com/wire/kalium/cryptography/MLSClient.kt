@@ -8,17 +8,28 @@ typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
 
-open class CommitBundle(
-    val commit: ByteArray,
-    open val welcome: ByteArray?,
-    val publicGroupState: ByteArray
+enum class PublicGroupStateEncryptionType {
+    PLAINTEXT,
+    JWE_ENCRYPTED
+}
+
+enum class RatchetTreeType {
+    FULL,
+    DELTA,
+    BY_REF
+}
+
+open class PublicGroupStateBundle(
+    var encryptionType: PublicGroupStateEncryptionType,
+    var ratchetTreeType: RatchetTreeType,
+    var payload: ByteArray
 )
 
-class AddMemberCommitBundle(
-    commit: ByteArray,
-    override val welcome: ByteArray,
-    publicGroupState: ByteArray
-) : CommitBundle(commit, welcome, publicGroupState)
+open class CommitBundle(
+    val commit: ByteArray,
+    val welcome: ByteArray?,
+    val publicGroupStateBundle: PublicGroupStateBundle
+)
 
 class DecryptedMessageBundle(
     val message: ByteArray?,
@@ -177,7 +188,7 @@ interface MLSClient {
     fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
-    ): AddMemberCommitBundle?
+    ): CommitBundle?
 
     /**
      * Remove a user/client from an existing MLS group
@@ -192,8 +203,5 @@ interface MLSClient {
         members: List<CryptoQualifiedClientId>
     ): CommitBundle
 }
-
-@JvmInline
-value class MlsDBSecret(val value: String)
 
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

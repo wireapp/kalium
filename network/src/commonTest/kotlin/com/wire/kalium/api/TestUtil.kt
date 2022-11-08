@@ -14,7 +14,8 @@ val TEST_BACKEND_CONFIG =
             "https://test.teams.com",
             "https://test.wire.com",
             "Test Title",
-            false
+            false,
+            null
         ),
         ServerConfigDTO.MetaData(
             false,
@@ -32,7 +33,8 @@ val TEST_BACKEND_LINKS =
         "https://test.teams.com",
         "https://test.wire.com",
         "Test Title",
-        false
+        false,
+        null
     )
 
 val TEST_BACKEND =

@@ -43,6 +43,8 @@ sealed class NetworkFailure : CoreFailure() {
      */
     class NoNetworkConnection(val cause: Throwable?) : NetworkFailure()
 
+    class ProxyError(val cause: Throwable?) : NetworkFailure()
+
     /**
      * Server internal error, or we can't parse the response,
      * or anything API-related that is out of control from the user.
@@ -76,16 +78,23 @@ sealed class StorageFailure : CoreFailure() {
     class Generic(val rootCause: Throwable) : StorageFailure()
 }
 
+private const val SOCKS_EXCEPTION = "socks"
+
 internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<T>): Either<NetworkFailure, T> =
     when (val result = networkCall()) {
         is NetworkResponse.Success -> Either.Right(result.value)
         is NetworkResponse.Error -> {
             kaliumLogger.e(result.kException.stackTraceToString())
             val exception = result.kException
-            if (exception is KaliumException.GenericError && exception.cause is IOException) {
-                Either.Left(NetworkFailure.NoNetworkConnection(exception))
+            // todo SocketException is platform specific so need to wrap it in our own exceptions
+            if (exception.cause?.message?.contains(SOCKS_EXCEPTION, true) == true) {
+                Either.Left(NetworkFailure.ProxyError(exception.cause))
             } else {
-                Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+                if (exception is KaliumException.GenericError && exception.cause is IOException) {
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                } else {
+                    Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
+                }
             }
         }
     }

@@ -11,5 +11,10 @@ class WireRuleSetProvider : RuleSetProvider {
 
     override val ruleSetId: String = "WireRuleSet"
 
-    override fun instance(config: Config) = RuleSet(ruleSetId, listOf(EnforceSerializableFields(config)))
+    override fun instance(config: Config) = RuleSet(
+        ruleSetId, listOf(
+            EnforceSerializableFields(config),
+            DocumentedPublicUseCases(config)
+        )
+    )
 }

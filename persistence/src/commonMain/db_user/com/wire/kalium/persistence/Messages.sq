@@ -41,6 +41,7 @@ CREATE TABLE MessageTextContent (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
       text_body TEXT,
+      quoted_message_id TEXT,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -207,7 +208,19 @@ IFNULL(
         AND Reaction.sender_id = SelfUser.id
     ),
     '[]'
-) AS selfReactionsJson
+) AS selfReactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT(
+        '{"start":' || start || ', "length":' || length ||
+        ', "userId":{"value":"' || replace(substr(user_id, 0, instr(user_id, '@')), '@', '') || '"' ||
+        ',"domain":"' || replace(substr(user_id, instr(user_id, '@')+1, length(user_id)), '@', '') || '"' ||
+        '}' || '}') || ']'
+    FROM MessageMention
+    WHERE MessageMention.message_id = Message.id
+        AND MessageMention.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS mentions
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -219,7 +232,6 @@ LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id 
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN SelfUser;
-
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
 deleteAllMessages:
@@ -428,3 +440,13 @@ WHERE message.conversation_id IS :conversation_id
 AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
 AND message.content_type IN ('TEXT')
 AND message.id IN (SELECT message_id FROM MessageMention WHERE user_id = :self_user_id);
+
+resetAssetUploadStatus:
+UPDATE MessageAssetContent
+SET asset_upload_status = 'FAILED'
+WHERE asset_upload_status = 'IN_PROGRESS';
+
+resetAssetDownloadStatus:
+UPDATE MessageAssetContent
+SET asset_download_status = 'FAILED'
+WHERE asset_download_status = 'IN_PROGRESS';

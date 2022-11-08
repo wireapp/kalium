@@ -13,7 +13,8 @@ import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.Uint8Array
 
-actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClient {
+@Suppress("TooManyFunctions")
+actual class ProteusClientImpl actual constructor(rootDir: String, databaseKey: ProteusDBSecret?) : ProteusClient {
 
     private lateinit var box: Cryptobox
 
@@ -21,12 +22,20 @@ actual class ProteusClientImpl actual constructor(rootDir: String) : ProteusClie
         TODO("Not yet implemented")
     }
 
-    override suspend fun open() {
+    override fun needsMigration(): Boolean {
+        return false
+    }
+
+    override suspend fun openOrCreate() {
         val engine = MemoryEngine()
         engine.init("in-memory").await()
 
         box = Cryptobox(engine)
         box.create().await()
+    }
+
+    override suspend fun openOrError() {
+        openOrCreate() // JS cryptobox is in-memory only
     }
 
     override fun getIdentity(): ByteArray {

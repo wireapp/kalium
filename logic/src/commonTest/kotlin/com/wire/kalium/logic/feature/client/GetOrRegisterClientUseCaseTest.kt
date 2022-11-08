@@ -2,7 +2,6 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
@@ -26,13 +25,12 @@ import kotlin.test.assertIs
 class GetOrRegisterClientUseCaseTest {
 
     @Test
-    fun givenValidClientIsPersisted_whenRegisteringAClient_thenDoNotRegisterNewAndReturnPersistedCLient() = runTest {
+    fun givenValidClientIsRetained_whenRegisteringAClient_thenDoNotRegisterNewAndReturnPersistedClient() = runTest {
         val clientId = ClientId("clientId")
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model")
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
-            .withSelfClientsResult(Either.Right(listOf(client)))
-            .withPersistClientResult(Either.Right(Unit))
+            .withPersistRegisteredClientIdResult(PersistRegisteredClientIdResult.Success(client))
             .arrange()
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
         assertIs<RegisterClientResult.Success>(result)
@@ -44,12 +42,12 @@ class GetOrRegisterClientUseCaseTest {
     }
 
     @Test
-    fun givenInvalidClientIsPersisted_whenRegisteringAClient_thenClearDataAndRegisterNewClient() = runTest {
+    fun givenInvalidClientIsRetained_whenRegisteringAClient_thenClearDataAndRegisterNewClient() = runTest {
         val clientId = ClientId("clientId")
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model")
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
-            .withSelfClientsResult(Either.Right(listOf()))
+            .withPersistRegisteredClientIdResult(PersistRegisteredClientIdResult.Failure.ClientNotRegistered)
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .arrange()
@@ -66,7 +64,7 @@ class GetOrRegisterClientUseCaseTest {
     }
 
     @Test
-    fun givenClientNotPersisted_whenRegisteringAClient_thenRegisterNewClient() = runTest {
+    fun givenClientNotRetained_whenRegisteringAClient_thenRegisterNewClient() = runTest {
         val clientId = ClientId("clientId")
         val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model")
         val (arrangement, useCase) = Arrangement()
@@ -93,28 +91,17 @@ class GetOrRegisterClientUseCaseTest {
         @Mock
         val clearClientDataUseCase = configure(mock(classOf<ClearClientDataUseCase>())) { stubsUnitByDefault = true }
 
+        @Mock
+        val persistRegisteredClientIdUseCase = mock(classOf<PersistRegisteredClientIdUseCase>())
+
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
-            clientRepository, registerClientUseCase, clearClientDataUseCase
+            clientRepository, registerClientUseCase, clearClientDataUseCase, persistRegisteredClientIdUseCase
         )
 
         fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>): Arrangement {
             given(clientRepository)
                 .suspendFunction(clientRepository::retainedClientId)
                 .whenInvoked()
-                .thenReturn(result)
-            return this
-        }
-        fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::selfListOfClients)
-                .whenInvoked()
-                .thenReturn(result)
-            return this
-        }
-        fun withPersistClientResult(result: Either<CoreFailure, Unit>): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::persistClientId)
-                .whenInvokedWith(any())
                 .thenReturn(result)
             return this
         }
@@ -129,6 +116,13 @@ class GetOrRegisterClientUseCaseTest {
             given(clientRepository)
                 .suspendFunction(clientRepository::clearRetainedClientId)
                 .whenInvoked()
+                .thenReturn(result)
+            return this
+        }
+        fun withPersistRegisteredClientIdResult(result: PersistRegisteredClientIdResult): Arrangement {
+            given(persistRegisteredClientIdUseCase)
+                .suspendFunction(persistRegisteredClientIdUseCase::invoke)
+                .whenInvokedWith(any())
                 .thenReturn(result)
             return this
         }

@@ -7,19 +7,22 @@ import com.wire.kalium.logic.data.conversation.ConversationRepositoryTest
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
 
@@ -36,12 +39,12 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        PlainId("someValue"),
         null,
         null,
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
     )
     val SELF = Conversation(
         ID.copy(value = "SELF ID"),
@@ -51,12 +54,12 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        PlainId("someValue"),
         null,
         null,
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -67,12 +70,12 @@ object TestConversation {
         protocolInfo,
         MutedConversationStatus.AllAllowed,
         null,
-        PlainId("someValue"),
         null,
         null,
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
     )
 
     fun GROUP_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationEntity(
@@ -89,6 +92,42 @@ object TestConversation {
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
 
+    fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
+        ENTITY_ID.copy(value = if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"),
+        "convo name",
+        ConversationEntity.Type.GROUP,
+        null,
+        null,
+        ConversationEntity.MutedStatus.ALL_ALLOWED,
+        "teamId",
+        lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = "2022-03-30T15:36:00.000Z",
+        null,
+        null,
+        null,
+        false,
+        null,
+        null,
+        isCreator = 0L,
+        lastNotificationDate = null,
+        unreadMessageCount = 0,
+        unreadMentionsCount = 0,
+        isMember = 1L,
+        protocolInfo = protocolInfo,
+        creatorId = "someValue",
+        accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+        accessRoleList = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+        protocol = ConversationEntity.Protocol.MLS,
+        mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+        mlsEpoch = 0L,
+        mlsGroupId = null,
+        mlsLastKeyingMaterialUpdate = 0L,
+        mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
+        mlsProposalTimer = null,
+        mutedTime = 0L,
+        removedBy = null,
+    )
+
     fun one_on_one(convId: ConversationId) = Conversation(
         convId,
         "ONE_ON_ONE Name",
@@ -97,12 +136,12 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        PlainId("someValue"),
         null,
         null,
         lastReadDate = "2022-03-30T15:36:00.000Z",
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+        creatorId = null
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -120,7 +159,7 @@ object TestConversation {
         "creator",
         ConversationMembersResponse(
             ConversationMemberDTO.Self(MapperProvider.idMapper().toApiModel(TestUser.SELF.id), "wire_admin"),
-            emptyList()
+            listOf(ConversationMemberDTO.Other(MapperProvider.idMapper().toApiModel(TestUser.OTHER.id), conversationRole = "wire_member"))
         ),
         ConversationRepositoryTest.GROUP_NAME,
         NETWORK_ID,
@@ -141,19 +180,25 @@ object TestConversation {
     )
 
     val ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE =
-        ConversationMemberAddedDTO.Changed(
-            "conversation.member-join",
-            qualifiedConversationId = NETWORK_ID,
-            fromUser = NETWORK_USER_ID1,
-            time = "2022-03-30T15:36:00.000Z"
+        ConversationMemberAddedResponse.Changed(
+            EventContentDTO.Conversation.MemberJoinDTO(
+                NETWORK_ID,
+                NETWORK_USER_ID1,
+                "2022-03-30T15:36:00.000Z",
+                ConversationMembers(emptyList(), emptyList()),
+                NETWORK_ID.value
+            )
         )
 
     val REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE =
-        ConversationMemberRemovedDTO.Changed(
-            "conversation.member-leave",
-            qualifiedConversationId = NETWORK_ID,
-            fromUser = NETWORK_USER_ID1,
-            time = "2022-03-30T15:36:00.000Z"
+        ConversationMemberRemovedResponse.Changed(
+            EventContentDTO.Conversation.MemberLeaveDTO(
+                NETWORK_ID,
+                NETWORK_USER_ID1,
+                "2022-03-30T15:36:00.000Z",
+                ConversationUsers(emptyList(), emptyList()),
+                NETWORK_USER_ID1.value
+            )
         )
 
     val GROUP_ID = GroupID("mlsGroupId")
@@ -171,6 +216,41 @@ object TestConversation {
         access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
     )
+    val VIEW_ENTITY = ConversationViewEntity(
+        ENTITY_ID,
+        "convo name",
+        ConversationEntity.Type.SELF,
+        null,
+        null,
+        ConversationEntity.MutedStatus.ALL_ALLOWED,
+        "teamId",
+        lastModifiedDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = "2022-03-30T15:36:00.000Z",
+        null,
+        null,
+        null,
+        false,
+        null,
+        null,
+        isCreator = 0L,
+        lastNotificationDate = null,
+        unreadMessageCount = 0,
+        unreadMentionsCount = 0,
+        isMember = 1L,
+        ConversationEntity.ProtocolInfo.Proteus,
+        creatorId = "someValue",
+        accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+        accessRoleList = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+        protocol = ConversationEntity.Protocol.MLS,
+        mlsCipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+        mlsEpoch = 0L,
+        mlsGroupId = null,
+        mlsLastKeyingMaterialUpdate = 0L,
+        mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
+        mlsProposalTimer = null,
+        mutedTime = 0L,
+        removedBy = null
+    )
 
     val CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
@@ -180,12 +260,12 @@ object TestConversation {
         ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
-        PlainId("someValue"),
         null,
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        lastReadDate = "2022-03-30T15:36:00.000Z"
+        lastReadDate = "2022-03-30T15:36:00.000Z",
+        creatorId = null
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -194,7 +274,7 @@ object TestConversation {
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
         ProtocolInfo.MLS(
-            GroupID("group_id"),
+            GROUP_ID,
             ProtocolInfo.MLS.GroupState.PENDING_JOIN,
             0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
@@ -202,11 +282,11 @@ object TestConversation {
         ),
         MutedConversationStatus.AllAllowed,
         null,
-        PlainId("someValue"),
         null,
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        lastReadDate = "2022-03-30T15:36:00.000Z"
+        lastReadDate = "2022-03-30T15:36:00.000Z",
+        creatorId = null
     )
 }

@@ -24,6 +24,9 @@ android {
     packagingOptions {
         resources.pickFirsts.add("google/protobuf/*.proto")
     }
+    // Run only Instrumented tests. No need to run Unit AND Instrumented
+    // We have JVM tests if we want to run quickly on our machines
+    sourceSets.remove(sourceSets["test"])
 }
 
 kotlin {
@@ -68,6 +71,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(project(":persistence-test"))
                 // coroutines
                 implementation(Dependencies.Coroutines.test)
                 implementation(Dependencies.Test.turbine)
@@ -78,7 +82,11 @@ kotlin {
                 implementation(Dependencies.MultiplatformSettings.test)
             }
         }
-        val jvmMain by getting {}
+        val jvmMain by getting {
+            dependencies {
+	        implementation(Dependencies.Calling.jna)
+            }
+        }
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
@@ -86,7 +94,7 @@ kotlin {
                 implementation(Dependencies.Android.work)
             }
         }
-        val androidTest by getting {
+        val androidAndroidTest by getting {
             dependencies {
                 implementation(Dependencies.AndroidInstruments.androidTestRunner)
                 implementation(Dependencies.AndroidInstruments.androidTestRules)

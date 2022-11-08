@@ -3,8 +3,8 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
@@ -88,13 +88,14 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun addMember(
         request: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedDTO> = try {
-        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
+    ): NetworkResponse<ConversationMemberAddedResponse> = try {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") {
             setBody(request)
         }.let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberAddedDTO.Changed> { response }
-                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberAddedDTO.Unchanged, response)
+                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberJoinDTO> { response }
+                    .mapSuccess { ConversationMemberAddedResponse.Changed(it) }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
         }
@@ -108,13 +109,14 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun removeMember(
         userId: UserId,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberRemovedDTO> = try {
+    ): NetworkResponse<ConversationMemberRemovedResponse> = try {
         httpClient.delete(
             "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
         ).let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<ConversationMemberRemovedDTO.Changed> { response }
-                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberRemovedDTO.Unchanged, response)
+                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberLeaveDTO> { response }
+                    .mapSuccess { ConversationMemberRemovedResponse.Changed(it) }
+                HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberRemovedResponse.Unchanged, response)
                 else -> wrapKaliumResponse { response }
             }
         }

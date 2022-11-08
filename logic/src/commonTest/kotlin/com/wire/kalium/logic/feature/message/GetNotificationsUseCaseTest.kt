@@ -9,13 +9,12 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
-import com.wire.kalium.logic.data.message.MessageMention
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationConversation
@@ -282,7 +281,8 @@ class GetNotificationsUseCaseTest {
                 listOf(
                     entityTextMessage(conversationId, otherUserId(), "0"),
                     entityTextMessage(conversationId, otherUserId(), "1"),
-                    entityTextMessage(conversationId, otherUserId(), "2",
+                    entityTextMessage(
+                        conversationId, otherUserId(), "2",
                         MessageContent.Text(mentionMessageText, listOf(MessageMention(0, 7, MY_ID)))
                     )
                 )
@@ -349,7 +349,8 @@ class GetNotificationsUseCaseTest {
                 listOf(
                     entityTextMessage(conversationId, otherUserId(), "0"),
                     entityTextMessage(conversationId, otherUserId(), "1"),
-                    entityTextMessage(conversationId, otherUserId(), "2",
+                    entityTextMessage(
+                        conversationId, otherUserId(), "2",
                         MessageContent.Text(mentionMessageText, listOf(MessageMention(0, 7, MY_ID)))
                     )
                 )
@@ -539,12 +540,12 @@ class GetNotificationsUseCaseTest {
             ProtocolInfo.Proteus,
             mutedStatus,
             null,
-            PlainId("someValue"),
             TIME_EARLIER,
             TIME_EARLIER,
             lastReadDate = "2000-01-01T12:00:00.000Z",
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
+            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
+            creatorId = null
         )
 
         private fun entityTextMessage(

@@ -1,11 +1,27 @@
 
 <img src="/.idea/icon.png" alt="Kalium Logo" style="max-width:100%;">
 
-# kalium
+# Kalium
 [![JVM & JS Tests](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml/badge.svg)](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml)
 [![codecov](https://codecov.io/gh/wireapp/kalium/branch/develop/graph/badge.svg?token=UWQ1P7DY7I)](https://codecov.io/gh/wireapp/kalium)
 
 ## How to build
+
+### GitHub Packages authentication
+
+In order to download some open source libraries published on GitHub Pacakges, a GitHub Personal Access Token is needed with `packages:read` scope.
+
+1. You can generate one quickly [on this page](https://github.com/settings/tokens/new?description=ReadPackages&scopes=read:packages). Or, for more details, see [Creating a personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
+
+2. In `local.properties` add:
+```
+github.package_registry.user=<github_username>
+github.package_registry.token=<github_token>
+```
+
+Alternatively the credentials are also read from your environment if `GITHUB_USER` and `GITHUB_TOKEN` exists.
+
+> *Note*: See [GitHub packages docs](https://docs.github.com/en/packages/learn-github-packages/introduction-to-github-packages#authenticating-to-github-packages) for more details and.
 
 ### Dependencies
 
@@ -51,8 +67,6 @@ For example, if you want to run the task `jvmTest` and the libraries are in `./n
 ```
 
 #### Running the CLI
-
-Note: Currently the CLI only works on the development or staging environments (see CL-61).
 
 Run the following with the native libs in the
 classpath (-Djava.library.path=/usr/local/lib/:./native/libs):

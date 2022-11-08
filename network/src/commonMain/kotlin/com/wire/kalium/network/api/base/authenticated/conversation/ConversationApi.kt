@@ -28,12 +28,12 @@ interface ConversationApi {
     suspend fun addMember(
         addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedDTO>
+    ): NetworkResponse<ConversationMemberAddedResponse>
 
     suspend fun removeMember(
         userId: UserId,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberRemovedDTO>
+    ): NetworkResponse<ConversationMemberRemovedResponse>
 
     suspend fun updateConversationMemberState(
         memberUpdateRequest: MemberUpdateDTO,

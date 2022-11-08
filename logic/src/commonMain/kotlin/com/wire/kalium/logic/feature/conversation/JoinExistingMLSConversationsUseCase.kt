@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLS.GroupState
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
@@ -24,8 +25,9 @@ import kotlinx.coroutines.async
  * of but has not yet joined the corresponding MLS group.
  */
 class JoinExistingMLSConversationsUseCase(
-    val featureSupport: FeatureSupport,
-    val conversationRepository: ConversationRepository,
+    private val featureSupport: FeatureSupport,
+    private val conversationRepository: ConversationRepository,
+    private val conversationGroupRepository: ConversationGroupRepository,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     private val dispatcher = kaliumDispatcher.io
@@ -53,7 +55,7 @@ class JoinExistingMLSConversationsUseCase(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun requestToJoinMLSGroupAndRetry(conversation: Conversation): Either<CoreFailure, Unit> =
-        conversationRepository.requestToJoinMLSGroup(conversation)
+        conversationGroupRepository.requestToJoinMLSGroup(conversation)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if (failure.kaliumException.isMlsStaleMessage()) {
