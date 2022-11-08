@@ -30,7 +30,6 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -55,7 +54,6 @@ class MessageScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val timeParser: TimeParser,
-    private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
@@ -188,6 +186,6 @@ class MessageScope internal constructor(
         )
 
     val persistMigratedMessage: PersistMigratedMessagesUseCase
-        get() = PersistMigratedMessagesUseCaseImpl(applicationMessageHandler, proteusMessageUnpacker, protoContentMapper)
+        get() = PersistMigratedMessagesUseCaseImpl(applicationMessageHandler, protoContentMapper)
 
 }

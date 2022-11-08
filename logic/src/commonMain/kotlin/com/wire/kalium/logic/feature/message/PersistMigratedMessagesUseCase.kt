@@ -19,7 +19,6 @@ fun interface PersistMigratedMessagesUseCase {
 
 internal class PersistMigratedMessagesUseCaseImpl(
     private val applicationMessageHandler: ApplicationMessageHandler,
-    private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val protoContentMapper: ProtoContentMapper,
 ) : PersistMigratedMessagesUseCase {
     override suspend fun invoke(messages: List<MigratedMessage>): Either<CoreFailure, Unit> {
