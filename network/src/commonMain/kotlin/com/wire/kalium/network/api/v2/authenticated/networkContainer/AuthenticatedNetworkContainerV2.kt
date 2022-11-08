@@ -18,6 +18,7 @@ import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.v2.authenticated.AccessTokenApiV2
 import com.wire.kalium.network.api.v2.authenticated.AssetApiV2
 import com.wire.kalium.network.api.v2.authenticated.CallApiV2
 import com.wire.kalium.network.api.v2.authenticated.ClientApiV2
@@ -48,6 +49,7 @@ internal class AuthenticatedNetworkContainerV2 internal constructor(
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,
+        { httpClient -> AccessTokenApiV2(httpClient) },
         engine
     ) {
 
