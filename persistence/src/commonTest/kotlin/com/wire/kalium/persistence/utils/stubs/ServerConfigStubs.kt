@@ -12,7 +12,8 @@ internal fun newServerConfig(id: Int) = ServerConfigEntity(
         teams = "https://server$id-teamsUrl.de",
         website = "https://server$id-websiteUrl.de",
         title = "server$id-title",
-        isOnPremises = false
+        isOnPremises = false,
+        ServerConfigEntity.Proxy(true, "apiProxy", 8888)
     ),
     ServerConfigEntity.MetaData(
         federation = false,

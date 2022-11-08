@@ -23,6 +23,9 @@ internal object ServerConfigMapper {
         domain: String?,
         commonApiVersion: Int,
         federation: Boolean,
+        proxyApi: String?,
+        proxyNeedsAuthentication: Boolean?,
+        proxyPort: Int?
     ): ServerConfigEntity = ServerConfigEntity(
         id,
         ServerConfigEntity.Links(
@@ -33,7 +36,14 @@ internal object ServerConfigMapper {
             teams = teamsUrl,
             website = websiteUrl,
             title = title,
-            isOnPremises = isOnPremises
+            isOnPremises = isOnPremises,
+            proxy = if (proxyApi != null && proxyNeedsAuthentication != null && proxyPort != null) {
+                ServerConfigEntity.Proxy(
+                    needsAuthentication = proxyNeedsAuthentication,
+                    proxyApi = proxyApi,
+                    proxyPort = proxyPort
+                )
+            } else null
         ),
         ServerConfigEntity.MetaData(
             federation = federation,
@@ -67,7 +77,10 @@ interface ServerConfigurationDAO {
         val isOnPremises: Boolean,
         val federation: Boolean,
         val domain: String?,
-        val commonApiVersion: Int
+        val commonApiVersion: Int,
+        val proxyApi: String?,
+        val proxyNeedsAuthentication: Boolean?,
+        val proxyPort: Int?
     )
 }
 
@@ -94,7 +107,10 @@ internal class ServerConfigurationDAOImpl internal constructor(
             isOnPremises,
             federation,
             domain,
-            commonApiVersion
+            commonApiVersion,
+            proxyApi,
+            proxyNeedsAuthentication,
+            proxyPort
         )
     }
 

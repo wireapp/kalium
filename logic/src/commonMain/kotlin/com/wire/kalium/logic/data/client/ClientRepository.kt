@@ -27,6 +27,7 @@ interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
+
     @Deprecated("this function is not cached use CurrentClientIdProvider")
     suspend fun currentClientId(): Either<CoreFailure, ClientId>
     suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
@@ -43,7 +44,7 @@ interface ClientRepository {
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
 }
 
-@Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME")
+@Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
 class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,

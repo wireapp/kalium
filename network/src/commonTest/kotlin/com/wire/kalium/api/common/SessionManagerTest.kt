@@ -3,8 +3,10 @@ package com.wire.kalium.api.common
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -39,7 +41,7 @@ class SessionManagerTest {
         }
 
         val client = HttpClient(mockEngine) {
-            installAuth(sessionManager)
+            installAuth(sessionManager) { httpClient -> AccessTokenApiV0(httpClient) }
             expectSuccess = false
         }
 
@@ -57,7 +59,7 @@ class SessionManagerTest {
         }
 
         val client = HttpClient(mockEngine) {
-            installAuth(sessionManager)
+            installAuth(sessionManager) { httpClient -> AccessTokenApiV0(httpClient) }
             expectSuccess = false
         }
 
@@ -75,5 +77,7 @@ class SessionManagerTest {
         override suspend fun onSessionExpired() = TODO("Not yet implemented")
 
         override suspend fun onClientRemoved() = TODO("Not yet implemented")
+        override fun proxyCredentials(): ProxyCredentialsDTO? = ProxyCredentialsDTO("username", "password")
+
     }
 }
