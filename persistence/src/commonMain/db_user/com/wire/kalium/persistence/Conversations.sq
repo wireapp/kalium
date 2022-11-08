@@ -129,11 +129,15 @@ CASE
     ELSE 0
     END AS isCreator,
 Conversation.last_notified_message_date AS lastNotifiedMessageDate,
-(SELECT COUNT() FROM Message AS message
-    WHERE message.conversation_id = Conversation.qualified_id
-    AND (DateTime(message.date) >  DateTime(Conversation.last_read_date))
-    AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL') AND message.visibility IS 'VISIBLE')
-    AS unreadMessageCount,
+'{' || IFNULL(
+    (SELECT GROUP_CONCAT( singleUnreadContentTypeCount ) singleUnreadContentTypeCount FROM
+        (SELECT ('"' || message.content_type || '":' || Count(message.content_type)) singleUnreadContentTypeCount FROM Message AS message
+            WHERE message.conversation_id = Conversation.qualified_id
+            AND (DateTime(message.date) > DateTime(Conversation.last_read_date))
+            AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL')
+            AND message.visibility IS 'VISIBLE' GROUP BY message.content_type ) ),
+     '')
+|| '}' AS unreadContentTypeJson,
 (SELECT COUNT() FROM MessageMention
     WHERE message_id IN (SELECT Message.id FROM Message WHERE Message.conversation_id = Conversation.qualified_id
                  AND (DateTime(Message.date) >  DateTime(Conversation.last_read_date))

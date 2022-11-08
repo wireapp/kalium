@@ -1,6 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.persistence.dao.unread_content.UnreadContentCountEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -83,7 +84,7 @@ data class ConversationViewEntity(
     val otherUserId: QualifiedIDEntity?,
     val isCreator: Long,
     val lastNotificationDate: String?,
-    val unreadMessageCount: Long,
+    val unreadContentCountEntity: UnreadContentCountEntity,
     val unreadMentionsCount: Long,
     val isMember: Long,
     val protocolInfo: ConversationEntity.ProtocolInfo,

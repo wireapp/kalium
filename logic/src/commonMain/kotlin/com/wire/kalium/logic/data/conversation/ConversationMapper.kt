@@ -50,7 +50,7 @@ interface ConversationMapper {
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
-        unreadMessageCount: Long,
+        unreadMessageCount: Int,
         unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne
@@ -141,7 +141,7 @@ internal class ConversationMapperImpl(
                     ),
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                    unreadMessagesCount = unreadMessageCount,
+                    unreadMessagesCount = unreadContentCountEntity.values.sum(),
                     unreadMentionsCount = unreadMentionsCount,
                     lastUnreadMessage = null
                 )
@@ -152,7 +152,7 @@ internal class ConversationMapperImpl(
                     conversation = fromDaoModel(daoModel),
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     hasOngoingCall = callStatus != null, // todo: we can do better!
-                    unreadMessagesCount = unreadMessageCount,
+                    unreadMessagesCount = unreadContentCountEntity.values.sum(),
                     unreadMentionsCount = unreadMentionsCount,
                     lastUnreadMessage = null,
                     isSelfUserMember = isMember == 1L,
@@ -256,7 +256,7 @@ internal class ConversationMapperImpl(
         conversation: Conversation,
         otherUser: OtherUser,
         selfUser: SelfUser,
-        unreadMessageCount: Long,
+        unreadMessageCount: Int,
         unreadMentionsCount: Long,
         lastUnreadMessage: Message?
     ): ConversationDetails.OneOne {

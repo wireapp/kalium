@@ -488,7 +488,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenMessagesArrivedAfterTheUserSawConversation_WhenGettingUnreadMessageCount_ThenReturnTheExpectedCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
-        val selfUserId = QualifiedIDEntity("1", "domain")
         conversationDAO.insertConversation(
             newConversationEntity(
                 id = conversationId,
@@ -497,13 +496,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
 
         userDAO.insertUser(user1)
+        val readMessagesCount = 3
+        val unreadMessagesCount = 2
 
         val message = buildList {
             // add 9 Message before the lastReadDate
-            repeat(9) {
+            repeat(readMessagesCount) {
                 add(
                     newRegularMessageEntity(
-                        id = it.toString(),
+                        id = "read$it",
                         date = "2000-01-01T11:0$it:00.000Z",
                         conversationId = conversationId,
                         senderUserId = user1.id,
@@ -511,10 +512,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 )
             }
             // add 9 Message past the lastReadDate
-            repeat(9) {
+            repeat(unreadMessagesCount) {
                 add(
                     newRegularMessageEntity(
-                        id = "${it + 9}",
+                        id = "unread$it",
                         date = "2000-01-01T13:0$it:00.000Z",
                         conversationId = conversationId,
                         senderUserId = user1.id,
@@ -527,9 +528,65 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         launch(UnconfinedTestDispatcher(testScheduler)) {
             // when
-            messageDAO.observeUnreadMessageCount(conversationId).test {
+            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
+                val conversation = awaitItem()
+                assertNotNull(conversation)
                 // then
-                assertEquals(9L, awaitItem())
+                assertEquals(unreadMessagesCount, conversation.unreadContentCountEntity.values.sum())
+            }
+        }
+    }
+
+    @Test
+    fun givenDifferentUnreadMessageContentTypes_WhenGettingUnreadMessageCount_ThenSystemMessagesShouldBeNotCounted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(user1)
+
+        val systemMessagesCount = 3
+        val regularMessagesCount = 2
+
+        val message = buildList {
+            // add 5 Message past the lastReadDate
+            repeat(systemMessagesCount) {
+                add(
+                    newSystemMessageEntity(
+                        id = "system$it",
+                        date = "2000-01-01T13:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = user1.id,
+                    )
+                )
+            }
+            // add 9 Message past the lastReadDate
+            repeat(regularMessagesCount) {
+                add(
+                    newRegularMessageEntity(
+                        id = "regular$it",
+                        date = "2000-01-01T13:0$it:00.000Z",
+                        conversationId = conversationId,
+                        senderUserId = user1.id,
+                    )
+                )
+            }
+        }
+
+        messageDAO.insertMessages(message)
+
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            // when
+            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
+                val conversation = awaitItem()
+                assertNotNull(conversation)
+                // then
+                assertEquals(regularMessagesCount, conversation.unreadContentCountEntity.values.sum())
             }
         }
     }
@@ -538,7 +595,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenMessagesArrivedBeforeUserSawTheConversation_whenGettingUnreadMessageCount_thenReturnZeroUnreadCount() = runTest {
         // given
         val conversationId = QualifiedIDEntity("1", "someDomain")
-        val selfUserId = QualifiedIDEntity("1", "domain")
 
         conversationDAO.insertConversation(
             newConversationEntity(
@@ -566,9 +622,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         launch(UnconfinedTestDispatcher(testScheduler)) {
             // when
-            messageDAO.observeUnreadMessageCount(conversationId).test {
+            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
+                val conversation = awaitItem()
+                assertNotNull(conversation)
                 // then
-                assertEquals(0L, awaitItem())
+                assertEquals(0, conversation.unreadContentCountEntity.values.sum())
             }
         }
     }
@@ -997,7 +1055,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsLastKeyingMaterialUpdate = 0L
             mlsGroupState = ConversationEntity.GroupState.ESTABLISHED
         }
-
         return ConversationViewEntity(
             id = id,
             name = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.name else name,
@@ -1016,7 +1073,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             otherUserId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.id else null,
             isCreator = 0L,
             lastNotificationDate = lastNotificationDate,
-            unreadMessageCount = 0,
             unreadMentionsCount = 0,
             isMember = 1L,
             protocolInfo = protocolInfo,
@@ -1031,6 +1087,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             mlsProposalTimer = null,
             mutedTime = mutedTime,
             creatorId = creatorId,
+            unreadContentCountEntity = emptyMap()
         )
     }
 

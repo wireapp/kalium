@@ -7,6 +7,7 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.dao.unread_content.UnreadContentMapper
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -19,6 +20,7 @@ import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
     fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
+        val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
         ConversationViewEntity(
             id = qualifiedId,
             name = name,
@@ -56,14 +58,15 @@ private class ConversationMapper {
             userDeleted = userDeleted,
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
-            unreadMessageCount = unreadMessageCount,
             unreadMentionsCount = unreadMentionsCount,
             isMember = isMember,
+            unreadContentCountEntity = unreadContentType
         )
     }
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
         return conversation?.run {
+            val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
             ConversationViewEntity(
                 id = qualifiedId,
                 name = name,
@@ -101,9 +104,9 @@ private class ConversationMapper {
                 userDeleted = userDeleted,
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
-                unreadMessageCount = unreadMessageCount,
                 unreadMentionsCount = unreadMentionsCount,
                 isMember = isMember,
+                unreadContentCountEntity = unreadContentType
             )
         }
     }
