@@ -242,12 +242,12 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenAWantToMuteAConversation_whenCallingUpdateMutedStatus_thenShouldDelegateCallToConversationApi() = runTest {
+    fun whenCallingUpdateMutedStatusRemotly_thenShouldDelegateCallToConversationApi() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withUpdateConversationMemberStateResult(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
             .arrange()
 
-        conversationRepository.updateMutedStatus(
+        conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
             Clock.System.now().toEpochMilliseconds()
@@ -261,7 +261,30 @@ class ConversationRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateConversationMutedStatus)
             .with(any(), any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun whenCallingUpdateMutedStatusLocally_thenShouldUpdateTheDatabase() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withUpdateConversationMemberStateResult(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+            .arrange()
+
+        conversationRepository.updateMutedStatusLocally(
+            TestConversation.ID,
+            MutedConversationStatus.AllMuted,
+            Clock.System.now().toEpochMilliseconds()
+        )
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateConversationMutedStatus)
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::updateConversationMemberState)
+            .with(any(), any())
+            .wasNotInvoked()
     }
 
     @Test
