@@ -60,10 +60,14 @@ class SessionManagerImpl internal constructor(
                 tokenType = newAccessTokeDTO.tokenType,
                 refreshToken = newRefreshTokenDTO?.value
             )
+        }.map {
+            sessionMapper.fromEntityToSessionDTO(it)
+        }.onSuccess {
+            session.set(it)
         }.fold({
             TODO("IMPORTANT! Not yet implemented")
         }, {
-            sessionMapper.fromEntityToSessionDTO(it)
+            it
         })
 
     override suspend fun onSessionExpired() {
