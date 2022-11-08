@@ -10,7 +10,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -28,7 +27,6 @@ import io.ktor.utils.io.core.toByteArray
 internal interface ProteusMessageUnpacker {
 
     suspend fun unpackProteusMessage(event: Event.Conversation.NewMessage): Either<CoreFailure, MessageUnpackResult>
-    suspend fun unpackMigratedProteusMessage(migratedMessage: MigratedMessage): Either<CoreFailure, MessageUnpackResult>
 
 }
 
@@ -66,39 +64,6 @@ internal class ProteusMessageUnpackerImpl(
                     timestampIso = event.timestampIso,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
-                    content = readableContent
-                )
-            }
-    }
-
-    override suspend fun unpackMigratedProteusMessage(migratedMessage: MigratedMessage): Either<CoreFailure, MessageUnpackResult> {
-        val decodedContentBytes = Base64.decodeFromBase64(migratedMessage.content.toByteArray())
-        val cryptoSessionId = CryptoSessionId(
-            idMapper.toCryptoQualifiedIDId(migratedMessage.senderUserId),
-            CryptoClientId(migratedMessage.senderClientId.value)
-        )
-        return proteusClientProvider.getOrError()
-            .flatMap {
-                wrapCryptoRequest {
-                    it.decrypt(decodedContentBytes, cryptoSessionId)
-                }
-            }
-            .map { PlainMessageBlob(it) }
-            .flatMap { plainMessageBlob ->
-                getReadableMessageContent(plainMessageBlob, migratedMessage.encryptedProto?.let { EncryptedData(it) })
-            }
-            .onFailure {
-                when (it) {
-                    is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
-                    is ProteusFailure -> logger.e("ProteusFailure when processing message: $it", it.proteusException)
-                    else -> logger.e("Failure when processing message: $it")
-                }
-            }.map { readableContent ->
-                MessageUnpackResult.ApplicationMessage(
-                    conversationId = migratedMessage.conversationId,
-                    timestampIso = migratedMessage.timestampIso,
-                    senderUserId = migratedMessage.senderUserId,
-                    senderClientId = migratedMessage.senderClientId,
                     content = readableContent
                 )
             }
