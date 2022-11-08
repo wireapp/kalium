@@ -49,7 +49,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
         bearer {
 
             loadTokens {
-                val session  = sessionManager.session()
+                val session = sessionManager.session()
                 BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
             }
 
