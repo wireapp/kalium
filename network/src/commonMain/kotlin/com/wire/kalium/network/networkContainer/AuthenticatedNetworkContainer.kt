@@ -2,6 +2,7 @@ package com.wire.kalium.network.networkContainer
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
@@ -25,6 +26,7 @@ import com.wire.kalium.network.api.v3.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 
 @Suppress("MagicNumber")
@@ -101,20 +103,22 @@ internal interface AuthenticatedHttpClientProvider {
 
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
-    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.session().second.links.proxy),
+    private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
+    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.session().second.links.proxy)
 ) : AuthenticatedHttpClientProvider {
     override val backendConfig = sessionManager.session().second.links
 
     override val networkClient by lazy {
         AuthenticatedNetworkClient(
             engine,
-            sessionManager
+            sessionManager,
+            accessTokenApi
         )
     }
     override val websocketClient by lazy {
-        AuthenticatedWebSocketClient(engine, sessionManager)
+        AuthenticatedWebSocketClient(engine, sessionManager, accessTokenApi)
     }
     override val networkClientWithoutCompression by lazy {
-        AuthenticatedNetworkClient(engine, sessionManager, installCompression = false)
+        AuthenticatedNetworkClient(engine, sessionManager, accessTokenApi, installCompression = false)
     }
 }
