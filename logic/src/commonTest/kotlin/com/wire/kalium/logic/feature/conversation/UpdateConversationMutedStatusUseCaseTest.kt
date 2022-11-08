@@ -45,7 +45,6 @@ class UpdateConversationMutedStatusUseCaseTest {
         val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Success::class, result::class)
 
-
         verify(conversationRepository)
             .suspendFunction(conversationRepository::updateMutedStatusRemotely)
             .with(any(), eq(MutedConversationStatus.AllMuted), any())
