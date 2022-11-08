@@ -380,20 +380,20 @@ class RestoreBackupTest : BaseDatabaseTest() {
 
         // then
         val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
-        assertEquals(restoredUsers,  uniqueUsers + uniqueBackupUsers)
+        assertEquals(restoredUsers, uniqueUsers + uniqueBackupUsers)
         assertEquals(uniqueUsersAmount + uniqueBackupUsersAmount, restoredUsers.size)
     }
 
     @Test
     fun givenBackupHasAssetsButUserNot_whenRestoringBackup_thenBackupAssetsAreRestored() = runTest {
         // given
-        val assetsToBackup = backupDatabaseDataGenerator.generateAndInsertAssets(10)
+        val assetsToRestore = backupDatabaseDataGenerator.generateAndInsertAssets(10)
 
         // when
         userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
-        assetsToBackup.forEach { restoredAssetEntity ->
+        assetsToRestore.forEach { restoredAssetEntity ->
             val asset = userDatabaseBuilder.assetDAO.getAssetByKey(restoredAssetEntity.key).first()
             assertTrue(asset != null)
             assertEquals(asset, restoredAssetEntity)
@@ -420,18 +420,18 @@ class RestoreBackupTest : BaseDatabaseTest() {
     @Test
     fun givenUserHasUniqueAssetsAlongWithBackup_whenRestoringBackup_thenThoseAssetsAreRestored() = runTest {
         // given
-        val assetsToRestore = userDatabaseDataGenerator.generateAndInsertAssets(10)
+        val currentUserAssets = userDatabaseDataGenerator.generateAndInsertAssets(10)
         val backupAssets = backupDatabaseDataGenerator.generateAndInsertAssets(10)
 
         // when
         userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
-        assetsToRestore.forEach { restoredAssetEntity ->
-            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(restoredAssetEntity.key).first()
+        currentUserAssets.forEach { currentUserAsset ->
+            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(currentUserAsset.key).first()
 
             assertTrue(asset != null)
-            assertEquals(asset, restoredAssetEntity)
+            assertEquals(asset, currentUserAsset)
         }
         backupAssets.forEach { backupAssetEntity ->
             val asset = userDatabaseBuilder.assetDAO.getAssetByKey(backupAssetEntity.key).first()
