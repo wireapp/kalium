@@ -766,7 +766,6 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             timeParser,
-            proteusUnpacker,
             applicationMessageHandler,
             this
         )
