@@ -228,6 +228,23 @@ class ConversationApiV0Test : ApiTest {
         assertTrue(response.isSuccessful())
     }
 
+    @Test
+    fun whenUpdatingConversationName_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val networkClient = mockAuthenticatedNetworkClient(
+            "", statusCode = HttpStatusCode.NoContent,
+            assertion = {
+                assertPut()
+                assertPathEqual("/conversations/conversationDomain/conversationId/name")
+            }
+        )
+
+        val conversationApi = ConversationApiV0(networkClient)
+        val response = conversationApi.updateConversationName(conversationId, "new_name")
+
+        assertTrue(response.isSuccessful())
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_CONVERSATIONS_LIST_V2 = "/conversations/list/v2"
