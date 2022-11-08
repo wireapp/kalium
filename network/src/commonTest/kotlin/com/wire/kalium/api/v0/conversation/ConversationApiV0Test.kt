@@ -147,7 +147,7 @@ class ConversationApiV0Test : ApiTest {
             setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf()
         )
         val networkClient = mockAuthenticatedNetworkClient(
-            EventContentDTOJson.valid.rawJson, statusCode = HttpStatusCode.OK
+            EventContentDTOJson.validAccessUpdate.rawJson, statusCode = HttpStatusCode.OK
         )
 
         val conversationApi = ConversationApiV0(networkClient)
@@ -196,14 +196,53 @@ class ConversationApiV0Test : ApiTest {
         val request = AddConversationMembersRequest(listOf(userId), "Member")
 
         val networkClient = mockAuthenticatedNetworkClient(
-            "", statusCode = HttpStatusCode.OK,
+            EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK,
             assertion = {
                 assertPost()
                 assertPathEqual("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2")
             }
         )
         val conversationApi = ConversationApiV0(networkClient)
-        conversationApi.addMember(request, conversationId)
+        val response = conversationApi.addMember(request, conversationId)
+
+        assertTrue(response.isSuccessful())
+    }
+
+    @Test
+    fun whenRemovingMemberFromGroup_thenTheMemberShouldBeRemovedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val userId = UserId("userId", "userDomain")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.validMemberLeave.rawJson, statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertDelete()
+                assertPathEqual(
+                    "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
+                )
+            }
+        )
+        val conversationApi = ConversationApiV0(networkClient)
+        val response = conversationApi.removeMember(userId, conversationId)
+
+        assertTrue(response.isSuccessful())
+    }
+
+    @Test
+    fun whenUpdatingConversationName_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val networkClient = mockAuthenticatedNetworkClient(
+            "", statusCode = HttpStatusCode.NoContent,
+            assertion = {
+                assertPut()
+                assertPathEqual("/conversations/conversationDomain/conversationId/name")
+            }
+        )
+
+        val conversationApi = ConversationApiV0(networkClient)
+        val response = conversationApi.updateConversationName(conversationId, "new_name")
+
+        assertTrue(response.isSuccessful())
     }
 
     private companion object {

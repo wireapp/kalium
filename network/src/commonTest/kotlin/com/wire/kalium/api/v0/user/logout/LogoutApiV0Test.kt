@@ -28,7 +28,7 @@ class LogoutApiV0Test : ApiTest {
                     assertPost()
                     assertNoQueryParams()
                     assertPathEqual(PATH_LOGOUT)
-                    assertHeaderEqual(HttpHeaders.Cookie, "zuid=${sessionManager.session().first.refreshToken}")
+                    assertHeaderEqual(HttpHeaders.Cookie, "zuid=${sessionManager.session().refreshToken}")
                 }
             )
             val logout: LogoutApi = LogoutApiV0(networkClient, sessionManager)

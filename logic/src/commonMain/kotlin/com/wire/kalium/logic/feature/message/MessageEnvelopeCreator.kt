@@ -51,7 +51,6 @@ class MessageEnvelopeCreatorImpl(
         message: Message.Regular
     ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
-        ProtoContent.Readable(message.id, message.content)
 
         val actualMessageContent = ProtoContent.Readable(message.id, message.content)
         val (encodedContent, externalDataBlob) = getContentAndExternalData(actualMessageContent, recipients)

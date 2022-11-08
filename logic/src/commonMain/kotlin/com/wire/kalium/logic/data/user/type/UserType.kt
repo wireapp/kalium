@@ -6,6 +6,7 @@ enum class UserType {
     INTERNAL,
 
     ADMIN,
+
     // TODO add documentation
     OWNER,
 
@@ -38,3 +39,6 @@ enum class UserType {
      */
     NONE;
 }
+
+fun UserType.isTeammate(): Boolean =
+    this in listOf(UserType.INTERNAL, UserType.ADMIN, UserType.OWNER, UserType.EXTERNAL, UserType.SERVICE)

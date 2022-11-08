@@ -2,9 +2,9 @@
 
 package com.wire.kalium.network.exceptions
 
-import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
@@ -64,6 +64,10 @@ sealed class SendMessageError : KaliumException.FeatureError() {
 
 data class ProteusClientsChangedError(
     val errorBody: QualifiedSendMessageResponse.MissingDevicesResponse
+) : KaliumException.FeatureError()
+
+data class APINotSupported(
+    val errorBody: String
 ) : KaliumException.FeatureError()
 
 fun KaliumException.InvalidRequestError.isInvalidCredentials(): Boolean {

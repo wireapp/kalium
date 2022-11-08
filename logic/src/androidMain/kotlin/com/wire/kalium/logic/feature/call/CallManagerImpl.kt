@@ -60,7 +60,7 @@ import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 
 @Suppress("LongParameterList", "TooManyFunctions")
-actual class CallManagerImpl internal constructor(
+class CallManagerImpl internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,

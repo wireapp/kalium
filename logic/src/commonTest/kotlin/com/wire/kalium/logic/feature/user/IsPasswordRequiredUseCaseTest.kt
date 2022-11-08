@@ -46,7 +46,7 @@ class IsPasswordRequiredUseCaseTest {
             .arrange()
 
         isPasswordRequired.eitherInvoke().shouldSucceed {
-            assertTrue(it)
+            assertFalse(it)
         }
 
         verify(arrangement.sessionRepository)
@@ -61,7 +61,7 @@ class IsPasswordRequiredUseCaseTest {
             .arrange()
 
         isPasswordRequired.eitherInvoke().shouldSucceed {
-            assertFalse(it)
+            assertTrue(it)
         }
 
         verify(arrangement.sessionRepository)

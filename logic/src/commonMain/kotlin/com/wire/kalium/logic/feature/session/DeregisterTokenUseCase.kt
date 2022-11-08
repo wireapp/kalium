@@ -26,7 +26,6 @@ class DeregisterTokenUseCaseImpl(
     private val notificationTokenRepository: NotificationTokenRepository
 ) : DeregisterTokenUseCase {
 
-
     override suspend operator fun invoke(): DeregisterTokenUseCase.Result =
         notificationTokenRepository.getNotificationToken().flatMap { notiToken ->
             clientRepository.deregisterToken(notiToken.token)

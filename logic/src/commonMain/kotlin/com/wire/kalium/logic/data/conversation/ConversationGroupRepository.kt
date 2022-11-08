@@ -50,7 +50,8 @@ internal class ConversationGroupRepositoryImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(),
-    private val memberMapper: MemberMapper = MapperProvider.memberMapper()
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
+    private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
 ) : ConversationGroupRepository {
 
     override suspend fun requestToJoinMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
@@ -63,6 +64,7 @@ internal class ConversationGroupRepositoryImpl(
             Either.Right(Unit)
         }
     }
+
     override suspend fun createGroupConversation(
         name: String?,
         usersList: List<UserId>,
@@ -74,25 +76,33 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.createNewConversation(
                 conversationMapper.toApiModel(name, usersList, selfUser.teamId?.value, options)
             )
-        }.flatMap { conversationResponse ->
-            val teamId = selfUser.teamId
-            val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-                conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, teamId
-            )
-            val conversation = conversationMapper.fromDaoModel(conversationEntity)
-
-            wrapStorageRequest {
-                conversationDAO.insertConversation(conversationEntity)
-            }.flatMap {
-                when (conversation.protocol) {
-                    is Conversation.ProtocolInfo.Proteus ->
-                        persistMembersFromConversationResponse(conversationResponse)
-                    is Conversation.ProtocolInfo.MLS ->
-                        persistMembersFromConversationResponse(conversationResponse)
-                            .flatMap { mlsConversationRepository.establishMLSGroup(conversation.protocol.groupId, usersList) }
-                }
-            }.map { conversation }
         }
+            .flatMap { conversationResponse ->
+                val teamId = selfUser.teamId
+                val conversationEntity = conversationMapper.fromApiModelToDaoModel(
+                    conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, teamId
+                )
+                val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
+
+                wrapStorageRequest {
+                    conversationDAO.insertConversation(conversationEntity)
+                }.flatMap {
+                    when (protocol) {
+                        is Conversation.ProtocolInfo.Proteus ->
+                            persistMembersFromConversationResponse(conversationResponse)
+
+                        is Conversation.ProtocolInfo.MLS ->
+                            persistMembersFromConversationResponse(conversationResponse)
+                                .flatMap { mlsConversationRepository.establishMLSGroup(protocol.groupId, usersList) }
+                    }
+                }.flatMap {
+                    wrapStorageRequest {
+                        conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
+                            conversationMapper.fromDaoModel(it)
+                        }
+                    }
+                }
+            }
     }
 
     private suspend fun persistMembersFromConversationResponse(
@@ -117,6 +127,7 @@ internal class ConversationGroupRepositoryImpl(
             when (conversation.protocol) {
                 is Conversation.ProtocolInfo.Proteus ->
                     addMembersToCloudAndStorage(userIdList, conversationId)
+
                 is Conversation.ProtocolInfo.MLS -> {
                     mlsConversationRepository.addMemberToMLSGroup(conversation.protocol.groupId, userIdList)
                 }

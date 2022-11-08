@@ -1,6 +1,6 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.framework.TestConversation
@@ -33,7 +33,12 @@ class UpdateConversationMutedStatusUseCaseTest {
     fun givenAConversationId_whenInvokingAMutedStatusChange_thenShouldDelegateTheCallAndReturnASuccessResult() = runTest {
         val conversationId = TestConversation.ID
         given(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatus)
+            .suspendFunction(conversationRepository::updateMutedStatusRemotely)
+            .whenInvokedWith(any(), eq(MutedConversationStatus.AllMuted), any())
+            .thenReturn(Either.Right(Unit))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateMutedStatusLocally)
             .whenInvokedWith(any(), eq(MutedConversationStatus.AllMuted), any())
             .thenReturn(Either.Right(Unit))
 
@@ -41,27 +46,37 @@ class UpdateConversationMutedStatusUseCaseTest {
         assertEquals(ConversationUpdateStatusResult.Success::class, result::class)
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatus)
+            .suspendFunction(conversationRepository::updateMutedStatusRemotely)
             .with(any(), eq(MutedConversationStatus.AllMuted), any())
             .wasInvoked(exactly = once)
 
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::updateMutedStatusLocally)
+            .with(any(), eq(MutedConversationStatus.AllMuted), any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAConversationId_whenInvokingAMutedStatusChangeAndFails_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
         val conversationId = TestConversation.ID
+
         given(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatus)
+            .suspendFunction(conversationRepository::updateMutedStatusRemotely)
             .whenInvokedWith(any(), eq(MutedConversationStatus.AllMuted), any())
-            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+            .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error"))))
 
         val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Failure::class, result::class)
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatus)
+            .suspendFunction(conversationRepository::updateMutedStatusRemotely)
             .with(any(), eq(MutedConversationStatus.AllMuted), any())
             .wasInvoked(exactly = once)
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::updateMutedStatusLocally)
+            .with(any(), eq(MutedConversationStatus.AllMuted), any())
+            .wasNotInvoked()
 
     }
 

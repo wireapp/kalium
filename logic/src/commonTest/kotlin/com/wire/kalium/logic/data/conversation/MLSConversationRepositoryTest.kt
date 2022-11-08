@@ -1,8 +1,10 @@
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.cryptography.AddMemberCommitBundle
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.PublicGroupStateBundle
+import com.wire.kalium.cryptography.PublicGroupStateEncryptionType
+import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
@@ -20,7 +22,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
@@ -30,6 +31,7 @@ import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationDAO
@@ -691,7 +693,7 @@ class MLSConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationByGroupID)
                 .whenInvokedWith(anything())
-                .then { flowOf(TestConversation.ENTITY) }
+                .then { flowOf(TestConversation.VIEW_ENTITY) }
         }
 
         fun withGetConversationByGroupIdFailing() = apply {
@@ -740,7 +742,7 @@ class MLSConversationRepositoryTest {
             given(mlsClient)
                 .function(mlsClient::addMember)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(ADD_MEMBER_COMMIT_BUNDLE)
+                .thenReturn(COMMIT_BUNDLE)
         }
 
         fun withJoinConversationSuccessful() = apply {
@@ -891,9 +893,12 @@ class MLSConversationRepositoryTest {
             )
             val WELCOME = "welcome".encodeToByteArray()
             val COMMIT = "commit".encodeToByteArray()
-            val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
+            val PUBLIC_GROUP_STATE = PublicGroupStateBundle(
+                PublicGroupStateEncryptionType.PLAINTEXT,
+                RatchetTreeType.FULL,
+                "public_group_state".encodeToByteArray()
+            )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
-            val ADD_MEMBER_COMMIT_BUNDLE = AddMemberCommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,

@@ -11,9 +11,7 @@ import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.encodedPath
 
-fun HttpClientConfig<*>.installWireDefaultRequest(
-    serverConfigDTO: ServerConfigDTO
-) {
+fun HttpClientConfig<*>.installWireDefaultRequest(serverConfigDTO: ServerConfigDTO) {
     defaultRequest {
         header(HttpHeaders.ContentType, ContentType.Application.Json)
         with(serverConfigDTO) {

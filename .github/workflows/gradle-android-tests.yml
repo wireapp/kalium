@@ -54,12 +54,25 @@ jobs:
 
       - name: Android Unit Test
         run: ./gradlew testDebugUnitTest
+        env:
+            GITHUB_USER: ${{ github.actor }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Android Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
           script: ./gradlew connectedAndroidOnlyAffectedTest
+        env:
+            GITHUB_USER: ${{ github.actor }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Archive Test Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+            name: test-reports
+            path: ./**/build/reports/tests/**
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v1.25

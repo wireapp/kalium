@@ -7,7 +7,6 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.UsersQueries
-import com.wire.kalium.persistence.dao.call.CallEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -15,16 +14,16 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration
-import com.wire.kalium.persistence.Conversation as SQLDelightConversation
+import com.wire.kalium.persistence.ConversationDetails as SQLDelightConversationView
 import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
-    fun toModel(conversation: SQLDelightConversation): ConversationEntity = with(conversation) {
-        ConversationEntity(
-            qualified_id,
-            name,
-            type,
-            team_id,
+    fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
+        ConversationViewEntity(
+            id = qualifiedId,
+            name = name,
+            type = type,
+            teamId = teamId,
             protocolInfo = mapProtocolInfo(
                 protocol,
                 mls_group_id,
@@ -33,86 +32,43 @@ private class ConversationMapper {
                 mls_last_keying_material_update,
                 mls_cipher_suite
             ),
-            mutedStatus = muted_status,
+            isCreator = isCreator,
+            mutedStatus = mutedStatus,
             mutedTime = muted_time,
             creatorId = creator_id,
-            lastNotificationDate = last_notified_message_date,
+            lastNotificationDate = lastNotifiedMessageDate,
             lastModifiedDate = last_modified_date,
-            lastReadDate = conversation.last_read_date,
-            access = access_list,
-            accessRole = access_role_list
+            lastReadDate = lastReadDate,
+            accessList = access_list,
+            accessRoleList = access_role_list,
+            protocol = protocol,
+            mlsCipherSuite = mls_cipher_suite,
+            mlsEpoch = mls_epoch,
+            mlsGroupId = mls_group_id,
+            mlsLastKeyingMaterialUpdate = mls_last_keying_material_update,
+            mlsGroupState = mls_group_state,
+            mlsProposalTimer = mls_proposal_timer,
+            callStatus = callStatus,
+            previewAssetId = previewAssetId,
+            userAvailabilityStatus = userAvailabilityStatus,
+            userType = userType,
+            botService = botService,
+            userDeleted = userDeleted,
+            connectionStatus = connectionStatus,
+            otherUserId = otherUserId,
+            unreadMessageCount = unreadMessageCount,
+            unreadMentionsCount = unreadMentionsCount,
+            isMember = isMember,
         )
     }
 
-    @Suppress("FunctionParameterNaming", "LongParameterList")
-    fun toModel(
-        id: QualifiedIDEntity,
-        name: String?,
-        type: ConversationEntity.Type,
-        callStatus: CallEntity.Status?,
-        previewAssetId: QualifiedIDEntity?,
-        mutedStatus: ConversationEntity.MutedStatus,
-        teamId: String?,
-        lastModifiedDate: String?,
-        lastReadDate: String,
-        userAvailabilityStatus: UserAvailabilityStatusEntity?,
-        userType: UserTypeEntity?,
-        botService: BotEntity?,
-        userDeleted: Boolean?,
-        connectionStatus: ConnectionEntity.State?,
-        otherUserId: QualifiedIDEntity?,
-        isCreator: Long,
-        lastNotifiedMessageDate: String?,
-        unreadMessageCount: Long,
-        isMember: Long,
-        protocol: ConversationEntity.Protocol,
-        mlsCipherSuite: ConversationEntity.CipherSuite,
-        mlsEpoch: Long,
-        mlsGroupId: String?,
-        mlsLastKeyingMaterialUpdate: Long,
-        mlsGroupState: ConversationEntity.GroupState,
-        accessList: List<ConversationEntity.Access>,
-        accessRoleList: List<ConversationEntity.AccessRole>,
-    ): ConversationViewEntity =
-        ConversationViewEntity(
-            id,
-            name,
-            type,
-            callStatus,
-            previewAssetId,
-            mutedStatus,
-            teamId,
-            lastModifiedDate,
-            lastReadDate,
-            userAvailabilityStatus,
-            userType,
-            botService,
-            userDeleted,
-            connectionStatus,
-            otherUserId,
-            isCreator,
-            lastNotifiedMessageDate,
-            unreadMessageCount,
-            isMember,
-            protocolInfo = mapProtocolInfo(
-                protocol,
-                mlsGroupId,
-                mlsGroupState,
-                mlsEpoch,
-                mlsLastKeyingMaterialUpdate,
-                mlsCipherSuite
-            ),
-            accessList,
-            accessRoleList
-        )
-
-    fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationEntity? {
+    fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
         return conversation?.run {
-            ConversationEntity(
-                qualified_id,
-                name,
-                type,
-                team_id,
+            ConversationViewEntity(
+                id = qualifiedId,
+                name = name,
+                type = type,
+                teamId = teamId,
                 protocolInfo = mapProtocolInfo(
                     protocol,
                     mls_group_id,
@@ -121,14 +77,33 @@ private class ConversationMapper {
                     mls_last_keying_material_update,
                     mls_cipher_suite
                 ),
-                mutedStatus = muted_status,
+                isCreator = isCreator,
+                mutedStatus = mutedStatus,
                 mutedTime = muted_time,
                 creatorId = creator_id,
-                lastNotificationDate = last_notified_message_date,
+                lastNotificationDate = lastNotifiedMessageDate,
                 lastModifiedDate = last_modified_date,
-                lastReadDate = conversation.last_read_date,
-                access = access_list,
-                accessRole = access_role_list
+                lastReadDate = lastReadDate,
+                accessList = access_list,
+                accessRoleList = access_role_list,
+                protocol = protocol,
+                mlsCipherSuite = mls_cipher_suite,
+                mlsEpoch = mls_epoch,
+                mlsGroupId = mls_group_id,
+                mlsLastKeyingMaterialUpdate = mls_last_keying_material_update,
+                mlsGroupState = mls_group_state,
+                mlsProposalTimer = mls_proposal_timer,
+                callStatus = callStatus,
+                previewAssetId = previewAssetId,
+                userAvailabilityStatus = userAvailabilityStatus,
+                userType = userType,
+                botService = botService,
+                userDeleted = userDeleted,
+                connectionStatus = connectionStatus,
+                otherUserId = otherUserId,
+                unreadMessageCount = unreadMessageCount,
+                unreadMentionsCount = unreadMentionsCount,
+                isMember = isMember,
             )
         }
     }
@@ -248,11 +223,11 @@ class ConversationDAOImpl(
         conversationQueries.transaction {
             conversationQueries.selectConversationsWithUnnotifiedMessages()
                 .executeAsList()
-                .forEach { conversationQueries.updateConversationNotificationsDate(date, it.qualified_id) }
+                .forEach { conversationQueries.updateConversationNotificationsDate(date, it.qualifiedId) }
         }
     }
 
-    override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {
+    override suspend fun getAllConversations(): Flow<List<ConversationViewEntity>> {
         return conversationQueries.selectAllConversations()
             .asFlow()
             .mapToList()
@@ -260,31 +235,32 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>> {
-        return conversationQueries.selectAllConversationDetails(conversationMapper::toModel)
+        return conversationQueries.selectAllConversationDetails()
             .asFlow()
             .mapToList()
+            .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
-    override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
+    override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity {
+    override suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity {
         return conversationQueries.selectByQualifiedId(qualifiedID).executeAsOne().let {
             conversationMapper.toModel(it)
         }
     }
 
-    override suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationEntity? {
+    override suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationViewEntity? {
         return memberQueries.selectConversationByMember(userId).executeAsOneOrNull().let {
             conversationMapper.fromOneToOneToModel(it)
         }
     }
 
-    override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationEntity?> {
+    override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByGroupId(groupID)
             .asFlow()
             .mapToOneOrNull()
@@ -294,7 +270,7 @@ class ConversationDAOImpl(
     override suspend fun getConversationIdByGroupID(groupID: String) =
         conversationQueries.getConversationIdByGroupId(groupID).executeAsOne()
 
-    override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity> =
+    override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
         conversationQueries.selectByGroupState(groupState, ConversationEntity.Protocol.MLS)
             .executeAsList()
             .map(conversationMapper::toModel)
@@ -378,7 +354,7 @@ class ConversationDAOImpl(
         conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
     }
 
-    override suspend fun getConversationsForNotifications(): Flow<List<ConversationEntity>> {
+    override suspend fun getConversationsForNotifications(): Flow<List<ConversationViewEntity>> {
         return conversationQueries.selectConversationsWithUnnotifiedMessages()
             .asFlow()
             .mapToList()
@@ -444,12 +420,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) {
-        conversationQueries.transaction {
-            memberQueries.selectConversationByMember(userId).executeAsOneOrNull()?.conversation?.let { conversationId ->
-                conversationQueries.updateConversationType(ConversationEntity.Type.GROUP, conversationId)
-            }
-            memberQueries.deleteUserFromConversations(userId)
-        }
+        memberQueries.deleteUserFromGroupConversations(userId, userId)
     }
 
     override suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity> {

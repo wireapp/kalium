@@ -13,7 +13,8 @@ data class ServerConfigDTO(
         val teams: String,
         val website: String,
         val title: String,
-        val isOnPremises: Boolean
+        val isOnPremises: Boolean,
+        val proxy: Proxy?
     )
 
     data class MetaData(
@@ -21,6 +22,16 @@ data class ServerConfigDTO(
         val commonApiVersion: ApiVersionDTO,
         val domain: String?
     )
+
+    data class Proxy(
+        val needsAuthentication: Boolean,
+        val proxyApi: String,
+        val proxyPort: Int
+    )
+}
+
+fun isProxyRequired(serverConfigDTOProxy: ServerConfigDTO.Proxy?): Boolean {
+    return serverConfigDTOProxy != null
 }
 
 sealed class ApiVersionDTO(open val version: Int) {
