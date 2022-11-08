@@ -33,8 +33,6 @@ internal class UpdateConversationMutedStatusUseCaseImpl(
         mutedConversationStatus: MutedConversationStatus,
         mutedStatusTimestamp: Long
     ): ConversationUpdateStatusResult =
-
-        //conversationRepository.updateMutedStatus(conversationId, mutedConversationStatus, mutedStatusTimestamp)
         conversationRepository.updateMutedStatusRemotely(conversationId, mutedConversationStatus, mutedStatusTimestamp)
             .flatMap {
                 conversationRepository.updateMutedStatusLocally(conversationId, mutedConversationStatus, mutedStatusTimestamp)
