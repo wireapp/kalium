@@ -18,6 +18,7 @@ import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.v2.authenticated.AccessTokenApiV2
 import com.wire.kalium.network.api.v2.authenticated.AssetApiV2
 import com.wire.kalium.network.api.v2.authenticated.CallApiV2
 import com.wire.kalium.network.api.v2.authenticated.ClientApiV2
@@ -44,10 +45,11 @@ import io.ktor.client.engine.HttpClientEngine
 
 internal class AuthenticatedNetworkContainerV2 internal constructor(
     private val sessionManager: SessionManager,
-    engine: HttpClientEngine = defaultHttpEngine(sessionManager.session().second.links.proxy, sessionManager.proxyCredentials())
+    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.proxy, sessionManager.proxyCredentials())
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,
+        { httpClient -> AccessTokenApiV2(httpClient) },
         engine
     ) {
 

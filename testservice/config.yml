@@ -3,3 +3,27 @@ instanceCreationTimeoutInSeconds: 60
 # the only required property is resourcePackage, for more config options see below
 swagger:
     resourcePackage: com.wire.kalium.testservice.api.v1
+
+# Logging settings.
+logging:
+
+    # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+    level: INFO
+
+    appenders:
+        - type: console
+          threshold: INFO
+        - type: file
+          threshold: INFO
+          logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
+          currentLogFilename: /var/log/kalium-testservice/application.log
+          archivedLogFilenamePattern: /var/log/kalium-testservice/application-%d{yyyy-MM-dd}.log
+          archivedFileCount: 7
+          timeZone: GMT+1
+        - type: file
+          threshold: ALL
+          logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
+          currentLogFilename: /var/log/kalium-testservice/application_debug.log
+          archivedLogFilenamePattern: /var/log/kalium-testservice/application_debug-%d{yyyy-MM-dd}.log
+          archivedFileCount: 7
+          timeZone: GMT+1

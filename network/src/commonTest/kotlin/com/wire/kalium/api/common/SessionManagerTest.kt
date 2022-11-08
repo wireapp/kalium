@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -40,7 +41,7 @@ class SessionManagerTest {
         }
 
         val client = HttpClient(mockEngine) {
-            installAuth(sessionManager)
+            installAuth(sessionManager) { httpClient -> AccessTokenApiV0(httpClient) }
             expectSuccess = false
         }
 
@@ -58,7 +59,7 @@ class SessionManagerTest {
         }
 
         val client = HttpClient(mockEngine) {
-            installAuth(sessionManager)
+            installAuth(sessionManager) { httpClient -> AccessTokenApiV0(httpClient) }
             expectSuccess = false
         }
 
@@ -68,7 +69,8 @@ class SessionManagerTest {
     }
 
     private fun createFakeSessionManager() = object : SessionManager {
-        override fun session(): Pair<SessionDTO, ServerConfigDTO> = testCredentials to TEST_BACKEND_CONFIG
+        override fun session(): SessionDTO = testCredentials
+        override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
 
         override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
             testCredentials

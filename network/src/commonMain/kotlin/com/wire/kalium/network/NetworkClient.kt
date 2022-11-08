@@ -1,5 +1,6 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
@@ -27,11 +28,12 @@ import io.ktor.serialization.kotlinx.json.json
 internal class AuthenticatedNetworkClient(
     engine: HttpClientEngine,
     sessionManager: SessionManager,
+    accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     installCompression: Boolean = true
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(engine, installCompression) {
-        installWireDefaultRequest(sessionManager.session().second)
-        installAuth(sessionManager)
+        installWireDefaultRequest(sessionManager.serverConfig())
+        installAuth(sessionManager, accessTokenApi)
         install(ContentNegotiation) {
             mls()
             xprotobuf()
@@ -70,7 +72,8 @@ internal class UnboundNetworkClient(engine: HttpClientEngine) {
  */
 internal class AuthenticatedWebSocketClient(
     private val engine: HttpClientEngine,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi
 ) {
     /**
      * Creates a disposable [HttpClient] for a single use.
@@ -80,8 +83,8 @@ internal class AuthenticatedWebSocketClient(
      */
     fun createDisposableHttpClient(): HttpClient =
         provideBaseHttpClient(engine) {
-            installWireDefaultRequest(sessionManager.session().second)
-            installAuth(sessionManager)
+            installWireDefaultRequest(sessionManager.serverConfig())
+            installAuth(sessionManager, accessTokenApi)
             install(ContentNegotiation) {
                 mls()
                 xprotobuf()
