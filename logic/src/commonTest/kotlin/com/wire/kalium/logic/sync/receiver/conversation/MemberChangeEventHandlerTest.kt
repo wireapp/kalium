@@ -151,13 +151,6 @@ class MemberChangeEventHandlerTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withUpdateMutedStatusSucceeding() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatus)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
         fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateMutedStatusLocally)

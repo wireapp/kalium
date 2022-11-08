@@ -93,13 +93,6 @@ interface ConversationRepository {
     suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
 
-    @Deprecated("sdsd")
-    suspend fun updateMutedStatus(
-        conversationId: ConversationId,
-        mutedStatus: MutedConversationStatus,
-        mutedStatusTimestamp: Long
-    ): Either<CoreFailure, Unit>
-
     suspend fun updateMutedStatusLocally(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
@@ -479,28 +472,6 @@ internal class ConversationDataSource internal constructor(
         return wrapStorageRequest {
             val conversationEntity = conversationDAO.getConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
             conversationEntity?.let { conversationMapper.fromDaoModel(it) }
-        }
-    }
-
-    /**
-     * Updates the conversation muting options status and the timestamp of the applied change, both remotely and local
-     */
-    override suspend fun updateMutedStatus(
-        conversationId: ConversationId,
-        mutedStatus: MutedConversationStatus,
-        mutedStatusTimestamp: Long
-    ): Either<CoreFailure, Unit> = wrapApiRequest {
-        conversationApi.updateConversationMemberState(
-            memberUpdateRequest = conversationStatusMapper.toMutedStatusApiModel(mutedStatus, mutedStatusTimestamp),
-            conversationId = idMapper.toApiModel(conversationId)
-        )
-    }.flatMap {
-        wrapStorageRequest {
-            conversationDAO.updateConversationMutedStatus(
-                conversationId = idMapper.toDaoModel(conversationId),
-                mutedStatus = conversationStatusMapper.toMutedStatusDaoModel(mutedStatus),
-                mutedStatusTimestamp = mutedStatusTimestamp
-            )
         }
     }
 
