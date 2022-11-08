@@ -70,8 +70,7 @@ interface AuthenticatedNetworkContainer {
         fun create(
             sessionManager: SessionManager
         ): AuthenticatedNetworkContainer {
-            val version = sessionManager.session().second.metaData.commonApiVersion.version
-            return when (version) {
+            return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
                     sessionManager
                 )
@@ -104,9 +103,9 @@ internal interface AuthenticatedHttpClientProvider {
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
-    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.session().second.links.proxy)
+    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.proxy),
 ) : AuthenticatedHttpClientProvider {
-    override val backendConfig = sessionManager.session().second.links
+    override val backendConfig = sessionManager.serverConfig().links
 
     override val networkClient by lazy {
         AuthenticatedNetworkClient(
