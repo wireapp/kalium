@@ -12,7 +12,8 @@ class TestSessionManagerV0 : SessionManager {
     private val serverConfig = TEST_BACKEND_CONFIG
     private var session = testCredentials
 
-    override fun session(): Pair<SessionDTO, ServerConfigDTO> = Pair(session, serverConfig)
+    override fun session(): SessionDTO = session
+    override fun serverConfig(): ServerConfigDTO = serverConfig
     override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
         SessionDTO(
             session.userId,
