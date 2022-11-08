@@ -20,7 +20,7 @@ internal class MemberChangeEventHandlerImpl(
     override suspend fun handle(event: Event.Conversation.MemberChanged) {
         when (event) {
             is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
-                conversationRepository.updateMutedStatus(
+                conversationRepository.updateMutedStatusLocally(
                     event.conversationId,
                     event.mutedConversationStatus,
                     Clock.System.now().toEpochMilliseconds()

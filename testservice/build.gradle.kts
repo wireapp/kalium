@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm")
     java
     application
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 group = "com.wire.kalium.testservice"
@@ -26,14 +27,12 @@ tasks.named("run", JavaExec::class) {
     standardOutput = System.out
 }
 
-tasks.jar {
-    manifest.attributes["Main-Class"] = mainFunctionClassName
-    val dependencies = configurations
-        .runtimeClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+tasks.shadowJar {
+    archiveBaseName.set("testservice")
+    mergeServiceFiles()
+    manifest {
+        attributes(mapOf("Main-Class" to mainFunctionClassName))
+    }
 }
 
 repositories {
