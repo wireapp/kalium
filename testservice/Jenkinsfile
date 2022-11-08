@@ -26,7 +26,9 @@ pipeline {
         stage('Build') {
             steps {
                 withMaven(jdk: 'AdoptiumJDK11', maven: 'M3', mavenLocalRepo: '.repository') {
-                    sh './gradlew :testservice:jar'
+                    withCredentials([usernamePassword(credentialsId: 'READ_PACKAGES_GITHUB_TOKEN', passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USER')]) {
+                        sh './gradlew :testservice:jar'
+                    }
                 }
             }
         }

@@ -97,7 +97,8 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                 blackList = ServerConfig.STAGING.blackList,
                 teams = ServerConfig.STAGING.teams,
                 website = ServerConfig.STAGING.website,
-                isOnPremises = true
+                isOnPremises = true,
+                proxy = null
             )
         } else {
             if (instanceRequest.backend == "staging") {
