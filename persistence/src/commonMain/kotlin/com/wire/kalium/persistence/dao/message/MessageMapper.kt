@@ -111,7 +111,15 @@ object MessageMapper {
         conversationName: String?,
         allReactionsJson: String?,
         selfReactionsJson: String?,
-        mentions: String
+        mentions: String,
+        quotedMessageId: String?,
+        quotedSenderId: QualifiedIDEntity?,
+        quotedSenderName: String?,
+        quotedMessageDateTime: String?,
+        quotedMessageStatus: MessageEntity.Status?,
+        quotedMessageVisibility: MessageEntity.Visibility?,
+        quotedMessageContentType: MessageEntity.ContentType?,
+        quotedAssetMimeType: String?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -120,6 +128,7 @@ object MessageMapper {
             MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
                 messageBody = text ?: "",
                 mentions = messageMentionsFromJsonString(mentions)
+                // TODO: Handle Replies/Quotes
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(

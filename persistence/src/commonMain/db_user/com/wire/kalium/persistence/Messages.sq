@@ -139,6 +139,21 @@ CREATE TABLE MessageConversationChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE VIEW IF NOT EXISTS MessageQuoteDetails
+AS SELECT
+    MessageTextContent.quoted_message_id AS quotedMessageId,
+    QuotedSender.qualified_id AS quotedSenderId,
+    QuotedSender.name AS quotedSenderName,
+    QuotedMessage.date AS quotedMessageDateTime,
+    QuotedMessage.status AS quotedMessageStatus,
+    QuotedMessage.visibility AS quotedMessageVisibility,
+    QuotedMessage.content_type AS quotedMessageContentType,
+    QuotedAssetContent.asset_mime_type AS quotedAssetMimeType
+FROM MessageTextContent
+INNER JOIN Message AS QuotedMessage ON QuotedMessage.id = MessageTextContent.quoted_message_id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
+INNER JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
+LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id;
+
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -220,7 +235,15 @@ IFNULL(
         AND MessageMention.conversation_id = Message.conversation_id
     ),
     '[]'
-) AS mentions
+) AS mentions,
+QuotedMessage.quotedMessageId AS quotedMessageId,
+QuotedMessage.quotedSenderId AS quotedSenderId,
+QuotedMessage.quotedSenderName AS quotedSenderName,
+QuotedMessage.quotedMessageDateTime AS quotedMessageDateTime,
+QuotedMessage.quotedMessageStatus AS quotedMessageStatus,
+QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
+QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
+QuotedMessage.quotedAssetMimeType AS quotedAssetMimeType
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -231,6 +254,7 @@ LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageQuoteDetails AS QuotedMessage ON TextContent.quoted_message_id = QuotedMessage.quotedMessageId AND Message.conversation_id = TextContent.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
