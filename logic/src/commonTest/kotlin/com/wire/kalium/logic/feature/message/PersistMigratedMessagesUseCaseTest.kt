@@ -8,7 +8,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
-import io.ktor.utils.io.core.toByteArray
+import com.wire.kalium.protobuf.encodeToByteArray
+import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.Text
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -23,7 +25,7 @@ import kotlin.test.assertTrue
 class PersistMigratedMessagesUseCaseTest {
 
     @Test
-    fun givenAValidSendKnockRequest_whenSendingKnock_thenShouldReturnASuccessResult() = runTest {
+    fun givenAValidProtoMessage_whenMigratingMessage_thenShouldReturnASuccessResult() = runTest {
         // Given
         val (arrangement, persistMigratedMessages) = Arrangement()
             .withSuccessfulHandling()
@@ -44,6 +46,7 @@ class PersistMigratedMessagesUseCaseTest {
         @Mock
         private val applicationMessageHandler = mock(classOf<ApplicationMessageHandler>())
 
+        val genericMessage = GenericMessage("uuid", GenericMessage.Content.Text(Text("some_text")))
 
         fun fakeMigratedMessage() = MigratedMessage(
             conversationId = TestConversation.ID,
@@ -51,7 +54,7 @@ class PersistMigratedMessagesUseCaseTest {
             senderClientId = TestClient.CLIENT_ID,
             "",
             "some_content",
-            "some_content".toByteArray()
+            genericMessage.encodeToByteArray()
         )
 
         fun withSuccessfulHandling(): Arrangement {
