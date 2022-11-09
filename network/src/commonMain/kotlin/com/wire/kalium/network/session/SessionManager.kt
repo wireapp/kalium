@@ -28,7 +28,9 @@ import io.ktor.utils.io.ByteReadChannel
 import kotlin.coroutines.CoroutineContext
 
 interface SessionManager {
-    fun session(): Pair<SessionDTO, ServerConfigDTO>
+    fun session(): SessionDTO
+
+    fun serverConfig(): ServerConfigDTO
     fun updateLoginSession(
         newAccessTokenDTO: AccessTokenDTO,
         newRefreshTokenDTO: RefreshTokenDTO?
@@ -45,24 +47,17 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
     }
     install(Auth) {
         bearer {
-            // memory cache the tokens
-            var access: String
-            var refresh: String
-            sessionManager.session().first.also { storedSession ->
-                access = storedSession.accessToken
-                refresh = storedSession.refreshToken
-            }
 
             loadTokens {
-                BearerTokens(accessToken = access, refreshToken = refresh)
+                val session = sessionManager.session()
+                BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
             }
+
             refreshTokens {
                 when (val response = accessTokenApi(client).getToken(oldTokens!!.refreshToken)) {
                     is NetworkResponse.Success -> {
-                        response.value.first.let { newAccessToken -> access = newAccessToken.value }
-                        response.value.second?.let { newRefreshToken -> refresh = newRefreshToken.value }
-                        sessionManager.updateLoginSession(response.value.first, response.value.second)
-                        BearerTokens(access, refresh)
+                        val newSession = sessionManager.updateLoginSession(response.value.first, response.value.second)
+                        BearerTokens(newSession.accessToken, newSession.refreshToken)
                     }
 
                     is NetworkResponse.Error -> {
