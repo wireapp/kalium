@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.dao
 
-import com.wire.kalium.persistence.dao.UnreadContentMapper
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
