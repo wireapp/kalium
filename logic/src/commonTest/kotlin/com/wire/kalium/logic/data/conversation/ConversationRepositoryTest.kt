@@ -481,7 +481,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
-        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3 )
+        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.GROUP,
             unreadContentCountEntity = unreadContentCount
@@ -558,7 +558,7 @@ class ConversationRepositoryTest {
     @Test
     fun givenAOneToOneConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
-        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3 )
+        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.ONE_ON_ONE,
             otherUserId = QualifiedIDEntity("otherUser", "domain"),
