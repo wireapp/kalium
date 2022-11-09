@@ -524,7 +524,7 @@ class UserSessionScope internal constructor(
 
     private val apiMigrationManager get() =
         ApiMigrationManager(
-            sessionManager.session().second.metaData.commonApiVersion.version,
+            sessionManager.serverConfig().metaData.commonApiVersion.version,
             userStorage.database.metadataDAO,
             apiMigrations
         )
