@@ -33,6 +33,9 @@ android {
             // path(File("src/androidMain/jni/Android.mk"))
         }
     }
+    packagingOptions {
+        jniLibs.pickFirsts.add("**/libsodium.so")
+    }
 }
 
 kotlin {
@@ -40,6 +43,7 @@ kotlin {
         compilations.all {
             kotlinOptions.jvmTarget = "1.8"
             kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+            kotlinOptions.freeCompilerArgs += "-Xjvm-default=enable"
         }
         testRuns["test"].executionTask.configure {
             useJUnit()
@@ -86,6 +90,9 @@ kotlin {
 
                 // Okio
                 implementation(Dependencies.Okio.core)
+
+                // Libsodium
+                implementation(Dependencies.Cryptography.libsodiumBindingsMP)
             }
         }
         val commonTest by getting {
@@ -95,9 +102,11 @@ kotlin {
                 implementation(Dependencies.Test.okio)
             }
         }
+
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
+
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {

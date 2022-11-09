@@ -38,6 +38,7 @@ object Versions {
     const val desugarJdk = "1.1.5"
     const val kermit = "1.0.0"
     const val detekt = "1.19.0"
+    const val libsodium = "0.8.5"
 }
 
 object Plugins {
@@ -121,6 +122,7 @@ object Dependencies {
         const val cryptoboxAndroid = "com.wire:cryptobox-android:${Versions.cryptoboxAndroid}"
         const val cryptobox4j = "com.wire:cryptobox4j:${Versions.cryptobox4j}"
         const val javaxCrypto = "androidx.security:security-crypto-ktx:${Versions.javaxCrypto}"
+        const val libsodiumBindingsMP = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings:${Versions.libsodium}"
         const val coreCryptoJvm = "com.wire:core-crypto-jvm:${Versions.coreCrypto}"
         const val coreCryptoAndroid = "com.wire:core-crypto-android:${Versions.coreCrypto}"
     }

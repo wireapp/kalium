@@ -50,7 +50,7 @@ internal class AESEncrypt {
                 }
             }
         } catch (e: Exception) {
-            kaliumLogger.e("There was an error while encrypting the asset:\n $e}")
+            kaliumLogger.e("There was an error while encrypting the asset with AES256:\n $e}")
         } finally {
             assetDataSource.close()
             outputSink.close()
@@ -124,7 +124,7 @@ internal class AESDecrypt(private val secretKey: AES256Key) {
             }
             kaliumLogger.d("WROTE $size bytes")
         } catch (e: Exception) {
-            kaliumLogger.e("There was an error while decrypting the asset:\n $e}")
+            kaliumLogger.e("There was an error while decrypting the asset with AES256:\n $e}")
         } finally {
             encryptedDataSource.close()
             outputSink.close()
