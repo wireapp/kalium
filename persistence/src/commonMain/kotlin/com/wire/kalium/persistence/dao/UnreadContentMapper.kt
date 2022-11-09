@@ -1,5 +1,6 @@
-package com.wire.kalium.persistence.dao.unread_content
+package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.dao.message.UnreadContentCountEntity
 import com.wire.kalium.persistence.util.JsonSerializer
 import kotlinx.serialization.decodeFromString
 

@@ -3,12 +3,10 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.OtherUser
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
@@ -378,7 +376,7 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
 }
 
-fun MessageEntity.ContentType.toUnreadModel(): UnreadContentType = when(this) {
+fun MessageEntity.ContentType.toUnreadModel(): UnreadContentType = when (this) {
     MessageEntity.ContentType.TEXT -> UnreadContentType.TEXT_OR_ASSET
     MessageEntity.ContentType.ASSET -> UnreadContentType.TEXT_OR_ASSET
     MessageEntity.ContentType.KNOCK -> UnreadContentType.KNOCK
@@ -391,9 +389,9 @@ fun MessageEntity.ContentType.toUnreadModel(): UnreadContentType = when(this) {
     MessageEntity.ContentType.REMOVED_FROM_TEAM -> UnreadContentType.SYSTEM
 }
 
-fun Map<MessageEntity.ContentType, Int>.toUnreadModel(): Map<UnreadContentType,Int> {
-    val unreadContent = mutableMapOf<UnreadContentType,Int>()
-    forEach {contentEntity ->
+fun Map<MessageEntity.ContentType, Int>.toUnreadModel(): Map<UnreadContentType, Int> {
+    val unreadContent = mutableMapOf<UnreadContentType, Int>()
+    forEach { contentEntity ->
         val contentType = contentEntity.key.toUnreadModel()
         unreadContent[contentType] = unreadContent[contentType]?.let { it + contentEntity.value } ?: contentEntity.value
     }

@@ -191,3 +191,5 @@ sealed class MessageEntityContent {
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
 }
+
+typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>
