@@ -12,7 +12,6 @@ import com.wire.kalium.cryptography.backup.Backup
 import com.wire.kalium.cryptography.backup.Backup.Header.Companion.readBackupHeader
 import com.wire.kalium.cryptography.kaliumLogger
 import okio.Buffer
-import okio.BufferedSource
 import okio.Sink
 import okio.Source
 import okio.buffer

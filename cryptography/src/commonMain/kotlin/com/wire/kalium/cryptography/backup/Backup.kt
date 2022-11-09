@@ -6,7 +6,6 @@ import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.utils.initializeLibsodiumIfNeeded
 import okio.Buffer
-import okio.BufferedSource
 import okio.IOException
 import okio.Source
 
@@ -44,7 +43,7 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
 
         companion object {
 
-            @Throws(IOException::class)
+            @Suppress("ComplexMethod")
             fun Source.readBackupHeader(): Header {
                 try {
                     val readBuffer = Buffer()
@@ -76,14 +75,14 @@ class Backup(val salt: UByteArray, val userId: CryptoUserID, val passphrase: Pas
 
                     val opslimit = this.read(readBuffer, UNSIGNED_INT_LENGTH).let {
                         readBuffer.readInt().also {
-                            // TODO: Do some checkings if opslimit value changes between versions?
+                            // TODO: Do some checking if opslimit value changes between versions?
                             readBuffer.clear()
                         }
                     }
 
                     val memlimit = this.read(readBuffer, UNSIGNED_INT_LENGTH).let {
                         readBuffer.readInt().also {
-                            // TODO: Do some checkings if opslimit value changes between versions?
+                            // TODO: Do some checking if opslimit value changes between versions?
                             readBuffer.clear()
                         }
                     }
