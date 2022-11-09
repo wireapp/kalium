@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isUnknownClient
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClient
@@ -70,6 +71,8 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
                         }
                         null
                     }
+                }.also {
+                    kaliumLogger.d("AUTH TOKEN REFRESH:{response_code: \"${response.status.value}\"}")
                 }
             }
         }
