@@ -40,7 +40,10 @@ class AccountsDAOTest : GlobalDBBaseTest() {
                     isOnPremises = links.isOnPremises,
                     federation = metaData.federation,
                     domain = metaData.domain,
-                    commonApiVersion = metaData.apiVersion
+                    commonApiVersion = metaData.apiVersion,
+                    proxyApi = links.proxy?.proxyApi,
+                    proxyNeedsAuthentication = links.proxy?.needsAuthentication,
+                    proxyPort = links.proxy?.proxyPort
                 )
             )
         }
@@ -178,7 +181,8 @@ class AccountsDAOTest : GlobalDBBaseTest() {
                 teams = "teams",
                 website = "website",
                 title = "title",
-                isOnPremises = false
+                isOnPremises = false,
+                ServerConfigEntity.Proxy(true, "apiProxy", 8888)
             ),
             metaData = ServerConfigEntity.MetaData(
                 federation = false,

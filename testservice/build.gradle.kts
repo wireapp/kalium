@@ -2,14 +2,14 @@ plugins {
     kotlin("jvm")
     java
     application
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
 group = "com.wire.kalium.testservice"
 version = "0.0.1-SNAPSHOT"
 
 object Versions {
-    // dropwizard-swagger:2.0.0-1 does not support dropwizard >= 2.0.11
-    const val dropwizard = "2.0.10"
+    const val dropwizard = "2.1.2"
     const val prometheus_simpleclient = "0.1.0"
 }
 
@@ -27,19 +27,22 @@ tasks.named("run", JavaExec::class) {
     standardOutput = System.out
 }
 
-tasks.jar {
-    manifest.attributes["Main-Class"] = mainFunctionClassName
-    val dependencies = configurations
-        .runtimeClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+tasks.shadowJar {
+    archiveBaseName.set("testservice")
+    mergeServiceFiles()
+    manifest {
+        attributes(mapOf("Main-Class" to mainFunctionClassName))
+    }
+}
+
+repositories {
+    // to fetch a version of dropwizard-swagger via git reference
+    maven(url = "https://jitpack.io")
 }
 
 dependencies {
     add("implementation", "io.dropwizard:dropwizard-core:${Versions.dropwizard}")
-    add("implementation", "com.smoketurner:dropwizard-swagger:2.0.0-1")
+    add("implementation", "com.github.smoketurner:dropwizard-swagger:72e8441e4a")
 
     // prometheus metrics
     add("implementation", "io.prometheus:simpleclient_dropwizard:${Versions.prometheus_simpleclient}")

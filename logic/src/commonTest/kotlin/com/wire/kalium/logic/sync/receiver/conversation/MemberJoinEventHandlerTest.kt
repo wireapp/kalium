@@ -76,6 +76,7 @@ class MemberJoinEventHandlerTest {
         val (arrangement, eventHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .withPersistMembersSucceeding()
             .arrange()
 
@@ -95,6 +96,7 @@ class MemberJoinEventHandlerTest {
         val (arrangement, eventHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .withPersistMembersSucceeding()
             .arrange()
 
@@ -122,6 +124,7 @@ class MemberJoinEventHandlerTest {
 
         private val memberJoinEventHandler: MemberJoinEventHandler = MemberJoinEventHandlerImpl(
             conversationRepository,
+            userRepository,
             persistMessage
         )
 

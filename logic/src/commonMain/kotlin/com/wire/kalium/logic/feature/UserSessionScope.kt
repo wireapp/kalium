@@ -166,13 +166,13 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandlerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
@@ -303,8 +303,9 @@ class UserSessionScope internal constructor(
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
-            userRepository,
+            userId,
             mlsClientProvider,
+            selfTeamId,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
@@ -406,7 +407,11 @@ class UserSessionScope internal constructor(
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
 
     private val clientRepository: ClientRepository
-        get() = ClientDataSource(clientRemoteRepository, clientRegistrationStorage, userStorage.database.clientDAO)
+        get() = ClientDataSource(
+            clientRemoteRepository,
+            clientRegistrationStorage,
+            userStorage.database.clientDAO,
+        )
 
     private val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(userRepository, clientRepository)
@@ -603,14 +608,24 @@ class UserSessionScope internal constructor(
             applicationMessageHandler
         )
 
-    private val newConversationHandler: NewConversationEventHandler get() = NewConversationEventHandlerImpl(conversationRepository)
+    private val newConversationHandler: NewConversationEventHandler
+        get() = NewConversationEventHandlerImpl(
+            conversationRepository,
+            userRepository,
+            selfTeamId,
+        )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
             userRepository,
             conversationRepository,
             EphemeralNotificationsManager
         )
-    private val memberJoinHandler: MemberJoinEventHandler get() = MemberJoinEventHandlerImpl(conversationRepository, persistMessage)
+    private val memberJoinHandler: MemberJoinEventHandler
+        get() = MemberJoinEventHandlerImpl(
+            conversationRepository,
+            userRepository,
+            persistMessage
+        )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
             userStorage.database.conversationDAO,
@@ -751,6 +766,7 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             timeParser,
+            applicationMessageHandler,
             this
         )
     val users: UserScope

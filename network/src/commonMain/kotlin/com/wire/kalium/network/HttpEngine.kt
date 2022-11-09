@@ -1,5 +1,10 @@
 package com.wire.kalium.network
 
+import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
-expect fun defaultHttpEngine(): HttpClientEngine
+expect fun defaultHttpEngine(
+    serverConfigDTOProxy: ServerConfigDTO.Proxy? = null,
+    proxyCredentials: ProxyCredentialsDTO? = null
+): HttpClientEngine

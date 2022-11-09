@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
@@ -29,7 +30,11 @@ class SendTextMessageUseCase internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
-    suspend operator fun invoke(conversationId: ConversationId, text: String): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        text: String,
+        mentions: List<MessageMention> = listOf()
+    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -38,7 +43,7 @@ class SendTextMessageUseCase internal constructor(
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Text(text),
+                content = MessageContent.Text(text, mentions),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,

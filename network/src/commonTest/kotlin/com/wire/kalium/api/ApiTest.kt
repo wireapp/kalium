@@ -4,6 +4,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.tools.KtxSerializer
@@ -84,7 +85,8 @@ internal interface ApiTest {
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
         return AuthenticatedNetworkClient(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            { httpClient -> AccessTokenApiV0(httpClient) }
         )
     }
 
@@ -113,7 +115,8 @@ internal interface ApiTest {
 
         return UnauthenticatedNetworkContainerV0(
             backendLinks = TEST_BACKEND,
-            engine = mockEngine
+            engine = mockEngine,
+            proxyCredentials = null
         ).unauthenticatedNetworkClient
     }
 
@@ -147,7 +150,8 @@ internal interface ApiTest {
         }
         return UnauthenticatedNetworkContainerV0(
             backendLinks = TEST_BACKEND,
-            engine = mockEngine
+            engine = mockEngine,
+            proxyCredentials = null
         ).unauthenticatedNetworkClient
     }
 

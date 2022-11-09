@@ -13,7 +13,9 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
@@ -76,14 +78,14 @@ import com.wire.kalium.persistence.dao.Member as MemberEntity
 class ConversationRepositoryTest {
 
     @Test
-    fun givenNewConversationEvent_whenCallingInsertConversationFromEvent_thenConversationShouldBePersisted() = runTest {
+    fun givenNewConversationEvent_whenCallingPersistConversation_thenConversationShouldBePersisted() = runTest {
         val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE)
         val selfUserFlow = flowOf(TestUser.SELF)
         val (arrangement, conversationRepository) = Arrangement()
             .withSelfUserFlow(selfUserFlow)
             .arrange()
 
-        conversationRepository.insertConversationFromEvent(event)
+        conversationRepository.persistConversations(listOf(event.conversation), "teamId")
 
         with(arrangement) {
             verify(conversationDAO)
@@ -122,7 +124,7 @@ class ConversationRepositoryTest {
             .withHasEstablishedMLSGroup(true)
             .arrange()
 
-        conversationRepository.insertConversationFromEvent(event)
+        conversationRepository.persistConversations(listOf(event.conversation), "teamId", originatedFromEvent = true)
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::conversationExists)
@@ -240,12 +242,12 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenAWantToMuteAConversation_whenCallingUpdateMutedStatus_thenShouldDelegateCallToConversationApi() = runTest {
+    fun whenCallingUpdateMutedStatusRemotly_thenShouldDelegateCallToConversationApi() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withUpdateConversationMemberStateResult(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
             .arrange()
 
-        conversationRepository.updateMutedStatus(
+        conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
             Clock.System.now().toEpochMilliseconds()
@@ -259,7 +261,30 @@ class ConversationRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateConversationMutedStatus)
             .with(any(), any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun whenCallingUpdateMutedStatusLocally_thenShouldUpdateTheDatabase() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withUpdateConversationMemberStateResult(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+            .arrange()
+
+        conversationRepository.updateMutedStatusLocally(
+            TestConversation.ID,
+            MutedConversationStatus.AllMuted,
+            Clock.System.now().toEpochMilliseconds()
+        )
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateConversationMutedStatus)
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::updateConversationMemberState)
+            .with(any(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -706,6 +731,24 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversation_WhenChangingNameConversation_ShouldReturnSuccess() = runTest {
+        val newConversationName = "new_name"
+        val (arrange, conversationRepository) = Arrangement()
+            .withConversationRenameApiCall(newConversationName)
+            .withConversationRenameCall(newConversationName)
+            .arrange()
+
+        val result = conversationRepository.changeConversationName(CONVERSATION_ID, newConversationName)
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationName)
+                .with(any(), eq(newConversationName), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -715,6 +758,9 @@ class ConversationRepositoryTest {
 
         @Mock
         val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
+
+        @Mock
+        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
         val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
@@ -733,8 +779,9 @@ class ConversationRepositoryTest {
 
         val conversationRepository =
             ConversationDataSource(
-                userRepository,
+                TestUser.USER_ID,
                 mlsClientProvider,
+                selfTeamIdProvider,
                 conversationDAO,
                 conversationApi,
                 messageDAO,
@@ -762,6 +809,11 @@ class ConversationRepositoryTest {
                 .suspendFunction(mlsClientProvider::getMLSClient)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(mlsClient))
+
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(TestTeam.TEAM_ID) }
         }
 
         fun withHasEstablishedMLSGroup(isClient: Boolean) = apply {
@@ -932,6 +984,20 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::getConversationIdsByUserId)
                 .whenInvokedWith(any())
                 .thenReturn(conversationIdEntities)
+        }
+
+        fun withConversationRenameCall(newName: String = "newName") = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateConversationName)
+                .whenInvokedWith(any(), eq(newName), any())
+                .thenReturn(Unit)
+        }
+
+        fun withConversationRenameApiCall(newName: String = "newName") = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateConversationName)
+                .whenInvokedWith(any(), eq(newName))
+                .thenReturn(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
         }
 
         fun arrange() = this to conversationRepository

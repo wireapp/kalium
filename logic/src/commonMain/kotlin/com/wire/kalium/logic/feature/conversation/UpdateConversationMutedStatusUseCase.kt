@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.datetime.Clock
@@ -32,8 +33,10 @@ internal class UpdateConversationMutedStatusUseCaseImpl(
         mutedConversationStatus: MutedConversationStatus,
         mutedStatusTimestamp: Long
     ): ConversationUpdateStatusResult =
-        conversationRepository.updateMutedStatus(conversationId, mutedConversationStatus, mutedStatusTimestamp)
-            .fold({
+        conversationRepository.updateMutedStatusRemotely(conversationId, mutedConversationStatus, mutedStatusTimestamp)
+            .flatMap {
+                conversationRepository.updateMutedStatusLocally(conversationId, mutedConversationStatus, mutedStatusTimestamp)
+            }.fold({
                 kaliumLogger.e("Something went wrong when updating the convId ($conversationId) to (${mutedConversationStatus.status}")
                 ConversationUpdateStatusResult.Failure
             }, {
