@@ -27,7 +27,7 @@ private fun createOrLoad(rootPath: String, file: File): Properties {
 /**
  * the java implementation is not yet encrypted
  */
-actual fun encryptedSettingsBuilder(
+internal actual fun encryptedSettingsBuilder(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
 ): Settings {
@@ -37,4 +37,4 @@ actual fun encryptedSettingsBuilder(
     return JvmPropertiesSettings(properties) { onModify(it, file) }
 }
 
-actual class EncryptedSettingsPlatformParam
+internal actual class EncryptedSettingsPlatformParam

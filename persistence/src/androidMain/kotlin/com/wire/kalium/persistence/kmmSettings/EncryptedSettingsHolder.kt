@@ -20,7 +20,7 @@ private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.
         .build()
 
 @Synchronized
-actual fun encryptedSettingsBuilder(
+internal actual fun encryptedSettingsBuilder(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
 ): Settings = AndroidSettings(
@@ -37,4 +37,4 @@ actual fun encryptedSettingsBuilder(
     }, false
 )
 
-actual class EncryptedSettingsPlatformParam(val appContext: Context)
+internal actual class EncryptedSettingsPlatformParam(val appContext: Context)
