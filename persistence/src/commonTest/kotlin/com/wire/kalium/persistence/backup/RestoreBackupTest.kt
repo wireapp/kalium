@@ -74,32 +74,69 @@ class RestoreBackupTest : BaseDatabaseTest() {
         }
 
     @Test
-    fun givenBackupHasUniqueConversationsAndSomeOverlappingWithUser_whenRestoringBackup_thenOnlyUniqueConversationsAreRestored() = runTest {
-        // given
-        val uniqueUserConversationAmount = 25
-        val userConversations = userDatabaseDataGenerator.generateAndInsertConversations(
-            conversationAmount = uniqueUserConversationAmount,
-            messagePerConversation = 5,
-            messageType = MessageType.Regular
-        )
+    fun givenBackupHasSomeOverlappingConversationsWithTheUserAlongWithTheUniqueOnes_whenRestoringBackup_thenOnlyTheUniqueOnesAreRestored() =
+        runTest {
+            // given
+            val uniqueUserConversationAmount = 25
+            val userConversations = userDatabaseDataGenerator.generateAndInsertConversations(
+                conversationAmount = uniqueUserConversationAmount,
+                messagePerConversation = 5,
+                messageType = MessageType.Regular
+            )
 
-        val uniqueBackupConversationAmount = 25
-        val uniqueBackupConversations = backupDatabaseDataGenerator.generateAndInsertConversations(
-            conversationAmount = uniqueBackupConversationAmount,
-            messagePerConversation = 10,
-            messageType = MessageType.Regular
-        )
+            val uniqueBackupConversationAmount = 25
+            val uniqueBackupConversations = backupDatabaseDataGenerator.generateAndInsertConversations(
+                conversationAmount = uniqueBackupConversationAmount,
+                messagePerConversation = 10,
+                messageType = MessageType.Regular
+            )
 
-        backupDatabaseBuilder.conversationDAO.insertConversations(userConversations)
-        // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+            backupDatabaseBuilder.conversationDAO.insertConversations(
+                listOf(
+                    userConversations[0],
+                    userConversations[1],
+                    userConversations[2]
+                )
+            )
+            // when
+            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
-        // then
-        val conversationAfterRestore = userDatabaseBuilder.conversationDAO.getAllConversations().first()
+            // then
+            val conversationAfterRestore = userDatabaseBuilder.conversationDAO.getAllConversations().first()
 
-        assertTrue(conversationAfterRestore.containsAll(uniqueBackupConversations))
-        assertEquals(uniqueBackupConversationAmount + uniqueBackupConversationAmount, conversationAfterRestore.size)
-    }
+            assertTrue(conversationAfterRestore.containsAll(uniqueBackupConversations))
+            assertEquals(uniqueBackupConversationAmount + uniqueBackupConversationAmount, conversationAfterRestore.size)
+        }
+
+    @Test
+    fun givenBackupHasAllUserConversationsAndBackupHasUniqueOnesAlongWithTheUser_whenRestoringBackup_thenOnlyTheUniqueOesAreRestored() =
+        runTest {
+            // given
+            val uniqueUserConversationAmount = 25
+            val userConversations = userDatabaseDataGenerator.generateAndInsertConversations(
+                conversationAmount = uniqueUserConversationAmount,
+                messagePerConversation = 5,
+                messageType = MessageType.Regular
+            )
+
+            val uniqueBackupConversationAmount = 25
+            val uniqueBackupConversations = backupDatabaseDataGenerator.generateAndInsertConversations(
+                conversationAmount = uniqueBackupConversationAmount,
+                messagePerConversation = 10,
+                messageType = MessageType.Regular
+            )
+
+            backupDatabaseBuilder.conversationDAO.insertConversations(userConversations)
+            // when
+            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+
+            // then
+            val conversationAfterRestore = userDatabaseBuilder.conversationDAO.getAllConversations().first()
+
+            assertTrue(conversationAfterRestore.containsAll(uniqueBackupConversations))
+            assertEquals(uniqueBackupConversationAmount + uniqueBackupConversationAmount, conversationAfterRestore.size)
+        }
+
 
     @Test
     fun givenBackupHasConversationsAndUserNone_whenRestoringBackup_thenThoseConversationAreRestored() = runTest {
