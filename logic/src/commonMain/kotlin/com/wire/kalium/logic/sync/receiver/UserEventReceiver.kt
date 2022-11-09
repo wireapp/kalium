@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
@@ -16,8 +17,9 @@ interface UserEventReceiver : EventReceiver<Event.User>
 
 class UserEventReceiverImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
-    private val logoutUseCase: LogoutUseCase,
+    private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
+    private val logoutUseCase: LogoutUseCase,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
 ) : UserEventReceiver {
@@ -52,8 +54,9 @@ class UserEventReceiverImpl internal constructor(
         if (selfUserId == event.userId) {
             logoutUseCase(LogoutReason.DELETED_ACCOUNT)
         } else {
-            /* TODO: handle a connection delete their account:
-                update connection, conversations[member left, 1:1 show as the connection is deleted and... */
+            userRepository.removeUser(event.userId)
+                .onSuccess { conversationRepository.deleteUserFromConversations(event.userId) }
+                .onFailure { kaliumLogger.e("$TAG - failure on user delete event: $it") }
         }
     }
 
