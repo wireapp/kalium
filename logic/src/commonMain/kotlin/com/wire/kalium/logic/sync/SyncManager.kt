@@ -11,6 +11,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.transform
 
 interface SyncManager {
     /**
@@ -35,6 +36,7 @@ interface SyncManager {
 
     suspend fun isSlowSyncOngoing(): Boolean
     suspend fun isSlowSyncCompleted(): Boolean
+    suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit>
 }
 
 internal class SyncManagerImpl(
@@ -42,8 +44,7 @@ internal class SyncManagerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
 ) : SyncManager {
 
-    private val logger
-        get() = kaliumLogger.withFeatureId(SYNC)
+    private val logger by lazy { kaliumLogger.withFeatureId(SYNC) }
 
     override suspend fun waitUntilLive() {
         incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
@@ -69,6 +70,31 @@ internal class SyncManagerImpl(
                 Either.Right(Unit)
             } else {
                 logger.d("Waiting until live or failure failed")
+                Either.Left(NetworkFailure.NoNetworkConnection(null))
+            }
+        }
+
+    override suspend fun waitUntilStartedOrFailure(): Either<NetworkFailure.NoNetworkConnection, Unit> = slowSyncRepository.slowSyncStatus
+        .transform { slowSyncState ->
+            logger.d("Waiting until started or failure. Current status: slowSync: $slowSyncState")
+
+            val didSlowSyncFail = slowSyncState is SlowSyncStatus.Failed
+            if (didSlowSyncFail) {
+                emit(false)
+            }
+
+            val isSyncStarted = slowSyncState is SlowSyncStatus.Ongoing || slowSyncState is SlowSyncStatus.Complete
+            if (isSyncStarted) {
+                emit(true)
+            }
+        }
+        .first()
+        .let { didWaitingSucceed ->
+            if (didWaitingSucceed) {
+                logger.d("Waiting until started or failure succeeded")
+                Either.Right(Unit)
+            } else {
+                logger.d("Waiting until started or failure failed")
                 Either.Left(NetworkFailure.NoNetworkConnection(null))
             }
         }
