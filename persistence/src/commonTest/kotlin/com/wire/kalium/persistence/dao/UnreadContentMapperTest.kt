@@ -1,4 +1,4 @@
-package com.wire.kalium.persistence.dao.unread_content
+package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.dao.UnreadContentMapper
 import com.wire.kalium.persistence.dao.message.MessageEntity
