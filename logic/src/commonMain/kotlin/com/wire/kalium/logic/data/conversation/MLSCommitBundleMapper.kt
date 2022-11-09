@@ -23,7 +23,7 @@ class MLSCommitBundleMapperImpl : MLSCommitBundleMapper {
             },
             groupInfoBundle = GroupInfoBundle(
                 groupInfo = ByteArr(bundle.publicGroupStateBundle.payload),
-                groupInfoType = GroupInfoType.PUBLIC_GROUP_STATE,// TODO: later map it from the bundle object
+                groupInfoType = GroupInfoType.PUBLIC_GROUP_STATE, // TODO: later map it from the bundle object
                 ratchetTreeType = RatchetTreeType.fromName(bundle.publicGroupStateBundle.ratchetTreeType.name)
             )
         )
