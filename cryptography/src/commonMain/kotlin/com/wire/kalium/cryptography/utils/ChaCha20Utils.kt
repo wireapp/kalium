@@ -7,7 +7,7 @@ import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_FINAL
 import com.ionspin.kotlin.crypto.secretstream.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE
 import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.backup.Backup
+import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.kaliumLogger
 import okio.Buffer
 import okio.Sink
@@ -22,21 +22,21 @@ internal class ChaCha20Utils {
         backupDataSource: Source,
         outputSink: Sink,
         userId: CryptoUserID,
-        passphrase: Backup.Passphrase
+        passphrase: BackupCoder.Passphrase
     ): Long {
 
         initializeLibsodiumIfNeeded()
         var encryptedDataSize = 0L
-        val additionalInformation: UByteArray = Backup.version.encodeToByteArray().toUByteArray()
+        val additionalInformation: UByteArray = BackupCoder.version.encodeToByteArray().toUByteArray()
         val outputBufferedSink = outputSink.buffer()
 
         try {
-            val backup = Backup(
+            val backupCoder = BackupCoder(
                 userId = userId,
                 passphrase = passphrase
             )
-            val backupHeader = backup.encodeHeader()
-            val chaCha20Key = backup.generateChaCha20Key(backupHeader)
+            val backupHeader = backupCoder.encodeHeader()
+            val chaCha20Key = backupCoder.generateChaCha20Key(backupHeader)
             val backupHeaderData = backupHeader.toByteArray().also {
                 if (it.isEmpty()) throw IllegalStateException("Backup header is empty")
             }
@@ -84,7 +84,7 @@ internal class ChaCha20Utils {
     suspend fun decryptBackupFile(
         encryptedDataSource: Source,
         decryptedDataSink: Sink,
-        passphrase: Backup.Passphrase,
+        passphrase: BackupCoder.Passphrase,
         userId: CryptoUserID
     ): Long {
 
@@ -93,11 +93,11 @@ internal class ChaCha20Utils {
         val decryptionBufferedSink = decryptedDataSink.buffer()
 
         try {
-            val additionalInformation: UByteArray = Backup.version.encodeToByteArray().toUByteArray()
-            val backup = Backup(userId, passphrase)
-            val header = backup.decodeHeader(encryptedDataSource)
+            val additionalInformation: UByteArray = BackupCoder.version.encodeToByteArray().toUByteArray()
+            val backupCoder = BackupCoder(userId, passphrase)
+            val header = backupCoder.decodeHeader(encryptedDataSource)
 
-            val key = backup.generateChaCha20Key(header).toUByteArray()
+            val key = backupCoder.generateChaCha20Key(header).toUByteArray()
 
             // ChaCha20 header is needed to validate the encrypted data hasn't been tampered with different authentication
             val chaChaHeaderBuffer = Buffer()

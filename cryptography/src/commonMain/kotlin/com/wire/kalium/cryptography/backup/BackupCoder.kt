@@ -4,24 +4,22 @@ import com.ionspin.kotlin.crypto.pwhash.PasswordHash
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_ALG_DEFAULT
 import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
 import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.utils.initializeLibsodiumIfNeeded
 import okio.Buffer
-import okio.BufferedSource
 import okio.IOException
 import okio.Source
 import kotlin.random.Random
 import kotlin.random.nextUBytes
 
 @OptIn(ExperimentalUnsignedTypes::class)
-class Backup(val userId: CryptoUserID, val passphrase: Passphrase) {
+class BackupCoder(val userId: CryptoUserID, val passphrase: Passphrase) {
 
-    suspend fun encodeHeader(): Header {
+    fun encodeHeader(): Header {
         val salt = Random.nextUBytes(crypto_pwhash_SALTBYTES)
         val hashedUserId = hashUserId(userId, salt, OPSLIMIT_INTERACTIVE_VALUE, MEMLIMIT_INTERACTIVE_VALUE)
         return Header(format, version, salt, hashedUserId, OPSLIMIT_INTERACTIVE_VALUE, MEMLIMIT_INTERACTIVE_VALUE)
     }
 
-    suspend fun decodeHeader(encryptedDataSource: Source): Header {
+    fun decodeHeader(encryptedDataSource: Source): Header {
         val decodedHeader = encryptedDataSource.readBackupHeader()
 
         // Sanity checks
@@ -108,8 +106,7 @@ class Backup(val userId: CryptoUserID, val passphrase: Passphrase) {
     }
 
     // ChaCha20 SecretKey used to encrypt derived from the passphrase (salt + provided password)
-    internal suspend fun generateChaCha20Key(header: Header): UByteArray {
-        initializeLibsodiumIfNeeded()
+    internal fun generateChaCha20Key(header: Header): UByteArray {
         return PasswordHash.pwhash(
             PWD_HASH_OUTPUT_BYTES,
             passphrase.password,
@@ -120,8 +117,7 @@ class Backup(val userId: CryptoUserID, val passphrase: Passphrase) {
         )
     }
 
-    private suspend fun hashUserId(userId: CryptoUserID, salt: UByteArray, opslimit: Int, memlimit: Int): UByteArray {
-        initializeLibsodiumIfNeeded()
+    private fun hashUserId(userId: CryptoUserID, salt: UByteArray, opslimit: Int, memlimit: Int): UByteArray {
         return PasswordHash.pwhash(
             PWD_HASH_OUTPUT_BYTES,
             userId.toString(),

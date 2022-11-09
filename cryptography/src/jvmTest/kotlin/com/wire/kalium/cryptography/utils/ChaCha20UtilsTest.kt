@@ -1,7 +1,7 @@
 package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.CryptoUserID
-import com.wire.kalium.cryptography.backup.Backup
+import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.readBinaryResource
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -19,9 +19,9 @@ internal class ChaCha20UtilsTest {
     fun `given some passphrase, when generating the ChaCha20 secret key, it is a valid one`() = runTest {
 
         val password = "some password"
-        val passphrase = Backup.Passphrase(password)
-        val backup = Backup(CryptoUserID("some user id", "some-domain"), passphrase)
-        val header = Backup.Header(
+        val passphrase = BackupCoder.Passphrase(password)
+        val backupCoder = BackupCoder(CryptoUserID("some user id", "some-domain"), passphrase)
+        val header = BackupCoder.Header(
             format = "some format",
             version = "some version",
             salt = UByteArray(16) { 0u },
@@ -30,7 +30,7 @@ internal class ChaCha20UtilsTest {
             memlimit = 1
         )
 
-        val chaCha20Key = backup.generateChaCha20Key(header)
+        val chaCha20Key = backupCoder.generateChaCha20Key(header)
 
         assertTrue(chaCha20Key.isNotEmpty())
         assertTrue(chaCha20Key.size == 32)
@@ -54,7 +54,7 @@ internal class ChaCha20UtilsTest {
             val decryptedDataOutputSink = fakeFileSystem.sink(decryptedOutputPath)
             val password = "some password"
             val userId = CryptoUserID("some-user-id", "some-domain.com")
-            val passphrase = Backup.Passphrase(password)
+            val passphrase = BackupCoder.Passphrase(password)
 
             val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, userId, passphrase)
 
@@ -89,7 +89,7 @@ internal class ChaCha20UtilsTest {
             val decryptedDataOutputSink = fakeFileSystem.sink(decryptedOutputPath)
             val password = "some password"
             val userId = CryptoUserID("some-user-id", "some-domain.com")
-            val passphrase = Backup.Passphrase(password)
+            val passphrase = BackupCoder.Passphrase(password)
             val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, userId, passphrase)
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
             val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
