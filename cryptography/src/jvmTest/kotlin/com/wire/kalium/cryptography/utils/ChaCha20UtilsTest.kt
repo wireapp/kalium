@@ -1,6 +1,5 @@
 package com.wire.kalium.cryptography.utils
 
-import com.ionspin.kotlin.crypto.pwhash.crypto_pwhash_SALTBYTES
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.backup.Backup
 import com.wire.kalium.cryptography.readBinaryResource
@@ -15,30 +14,28 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ChaCha20UtilsTest {
 
-    @Test
     @OptIn(ExperimentalUnsignedTypes::class)
-    fun `salt generated has correct size`() = runTest {
-        val salt = generateSalt()
-
-        assertTrue(salt.isNotEmpty())
-        assertEquals(salt.size, crypto_pwhash_SALTBYTES)
-    }
-
     @Test
-    @OptIn(ExperimentalUnsignedTypes::class)
     fun `given some passphrase, when generating the ChaCha20 secret key, it is a valid one`() = runTest {
-        val salt = generateSalt()
 
         val password = "some password"
         val passphrase = Backup.Passphrase(password)
+        val backup = Backup(CryptoUserID("some user id", "some-domain"), passphrase)
+        val header = Backup.Header(
+            format = "some format",
+            version = "some version",
+            salt = UByteArray(16) { 0u },
+            hashedUserId = "some hashed user id".toByteArray().toUByteArray(),
+            opslimit = 1,
+            memlimit = 1
+        )
 
-        val chaCha20Key = Backup.generateChaCha20Key(passphrase, salt)
+        val chaCha20Key = backup.generateChaCha20Key(header)
 
         assertTrue(chaCha20Key.isNotEmpty())
         assertTrue(chaCha20Key.size == 32)
     }
 
-    @OptIn(ExperimentalUnsignedTypes::class)
     @Test
     fun `given some dummy backup data, when encrypting and decrypting with chacha20, data matches`() = runTest {
         // Given
@@ -55,13 +52,11 @@ internal class ChaCha20UtilsTest {
             val inputDataSource = fakeFileSystem.source(inputPath)
             val encryptedOutputSink = fakeFileSystem.sink(encryptedOutputPath)
             val decryptedDataOutputSink = fakeFileSystem.sink(decryptedOutputPath)
-            val salt = generateSalt()
             val password = "some password"
             val userId = CryptoUserID("some-user-id", "some-domain.com")
             val passphrase = Backup.Passphrase(password)
-            val backup = Backup(salt, userId, passphrase)
 
-            val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
+            val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, userId, passphrase)
 
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
             val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
@@ -76,7 +71,6 @@ internal class ChaCha20UtilsTest {
         }
     }
 
-    @OptIn(ExperimentalUnsignedTypes::class)
     @Test
     fun `given some big backup data, when encrypting and decrypting with chacha20, data matches`() = runTest {
         // Given
@@ -93,14 +87,10 @@ internal class ChaCha20UtilsTest {
             val inputDataSource = fakeFileSystem.source(inputPath)
             val encryptedOutputSink = fakeFileSystem.sink(encryptedOutputPath)
             val decryptedDataOutputSink = fakeFileSystem.sink(decryptedOutputPath)
-            val salt = generateSalt()
             val password = "some password"
             val userId = CryptoUserID("some-user-id", "some-domain.com")
             val passphrase = Backup.Passphrase(password)
-            val backup = Backup(salt, userId, passphrase)
-
-            val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, backup)
-
+            val outputSize = ChaCha20Utils().encryptBackupFile(inputDataSource, encryptedOutputSink, userId, passphrase)
             val encryptedDataSource = fakeFileSystem.source(encryptedOutputPath)
             val decryptedDataSize = ChaCha20Utils().decryptBackupFile(encryptedDataSource, decryptedDataOutputSink, passphrase, userId)
 
