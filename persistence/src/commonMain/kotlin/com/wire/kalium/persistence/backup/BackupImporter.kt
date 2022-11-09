@@ -8,7 +8,6 @@ interface BackupImporter {
 
 class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
 
-    // TODO: Emit steps to display progress as backup is imported
     override suspend fun importFromFile(filePath: String) {
         sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS""", 1) {
             bindString(1, filePath)
@@ -17,7 +16,9 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
 
         migrateTable("Team")
         migrateTable("User")
-//         migrateTable("SelfUser")
+        // TODO: This is going to be addressed in a separate ticket as it requires some changes
+        // to the way we are creating a database
+        // migrateTable("SelfUser")
         migrateTable("Metadata")
         migrateTable("Conversation")
         migrateTable("Connection")
@@ -32,7 +33,7 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
         migrateTable("MessageMemberChangeContent")
         migrateTable("MessageMention")
         migrateTable("MessageMissedCallContent")
-        migrateTable("MessageRestrictedAssetContent")
+        migrateTable("MessageRestrictedAssetConte  nt")
         migrateTable("MessageTextContent")
         migrateTable("MessageUnknownContent")
         migrateTable("Reaction")

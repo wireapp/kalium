@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.backup
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -67,7 +68,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
             // then
-            val conversationsAfterBackup: List<ConversationEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
+            val conversationsAfterBackup: List<ConversationViewEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
 
             assertTrue(conversationsAfterBackup.containsAll(conversationsToBackup))
             assertEquals(backupConversationAmount + userConversationAmount, conversationsAfterBackup.size)
@@ -96,7 +97,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                     userConversations[0],
                     userConversations[1],
                     userConversations[2]
-                )
+                ).map(::mapFromDetailsToConversationEntity)
             )
             // when
             userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
@@ -126,7 +127,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 messageType = MessageType.Regular
             )
 
-            backupDatabaseBuilder.conversationDAO.insertConversations(userConversations)
+            backupDatabaseBuilder.conversationDAO.insertConversations(userConversations.map(::mapFromDetailsToConversationEntity))
             // when
             userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
@@ -136,7 +137,6 @@ class RestoreBackupTest : BaseDatabaseTest() {
             assertTrue(conversationAfterRestore.containsAll(uniqueBackupConversations))
             assertEquals(uniqueBackupConversationAmount + uniqueBackupConversationAmount, conversationAfterRestore.size)
         }
-
 
     @Test
     fun givenBackupHasConversationsAndUserNone_whenRestoringBackup_thenThoseConversationAreRestored() = runTest {
@@ -185,7 +185,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             messageType = MessageType.Regular
         )
 
-        backupDatabaseBuilder.conversationDAO.insertConversations(userConversations)
+        backupDatabaseBuilder.conversationDAO.insertConversations(userConversations.map(::mapFromDetailsToConversationEntity))
 
         // when
         userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
@@ -312,12 +312,10 @@ class RestoreBackupTest : BaseDatabaseTest() {
         userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
-        val conversationsAfterBackup: List<ConversationEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
+        val conversationsAfterBackup: List<ConversationViewEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
 
-        val conversations = conversationsWithCallToBackup.map { it.first }
         val calls = conversationsWithCallToBackup.map { it.second }
 
-        assertTrue(conversationsAfterBackup.containsAll(conversations))
         assertEquals(backupConversationAmount + userConversationAmount, conversationsAfterBackup.size)
 
         val allCalls = userDatabaseBuilder.callDAO.observeCalls().first()
@@ -478,6 +476,27 @@ class RestoreBackupTest : BaseDatabaseTest() {
         }
     }
 
+    private fun mapFromDetailsToConversationEntity(details: ConversationViewEntity): ConversationEntity {
+        return with(details) {
+            ConversationEntity(
+                id = id,
+                name = name,
+                type = type,
+                teamId = teamId,
+                protocolInfo = protocolInfo,
+                mutedStatus = mutedStatus,
+                mutedTime = mutedTime,
+                removedBy = removedBy,
+                creatorId = creatorId,
+                lastNotificationDate = lastNotificationDate,
+                lastModifiedDate = lastModifiedDate ?: "",
+                lastReadDate = lastReadDate,
+                access = accessList,
+                accessRole = accessRoleList
+            )
+        }
+    }
+
     private suspend fun insertOverlappingConversations(amount: Int): List<ConversationEntity> {
         val conversationAdded = mutableListOf<ConversationEntity>()
 
@@ -506,8 +525,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 lastModifiedDate = UserDatabaseDataGenerator.DEFAULT_DATE_STRING,
                 lastReadDate = UserDatabaseDataGenerator.DEFAULT_DATE_STRING,
                 access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
-                isCreator = (index % 2 == 0)
+                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
             )
 
             conversationAdded.add(overlappingConversation)

@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.backup
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamEntity
@@ -121,7 +122,7 @@ class UserDatabaseDataGenerator(
         conversationAmount: Int,
         messagePerConversation: Int,
         messageType: MessageType
-    ): List<ConversationEntity> {
+    ): List<ConversationViewEntity> {
         val conversationPrefix = "${databasePrefix}Conversation${generatedConversationsCount}"
 
         for (index in generatedConversationsCount + 1..conversationAmount) {
@@ -152,8 +153,7 @@ class UserDatabaseDataGenerator(
                     lastModifiedDate = DEFAULT_DATE_STRING,
                     lastReadDate = DEFAULT_DATE_STRING,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
-                    isCreator = (conversationAmount % 2 == 0)
+                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
                 )
             )
 
@@ -169,47 +169,6 @@ class UserDatabaseDataGenerator(
         }
 
         return userDatabaseBuilder.conversationDAO.getAllConversations().first()
-    }
-
-    suspend fun generateAndInsertConversationsWithCall(conversationAmount: Int): List<Pair<ConversationEntity, CallEntity>> {
-        val groupConversationPrefix = "${databasePrefix}CallConversation${generatedConversationsCount}"
-
-        val conversationWithAssociatedCall = mutableListOf<Pair<ConversationEntity, CallEntity>>()
-
-        for (index in generatedConversationsCount + 1..conversationAmount) {
-            val conversationId = QualifiedIDEntity(
-                "${groupConversationPrefix}Value$index",
-                "${groupConversationPrefix}Domain$index"
-            )
-
-            val conversationEntity = ConversationEntity(
-                id = conversationId,
-                name = "${groupConversationPrefix}Name$index",
-                type = ConversationEntity.Type.GROUP,
-                teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
-                mutedTime = 0,
-                removedBy = null,
-                creatorId = "${groupConversationPrefix}CreatorId$index",
-                lastNotificationDate = DEFAULT_DATE_STRING,
-                lastModifiedDate = DEFAULT_DATE_STRING,
-                lastReadDate = DEFAULT_DATE_STRING,
-                access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
-                isCreator = (conversationAmount % 2 == 0)
-            )
-
-            userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
-
-            generatedConversationsCount += 1
-
-            val generatedCall = generateAndInsertCall(conversationId)
-
-            conversationWithAssociatedCall.add(Pair(conversationEntity, generatedCall))
-        }
-
-        return conversationWithAssociatedCall
     }
 
     private suspend fun generateAndInsertCall(conversationId: QualifiedIDEntity): CallEntity {
@@ -240,6 +199,46 @@ class UserDatabaseDataGenerator(
         return callEntity
     }
 
+    suspend fun generateAndInsertConversationsWithCall(conversationAmount: Int): List<Pair<ConversationEntity, CallEntity>> {
+        val groupConversationPrefix = "${databasePrefix}CallConversation${generatedConversationsCount}"
+
+        val conversationWithAssociatedCall = mutableListOf<Pair<ConversationEntity, CallEntity>>()
+
+        for (index in generatedConversationsCount + 1..conversationAmount) {
+            val conversationId = QualifiedIDEntity(
+                "${groupConversationPrefix}Value$index",
+                "${groupConversationPrefix}Domain$index"
+            )
+
+            val conversationEntity = ConversationEntity(
+                id = conversationId,
+                name = "${groupConversationPrefix}Name$index",
+                type = ConversationEntity.Type.GROUP,
+                teamId = null,
+                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+                mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
+                mutedTime = 0,
+                removedBy = null,
+                creatorId = "${groupConversationPrefix}CreatorId$index",
+                lastNotificationDate = DEFAULT_DATE_STRING,
+                lastModifiedDate = DEFAULT_DATE_STRING,
+                lastReadDate = DEFAULT_DATE_STRING,
+                access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
+                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
+            )
+
+            userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
+
+            generatedConversationsCount += 1
+
+            val generatedCall = generateAndInsertCall(conversationId)
+
+            conversationWithAssociatedCall.add(Pair(conversationEntity, generatedCall))
+        }
+
+        return conversationWithAssociatedCall
+    }
+
     fun generateTeams(teamAmount: Int): List<TeamEntity> {
         val teamPrefix = "${databasePrefix}Team${generatedTeamCount}"
         val teams = mutableListOf<TeamEntity>()
@@ -261,7 +260,7 @@ class UserDatabaseDataGenerator(
     suspend fun generateAndInsertGroupConversations(
         conversationAmount: Int,
         membersPerGroup: Int
-    ): List<ConversationEntity> {
+    ): List<ConversationViewEntity> {
         val groupConversationPrefix = "${databasePrefix}GroupConversation${generatedConversationsCount}"
 
         for (index in generatedConversationsCount + 1..conversationAmount) {
@@ -285,8 +284,7 @@ class UserDatabaseDataGenerator(
                     lastModifiedDate = DEFAULT_DATE_STRING,
                     lastReadDate = DEFAULT_DATE_STRING,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
-                    isCreator = (conversationAmount % 2 == 0)
+                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
                 )
             )
 
@@ -301,7 +299,7 @@ class UserDatabaseDataGenerator(
     suspend fun generateAndInsertGroupConversations(
         conversationAmount: Int,
         membersGenerate: (ConversationIDEntity) -> List<Member>
-    ): List<ConversationEntity> {
+    ): List<ConversationViewEntity> {
         val groupConversationPrefix = "${databasePrefix}GroupConversation${generatedConversationsCount}"
 
         for (index in generatedConversationsCount + 1..conversationAmount) {
@@ -325,8 +323,7 @@ class UserDatabaseDataGenerator(
                     lastModifiedDate = DEFAULT_DATE_STRING,
                     lastReadDate = DEFAULT_DATE_STRING,
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
-                    isCreator = (conversationAmount % 2 == 0)
+                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
                 )
             )
 
@@ -371,17 +368,6 @@ class UserDatabaseDataGenerator(
         return userDatabaseBuilder.userDAO.getAllUsers().first()
     }
 
-    fun generateUsers(amount: Int): List<UserEntity> {
-        val generatedUsers = mutableListOf<UserEntity>()
-
-        for (index in generatedUsersCount + 1..amount) {
-            val user = generateUser()
-            generatedUsers.add(user)
-        }
-
-        return generatedUsers
-    }
-
     suspend fun generateAndInsertAssets(amount: Int): MutableList<AssetEntity> {
         val assetPrefix = "${databasePrefix}Asset${generatedAssetsCount}"
 
@@ -408,9 +394,8 @@ class UserDatabaseDataGenerator(
         return generatedAssets
     }
 
-
 }
 
 enum class MessageType {
-    Regular, System
+    Regular
 }
