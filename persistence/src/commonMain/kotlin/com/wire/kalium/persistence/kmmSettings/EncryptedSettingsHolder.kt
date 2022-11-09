@@ -4,7 +4,7 @@ import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
 
-internal sealed class SettingOptions {
+sealed class SettingOptions {
     abstract val fileName: String
     abstract val shouldEncryptData: Boolean
 
@@ -17,6 +17,6 @@ internal sealed class SettingOptions {
     }
 }
 
-internal expect class EncryptedSettingsHolder {
-    val encryptedSettings: Settings
-}
+expect fun encryptedSettingsBuilder(options: SettingOptions, param: EncryptedSettingsPlatformParam): Settings
+
+expect class EncryptedSettingsPlatformParam
