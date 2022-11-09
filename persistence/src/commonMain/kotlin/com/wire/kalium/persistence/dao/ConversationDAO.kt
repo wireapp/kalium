@@ -1,7 +1,7 @@
 package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.dao.call.CallEntity
-import com.wire.kalium.persistence.dao.unread_content.UnreadContentCountEntity
+import com.wire.kalium.persistence.dao.message.UnreadContentCountEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
