@@ -19,6 +19,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -587,6 +588,129 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 assertNotNull(conversation)
                 // then
                 assertEquals(regularMessagesCount, conversation.unreadContentCountEntity.values.sum())
+            }
+        }
+    }
+
+    @Test
+    fun givenUnreadMessageTextContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(user1)
+
+        messageDAO.insertMessages(
+            listOf(
+                newRegularMessageEntity(
+                    id = "regularAsset",
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = user1.id,
+                    content = MessageEntityContent.Text("text")
+                )
+            )
+        )
+
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            // when
+            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
+                val conversation = awaitItem()
+                assertNotNull(conversation)
+                // then
+                assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.TEXT)
+            }
+        }
+    }
+
+    @Test
+    fun givenUnreadMessageAssetContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainTextContentType() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(user1)
+
+        messageDAO.insertMessages(
+            listOf(
+                newRegularMessageEntity(
+                    id = "regularAsset",
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = user1.id,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = "MP4",
+                        assetDownloadStatus = null,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = "assetId",
+                        assetToken = "",
+                        assetDomain = "domain",
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = 111,
+                        assetHeight = 111,
+                        assetDurationMs = 10,
+                        assetNormalizedLoudness = byteArrayOf(1),
+                    )
+                )
+            )
+        )
+
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            // when
+            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
+                val conversation = awaitItem()
+                assertNotNull(conversation)
+                // then
+                assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.ASSET)
+            }
+        }
+    }
+
+    @Test
+    fun givenUnreadMessageMissedCallContentType_WhenGettingUnreadMessageCount_ThenCounterShouldContainMissedCallContentType() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        conversationDAO.insertConversation(
+            newConversationEntity(
+                id = conversationId,
+                lastReadDate = "2000-01-01T12:00:00.000Z",
+            )
+        )
+
+        userDAO.insertUser(user1)
+
+        messageDAO.insertMessages(
+            listOf(
+                newSystemMessageEntity(
+                    id = "regularAsset",
+                    date = "2000-01-01T13:00:00.000Z",
+                    conversationId = conversationId,
+                    senderUserId = user1.id,
+                    content = MessageEntityContent.MissedCall
+                )
+            )
+        )
+
+        launch(UnconfinedTestDispatcher(testScheduler)) {
+            // when
+            conversationDAO.observeGetConversationByQualifiedID(conversationId).test {
+                val conversation = awaitItem()
+                assertNotNull(conversation)
+                // then
+                assertContains(conversation.unreadContentCountEntity.keys, MessageEntity.ContentType.MISSED_CALL)
             }
         }
     }
