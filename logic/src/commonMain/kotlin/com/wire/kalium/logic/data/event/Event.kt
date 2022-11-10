@@ -236,7 +236,7 @@ sealed class Event(open val id: String) {
                     "senderUserId" to "${senderUserId.value.obfuscateId()}@${senderUserId.domain.obfuscateDomain()}",
                     "conversationName" to conversationName,
                     "timestampIso" to timestampIso,
-                    )
+                )
                 return "${properties.toJsonElement()}"
             }
         }
@@ -430,11 +430,17 @@ sealed class Event(open val id: String) {
             }
         }
 
-        data class UserDelete(override val id: String, val userId: UserId) : User(id) {
+        data class UserDelete(
+            override val id: String,
+            val userId: UserId,
+            val timestampIso: String = Clock.System.now().toString() // TODO we are not receiving it from API
+        ) :
+            User(id) {
             override fun toString(): String {
                 val properties = mapOf(
                     "id" to id.obfuscateId(),
-                    "userId" to "${userId.value.obfuscateId()}@${userId.domain.obfuscateDomain()}"
+                    "userId" to "${userId.value.obfuscateId()}@${userId.domain.obfuscateDomain()}",
+                    "timestampIso" to timestampIso
                 )
                 return "${properties.toJsonElement()}"
             }

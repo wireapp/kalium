@@ -62,7 +62,8 @@ class ObserveConversationDetailsUseCaseTest {
                     unreadMessagesCount = 0,
                     lastUnreadMessage = null,
                     isSelfUserMember = true,
-                    isSelfUserCreator = true
+                    isSelfUserCreator = true,
+                    unreadContentCount = emptyMap()
                 )
             ),
             Either.Right(
@@ -72,7 +73,8 @@ class ObserveConversationDetailsUseCaseTest {
                     unreadMessagesCount = 0,
                     lastUnreadMessage = null,
                     isSelfUserMember = true,
-                    isSelfUserCreator = true
+                    isSelfUserCreator = true,
+                    unreadContentCount = emptyMap()
                 )
             )
         )
