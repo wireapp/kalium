@@ -17,6 +17,8 @@ sqldelight {
         dialect = Dependencies.SqlDelight.dialect
         packageName = "com.wire.kalium.persistence"
         sourceFolders = listOf("db_user")
+//     TODO add :kalium:persistence:generateCommonMainUserDatabaseSchema to build proccess
+        schemaOutputDirectory = file("src/commonMain/db_user/samples_for_migration_testing")
     }
 
     database("GlobalDatabase") {
