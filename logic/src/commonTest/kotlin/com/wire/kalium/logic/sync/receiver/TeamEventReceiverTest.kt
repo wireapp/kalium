@@ -111,7 +111,7 @@ class TeamEventReceiverTest {
         @Mock
         val persistMessageUseCase = mock(classOf<PersistMessageUseCase>())
 
-        private val userEventReceiver: TeamEventReceiver = TeamEventReceiverImpl(
+        private val teamEventReceiver: TeamEventReceiver = TeamEventReceiverImpl(
             teamRepository, conversationRepository, userRepository, persistMessageUseCase,
             TestUser.USER_ID
         )
@@ -155,6 +155,6 @@ class TeamEventReceiverTest {
                 .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
-        fun arrange() = this to userEventReceiver
+        fun arrange() = this to teamEventReceiver
     }
 }
