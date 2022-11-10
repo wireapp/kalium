@@ -59,7 +59,7 @@ interface ServerConfigurationDAO {
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
-    fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity?
+    fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
     fun updateApiVersion(id: String, commonApiVersion: Int)
     fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     fun configForUser(userId: UserIDEntity): ServerConfigEntity?
@@ -123,9 +123,16 @@ internal class ServerConfigurationDAOImpl internal constructor(
     override fun configById(id: String): ServerConfigEntity? =
         queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
 
-    override fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity? =
-        queries.getByLinks(title, apiBaseUrl, webSocketBaseUrl, mapper = mapper::fromServerConfiguration)
-            .executeAsOneOrNull()
+    override fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity? = with(links) {
+        queries.getByLinks(
+            apiBaseUrl = api,
+            webSocketBaseUrl = webSocket,
+            title = title,
+            proxy_api = proxy?.proxyApi,
+            proxy_port = proxy?.proxyPort,
+            mapper = mapper::fromServerConfiguration
+        )
+    }.executeAsOneOrNull()
 
     override fun updateApiVersion(id: String, commonApiVersion: Int) = queries.updateApiVersion(commonApiVersion, id)
 

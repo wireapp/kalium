@@ -108,7 +108,7 @@ internal class ServerConfigDataSource(
 
     override fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
     override suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
-        wrapStorageRequest { dao.configByLinks(serverLinks.title, serverLinks.api, serverLinks.webSocket) }.fold({
+        wrapStorageRequest { dao.configByLinks(serverConfigMapper.toEntity(serverLinks)) }.fold({
             fetchApiVersionAndStore(serverLinks)
         }, {
             Either.Right(serverConfigMapper.fromEntity(it))
@@ -117,7 +117,7 @@ internal class ServerConfigDataSource(
     override fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest {
             // check if such config is already inserted
-            val storedConfigId = dao.configByLinks(links.title, links.api, links.webSocket)?.id
+            val storedConfigId = dao.configByLinks(serverConfigMapper.toEntity(links))?.id
             if (storedConfigId != null) {
                 // if already exists then just update it
                 dao.updateApiVersion(storedConfigId, metadata.commonApiVersion.version)
@@ -177,7 +177,7 @@ internal class ServerConfigDataSource(
     }.map { serverConfigMapper.fromEntity(it) }
 
     override fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig> =
-        wrapStorageRequest { dao.configByLinks(links.title, links.api, links.webSocket) }.map { serverConfigMapper.fromEntity(it) }
+        wrapStorageRequest { dao.configByLinks(serverConfigMapper.toEntity(links)) }.map { serverConfigMapper.fromEntity(it) }
 
     override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
         .flatMap { fetchMetadata(it.links) }
