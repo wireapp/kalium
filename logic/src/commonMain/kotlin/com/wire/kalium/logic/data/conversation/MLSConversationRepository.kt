@@ -216,11 +216,6 @@ class MLSConversationDataSource(
     private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
-                kaliumLogger.e("### commit bundle ${bundle.commit}")
-                kaliumLogger.e("### commit bundle ${bundle.welcome}")
-                kaliumLogger.e("### commit bundle ${bundle.publicGroupStateBundle.payload}")
-                kaliumLogger.e("### commit bundle ${bundle.publicGroupStateBundle.ratchetTreeType.name}")
-                kaliumLogger.e("### commit bundle ${bundle.publicGroupStateBundle.encryptionType.name}")
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
             }.flatMap { response ->
                 processCommitBundleEvents(response.events)

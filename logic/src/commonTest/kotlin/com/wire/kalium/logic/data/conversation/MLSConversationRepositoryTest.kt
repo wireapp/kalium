@@ -69,9 +69,7 @@ class MLSConversationRepositoryTest {
             .withGetPublicKeysSuccessful()
             .withCreateMLSConversationSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
-            .withSendMLSMessageSuccessful()
-            .withCommitAcceptedSuccessful()
+            .withSendCommitBundleSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .arrange()
 
@@ -88,10 +86,9 @@ class MLSConversationRepositoryTest {
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
-            .wasInvoked(once)
-
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
@@ -109,8 +106,7 @@ class MLSConversationRepositoryTest {
             .withGetPublicKeysSuccessful()
             .withCreateMLSConversationSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
-            .withSendMLSMessageFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withClearPendingCommitSuccessful()
             .withWaitUntilLiveSuccessful()
             .withCommitAcceptedSuccessful()
@@ -130,7 +126,9 @@ class MLSConversationRepositoryTest {
             .with()
             .wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(twice)
     }
 
@@ -179,9 +177,7 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
-            .withSendMLSMessageSuccessful()
-            .withCommitAcceptedSuccessful()
+            .withCommitBundleSuccessful()
             .arrange()
 
         val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
@@ -192,10 +188,9 @@ class MLSConversationRepositoryTest {
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
-            .wasInvoked(once)
-
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
@@ -211,9 +206,7 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
-            .withSendMLSMessageSuccessful(events = listOf(Arrangement.MEMBER_JOIN_EVENT))
-            .withCommitAcceptedSuccessful()
+            .withCommitBundleSuccessful(events = listOf(Arrangement.MEMBER_JOIN_EVENT))
             .arrange()
 
         val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
@@ -232,9 +225,7 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
-            .withSendMLSMessageSuccessful()
-            .withCommitAcceptedSuccessful()
+            .withCommitBundleSuccessful()
             .arrange()
 
         val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
@@ -254,7 +245,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
             .withSendWelcomeMessageSuccessful()
-            .withSendMLSMessageFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withClearPendingCommitSuccessful()
             .withWaitUntilLiveSuccessful()
             .withCommitAcceptedSuccessful()
@@ -273,7 +264,9 @@ class MLSConversationRepositoryTest {
             .with()
             .wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(twice)
     }
 
@@ -285,7 +278,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
             .withSendWelcomeMessageSuccessful()
-            .withSendMLSMessageFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
+            .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withClearPendingCommitSuccessful()
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
@@ -304,7 +297,9 @@ class MLSConversationRepositoryTest {
             .with(eq(Arrangement.RAW_GROUP_ID))
             .wasNotInvoked()
 
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(twice)
     }
 
@@ -315,7 +310,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
             .withSendWelcomeMessageSuccessful()
-            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
             .withClearPendingCommitSuccessful()
             .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
@@ -337,7 +332,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withJoinConversationSuccessful()
-            .withSendMLSMessageSuccessful()
+            .withSendCommitBundleSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .arrange()
 
@@ -372,10 +367,9 @@ class MLSConversationRepositoryTest {
             .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
-            .wasInvoked(once)
-
-        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
@@ -407,7 +401,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
-            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
             .withClearPendingCommitSuccessful()
             .arrange()
 
@@ -425,7 +419,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withCommitPendingProposalsSuccessful()
-            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
             .withClearPendingCommitSuccessful()
             .arrange()
 
@@ -444,11 +438,9 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
-            .withSendMLSMessageSuccessful()
+            .withCommitBundleSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .withFetchClientsOfUsersSuccessful()
-            .withCommitAcceptedSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
@@ -460,10 +452,9 @@ class MLSConversationRepositoryTest {
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
-            .wasInvoked(once)
-
-        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(once)
     }
 
@@ -473,11 +464,9 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
-            .withSendMLSMessageSuccessful(events = listOf(Arrangement.MEMBER_LEAVE_EVENT))
+            .withCommitBundleSuccessful(events = listOf(Arrangement.MEMBER_LEAVE_EVENT))
             .withUpdateConversationGroupStateSuccessful()
             .withFetchClientsOfUsersSuccessful()
-            .withCommitAcceptedSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
@@ -496,11 +485,9 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsSuccessful()
             .withGetMLSClientSuccessful()
             .withRemoveMemberSuccessful()
-            .withSendMLSMessageSuccessful()
+            .withCommitBundleSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .withFetchClientsOfUsersSuccessful()
-            .withCommitAcceptedSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
@@ -520,7 +507,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
-            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
             .withClearPendingCommitSuccessful()
             .arrange()
 
@@ -541,7 +528,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
-            .withSendMLSMessageFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
+            .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withSendWelcomeMessageSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .withClearPendingCommitSuccessful()
@@ -563,7 +550,9 @@ class MLSConversationRepositoryTest {
             .with()
             .wasInvoked(once)
 
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(twice)
     }
 
@@ -574,7 +563,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
-            .withSendMLSMessageFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
+            .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withSendWelcomeMessageSuccessful()
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
@@ -595,7 +584,9 @@ class MLSConversationRepositoryTest {
             .with(eq(Arrangement.RAW_GROUP_ID))
             .wasNotInvoked()
 
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(twice)
     }
 
@@ -611,10 +602,9 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
         result.shouldSucceed()
 
-        verify(arrangement.mlsMessageApi).coroutine { sendMessage(MLSMessageApi.Message(Arrangement.COMMIT)) }
-            .wasInvoked(once)
-
-        verify(arrangement.mlsMessageApi).coroutine { sendWelcomeMessage(MLSMessageApi.WelcomeMessage(Arrangement.WELCOME)) }
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
@@ -646,7 +636,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
-            .withSendMLSMessageFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
             .withClearPendingCommitSuccessful()
             .arrange()
 
@@ -803,6 +793,22 @@ class MLSConversationRepositoryTest {
                 .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
         }
 
+        fun withSendCommitBundleSuccessful(events: List<EventContentDTO> = emptyList()) = apply {
+            given(mlsMessageApi)
+                .suspendFunction(mlsMessageApi::sendCommitBundle)
+                .whenInvokedWith(anything())
+                .then { NetworkResponse.Success(SendMLSMessageResponse(TIME, events), emptyMap(), 201) }
+        }
+
+        fun withSendCommitBundleFailing(failure: KaliumException, times: Int = Int.MAX_VALUE) = apply {
+            withSendCommitBundleSuccessful()
+            var invocationCounter = 0
+            given(mlsMessageApi)
+                .suspendFunction(mlsMessageApi::sendCommitBundle)
+                .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
+                .then { NetworkResponse.Error(failure) }
+        }
+
         fun withSendMLSMessageFailing(failure: KaliumException, times: Int = Int.MAX_VALUE) = apply {
             withSendMLSMessageSuccessful()
             var invocationCounter = 0
@@ -819,8 +825,9 @@ class MLSConversationRepositoryTest {
                 .then { NetworkResponse.Success(SendMLSMessageResponse(TIME, events), emptyMap(), 201) }
         }
 
-        fun withCommitBundleSuccessful() = apply {
-            withSendMLSMessageSuccessful()
+        fun withCommitBundleSuccessful(events: List<EventContentDTO> = emptyList()) = apply {
+            withSendMLSMessageSuccessful(events)
+            withSendCommitBundleSuccessful(events)
             withSendWelcomeMessageSuccessful()
             withCommitAcceptedSuccessful()
         }
@@ -899,6 +906,7 @@ class MLSConversationRepositoryTest {
                 "public_group_state".encodeToByteArray()
             )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE)
+            val COMMIT_BUNDLE_DTO = MapperProvider.mlsCommitBundleMapper().toDTO(COMMIT_BUNDLE)
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
