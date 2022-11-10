@@ -481,9 +481,10 @@ class ConversationRepositoryTest {
     @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
+        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.GROUP,
-            unreadMessageCount = 10
+            unreadContentCountEntity = unreadContentCount
         )
 
         val (_, conversationRepository) = Arrangement()
@@ -497,7 +498,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
+            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
 
             awaitComplete()
         }
@@ -521,7 +522,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
+            assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
             assertTrue { conversationDetail.value.lastUnreadMessage == null }
 
             awaitComplete()
@@ -547,7 +548,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
+            assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
             assertTrue { conversationDetail.value.lastUnreadMessage == null }
 
             awaitComplete()
@@ -557,10 +558,11 @@ class ConversationRepositoryTest {
     @Test
     fun givenAOneToOneConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
+        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.ONE_ON_ONE,
             otherUserId = QualifiedIDEntity("otherUser", "domain"),
-            unreadMessageCount = 10
+            unreadContentCountEntity = unreadContentCount
         )
 
         val (_, conversationRepository) = Arrangement()
@@ -574,7 +576,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
+            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
             assertTrue(conversationDetail.value.lastUnreadMessage != null)
 
             awaitComplete()
