@@ -110,7 +110,6 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        unreadMessageCount = 0,
         unreadMentionsCount = 0,
         isMember = 1L,
         protocolInfo = protocolInfo,
@@ -126,6 +125,7 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
+        unreadContentCountEntity = mapOf()
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -234,10 +234,9 @@ object TestConversation {
         null,
         isCreator = 0L,
         lastNotificationDate = null,
-        unreadMessageCount = 0,
         unreadMentionsCount = 0,
         isMember = 1L,
-        ConversationEntity.ProtocolInfo.Proteus,
+        protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRoleList = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
@@ -249,7 +248,8 @@ object TestConversation {
         mlsGroupState = ConversationEntity.GroupState.ESTABLISHED,
         mlsProposalTimer = null,
         mutedTime = 0L,
-        removedBy = null
+        removedBy = null,
+        unreadContentCountEntity = mapOf()
     )
 
     val CONVERSATION = Conversation(
