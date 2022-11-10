@@ -1834,8 +1834,9 @@ $dokka.location:com.wire.kalium.logic.data.event/Event.User.Update/ssoIdDeleted/
 $dokka.location:com.wire.kalium.logic.data.event/Event.User.Update/toString/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-update/to-string.html
 $dokka.location:com.wire.kalium.logic.data.event/Event.User.Update/userId/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-update/user-id.html
 $dokka.location:com.wire.kalium.logic.data.event/Event.User.UserDelete///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-user-delete/index.html
-$dokka.location:com.wire.kalium.logic.data.event/Event.User.UserDelete/UserDelete/#kotlin.String#com.wire.kalium.logic.data.id.QualifiedID/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-user-delete/-user-delete.html
+$dokka.location:com.wire.kalium.logic.data.event/Event.User.UserDelete/UserDelete/#kotlin.String#com.wire.kalium.logic.data.id.QualifiedID#kotlin.String/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-user-delete/-user-delete.html
 $dokka.location:com.wire.kalium.logic.data.event/Event.User.UserDelete/id/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-user-delete/id.html
+$dokka.location:com.wire.kalium.logic.data.event/Event.User.UserDelete/timestampIso/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-user-delete/timestamp-iso.html
 $dokka.location:com.wire.kalium.logic.data.event/Event.User.UserDelete/toString/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-user-delete/to-string.html
 $dokka.location:com.wire.kalium.logic.data.event/Event.User.UserDelete/userId/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/-user-delete/user-id.html
 $dokka.location:com.wire.kalium.logic.data.event/Event.User///PointingToDeclaration/logic/logic/com.wire.kalium.logic.data.event/-event/-user/index.html
