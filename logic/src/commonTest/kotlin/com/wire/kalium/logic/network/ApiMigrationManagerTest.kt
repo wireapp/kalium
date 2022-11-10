@@ -105,7 +105,7 @@ class ApiMigrationManagerTest {
 
         verify(arrangement.metadataDAO)
             .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY), eq("2"))
+            .with(eq("2"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
             .wasInvoked(once)
     }
 
@@ -125,7 +125,7 @@ class ApiMigrationManagerTest {
 
         verify(arrangement.metadataDAO)
             .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY), eq("1"))
+            .with(eq("1"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
             .wasInvoked(once)
     }
 
