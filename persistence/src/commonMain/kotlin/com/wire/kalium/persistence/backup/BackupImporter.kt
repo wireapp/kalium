@@ -13,36 +13,39 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
             bindString(1, filePath)
         }
         sqlDriver.execute("""BEGIN""")
-
-        migrateTable("Team")
-        migrateTable("User")
+        restoreTable("Team")
+        restoreTable("User")
         // TODO: This is going to be addressed in a separate ticket as it requires some changes
         // to the way we are creating a database
         // migrateTable("SelfUser")
-        migrateTable("Metadata")
-        migrateTable("Conversation")
-        migrateTable("Connection")
-        migrateTable("Member")
-        migrateTable("Client")
-        migrateTable("Message")
-        migrateTable("Asset")
-        migrateTable("Call")
-        migrateTable("MessageAssetContent")
-        migrateTable("MessageConversationChangedContent")
-        migrateTable("MessageFailedToDecryptContent")
-        migrateTable("MessageMemberChangeContent")
-        migrateTable("MessageMention")
-        migrateTable("MessageMissedCallContent")
-        migrateTable("MessageRestrictedAssetConte  nt")
-        migrateTable("MessageTextContent")
-        migrateTable("MessageUnknownContent")
-        migrateTable("Reaction")
+        restoreTable("Metadata")
+        restoreTable("Conversation")
+        restoreTable("Connection")
+        restoreTable("Member")
+        restoreTable("Client")
+        restoreTable("Message")
+        restoreTable("Call")
+        restoreAssets()
+        restoreTable("MessageConversationChangedContent")
+        restoreTable("MessageFailedToDecryptContent")
+        restoreTable("MessageMemberChangeContent")
+        restoreTable("MessageMention")
+        restoreTable("MessageMissedCallContent")
+        restoreTable("MessageTextContent")
+        restoreTable("MessageUnknownContent")
+        restoreTable("Reaction")
 
         sqlDriver.execute("""COMMIT""")
         sqlDriver.execute("""DETACH $BACKUP_DB_ALIAS""")
     }
 
-    private fun migrateTable(tableName: String) {
+    private fun restoreAssets() {
+        sqlDriver.execute("""UPDATE backupDb.MessageAssetContent SET asset_upload_status = 'NOT_UPLOADED', asset_download_status = 'NOT_DOWNLOADED'""")
+        restoreTable("MessageAssetContent")
+        restoreTable("MessageRestrictedAssetContent")
+    }
+
+    private fun restoreTable(tableName: String) {
         sqlDriver.execute("""INSERT OR IGNORE INTO $tableName SELECT * FROM $BACKUP_DB_ALIAS.$tableName""")
     }
 

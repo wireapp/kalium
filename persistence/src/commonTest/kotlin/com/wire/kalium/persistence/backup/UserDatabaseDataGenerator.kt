@@ -66,6 +66,66 @@ class UserDatabaseDataGenerator(
         return messages
     }
 
+    private suspend fun generateAndInsertAssetMessages(
+        amount: Int,
+        conversationIDEntity: ConversationIDEntity,
+        assetUploadStatus: MessageEntity.UploadStatus,
+        assetDownloadStatus: MessageEntity.DownloadStatus
+    ): List<MessageEntity> {
+        val messagePrefix = "regular${databasePrefix}Message${generatedMessagesCount}"
+        val messages = mutableListOf<MessageEntity>()
+
+        for (index in generatedMessagesCount + 1..amount) {
+            val senderUser = generateUser()
+            userDatabaseBuilder.userDAO.insertUser(senderUser)
+
+            messages.add(
+                MessageEntity.Regular(
+                    id = "${messagePrefix}messageId",
+                    content = generateMessageAssetContent(assetUploadStatus, assetDownloadStatus),
+                    conversationId = conversationIDEntity,
+                    date = DEFAULT_DATE_STRING,
+                    senderUserId = senderUser.id,
+                    senderClientId = "${messagePrefix}senderClientId",
+                    status = MessageEntity.Status.values()[index % MessageEntity.Status.values().size],
+                    editStatus = if (index % 2 == 0)
+                        MessageEntity.EditStatus.NotEdited else
+                        MessageEntity.EditStatus.Edited(DEFAULT_DATE_STRING),
+                    visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+                )
+            )
+
+            generatedMessagesCount += 1
+        }
+
+        return messages
+    }
+
+    private fun generateMessageAssetContent(
+        assetUploadStatus: MessageEntity.UploadStatus,
+        assetDownloadStatus: MessageEntity.DownloadStatus
+    ): MessageEntityContent.Regular {
+        val messageAssetContentPrefix = "${databasePrefix}MessageAssetContent${generatedAssetsCount}"
+
+        return MessageEntityContent.Asset(
+            assetSizeInBytes = 256,
+            assetName = "${messageAssetContentPrefix}Name",
+            assetMimeType = "MP4",
+            assetUploadStatus = assetUploadStatus,
+            assetDownloadStatus = assetDownloadStatus,
+            assetOtrKey = byteArrayOf(1),
+            assetSha256Key = byteArrayOf(1),
+            assetId = "${messageAssetContentPrefix}AssetId",
+            assetToken = "${messageAssetContentPrefix}AssetToken",
+            assetDomain = "${messageAssetContentPrefix}AssetDomain",
+            assetEncryptionAlgorithm = "",
+            assetWidth = 256,
+            assetHeight = 256,
+            assetDurationMs = 10,
+            assetNormalizedLoudness = byteArrayOf(1)
+        )
+    }
+
     private fun generateUser(): UserEntity {
         val userPrefix = "${databasePrefix}User${generatedUsersCount}"
 
@@ -392,6 +452,63 @@ class UserDatabaseDataGenerator(
         }
 
         return generatedAssets
+    }
+
+    suspend fun generateAndInsertMessageAssetContent(
+        conversationAmount: Int,
+        assetAmountPerConversation: Int,
+        assetUploadStatus: MessageEntity.UploadStatus,
+        assetDownloadStatus: MessageEntity.DownloadStatus
+    ): List<ConversationViewEntity> {
+        val conversationPrefix = "${databasePrefix}Conversation${generatedConversationsCount}"
+
+        for (index in generatedConversationsCount + 1..conversationAmount) {
+            val conversationId = QualifiedIDEntity(
+                "${conversationPrefix}Value$index",
+                "${conversationPrefix}Domain$index"
+            )
+
+            val conversationType = ConversationEntity.Type.values()[index % ConversationEntity.Type.values().size]
+
+            val invalidatedConversationType =
+                if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
+                    ConversationEntity.Type.values()[(index + 1) % ConversationEntity.Type.values().size]
+                else conversationType
+
+            userDatabaseBuilder.conversationDAO.insertConversation(
+                ConversationEntity(
+                    id = conversationId,
+                    name = "${conversationPrefix}Name$index",
+                    type = invalidatedConversationType,
+                    teamId = null,
+                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+                    mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
+                    mutedTime = 0,
+                    removedBy = null,
+                    creatorId = "${conversationPrefix}CreatorId$index",
+                    lastNotificationDate = DEFAULT_DATE_STRING,
+                    lastModifiedDate = DEFAULT_DATE_STRING,
+                    lastReadDate = DEFAULT_DATE_STRING,
+                    access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
+                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size])
+                )
+            )
+
+            generatedConversationsCount += 1
+
+            generateMessageAssetContent(assetUploadStatus, assetDownloadStatus)
+
+            userDatabaseBuilder.messageDAO.insertMessages(
+                generateAndInsertAssetMessages(
+                    amount = assetAmountPerConversation,
+                    conversationIDEntity = conversationId,
+                    assetUploadStatus = assetUploadStatus,
+                    assetDownloadStatus = assetDownloadStatus
+                )
+            )
+        }
+
+        return userDatabaseBuilder.conversationDAO.getAllConversations().first()
     }
 
 }

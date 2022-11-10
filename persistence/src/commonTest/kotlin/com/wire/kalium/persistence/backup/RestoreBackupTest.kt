@@ -6,6 +6,8 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.IgnoreJvm
 import kotlinx.coroutines.flow.first
@@ -13,6 +15,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 // There is some issue with restoring backup on JVM, investigation in progress
@@ -420,7 +424,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenBackupHasAssetsButUserNot_whenRestoringBackup_thenBackupAssetsAreRestored() = runTest {
+    fun givenBackupHasAssets_whenRestoringBackup_thenThoseAssetsAreNotRestored() = runTest {
         // given
         val assetsToRestore = backupDatabaseDataGenerator.generateAndInsertAssets(10)
 
@@ -428,53 +432,107 @@ class RestoreBackupTest : BaseDatabaseTest() {
         userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
-        assetsToRestore.forEach { restoredAssetEntity ->
-            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(restoredAssetEntity.key).first()
-            assertTrue(asset != null)
-            assertEquals(asset, restoredAssetEntity)
+        assetsToRestore.forEach { assetEntity ->
+            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(assetEntity.key).first()
+            assertNull(asset)
         }
     }
 
     @Test
-    fun givenUserHasAssetButBackupNot_whenRestoringBackup_thenUserAssetAreRestored() = runTest {
+    fun givenBackupHasAssetsAndUser_whenRestoringBackup_thenBackupAssetsAreNotRestoredButUsersAssetArePreserved() = runTest {
         // given
-        val assetsToRestore = userDatabaseDataGenerator.generateAndInsertAssets(10)
+        val assetsToRestore = backupDatabaseDataGenerator.generateAndInsertAssets(10)
+        val userAssets = userDatabaseDataGenerator.generateAndInsertAssets(10)
 
         // when
         userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
-        assetsToRestore.forEach { restoredAssetEntity ->
-            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(restoredAssetEntity.key).first()
-
-            assertTrue(asset != null)
-            assertEquals(asset, restoredAssetEntity)
+        assetsToRestore.forEach { assetEntity ->
+            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(assetEntity.key).first()
+            assertNull(asset)
+        }
+        userAssets.forEach { assetEntity ->
+            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(assetEntity.key).first()
+            assertEquals(assetEntity, asset)
         }
     }
 
     @Test
-    fun givenUserHasUniqueAssetsAlongWithBackup_whenRestoringBackup_thenThoseAssetsAreRestored() = runTest {
+    fun givenBackupHasMessageWithAssetContent_whenRestoringBackup_thenThoseMessagesHaveTheirUploadAndDownloadStatusReset() = runTest {
         // given
-        val currentUserAssets = userDatabaseDataGenerator.generateAndInsertAssets(10)
-        val backupAssets = backupDatabaseDataGenerator.generateAndInsertAssets(10)
+        val test = backupDatabaseDataGenerator.generateAndInsertMessageAssetContent(
+            conversationAmount = 5,
+            assetAmountPerConversation = 5,
+            assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
+            assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
+        )
 
         // when
         userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
-        currentUserAssets.forEach { currentUserAsset ->
-            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(currentUserAsset.key).first()
+        test.forEach { conversationViewEntity ->
+            val messagesByConversationAndVisibility =
+                userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(conversationViewEntity.id, 100, 0).first()
 
-            assertTrue(asset != null)
-            assertEquals(asset, currentUserAsset)
-        }
-        backupAssets.forEach { backupAssetEntity ->
-            val asset = userDatabaseBuilder.assetDAO.getAssetByKey(backupAssetEntity.key).first()
+            messagesByConversationAndVisibility.forEach { messageEntity ->
+                val messageContent = messageEntity.content
 
-            assertTrue(asset != null)
-            assertEquals(asset, backupAssetEntity)
+                assertIs<MessageEntityContent.Asset>(messageContent)
+                assertEquals(MessageEntity.DownloadStatus.NOT_DOWNLOADED, messageContent.assetDownloadStatus)
+                assertEquals(MessageEntity.UploadStatus.NOT_UPLOADED, messageContent.assetUploadStatus)
+            }
         }
     }
+
+    @Test
+    fun givenBackupHasConversationWithAssetContentAndUserToo_whenRestoringBackup_thenOnlyTheBackupMessageAssetContentDownloadAndUploadStatusIsReset() =
+        runTest {
+            // given
+            val backupConversationWithAssetContent = backupDatabaseDataGenerator.generateAndInsertMessageAssetContent(
+                conversationAmount = 5,
+                assetAmountPerConversation = 5,
+                assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
+                assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
+            )
+
+            val userConversationWithAssetContent = backupDatabaseDataGenerator.generateAndInsertMessageAssetContent(
+                conversationAmount = 5,
+                assetAmountPerConversation = 5,
+                assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
+                assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
+            )
+
+            // when
+            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+
+            // then
+            backupConversationWithAssetContent.forEach { conversationViewEntity ->
+                val messagesByConversationAndVisibility =
+                    userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(conversationViewEntity.id, 100, 0).first()
+
+                messagesByConversationAndVisibility.forEach { messageEntity ->
+                    val messageContent = messageEntity.content
+
+
+                    assertIs<MessageEntityContent.Asset>(messageContent)
+                    assertEquals(MessageEntity.DownloadStatus.NOT_DOWNLOADED, messageContent.assetDownloadStatus)
+                    assertEquals(MessageEntity.UploadStatus.NOT_UPLOADED, messageContent.assetUploadStatus)
+                }
+            }
+
+            userConversationWithAssetContent.forEach { conversationViewEntity ->
+                val messagesByConversationAndVisibility =
+                    userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(conversationViewEntity.id, 100, 0).first()
+
+                messagesByConversationAndVisibility.forEach { messageEntity ->
+                    assertIs<MessageEntityContent.Asset>(messageEntity)
+                    assertEquals(MessageEntity.DownloadStatus.SAVED_INTERNALLY, messageEntity.assetDownloadStatus)
+                    assertEquals(MessageEntity.UploadStatus.UPLOADED, messageEntity.assetUploadStatus)
+                }
+            }
+        }
 
     private fun mapFromDetailsToConversationEntity(details: ConversationViewEntity): ConversationEntity {
         return with(details) {
