@@ -109,6 +109,7 @@ sealed class MessageEntity(
         FAILED
     }
 
+    @Serializable
     enum class ContentType {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM
@@ -190,3 +191,5 @@ sealed class MessageEntityContent {
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
 }
+
+typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>
