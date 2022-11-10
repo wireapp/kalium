@@ -23,6 +23,7 @@ android {
     }
     packagingOptions {
         resources.pickFirsts.add("google/protobuf/*.proto")
+        jniLibs.pickFirsts.add("**/libsodium.so")
     }
     // Run only Instrumented tests. No need to run Unit AND Instrumented
     // We have JVM tests if we want to run quickly on our machines

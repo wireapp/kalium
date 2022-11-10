@@ -7,6 +7,7 @@ import com.wire.kalium.persistence.cache.Cache
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.shareIn
 
@@ -28,6 +29,7 @@ class MetadataDAOImpl internal constructor(
         metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
+            .distinctUntilChanged()
             .shareIn(databaseScope, SharingStarted.Lazily, 1)
     }
 
