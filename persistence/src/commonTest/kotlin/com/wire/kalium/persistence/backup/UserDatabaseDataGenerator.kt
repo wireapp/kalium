@@ -66,16 +66,16 @@ class UserDatabaseDataGenerator(
         return messages
     }
 
-    private suspend fun generateAndInsertAssetMessages(
+    private suspend fun generateAssetMessages(
         amount: Int,
         conversationIDEntity: ConversationIDEntity,
         assetUploadStatus: MessageEntity.UploadStatus,
         assetDownloadStatus: MessageEntity.DownloadStatus
     ): List<MessageEntity> {
-        val messagePrefix = "regular${databasePrefix}Message${generatedMessagesCount}"
+        val messagePrefix = "Asset${databasePrefix}Message${generatedAssetsCount}"
         val messages = mutableListOf<MessageEntity>()
 
-        for (index in generatedMessagesCount + 1..amount) {
+        for (index in generatedAssetsCount + 1..amount) {
             val senderUser = generateUser()
             userDatabaseBuilder.userDAO.insertUser(senderUser)
 
@@ -95,7 +95,7 @@ class UserDatabaseDataGenerator(
                 )
             )
 
-            generatedMessagesCount += 1
+            generatedAssetsCount += 1
         }
 
         return messages
@@ -496,10 +496,8 @@ class UserDatabaseDataGenerator(
 
             generatedConversationsCount += 1
 
-            generateMessageAssetContent(assetUploadStatus, assetDownloadStatus)
-
             userDatabaseBuilder.messageDAO.insertMessages(
-                generateAndInsertAssetMessages(
+                generateAssetMessages(
                     amount = assetAmountPerConversation,
                     conversationIDEntity = conversationId,
                     assetUploadStatus = assetUploadStatus,

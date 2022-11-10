@@ -497,7 +497,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
             )
 
-            val userConversationWithAssetContent = backupDatabaseDataGenerator.generateAndInsertMessageAssetContent(
+            val userConversationWithAssetContent = userDatabaseDataGeneratorg.generateAndInsertMessageAssetContent(
                 conversationAmount = 5,
                 assetAmountPerConversation = 5,
                 assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
@@ -515,21 +515,22 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 messagesByConversationAndVisibility.forEach { messageEntity ->
                     val messageContent = messageEntity.content
 
-
                     assertIs<MessageEntityContent.Asset>(messageContent)
                     assertEquals(MessageEntity.DownloadStatus.NOT_DOWNLOADED, messageContent.assetDownloadStatus)
                     assertEquals(MessageEntity.UploadStatus.NOT_UPLOADED, messageContent.assetUploadStatus)
                 }
             }
 
-            userConversationWithAssetContent.forEach { conversationViewEntity ->
+            userConversationWithAssetContent.forEach { messageEntity ->
                 val messagesByConversationAndVisibility =
-                    userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(conversationViewEntity.id, 100, 0).first()
+                    userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(messageEntity.id, 100, 0).first()
 
                 messagesByConversationAndVisibility.forEach { messageEntity ->
-                    assertIs<MessageEntityContent.Asset>(messageEntity)
-                    assertEquals(MessageEntity.DownloadStatus.SAVED_INTERNALLY, messageEntity.assetDownloadStatus)
-                    assertEquals(MessageEntity.UploadStatus.UPLOADED, messageEntity.assetUploadStatus)
+                    val messageContent = messageEntity.content
+
+                    assertIs<MessageEntityContent.Asset>(messageContent)
+                    assertEquals(MessageEntity.DownloadStatus.SAVED_INTERNALLY, messageContent.assetDownloadStatus)
+                    assertEquals(MessageEntity.UploadStatus.UPLOADED, messageContent.assetUploadStatus)
                 }
             }
         }
