@@ -332,7 +332,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withJoinConversationSuccessful()
-            .withSendCommitBundleSuccessful()
+            .withSendMLSMessageSuccessful()
             .withUpdateConversationGroupStateSuccessful()
             .arrange()
 
