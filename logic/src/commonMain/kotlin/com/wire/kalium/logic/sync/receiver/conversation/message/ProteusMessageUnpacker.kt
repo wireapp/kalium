@@ -51,7 +51,7 @@ internal class ProteusMessageUnpackerImpl(
                 }
             }
             .map { PlainMessageBlob(it) }
-            .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event) }
+            .flatMap { plainMessageBlob -> getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent) }
             .onFailure {
                 when (it) {
                     is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
@@ -71,12 +71,12 @@ internal class ProteusMessageUnpackerImpl(
 
     private fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
-        event: Event.Conversation.NewMessage
+        encryptedData: EncryptedData?
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
         is ProtoContent.Readable -> Either.Right(protoContent)
-        is ProtoContent.ExternalMessageInstructions -> event.encryptedExternalContent?.let {
+        is ProtoContent.ExternalMessageInstructions -> encryptedData?.let {
             logger.d("Solving external content '$protoContent', EncryptedData='$it'")
-            solveExternalContentForProteusMessage(protoContent, event.encryptedExternalContent)
+            solveExternalContentForProteusMessage(protoContent, encryptedData)
         } ?: run {
             val rootCause = IllegalArgumentException("Null external content when processing external message instructions.")
             Either.Left(CoreFailure.Unknown(rootCause))
