@@ -19,7 +19,7 @@ class UserEventReceiverImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
-    private val logoutUseCase: LogoutUseCase,
+    private val logout: LogoutUseCase,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
 ) : UserEventReceiver {
@@ -46,13 +46,13 @@ class UserEventReceiverImpl internal constructor(
     private suspend fun handleClientRemove(event: Event.User.ClientRemove) {
         currentClientIdProvider().map { currentClientId ->
             if (currentClientId == event.clientId)
-                logoutUseCase(LogoutReason.REMOVED_CLIENT)
+                logout(LogoutReason.REMOVED_CLIENT)
         }
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {
         if (selfUserId == event.userId) {
-            logoutUseCase(LogoutReason.DELETED_ACCOUNT)
+            logout(LogoutReason.DELETED_ACCOUNT)
         } else {
             userRepository.removeUser(event.userId)
                 .onSuccess { conversationRepository.deleteUserFromConversations(event.userId) }
