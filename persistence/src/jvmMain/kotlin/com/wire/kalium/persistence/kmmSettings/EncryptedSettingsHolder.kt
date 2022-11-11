@@ -19,7 +19,9 @@ private fun createOrLoad(rootPath: String, file: File): Properties {
         println(file.absolutePath)
         file.createNewFile()
     }
-    properties.load(FileInputStream(file))
+    FileInputStream(file).use {
+        properties.load(it)
+    }
     return properties
 }
 
