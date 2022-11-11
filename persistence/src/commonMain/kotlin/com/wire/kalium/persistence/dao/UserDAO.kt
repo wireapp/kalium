@@ -96,6 +96,12 @@ interface UserDAO {
      */
     suspend fun insertUser(user: UserEntity)
 
+
+    /**
+     * Inserts each user into the local storage or ignores if already exists
+     */
+    suspend fun insertOrIgnoreUsers(users: List<UserEntity>)
+
     /**
      * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
      * [ConnectionEntity.State.NOT_CONNECTED]

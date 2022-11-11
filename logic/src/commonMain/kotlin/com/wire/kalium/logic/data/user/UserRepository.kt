@@ -66,7 +66,7 @@ internal interface UserRepository {
     suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
     suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
-    suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
+    suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -312,11 +312,17 @@ internal class UserDataSource internal constructor(
         userDAO.updateUser(userMapper.toUpdateDaoFromEvent(event, user))
     }
 
-    override suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            userDAO.markUserAsDeleted(idMapper.toDaoModel(userId))
+    override suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userDAO.insertOrIgnoreUsers(
+                users.map { user ->
+                    when (user) {
+                        is OtherUser -> publicUserMapper.fromPublicUserToDaoModel(user)
+                        is SelfUser -> userMapper.fromSelfUserToDaoModel(user)
+                    }
+                }
+            )
         }
-    }
 
     companion object {
         const val SELF_USER_ID_KEY = "selfUserID"
