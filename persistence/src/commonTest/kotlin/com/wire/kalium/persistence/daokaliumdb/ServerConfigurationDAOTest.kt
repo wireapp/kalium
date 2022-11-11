@@ -11,6 +11,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertNotEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,8 +47,9 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val newLinks = config1.links.copy(api = "new_base_url.com")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
-        insertConfig(duplicatedConfig)
-
+        assertFails {
+            insertConfig(duplicatedConfig)
+        }
         val actual = db.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
@@ -59,7 +61,9 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val newLinks = config1.links.copy(title = "title")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
-        insertConfig(duplicatedConfig)
+        assertFails {
+            insertConfig(duplicatedConfig)
+        }
 
         val actual = db.serverConfigurationDAO.configById(config1.id)
 
@@ -73,7 +77,9 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val newLinks = config1.links.copy(website = "ws_de.berlin.com")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
-        insertConfig(duplicatedConfig)
+        assertFails {
+            insertConfig(duplicatedConfig)
+        }
 
         val actual = db.serverConfigurationDAO.configById(config1.id)
 
@@ -87,7 +93,9 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val newMetaData = config1.metaData.copy(domain = "new_domain")
         val duplicatedConfig = config1.copy(metaData = newMetaData)
         insertConfig(config1)
-        insertConfig(duplicatedConfig)
+        assertFails {
+            insertConfig(duplicatedConfig)
+        }
 
         val actual = db.serverConfigurationDAO.configById(config1.id)
 
