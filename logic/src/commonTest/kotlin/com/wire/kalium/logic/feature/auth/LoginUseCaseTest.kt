@@ -135,7 +135,10 @@ class LoginUseCaseTest {
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials))
+            assertEquals(
+                loginUserCaseResult,
+                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials)
+            )
 
             verify(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).function(validateUserHandleUseCase::invoke).with(any()).wasNotInvoked()
@@ -160,7 +163,10 @@ class LoginUseCaseTest {
             val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
             // then
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials))
+            assertEquals(
+                loginUserCaseResult,
+                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials)
+            )
 
             verify(validateEmailUseCase)
                 .invocation { invoke(TEST_HANDLE) }
