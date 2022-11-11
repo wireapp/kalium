@@ -71,7 +71,6 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         assertNotEquals(duplicatedConfig, actual)
     }
 
-
     @Test
     fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameWSUrl_thenNothingChanges() {
         val newLinks = config1.links.copy(website = "ws_de.berlin.com")
@@ -87,7 +86,6 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         assertNotEquals(duplicatedConfig, actual)
     }
 
-
     @Test
     fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameDomain_thenNothingChanges() {
         val newMetaData = config1.metaData.copy(domain = "new_domain")
@@ -102,7 +100,6 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         assertEquals(config1, actual)
         assertNotEquals(duplicatedConfig, actual)
     }
-
 
     @Test
     fun givenExistingConfig_thenItCanBeDeleted() {
@@ -157,7 +154,6 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val actual = db.serverConfigurationDAO.configById(config1.id)
         assertEquals(expected, actual)
     }
-
 
     private fun insertConfig(serverConfigEntity: ServerConfigEntity) {
         with(serverConfigEntity) {
