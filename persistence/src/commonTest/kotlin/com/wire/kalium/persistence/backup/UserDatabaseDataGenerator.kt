@@ -1,3 +1,5 @@
+@file:Suppress("StringTemplate")
+
 package com.wire.kalium.persistence.backup
 
 import com.wire.kalium.persistence.dao.ConnectionEntity
