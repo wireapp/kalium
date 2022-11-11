@@ -18,6 +18,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 
+@Suppress("StringTemplate")
 class UserDatabaseDataGenerator(
     private val userDatabaseBuilder: UserDatabaseBuilder,
     private val databasePrefix: String

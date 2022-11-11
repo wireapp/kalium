@@ -15,9 +15,6 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
         sqlDriver.execute("""BEGIN""")
         restoreTable("Team")
         restoreTable("User")
-        // TODO: This is going to be addressed in a separate ticket as it requires some changes
-        // to the way we are creating a database
-        // migrateTable("SelfUser")
         restoreTable("Metadata")
         restoreTable("Conversation")
         restoreTable("Connection")
@@ -40,7 +37,10 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
     }
 
     private fun restoreAssets() {
-        sqlDriver.execute("""UPDATE backupDb.MessageAssetContent SET asset_upload_status = 'NOT_UPLOADED', asset_download_status = 'NOT_DOWNLOADED'""")
+        sqlDriver.execute(
+            """UPDATE backupDb.MessageAssetContent 
+            |SET asset_upload_status = 'NOT_UPLOADED', asset_download_status = 'NOT_DOWNLOADED'""".trimMargin()
+        )
         restoreTable("MessageAssetContent")
         restoreTable("MessageRestrictedAssetContent")
     }
