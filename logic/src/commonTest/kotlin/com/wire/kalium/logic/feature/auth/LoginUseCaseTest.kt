@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -38,6 +39,8 @@ class LoginUseCaseTest {
 
     private val serverConfig = TEST_SERVER_CONFIG
 
+    val proxyCredentials = PROXY_CREDENTIALS
+
     @BeforeTest
     fun setup() {
         loginUseCase =
@@ -45,7 +48,8 @@ class LoginUseCaseTest {
                 loginRepository,
                 validateEmailUseCase,
                 validateUserHandleUseCase,
-                serverConfig
+                serverConfig,
+                proxyCredentials
             )
     }
 
@@ -64,7 +68,7 @@ class LoginUseCaseTest {
 
             assertEquals(
                 loginUserCaseResult,
-                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id)
+                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials)
             )
 
             verify(validateEmailUseCase)
@@ -100,7 +104,7 @@ class LoginUseCaseTest {
 
             assertEquals(
                 loginUserCaseResult,
-                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id)
+                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials)
             )
 
             verify(validateEmailUseCase)
@@ -131,7 +135,7 @@ class LoginUseCaseTest {
 
             val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials))
 
             verify(validateEmailUseCase).invocation { invoke(TEST_EMAIL) }.wasInvoked(exactly = once)
             verify(validateUserHandleUseCase).function(validateUserHandleUseCase::invoke).with(any()).wasNotInvoked()
@@ -156,7 +160,7 @@ class LoginUseCaseTest {
             val loginUserCaseResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT)
 
             // then
-            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id))
+            assertEquals(loginUserCaseResult, AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials))
 
             verify(validateEmailUseCase)
                 .invocation { invoke(TEST_HANDLE) }
@@ -185,7 +189,7 @@ class LoginUseCaseTest {
 
             assertEquals(
                 loginUserCaseResult,
-                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id)
+                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials)
             )
         }
 
@@ -330,7 +334,7 @@ class LoginUseCaseTest {
 
             assertEquals(
                 loginUserCaseResult,
-                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id)
+                AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, TEST_SERVER_CONFIG.id, proxyCredentials)
             )
 
             verify(validateEmailUseCase)
@@ -361,6 +365,8 @@ class LoginUseCaseTest {
             refreshToken = "refresh_token",
             tokenType = "token_type"
         )
+        val PROXY_CREDENTIALS = ProxyCredentials("user_name", "password")
+
         val TEST_SSO_ID = SsoId("scim_external", "subject", null)
     }
 }
