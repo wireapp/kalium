@@ -224,6 +224,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             assertEquals(backupConversations, restoredConversations)
         }
 
+    @Suppress("MaxLineLength")
     @Test
     fun givenBackupHasGroupConversationWithMembersAndUserAnotherGroupConversationWithSomeOfThoseMembers_whenRestoringBackup_thenTheOverlappingMembersAreNotRestored() =
         runTest {
@@ -486,6 +487,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun givenBackupHasConversationWithAssetContentAndUserToo_whenRestoringBackup_thenOnlyTheBackupMessageAssetContentDownloadAndUploadStatusIsReset() =
         runTest {
@@ -497,7 +499,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
             )
 
-            val userConversationWithAssetContent = userDatabaseDataGeneratorg.generateAndInsertMessageAssetContent(
+            val userConversationWithAssetContent = userDatabaseDataGenerator.generateAndInsertMessageAssetContent(
                 conversationAmount = 5,
                 assetAmountPerConversation = 5,
                 assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
@@ -597,4 +599,3 @@ class RestoreBackupTest : BaseDatabaseTest() {
         return conversationAdded
     }
 }
-

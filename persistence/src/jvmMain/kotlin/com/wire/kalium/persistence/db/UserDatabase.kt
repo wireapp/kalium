@@ -4,7 +4,6 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import app.cash.sqldelight.logs.LogSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.CoroutineDispatcher
