@@ -15,9 +15,6 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
         sqlDriver.execute("""BEGIN""")
         restoreTable("Team")
         restoreTable("User")
-        // TODO: This is going to be addressed in a separate ticket as it requires some changes
-        // to the way we are creating a database
-        // migrateTable("SelfUser")
         restoreTable("Metadata")
         restoreTable("Conversation")
         restoreTable("Connection")
