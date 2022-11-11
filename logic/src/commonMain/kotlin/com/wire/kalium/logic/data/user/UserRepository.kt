@@ -66,6 +66,7 @@ internal interface UserRepository {
     suspend fun getUsersFromTeam(teamId: TeamId): Either<StorageFailure, List<OtherUser>>
     suspend fun getTeamRecipients(teamId: TeamId): Either<CoreFailure, List<Recipient>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
+    suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
 }
 
@@ -310,6 +311,12 @@ internal class UserDataSource internal constructor(
         val user =
             userDAO.getUserByQualifiedID(idMapper.toDaoModel(userId)).firstOrNull() ?: return Either.Left(StorageFailure.DataNotFound)
         userDAO.updateUser(userMapper.toUpdateDaoFromEvent(event, user))
+    }
+
+    override suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            userDAO.markUserAsDeleted(idMapper.toDaoModel(userId))
+        }
     }
 
     override suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit> =
