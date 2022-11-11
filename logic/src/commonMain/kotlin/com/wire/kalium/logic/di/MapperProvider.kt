@@ -21,6 +21,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationStatusMapperImpl
+import com.wire.kalium.logic.data.conversation.MLSCommitBundleMapper
+import com.wire.kalium.logic.data.conversation.MLSCommitBundleMapperImpl
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MemberMapperImpl
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
@@ -38,12 +40,12 @@ import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
-import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
-import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
+import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
+import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapperImpl
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
@@ -133,6 +135,8 @@ internal object MapperProvider {
     ): FederatedIdMapper = FederatedIdMapperImpl(userId, qualifiedIdMapper, sessionRepository)
 
     fun mlsPublicKeyMapper(): MLSPublicKeysMapper = MLSPublicKeysMapperImpl()
+
+    fun mlsCommitBundleMapper(): MLSCommitBundleMapper = MLSCommitBundleMapperImpl()
 
     fun protocolInfoMapper(): ProtocolInfoMapper = ProtocolInfoMapperImpl()
 
