@@ -28,7 +28,7 @@ internal interface KaliumPreferences {
 
 }
 
-class KaliumPreferencesSettings(
+internal class KaliumPreferencesSettings(
     private val encryptedSettings: Settings
 ) : KaliumPreferences {
 

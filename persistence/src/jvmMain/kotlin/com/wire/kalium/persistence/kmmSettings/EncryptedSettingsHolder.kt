@@ -16,7 +16,7 @@ private fun createOrLoad(rootPath: String, file: File): Properties {
     val properties = Properties()
     File(rootPath).mkdirs()
     if (!file.exists()) {
-        System.out.println(file.absolutePath)
+        println(file.absolutePath)
         file.createNewFile()
     }
     properties.load(FileInputStream(file))
