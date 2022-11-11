@@ -1,14 +1,15 @@
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -60,7 +61,7 @@ class UserEventReceiverTest {
 
     @Test
     fun givenDeleteAccountEvent_SoftLogoutInvoked() = runTest {
-        val event = TestEvent.userDelete(userId = USER_ID)
+        val event = TestEvent.userDelete(userId = SELF_USER_ID)
         val (arrangement, eventReceiver) = Arrangement()
             .withLogoutUseCaseSucceed()
             .arrange()
@@ -74,8 +75,29 @@ class UserEventReceiverTest {
     }
 
     @Test
+    fun givenUserDeleteEvent_RepoAndPersisMessageAreInvoked() = runTest {
+        val event = TestEvent.userDelete(userId = OTHER_USER_ID)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withUserDeleteSuccess()
+            .withConversationIdsByUserId(listOf(TestConversation.ID))
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::removeUser)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::deleteUserFromConversations)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenUserUpdateEvent_RepoIsInvoked() = runTest {
-        val event = TestEvent.updateUser(userId = USER_ID)
+        val event = TestEvent.updateUser(userId = SELF_USER_ID)
         val (arrangement, eventReceiver) = Arrangement()
             .withUpdateUserSuccess()
             .arrange()
@@ -93,19 +115,24 @@ class UserEventReceiverTest {
         val connectionRepository = mock(classOf<ConnectionRepository>())
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
-
-        @Mock
         val logoutUseCase = mock(classOf<LogoutUseCase>())
 
         @Mock
         val userRepository = mock(classOf<UserRepository>())
 
         @Mock
+        val conversationRepository = mock(classOf<ConversationRepository>())
+
+        @Mock
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            connectionRepository, logoutUseCase, userRepository, USER_ID, currentClientIdProvider
+            connectionRepository,
+            conversationRepository,
+            userRepository,
+            logoutUseCase,
+            SELF_USER_ID,
+            currentClientIdProvider
         )
 
         fun withCurrentClientIdIs(clientId: ClientId) = apply {
@@ -123,15 +150,27 @@ class UserEventReceiverTest {
             given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
+        fun withUserDeleteSuccess() = apply {
+            given(userRepository).suspendFunction(userRepository::removeUser)
+                .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+            given(conversationRepository).suspendFunction(conversationRepository::deleteUserFromConversations)
+                .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+        }
+
+        fun withConversationIdsByUserId(conversationIds: List<ConversationId>) = apply {
+            given(conversationRepository).suspendFunction(conversationRepository::getConversationIdsByUserId)
+                .whenInvokedWith(any()).thenReturn(Either.Right(conversationIds))
+        }
+
         fun arrange() = this to userEventReceiver
     }
 
     companion object {
         const val EVENT_ID = "1234"
-        val USER_ID = UserId("alice", "wonderland")
+        val SELF_USER_ID = UserId("alice", "wonderland")
+        val OTHER_USER_ID = UserId("john", "public")
         val CLIENT_ID1 = ClientId("clientId1")
         val CLIENT_ID2 = ClientId("clientId2")
 
-        fun validAuthSessionWith(userId: UserId): AccountInfo.Valid = AccountInfo.Valid(userId)
     }
 }
