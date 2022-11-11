@@ -72,7 +72,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
                         null
                     }
                 }.also {
-                    kaliumLogger.d("AUTH TOKEN REFRESH:{response_code: \"${response.status.value}\"}")
+                    kaliumLogger.d("AUTH TOKEN REFRESH:{\"status\": ${response.status.value}}")
                 }
             }
         }
