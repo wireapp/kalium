@@ -307,12 +307,6 @@ class MessageDAOImpl(
         mapper::toEntityMessageFromView
     ).asFlow().mapToOneOrNull()
 
-    override suspend fun observeUnreadMessageCount(
-        conversationId: QualifiedIDEntity
-    ): Flow<Long> =
-        queries.getUnreadMessageCount(conversationId, selfUserId).asFlow().mapToOneOrDefault(0L)
-            .distinctUntilChanged()
-
     override suspend fun observeUnreadMentionsCount(
         conversationId: QualifiedIDEntity
     ): Flow<Long> =

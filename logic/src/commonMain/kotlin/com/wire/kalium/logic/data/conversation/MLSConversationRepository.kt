@@ -103,7 +103,8 @@ class MLSConversationDataSource(
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
-    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
+    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
+    private val mlsCommitBundleMapper: MLSCommitBundleMapper = MapperProvider.mlsCommitBundleMapper()
 ) : MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(
@@ -215,18 +216,12 @@ class MLSConversationDataSource(
     private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
-                mlsMessageApi.sendMessage(MLSMessageApi.Message(bundle.commit))
+                mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
             }.flatMap { response ->
                 processCommitBundleEvents(response.events)
                 wrapMLSRequest {
                     mlsClient.commitAccepted(idMapper.toCryptoModel(groupID))
                 }
-            }.flatMap {
-                bundle.welcome?.let {
-                    wrapApiRequest {
-                        mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(it))
-                    }
-                } ?: Either.Right(Unit)
             }
         }
     }
