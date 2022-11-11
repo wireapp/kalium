@@ -37,4 +37,4 @@ internal actual fun encryptedSettingsBuilder(
     return JvmPropertiesSettings(properties) { onModify(it, file) }
 }
 
-internal actual class EncryptedSettingsPlatformParam
+internal actual class EncryptedSettingsPlatformParam(val rootPath: String)
