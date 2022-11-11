@@ -101,6 +101,7 @@ public class KaliumKtorCustomLogging private constructor(
                 val jsonElement = properties.toJsonElement()
                 kaliumLogger.v("REQUEST: $jsonElement")
             }
+
             level.headers -> {
 
                 val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
@@ -114,6 +115,7 @@ public class KaliumKtorCustomLogging private constructor(
 
                 kaliumLogger.v("REQUEST: $jsonElement")
             }
+
             level.body -> {
                 return logRequestBody(content)
             }
@@ -133,6 +135,7 @@ public class KaliumKtorCustomLogging private constructor(
             level.info -> {
                 // Intentionally left empty
             }
+
             level.headers -> {
                 val obfuscatedHeaders = obfuscatedHeaders(response.headers.entries().map { it.key to it.value }).toMutableMap()
                 properties["headers"] = obfuscatedHeaders.toMap()
@@ -150,6 +153,7 @@ public class KaliumKtorCustomLogging private constructor(
             kaliumLogger.e(logString)
         }
     }
+
     private fun obfuscatedHeaders(headers: List<Pair<String, List<String>>>): Map<String, String> =
         headers.associate {
             if (sensitiveJsonKeys.contains(it.first.lowercase())) {
@@ -166,13 +170,21 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun logRequestException(context: HttpRequestBuilder, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("REQUEST FAILURE: {\"endpoint\":\"${obfuscatePath(Url(context.url))}\", \"method\":\"${context.method.value}\", \"cause\":\"$cause\"}")
+            kaliumLogger.v("""REQUEST FAILURE: {
+                        |"endpoint":"${obfuscatePath(Url(context.url))}",
+                        | "method":"${context.method.value}",
+                        |  "cause":"$cause"}
+                        |  """.trimMargin())
         }
     }
 
     private fun logResponseException(request: HttpRequest, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("RESPONSE FAILURE: {\"endpoint\":\"${obfuscatePath(request.url)}\", \"method\":\"${request.method.value}\", \"cause\":\"$cause\"}")
+            kaliumLogger.v("""RESPONSE FAILURE: 
+                            |{"endpoint":"${obfuscatePath(request.url)}\",
+                            | "method":"${request.method.value}",
+                            |  "cause":"$cause"}
+                            |  """.trimMargin())
         }
     }
 
