@@ -140,9 +140,9 @@ internal class ServerConfigDataSource(
                         federation = metadata.federation,
                         domain = metadata.domain,
                         commonApiVersion = metadata.commonApiVersion.version,
-                        proxyApi = links.proxy?.proxyApi,
-                        proxyNeedsAuthentication = links.proxy?.needsAuthentication,
-                        proxyPort = links.proxy?.proxyPort
+                        apiProxyHost = links.apiProxy?.host,
+                        apiProxyNeedsAuthentication = links.apiProxy?.needsAuthentication,
+                        apiProxyPort = links.apiProxy?.port
                     )
                 )
                 newId

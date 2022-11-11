@@ -167,9 +167,9 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
                     domain = metaData.domain,
                     commonApiVersion = metaData.apiVersion,
                     isOnPremises = false,
-                    proxyApi = links.proxy?.proxyApi,
-                    proxyNeedsAuthentication = links.proxy?.needsAuthentication,
-                    proxyPort = links.proxy?.proxyPort
+                    apiProxyHost = links.apiProxy?.host,
+                    apiProxyNeedsAuthentication = links.apiProxy?.needsAuthentication,
+                    apiProxyPort = links.apiProxy?.port
                 )
             )
         }
