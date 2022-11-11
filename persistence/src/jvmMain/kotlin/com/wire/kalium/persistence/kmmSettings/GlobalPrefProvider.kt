@@ -13,7 +13,12 @@ actual class GlobalPrefProvider(
     shouldEncryptData: Boolean = true
 ) {
     private val kaliumPref =
-        KaliumPreferencesSettings(EncryptedSettingsHolder(rootPath, SettingOptions.AppSettings(shouldEncryptData)).encryptedSettings)
+        KaliumPreferencesSettings(
+            encryptedSettingsBuilder(
+                SettingOptions.AppSettings(shouldEncryptData),
+                EncryptedSettingsPlatformParam(rootPath)
+            )
+        )
 
     actual val authTokenStorage: AuthTokenStorage
         get() = AuthTokenStorage(kaliumPref)
