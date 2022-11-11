@@ -224,7 +224,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             assertEquals(backupConversations, restoredConversations)
         }
 
-    @Suppress("MaximumLineLength")
+    @Suppress("MaxLineLength", "MaximumLineLength")
     @Test
     fun givenBackupHasGroupConversationWithMembersAndUserAnotherGroupConversationWithSomeOfThoseMembers_whenRestoringBackup_thenTheOverlappingMembersAreNotRestored() =
         runTest {
@@ -487,7 +487,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         }
     }
 
-    @Suppress("MaxLineLength")
+    @Suppress("MaxLineLength", "MaximumLineLength")
     @Test
     fun givenBackupHasConversationWithAssetContentAndUserToo_whenRestoringBackup_thenOnlyTheBackupMessageAssetContentDownloadAndUploadStatusIsReset() =
         runTest {
