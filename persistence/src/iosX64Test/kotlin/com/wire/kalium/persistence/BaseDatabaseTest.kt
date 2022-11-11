@@ -1,11 +1,10 @@
 package com.wire.kalium.persistence
 
-import co.touchlab.sqliter.DatabaseFileContext
 import co.touchlab.sqliter.DatabaseFileContext.databasePath
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher

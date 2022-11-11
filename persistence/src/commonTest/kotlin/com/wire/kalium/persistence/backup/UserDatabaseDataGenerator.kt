@@ -18,7 +18,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.flow.first
 
-@Suppress("StringTemplate")
 class UserDatabaseDataGenerator(
     private val userDatabaseBuilder: UserDatabaseBuilder,
     private val databasePrefix: String
@@ -34,6 +33,7 @@ class UserDatabaseDataGenerator(
     private var generatedTeamCount = 0
     private var generatedAssetsCount = 0
 
+    @Suppress("StringTemplate")
     private suspend fun generateAndInsertRegularMessages(
         amount: Int,
         conversationIDEntity: ConversationIDEntity,
@@ -67,6 +67,7 @@ class UserDatabaseDataGenerator(
         return messages
     }
 
+    @Suppress("StringTemplate")
     private suspend fun generateAssetMessages(
         amount: Int,
         conversationIDEntity: ConversationIDEntity,
@@ -102,6 +103,7 @@ class UserDatabaseDataGenerator(
         return messages
     }
 
+    @Suppress("StringTemplate")
     private fun generateMessageAssetContent(
         assetUploadStatus: MessageEntity.UploadStatus,
         assetDownloadStatus: MessageEntity.DownloadStatus
@@ -127,6 +129,7 @@ class UserDatabaseDataGenerator(
         )
     }
 
+    @Suppress("StringTemplate")
     private fun generateUser(): UserEntity {
         val userPrefix = "${databasePrefix}User${generatedUsersCount}"
 
@@ -150,6 +153,7 @@ class UserDatabaseDataGenerator(
         )
     }
 
+    @Suppress("StringTemplate")
     private suspend fun generateAndInsertSystemMessages(
         amount: Int,
         conversationIDEntity: ConversationIDEntity
@@ -179,6 +183,7 @@ class UserDatabaseDataGenerator(
         return messages
     }
 
+    @Suppress("StringTemplate")
     suspend fun generateAndInsertConversations(
         conversationAmount: Int,
         messagePerConversation: Int,
@@ -232,6 +237,7 @@ class UserDatabaseDataGenerator(
         return userDatabaseBuilder.conversationDAO.getAllConversations().first()
     }
 
+    @Suppress("StringTemplate")
     private suspend fun generateAndInsertCall(conversationId: QualifiedIDEntity): CallEntity {
         val callPrefix = "${databasePrefix}Call${generatedCallsCount}"
 
@@ -260,6 +266,7 @@ class UserDatabaseDataGenerator(
         return callEntity
     }
 
+    @Suppress("StringTemplate")
     suspend fun generateAndInsertConversationsWithCall(conversationAmount: Int): List<Pair<ConversationEntity, CallEntity>> {
         val groupConversationPrefix = "${databasePrefix}CallConversation${generatedConversationsCount}"
 
@@ -300,6 +307,7 @@ class UserDatabaseDataGenerator(
         return conversationWithAssociatedCall
     }
 
+    @Suppress("StringTemplate")
     fun generateTeams(teamAmount: Int): List<TeamEntity> {
         val teamPrefix = "${databasePrefix}Team${generatedTeamCount}"
         val teams = mutableListOf<TeamEntity>()
@@ -318,6 +326,7 @@ class UserDatabaseDataGenerator(
         return teams
     }
 
+    @Suppress("StringTemplate")
     suspend fun generateAndInsertGroupConversations(
         conversationAmount: Int,
         membersPerGroup: Int
@@ -357,6 +366,7 @@ class UserDatabaseDataGenerator(
         return userDatabaseBuilder.conversationDAO.getAllConversations().first()
     }
 
+    @Suppress("StringTemplate")
     suspend fun generateAndInsertGroupConversations(
         conversationAmount: Int,
         membersGenerate: (ConversationIDEntity) -> List<Member>
@@ -429,6 +439,7 @@ class UserDatabaseDataGenerator(
         return userDatabaseBuilder.userDAO.getAllUsers().first()
     }
 
+    @Suppress("StringTemplate")
     suspend fun generateAndInsertAssets(amount: Int): MutableList<AssetEntity> {
         val assetPrefix = "${databasePrefix}Asset${generatedAssetsCount}"
 
@@ -455,6 +466,7 @@ class UserDatabaseDataGenerator(
         return generatedAssets
     }
 
+    @Suppress("StringTemplate")
     suspend fun generateAndInsertMessageAssetContent(
         conversationAmount: Int,
         assetAmountPerConversation: Int,
