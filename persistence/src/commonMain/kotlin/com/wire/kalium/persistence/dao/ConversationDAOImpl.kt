@@ -19,6 +19,7 @@ import com.wire.kalium.persistence.Member as SQLDelightMember
 
 private class ConversationMapper {
     fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
+        val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
         ConversationViewEntity(
             id = qualifiedId,
             name = name,
@@ -56,14 +57,15 @@ private class ConversationMapper {
             userDeleted = userDeleted,
             connectionStatus = connectionStatus,
             otherUserId = otherUserId,
-            unreadMessageCount = unreadMessageCount,
             unreadMentionsCount = unreadMentionsCount,
             isMember = isMember,
+            unreadContentCountEntity = unreadContentType
         )
     }
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
         return conversation?.run {
+            val unreadContentType = UnreadContentMapper.unreadContentTypeFromJsonString(unreadContentTypeJson)
             ConversationViewEntity(
                 id = qualifiedId,
                 name = name,
@@ -101,9 +103,9 @@ private class ConversationMapper {
                 userDeleted = userDeleted,
                 connectionStatus = connectionStatus,
                 otherUserId = otherUserId,
-                unreadMessageCount = unreadMessageCount,
                 unreadMentionsCount = unreadMentionsCount,
                 isMember = isMember,
+                unreadContentCountEntity = unreadContentType
             )
         }
     }

@@ -204,7 +204,8 @@ class CallRepositoryTest {
                             unreadMessagesCount = 0,
                             lastUnreadMessage = null,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true
+                            isSelfUserCreator = true,
+                            unreadContentCount = emptyMap()
                         )
                     )
                 )
@@ -270,7 +271,8 @@ class CallRepositoryTest {
                             unreadMessagesCount = 0,
                             lastUnreadMessage = null,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true
+                            isSelfUserCreator = true,
+                            unreadContentCount = emptyMap()
                         )
                     )
                 )
@@ -331,7 +333,8 @@ class CallRepositoryTest {
                             unreadMessagesCount = 0,
                             lastUnreadMessage = null,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true
+                            isSelfUserCreator = true,
+                            unreadContentCount = emptyMap()
                         )
                     )
                 )
@@ -401,7 +404,8 @@ class CallRepositoryTest {
                             unreadMessagesCount = 0,
                             lastUnreadMessage = null,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true
+                            isSelfUserCreator = true,
+                            unreadContentCount = emptyMap()
                         )
                     )
                 )
@@ -457,7 +461,8 @@ class CallRepositoryTest {
                             unreadMessagesCount = 0,
                             lastUnreadMessage = null,
                             isSelfUserMember = true,
-                            isSelfUserCreator = true
+                            isSelfUserCreator = true,
+                            unreadContentCount = emptyMap()
                         )
                     )
                 )
@@ -1308,7 +1313,8 @@ class CallRepositoryTest {
             legalHoldStatus = LegalHoldStatus.ENABLED,
             userType = UserType.INTERNAL,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null
+            lastUnreadMessage = null,
+            unreadContentCount = emptyMap()
         )
     }
 }
