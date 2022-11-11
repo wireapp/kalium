@@ -37,7 +37,10 @@ class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
     }
 
     private fun restoreAssets() {
-        sqlDriver.execute("""UPDATE backupDb.MessageAssetContent SET asset_upload_status = 'NOT_UPLOADED', asset_download_status = 'NOT_DOWNLOADED'""")
+        sqlDriver.execute(
+            """UPDATE backupDb.MessageAssetContent 
+            |SET asset_upload_status = 'NOT_UPLOADED', asset_download_status = 'NOT_DOWNLOADED'""".trimMargin()
+        )
         restoreTable("MessageAssetContent")
         restoreTable("MessageRestrictedAssetContent")
     }
