@@ -25,6 +25,7 @@ sqldelight {
         dialect = Dependencies.SqlDelight.dialect
         packageName = "com.wire.kalium.persistence"
         sourceFolders = listOf("db_global")
+        schemaOutputDirectory = file("src/commonMain/db_global/samples_for_migration_testing")
     }
 }
 

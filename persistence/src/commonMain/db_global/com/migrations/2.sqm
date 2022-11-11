@@ -1,0 +1,10 @@
+ALTER TABLE ServerConfiguration RENAME COLUMN proxyApi TO apiProxyHost;
+ALTER TABLE ServerConfiguration RENAME COLUMN proxyNeedsAuthentication TO apiProxyNeedsAuthentication;
+ALTER TABLE ServerConfiguration RENAME COLUMN proxyPort TO apiProxyPort;
+ALTER TABLE ServerConfiguration DROP INDEX domain;
+
+ALTER TABLE ServerConfiguration DROP CONSTRAINT server_config_unique;
+ALTER TABLE ServerConfiguration
+add CONSTRAINT server_config_unique UNIQUE (title, apiBaseUrl, webSocketBaseUrl, domain, apiProxyHost, apiProxyPort);
+
+
