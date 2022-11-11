@@ -166,13 +166,13 @@ public class KaliumKtorCustomLogging private constructor(
 
     private fun logRequestException(context: HttpRequestBuilder, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("REQUEST FAILURE: {\"endpoint\":\"${obfuscatePath(Url(context.url))}\", \"method\": \"${context.method.value}, \"cause\":\"$cause\"}")
+            kaliumLogger.v("REQUEST FAILURE: {\"endpoint\":\"${obfuscatePath(Url(context.url))}\", \"method\":\"${context.method.value}\", \"cause\":\"$cause\"}")
         }
     }
 
     private fun logResponseException(request: HttpRequest, cause: Throwable) {
         if (level.info) {
-            kaliumLogger.v("RESPONSE FAILURE: {\"endpoint\":\"${obfuscatePath(request.url)}\", \"method\": \"${request.method.value}, \"cause\":\"$cause\"}")
+            kaliumLogger.v("RESPONSE FAILURE: {\"endpoint\":\"${obfuscatePath(request.url)}\", \"method\":\"${request.method.value}\", \"cause\":\"$cause\"}")
         }
     }
 
