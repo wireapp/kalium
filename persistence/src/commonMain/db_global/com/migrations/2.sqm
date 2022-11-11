@@ -32,4 +32,4 @@ INSERT INTO ServerConfiguration SELECT * FROM oldServerConfiguration;
 COMMIT;
 PRAGMA foreign_keys=on;
 
-DROP oldServerConfiguration
+DROP TABLE oldServerConfiguration;
