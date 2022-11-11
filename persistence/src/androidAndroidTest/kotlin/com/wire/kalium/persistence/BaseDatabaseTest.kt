@@ -9,7 +9,6 @@ import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
-import java.io.File
 
 actual open class BaseDatabaseTest actual constructor() {
 
