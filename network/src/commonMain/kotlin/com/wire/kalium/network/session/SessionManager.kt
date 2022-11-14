@@ -29,13 +29,16 @@ import io.ktor.utils.io.ByteReadChannel
 import kotlin.coroutines.CoroutineContext
 
 interface SessionManager {
-    fun session(): SessionDTO
+    suspend fun session(): SessionDTO
 
     fun serverConfig(): ServerConfigDTO
     fun updateLoginSession(
         newAccessTokenDTO: AccessTokenDTO,
         newRefreshTokenDTO: RefreshTokenDTO?
     ): SessionDTO
+
+    suspend fun beforeTokenUpdate()
+    fun afterTokenUpdate()
 
     suspend fun onSessionExpired()
     suspend fun onClientRemoved()
@@ -55,6 +58,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
             }
 
             refreshTokens {
+                sessionManager.beforeTokenUpdate()
                 when (val response = accessTokenApi(client).getToken(oldTokens!!.refreshToken)) {
                     is NetworkResponse.Success -> {
                         val newSession = sessionManager.updateLoginSession(response.value.first, response.value.second)
@@ -72,6 +76,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
                         null
                     }
                 }.also {
+                    sessionManager.afterTokenUpdate()
                     kaliumLogger.d("AUTH TOKEN REFRESH:{\"status\": ${response.status.value}}")
                 }
             }

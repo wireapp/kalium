@@ -22,6 +22,8 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.ProxyCredentialsStorage
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @Suppress("LongParameterList")
 class SessionManagerImpl internal constructor(
@@ -34,15 +36,19 @@ class SessionManagerImpl internal constructor(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionManager {
 
-    private val session: Atomic<SessionDTO?> = Atomic(null)
+    private val lock: Mutex = Mutex()
+    private var session: SessionDTO? = null
     private var serverConfig: Atomic<ServerConfigDTO?> = Atomic(null)
 
-    override fun session(): SessionDTO = session.get() ?: run {
-        wrapStorageRequest { tokenStorage.getToken(idMapper.toDaoModel(userId)) }
-            .map { sessionMapper.fromEntityToSessionDTO(it) }
-            .onSuccess { session.set(it) }
-        session.get()!!
+    override suspend fun session(): SessionDTO = lock.withLock {
+        session ?: run {
+            wrapStorageRequest { tokenStorage.getToken(idMapper.toDaoModel(userId)) }
+                .map { sessionMapper.fromEntityToSessionDTO(it) }
+                .onSuccess { session = it }
+            session!!
+        }
     }
+
 
     override fun serverConfig(): ServerConfigDTO = serverConfig.get() ?: run {
         serverConfig.set(sessionRepository.fullAccountInfo(userId)
@@ -63,12 +69,20 @@ class SessionManagerImpl internal constructor(
         }.map {
             sessionMapper.fromEntityToSessionDTO(it)
         }.onSuccess {
-            session.set(it)
+            session = it
         }.fold({
             TODO("IMPORTANT! Not yet implemented")
         }, {
             it
         })
+
+    override suspend fun beforeTokenUpdate() {
+        lock.lock()
+    }
+
+    override fun afterTokenUpdate() {
+        lock.unlock()
+    }
 
     override suspend fun onSessionExpired() {
         sessionRepository.logout(userId, LogoutReason.SESSION_EXPIRED)
