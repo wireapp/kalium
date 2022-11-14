@@ -1,10 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.BotEntity
-import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
-import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.*
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer
@@ -109,16 +105,18 @@ object MessageMapper {
         restrictedAssetName: String?,
         failedToDecryptData: ByteArray?,
         conversationName: String?,
-        allReactionsJson: String?,
-        selfReactionsJson: String?,
+        allReactionsJson: String,
+        selfReactionsJson: String,
         mentions: String,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
+        isQuotingSelfUser: Long?,
         quotedSenderName: String?,
         quotedMessageDateTime: String?,
-        quotedMessageStatus: MessageEntity.Status?,
+        quotedMessageEditTimestamp: String?,
         quotedMessageVisibility: MessageEntity.Visibility?,
         quotedMessageContentType: MessageEntity.ContentType?,
+        quotedTextBody: String?,
         quotedAssetMimeType: String?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
@@ -127,7 +125,20 @@ object MessageMapper {
         } else when (contentType) {
             MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
                 messageBody = text ?: "",
-                mentions = messageMentionsFromJsonString(mentions)
+                mentions = messageMentionsFromJsonString(mentions),
+                quotedMessageId = quotedMessageId,
+                quotedMessage = quotedMessageId?.let {
+                    MessageEntityContent.Text.QuotedMessage(
+                        it,
+                        quotedSenderId.requireField("quotedSenderId"),
+                        quotedSenderName.requireField("quotedSenderName"),
+                        quotedMessageDateTime.requireField("quotedMessageDateTime"),
+                        quotedMessageEditTimestamp,
+                        quotedMessageVisibility.requireField("quotedMessageVisibility"),
+                        quotedMessageContentType.requireField("quotedMessageContentType"),
+                        quotedTextBody, quotedAssetMimeType
+                    )
+                }
                 // TODO: Handle Replies/Quotes
             )
 
@@ -190,6 +201,11 @@ object MessageMapper {
         )
     }
 
+    /**
+     * Used when unpacking a value from the database, and it is expected to not be null.
+     * For example, if there's a quoted message ID, it is 100% expected that there is a quoted message content type
+     * This is basically a verbose !! (🔫🔫 Bang Bang) that provides a more meaningful exception.
+     */
     private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
         "Field $fieldName null when unpacking message content"
     }

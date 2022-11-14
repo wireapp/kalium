@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -11,18 +10,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
-import com.wire.kalium.protobuf.messages.Calling
-import com.wire.kalium.protobuf.messages.Cleared
-import com.wire.kalium.protobuf.messages.External
-import com.wire.kalium.protobuf.messages.GenericMessage
-import com.wire.kalium.protobuf.messages.Knock
-import com.wire.kalium.protobuf.messages.LastRead
-import com.wire.kalium.protobuf.messages.MessageDelete
-import com.wire.kalium.protobuf.messages.MessageEdit
-import com.wire.kalium.protobuf.messages.MessageHide
-import com.wire.kalium.protobuf.messages.QualifiedConversationId
-import com.wire.kalium.protobuf.messages.Reaction
-import com.wire.kalium.protobuf.messages.Text
+import com.wire.kalium.protobuf.messages.*
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
@@ -142,8 +130,13 @@ class ProtoContentMapperImpl(
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(
                 protoContent.value.content,
-                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull(),
-                protoContent.value.quote?.,
+                protoContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
+                protoContent.value.quote?.let {
+                    MessageContent.QuoteReference(
+                        it.quotedMessageId,
+                        it.quotedMessageSha256?.array
+                    )
+                }, null
             )
 
             is GenericMessage.Content.Asset -> {

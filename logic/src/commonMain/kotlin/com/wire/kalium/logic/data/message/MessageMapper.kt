@@ -4,9 +4,7 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
@@ -14,6 +12,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import kotlinx.datetime.Instant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message): MessageEntity
@@ -127,7 +126,7 @@ class MessageMapperImpl(
         is MessageContent.Text -> MessageEntityContent.Text(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
-            quotedMessageId = this.
+            quotedMessageId = this.quotedMessageReference?.quotedMessageId
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -204,11 +203,23 @@ class MessageMapperImpl(
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
-        is MessageEntityContent.Text -> MessageContent.Text(
-            value = this.messageBody,
-            mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
-            quotedMessageId = this.quotedMessageId
-        )
+        is MessageEntityContent.Text -> {
+            val quotedMessageDetails = this.quotedMessage?.let {
+                MessageContent.QuotedMessageDetails(
+                    senderId = idMapper.fromDaoModel(it.senderId),
+                    messageId = it.id,
+                    timeInstant = Instant.parse(it.dateTime),
+                    assetMimeType = it.assetMimeType,
+                    textContent = it.textBody
+                )
+            }
+            MessageContent.Text(
+                value = this.messageBody,
+                mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
+                quotedMessageReference = quotedMessageDetails?.messageId?.let { MessageContent.QuoteReference(it, null) },
+                quotedMessageDetails = quotedMessageDetails
+            )
+        }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)

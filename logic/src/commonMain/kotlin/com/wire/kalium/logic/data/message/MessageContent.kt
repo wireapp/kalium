@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.conversation.UnreadContentType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -17,15 +18,24 @@ sealed class MessageContent {
     data class Text(
         val value: String,
         val mentions: List<MessageMention> = listOf(),
-        val quotedMessageReference: QuoteReference?
+        val quotedMessageReference: QuoteReference? = null,
+        val quotedMessageDetails: QuotedMessageDetails? = null
     ) : Regular()
 
-    data class QuoteReference(
+    class QuoteReference(
         val quotedMessageId: String,
         /**
          * The hash of the text of the quoted message
          */
-        val quotedMessageSha256: String?
+        val quotedMessageSha256: ByteArray?
+    )
+
+    data class QuotedMessageDetails(
+        val senderId: UserId,
+        val messageId: String,
+        val timeInstant: Instant?,
+        val assetMimeType: String?,
+        val textContent: String?,
     )
 
     data class Calling(val value: String) : Regular()
