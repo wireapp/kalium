@@ -24,7 +24,9 @@ sqldelight {
     database("GlobalDatabase") {
         dialect = Dependencies.SqlDelight.dialect
         packageName = "com.wire.kalium.persistence"
-        sourceFolders = listOf("db_global")
+        val sourceFolderName = "db_global"
+        sourceFolders = listOf(sourceFolderName)
+        schemaOutputDirectory = file("src/commonMain/$sourceFolderName/schemas")
     }
 }
 

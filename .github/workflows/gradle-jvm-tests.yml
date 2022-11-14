@@ -31,6 +31,9 @@ jobs:
       - name: Verify DB Migrations
         run: |
           ./gradlew :persistence:verifySqlDelightMigration
+          ./gradlew :persistence:generateCommonMainUserDatabaseSchema
+          ./gradlew :persistence:generateCommonMainGlobalDatabaseSchema
+          ./persistence/verifySchemas.sh
 
       - name: Test with Gradle
         run: |
