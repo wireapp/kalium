@@ -28,6 +28,12 @@ jobs:
         run: |
           ./gradlew :cli:build -Djava.library.path=$LD_LIBRARY_PATH
 
+      - name: Verify DB schemas are all present
+        run: |
+          ./gradlew :persistence:generateCommonMainUserDatabaseSchema
+          ./gradlew :persistence:generateCommonMainGlobalDatabaseSchema
+          ./persistence/verifySchemas.sh
+
       - name: Verify DB Migrations
         run: |
           ./gradlew :persistence:verifySqlDelightMigration
