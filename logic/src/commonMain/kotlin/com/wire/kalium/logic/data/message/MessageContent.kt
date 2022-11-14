@@ -16,8 +16,17 @@ sealed class MessageContent {
     // client message content types
     data class Text(
         val value: String,
-        val mentions: List<MessageMention> = listOf()
+        val mentions: List<MessageMention> = listOf(),
+        val quotedMessageReference: QuoteReference?
     ) : Regular()
+
+    data class QuoteReference(
+        val quotedMessageId: String,
+        /**
+         * The hash of the text of the quoted message
+         */
+        val quotedMessageSha256: String?
+    )
 
     data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()

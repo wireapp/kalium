@@ -126,7 +126,8 @@ class MessageMapperImpl(
     private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
         is MessageContent.Text -> MessageEntityContent.Text(
             messageBody = this.value,
-            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) }
+            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
+            quotedMessageId = this.
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -205,7 +206,8 @@ class MessageMapperImpl(
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
         is MessageEntityContent.Text -> MessageContent.Text(
             value = this.messageBody,
-            mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) }
+            mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
+            quotedMessageId = this.quotedMessageId
         )
 
         is MessageEntityContent.Asset -> MessageContent.Asset(

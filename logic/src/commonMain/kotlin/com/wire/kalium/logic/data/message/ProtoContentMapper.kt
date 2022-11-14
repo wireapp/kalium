@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -141,7 +142,8 @@ class ProtoContentMapperImpl(
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(
                 protoContent.value.content,
-                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull()
+                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull(),
+                protoContent.value.quote?.,
             )
 
             is GenericMessage.Content.Asset -> {
