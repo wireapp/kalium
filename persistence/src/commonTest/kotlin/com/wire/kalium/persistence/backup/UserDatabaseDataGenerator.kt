@@ -201,7 +201,7 @@ class UserDatabaseDataGenerator(
 
             val conversationType = ConversationEntity.Type.values()[index % ConversationEntity.Type.values().size]
 
-            val invalidatedConversationType =
+            val sanitizedConversationType =
                 if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
                     ConversationEntity.Type.values()[(index + 1) % ConversationEntity.Type.values().size]
                 else conversationType
@@ -248,7 +248,7 @@ class UserDatabaseDataGenerator(
 
         val conversationType = ConversationEntity.Type.values()[generatedCallsCount % ConversationEntity.Type.values().size]
 
-        val invalidatedConversationType =
+        val sanitizedConversationType =
             if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
                 ConversationEntity.Type.values()[(generatedCallsCount + 1) % ConversationEntity.Type.values().size]
             else conversationType
@@ -485,7 +485,7 @@ class UserDatabaseDataGenerator(
 
             val conversationType = ConversationEntity.Type.values()[index % ConversationEntity.Type.values().size]
 
-            val invalidatedConversationType =
+            val sanitizedConversationType =
                 if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
                     ConversationEntity.Type.values()[(index + 1) % ConversationEntity.Type.values().size]
                 else conversationType
