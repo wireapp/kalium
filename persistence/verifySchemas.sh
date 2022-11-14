@@ -12,6 +12,6 @@ done
 
 if [ -n "${MISSING_FILES}" ]
 then
-    >&2 echo "Missing DB schema(s) detected listed above. Make sure you run the appropriate ./gradlew generate[*]DatabaseSchema and commit the generated files to the repository.$MISSING_FILES"
+    >&2 echo "Missing DB schema(s) detected. Make sure you run the appropriate ./gradlew generate[*]DatabaseSchema and commit the generated files to the repository.$MISSING_FILES"
     exit 1
 fi
