@@ -32,8 +32,11 @@ sealed class MessageContent {
 
     data class QuotedMessageDetails(
         val senderId: UserId,
+        val senderName: String,
         val messageId: String,
-        val timeInstant: Instant?,
+        val isDeleted: Boolean,
+        val timeInstant: Instant,
+        val editInstant: Instant?,
         val assetMimeType: String?,
         val textContent: String?,
     )

@@ -1,5 +1,7 @@
 CREATE VIEW IF NOT EXISTS MessageQuoteDetails
 AS SELECT
+    MessageTextContent.message_id AS messageId,
+    MessageTextContent.conversation_id AS conversationId,
     MessageTextContent.quoted_message_id AS quotedMessageId,
     QuotedSender.qualified_id AS quotedSenderId,
     CASE
@@ -14,7 +16,7 @@ AS SELECT
     QuotedTextContent.text_body AS quotedTextBody,
     QuotedAssetContent.asset_mime_type AS quotedAssetMimeType
 FROM MessageTextContent
-INNER JOIN Message AS QuotedMessage ON QuotedMessage.id = MessageTextContent.quoted_message_id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
+LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = MessageTextContent.quoted_message_id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
 INNER JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
 INNER JOIN SelfUser AS SelfUser
 LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
@@ -124,5 +126,5 @@ LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
-LEFT JOIN MessageQuoteDetails AS QuotedMessage ON TextContent.quoted_message_id = QuotedMessage.quotedMessageId AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN SelfUser;

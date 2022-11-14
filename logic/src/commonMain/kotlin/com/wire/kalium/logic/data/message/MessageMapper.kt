@@ -207,8 +207,11 @@ class MessageMapperImpl(
             val quotedMessageDetails = this.quotedMessage?.let {
                 MessageContent.QuotedMessageDetails(
                     senderId = idMapper.fromDaoModel(it.senderId),
+                    senderName = it.senderName,
                     messageId = it.id,
+                    isDeleted = it.visibility != MessageEntity.Visibility.VISIBLE,
                     timeInstant = Instant.parse(it.dateTime),
+                    editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
                     assetMimeType = it.assetMimeType,
                     textContent = it.textBody
                 )
