@@ -3,7 +3,6 @@ package com.wire.kalium.persistence
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
