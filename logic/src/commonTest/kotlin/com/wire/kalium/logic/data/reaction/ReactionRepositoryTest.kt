@@ -61,7 +61,6 @@ class ReactionRepositoryTest {
             ).test {
                 val result = awaitItem()
                 assertTrue(result.size == 2)
-                assertEquals("🤯", result.first().emoji)
             }
         }
     }
