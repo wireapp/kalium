@@ -32,7 +32,7 @@ data class ServerConfig(
         @SerialName("websiteUrl") val website: String,
         @SerialName("title") val title: String,
         @SerialName("is_on_premises") val isOnPremises: Boolean,
-        @SerialName("proxy") val proxy: Proxy?
+        @SerialName("apiProxy") val apiProxy: ApiProxy?
     ) {
         val forgotPassword: String
             get() = URLBuilder().apply {
@@ -77,10 +77,10 @@ data class ServerConfig(
     )
 
     @Serializable
-    data class Proxy(
+    data class ApiProxy(
         @SerialName("needsAuthentication") val needsAuthentication: Boolean,
-        @SerialName("apiProxy") val proxyApi: String,
-        @SerialName("port") val proxyPort: Int
+        @SerialName("host") val host: String,
+        @SerialName("port") val port: Int
     )
 
     companion object {
@@ -93,7 +93,7 @@ data class ServerConfig(
             website = """https://wire.com""",
             title = "production",
             isOnPremises = false,
-            proxy = null
+            apiProxy = null
         )
 
         val STAGING = Links(
@@ -105,7 +105,7 @@ data class ServerConfig(
             website = """https://wire.com""",
             title = "staging",
             isOnPremises = false,
-            proxy = null
+            apiProxy = null
         )
         val DEFAULT = PRODUCTION
 
@@ -119,18 +119,18 @@ interface ServerConfigMapper {
     fun toDTO(serverConfig: ServerConfig): ServerConfigDTO
     fun toDTO(links: ServerConfig.Links): ServerConfigDTO.Links
     fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO
-    fun toDTO(proxy: ServerConfig.Proxy): ServerConfigDTO.Proxy
-    fun toDTO(proxy: ServerConfigEntity.Proxy): ServerConfigDTO.Proxy
+    fun toDTO(apiProxy: ServerConfig.ApiProxy): ServerConfigDTO.ApiProxy
+    fun toDTO(apiProxy: ServerConfigEntity.ApiProxy): ServerConfigDTO.ApiProxy
     fun fromDTO(wireServer: ServerConfigDTO): ServerConfig
     fun fromDTO(links: ServerConfigDTO.Links): ServerConfig.Links
-    fun fromDTO(proxy: ServerConfigDTO.Proxy): ServerConfig.Proxy
+    fun fromDTO(apiProxy: ServerConfigDTO.ApiProxy): ServerConfig.ApiProxy
     fun fromDTO(metadata: ServerConfigDTO.MetaData): ServerConfig.MetaData
     fun toEntity(serverLinks: ServerConfig): ServerConfigEntity
     fun toEntity(serverLinks: ServerConfig.Links): ServerConfigEntity.Links
-    fun toEntity(proxy: ServerConfig.Proxy): ServerConfigEntity.Proxy
+    fun toEntity(apiProxy: ServerConfig.ApiProxy): ServerConfigEntity.ApiProxy
     fun fromEntity(serverConfigEntity: ServerConfigEntity): ServerConfig
     fun fromEntity(serverConfigEntityLinks: ServerConfigEntity.Links): ServerConfig.Links
-    fun fromEntity(proxy: ServerConfigEntity.Proxy): ServerConfig.Proxy
+    fun fromEntity(apiProxy: ServerConfigEntity.ApiProxy): ServerConfig.ApiProxy
 }
 
 class ServerConfigMapperImpl(
@@ -147,7 +147,7 @@ class ServerConfigMapperImpl(
                 links.website,
                 links.title,
                 isOnPremises = links.isOnPremises,
-                proxy = links.proxy?.let { toDTO(it) }
+                apiProxy = links.apiProxy?.let { toDTO(it) }
             ), ServerConfigDTO.MetaData(
                 federation = metaData.federation, apiVersionMapper.toDTO(metaData.commonApiVersion), metaData.domain
             )
@@ -164,7 +164,7 @@ class ServerConfigMapperImpl(
             links.website,
             title,
             isOnPremises,
-            links.proxy?.let { toDTO(it) }
+            links.apiProxy?.let { toDTO(it) }
         )
     }
 
@@ -179,18 +179,18 @@ class ServerConfigMapperImpl(
                 website = links.website,
                 title = links.title,
                 isOnPremises = links.isOnPremises,
-                proxy = links.proxy?.let { toDTO(it) }
+                apiProxy = links.apiProxy?.let { toDTO(it) }
             ), ServerConfigDTO.MetaData(
                 federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain
             )
         )
     }
 
-    override fun toDTO(proxy: ServerConfig.Proxy): ServerConfigDTO.Proxy =
-        with(proxy) { ServerConfigDTO.Proxy(needsAuthentication, proxyApi, proxyPort) }
+    override fun toDTO(apiProxy: ServerConfig.ApiProxy): ServerConfigDTO.ApiProxy =
+        with(apiProxy) { ServerConfigDTO.ApiProxy(needsAuthentication, host, port) }
 
-    override fun toDTO(proxy: ServerConfigEntity.Proxy): ServerConfigDTO.Proxy =
-        with(proxy) { ServerConfigDTO.Proxy(needsAuthentication, proxyApi, proxyPort) }
+    override fun toDTO(apiProxy: ServerConfigEntity.ApiProxy): ServerConfigDTO.ApiProxy =
+        with(apiProxy) { ServerConfigDTO.ApiProxy(needsAuthentication, host, port) }
 
     override fun fromDTO(wireServer: ServerConfigDTO): ServerConfig = with(wireServer) {
         ServerConfig(id = id, links = fromDTO(links), metaData = fromDTO(metaData))
@@ -206,12 +206,12 @@ class ServerConfigMapperImpl(
             teams = teams,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { fromDTO(it) }
+            apiProxy = apiProxy?.let { fromDTO(it) }
         )
     }
 
-    override fun fromDTO(proxy: ServerConfigDTO.Proxy): ServerConfig.Proxy = with(proxy) {
-        ServerConfig.Proxy(needsAuthentication = needsAuthentication, proxyApi = proxyApi, proxyPort = proxyPort)
+    override fun fromDTO(apiProxy: ServerConfigDTO.ApiProxy): ServerConfig.ApiProxy = with(apiProxy) {
+        ServerConfig.ApiProxy(needsAuthentication = needsAuthentication, host = host, port = port)
     }
 
     override fun fromDTO(metadata: ServerConfigDTO.MetaData): ServerConfig.MetaData = with(metadata) {
@@ -238,15 +238,15 @@ class ServerConfigMapperImpl(
             website = website,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { toEntity(it) }
+            apiProxy = apiProxy?.let { toEntity(it) }
         )
     }
 
-    override fun toEntity(proxy: ServerConfig.Proxy): ServerConfigEntity.Proxy = with(proxy) {
-        ServerConfigEntity.Proxy(
+    override fun toEntity(apiProxy: ServerConfig.ApiProxy): ServerConfigEntity.ApiProxy = with(apiProxy) {
+        ServerConfigEntity.ApiProxy(
             needsAuthentication = needsAuthentication,
-            proxyApi = proxyApi,
-            proxyPort = proxyPort
+            host = host,
+            port = port
         )
     }
 
@@ -268,15 +268,15 @@ class ServerConfigMapperImpl(
             website = website,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = proxy?.let { fromEntity(it) }
+            apiProxy = apiProxy?.let { fromEntity(it) }
         )
     }
 
-    override fun fromEntity(proxy: ServerConfigEntity.Proxy): ServerConfig.Proxy = with(proxy) {
-        ServerConfig.Proxy(
+    override fun fromEntity(apiProxy: ServerConfigEntity.ApiProxy): ServerConfig.ApiProxy = with(apiProxy) {
+        ServerConfig.ApiProxy(
             needsAuthentication = needsAuthentication,
-            proxyApi = proxyApi,
-            proxyPort = proxyPort
+            host = host,
+            port = port
         )
     }
 }
