@@ -82,8 +82,7 @@ import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
-import com.wire.kalium.logic.feature.backup.ImportBackupUseCase
-import com.wire.kalium.logic.feature.backup.ImportBackupUseCaseImpl
+import com.wire.kalium.logic.feature.backup.RestoreBackupUseCaseImpl
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -385,7 +384,7 @@ class UserSessionScope internal constructor(
             userSearchApiWrapper
         )
 
-    val importBackup get() = ImportBackupUseCaseImpl(userStorage.database.backupImporter)
+    val importBackup get() = RestoreBackupUseCaseImpl(userStorage.database.backupImporter)
 
     val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(messageRepository, userId)
