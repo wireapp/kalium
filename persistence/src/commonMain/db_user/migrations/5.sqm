@@ -1,0 +1,2 @@
+-- This file is a test and MUST NOT GO TO PRODUCTION.
+DROP VIEW ConversationDetails;
