@@ -210,7 +210,7 @@ class UserDatabaseDataGenerator(
                 ConversationEntity(
                     id = conversationId,
                     name = "${conversationPrefix}Name$index",
-                    type = invalidatedConversationType,
+                    type = sanitizedConversationType,
                     teamId = null,
                     protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                     mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
@@ -258,7 +258,7 @@ class UserDatabaseDataGenerator(
             id = "${callPrefix}Id${generatedCallsCount}",
             status = CallEntity.Status.values()[generatedCallsCount % CallEntity.Status.values().size],
             callerId = userEntity.id.value,
-            conversationType = invalidatedConversationType
+            conversationType = sanitizedConversationType
         )
 
         userDatabaseBuilder.callDAO.insertCall(callEntity)
@@ -494,7 +494,7 @@ class UserDatabaseDataGenerator(
                 ConversationEntity(
                     id = conversationId,
                     name = "${conversationPrefix}Name$index",
-                    type = invalidatedConversationType,
+                    type = sanitizedConversationType,
                     teamId = null,
                     protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                     mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
