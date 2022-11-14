@@ -384,7 +384,7 @@ class UserSessionScope internal constructor(
             userSearchApiWrapper
         )
 
-    val importBackup get() = RestoreBackupUseCaseImpl(userStorage.database.backupImporter)
+    val restoreBackup: RestorbackupUseCase get() = RestoreBackupUseCaseImpl(userStorage.database.backupImporter)
 
     val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(messageRepository, userId)
