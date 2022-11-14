@@ -5,7 +5,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.backup.BackupImporter
 
-
 /**
  * Restores a valid previously created backup file into the current database, respecting the current data if there is any overlap.
  * @param backUpFilePath The absolute file system path to the backup file
