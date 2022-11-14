@@ -100,6 +100,11 @@ CASE (Conversation.type)
         ELSE Conversation.last_modified_date
         END AS lastModifiedDate,
 Conversation.last_read_date AS lastReadDate,
+IFNULL((SELECT Message.date FROM Message
+ WHERE Message.conversation_id IS Conversation.qualified_id
+ AND (DateTime(Message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS Conversation.qualified_id))
+ ORDER BY Message.date ASC
+ LIMIT  1), 0) AS lastUnreadMessageDate,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.user_availability_status
     WHEN "CONNECTION_PENDING" THEN connection_user.user_availability_status

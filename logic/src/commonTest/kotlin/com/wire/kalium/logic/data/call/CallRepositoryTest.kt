@@ -202,7 +202,7 @@ class CallRepositoryTest {
                             LegalHoldStatus.ENABLED,
                             false,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
                             unreadContentCount = emptyMap()
@@ -269,7 +269,7 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
                             unreadContentCount = emptyMap()
@@ -331,7 +331,7 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
                             unreadContentCount = emptyMap()
@@ -402,7 +402,7 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
                             unreadContentCount = emptyMap()
@@ -459,7 +459,7 @@ class CallRepositoryTest {
                             groupConversation,
                             LegalHoldStatus.ENABLED,
                             unreadMessagesCount = 0,
-                            lastUnreadMessage = null,
+                            lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
                             unreadContentCount = emptyMap()
@@ -1313,7 +1313,7 @@ class CallRepositoryTest {
             legalHoldStatus = LegalHoldStatus.ENABLED,
             userType = UserType.INTERNAL,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             unreadContentCount = emptyMap()
         )
     }

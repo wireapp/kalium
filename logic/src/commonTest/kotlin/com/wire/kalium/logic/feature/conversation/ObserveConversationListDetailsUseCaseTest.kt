@@ -46,7 +46,7 @@ class ObserveConversationListDetailsUseCaseTest {
                 groupConversation,
                 LegalHoldStatus.DISABLED,
                 unreadMessagesCount = 0,
-                lastUnreadMessage = null,
+                lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
                 unreadContentCount = emptyMap()
@@ -82,7 +82,7 @@ class ObserveConversationListDetailsUseCaseTest {
             conversation = groupConversation,
             legalHoldStatus = LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
             unreadContentCount = emptyMap()
@@ -120,7 +120,7 @@ class ObserveConversationListDetailsUseCaseTest {
                 groupConversation,
                 LegalHoldStatus.DISABLED,
                 unreadMessagesCount = 0,
-                lastUnreadMessage = null,
+                lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
                 unreadContentCount = emptyMap()
@@ -133,7 +133,7 @@ class ObserveConversationListDetailsUseCaseTest {
             LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             unreadContentCount = emptyMap()
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
@@ -142,7 +142,7 @@ class ObserveConversationListDetailsUseCaseTest {
             LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             unreadContentCount = emptyMap()
         )
 
@@ -179,7 +179,7 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
             unreadContentCount = emptyMap()
@@ -217,7 +217,7 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
             unreadContentCount = emptyMap()
@@ -249,7 +249,7 @@ class ObserveConversationListDetailsUseCaseTest {
             groupConversation,
             LegalHoldStatus.DISABLED,
             unreadMessagesCount = 0,
-            lastUnreadMessage = null,
+            lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
             unreadContentCount = emptyMap()

@@ -523,7 +523,7 @@ class ConversationRepositoryTest {
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
-            assertTrue { conversationDetail.value.lastUnreadMessage == null }
+            assertTrue { conversationDetail.value.lastMessage == null }
 
             awaitComplete()
         }
@@ -549,7 +549,7 @@ class ConversationRepositoryTest {
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
-            assertTrue { conversationDetail.value.lastUnreadMessage == null }
+            assertTrue { conversationDetail.value.lastMessage == null }
 
             awaitComplete()
         }
@@ -577,7 +577,7 @@ class ConversationRepositoryTest {
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
             assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
-            assertTrue(conversationDetail.value.lastUnreadMessage != null)
+            assertTrue(conversationDetail.value.lastMessage != null)
 
             awaitComplete()
         }

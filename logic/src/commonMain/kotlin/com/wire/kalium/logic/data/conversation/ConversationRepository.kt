@@ -285,19 +285,20 @@ internal class ConversationDataSource internal constructor(
             .mapRight { conversationMapper.fromDaoModelToDetails(it) }
             .flatMapRight { conversationDetails ->
                 when (conversationDetails) {
-                    is ConversationDetails.OneOne -> observeLastUnreadMessage(conversationID)
-                        .map { conversationDetails.copy(lastUnreadMessage = it) }
+                    // TODO perfomance issue
+                    is ConversationDetails.OneOne -> observeLastMessage(conversationID)
+                        .map { conversationDetails.copy(lastMessage = it) }
 
-                    is ConversationDetails.Group -> observeLastUnreadMessage(conversationID)
-                        .map { conversationDetails.copy(lastUnreadMessage = it) }
+                    is ConversationDetails.Group -> observeLastMessage(conversationID)
+                        .map { conversationDetails.copy(lastMessage = it) }
 
                     else -> flowOf(conversationDetails)
                 }
             }
             .distinctUntilChanged()
 
-    private suspend fun observeLastUnreadMessage(conversationId: ConversationId): Flow<Message?> =
-        messageDAO.observeLastUnreadMessage(idMapper.toDaoModel(conversationId))
+    private suspend fun observeLastMessage(conversationId: ConversationId): Flow<Message?> =
+        messageDAO.observeConversationLastMessage(idMapper.toDaoModel(conversationId))
             .map { it?.let { messageMapper.fromEntityToMessage(it) } }
             .distinctUntilChanged()
 

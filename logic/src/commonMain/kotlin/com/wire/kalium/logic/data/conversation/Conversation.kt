@@ -26,6 +26,7 @@ data class Conversation(
     val lastNotificationDate: String?,
     val lastModifiedDate: String?,
     val lastReadDate: String,
+    val lastUnreadMessageDate: String,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
     val creatorId: String?
@@ -144,7 +145,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadMessagesCount: Int = 0,
         val unreadMentionsCount: Long = 0L,
         val unreadContentCount: UnreadContentCount,
-        val lastUnreadMessage: Message?
+        val lastMessage: Message?
     ) : ConversationDetails(conversation)
 
     data class Group(
@@ -154,7 +155,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val unreadMessagesCount: Int = 0,
         val unreadMentionsCount: Long = 0L,
         val unreadContentCount: UnreadContentCount,
-        val lastUnreadMessage: Message?,
+        val lastMessage: Message?,
         val isSelfUserMember: Boolean,
         val isSelfUserCreator: Boolean
     ) : ConversationDetails(conversation)
@@ -182,7 +183,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             lastReadDate = EPOCH_FIRST_DAY,
             access = access,
             accessRole = accessRole,
-            creatorId = null
+            creatorId = null,
+            lastUnreadMessageDate = EPOCH_FIRST_DAY
         )
     )
 }

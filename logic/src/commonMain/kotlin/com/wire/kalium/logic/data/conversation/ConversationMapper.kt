@@ -71,6 +71,7 @@ internal class ConversationMapperImpl(
         removedBy = null,
         creatorId = apiModel.creator,
         lastReadDate = EPOCH_FIRST_DAY,
+        lastUnreadMessageDate = EPOCH_FIRST_DAY,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime,
         access = apiModel.access.map { it.toDAO() },
@@ -98,7 +99,8 @@ internal class ConversationMapperImpl(
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
-            creatorId = creatorId
+            creatorId = creatorId,
+            lastUnreadMessageDate = lastUnreadMessageDate
         )
     }
 
@@ -132,7 +134,7 @@ internal class ConversationMapperImpl(
                     unreadMessagesCount = unreadContentCountEntity.values.sum(),
                     unreadMentionsCount = unreadMentionsCount,
                     unreadContentCount = unreadContentCountEntity.toUnreadModel(),
-                    lastUnreadMessage = null,
+                    lastMessage = null,
                 )
             }
 
@@ -144,7 +146,7 @@ internal class ConversationMapperImpl(
                     unreadMessagesCount = unreadContentCountEntity.values.sum(),
                     unreadMentionsCount = unreadMentionsCount,
                     unreadContentCount = unreadContentCountEntity.toUnreadModel(),
-                    lastUnreadMessage = null,
+                    lastMessage = null,
                     isSelfUserMember = isMember == 1L,
                     isSelfUserCreator = isCreator == 1L
                 )
@@ -274,6 +276,7 @@ internal class ConversationMapperImpl(
             creatorId = creatorId.orEmpty(),
             lastNotificationDate = "",
             lastModifiedDate = "",
+            lastUnreadMessageDate = "",
             lastReadDate = "",
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() }

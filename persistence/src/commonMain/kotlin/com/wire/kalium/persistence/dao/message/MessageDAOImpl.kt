@@ -300,9 +300,17 @@ class MessageDAOImpl(
         queries.deleteAllConversationMessages(conversationId)
     }
 
+    // TODO remove
     override suspend fun observeLastUnreadMessage(
         conversationID: QualifiedIDEntity
     ): Flow<MessageEntity?> = queries.getLastUnreadMessage(
+        conversationID,
+        mapper::toEntityMessageFromView
+    ).asFlow().mapToOneOrNull()
+
+    override suspend fun observeConversationLastMessage(
+        conversationID: QualifiedIDEntity
+    ): Flow<MessageEntity?> = queries.getConversationLastMessage(
         conversationID,
         mapper::toEntityMessageFromView
     ).asFlow().mapToOneOrNull()

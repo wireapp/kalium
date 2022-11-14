@@ -21,6 +21,7 @@ data class ConversationEntity(
     val lastModifiedDate: String,
     // Date that indicates when the user has seen the conversation,
     val lastReadDate: String,
+    val lastUnreadMessageDate: String,
     val access: List<Access>,
     val accessRole: List<AccessRole>
 ) {
@@ -76,6 +77,7 @@ data class ConversationViewEntity(
     val teamId: String?,
     val lastModifiedDate: String?,
     val lastReadDate: String,
+    val lastUnreadMessageDate: String,
     val userAvailabilityStatus: UserAvailabilityStatusEntity?,
     val userType: UserTypeEntity?,
     val botService: BotEntity?,

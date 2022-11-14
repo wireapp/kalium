@@ -417,10 +417,18 @@ deleteAllConversationMessages:
 DELETE FROM Message
 WHERE conversation_id IS :conversation_id;
 
+-- TODO remove
 getLastUnreadMessage:
 SELECT * FROM MessageDetailsView AS message
 WHERE message.conversationId
 IS :conversation_id AND (DateTime(message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS :conversation_id))
+ORDER BY message.date ASC
+LIMIT  1;
+
+getConversationLastMessage:
+SELECT * FROM MessageDetailsView AS message
+WHERE message.conversationId
+IS :conversation_id
 ORDER BY message.date ASC
 LIMIT  1;
 
