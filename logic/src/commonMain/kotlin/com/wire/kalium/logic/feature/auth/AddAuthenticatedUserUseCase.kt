@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
@@ -24,6 +25,7 @@ class AddAuthenticatedUserUseCase internal constructor(
         serverConfigId: String,
         ssoId: SsoId?,
         authTokens: AuthTokens,
+        proxyCredentials: ProxyCredentials?,
         replace: Boolean = false
     ): Result =
         sessionRepository.doesValidSessionExist(authTokens.userId).fold(
@@ -31,8 +33,8 @@ class AddAuthenticatedUserUseCase internal constructor(
                 Result.Failure.Generic(it)
             }, { doesValidSessionExist ->
                 when (doesValidSessionExist) {
-                    true -> onUserExist(serverConfigId, ssoId, authTokens, replace)
-                    false -> storeUser(serverConfigId, ssoId, authTokens)
+                    true -> onUserExist(serverConfigId, ssoId, authTokens, proxyCredentials, replace)
+                    false -> storeUser(serverConfigId, ssoId, authTokens, proxyCredentials)
                 }
             }
         )
@@ -40,9 +42,10 @@ class AddAuthenticatedUserUseCase internal constructor(
     private suspend fun storeUser(
         serverConfigId: String,
         ssoId: SsoId?,
-        authTokens: AuthTokens
+        authTokens: AuthTokens,
+        proxyCredentials: ProxyCredentials?
     ): Result =
-        sessionRepository.storeSession(serverConfigId, ssoId, authTokens)
+        sessionRepository.storeSession(serverConfigId, ssoId, authTokens, proxyCredentials)
             .onSuccess {
                 sessionRepository.updateCurrentSession(authTokens.userId)
             }.fold(
@@ -54,6 +57,7 @@ class AddAuthenticatedUserUseCase internal constructor(
         newServerConfigId: String,
         ssoId: SsoId?,
         newAuthTokens: AuthTokens,
+        proxyCredentials: ProxyCredentials?,
         replace: Boolean
     ): Result =
         when (replace) {
@@ -68,7 +72,8 @@ class AddAuthenticatedUserUseCase internal constructor(
                             storeUser(
                                 serverConfigId = newServerConfigId,
                                 ssoId = ssoId,
-                                authTokens = newAuthTokens
+                                authTokens = newAuthTokens,
+                                proxyCredentials = proxyCredentials
                             )
                         } else Result.Failure.UserAlreadyExists
                     }

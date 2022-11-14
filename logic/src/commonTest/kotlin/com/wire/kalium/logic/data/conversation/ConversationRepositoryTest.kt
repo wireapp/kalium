@@ -242,12 +242,12 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun givenAWantToMuteAConversation_whenCallingUpdateMutedStatus_thenShouldDelegateCallToConversationApi() = runTest {
+    fun whenCallingUpdateMutedStatusRemotly_thenShouldDelegateCallToConversationApi() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withUpdateConversationMemberStateResult(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
             .arrange()
 
-        conversationRepository.updateMutedStatus(
+        conversationRepository.updateMutedStatusRemotely(
             TestConversation.ID,
             MutedConversationStatus.AllMuted,
             Clock.System.now().toEpochMilliseconds()
@@ -261,7 +261,30 @@ class ConversationRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateConversationMutedStatus)
             .with(any(), any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun whenCallingUpdateMutedStatusLocally_thenShouldUpdateTheDatabase() = runTest {
+        val (arrangement, conversationRepository) = Arrangement()
+            .withUpdateConversationMemberStateResult(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+            .arrange()
+
+        conversationRepository.updateMutedStatusLocally(
+            TestConversation.ID,
+            MutedConversationStatus.AllMuted,
+            Clock.System.now().toEpochMilliseconds()
+        )
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateConversationMutedStatus)
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::updateConversationMemberState)
+            .with(any(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -458,9 +481,10 @@ class ConversationRepositoryTest {
     @Test
     fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
+        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.GROUP,
-            unreadMessageCount = 10
+            unreadContentCountEntity = unreadContentCount
         )
 
         val (_, conversationRepository) = Arrangement()
@@ -474,7 +498,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
+            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
 
             awaitComplete()
         }
@@ -498,7 +522,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
+            assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
             assertTrue { conversationDetail.value.lastUnreadMessage == null }
 
             awaitComplete()
@@ -524,7 +548,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 0L }
+            assertTrue { conversationDetail.value.unreadMessagesCount == 0 }
             assertTrue { conversationDetail.value.lastUnreadMessage == null }
 
             awaitComplete()
@@ -534,10 +558,11 @@ class ConversationRepositoryTest {
     @Test
     fun givenAOneToOneConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
         // given
+        val unreadContentCount = mapOf(MessageEntity.ContentType.TEXT to 2, MessageEntity.ContentType.ASSET to 3)
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             type = ConversationEntity.Type.ONE_ON_ONE,
             otherUserId = QualifiedIDEntity("otherUser", "domain"),
-            unreadMessageCount = 10
+            unreadContentCountEntity = unreadContentCount
         )
 
         val (_, conversationRepository) = Arrangement()
@@ -551,7 +576,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadMessagesCount == 10L }
+            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
             assertTrue(conversationDetail.value.lastUnreadMessage != null)
 
             awaitComplete()
@@ -708,6 +733,24 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversation_WhenChangingNameConversation_ShouldReturnSuccess() = runTest {
+        val newConversationName = "new_name"
+        val (arrange, conversationRepository) = Arrangement()
+            .withConversationRenameApiCall(newConversationName)
+            .withConversationRenameCall(newConversationName)
+            .arrange()
+
+        val result = conversationRepository.changeConversationName(CONVERSATION_ID, newConversationName)
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationName)
+                .with(any(), eq(newConversationName), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -769,10 +812,10 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(mlsClient))
 
-                given(selfTeamIdProvider)
-                    .suspendFunction(selfTeamIdProvider::invoke)
-                    .whenInvoked()
-                    .then { Either.Right(TestTeam.TEAM_ID) }
+            given(selfTeamIdProvider)
+                .suspendFunction(selfTeamIdProvider::invoke)
+                .whenInvoked()
+                .then { Either.Right(TestTeam.TEAM_ID) }
         }
 
         fun withHasEstablishedMLSGroup(isClient: Boolean) = apply {
@@ -943,6 +986,20 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::getConversationIdsByUserId)
                 .whenInvokedWith(any())
                 .thenReturn(conversationIdEntities)
+        }
+
+        fun withConversationRenameCall(newName: String = "newName") = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateConversationName)
+                .whenInvokedWith(any(), eq(newName), any())
+                .thenReturn(Unit)
+        }
+
+        fun withConversationRenameApiCall(newName: String = "newName") = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateConversationName)
+                .whenInvokedWith(any(), eq(newName))
+                .thenReturn(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
         }
 
         fun arrange() = this to conversationRepository

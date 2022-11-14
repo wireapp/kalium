@@ -2,8 +2,6 @@ package com.wire.kalium.persistence.kmmSettings
 
 import android.content.Context
 import com.wire.kalium.persistence.client.AuthTokenStorage
-import com.wire.kalium.persistence.client.ProxyCredentialsStorage
-import com.wire.kalium.persistence.client.ProxyCredentialsStorageImpl
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.config.GlobalAppConfigStorage
@@ -13,13 +11,9 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
 
 actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean = true) {
 
-    private val encryptedSettingsHolder =
-        KaliumPreferencesSettings(
-            EncryptedSettingsHolder(
-                context,
-                options = SettingOptions.AppSettings(shouldEncryptData)
-            ).encryptedSettings
-        )
+    private val encryptedSettingsHolder: KaliumPreferences = KaliumPreferencesSettings(
+        encryptedSettingsBuilder(SettingOptions.AppSettings(shouldEncryptData), EncryptedSettingsPlatformParam(context))
+    )
 
     actual val authTokenStorage: AuthTokenStorage
         get() = AuthTokenStorage(encryptedSettingsHolder)
@@ -27,8 +21,6 @@ actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean = t
         get() = PassphraseStorageImpl(encryptedSettingsHolder)
     actual val tokenStorage: TokenStorage
         get() = TokenStorageImpl(encryptedSettingsHolder)
-    actual val proxyCredentialsStorage: ProxyCredentialsStorage
-        get() = ProxyCredentialsStorageImpl(encryptedSettingsHolder)
     actual val globalAppConfigStorage: GlobalAppConfigStorage = GlobalAppConfigStorageImpl(encryptedSettingsHolder)
 
 }

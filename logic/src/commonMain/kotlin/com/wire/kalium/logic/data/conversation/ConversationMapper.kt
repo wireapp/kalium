@@ -3,12 +3,10 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.OtherUser
-import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.util.EPOCH_FIRST_DAY
@@ -25,6 +23,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.ProposalTimerEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.util.requireField
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -44,17 +43,6 @@ interface ConversationMapper {
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
     fun toApiModel(protocol: ConversationOptions.Protocol): ConvProtocol
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
-
-    @Suppress("LongParameterList")
-    fun toConversationDetailsOneToOne(
-        conversation: Conversation,
-        otherUser: OtherUser,
-        selfUser: SelfUser,
-        unreadMessageCount: Long,
-        unreadMentionsCount: Long,
-        lastUnreadMessage: Message?
-    ): ConversationDetails.OneOne
-
     fun toDaoModel(conversation: Conversation): ConversationEntity
 }
 
@@ -141,9 +129,10 @@ internal class ConversationMapperImpl(
                     ),
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                    unreadMessagesCount = unreadMessageCount,
+                    unreadMessagesCount = unreadContentCountEntity.values.sum(),
                     unreadMentionsCount = unreadMentionsCount,
-                    lastUnreadMessage = null
+                    unreadContentCount = unreadContentCountEntity.toUnreadModel(),
+                    lastUnreadMessage = null,
                 )
             }
 
@@ -152,8 +141,9 @@ internal class ConversationMapperImpl(
                     conversation = fromDaoModel(daoModel),
                     legalHoldStatus = LegalHoldStatus.DISABLED,
                     hasOngoingCall = callStatus != null, // todo: we can do better!
-                    unreadMessagesCount = unreadMessageCount,
+                    unreadMessagesCount = unreadContentCountEntity.values.sum(),
                     unreadMentionsCount = unreadMentionsCount,
+                    unreadContentCount = unreadContentCountEntity.toUnreadModel(),
                     lastUnreadMessage = null,
                     isSelfUserMember = isMember == 1L,
                     isSelfUserCreator = isCreator == 1L
@@ -250,27 +240,6 @@ internal class ConversationMapperImpl(
         protocol = toApiModel(options.protocol),
         creatorClient = options.creatorClientId
     )
-
-    // TODO looks like could be removed
-    override fun toConversationDetailsOneToOne(
-        conversation: Conversation,
-        otherUser: OtherUser,
-        selfUser: SelfUser,
-        unreadMessageCount: Long,
-        unreadMentionsCount: Long,
-        lastUnreadMessage: Message?
-    ): ConversationDetails.OneOne {
-        return ConversationDetails.OneOne(
-            conversation = conversation,
-            otherUser = otherUser,
-            // TODO(user-metadata) get actual legal hold status
-            legalHoldStatus = LegalHoldStatus.DISABLED,
-            userType = otherUser.userType,
-            unreadMessagesCount = unreadMessageCount,
-            unreadMentionsCount = unreadMentionsCount,
-            lastUnreadMessage = lastUnreadMessage
-        )
-    }
 
     override fun toApiModel(access: Conversation.Access): ConversationAccessDTO = when (access) {
         Conversation.Access.PRIVATE -> ConversationAccessDTO.PRIVATE
@@ -405,4 +374,26 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.INVITE -> ConversationEntity.Access.INVITE
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
+}
+
+fun MessageEntity.ContentType.toUnreadModel(): UnreadContentType = when (this) {
+    MessageEntity.ContentType.TEXT -> UnreadContentType.TEXT_OR_ASSET
+    MessageEntity.ContentType.ASSET -> UnreadContentType.TEXT_OR_ASSET
+    MessageEntity.ContentType.KNOCK -> UnreadContentType.KNOCK
+    MessageEntity.ContentType.MEMBER_CHANGE -> UnreadContentType.SYSTEM
+    MessageEntity.ContentType.MISSED_CALL -> UnreadContentType.MISSED_CALL
+    MessageEntity.ContentType.RESTRICTED_ASSET -> UnreadContentType.TEXT_OR_ASSET
+    MessageEntity.ContentType.CONVERSATION_RENAMED -> UnreadContentType.SYSTEM
+    MessageEntity.ContentType.UNKNOWN -> UnreadContentType.UNKNOWN
+    MessageEntity.ContentType.FAILED_DECRYPTION -> UnreadContentType.UNKNOWN
+    MessageEntity.ContentType.REMOVED_FROM_TEAM -> UnreadContentType.SYSTEM
+}
+
+fun Map<MessageEntity.ContentType, Int>.toUnreadModel(): Map<UnreadContentType, Int> {
+    val unreadContent = mutableMapOf<UnreadContentType, Int>()
+    forEach { contentEntity ->
+        val contentType = contentEntity.key.toUnreadModel()
+        unreadContent[contentType] = unreadContent[contentType]?.let { it + contentEntity.value } ?: contentEntity.value
+    }
+    return unreadContent
 }

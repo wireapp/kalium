@@ -123,6 +123,9 @@ class ConversationScope internal constructor(
     val leaveConversation: LeaveConversationUseCase
         get() = LeaveConversationUseCaseImpl(conversationGroupRepository, selfUserId)
 
+    val renameConversation: RenameConversationUseCase
+        get() = RenameConversationUseCaseImpl(conversationRepository, persistMessage, selfUserId)
+
     val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
         get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, updateKeyingMaterialThresholdProvider)
 
@@ -134,5 +137,4 @@ class ConversationScope internal constructor(
             selfUserId,
             selfConversationIdProvider
         )
-
 }

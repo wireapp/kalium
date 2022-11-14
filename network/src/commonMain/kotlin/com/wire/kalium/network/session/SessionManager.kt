@@ -1,13 +1,14 @@
 package com.wire.kalium.network.session
 
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isUnknownClient
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClient
@@ -28,7 +29,9 @@ import io.ktor.utils.io.ByteReadChannel
 import kotlin.coroutines.CoroutineContext
 
 interface SessionManager {
-    fun session(): Pair<SessionDTO, ServerConfigDTO>
+    fun session(): SessionDTO
+
+    fun serverConfig(): ServerConfigDTO
     fun updateLoginSession(
         newAccessTokenDTO: AccessTokenDTO,
         newRefreshTokenDTO: RefreshTokenDTO?
@@ -39,30 +42,23 @@ interface SessionManager {
     fun proxyCredentials(): ProxyCredentialsDTO?
 }
 
-fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
+fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi) {
     install("Add_WWW-Authenticate_Header") {
         addWWWAuthenticateHeaderIfNeeded()
     }
     install(Auth) {
         bearer {
-            // memory cache the tokens
-            var access: String
-            var refresh: String
-            sessionManager.session().first.also { storedSession ->
-                access = storedSession.accessToken
-                refresh = storedSession.refreshToken
-            }
 
             loadTokens {
-                BearerTokens(accessToken = access, refreshToken = refresh)
+                val session = sessionManager.session()
+                BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
             }
+
             refreshTokens {
-                when (val response = AccessTokenApiV0(client).getToken(oldTokens!!.refreshToken)) {
+                when (val response = accessTokenApi(client).getToken(oldTokens!!.refreshToken)) {
                     is NetworkResponse.Success -> {
-                        response.value.first.let { newAccessToken -> access = newAccessToken.value }
-                        response.value.second?.let { newRefreshToken -> refresh = newRefreshToken.value }
-                        sessionManager.updateLoginSession(response.value.first, response.value.second)
-                        BearerTokens(access, refresh)
+                        val newSession = sessionManager.updateLoginSession(response.value.first, response.value.second)
+                        BearerTokens(newSession.accessToken, newSession.refreshToken)
                     }
 
                     is NetworkResponse.Error -> {
@@ -75,6 +71,8 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager) {
                         }
                         null
                     }
+                }.also {
+                    kaliumLogger.d("AUTH TOKEN REFRESH:{\"status\": ${response.status.value}}")
                 }
             }
         }

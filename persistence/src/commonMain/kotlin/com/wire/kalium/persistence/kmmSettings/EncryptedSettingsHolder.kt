@@ -17,6 +17,6 @@ internal sealed class SettingOptions {
     }
 }
 
-internal expect class EncryptedSettingsHolder {
-    val encryptedSettings: Settings
-}
+internal expect fun encryptedSettingsBuilder(options: SettingOptions, param: EncryptedSettingsPlatformParam): Settings
+
+internal expect class EncryptedSettingsPlatformParam

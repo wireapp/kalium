@@ -6,6 +6,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
@@ -17,6 +18,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.UpdateC
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.PaginationRequest
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -166,6 +168,15 @@ internal open class ConversationApiV0 internal constructor(
         }
     }
 
+    override suspend fun updateConversationName(conversationId: QualifiedID, conversationName: String): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.put(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_NAME"
+            ) {
+                setBody(ConversationRenameRequest(conversationName))
+            }
+        }
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
@@ -175,6 +186,7 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_CONVERSATIONS_LIST = "list"
         const val PATH_LIST_IDS = "list-ids"
         const val PATH_ACCESS = "access"
+        const val PATH_NAME = "name"
 
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"

@@ -16,13 +16,17 @@ sqldelight {
     database("UserDatabase") {
         dialect = Dependencies.SqlDelight.dialect
         packageName = "com.wire.kalium.persistence"
-        sourceFolders = listOf("db_user")
+        val sourceFolderName = "db_user"
+        sourceFolders = listOf(sourceFolderName)
+        schemaOutputDirectory = file("src/commonMain/$sourceFolderName/schemas")
     }
 
     database("GlobalDatabase") {
         dialect = Dependencies.SqlDelight.dialect
         packageName = "com.wire.kalium.persistence"
-        sourceFolders = listOf("db_global")
+        val sourceFolderName = "db_global"
+        sourceFolders = listOf(sourceFolderName)
+        schemaOutputDirectory = file("src/commonMain/$sourceFolderName/schemas")
     }
 }
 
