@@ -63,6 +63,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
+          arch: x86_64
           script: ./gradlew connectedAndroidOnlyAffectedTest
         env:
             GITHUB_USER: ${{ github.actor }}
