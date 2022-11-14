@@ -143,6 +143,10 @@ CREATE VIEW IF NOT EXISTS MessageQuoteDetails
 AS SELECT
     MessageTextContent.quoted_message_id AS quotedMessageId,
     QuotedSender.qualified_id AS quotedSenderId,
+    CASE
+        WHEN (qualified_id = SelfUser.id) THEN 1
+        ELSE 0
+    END AS isQuotingSelfUser,
     QuotedSender.name AS quotedSenderName,
     QuotedMessage.date AS quotedMessageDateTime,
     QuotedMessage.last_edit_timestamp AS quotedMessageEditTimestamp,
@@ -153,6 +157,7 @@ AS SELECT
 FROM MessageTextContent
 INNER JOIN Message AS QuotedMessage ON QuotedMessage.id = MessageTextContent.quoted_message_id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
 INNER JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
+INNER JOIN SelfUser AS SelfUser
 LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
 LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id;
 
@@ -240,6 +245,7 @@ IFNULL(
 ) AS mentions,
 QuotedMessage.quotedMessageId AS quotedMessageId,
 QuotedMessage.quotedSenderId AS quotedSenderId,
+QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
 QuotedMessage.quotedSenderName AS quotedSenderName,
 QuotedMessage.quotedMessageDateTime AS quotedMessageDateTime,
 QuotedMessage.quotedMessageEditTimestamp AS quotedMessageEditTimestamp,
