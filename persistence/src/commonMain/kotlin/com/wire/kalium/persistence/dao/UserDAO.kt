@@ -96,7 +96,6 @@ interface UserDAO {
      */
     suspend fun insertUser(user: UserEntity)
 
-
     /**
      * Inserts each user into the local storage or ignores if already exists
      */

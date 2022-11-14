@@ -6,6 +6,9 @@ import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 
+/**
+ * Persist migrated users from old datasource
+ */
 fun interface PersistMigratedUsersUseCase {
     suspend operator fun invoke(users: List<User>): Boolean
 }
