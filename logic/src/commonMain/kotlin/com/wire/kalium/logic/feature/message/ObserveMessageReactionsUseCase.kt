@@ -1,4 +1,4 @@
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.reaction.MessageReaction
