@@ -72,7 +72,7 @@ class LoginCommand : CliktCommand(name = "login") {
         }
 
         val userId = coreLogic.globalScope {
-            addAuthenticatedAccount(loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, true)
+            addAuthenticatedAccount(loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, null, true)
             loginResult.authData.userId
         }
 

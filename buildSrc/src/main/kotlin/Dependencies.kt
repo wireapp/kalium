@@ -34,7 +34,7 @@ object Versions {
     const val turbine = "0.7.0"
     const val avs = "8.2.16"
     const val jna = "5.6.0"
-    const val coreCrypto = "0.6.0-pre.2"
+    const val coreCrypto = "0.6.0-pre.3"
     const val desugarJdk = "1.1.5"
     const val kermit = "1.0.0"
     const val detekt = "1.19.0"
@@ -161,7 +161,7 @@ object Dependencies {
         const val jvmDriver = "app.cash.sqldelight:sqlite-driver:${Versions.sqlDelight}"
         const val jsDriver = "app.cash.sqldelight:sqljs-driver:${Versions.sqlDelight}"
         const val primitiveAdapters = "app.cash.sqldelight:primitive-adapters:${Versions.sqlDelight}"
-        const val dialect = "app.cash.sqldelight:sqlite-3-24-dialect:${Versions.sqlDelight}"
+        const val dialect = "app.cash.sqldelight:sqlite-3-25-dialect:${Versions.sqlDelight}"
     }
 
     object Test {

@@ -105,7 +105,7 @@ internal interface AuthenticatedHttpClientProvider {
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
-    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.proxy),
+    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy),
 ) : AuthenticatedHttpClientProvider {
     override val backendConfig = sessionManager.serverConfig().links
 

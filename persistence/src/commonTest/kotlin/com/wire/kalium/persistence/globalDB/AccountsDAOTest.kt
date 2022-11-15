@@ -41,9 +41,9 @@ class AccountsDAOTest : GlobalDBBaseTest() {
                     federation = metaData.federation,
                     domain = metaData.domain,
                     commonApiVersion = metaData.apiVersion,
-                    proxyApi = links.proxy?.proxyApi,
-                    proxyNeedsAuthentication = links.proxy?.needsAuthentication,
-                    proxyPort = links.proxy?.proxyPort
+                    apiProxyHost = links.apiProxy?.host,
+                    apiProxyNeedsAuthentication = links.apiProxy?.needsAuthentication,
+                    apiProxyPort = links.apiProxy?.port
                 )
             )
         }
@@ -182,7 +182,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
                 website = "website",
                 title = "title",
                 isOnPremises = false,
-                ServerConfigEntity.Proxy(true, "apiProxy", 8888)
+                ServerConfigEntity.ApiProxy(true, "apiProxy", 8888)
             ),
             metaData = ServerConfigEntity.MetaData(
                 federation = false,
