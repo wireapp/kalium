@@ -15,7 +15,9 @@ AS SELECT
     QuotedMessage.visibility AS quotedMessageVisibility,
     QuotedMessage.content_type AS quotedMessageContentType,
     QuotedTextContent.text_body AS quotedTextBody,
-    QuotedAssetContent.asset_mime_type AS quotedAssetMimeType
+    QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
+    QuotedAssetContent.asset_id AS quotedAssetId,
+    QuotedAssetContent.asset_domain AS quotedAssetDomain
 FROM MessageTextContent
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = MessageTextContent.quoted_message_id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
 INNER JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
@@ -116,7 +118,9 @@ QuotedMessage.quotedMessageEditTimestamp AS quotedMessageEditTimestamp,
 QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
 QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
 QuotedMessage.quotedTextBody AS quotedTextBody,
-QuotedMessage.quotedAssetMimeType AS quotedAssetMimeType
+QuotedMessage.quotedAssetMimeType AS quotedAssetMimeType,
+QuotedMessage.quotedAssetId AS quotedAssetId,
+QuotedMessage.quotedAssetDomain AS quotedAssetDomain
 FROM Message
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id

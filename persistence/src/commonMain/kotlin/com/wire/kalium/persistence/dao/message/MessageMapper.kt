@@ -118,6 +118,8 @@ object MessageMapper {
         quotedMessageContentType: MessageEntity.ContentType?,
         quotedTextBody: String?,
         quotedAssetMimeType: String?,
+        quotedAssetId: String?,
+        quotedAssetDomain: String?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -129,17 +131,20 @@ object MessageMapper {
                 quotedMessageId = quotedMessageId,
                 quotedMessage = quotedMessageId?.let {
                     MessageEntityContent.Text.QuotedMessage(
-                        it,
-                        quotedSenderId.requireField("quotedSenderId"),
-                        quotedSenderName.requireField("quotedSenderName"),
-                        quotedMessageDateTime.requireField("quotedMessageDateTime"),
-                        quotedMessageEditTimestamp,
-                        quotedMessageVisibility.requireField("quotedMessageVisibility"),
-                        quotedMessageContentType.requireField("quotedMessageContentType"),
-                        quotedTextBody, quotedAssetMimeType
+                        id = it,
+                        senderId = quotedSenderId.requireField("quotedSenderId"),
+                        isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser") != 0L,
+                        senderName = quotedSenderName.requireField("quotedSenderName"),
+                        dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime"),
+                        editTimestamp = quotedMessageEditTimestamp,
+                        visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
+                        contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
+                        textBody = quotedTextBody,
+                        assetMimeType = quotedAssetMimeType,
+                        assetId = quotedAssetId,
+                        assetDomain = quotedAssetDomain
                     )
                 }
-                // TODO: Handle Replies/Quotes
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(

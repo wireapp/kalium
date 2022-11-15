@@ -1,33 +1,13 @@
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
-import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class MessageMentionsTest : BaseDatabaseTest() {
-
-    private lateinit var messageDAO: MessageDAO
-    private lateinit var conversationDAO: ConversationDAO
-    private lateinit var userDAO: UserDAO
-
-    @BeforeTest
-    fun setUp() {
-        deleteDatabase(SELF_USER_ID)
-        val db = createDatabase(SELF_USER_ID)
-
-        messageDAO = db.messageDAO
-        conversationDAO = db.conversationDAO
-        userDAO = db.userDAO
-    }
+class MessageMentionsTest : BaseMessageTest() {
 
     @Test
     fun givenMentionsAreInserted_whenGettingMessageByConversationIdAndVisibility_thenCorrectMentionsAreReturned() = runTest {
@@ -71,9 +51,8 @@ class MessageMentionsTest : BaseDatabaseTest() {
         )
     }
 
-    private suspend fun insertInitialData() {
-        userDAO.upsertUsers(listOf(SELF_USER, OTHER_USER))
-        conversationDAO.insertConversation(TEST_CONVERSATION)
+    override suspend fun insertInitialData() {
+        super.insertInitialData()
         messageDAO.insertMessage(
             TEST_MESSAGE.copy(
                 content = MessageEntityContent.Text(
@@ -88,15 +67,6 @@ class MessageMentionsTest : BaseDatabaseTest() {
     }
 
     private companion object {
-        val TEST_CONVERSATION = newConversationEntity("testConversation")
-        val SELF_USER = newUserEntity("selfUser").copy(name = "selfUser")
-        val OTHER_USER = newUserEntity("otherUser").copy(name = "otherUser")
-        val OTHER_USER_2 = newUserEntity("otherUser2").copy(name = "otherUser2")
-        val SELF_USER_ID = SELF_USER.id
-        val TEST_MESSAGE = newRegularMessageEntity(
-            conversationId = TEST_CONVERSATION.id,
-            senderUserId = OTHER_USER.id
-        )
         val TEST_MENTION_1 = MessageEntity.Mention(
             start = 0,
             length = 9,
@@ -106,6 +76,10 @@ class MessageMentionsTest : BaseDatabaseTest() {
             start = 10,
             length = 11,
             userId = OTHER_USER_2.id
+        )
+        val TEST_MESSAGE = newRegularMessageEntity(
+            conversationId = TEST_CONVERSATION_1.id,
+            senderUserId = OTHER_USER.id
         )
     }
 }

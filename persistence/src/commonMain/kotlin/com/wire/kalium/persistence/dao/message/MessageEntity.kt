@@ -159,13 +159,16 @@ sealed class MessageEntityContent {
         data class QuotedMessage(
             val id: String,
             val senderId: QualifiedIDEntity,
+            val isQuotingSelfUser: Boolean,
             val senderName: String,
             val dateTime: String,
             val editTimestamp: String?,
             val visibility: MessageEntity.Visibility,
             val contentType: MessageEntity.ContentType,
             val textBody: String?,
-            val assetMimeType: String?
+            val assetMimeType: String?,
+            val assetId: String?,
+            val assetDomain: String?
         )
     }
 
