@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.data.conversation.UnreadContentType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus

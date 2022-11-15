@@ -4,7 +4,9 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.*
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage

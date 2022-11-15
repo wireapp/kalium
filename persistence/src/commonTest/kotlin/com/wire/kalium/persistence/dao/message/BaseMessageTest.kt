@@ -45,7 +45,6 @@ open class BaseMessageTest : BaseDatabaseTest() {
         conversationDAO.insertConversations(listOf(TEST_CONVERSATION_1, TEST_CONVERSATION_2))
     }
 
-
     protected companion object {
         val TEST_CONVERSATION_1 = newConversationEntity("testConversation1")
         val TEST_CONVERSATION_2 = newConversationEntity("testConversation2")

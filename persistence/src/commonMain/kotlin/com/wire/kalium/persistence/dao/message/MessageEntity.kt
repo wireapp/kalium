@@ -1,6 +1,5 @@
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.serialization.SerialName

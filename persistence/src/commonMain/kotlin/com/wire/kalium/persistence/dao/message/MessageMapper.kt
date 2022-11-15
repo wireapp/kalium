@@ -1,6 +1,10 @@
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.*
+import com.wire.kalium.persistence.dao.BotEntity
+import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.persistence.util.JsonSerializer

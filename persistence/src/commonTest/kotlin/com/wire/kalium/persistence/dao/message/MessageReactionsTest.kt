@@ -83,7 +83,6 @@ class MessageReactionsTest : BaseMessageTest() {
         assertEquals(expectedReactionCounts, reactionCount)
     }
 
-
     protected override suspend fun insertInitialData() {
         super.insertInitialData()
         messageDAO.insertMessages(
