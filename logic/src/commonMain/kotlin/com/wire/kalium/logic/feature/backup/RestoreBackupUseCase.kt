@@ -4,6 +4,9 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.backup.BackupImporter
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 interface RestoreBackupUseCase {
 
@@ -14,15 +17,17 @@ interface RestoreBackupUseCase {
     suspend operator fun invoke(backupFilePath: String): RestoreBackupResult
 }
 
-// TODO: User IO Dispatcher
 internal class RestoreBackupUseCaseImpl(
-    private val backupImporter: BackupImporter
+    private val backupImporter: BackupImporter,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RestoreBackupUseCase {
 
     override suspend operator fun invoke(backupFilePath: String): RestoreBackupResult {
-        return wrapStorageRequest {
-            backupImporter.importFromFile(backupFilePath)
-        }.fold({ RestoreBackupResult.Failure(it) }, { RestoreBackupResult.Success })
+        return withContext(dispatchers.io) {
+            wrapStorageRequest {
+                backupImporter.importFromFile(backupFilePath)
+            }.fold({ RestoreBackupResult.Failure(it) }, { RestoreBackupResult.Success })
+        }
     }
 
 }
