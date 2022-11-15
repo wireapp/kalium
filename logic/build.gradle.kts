@@ -24,6 +24,9 @@ android {
     packagingOptions {
         resources.pickFirsts.add("google/protobuf/*.proto")
     }
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+    }
     // Run only Instrumented tests. No need to run Unit AND Instrumented
     // We have JVM tests if we want to run quickly on our machines
     sourceSets.remove(sourceSets["test"])
@@ -98,6 +101,8 @@ kotlin {
             dependencies {
                 implementation(Dependencies.AndroidInstruments.androidTestRunner)
                 implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(Dependencies.AndroidInstruments.androidxOrchestratorRunner)
+                implementation(Dependencies.AndroidInstruments.androidxOrchestratorUtil)
             }
         }
     }
