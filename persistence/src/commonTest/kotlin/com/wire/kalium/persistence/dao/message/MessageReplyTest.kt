@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -9,6 +10,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
+@IgnoreIOS
 class MessageReplyTest : BaseMessageTest() {
 
     @Test
