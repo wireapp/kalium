@@ -28,7 +28,7 @@ internal interface KaliumPreferences {
 
 }
 
-internal class KaliumPreferencesSettings internal constructor(
+internal class KaliumPreferencesSettings(
     private val encryptedSettings: Settings
 ) : KaliumPreferences {
 

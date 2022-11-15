@@ -16,15 +16,14 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
-import com.wire.kalium.persistence.client.ProxyCredentialsStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.mockative.Mock
 import io.mockative.any
@@ -64,11 +63,6 @@ class ClientRepositoryTest {
 
     @Mock
     private val userMapper = mock(classOf<UserMapper>())
-
-    @Mock
-    private val proxyCredentialsStorage = configure(mock(classOf<ProxyCredentialsStorage>())) {
-        stubsUnitByDefault = true
-    }
 
     private lateinit var clientRepository: ClientRepository
 
