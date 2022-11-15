@@ -75,4 +75,6 @@ class UserScope internal constructor(
     val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
 
     val timestampKeyRepository get() = TimestampKeyRepositoryImpl(metadataDAO)
+
+    val persistMigratedUsers: PersistMigratedUsersUseCase get() = PersistMigratedUsersUseCaseImpl(userRepository)
 }
