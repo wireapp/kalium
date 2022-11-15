@@ -515,7 +515,9 @@ class RestoreBackupTest : BaseDatabaseTest() {
             // then
             backupConversationWithAssetContent.forEach { conversationViewEntity ->
                 val messagesByConversationAndVisibility =
-                    userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(conversationViewEntity.id, 100, 0).first()
+                    userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(
+                        conversationViewEntity.id, 100, 0
+                    ).first()
 
                 messagesByConversationAndVisibility.forEach { messageEntity ->
                     val messageContent = messageEntity.content
@@ -528,7 +530,9 @@ class RestoreBackupTest : BaseDatabaseTest() {
 
             userConversationWithAssetContent.forEach { messageEntity ->
                 val messagesByConversationAndVisibility =
-                    userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(messageEntity.id, 100, 0).first()
+                    userDatabaseBuilder.messageDAO.getMessagesByConversationAndVisibility(
+                        messageEntity.id, 100, 0
+                    ).first()
 
                 messagesByConversationAndVisibility.forEach { messageEntity ->
                     val messageContent = messageEntity.content
