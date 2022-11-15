@@ -46,7 +46,6 @@ class SessionManagerImpl internal constructor(
         }
     }
 
-
     override fun serverConfig(): ServerConfigDTO = serverConfig.get() ?: run {
         serverConfig.set(sessionRepository.fullAccountInfo(userId)
             .map { serverConfigMapper.toDTO(it.serverConfig) }
