@@ -24,6 +24,7 @@ object Versions {
     const val androidTestRules = "1.4.0"
     const val androidTestCore = "1.4.0"
     const val androidxArch = "2.1.0"
+    const val androidxOrchestrator = "1.1.0"
     const val benAsherUUID = "0.4.0"
     const val ktxDateTime = "0.3.2"
     const val ktxSerialization = "1.3.2"
@@ -110,6 +111,8 @@ object Dependencies {
         const val androidTestRules = "androidx.test:rules:${Versions.androidTestRules}"
         const val androidTestCore = "androidx.test:core:${Versions.androidTestCore}"
         const val androidxArchTesting = "androidx.arch.core:core-testing:${Versions.androidxArch}"
+        const val androidxOrchestratorRunner = "androidx.test:runner:${Versions.androidxOrchestrator}"
+        const val androidxOrchestratorUtil = "androidx.test:orchestrator:${Versions.androidxOrchestrator}"
     }
 
     object Coroutines {
