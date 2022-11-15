@@ -5,7 +5,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.backup.BackupImporter
 
-
 interface RestoreBackupUseCase {
 
     /**
