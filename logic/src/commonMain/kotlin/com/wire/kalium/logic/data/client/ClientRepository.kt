@@ -13,6 +13,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
@@ -27,6 +28,7 @@ import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
+    suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
 
     @Deprecated("this function is not cached use CurrentClientIdProvider")
@@ -34,6 +36,7 @@ interface ClientRepository {
     suspend fun clearCurrentClientId(): Either<CoreFailure, Unit>
     suspend fun retainedClientId(): Either<CoreFailure, ClientId>
     suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
+    suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
@@ -43,7 +46,6 @@ interface ClientRepository {
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
-    suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -67,6 +69,9 @@ class ClientDataSource(
 
     override suspend fun clearRetainedClientId(): Either<CoreFailure, Unit> =
         wrapStorageRequest { clientRegistrationStorage.clearRetainedClientId() }
+
+    override suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit> =
+        wrapStorageRequest { clientRegistrationStorage.clearHasRegisteredMLSClient() }
 
     override suspend fun currentClientId(): Either<CoreFailure, ClientId> =
         wrapStorageRequest { clientRegistrationStorage.getRegisteredClientId() }
@@ -114,6 +119,16 @@ class ClientDataSource(
 
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> =
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
+            .flatMap {
+                wrapStorageRequest {
+                    clientRegistrationStorage.setHasRegisteredMLSClient()
+                }
+            }
+
+    override suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean> =
+        wrapStorageRequest {
+            clientRegistrationStorage.hasRegisteredMLSClient()
+        }
 
     override suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
@@ -140,13 +155,5 @@ class ClientDataSource(
             clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(userId))
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
-        }
-
-    // TODO avoid doing a network request by persisting the self client
-    override suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean> =
-        currentClientId().flatMap { clientId ->
-            clientInfo(clientId).map {
-                it.mlsPublicKeys.isNotEmpty()
-            }
         }
 }

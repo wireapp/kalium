@@ -8,7 +8,6 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUs
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -49,7 +48,6 @@ internal class MLSClientManagerImpl(
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
                 if (syncState is IncrementalSyncStatus.Live && featureSupport.isMLSSupported) {
-                    kaliumLogger.d("Register MLS Client if needed")
                     registerMLSClientIfNeeded()
                 }
             }
@@ -57,16 +55,15 @@ internal class MLSClientManagerImpl(
     }
 
     private suspend fun registerMLSClientIfNeeded() {
-        clientRepository.value.hasRegisteredMLSClient().onSuccess {
+        clientRepository.value.hasRegisteredMLSClient().flatMap {
             if (!it) {
                 currentClientIdProvider().flatMap { clientId ->
-                    kaliumLogger.d("No existing MLS Client, registering..")
+                    kaliumLogger.i("No existing MLS Client, registering..")
                     registerMLSClient.value(clientId).flatMap {
                         joinExistingMLSConversations.value()
                     }
                 }
             } else {
-                kaliumLogger.d("Existing MLS Client, skipping..")
                 Either.Right(Unit)
             }
         }
