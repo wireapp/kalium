@@ -162,7 +162,6 @@ class ConversationDAOImpl(
 
     override suspend fun insertConversations(conversationEntities: List<ConversationEntity>) {
         conversationQueries.transaction {
-
             for (conversationEntity: ConversationEntity in conversationEntities) {
                 nonSuspendingInsertConversation(conversationEntity)
             }

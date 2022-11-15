@@ -23,6 +23,7 @@ fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder {
     val driver = NativeSqliteDriver(UserDatabase.Schema, FileNameUtil.userDBName(userId))
+
     return UserDatabaseBuilder(
         userId,
         driver,
