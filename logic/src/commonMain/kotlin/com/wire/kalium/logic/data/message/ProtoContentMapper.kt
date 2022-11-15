@@ -10,7 +10,19 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
-import com.wire.kalium.protobuf.messages.*
+import com.wire.kalium.protobuf.messages.Calling
+import com.wire.kalium.protobuf.messages.Cleared
+import com.wire.kalium.protobuf.messages.External
+import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.Knock
+import com.wire.kalium.protobuf.messages.LastRead
+import com.wire.kalium.protobuf.messages.MessageDelete
+import com.wire.kalium.protobuf.messages.MessageEdit
+import com.wire.kalium.protobuf.messages.MessageHide
+import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import com.wire.kalium.protobuf.messages.Quote
+import com.wire.kalium.protobuf.messages.Reaction
+import com.wire.kalium.protobuf.messages.Text
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
@@ -42,7 +54,11 @@ class ProtoContentMapperImpl(
             is MessageContent.Text -> GenericMessage.Content.Text(
                 Text(
                     content = readableContent.value,
-                    mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) })
+                    mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) },
+                    quote = readableContent.quotedMessageReference?.let {
+                        Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+                    }
+                )
             )
 
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
