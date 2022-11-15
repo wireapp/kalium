@@ -86,6 +86,9 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.client.MLSClientManager
+import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
@@ -541,6 +544,7 @@ class UserSessionScope internal constructor(
         KeyPackageManagerImpl(
             featureSupport,
             incrementalSyncRepository,
+            lazy { clientRepository },
             lazy { client.refillKeyPackages },
             lazy { client.mlsKeyPackageCountUseCase },
             lazy { users.timestampKeyRepository }
@@ -549,8 +553,26 @@ class UserSessionScope internal constructor(
         KeyingMaterialsManagerImpl(
             featureSupport,
             incrementalSyncRepository,
+            lazy { clientRepository },
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository }
+        )
+
+    internal val mlsClientManager: MLSClientManager =
+        MLSClientManagerImpl(
+            clientIdProvider,
+            featureSupport,
+            incrementalSyncRepository,
+            lazy { clientRepository },
+            lazy {
+                RegisterMLSClientUseCaseImpl(
+                    mlsClientProvider,
+                    clientRepository,
+                    keyPackageRepository,
+                    keyPackageLimitsProvider
+                )
+            },
+            lazy { joinExistingMLSConversations }
         )
 
     internal val mlsPublicKeysRepository: MLSPublicKeysRepository
