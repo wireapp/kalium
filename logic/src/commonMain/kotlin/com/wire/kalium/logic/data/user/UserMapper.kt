@@ -36,6 +36,7 @@ interface UserMapper {
 
     fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
+    fun fromSelfUserToDaoModel(selfUser: SelfUser): UserEntity
 
     /**
      * Maps the user data to be updated. if the parameters [newName] [newAccent] [newAssetId] are nulls,
@@ -133,6 +134,25 @@ internal class UserMapperImpl(
             previewAssetId?.let { idMapper.fromDaoModel(it) },
             completeAssetId?.let { idMapper.fromDaoModel(it) },
             availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+        )
+    }
+
+    override fun fromSelfUserToDaoModel(selfUser: SelfUser): UserEntity = with(selfUser) {
+        UserEntity(
+            id = idMapper.toDaoModel(id),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = teamId?.value,
+            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionStatus),
+            previewAssetId = previewPicture?.let { idMapper.toDaoModel(it) },
+            completeAssetId = completePicture?.let { idMapper.toDaoModel(it) },
+            availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
+            userType = UserTypeEntity.STANDARD,
+            botService = null,
+            deleted = false
         )
     }
 
