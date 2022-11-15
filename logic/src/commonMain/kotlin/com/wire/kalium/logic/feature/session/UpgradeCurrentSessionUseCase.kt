@@ -8,6 +8,9 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
 
+/**
+ * Upgrade the current login session to be associated with self user's client ID
+ */
 interface UpgradeCurrentSessionUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit>
 }

@@ -9,12 +9,13 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ApiMigrationMock: ApiMigration {
+class ApiMigrationMock : ApiMigration {
 
     var hasBeenPerformed = false
 
@@ -25,13 +26,14 @@ class ApiMigrationMock: ApiMigration {
 
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ApiMigrationManagerTest {
 
     @Test
     fun givenUpgradeFromApi0ToApi1_whenCallingApplyUpgradesForApiVersion_thenMigrationIsPerformed() = runTest {
         val migration = ApiMigrationMock()
 
-        val (arrangement, apiUpgradeManager) = Arrangement()
+        val (_, apiUpgradeManager) = Arrangement()
             .withMigration(1, migration)
             .withPreviousApiVersion(0)
             .withCurrentApiVersion(1)
@@ -46,7 +48,7 @@ class ApiMigrationManagerTest {
         val migration1 = ApiMigrationMock()
         val migration2 = ApiMigrationMock()
 
-        val (arrangement, apiUpgradeManager) = Arrangement()
+        val (_, apiUpgradeManager) = Arrangement()
             .withMigration(1, migration1)
             .withMigration(2, migration2)
             .withPreviousApiVersion(0)
@@ -64,7 +66,7 @@ class ApiMigrationManagerTest {
         val migration1 = ApiMigrationMock()
         val migration2 = ApiMigrationMock()
 
-        val (arrangement, apiUpgradeManager) = Arrangement()
+        val (_, apiUpgradeManager) = Arrangement()
             .withMigration(1, migration1)
             .withMigration(2, migration2)
             .withPreviousApiVersion(1)
@@ -80,7 +82,7 @@ class ApiMigrationManagerTest {
     fun givenUpgradeFromApi1ToApi2_whenCallingApplyUpgradesForApiVersion_thenFutureMigrationsAreNotPerformed() = runTest {
         val migration3 = ApiMigrationMock()
 
-        val (arrangement, apiUpgradeManager) = Arrangement()
+        val (_, apiUpgradeManager) = Arrangement()
             .withMigration(3, migration3)
             .withPreviousApiVersion(1)
             .withCurrentApiVersion(2)
@@ -129,7 +131,7 @@ class ApiMigrationManagerTest {
             .wasInvoked(once)
     }
 
-    class Arrangement() {
+    class Arrangement {
 
         var apiVersion: Int = 0
         @Mock

@@ -57,7 +57,7 @@ class ApiMigrationV3Test {
         migration.invoke().shouldFail()
     }
 
-    class Arrangement() {
+    class Arrangement {
 
         @Mock
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
