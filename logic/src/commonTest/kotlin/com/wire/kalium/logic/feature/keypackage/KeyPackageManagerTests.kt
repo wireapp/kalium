@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
@@ -114,6 +115,9 @@ class KeyPackageManagerTests {
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
+        val clientRepository = mock(classOf<ClientRepository>())
+
+        @Mock
         val featureSupport = mock(classOf<FeatureSupport>())
 
         @Mock
@@ -174,6 +178,7 @@ class KeyPackageManagerTests {
         fun arrange() = this to KeyPackageManagerImpl(
             featureSupport,
             incrementalSyncRepository,
+            lazy { clientRepository },
             lazy { refillKeyPackagesUseCase },
             lazy { keyPackageCountUseCase },
             lazy { timestampKeyRepository },

@@ -245,7 +245,8 @@ class ClientRepositoryTest {
                     label = null,
                     cookie = null,
                     capabilities = null,
-                    model = "Mac ox"
+                    model = "Mac ox",
+                    mlsPublicKeys = emptyMap()
                 ),
                 Client(
                     id = PlainId(value = "client_id_1"),
@@ -256,7 +257,8 @@ class ClientRepositoryTest {
                     label = null,
                     cookie = null,
                     capabilities = null,
-                    model = "iphone 15"
+                    model = "iphone 15",
+                    mlsPublicKeys = emptyMap()
                 ),
             )
         )
