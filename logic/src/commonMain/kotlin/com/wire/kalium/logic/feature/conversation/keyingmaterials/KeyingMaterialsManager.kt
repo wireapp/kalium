@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
@@ -7,6 +8,7 @@ import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_C
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -31,6 +33,7 @@ internal interface KeyingMaterialsManager
 internal class KeyingMaterialsManagerImpl(
     private val featureSupport: FeatureSupport,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val clientRepository: Lazy<ClientRepository>,
     private val updateKeyingMaterialsUseCase: Lazy<UpdateKeyingMaterialsUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
@@ -50,7 +53,9 @@ internal class KeyingMaterialsManagerImpl(
         updateKeyingMaterialsJob = updateKeyingMaterialsScope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Live && featureSupport.isMLSSupported) {
+                if (syncState is IncrementalSyncStatus.Live &&
+                    featureSupport.isMLSSupported &&
+                    clientRepository.value.hasRegisteredMLSClient().getOrElse(false)) {
                     updateKeyingMaterialIfNeeded()
                 }
             }
