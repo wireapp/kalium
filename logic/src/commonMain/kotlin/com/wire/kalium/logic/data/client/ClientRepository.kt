@@ -10,6 +10,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.kaliumLogger
@@ -42,6 +43,7 @@ interface ClientRepository {
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
+    suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -138,5 +140,13 @@ class ClientDataSource(
             clientDAO.getClientsOfUserByQualifiedID(idMapper.toDaoModel(userId))
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
+        }
+
+    // TODO avoid doing a network request by persisting the self client
+    override suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean> =
+        currentClientId().flatMap { clientId ->
+            clientInfo(clientId).map {
+                it.mlsPublicKeys.isNotEmpty()
+            }
         }
 }
