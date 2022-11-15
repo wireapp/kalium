@@ -102,7 +102,6 @@ kotlin {
                 implementation(Dependencies.AndroidInstruments.androidTestRunner)
                 implementation(Dependencies.AndroidInstruments.androidTestRules)
                 implementation(Dependencies.AndroidInstruments.androidxOrchestratorRunner)
-                implementation(Dependencies.AndroidInstruments.androidxOrchestratorUtil)
             }
         }
     }
@@ -114,6 +113,7 @@ dependencies {
         .forEach {
             add(it.name, Dependencies.Test.mockativeProcessor)
         }
+    androidTestUtil(Dependencies.AndroidInstruments.androidxOrchestratorUtil)
 }
 
 ksp {
