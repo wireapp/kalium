@@ -74,9 +74,10 @@ class SessionManagerTest {
 
         override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
             testCredentials
-
+        @Suppress("EmptyFunctionBlock")
         override suspend fun beforeTokenUpdate() {}
 
+        @Suppress("EmptyFunctionBlock")
         override fun afterTokenUpdate() {}
 
         override suspend fun onSessionExpired() = TODO("Not yet implemented")
