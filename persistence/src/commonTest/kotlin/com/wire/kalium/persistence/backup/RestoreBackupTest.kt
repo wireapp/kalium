@@ -40,8 +40,6 @@ class RestoreBackupTest : BaseDatabaseTest() {
             databasePrefix = "user"
 
         )
-        // TODO: using UserIDEntity is not correct, because the file will contain another user id
-        // which we do want to preserve when restoring from the user database
         deleteDatabase(backupUserIdEntity)
         backupDatabaseBuilder = createDatabase(backupUserIdEntity)
         backupDatabaseDataGenerator = UserDatabaseDataGenerator(
@@ -72,7 +70,8 @@ class RestoreBackupTest : BaseDatabaseTest() {
             userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
             // then
-            val conversationsAfterBackup: List<ConversationViewEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
+            val conversationsAfterBackup: List<ConversationViewEntity> =
+                userDatabaseBuilder.conversationDAO.getAllConversations().first()
 
             assertTrue(conversationsAfterBackup.containsAll(conversationsToBackup))
             assertEquals(backupConversationAmount + userConversationAmount, conversationsAfterBackup.size)
@@ -131,7 +130,11 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 messageType = MessageType.Regular
             )
 
-            backupDatabaseBuilder.conversationDAO.insertConversations(userConversations.map(::mapFromDetailsToConversationEntity))
+            backupDatabaseBuilder.conversationDAO.insertConversations(
+                userConversations.map(
+                    ::mapFromDetailsToConversationEntity
+                )
+            )
             // when
             userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
 
@@ -189,7 +192,9 @@ class RestoreBackupTest : BaseDatabaseTest() {
             messageType = MessageType.Regular
         )
 
-        backupDatabaseBuilder.conversationDAO.insertConversations(userConversations.map(::mapFromDetailsToConversationEntity))
+        backupDatabaseBuilder.conversationDAO.insertConversations(
+            userConversations.map(::mapFromDetailsToConversationEntity)
+        )
 
         // when
         userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
@@ -224,9 +229,8 @@ class RestoreBackupTest : BaseDatabaseTest() {
             assertEquals(backupConversations, restoredConversations)
         }
 
-    @Suppress("MaxLineLength", "MaximumLineLength ")
     @Test
-    fun givenBackupHasGroupConversationWithMembersAndUserAnotherGroupConversationWithSomeOfThoseMembers_whenRestoringBackup_thenTheOverlappingMembersAreNotRestored() =
+    fun givenBackupHasConversationWithMembersAndUseWithSomeOfThoseMembers_whenRestoringBackup_thenTheOverlappingMembersAreNotRestored() =
         runTest {
             // given
             val overlappingBackupMembers = backupDatabaseDataGenerator.generateMembers(5)
@@ -487,9 +491,8 @@ class RestoreBackupTest : BaseDatabaseTest() {
         }
     }
 
-    @Suppress("MaxLineLength", "MaximumLineLength ")
     @Test
-    fun givenBackupHasConversationWithAssetContentAndUserToo_whenRestoringBackup_thenOnlyTheBackupMessageAssetContentDownloadAndUploadStatusIsReset() =
+    fun givenBackupHasConversationWithAssetContentAndUserToo_whenRestoringBackup_thenTheBackupAssetContentDownloadAndUploadStatusIsReset() =
         runTest {
             // given
             val backupConversationWithAssetContent = backupDatabaseDataGenerator.generateAndInsertMessageAssetContent(
