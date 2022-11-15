@@ -12,7 +12,7 @@ class TestSessionManagerV0 : SessionManager {
     private val serverConfig = TEST_BACKEND_CONFIG
     private var session = testCredentials
 
-    override fun session(): SessionDTO = session
+    override suspend fun session(): SessionDTO = session
     override fun serverConfig(): ServerConfigDTO = serverConfig
     override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
         SessionDTO(
@@ -21,6 +21,14 @@ class TestSessionManagerV0 : SessionManager {
             newAccessTokenDTO.value,
             newRefreshTokenDTO?.value ?: session.refreshToken
         )
+
+    override suspend fun beforeTokenUpdate() {
+        TODO("Not yet implemented")
+    }
+
+    override fun afterTokenUpdate() {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun onClientRemoved() {
         TODO("Not yet implemented")

@@ -69,11 +69,15 @@ class SessionManagerTest {
     }
 
     private fun createFakeSessionManager() = object : SessionManager {
-        override fun session(): SessionDTO = testCredentials
+        override suspend fun session(): SessionDTO = testCredentials
         override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
 
         override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
             testCredentials
+
+        override suspend fun beforeTokenUpdate() {}
+
+        override fun afterTokenUpdate() {}
 
         override suspend fun onSessionExpired() = TODO("Not yet implemented")
 
