@@ -6,7 +6,6 @@ plugins {
     id(libs.plugins.sqldelight.get().pluginId)
 }
 
-
 group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"
 
