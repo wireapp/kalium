@@ -90,7 +90,7 @@ kotlin {
                 implementation(libs.sqldelight.coroutinesExtension)
                 implementation(libs.sqldelight.primitiveAdapters)
                 implementation(libs.ktxSerialization)
-                implementation(libs.multiplatformSettings)
+                implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
 
                 api(project(":logger"))
@@ -103,7 +103,7 @@ kotlin {
                 implementation(libs.coroutinesTest)
                 implementation(libs.turbine)
                 // MultiplatformSettings
-                implementation(libs.multiPlatformSettingsTest)
+                implementation(libs.settings.kmpTest)
             }
         }
         val jvmMain by getting {

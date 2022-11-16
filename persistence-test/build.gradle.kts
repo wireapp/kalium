@@ -54,7 +54,7 @@ kotlin {
                     })
                 })
                 implementation(libs.coroutinesTest)
-                implementation(libs.multiPlatformSettingsTest)
+                implementation(libs.settings.kmpTest)
             }
         }
         val androidMain by getting {

@@ -65,7 +65,7 @@ kotlin {
                 implementation(libs.ktxDateTime)
                 implementation(libs.benAsherUUID)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
-                implementation(libs.multiplatformSettings)
+                implementation(libs.settings.kmp)
 
                 // Okio
                 implementation(libs.okioCore)
@@ -82,7 +82,7 @@ kotlin {
                 // mocking
                 implementation(libs.mockative)
                 implementation(libs.okioTest)
-                implementation(libs.multiPlatformSettingsTest)
+                implementation(libs.settings.kmpTest)
             }
         }
         val jvmMain by getting {
