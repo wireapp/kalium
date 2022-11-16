@@ -154,6 +154,11 @@ class MessageScope internal constructor(
             messageSender
         )
 
+    val observeMessageReactions: ObserveMessageReactionsUseCase
+        get() = ObserveMessageReactionsUseCaseImpl(
+            reactionRepository = reactionRepository
+        )
+
     val sendKnock: SendKnockUseCase
         get() = SendKnockUseCase(
             persistMessage,

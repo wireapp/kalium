@@ -10,6 +10,7 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -59,6 +60,12 @@ internal actual class GlobalWorkSchedulerImpl(
             "${UpdateApiVersionsWorker.name}-periodic",
             ExistingPeriodicWorkPolicy.KEEP,
             requestPeriodicWork
+        )
+    }
+
+    override fun scheduleImmediateApiVersionUpdate() {
+        kaliumLogger.w(
+            "Scheduling an immediate execution of checking the API version is not supported on Android."
         )
     }
 

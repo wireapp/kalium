@@ -120,6 +120,7 @@ import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -139,6 +140,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.network.ApiMigrationManager
+import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -190,6 +193,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -215,6 +219,7 @@ class UserSessionScope internal constructor(
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: GlobalPrefProvider,
+    private val sessionManager: SessionManager,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val featureSupport: FeatureSupport,
@@ -520,6 +525,21 @@ class UserSessionScope internal constructor(
         IncrementalSyncManager(slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository)
     }
 
+    private val upgradeCurrentSessionUseCase get() =
+        UpgradeCurrentSessionUseCaseImpl(authenticatedDataSourceSet.authenticatedNetworkContainer.accessTokenApi, sessionManager)
+
+    @Suppress("MagicNumber")
+    private val apiMigrations = listOf(
+        Pair(3, ApiMigrationV3(clientIdProvider, upgradeCurrentSessionUseCase))
+    )
+
+    private val apiMigrationManager get() =
+        ApiMigrationManager(
+            sessionManager.serverConfig().metaData.commonApiVersion.version,
+            userStorage.database.metadataDAO,
+            apiMigrations
+        )
+
     private val timeParser: TimeParser = TimeParserImpl()
 
     private val eventRepository: EventRepository
@@ -720,6 +740,7 @@ class UserSessionScope internal constructor(
             clientRemoteRepository,
             authenticatedDataSourceSet.proteusClientProvider,
             globalScope.sessionRepository,
+            upgradeCurrentSessionUseCase,
             userId,
             featureSupport,
             clientIdProvider
@@ -869,6 +890,7 @@ class UserSessionScope internal constructor(
 
     init {
         launch {
+            apiMigrationManager.performMigrations()
             // TODO: Add a public start function to the Managers
             incrementalSyncManager
             slowSyncManager
