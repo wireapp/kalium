@@ -32,6 +32,8 @@ import io.ktor.client.engine.HttpClientEngine
 @Suppress("MagicNumber")
 interface AuthenticatedNetworkContainer {
 
+    val accessTokenApi: AccessTokenApi
+
     val logoutApi: LogoutApi
 
     val clientApi: ClientApi

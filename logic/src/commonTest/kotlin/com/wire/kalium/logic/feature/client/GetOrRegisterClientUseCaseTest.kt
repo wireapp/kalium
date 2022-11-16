@@ -6,11 +6,13 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -31,14 +33,21 @@ class GetOrRegisterClientUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withPersistRegisteredClientIdResult(PersistRegisteredClientIdResult.Success(client))
+            .withUpgradeCurrentSessionResult(Either.Right(Unit))
             .arrange()
+
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
+
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
         verify(arrangement.registerClientUseCase)
             .suspendFunction(arrangement.registerClientUseCase::invoke)
             .with(any())
             .wasNotInvoked()
+        verify(arrangement.upgradeCurrentSessionUseCase)
+            .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
+            .with(eq(clientId))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -50,8 +59,11 @@ class GetOrRegisterClientUseCaseTest {
             .withPersistRegisteredClientIdResult(PersistRegisteredClientIdResult.Failure.ClientNotRegistered)
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUpgradeCurrentSessionResult(Either.Right(Unit))
             .arrange()
+
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
+
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
         verify(arrangement.clearClientDataUseCase)
@@ -60,6 +72,10 @@ class GetOrRegisterClientUseCaseTest {
         verify(arrangement.registerClientUseCase)
             .suspendFunction(arrangement.registerClientUseCase::invoke)
             .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.upgradeCurrentSessionUseCase)
+            .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
+            .with(eq(clientId))
             .wasInvoked(exactly = once)
     }
 
@@ -70,13 +86,20 @@ class GetOrRegisterClientUseCaseTest {
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
+            .withUpgradeCurrentSessionResult(Either.Right(Unit))
             .arrange()
+
         val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
+
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
         verify(arrangement.registerClientUseCase)
             .suspendFunction(arrangement.registerClientUseCase::invoke)
             .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.upgradeCurrentSessionUseCase)
+            .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
+            .with(eq(clientId))
             .wasInvoked(exactly = once)
     }
 
@@ -92,39 +115,44 @@ class GetOrRegisterClientUseCaseTest {
         val clearClientDataUseCase = configure(mock(classOf<ClearClientDataUseCase>())) { stubsUnitByDefault = true }
 
         @Mock
+        val upgradeCurrentSessionUseCase = mock(classOf<UpgradeCurrentSessionUseCase>())
+
+        @Mock
         val persistRegisteredClientIdUseCase = mock(classOf<PersistRegisteredClientIdUseCase>())
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
-            clientRepository, registerClientUseCase, clearClientDataUseCase, persistRegisteredClientIdUseCase
+            clientRepository, registerClientUseCase, clearClientDataUseCase, persistRegisteredClientIdUseCase, upgradeCurrentSessionUseCase
         )
 
-        fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>): Arrangement {
+        fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::retainedClientId)
                 .whenInvoked()
                 .thenReturn(result)
-            return this
         }
-        fun withRegisterClientResult(result: RegisterClientResult): Arrangement {
+        fun withRegisterClientResult(result: RegisterClientResult) = apply {
             given(registerClientUseCase)
                 .suspendFunction(registerClientUseCase::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
-            return this
         }
-        fun withClearRetainedClientIdResult(result: Either<CoreFailure, Unit>): Arrangement {
+        fun withClearRetainedClientIdResult(result: Either<CoreFailure, Unit>) = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::clearRetainedClientId)
                 .whenInvoked()
                 .thenReturn(result)
-            return this
         }
-        fun withPersistRegisteredClientIdResult(result: PersistRegisteredClientIdResult): Arrangement {
+        fun withPersistRegisteredClientIdResult(result: PersistRegisteredClientIdResult) = apply {
             given(persistRegisteredClientIdUseCase)
                 .suspendFunction(persistRegisteredClientIdUseCase::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(result)
-            return this
+        }
+        fun withUpgradeCurrentSessionResult(result: Either<CoreFailure, Unit>) = apply {
+            given(upgradeCurrentSessionUseCase)
+                .suspendFunction(upgradeCurrentSessionUseCase::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
 
         fun arrange() = this to getOrRegisterClientUseCase
