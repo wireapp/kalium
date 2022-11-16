@@ -54,13 +54,25 @@ sealed class MessageContent {
     data class QuotedMessageDetails(
         val senderId: UserId,
         val senderName: String,
+        val isQuotingSelfUser: Boolean,
         val messageId: String,
-        val isDeleted: Boolean,
         val timeInstant: Instant,
         val editInstant: Instant?,
-        val assetMimeType: String?,
-        val textContent: String?,
-    )
+        val quotedContent: Content
+    ) {
+
+        sealed interface Content
+
+        data class Text(val value: String) : Content
+
+        data class Asset(
+            val assetId: String,
+            val assetDomain: String,
+            val assetMimeType: String
+        ) : Content
+
+        object Deleted : Content
+    }
 
     data class Calling(val value: String) : Regular()
     data class Asset(val value: AssetContent) : Regular()
