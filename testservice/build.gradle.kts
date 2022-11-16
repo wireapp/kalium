@@ -53,5 +53,5 @@ dependencies {
     add("implementation", project(":logic"))
 
     // Okio
-    implementation(Dependencies.Okio.core)
+    implementation(libs.okioCore)
 }
