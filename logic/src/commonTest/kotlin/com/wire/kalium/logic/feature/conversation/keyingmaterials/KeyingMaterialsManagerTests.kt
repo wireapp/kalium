@@ -31,6 +31,7 @@ class KeyingMaterialsManagerTests {
 
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Success)
                 .withTimestampKeyCheck(true)
                 .withTimestampKeyResetSuccessful()
@@ -74,8 +75,22 @@ class KeyingMaterialsManagerTests {
 
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(false)
-                .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Success)
-                .withTimestampKeyCheck(true)
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+            verify(arrangement.updateKeyingMaterialsUseCase)
+                .suspendFunction(arrangement.updateKeyingMaterialsUseCase::invoke)
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenMLSClientHasNotBeenRegistered_whenObservingAndSyncFinishes_updateKeyingMaterialsUseCaseNotPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+
+            val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(false)
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -91,6 +106,7 @@ class KeyingMaterialsManagerTests {
 
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Failure(StorageFailure.DataNotFound))
                 .withTimestampKeyCheck(true)
                 .withTimestampKeyResetSuccessful()
@@ -148,6 +164,13 @@ class KeyingMaterialsManagerTests {
             given(featureSupport)
                 .invocation { featureSupport.isMLSSupported }
                 .thenReturn(supported)
+        }
+
+        fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::hasRegisteredMLSClient)
+                .whenInvoked()
+                .thenReturn(Either.Right(result))
         }
 
         fun arrange() = this to KeyingMaterialsManagerImpl(

@@ -48,10 +48,22 @@ class KeyPackageManagerTests {
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(false)
-                .withLastKeyPackageCountCheck(true)
-                .withRefillKeyPackagesUseCaseSuccessful()
-                .withKeyPackageCountFailed()
-                .withUpdateLastKeyPackageCountCheckSuccessful()
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            verify(arrangement.refillKeyPackagesUseCase)
+                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenNoMLSClientIsRegistered_whenObservingSyncFinishes_refillKeyPackagesIsNotPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(false)
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -67,6 +79,7 @@ class KeyPackageManagerTests {
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withLastKeyPackageCountCheck(true)
                 .withRefillKeyPackagesUseCaseSuccessful()
                 .withKeyPackageCountFailed()
@@ -91,6 +104,7 @@ class KeyPackageManagerTests {
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withLastKeyPackageCountCheck(false)
                 .withRefillKeyPackagesUseCaseSuccessful()
                 .withKeyPackageCountReturnsRefillTrue()
@@ -173,6 +187,13 @@ class KeyPackageManagerTests {
             given(featureSupport)
                 .invocation { featureSupport.isMLSSupported }
                 .thenReturn(supported)
+        }
+
+        fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::hasRegisteredMLSClient)
+                .whenInvoked()
+                .thenReturn(Either.Right(result))
         }
 
         fun arrange() = this to KeyPackageManagerImpl(
