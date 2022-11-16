@@ -29,9 +29,9 @@ dependencies {
     implementation(project(":cryptography"))
     implementation(project(":logic"))
 
-    implementation(Dependencies.Cli.cliKt)
-    implementation(Dependencies.Ktor.utils)
-    implementation(Dependencies.Ktor.okHttp)
-    implementation(Dependencies.OkHttp.loggingInterceptor)
-    implementation(Dependencies.Coroutines.core)
+    implementation(libs.cliKt)
+    implementation(libs.ktorUtils)
+    implementation(libs.okHttp)
+    implementation(libs.loggingInterceptor)
+    implementation(libs.coroutinesCore)
 }
