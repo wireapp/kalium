@@ -66,8 +66,8 @@ androidtest-runner = { module = "androidx.test:runner", version.ref = "android-t
 androidtest-rules = { module = "androidx.test:rules", version.ref = "android-test-rules" }
 androidtest-core = { module = "androidx.test:core", version.ref = "android-test-core" }
 androidtest-arch = { module = "androidx.arch.core:core-testing", version.ref = "androidx-arch" }
-androidtest-orchestrator-runner = { module = "androidx.test:runner", version.ref = "androidx-orchestrator" }
-androidtest-orchestrator-util = { module = "androidx.test:orchestrator", version.ref = "androidx-orchestrator" }
+androidtest-orchestratorRunner = { module = "androidx.test:runner", version.ref = "androidx-orchestrator" }
+androidtest-orchestratorUtil = { module = "androidx.test:orchestrator", version.ref = "androidx-orchestrator" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }

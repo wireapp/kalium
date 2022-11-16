@@ -101,7 +101,7 @@ kotlin {
             dependencies {
                 implementation(libs.androidtest.runner)
                 implementation(libs.androidtest.rules)
-                implementation(libs.androidtest.orchestrator.runner)
+                implementation(libs.androidtest.orchestratorRunner)
             }
         }
     }
@@ -111,9 +111,9 @@ dependencies {
     configurations
         .filter { it.name.startsWith("ksp") && it.name.contains("Test") }
         .forEach {
-            add(it.name, Dependencies.Test.mockativeProcessor)
+            add(it.name, libs.mockativeProcessor)
         }
-    androidTestUtil(Dependencies.AndroidInstruments.androidxOrchestratorUtil)
+    androidTestUtil(libs.androidtest.orchestratorUtil)
 }
 
 ksp {

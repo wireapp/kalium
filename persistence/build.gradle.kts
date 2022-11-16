@@ -14,7 +14,7 @@ dependencies {
 
 sqldelight {
     database("UserDatabase") {
-        dialect = Dependencies.SqlDelight.dialect
+        dialect = libs.sqldelight.dialect.get().toString()
         packageName = "com.wire.kalium.persistence"
         val sourceFolderName = "db_user"
         sourceFolders = listOf(sourceFolderName)
@@ -22,7 +22,7 @@ sqldelight {
     }
 
     database("GlobalDatabase") {
-        dialect = Dependencies.SqlDelight.dialect
+        dialect = libs.sqldelight.dialect.get().toString()
         packageName = "com.wire.kalium.persistence"
         val sourceFolderName = "db_global"
         sourceFolders = listOf(sourceFolderName)
