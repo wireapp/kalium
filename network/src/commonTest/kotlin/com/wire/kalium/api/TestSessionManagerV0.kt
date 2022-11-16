@@ -19,7 +19,7 @@ class TestSessionManagerV0 : SessionManager {
         TODO("Not yet implemented")
     }
 
-    private fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
+    override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
         SessionDTO(
             session.userId,
             newAccessTokenDTO.tokenType,

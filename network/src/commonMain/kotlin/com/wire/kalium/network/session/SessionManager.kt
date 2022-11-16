@@ -1,7 +1,9 @@
 package com.wire.kalium.network.session
 
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
@@ -28,6 +30,7 @@ interface SessionManager {
 
     suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO?
 
+    suspend fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO?
     fun proxyCredentials(): ProxyCredentialsDTO?
 }
 

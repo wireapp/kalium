@@ -66,7 +66,7 @@ class SessionManagerImpl internal constructor(
         serverConfig.get()!!
     }
 
-    private fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
+    override suspend fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
         wrapStorageRequest {
             tokenStorage.updateToken(
                 userId = idMapper.toDaoModel(userId),

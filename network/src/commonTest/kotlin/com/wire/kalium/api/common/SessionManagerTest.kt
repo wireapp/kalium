@@ -3,7 +3,9 @@ package com.wire.kalium.api.common
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.session.SessionManager
@@ -70,7 +72,15 @@ class SessionManagerTest {
     private fun createFakeSessionManager() = object : SessionManager {
         override suspend fun session(): SessionDTO = testCredentials
         override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
-        override suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO? = testCredentials
+        override suspend fun updateToken(
+            accessTokenApi: AccessTokenApi,
+            oldAccessToken: String,
+            oldRefreshToken: String
+        ): SessionDTO? = testCredentials
+
+        override suspend fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
+            testCredentials
+
         override fun proxyCredentials(): ProxyCredentialsDTO? = ProxyCredentialsDTO("username", "password")
     }
 }
