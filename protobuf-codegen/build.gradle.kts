@@ -22,7 +22,7 @@ protobuf {
     }
     plugins {
         id("pbandk") {
-            artifact = "pro.streem.pbandk:protoc-gen-pbandk-jvm:${Versions.pbandk}:jvm8@jar"
+            artifact = "pro.streem.pbandk:protoc-gen-pbandk-jvm:${libs.versions.pbandk.get()}:jvm8@jar"
         }
     }
     generateProtoTasks {
