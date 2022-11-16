@@ -39,7 +39,7 @@ detekt = "1.19.0"
 [bundles]
 kotlinx = ["ktxSerialization", "ktxDateTime"]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "composeTooling", "coroutinesAndroid", "ktor", "paging3", "securityCrypto", "desugarJdkLibs"]
-ktor = ["ktorCore", "ktorJson", "ktorSerialization", "ktorLogging", "authClient", "contentNegotiation", "webSocket", "ktorUtils", "mock", "okHttp", "iosHttp", "encoding"]
+ktor = ["ktorCore", "ktorJson", "ktorSerialization", "ktorLogging", "authClient", "contentNegotiation", "webSocket", "ktorUtils", "ktorMock", "okHttp", "iosHttp", "encoding"]
 detekt-test = ["detektCli", "detektTest"]
 detekt-core = ["detektApi"]
 
@@ -89,7 +89,7 @@ authClient = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 webSocket = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
 ktorUtils = { module = "io.ktor:ktor-utils", version.ref = "ktor" }
-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+ktorMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
 encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
