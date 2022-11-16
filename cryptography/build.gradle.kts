@@ -52,7 +52,7 @@ kotlin {
     }
     android() {
         dependencies {
-            coreLibraryDesugaring(Dependencies.Android.desugarJdkLibs)
+            coreLibraryDesugaring(libs.desugarJdkLibs)
         }
     }
 
@@ -81,18 +81,18 @@ kotlin {
             dependencies {
                 api(project(":logger"))
                 // coroutines
-                implementation(Dependencies.Coroutines.core)
-                api(Dependencies.Ktor.core)
+                implementation(libs.coroutinesCore)
+                api(libs.ktorCore)
 
                 // Okio
-                implementation(Dependencies.Okio.core)
+                implementation(libs.okioCore)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(Dependencies.Coroutines.test)
-                implementation(Dependencies.Test.okio)
+                implementation(libs.coroutinesTest)
+                implementation(libs.okioTest)
             }
         }
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
@@ -101,8 +101,8 @@ kotlin {
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(Dependencies.Cryptography.cryptobox4j)
-                implementation(Dependencies.Cryptography.coreCryptoJvm)
+                implementation(libs.cryptobox4j)
+                implementation(libs.coreCryptoJvm)
             }
         }
         val jvmTest by getting
@@ -116,15 +116,15 @@ kotlin {
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(Dependencies.Cryptography.cryptoboxAndroid)
-                implementation(Dependencies.Cryptography.javaxCrypto)
-                implementation(Dependencies.Cryptography.coreCryptoAndroid)
+                implementation(libs.cryptoboxAndroid)
+                implementation(libs.javaxCrypto)
+                implementation(libs.coreCryptoAndroid)
             }
         }
         val androidAndroidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(libs.androidTestRunner)
+                implementation(libs.androidTestRules)
             }
         }
     }

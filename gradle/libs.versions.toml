@@ -68,7 +68,7 @@ androidxOrchestratorRunner = { module = "androidx.test:runner", version.ref = "a
 androidxOrchestratorUtil = { module = "androidx.test:orchestrator", version.ref = "androidx-orchestrator" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 cryptoboxAndroid = { module = "com.wire:cryptobox-android", version.ref = "cryptobox-android" }
 cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
@@ -107,7 +107,7 @@ dialect = { module = "app.cash.sqldelight:sqlite-3-25-dialect", version.ref = "s
 mockative = { module = "io.mockative:mockative", version.ref = "mockative" }
 mockativeProcessor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
-okio = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
+okioTest = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
 
 detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
 detektApi = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
