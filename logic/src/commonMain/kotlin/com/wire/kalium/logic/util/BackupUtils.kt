@@ -1,12 +1,10 @@
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.persistence.util.FileNameUtil
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.functional.Either
+import okio.Sink
+import okio.Source
 
 expect val clientPlatform: String
 
-fun backupDBName(userId: UserId): String {
-    val idMapper = MapperProvider.idMapper()
-    return FileNameUtil.userDBName(idMapper.toDaoModel(userId))
-}
+expect fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Unit>

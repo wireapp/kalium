@@ -12,7 +12,7 @@ interface RestoreBackupUseCase {
 
     /**
      * Restores a valid previously created backup file into the current database, respecting the current data if there is any overlap.
-     * @param backUpFilePath The absolute file system path to the backup file
+     * @param backupFilePath The absolute file system path to the backup file
      */
     suspend operator fun invoke(backupFilePath: String): RestoreBackupResult
 }

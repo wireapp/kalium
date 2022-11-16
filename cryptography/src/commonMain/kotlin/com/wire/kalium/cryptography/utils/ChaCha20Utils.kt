@@ -15,7 +15,7 @@ import okio.Source
 import okio.buffer
 
 @OptIn(ExperimentalUnsignedTypes::class)
-internal class ChaCha20Utils {
+class ChaCha20Utils {
 
     @Suppress("TooGenericExceptionCaught")
     suspend fun encryptBackupFile(
