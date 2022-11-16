@@ -38,7 +38,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
     install(Auth) {
         bearer {
             loadTokens {
-                val session = sessionManager.session()
+                val session = sessionManager.session() ?: error("missing user session")
                 BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
             }
 
