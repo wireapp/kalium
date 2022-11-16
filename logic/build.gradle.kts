@@ -55,20 +55,20 @@ kotlin {
                 implementation(project(":util"))
 
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
-                implementation(Dependencies.Coroutines.core)
-                implementation(Dependencies.Kotlinx.serialization)
-                implementation(Dependencies.Kotlinx.dateTime)
-                implementation(Dependencies.UUID.benAsherUUID)
+                implementation(libs.coroutinesCore.map {
+                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
+                        version { strictly(libs.versions.coroutines.get()) }
+                    })
+                })
+                implementation(libs.coroutinesCore)
+                implementation(libs.ktxSerialization)
+                implementation(libs.ktxDateTime)
+                implementation(libs.benAsherUUID)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
-                implementation(Dependencies.MultiplatformSettings.settings)
+                implementation(libs.multiplatformSettings)
 
                 // Okio
-                implementation(Dependencies.Okio.core)
+                implementation(libs.okioCore)
             }
         }
         val commonTest by getting {
@@ -76,32 +76,32 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(project(":persistence-test"))
                 // coroutines
-                implementation(Dependencies.Coroutines.test)
-                implementation(Dependencies.Test.turbine)
+                implementation(libs.coroutinesTest)
+                implementation(libs.turbine)
 
                 // mocking
-                implementation(Dependencies.Test.mockative)
-                implementation(Dependencies.Test.okio)
-                implementation(Dependencies.MultiplatformSettings.test)
+                implementation(libs.mockative)
+                implementation(libs.okioTest)
+                implementation(libs.multiPlatformSettingsTest)
             }
         }
         val jvmMain by getting {
             dependencies {
-	        implementation(Dependencies.Calling.jna)
+                implementation(libs.jna)
             }
         }
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
-                implementation(Dependencies.Android.paging3)
-                implementation(Dependencies.Android.work)
+                implementation(libs.paging3)
+                implementation(libs.work)
             }
         }
         val androidAndroidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
-                implementation(Dependencies.AndroidInstruments.androidxOrchestratorRunner)
+                implementation(libs.androidTestRunner)
+                implementation(libs.androidTestRules)
+                implementation(libs.androidxOrchestratorRunner)
             }
         }
     }

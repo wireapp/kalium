@@ -59,8 +59,8 @@ paging3 = { module = "androidx.paging:paging-runtime", version.ref = "android-pa
 securityCrypto = { module = "androidx.security:security-crypto", version.ref = "android-security" }
 desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk" }
 
-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
-multiPlatformTest = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
+multiplatformSettings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
+multiPlatformSettingsTest = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
 
 androidTestRunner = { module = "androidx.test:runner", version.ref = "android-test-tunner" }
 androidTestRules = { module = "androidx.test:rules", version.ref = "android-test-rules" }
