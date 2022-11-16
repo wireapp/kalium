@@ -35,6 +35,23 @@ core-crypto = "0.6.0-pre.3"
 desugar-jdk = "1.1.5"
 kermit = "1.0.0"
 detekt = "1.19.0"
+agp = "7.2.2"
+dokka = "1.6.10"
+carthage = "0.0.1"
+protobufCodegen = "0.8.18"
+
+[plugins]
+android-plugin = { id = "com.android.tools.build:gradle", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-js = { id = "org.jetbrains.kotlin.js", version.ref = "kotlin" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+ksp = { id = "com.google.devtools.ksp", version = "1.6.10-1.0.2" }
+carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "composeTooling", "coroutinesAndroid", "ktor", "paging3", "securityCrypto", "desugarJdkLibs"]
@@ -80,7 +97,7 @@ javaxCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = 
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
 
-# Cli
+# cli
 cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }
 okhttp-loggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "ok-http" }
 

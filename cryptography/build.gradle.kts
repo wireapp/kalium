@@ -1,8 +1,9 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
-    Plugins.serialization(this)
-    Plugins.carthage(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    kotlin("plugin.serialization") version Versions.kotlin // todo: change
+    id(libs.plugins.carthage.get().pluginId)
 }
 
 group = "com.wire.kalium"
@@ -95,9 +96,11 @@ kotlin {
                 implementation(libs.okio.test)
             }
         }
+
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
+
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
