@@ -61,7 +61,7 @@ kotlin {
         val commonMain by getting {
             kotlin.srcDir(generatedFilesBaseDir)
             dependencies {
-                api(Dependencies.Protobuf.pbandkRuntime)
+                api(libs.pbandkRuntime)
             }
         }
         val commonTest by getting {
@@ -71,8 +71,8 @@ kotlin {
         }
         val androidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
             }
         }
     }
