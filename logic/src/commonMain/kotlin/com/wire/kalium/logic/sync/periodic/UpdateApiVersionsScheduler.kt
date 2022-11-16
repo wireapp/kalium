@@ -22,4 +22,10 @@ interface UpdateApiVersionsScheduler {
      */
     fun schedulePeriodicApiVersionUpdate()
 
+    /**
+     *  Schedules an immediate execution of [UpdateApiVersionsWorker], which checks and tries to determine
+     *  the API version to use.
+     */
+    fun scheduleImmediateApiVersionUpdate()
+
 }
