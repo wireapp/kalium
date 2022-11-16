@@ -28,6 +28,6 @@ enum class RetentionType {
     EXPIRING
 }
 
-fun isDisplayableMimeType(mimeType: String): Boolean = mimeType in setOf(
+fun isDisplayableImageMimeType(mimeType: String): Boolean = mimeType in setOf(
     "image/jpg", "image/jpeg", "image/png", "image/heic", "image/gif", "image/webp"
 )

@@ -39,6 +39,22 @@ class ProtoContentMapperTest {
     }
 
     @Test
+    fun givenTextContentWithQuoteReference_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val messageContent = MessageContent.Text(
+            value = "Hello",
+            quotedMessageReference = MessageContent.QuoteReference(
+                quotedMessageId = "quotedMessageId", quotedMessageSha256 = null
+            )
+        )
+        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(decoded, protoContent)
+    }
+
+    @Test
     fun givenProtoAssetContentWithStatusNotUploaded_whenMappingBackFromProtoData_thenTheDecodingGoesCorrectly() {
         val assetName = "Mocked-Asset.bin"
         val mockedAsset = assetName.toByteArray()
