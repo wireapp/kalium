@@ -102,7 +102,7 @@ class RegisterMLSClientUseCaseTest {
 
         companion object {
             val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
-            val REFILL_AMOUNT = 100
+            const val REFILL_AMOUNT = 100
         }
 
     }
