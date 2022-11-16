@@ -46,12 +46,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        // strictly using the native-mt version on coroutines
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation(libs.coroutinesCore.map {
+                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
+                        version { strictly(libs.versions.coroutines.get()) }
+                    })
+                })
             }
         }
     }
