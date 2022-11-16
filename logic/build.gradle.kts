@@ -55,12 +55,12 @@ kotlin {
                 implementation(project(":util"))
 
                 // coroutines
-                implementation(libs.coroutinesCore.map {
+                implementation(libs.coroutines.core.map {
                     project.dependencies.create(it, closureOf<ExternalModuleDependency> {
                         version { strictly(libs.versions.coroutines.get()) }
                     })
                 })
-                implementation(libs.coroutinesCore)
+                implementation(libs.coroutines.core)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
                 implementation(libs.benAsherUUID)
@@ -68,7 +68,7 @@ kotlin {
                 implementation(libs.settings.kmp)
 
                 // Okio
-                implementation(libs.okioCore)
+                implementation(libs.okio.core)
             }
         }
         val commonTest by getting {
@@ -76,12 +76,12 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(project(":persistence-test"))
                 // coroutines
-                implementation(libs.coroutinesTest)
+                implementation(libs.coroutines.test)
                 implementation(libs.turbine)
 
                 // mocking
-                implementation(libs.mockative)
-                implementation(libs.okioTest)
+                implementation(libs.mockative.runtime)
+                implementation(libs.okio.test)
                 implementation(libs.settings.kmpTest)
             }
         }
@@ -111,7 +111,7 @@ dependencies {
     configurations
         .filter { it.name.startsWith("ksp") && it.name.contains("Test") }
         .forEach {
-            add(it.name, libs.mockativeProcessor)
+            add(it.name, libs.mockative.processor)
         }
     androidTestUtil(libs.androidtest.orchestratorUtil)
 }

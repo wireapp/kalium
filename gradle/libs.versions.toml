@@ -37,12 +37,9 @@ kermit = "1.0.0"
 detekt = "1.19.0"
 
 [bundles]
-kotlinx = ["ktxSerialization", "ktxDateTime"]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "composeTooling", "coroutinesAndroid", "ktor", "paging3", "securityCrypto", "desugarJdkLibs"]
-ktor = ["ktorCore", "ktorJson", "ktorSerialization", "ktorLogging", "authClient", "contentNegotiation", "webSocket", "ktorUtils", "ktorMock", "okHttp", "iosHttp", "encoding"]
-detekt-test = ["detektCli", "detektTest"]
-detekt-core = ["detektApi"]
-
+detekt-test = ["detekt-cli", "detekt-test"]
+detekt-core = ["detekt-api"]
 
 [libraries]
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
@@ -69,8 +66,8 @@ androidtest-arch = { module = "androidx.arch.core:core-testing", version.ref = "
 androidtest-orchestratorRunner = { module = "androidx.test:runner", version.ref = "androidx-orchestrator" }
 androidtest-orchestratorUtil = { module = "androidx.test:orchestrator", version.ref = "androidx-orchestrator" }
 
-coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 cryptoboxAndroid = { module = "com.wire:cryptobox-android", version.ref = "cryptobox-android" }
 cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
@@ -79,22 +76,23 @@ coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypt
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
 
 cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }
-loggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "ok-http" }
+okhttp-loggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "ok-http" }
 
-ktorCore = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktorJson = { module = "io.ktor:ktor-client-json", version.ref = "ktor" }
-ktorSerialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-ktorLogging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
-authClient = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-webSocket = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
-ktorUtils = { module = "io.ktor:ktor-utils", version.ref = "ktor" }
-ktorMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
-okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
+ktor-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-json = { module = "io.ktor:ktor-client-json", version.ref = "ktor" }
+ktor-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-authClient = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
+ktor-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-webSocket = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
+ktor-utils = { module = "io.ktor:ktor-utils", version.ref = "ktor" }
+ktor-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+ktor-okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
+ktor-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
 
-okioCore = { module = "com.squareup.okio:okio", version.ref = "okio" }
+okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
+okio-test = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
 
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-coroutinesExtension = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
@@ -106,14 +104,13 @@ sqldelight-jsDriver = { module = "app.cash.sqldelight:sqljs-driver", version.ref
 sqldelight-primitiveAdapters = { module = "app.cash.sqldelight:primitive-adapters", version.ref = "sqldelight" }
 sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-25-dialect", version.ref = "sqldelight" }
 
-mockative = { module = "io.mockative:mockative", version.ref = "mockative" }
-mockativeProcessor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
+mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }
+mockative-processor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
-okioTest = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
 
-detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
-detektApi = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
-detektTest = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
+detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
+detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
+detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 
 pbandkRuntime = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
 

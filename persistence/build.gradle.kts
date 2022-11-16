@@ -80,7 +80,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(libs.coroutinesCore.map {
+                implementation(libs.coroutines.core.map {
                     project.dependencies.create(it, closureOf<ExternalModuleDependency> {
                         version { strictly(libs.versions.coroutines.get()) }
                     })
@@ -100,7 +100,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 // coroutines
-                implementation(libs.coroutinesTest)
+                implementation(libs.coroutines.test)
                 implementation(libs.turbine)
                 // MultiplatformSettings
                 implementation(libs.settings.kmpTest)

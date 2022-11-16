@@ -46,7 +46,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(libs.coroutinesCore.map {
+                implementation(libs.coroutines.core.map {
                     project.dependencies.create(it, closureOf<ExternalModuleDependency> {
                         version { strictly(libs.versions.coroutines.get()) }
                     })

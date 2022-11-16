@@ -43,35 +43,35 @@ kotlin {
                 api(project(":logger"))
 
                 // coroutines
-                implementation(libs.coroutinesCore.map {
+                implementation(libs.coroutines.core.map {
                     project.dependencies.create(it, closureOf<ExternalModuleDependency> {
                         version { strictly(libs.versions.coroutines.get()) }
                     })
                 })
 
                 // ktor
-                api(libs.ktorCore)
-                implementation(libs.ktorUtils)
-                implementation(libs.ktorJson)
-                implementation(libs.ktorSerialization)
-                implementation(libs.ktorLogging)
-                implementation(libs.authClient)
-                implementation(libs.webSocket)
-                implementation(libs.contentNegotiation)
-                implementation(libs.encoding)
+                api(libs.ktor.core)
+                implementation(libs.ktor.utils)
+                implementation(libs.ktor.json)
+                implementation(libs.ktor.serialization)
+                implementation(libs.ktor.logging)
+                implementation(libs.ktor.authClient)
+                implementation(libs.ktor.webSocket)
+                implementation(libs.ktor.contentNegotiation)
+                implementation(libs.ktor.encoding)
 
                 // Okio
-                implementation(libs.okioCore)
-                implementation(libs.okioTest)
+                implementation(libs.okio.core)
+                implementation(libs.okio.test)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 // coroutines
-                implementation(libs.coroutinesCore)
+                implementation(libs.coroutines.core)
                 // ktor test
-                implementation(libs.ktorMock)
+                implementation(libs.ktor.mock)
             }
         }
 
@@ -82,20 +82,20 @@ kotlin {
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(libs.okHttp)
+                implementation(libs.ktor.okHttp)
             }
         }
         val jvmTest by getting
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(libs.okHttp)
+                implementation(libs.ktor.okHttp)
             }
         }
         val androidTest by getting
         val iosX64Main by getting {
             dependencies {
-                implementation(libs.iosHttp)
+                implementation(libs.ktor.iosHttp)
             }
         }
     }

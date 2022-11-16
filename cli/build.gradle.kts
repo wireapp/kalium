@@ -30,8 +30,8 @@ dependencies {
     implementation(project(":logic"))
 
     implementation(libs.cliKt)
-    implementation(libs.ktorUtils)
-    implementation(libs.okHttp)
-    implementation(libs.loggingInterceptor)
-    implementation(libs.coroutinesCore)
+    implementation(libs.ktor.utils)
+    implementation(libs.ktor.okHttp)
+    implementation(libs.okhttp.loggingInterceptor)
+    implementation(libs.coroutines.core)
 }
