@@ -109,9 +109,21 @@ object MessageMapper {
         restrictedAssetName: String?,
         failedToDecryptData: ByteArray?,
         conversationName: String?,
-        allReactionsJson: String?,
-        selfReactionsJson: String?,
-        mentions: String
+        allReactionsJson: String,
+        selfReactionsJson: String,
+        mentions: String,
+        quotedMessageId: String?,
+        quotedSenderId: QualifiedIDEntity?,
+        isQuotingSelfUser: Long?,
+        quotedSenderName: String?,
+        quotedMessageDateTime: String?,
+        quotedMessageEditTimestamp: String?,
+        quotedMessageVisibility: MessageEntity.Visibility?,
+        quotedMessageContentType: MessageEntity.ContentType?,
+        quotedTextBody: String?,
+        quotedAssetMimeType: String?,
+        quotedAssetId: String?,
+        quotedAssetDomain: String?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -119,7 +131,24 @@ object MessageMapper {
         } else when (contentType) {
             MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
                 messageBody = text ?: "",
-                mentions = messageMentionsFromJsonString(mentions)
+                mentions = messageMentionsFromJsonString(mentions),
+                quotedMessageId = quotedMessageId,
+                quotedMessage = quotedMessageId?.let {
+                    MessageEntityContent.Text.QuotedMessage(
+                        id = it,
+                        senderId = quotedSenderId.requireField("quotedSenderId"),
+                        isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser") != 0L,
+                        senderName = quotedSenderName.requireField("quotedSenderName"),
+                        dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime"),
+                        editTimestamp = quotedMessageEditTimestamp,
+                        visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
+                        contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
+                        textBody = quotedTextBody,
+                        assetMimeType = quotedAssetMimeType,
+                        assetId = quotedAssetId,
+                        assetDomain = quotedAssetDomain
+                    )
+                }
             )
 
             MessageEntity.ContentType.ASSET -> MessageEntityContent.Asset(
@@ -181,6 +210,11 @@ object MessageMapper {
         )
     }
 
+    /**
+     * Used when unpacking a value from the database, and it is expected to not be null.
+     * For example, if there's a quoted message ID, it is 100% expected that there is a quoted message content type
+     * This is basically a verbose !! (🔫🔫 Bang Bang) that provides a more meaningful exception.
+     */
     private inline fun <reified T> T?.requireField(fieldName: String): T = requireNotNull(this) {
         "Field $fieldName null when unpacking message content"
     }
