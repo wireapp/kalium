@@ -30,7 +30,6 @@ class TestSessionManagerV0 : SessionManager {
     override fun proxyCredentials(): ProxyCredentialsDTO? =
         ProxyCredentialsDTO("username", "password")
 
-
     companion object {
         val SESSION = testCredentials
     }
