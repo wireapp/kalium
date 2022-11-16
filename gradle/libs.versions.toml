@@ -30,7 +30,7 @@ sqldelight = "2.0.0-alpha01"
 pbandk = "0.14.1"
 turbine = "0.7.0"
 avs = "8.2.16"
-jna = "5.6.0@aar"
+jna = "5.6.0"
 core-crypto = "0.6.0-pre.3"
 desugar-jdk = "1.1.5"
 kermit = "1.0.0"
@@ -119,6 +119,5 @@ benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
 
 avs = { module = "com.wire:avs", version.ref = "avs" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
-androidJna = { module = "net.java.dev.jna:jna", version.ref = "jna"}
 
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }

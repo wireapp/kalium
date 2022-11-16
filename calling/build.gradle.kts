@@ -36,19 +36,25 @@ kotlin {
     sourceSets {
         val androidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(libs.androidTestRunner)
+                implementation(libs.androidTestRules)
             }
         }
         val androidMain by getting {
             dependencies {
-                api(Dependencies.Calling.avs)
-                api(Dependencies.Calling.androidJna)
+                api(libs.jna)
+                api(libs.jna.map {
+                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
+                        artifact {
+                            type = "aar"
+                        }
+                    })
+                })
             }
         }
         val jvmMain by getting {
             dependencies {
-	        implementation(Dependencies.Calling.jna)
+                implementation(libs.jna)
             }
         }
 
