@@ -71,7 +71,7 @@ sealed class MessageContent {
             val assetMimeType: String
         ) : Content
 
-        object Deleted: Content
+        object Deleted : Content
     }
 
     data class Calling(val value: String) : Regular()
