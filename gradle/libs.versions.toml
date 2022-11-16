@@ -40,6 +40,8 @@ detekt = "1.19.0"
 kotlinx = ["ktxSerialization", "ktxDateTime"]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "composeTooling", "coroutinesAndroid", "ktor", "paging3", "securityCrypto", "desugarJdkLibs"]
 ktor = ["ktorCore", "ktorJson", "ktorSerialization", "ktorLogging", "authClient", "contentNegotiation", "webSocket", "ktorUtils", "mock", "okHttp", "iosHttp", "encoding"]
+detekt-test = ["detektCli", "detektTest"]
+detekt-core = ["detektApi"]
 
 
 [libraries]
