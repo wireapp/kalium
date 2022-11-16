@@ -99,9 +99,9 @@ kotlin {
         }
         val androidAndroidTest by getting {
             dependencies {
-                implementation(libs.androidTestRunner)
-                implementation(libs.androidTestRules)
-                implementation(libs.androidxOrchestratorRunner)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
+                implementation(libs.androidtest.orchestrator.runner)
             }
         }
     }

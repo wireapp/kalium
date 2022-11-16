@@ -36,8 +36,8 @@ kotlin {
     sourceSets {
         val androidTest by getting {
             dependencies {
-                implementation(libs.androidTestRunner)
-                implementation(libs.androidTestRules)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
             }
         }
         val androidMain by getting {
