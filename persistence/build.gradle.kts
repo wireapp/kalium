@@ -1,9 +1,11 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
-    Plugins.serialization(this)
-    Plugins.sqlDelight(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.kotlin.serialization)
+    id(libs.plugins.sqldelight.get().pluginId)
 }
+
 
 group = "com.wire.kalium"
 version = "0.0.1-SNAPSHOT"

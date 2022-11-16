@@ -52,6 +52,8 @@ kotlin-js = { id = "org.jetbrains.kotlin.js", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 ksp = { id = "com.google.devtools.ksp", version = "1.6.10-1.0.2" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "composeTooling", "coroutinesAndroid", "ktor", "paging3", "securityCrypto", "desugarJdkLibs"]

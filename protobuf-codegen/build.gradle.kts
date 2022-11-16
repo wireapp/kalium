@@ -7,9 +7,10 @@ import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
 import com.google.protobuf.gradle.remove
 
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.jvm(this)
-    Plugins.protobuf(this)
+    kotlin("jvm")
+    id(libs.plugins.protobuf.get().pluginId)
 }
 
 group = "com.wire.kalium"

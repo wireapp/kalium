@@ -2,7 +2,7 @@
 plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
-    kotlin("plugin.serialization") version Versions.kotlin // todo: change
+    alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.carthage.get().pluginId)
 }
 
