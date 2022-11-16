@@ -44,13 +44,13 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(Dependencies.Logging.kermit)
+                api(libs.kermit)
             }
         }
         val androidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(libs.androidTestRunner)
+                implementation(libs.androidTestRules)
             }
         }
     }
