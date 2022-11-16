@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -27,23 +28,35 @@ class SendTextMessageUseCase internal constructor(
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
+    private val messageContentEncryptor: MessageContentEncryptor,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
-        mentions: List<MessageMention> = listOf()
+        mentions: List<MessageMention> = emptyList(),
+        quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
 
         val generatedMessageUuid = uuid4().toString()
+
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Text(text, mentions),
+                content = MessageContent.Text(
+                    value = text,
+                    mentions = mentions,
+                    quotedMessageReference = quotedMessageId?.let {
+                        MessageContent.QuoteReference(
+                            quotedMessageId = it,
+                            quotedMessageSha256 = null
+                        )
+                    }
+                ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,
@@ -62,6 +75,25 @@ class SendTextMessageUseCase internal constructor(
                 kaliumLogger.e("There was an error trying to send the message $it")
             }
         }
+    }
+
+}
+
+
+class MessageContentEncryptor(private val messageRepository: MessageRepository) {
+
+    suspend fun encryptMessageContent(conversationId: ConversationId, messageId: String): Either<CoreFailure, String> {
+        val messageResult = messageRepository.getMessageById(conversationId, messageId)
+
+        return messageResult.flatMap { message ->
+            val messageContent = message.content
+            val messageTimeStamp = message.date
+
+
+            Either.Right("test")
+        }
+
+
     }
 
 }
