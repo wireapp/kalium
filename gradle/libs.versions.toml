@@ -1,0 +1,124 @@
+[versions]
+kotlin = "1.6.10"
+activity-compose = "1.3.1"
+app-compat = "1.1.0"
+android-paging3 = "3.1.1"
+cli-kt = "3.3.0"
+coroutines = "1.6.0-native-mt"
+compose = "1.1.0-rc01"
+compose-compiler = "1.1.0-rc02"
+cryptobox4j = "1.1.1"
+cryptobox-android = "1.1.3"
+javax-crypto = "1.1.0-alpha03"
+kover = "0.4.4"
+ktor = "2.0.0-beta-1"
+okio = "3.0.0"
+ok-http = "4.9.3"
+mockative = "1.2.6"
+android-work = "2.7.1"
+android-test-tunner = "1.4.0"
+android-test-rules = "1.4.0"
+android-test-core = "1.4.0"
+androidx-arch = "2.1.0"
+androidx-orchestrator = "1.1.0"
+benasher-uuid = "0.4.0"
+ktx-datetime = "0.3.2"
+ktx-serialization = "1.3.2"
+multiplatform-settings = "0.8.1"
+android-security = "1.1.0-alpha03"
+sqldelight = "2.0.0-alpha01"
+pbandk = "0.14.1"
+turbine = "0.7.0"
+avs = "8.2.16"
+jna = "5.6.0@aar"
+core-crypto = "0.6.0-pre.3"
+desugar-jdk = "1.1.5"
+kermit = "1.0.0"
+detekt = "1.19.0"
+
+[bundles]
+kotlinx = ["ktxSerialization", "ktxDateTime"]
+android = ["appCompat", "activityCompose", "work", "composeMaterial", "composeTooling", "coroutinesAndroid", "ktor", "paging3", "securityCrypto", "desugarJdkLibs"]
+ktor = ["ktorCore", "ktorJson", "ktorSerialization", "ktorLogging", "authClient", "contentNegotiation", "webSocket", "utils", "mock", "okHttp", "iosHttp", "encoding"]
+
+
+[libraries]
+ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
+ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
+
+appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }
+activityCompose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+work = { module = "androidx.work:work-runtime-ktx", version.ref = "android-work" }
+composeMaterial = { module = "androidx.compose.material:material", version.ref = "compose" }
+composeTooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
+coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+ktor = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
+paging3 = { module = "androidx.paging:paging-runtime", version.ref = "android-paging3" }
+securityCrypto = { module = "androidx.security:security-crypto", version.ref = "android-security" }
+desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk" }
+
+settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
+multiPlatformTest = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
+
+androidTestRunner = { module = "androidx.test:runner", version.ref = "android-test-tunner" }
+androidTestRules = { module = "androidx.test:rules", version.ref = "android-test-rules" }
+androidTestCore = { module = "androidx.test:core", version.ref = "android-test-core" }
+androidxArchTesting = { module = "androidx.arch.core:core-testing", version.ref = "androidx-arch" }
+androidxOrchestratorRunner = { module = "androidx.test:runner", version.ref = "androidx-orchestrator" }
+androidxOrchestratorUtil = { module = "androidx.test:orchestrator", version.ref = "androidx-orchestrator" }
+
+coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+
+cryptoboxAndroid = { module = "com.wire:cryptobox-android", version.ref = "cryptobox-android" }
+cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
+javaxCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "javax-crypto" }
+coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
+coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
+
+cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }
+loggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "ok-http" }
+
+ktorCore = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktorJson = { module = "io.ktor:ktor-client-json", version.ref = "ktor" }
+ktorSerialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktorLogging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+authClient = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
+contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+webSocket = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
+utils = { module = "io.ktor:ktor-utils", version.ref = "ktor" }
+mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
+encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
+
+okioCore = { module = "com.squareup.okio:okio", version.ref = "okio" }
+
+runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
+coroutinesExtension = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+androidDriver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+androidPaging = { module = "app.cash.sqldelight:android-paging3-extensions", version.ref = "sqldelight" }
+nativeDriver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
+jvmDriver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+jsDriver = { module = "app.cash.sqldelight:sqljs-driver", version.ref = "sqldelight" }
+primitiveAdapters = { module = "app.cash.sqldelight:primitive-adapters", version.ref = "sqldelight" }
+dialect = { module = "app.cash.sqldelight:sqlite-3-25-dialect", version.ref = "sqldelight" }
+
+mockative = { module = "io.mockative:mockative", version.ref = "mockative" }
+mockativeProcessor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+okio = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
+
+detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
+detektApi = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
+detektTest = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
+
+pbandkRuntime = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
+
+benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
+
+avs = { module = "com.wire:avs", version.ref = "avs" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+androidJna = { module = "net.java.dev.jna:jna", version.ref = "jna"}
+
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
