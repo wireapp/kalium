@@ -7,7 +7,7 @@ import com.wire.kalium.model.UserDTOJson
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
-import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -141,7 +141,7 @@ class SSOLoginApiV0Test : ApiTest {
         val actual = ssoApi.provideLoginSession(cookie)
 
         assertIs<NetworkResponse.Error>(actual)
-        assertIs<KaliumException.GenericError> (actual.kException)
+        assertEquals (CustomErrors.MISSING_REFRESH_TOKEN, actual)
     }
 
     private companion object {
