@@ -43,7 +43,7 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                api(libs.jna)
+                api(libs.avs)
                 api(libs.jna.map {
                     project.dependencies.create(it, closureOf<ExternalModuleDependency> {
                         artifact {
