@@ -6,7 +6,6 @@ import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isUnknownClient
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -51,7 +50,9 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
 
             loadTokens {
                 val session = sessionManager.session()
-                BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+                BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken).also {
+                    kaliumLogger.d("BearerTokens ${it.refreshToken}")
+                }
             }
 
             refreshTokens {
@@ -64,7 +65,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
                     is NetworkResponse.Error -> {
                         // BE return 403 with error liable invalid-credentials for expired cookies
                         if (response.kException is KaliumException.InvalidRequestError) {
-                            if (response.kException.isInvalidCredentials())
+                            if (response.kException.errorResponse.code == 403)
                                 sessionManager.onSessionExpired()
                             if (response.kException.isUnknownClient())
                                 sessionManager.onClientRemoved()
