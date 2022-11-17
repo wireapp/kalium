@@ -16,6 +16,11 @@ interface KaliumFileSystem {
     val rootCachePath: Path
 
     /**
+     * Provides the root of the current user database path, used to store all the Database information.
+     */
+    val rootDBPath: Path
+
+    /**
      * Opens an output stream that will be used to write the data on the given [outputPath]
      * @param outputPath the path where the data will be eventually written
      * @param mustCreate whether to force the creation of the outputPath if it doesn't exist on the current file system
@@ -62,7 +67,7 @@ interface KaliumFileSystem {
     fun copy(sourcePath: Path, targetPath: Path)
 
     /**
-     * Creates a temporary path if it didn't exist before and returns it if successful
+     * Provides the db root path of the current file system.
      * @param pathString a predefined temp path string. If not provided the temporary folder will be created with a default path
      */
     fun tempFilePath(pathString: String? = null): Path

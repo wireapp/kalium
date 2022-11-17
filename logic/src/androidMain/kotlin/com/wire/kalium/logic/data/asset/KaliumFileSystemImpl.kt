@@ -21,6 +21,11 @@ actual class KaliumFileSystemImpl actual constructor(
     override val rootCachePath: Path = dataStoragePaths.cachePath.value.toPath()
 
     /**
+     * Provides the root of the current user database path, used to store all the Database information.
+     */
+    override val rootDBPath: Path = dataStoragePaths.dbPath.value.toPath()
+
+    /**
      * Opens an output stream that will be used to write the data on the given [outputPath]
      * @param outputPath the path where the data will be eventually written
      * @param mustCreate whether to force the creation of the outputPath if it doesn't exist on the current file system

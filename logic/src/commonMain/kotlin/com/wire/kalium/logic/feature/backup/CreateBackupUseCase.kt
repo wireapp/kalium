@@ -55,11 +55,17 @@ internal class CreateBackupUseCaseImpl(
                 val isBackupEncrypted = password.isNotEmpty()
 
                 if (isBackupEncrypted) {
-                    val encryptedBackupFilePath = ENCRYPTED_BACKUP_FILE_NAME.toPath()
+                    val encryptedBackupFilePath = kaliumFileSystem.tempFilePath(ENCRYPTED_BACKUP_FILE_NAME)
                     val encryptedDataSize = encryptBackup(
                         kaliumFileSystem.source(backupFilePath),
                         kaliumFileSystem.sink(encryptedBackupFilePath),
                         BackupCoder.Passphrase(password)
+                    )
+                    val finalEncryptedFileName = "$encryptedBackupFilePath.zip".toPath()
+
+                    createCompressedFile(
+                        listOf(kaliumFileSystem.source(encryptedBackupFilePath) to finalEncryptedFileName.name),
+                        kaliumFileSystem.sink(finalEncryptedFileName)
                     )
 
                     if (encryptedDataSize > 0) {
@@ -97,7 +103,7 @@ internal class CreateBackupUseCaseImpl(
         val backupFilePath = kaliumFileSystem.tempFilePath(UNENCRYPTED_BACKUP_FILE_NAME)
         val backupSink = kaliumFileSystem.sink(backupFilePath)
         val backupMetadataPath = createMetadataFile(userId)
-        val userDBData = getUserDbDataPath(userId)
+        val userDBData = getUserDbDataPath()
 
         return createCompressedFile(
             listOf(
@@ -109,11 +115,12 @@ internal class CreateBackupUseCaseImpl(
         }
     }
 
-    private fun getUserDbDataPath(userId: UserId): Path = FileNameUtil.userDBName(idMapper.toDaoModel(userId)).toPath()
+    private fun getUserDbDataPath(): Path = kaliumFileSystem.rootDBPath
+
 
     private companion object {
         private const val UNENCRYPTED_BACKUP_FILE_NAME = "user-backup.zip"
-        private const val ENCRYPTED_BACKUP_FILE_NAME = "encrypted-user-backup.zip"
+        private const val ENCRYPTED_BACKUP_FILE_NAME = "encrypted-user-backup.cc20"
         private const val METADATA_FILE_NAME = "export.json"
         private const val USER_BACKUP_DB_NAME = "user-backup-database.db"
     }
