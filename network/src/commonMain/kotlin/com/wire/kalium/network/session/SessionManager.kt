@@ -50,9 +50,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
 
             loadTokens {
                 val session = sessionManager.session()
-                BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken).also {
-                    kaliumLogger.d("BearerTokens ${it.refreshToken}")
-                }
+                BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
             }
 
             refreshTokens {

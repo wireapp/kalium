@@ -8,6 +8,7 @@ import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.model.toSessionDto
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
@@ -62,7 +63,11 @@ internal open class SSOLoginApiV0 internal constructor(
             val refreshToken = cookie.splitSetCookieHeader().flatMap { it.splitSetCookieHeader() }
                 .map { parseServerSetCookieHeader(it) }.associate {
                     it.name to it.value
-                }[RefreshTokenProperties.COOKIE_NAME]!!
+                }[RefreshTokenProperties.COOKIE_NAME] ?: return@flatMap NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException("missing zuid token")
+                )
+            )
 
             with(accessTokenDTOResponse) {
                 NetworkResponse.Success(refreshToken, headers, httpCode)

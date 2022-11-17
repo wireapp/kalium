@@ -7,6 +7,7 @@ import com.wire.kalium.model.UserDTOJson
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -90,27 +91,27 @@ class SSOLoginApiV0Test : ApiTest {
         val authResponse = AccessTokenDTOJson.valid
         val selfResponse = UserDTOJson.valid
         val networkClient = mockUnauthenticatedNetworkClient(
-           listOf(
-               ApiTest.TestRequestHandler(
-                   path = PATH_ACCESS,
-                   authResponse.rawJson,
-                   statusCode = HttpStatusCode.OK,
-                   assertion = {
-                       assertGet()
-                       assertHeaderEqual(HttpHeaders.Cookie, cookie)
-                       assertPathEqual(PATH_ACCESS)
-                   }
-               ),
-               ApiTest.TestRequestHandler(
-                   path = PATH_SELF,
-                   selfResponse.rawJson,
-                   statusCode = HttpStatusCode.OK,
-                   assertion = {
-                       assertGet()
-                       assertPathEqual(PATH_SELF)
-                   }
-               )
-           )
+            listOf(
+                ApiTest.TestRequestHandler(
+                    path = PATH_ACCESS,
+                    authResponse.rawJson,
+                    statusCode = HttpStatusCode.OK,
+                    assertion = {
+                        assertGet()
+                        assertHeaderEqual(HttpHeaders.Cookie, cookie)
+                        assertPathEqual(PATH_ACCESS)
+                    }
+                ),
+                ApiTest.TestRequestHandler(
+                    path = PATH_SELF,
+                    selfResponse.rawJson,
+                    statusCode = HttpStatusCode.OK,
+                    assertion = {
+                        assertGet()
+                        assertPathEqual(PATH_SELF)
+                    }
+                )
+            )
         )
         val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
         val actual = ssoApi.provideLoginSession(cookie)
@@ -121,6 +122,26 @@ class SSOLoginApiV0Test : ApiTest {
         assertEquals(authResponse.serializableData.tokenType, actual.value.sessionDTO.tokenType)
         assertEquals(selfResponse.serializableData.id, actual.value.sessionDTO.userId)
         assertEquals(selfResponse.serializableData, actual.value.userDTO)
+    }
+
+    @Test
+    fun cookieIsMissingZuidToke_whenFetchingAuthToken_thenReturnError() = runTest {
+        val cookie = "cookie"
+        val authResponse = AccessTokenDTOJson.valid
+        val networkClient = mockUnauthenticatedNetworkClient(
+            listOf(
+                ApiTest.TestRequestHandler(
+                    path = PATH_ACCESS,
+                    authResponse.rawJson,
+                    statusCode = HttpStatusCode.OK
+                )
+            )
+        )
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
+        val actual = ssoApi.provideLoginSession(cookie)
+
+        assertIs<NetworkResponse.Error>(actual)
+        assertIs<KaliumException.GenericError> (actual.kException)
     }
 
     private companion object {
