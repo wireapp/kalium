@@ -65,7 +65,7 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
                     is NetworkResponse.Error -> {
                         // BE return 403 with error liable invalid-credentials for expired cookies
                         if (response.kException is KaliumException.InvalidRequestError) {
-                            if (response.kException.errorResponse.code == 403)
+                            if (response.kException.errorResponse.code == HttpStatusCode.Forbidden.value)
                                 sessionManager.onSessionExpired()
                             if (response.kException.isUnknownClient())
                                 sessionManager.onClientRemoved()

@@ -65,7 +65,7 @@ internal open class SSOLoginApiV0 internal constructor(
                 }[RefreshTokenProperties.COOKIE_NAME]!!
 
             with(accessTokenDTOResponse) {
-                NetworkResponse.Success(cookie, headers, httpCode)
+                NetworkResponse.Success(refreshToken, headers, httpCode)
             }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
         }.flatMap { tokensPairResponse ->
             wrapKaliumResponse<UserDTO> {
