@@ -9,9 +9,11 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -25,7 +27,8 @@ import java.util.concurrent.TimeUnit
 private val workerClass = WrapperWorker::class.java
 
 internal actual class GlobalWorkSchedulerImpl(
-    private val appContext: Context
+    private val appContext: Context,
+    private val coreLogic: CoreLogic
 ) : GlobalWorkScheduler {
 
     override fun schedulePeriodicApiVersionUpdate() {
@@ -64,9 +67,11 @@ internal actual class GlobalWorkSchedulerImpl(
     }
 
     override fun scheduleImmediateApiVersionUpdate() {
-        kaliumLogger.w(
-            "Scheduling an immediate execution of checking the API version is not supported on Android."
-        )
+        runBlocking {
+            coreLogic.globalScope {
+                UpdateApiVersionsWorker(updateApiVersions).doWork()
+            }
+        }
     }
 
     private companion object {
