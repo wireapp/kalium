@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageContentEncryptor
 import com.wire.kalium.logic.functional.Either
+import io.ktor.util.hex
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.anything
@@ -75,6 +76,8 @@ class MessageContentEncryptorTest {
         val array = dupa123 + jelop
         println(array)
         val gamon = "test"
+
+        val expectedArrayAsHex = hex("feff00480065006c006c006f0020d83ddc69200dd83ddcbbd83ddc68200dd83ddc69200dd83ddc670021000000005bcdcc09")
     }
 
 }
