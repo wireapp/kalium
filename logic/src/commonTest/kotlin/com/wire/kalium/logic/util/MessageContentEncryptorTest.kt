@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageContentEncryptor
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.util.string.toUTF16BEByteArray
 import io.ktor.util.hex
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
@@ -69,10 +70,10 @@ class MessageContentEncryptorTest {
     @Test
     fun test1() = runTest {
         val test = "https://www.youtube.com/watch?v=DLzxrzFCyOs"
-        val dupa123 = test.toByteArray()
+        val dupa123 = test.toUTF16BEByteArray()
 
         val test2 = ("2018-10-22T15:09:29.000+02:00".toTimeInMillis()) / 1000
-        val jelop = test2.toString().toByteArray()
+        val jelop = test2.toString().toUTF16BEByteArray()
         val array = dupa123 + jelop
         println(array)
         val gamon = "test"
