@@ -7,6 +7,7 @@ import com.wire.kalium.network.api.base.authenticated.logout.RemoveCookiesByLabe
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.header
@@ -27,7 +28,7 @@ internal open class LogoutApiV0 internal constructor(
                 header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
             }
         }
-    } ?: NetworkResponse.Error(KaliumException.GenericError(error("Missing refresh token")))
+    } ?: MISSING_REFRESH_TOKEN
 
     override suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): NetworkResponse<Unit> =
         wrapKaliumResponse {

@@ -28,33 +28,36 @@ import com.wire.kalium.network.exceptions.isUnknownClient
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LongParameterList")
 class SessionManagerImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val userId: QualifiedID,
     private val tokenStorage: AuthTokenStorage,
+    private val coroutineContext: CoroutineContext = KaliumDispatcherImpl.default.limitedParallelism(1),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionManager {
 
-    private val lock: Mutex = Mutex()
-    private var session: SessionDTO? = null
+    private val session: Atomic<SessionDTO?> = Atomic(null)
     private var serverConfig: Atomic<ServerConfigDTO?> = Atomic(null)
 
-    override suspend fun session(): SessionDTO? = lock.withLock {
-        session ?: run {
+    override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
+        session.get() ?: run {
             wrapStorageRequest { tokenStorage.getToken(idMapper.toDaoModel(userId)) }
                 .map { sessionMapper.fromEntityToSessionDTO(it) }
-                .onSuccess { session = it }
+                .onSuccess { session.set(it) }
                 .onFailure { kaliumLogger.e("""SESSION MANAGER: 
                     |"error": "missing user session",
                     |"cause": "$it" """.trimMargin()) }
-            session
+            session.get()
         }
     }
 
@@ -77,7 +80,7 @@ class SessionManagerImpl internal constructor(
         }.map {
             sessionMapper.fromEntityToSessionDTO(it)
         }.onSuccess {
-            session = it
+            session.set(it)
         }.nullableFold({
             null
         }, {
@@ -85,7 +88,7 @@ class SessionManagerImpl internal constructor(
         })
 
     override suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO? {
-        return lock.withLock {
+        return withContext(coroutineContext) {
             wrapApiRequest { accessTokenApi.getToken(oldRefreshToken) }.nullableFold({
                 when (it) {
                     is NetworkFailure.NoNetworkConnection -> null
