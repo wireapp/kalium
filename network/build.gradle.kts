@@ -70,7 +70,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 // coroutines
-                implementation(libs.coroutines.core)
+                implementation(libs.coroutines.test)
                 // ktor test
                 implementation(libs.ktor.mock)
             }
