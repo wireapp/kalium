@@ -51,7 +51,8 @@ actual class CoreLogic(
     )
 
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(
-        appContext = appContext
+        appContext = appContext,
+        coreLogic = this
     )
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
