@@ -51,7 +51,7 @@ sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
 
 [bundles]
-android = ["appCompat", "activityCompose", "work", "composeMaterial", "composeTooling", "coroutinesAndroid", "ktor", "paging3", "securityCrypto", "desugarJdkLibs"]
+android = ["appCompat", "activityCompose", "work", "composeMaterial", "coroutinesAndroid", "ktor", "ktor-okHttp"]
 detekt-test = ["detekt-cli", "detekt-test"]
 detekt-core = ["detekt-api"]
 
