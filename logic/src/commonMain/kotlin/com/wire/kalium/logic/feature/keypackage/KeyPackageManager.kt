@@ -28,6 +28,7 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
  */
 internal interface KeyPackageManager
 
+@Suppress("LongParameterList")
 internal class KeyPackageManagerImpl(
     private val featureSupport: FeatureSupport,
     private val incrementalSyncRepository: IncrementalSyncRepository,
@@ -54,7 +55,8 @@ internal class KeyPackageManagerImpl(
                 ensureActive()
                 if (syncState is IncrementalSyncStatus.Live &&
                     featureSupport.isMLSSupported &&
-                    clientRepository.value.hasRegisteredMLSClient().getOrElse(false)) {
+                    clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
+                ) {
                     refillKeyPackagesIfNeeded()
                 }
             }

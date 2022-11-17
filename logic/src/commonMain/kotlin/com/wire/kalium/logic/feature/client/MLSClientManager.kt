@@ -23,6 +23,7 @@ interface MLSClientManager
  * MLSClientManager is responsible for registering an MLS client when a user
  * upgrades to an MLS supported build.
  */
+@Suppress("LongParameterList")
 internal class MLSClientManagerImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val featureSupport: FeatureSupport,

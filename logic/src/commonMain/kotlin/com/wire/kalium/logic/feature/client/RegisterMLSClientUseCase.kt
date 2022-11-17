@@ -9,6 +9,9 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 
+/**
+ * Register an MLS client with an existing client already registered on the backend.
+ */
 interface RegisterMLSClientUseCase {
 
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit>
