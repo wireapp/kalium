@@ -6,8 +6,8 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
@@ -50,7 +50,6 @@ class MLSClientManagerTest {
                 .withHasRegisteredMLSClient(Either.Right(false))
                 .withCurrentClientId(Either.Right(TestClient.CLIENT_ID))
                 .withRegisterMLSClientSuccessful()
-                .withJoinExistingMLSConversationsSuccessful()
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -61,8 +60,8 @@ class MLSClientManagerTest {
                 .with(any())
                 .wasInvoked(once)
 
-            verify(arrangement.joinExistingMLSConversations)
-                .suspendFunction(arrangement.joinExistingMLSConversations::invoke)
+            verify(arrangement.slowSyncRepository)
+                .suspendFunction(arrangement.slowSyncRepository::clearLastSlowSyncCompletionInstant)
                 .wasInvoked(once)
         }
 
@@ -88,6 +87,9 @@ class MLSClientManagerTest {
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
+        var slowSyncRepository = mock(classOf<SlowSyncRepository>())
+
+        @Mock
         var clientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
@@ -98,9 +100,6 @@ class MLSClientManagerTest {
 
         @Mock
         val registerMLSClient = mock(classOf<RegisterMLSClientUseCase>())
-
-        @Mock
-        val joinExistingMLSConversations = mock(classOf<JoinExistingMLSConversationsUseCase>())
 
         fun withCurrentClientId(result: Either<CoreFailure, ClientId>) = apply {
             given(clientIdProvider)
@@ -123,13 +122,6 @@ class MLSClientManagerTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withJoinExistingMLSConversationsSuccessful() = apply {
-            given(joinExistingMLSConversations)
-                .suspendFunction(joinExistingMLSConversations::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
-        }
-
         fun withIsMLSSupported(supported: Boolean) = apply {
             given(featureSupport)
                 .invocation { featureSupport.isMLSSupported }
@@ -140,9 +132,9 @@ class MLSClientManagerTest {
             clientIdProvider,
             featureSupport,
             incrementalSyncRepository,
+            lazy { slowSyncRepository },
             lazy { clientRepository },
             lazy { registerMLSClient },
-            lazy { joinExistingMLSConversations },
             TestKaliumDispatcher
         )
     }

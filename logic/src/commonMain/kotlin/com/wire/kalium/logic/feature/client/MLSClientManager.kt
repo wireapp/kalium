@@ -3,11 +3,14 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -28,9 +31,9 @@ internal class MLSClientManagerImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val featureSupport: FeatureSupport,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val slowSyncRepository: Lazy<SlowSyncRepository>,
     private val clientRepository: Lazy<ClientRepository>,
     private val registerMLSClient: Lazy<RegisterMLSClientUseCase>,
-    private val joinExistingMLSConversations: Lazy<JoinExistingMLSConversationsUseCase>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSClientManager {
     /**
@@ -60,8 +63,9 @@ internal class MLSClientManagerImpl(
             if (!it) {
                 currentClientIdProvider().flatMap { clientId ->
                     kaliumLogger.i("No existing MLS Client, registering..")
-                    registerMLSClient.value(clientId).flatMap {
-                        joinExistingMLSConversations.value()
+                    registerMLSClient.value(clientId).onSuccess {
+                        kaliumLogger.i("Triggering slow sync after enabling MLS")
+                        slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
                     }
                 }
             } else {

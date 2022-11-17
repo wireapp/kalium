@@ -564,6 +564,7 @@ class UserSessionScope internal constructor(
             clientIdProvider,
             featureSupport,
             incrementalSyncRepository,
+            lazy { slowSyncRepository },
             lazy { clientRepository },
             lazy {
                 RegisterMLSClientUseCaseImpl(
@@ -572,8 +573,7 @@ class UserSessionScope internal constructor(
                     keyPackageRepository,
                     keyPackageLimitsProvider
                 )
-            },
-            lazy { joinExistingMLSConversations }
+            }
         )
 
     internal val mlsPublicKeysRepository: MLSPublicKeysRepository
