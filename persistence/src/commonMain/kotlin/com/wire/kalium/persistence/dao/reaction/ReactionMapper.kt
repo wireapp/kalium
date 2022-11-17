@@ -1,5 +1,6 @@
 package com.wire.kalium.persistence.dao.reaction
 
+import com.wire.kalium.persistence.MessageDetailsReactions
 import com.wire.kalium.persistence.util.JsonSerializer
 import kotlinx.serialization.decodeFromString
 
@@ -14,4 +15,20 @@ object ReactionMapper {
         userReactionsJson?.let {
             serializer.decodeFromString(userReactionsJson)
         } ?: emptySet()
+
+    fun fromDAOToMessageReactionsEntity(
+        queryResult: MessageDetailsReactions
+    ): MessageReactionEntity = with(queryResult) {
+        MessageReactionEntity(
+            emoji = emoji,
+            userId = userId,
+            name = name,
+            handle = handle,
+            previewAssetIdEntity = previewAssetId,
+            userTypeEntity = userType,
+            deleted = deleted,
+            connectionStatus = connectionStatus,
+            availabilityStatus = userAvailabilityStatus
+        )
+    }
 }

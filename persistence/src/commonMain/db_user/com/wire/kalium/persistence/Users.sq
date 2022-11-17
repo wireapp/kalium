@@ -46,6 +46,10 @@ user_type = excluded.user_type,
 bot_service = excluded.bot_service,
 deleted = excluded.deleted;
 
+insertOrIgnoreUser:
+INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
 updateUser:
 UPDATE User
 SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, user_type = ?, bot_service = ?

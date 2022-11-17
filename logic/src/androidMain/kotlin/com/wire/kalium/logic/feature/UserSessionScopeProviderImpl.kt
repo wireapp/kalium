@@ -36,8 +36,7 @@ internal actual class UserSessionScopeProviderImpl(
         val sessionManager = SessionManagerImpl(
             globalScope.sessionRepository,
             userId,
-            globalPreferences.authTokenStorage,
-            globalPreferences.proxyCredentialsStorage
+            globalPreferences.authTokenStorage
         )
         val networkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(sessionManager)
         val featureSupport = FeatureSupportImpl(kaliumConfigs, sessionManager.serverConfig().metaData.commonApiVersion.version)
@@ -58,6 +57,7 @@ internal actual class UserSessionScopeProviderImpl(
             globalScope,
             globalCallManager,
             globalPreferences,
+            sessionManager,
             dataStoragePaths,
             kaliumConfigs,
             featureSupport,

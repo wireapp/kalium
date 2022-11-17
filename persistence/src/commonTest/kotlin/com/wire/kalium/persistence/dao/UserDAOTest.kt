@@ -575,6 +575,32 @@ class UserDAOTest : BaseDatabaseTest() {
 
     }
 
+    @Test
+    fun givenNonExistingUser_whenInsertingOrIgnoringUsers_thenInsertThisUser() = runTest(dispatcher) {
+        // given
+        val usersToInsert = listOf(user1, user2)
+        val expected = listOf(user1, user2)
+        // when
+        db.userDAO.insertOrIgnoreUsers(usersToInsert)
+        // then
+        val persistedUsers = db.userDAO.getAllUsers().first()
+        assertEquals(expected, persistedUsers)
+    }
+
+    @Test
+    fun givenNonExistingAndExistingUsers_whenInsertingOrIgnoringUsers_thenInsertOnlyNonExistingUsers() = runTest(dispatcher) {
+        // given
+        val existingUser = user1
+        val usersToInsert = listOf(user1.copy(name = "other name to make sure this one wasn't inserted nor edited"), user2)
+        val expected = listOf(user1, user2)
+        db.userDAO.insertUser(existingUser)
+        // when
+        db.userDAO.insertOrIgnoreUsers(usersToInsert)
+        // then
+        val persistedUsers = db.userDAO.getAllUsers().first()
+        assertEquals(expected, persistedUsers)
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
