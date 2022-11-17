@@ -4482,6 +4482,7 @@ $dokka.location:com.wire.kalium.logic.sync/DefaultWorker/doWork/#/PointingToDecl
 $dokka.location:com.wire.kalium.logic.sync/ForegroundNotificationDetailsProvider///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-foreground-notification-details-provider/index.html
 $dokka.location:com.wire.kalium.logic.sync/ForegroundNotificationDetailsProvider/getSmallIconResId/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-foreground-notification-details-provider/get-small-icon-res-id.html
 $dokka.location:com.wire.kalium.logic.sync/GlobalWorkScheduler///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-global-work-scheduler/index.html
+$dokka.location:com.wire.kalium.logic.sync/GlobalWorkSchedulerImpl/coreLogic/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-global-work-scheduler-impl/[jvm]core-logic.html
 $dokka.location:com.wire.kalium.logic.sync/GlobalWorkSchedulerImpl/scheduleImmediateApiVersionUpdate/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-global-work-scheduler-impl/[jvm]schedule-immediate-api-version-update.html
 $dokka.location:com.wire.kalium.logic.sync/GlobalWorkSchedulerImpl/schedulePeriodicApiVersionUpdate/#/PointingToDeclaration/logic/com.wire.kalium.logic.sync/-global-work-scheduler-impl/[jvm]schedule-periodic-api-version-update.html
 $dokka.location:com.wire.kalium.logic.sync/KaliumSyncException///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync/-kalium-sync-exception/index.html
