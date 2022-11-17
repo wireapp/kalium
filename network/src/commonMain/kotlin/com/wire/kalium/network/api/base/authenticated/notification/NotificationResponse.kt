@@ -2,7 +2,6 @@ package com.wire.kalium.network.api.base.authenticated.notification
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 
 @Serializable
 data class NotificationResponse(
