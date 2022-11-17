@@ -141,7 +141,7 @@ class SSOLoginApiV0Test : ApiTest {
         val actual = ssoApi.provideLoginSession(cookie)
 
         assertIs<NetworkResponse.Error>(actual)
-        assertEquals (CustomErrors.MISSING_REFRESH_TOKEN, actual)
+        assertEquals(CustomErrors.MISSING_REFRESH_TOKEN, actual)
     }
 
     private companion object {
