@@ -16,11 +16,13 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import okio.ByteString.Companion.encodeUtf8
 
 class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
@@ -79,7 +81,6 @@ class SendTextMessageUseCase internal constructor(
 
 }
 
-
 class MessageContentEncryptor(private val messageRepository: MessageRepository) {
 
     suspend fun encryptMessageContent(conversationId: ConversationId, messageId: String): Either<CoreFailure, String> {
@@ -89,7 +90,38 @@ class MessageContentEncryptor(private val messageRepository: MessageRepository) 
             val messageContent = message.content
             val messageTimeStamp = message.date
 
+            when (messageContent) {
+                is MessageContent.Asset -> TODO()
+                is MessageContent.Calling -> TODO()
+                is MessageContent.Cleared -> TODO()
+                is MessageContent.DeleteForMe -> TODO()
+                is MessageContent.DeleteMessage -> TODO()
+                MessageContent.Empty -> TODO()
+                is MessageContent.FailedDecryption -> TODO()
+                is MessageContent.Knock -> TODO()
+                is MessageContent.LastRead -> TODO()
+                is MessageContent.Reaction -> TODO()
+                is MessageContent.RestrictedAsset -> TODO()
+                is MessageContent.Text -> {
+                    val messageBody = messageContent.value
+                    val test = messageBody.encodeUtf8()
 
+                    val timeStamp = messageTimeStamp.toTimeInMillis()
+                    print(timeStamp)
+
+                    val dupa = "test"
+                }
+
+                is MessageContent.TextEdited -> TODO()
+                is MessageContent.Unknown -> TODO()
+                is MessageContent.Availability -> TODO()
+                MessageContent.Ignored -> TODO()
+                is MessageContent.ConversationRenamed -> TODO()
+                is MessageContent.MemberChange.Added -> TODO()
+                is MessageContent.MemberChange.Removed -> TODO()
+                MessageContent.MissedCall -> TODO()
+                is MessageContent.TeamMemberRemoved -> TODO()
+            }
             Either.Right("test")
         }
 
