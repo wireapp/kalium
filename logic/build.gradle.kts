@@ -61,7 +61,6 @@ kotlin {
                         version { strictly(libs.versions.coroutines.get()) }
                     })
                 })
-                implementation(libs.coroutines.core)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
                 implementation(libs.benAsherUUID)
