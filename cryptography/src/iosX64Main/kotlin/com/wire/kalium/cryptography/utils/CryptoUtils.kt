@@ -2,6 +2,8 @@ package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
 import io.ktor.util.encodeBase64
+import io.ktor.utils.io.charsets.Charset
+import io.ktor.utils.io.charsets.Charsets
 import kotlinx.cinterop.allocArrayOf
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.refTo
@@ -20,6 +22,7 @@ import platform.Foundation.base64Encoding
 import platform.Foundation.create
 
 actual fun calcMd5(bytes: ByteArray): String {
+    Charsets.ISO_8859_1
     val digestData = UByteArray(CC_MD5_DIGEST_LENGTH)
     val data = toData(bytes)
     CC_MD5(data.bytes, data.length.toUInt(), digestData.refTo(0))

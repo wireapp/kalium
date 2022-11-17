@@ -19,6 +19,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -104,10 +105,9 @@ class MessageContentEncryptor(private val messageRepository: MessageRepository) 
                 is MessageContent.RestrictedAsset -> TODO()
                 is MessageContent.Text -> {
                     val messageBody = messageContent.value
-                    val test = messageBody.encodeUtf8()
+                    val utf8MessageBody = messageBody.encodeUtf8().utf8()
+                    val messageTimeStampInSec = messageTimeStamp.toTimeInMillis() / 1000
 
-                    val timeStamp = messageTimeStamp.toTimeInMillis()
-                    print(timeStamp)
 
                     val dupa = "test"
                 }
@@ -124,8 +124,6 @@ class MessageContentEncryptor(private val messageRepository: MessageRepository) 
             }
             Either.Right("test")
         }
-
-
     }
 
 }
