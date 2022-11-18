@@ -5,11 +5,7 @@ import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isUnknownClient
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.HttpClientCall
@@ -28,16 +24,10 @@ import io.ktor.utils.io.ByteReadChannel
 import kotlin.coroutines.CoroutineContext
 
 interface SessionManager {
-    fun session(): SessionDTO
-
+    suspend fun session(): SessionDTO?
     fun serverConfig(): ServerConfigDTO
-    fun updateLoginSession(
-        newAccessTokenDTO: AccessTokenDTO,
-        newRefreshTokenDTO: RefreshTokenDTO?
-    ): SessionDTO
-
-    suspend fun onSessionExpired()
-    suspend fun onClientRemoved()
+    suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO?
+    suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO?
     fun proxyCredentials(): ProxyCredentialsDTO?
 }
 
@@ -47,31 +37,15 @@ fun HttpClientConfig<*>.installAuth(sessionManager: SessionManager, accessTokenA
     }
     install(Auth) {
         bearer {
-
             loadTokens {
-                val session = sessionManager.session()
+                val session = sessionManager.session() ?: error("missing user session")
                 BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
             }
 
             refreshTokens {
-                when (val response = accessTokenApi(client).getToken(oldTokens!!.refreshToken)) {
-                    is NetworkResponse.Success -> {
-                        val newSession = sessionManager.updateLoginSession(response.value.first, response.value.second)
-                        BearerTokens(newSession.accessToken, newSession.refreshToken)
-                    }
-
-                    is NetworkResponse.Error -> {
-                        // BE return 403 with error liable invalid-credentials for expired cookies
-                        if (response.kException is KaliumException.InvalidRequestError) {
-                            if (response.kException.errorResponse.code == HttpStatusCode.Forbidden.value)
-                                sessionManager.onSessionExpired()
-                            if (response.kException.isUnknownClient())
-                                sessionManager.onClientRemoved()
-                        }
-                        null
-                    }
-                }.also {
-                    kaliumLogger.d("AUTH TOKEN REFRESH:{\"status\": ${response.status.value}}")
+                val newSession = sessionManager.updateToken(accessTokenApi(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
+                newSession?.let {
+                    BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
                 }
             }
         }
