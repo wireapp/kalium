@@ -159,6 +159,7 @@ sealed class MessageEntityContent {
             val id: String,
             val senderId: QualifiedIDEntity,
             val isQuotingSelfUser: Boolean,
+            val isQuoteValid: Boolean,
             val senderName: String,
             val dateTime: String,
             val editTimestamp: String?,
@@ -166,8 +167,7 @@ sealed class MessageEntityContent {
             val contentType: MessageEntity.ContentType,
             val textBody: String?,
             val assetMimeType: String?,
-            val assetId: String?,
-            val assetDomain: String?
+            val assetName: String?,
         )
     }
 

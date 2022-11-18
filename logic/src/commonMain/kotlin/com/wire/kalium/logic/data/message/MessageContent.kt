@@ -66,8 +66,7 @@ sealed class MessageContent {
         data class Text(val value: String) : Content
 
         data class Asset(
-            val assetId: String,
-            val assetDomain: String,
+            val assetName: String?,
             val assetMimeType: String
         ) : Content
 

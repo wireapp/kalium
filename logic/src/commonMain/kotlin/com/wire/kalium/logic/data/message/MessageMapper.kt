@@ -245,8 +245,7 @@ class MessageMapperImpl(
         it.contentType == MessageEntity.ContentType.TEXT -> MessageContent.QuotedMessageDetails.Text(it.textBody!!)
         it.contentType == MessageEntity.ContentType.ASSET -> {
             MessageContent.QuotedMessageDetails.Asset(
-                assetId = requireNotNull(it.assetId),
-                assetDomain = requireNotNull(it.assetDomain),
+                assetName = it.assetName,
                 assetMimeType = requireNotNull(it.assetMimeType)
             )
         }
