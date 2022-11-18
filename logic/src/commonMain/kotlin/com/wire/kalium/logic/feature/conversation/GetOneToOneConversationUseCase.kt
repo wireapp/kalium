@@ -10,6 +10,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
+/**
+ * Operation that returns [Conversation] data for the one-to-one conversation with specific [UserId].
+ *
+ * @param otherUserId [UserId] private conversation with which we are interested in.
+ * @return [Result.Success] with [Conversation] in case of success,
+ * or [Result.Failure] if something went wrong - can't get data from local DB.
+ */
 class GetOneToOneConversationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl

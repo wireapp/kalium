@@ -9,6 +9,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.first
 
+/**
+ * Operation that creates one-to-one Conversation with specific [UserId] (only if it is absent in local DB)
+ * and returns [Conversation] data.
+ *
+ * @param otherUserId [UserId] private conversation with which we are interested in.
+ * @return Result with [Conversation] in case of success, or [CoreFailure] if something went wrong:
+ * can't get data from local DB, or can't create a conversation.
+ */
 class GetOrCreateOneToOneConversationUseCase(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository
