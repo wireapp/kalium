@@ -8,8 +8,19 @@ class UTF16BEByteArrayTest {
     fun test() {
         val test = "testString"
         val test1 = test.toUTF16BEByteArray()
-        println(test1)
+        println("test prtinging ")
 
+        println("test prtinging ")
+        println("test prtinging ")
+        println("test prtinging ")
+        println("test prtinging ")
+        println("test prtinging ")
+        println("test prtinging ")
+        println("test prtinging ")
+//
+
+        val test2 = test1.asUByteArray.joinToString("") { it.toString(16).padStart(2, '0') }
+        throw RuntimeException("${}")
     }
 
 }
