@@ -3,7 +3,7 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.persistence.backup.BackupImporter
+import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -18,14 +18,14 @@ interface RestoreBackupUseCase {
 }
 
 internal class RestoreBackupUseCaseImpl(
-    private val backupImporter: BackupImporter,
+    private val databaseImporter: DatabaseImporter,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RestoreBackupUseCase {
 
     override suspend operator fun invoke(backupFilePath: String): RestoreBackupResult {
         return withContext(dispatchers.io) {
             wrapStorageRequest {
-                backupImporter.importFromFile(backupFilePath)
+                databaseImporter.importFromFile(backupFilePath)
             }.fold({ RestoreBackupResult.Failure(it) }, { RestoreBackupResult.Success })
         }
     }

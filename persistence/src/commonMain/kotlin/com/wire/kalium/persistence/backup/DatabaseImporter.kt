@@ -2,11 +2,11 @@ package com.wire.kalium.persistence.backup
 
 import app.cash.sqldelight.db.SqlDriver
 
-interface BackupImporter {
+interface DatabaseImporter {
     suspend fun importFromFile(filePath: String)
 }
 
-class BackupImporterImpl(private val sqlDriver: SqlDriver) : BackupImporter {
+class DatabaseImporterImpl(private val sqlDriver: SqlDriver) : DatabaseImporter {
 
     override suspend fun importFromFile(filePath: String) {
         sqlDriver.execute(null, """ATTACH ? AS $BACKUP_DB_ALIAS""", 1) {

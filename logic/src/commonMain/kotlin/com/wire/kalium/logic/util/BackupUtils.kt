@@ -8,3 +8,4 @@ import okio.Source
 expect val clientPlatform: String
 
 expect fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Unit>
+expect fun extractCompressedFile(inputSource: Source, outputSink: Sink): Either<CoreFailure, Unit>

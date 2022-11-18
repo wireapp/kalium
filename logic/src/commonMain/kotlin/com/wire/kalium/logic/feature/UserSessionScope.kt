@@ -397,7 +397,7 @@ class UserSessionScope internal constructor(
 
     val restoreBackup: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(
-            userStorage.database.backupImporter
+            userStorage.database.databaseImporter
         )
 
     val persistMessage: PersistMessageUseCase

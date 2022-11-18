@@ -67,7 +67,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 messageType = MessageType.Regular
             )
             // when
-            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+            userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
             // then
             val conversationsAfterBackup: List<ConversationViewEntity> =
@@ -103,7 +103,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 ).map(::mapFromDetailsToConversationEntity)
             )
             // when
-            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+            userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
             // then
             val conversationAfterRestore = userDatabaseBuilder.conversationDAO.getAllConversations().first()
@@ -136,7 +136,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
                 )
             )
             // when
-            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+            userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
             // then
             val conversationAfterRestore = userDatabaseBuilder.conversationDAO.getAllConversations().first()
@@ -155,7 +155,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         )
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val conversationAfterRestore = userDatabaseBuilder.conversationDAO.getAllConversations().first()
@@ -176,7 +176,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         )
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         assertEquals(10, userDatabaseBuilder.conversationDAO.getAllConversations().first().size)
@@ -197,7 +197,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         )
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val conversationAfterRestore = userDatabaseBuilder.conversationDAO.getAllConversations().first()
@@ -215,7 +215,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             )
 
             // when
-            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+            userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
             // then
             backupConversations.forEach { conversationEntity ->
@@ -250,7 +250,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             )
 
             // when
-            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+            userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
             // then
             val restoredConversations = userDatabaseBuilder.conversationDAO.getAllConversations().first()
@@ -281,7 +281,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             backupDatabaseBuilder.teamDAO.insertTeam(teamEntity)
         }
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
         // then
         teams.forEach { teamEntity ->
             val restoredTeam = backupDatabaseBuilder.teamDAO.getTeamById(teamEntity.id).first()
@@ -297,7 +297,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             userDatabaseBuilder.teamDAO.insertTeam(teamEntity)
         }
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
         // then
         teams.forEach { teamEntity ->
             val restoredTeam = userDatabaseBuilder.teamDAO.getTeamById(teamEntity.id).first()
@@ -318,7 +318,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             conversationAmount = userConversationAmount,
         )
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val conversationsAfterBackup: List<ConversationViewEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
@@ -339,7 +339,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         )
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val calls = conversationsWithCallToBackup.map { it.second }
@@ -356,7 +356,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         )
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val calls = conversationsWithCallToBackup.map { it.second }
@@ -371,7 +371,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         val userToBackup = backupDatabaseDataGenerator.generateAndInsertUsers(10)
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
@@ -384,7 +384,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         val usersPresent = userDatabaseDataGenerator.generateAndInsertUsers(10)
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
@@ -398,7 +398,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         val userToBackup = backupDatabaseDataGenerator.generateAndInsertUsers(50)
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
@@ -420,7 +420,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         }
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
@@ -434,7 +434,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         val assetsToRestore = backupDatabaseDataGenerator.generateAndInsertAssets(10)
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         assetsToRestore.forEach { assetEntity ->
@@ -450,7 +450,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         val userAssets = userDatabaseDataGenerator.generateAndInsertAssets(10)
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         assetsToRestore.forEach { assetEntity ->
@@ -474,7 +474,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
         )
 
         // when
-        userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+        userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
         // then
         test.forEach { conversationViewEntity ->
@@ -510,7 +510,7 @@ class RestoreBackupTest : BaseDatabaseTest() {
             )
 
             // when
-            userDatabaseBuilder.backupImporter.importFromFile(databasePath(backupUserIdEntity))
+            userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity))
 
             // then
             backupConversationWithAssetContent.forEach { conversationViewEntity ->
