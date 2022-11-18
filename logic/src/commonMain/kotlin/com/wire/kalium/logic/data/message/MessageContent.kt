@@ -26,7 +26,8 @@ sealed class MessageContent {
         /**
          * The hash of the text of the quoted message
          */
-        val quotedMessageSha256: ByteArray?
+        val quotedMessageSha256: ByteArray?,
+        val isQuoteValid: Boolean
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -55,6 +56,7 @@ sealed class MessageContent {
         val senderId: UserId,
         val senderName: String,
         val isQuotingSelfUser: Boolean,
+        val isQuoteValid: Boolean,
         val messageId: String,
         val timeInstant: Instant,
         val editInstant: Instant?,

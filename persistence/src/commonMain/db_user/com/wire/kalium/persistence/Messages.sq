@@ -328,8 +328,8 @@ length = excluded.length,
 user_id = excluded.user_id;
 
 insertMessageTextContent:
-INSERT INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id)
-VALUES(?, ?, ?, ?)
+INSERT INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_valid)
+VALUES(?, ?, ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 message_id = excluded.message_id,
 text_body = excluded.text_body;

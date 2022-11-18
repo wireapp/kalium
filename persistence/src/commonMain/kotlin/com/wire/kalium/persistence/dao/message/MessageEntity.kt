@@ -150,6 +150,7 @@ sealed class MessageEntityContent {
          *                 Otherwise we'd need to pass a full QuotedMessage object
          */
         val quotedMessageId: String? = null,
+        val isQuoteValid: Boolean? = null,
         /**
          * Details of the message being quoted.
          * Unused when inserting into the DB.
