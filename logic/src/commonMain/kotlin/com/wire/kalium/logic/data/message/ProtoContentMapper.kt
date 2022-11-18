@@ -51,15 +51,19 @@ class ProtoContentMapperImpl(
 
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
-            is MessageContent.Text -> GenericMessage.Content.Text(
-                Text(
-                    content = readableContent.value,
-                    mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) },
-                    quote = readableContent.quotedMessageReference?.let {
-                        Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
-                    }
+            is MessageContent.Text -> {
+                val mentions = readableContent.mentions
+                val mappedMentions = mentions.map { messageMentionMapper.fromModelToProto(it) }
+                GenericMessage.Content.Text(
+                    Text(
+                        content = readableContent.value,
+                        mentions = mappedMentions,
+                        quote = readableContent.quotedMessageReference?.let {
+                            Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+                        }
+                    )
                 )
-            )
+            }
 
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
             is MessageContent.Asset -> GenericMessage.Content.Asset(assetMapper.fromAssetContentToProtoAssetMessage(readableContent.value))
@@ -144,16 +148,20 @@ class ProtoContentMapperImpl(
         val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
 
         val readableContent = when (val protoContent = genericMessage.content) {
-            is GenericMessage.Content.Text -> MessageContent.Text(
-                protoContent.value.content,
-                protoContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
-                protoContent.value.quote?.let {
-                    MessageContent.QuoteReference(
-                        it.quotedMessageId,
-                        it.quotedMessageSha256?.array
-                    )
-                }, null
-            )
+            is GenericMessage.Content.Text -> {
+                val mentions = protoContent.value.mentions
+                val mentionsMapped = mentions.map { messageMentionMapper.fromProtoToModel(it) }
+                MessageContent.Text(
+                    protoContent.value.content,
+                    mentionsMapped,
+                    protoContent.value.quote?.let {
+                        MessageContent.QuoteReference(
+                            it.quotedMessageId,
+                            it.quotedMessageSha256?.array
+                        )
+                    }, null
+                )
+            }
 
             is GenericMessage.Content.Asset -> {
                 // Backend sends some preview asset messages just with img metadata and no keys or asset id, so we need to overwrite one with the other one
@@ -183,10 +191,11 @@ class ProtoContentMapperImpl(
                 val replacingMessageId = protoContent.value.replacingMessageId
                 when (val editContent = protoContent.value.content) {
                     is MessageEdit.Content.Text -> {
+                        val mentions = editContent.value.mentions
                         MessageContent.TextEdited(
                             replacingMessageId,
                             editContent.value.content,
-                            editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull()
+                            mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) }
                         )
                     }
                     // TODO: for now we do not implement it
