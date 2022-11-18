@@ -1,7 +1,8 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
-    Plugins.serialization(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 group = "com.wire.kalium"
@@ -43,57 +44,59 @@ kotlin {
                 api(project(":logger"))
 
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
+                implementation(libs.coroutines.core.map {
+                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
+                        version { strictly(libs.versions.coroutines.get()) }
+                    })
+                })
 
                 // ktor
-                api(Dependencies.Ktor.core)
-                implementation(Dependencies.Ktor.utils)
-                implementation(Dependencies.Ktor.json)
-                implementation(Dependencies.Ktor.serialization)
-                implementation(Dependencies.Ktor.logging)
-                implementation(Dependencies.Ktor.authClient)
-                implementation(Dependencies.Ktor.webSocket)
-                implementation(Dependencies.Ktor.contentNegotiation)
-                implementation(Dependencies.Ktor.encoding)
+                api(libs.ktor.core)
+                implementation(libs.ktor.utils)
+                implementation(libs.ktor.json)
+                implementation(libs.ktor.serialization)
+                implementation(libs.ktor.logging)
+                implementation(libs.ktor.authClient)
+                implementation(libs.ktor.webSocket)
+                implementation(libs.ktor.contentNegotiation)
+                implementation(libs.ktor.encoding)
 
                 // Okio
-                implementation(Dependencies.Okio.core)
-                implementation(Dependencies.Test.okio)
+                implementation(libs.okio.core)
+                implementation(libs.okio.test)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 // coroutines
-                implementation(Dependencies.Coroutines.test)
+                implementation(libs.coroutines.test)
                 // ktor test
-                implementation(Dependencies.Ktor.mock)
+                implementation(libs.ktor.mock)
             }
         }
+
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
+
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(Dependencies.Ktor.okHttp)
+                implementation(libs.ktor.okHttp)
             }
         }
         val jvmTest by getting
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(Dependencies.Ktor.okHttp)
+                implementation(libs.ktor.okHttp)
             }
         }
         val androidTest by getting
         val iosX64Main by getting {
             dependencies {
-                implementation(Dependencies.Ktor.iosHttp)
+                implementation(libs.ktor.iosHttp)
             }
         }
     }

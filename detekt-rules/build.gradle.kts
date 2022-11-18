@@ -3,7 +3,6 @@ plugins {
 }
 
 dependencies {
-    compileOnly(Dependencies.Detekt.detektApi)
-    testImplementation(Dependencies.Detekt.detektApi)
-    testImplementation(Dependencies.Detekt.detektTest)
+    compileOnly(libs.bundles.detekt.core)
+    testImplementation(libs.bundles.detekt.test)
 }
