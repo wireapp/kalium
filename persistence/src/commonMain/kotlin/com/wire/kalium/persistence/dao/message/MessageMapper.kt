@@ -59,7 +59,7 @@ object MessageMapper {
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     fun toEntityMessageFromView(
         id: String,
         conversationId: QualifiedIDEntity,
