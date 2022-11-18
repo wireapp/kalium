@@ -4426,12 +4426,11 @@ $dokka.location:com.wire.kalium.logic.network/ApiMigrationV3///PointingToDeclara
 $dokka.location:com.wire.kalium.logic.network/ApiMigrationV3/ApiMigrationV3/#com.wire.kalium.logic.feature.CurrentClientIdProvider#com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-api-migration-v3/-api-migration-v3.html
 $dokka.location:com.wire.kalium.logic.network/ApiMigrationV3/invoke/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-api-migration-v3/invoke.html
 $dokka.location:com.wire.kalium.logic.network/SessionManagerImpl///PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-session-manager-impl/index.html
-$dokka.location:com.wire.kalium.logic.network/SessionManagerImpl/onClientRemoved/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-session-manager-impl/on-client-removed.html
-$dokka.location:com.wire.kalium.logic.network/SessionManagerImpl/onSessionExpired/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-session-manager-impl/on-session-expired.html
 $dokka.location:com.wire.kalium.logic.network/SessionManagerImpl/proxyCredentials/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-session-manager-impl/proxy-credentials.html
 $dokka.location:com.wire.kalium.logic.network/SessionManagerImpl/serverConfig/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-session-manager-impl/server-config.html
 $dokka.location:com.wire.kalium.logic.network/SessionManagerImpl/session/#/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-session-manager-impl/session.html
 $dokka.location:com.wire.kalium.logic.network/SessionManagerImpl/updateLoginSession/#com.wire.kalium.network.api.base.model.AccessTokenDTO#com.wire.kalium.network.api.base.model.RefreshTokenDTO?/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-session-manager-impl/update-login-session.html
+$dokka.location:com.wire.kalium.logic.network/SessionManagerImpl/updateToken/#com.wire.kalium.network.api.base.authenticated.AccessTokenApi#kotlin.String#kotlin.String/PointingToDeclaration/logic/logic/com.wire.kalium.logic.network/-session-manager-impl/update-token.html
 $dokka.location:com.wire.kalium.logic.sync.incremental////PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.incremental/index.html
 $dokka.location:com.wire.kalium.logic.sync.incremental/EventSource.LIVE///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.incremental/-event-source/-l-i-v-e/index.html
 $dokka.location:com.wire.kalium.logic.sync.incremental/EventSource.PENDING///PointingToDeclaration/logic/logic/com.wire.kalium.logic.sync.incremental/-event-source/-p-e-n-d-i-n-g/index.html
@@ -5807,12 +5806,11 @@ $dokka.location:com.wire.kalium.network.serialization/ByteArrayConverter/seriali
 $dokka.location:com.wire.kalium.network.session////PointingToDeclaration/network/network/com.wire.kalium.network.session/index.html
 $dokka.location:com.wire.kalium.network.session//installAuth/io.ktor.client.HttpClientConfig[*]#com.wire.kalium.network.session.SessionManager#kotlin.Function1[io.ktor.client.HttpClient,com.wire.kalium.network.api.base.authenticated.AccessTokenApi]/PointingToDeclaration/network/network/com.wire.kalium.network.session/install-auth.html
 $dokka.location:com.wire.kalium.network.session/SessionManager///PointingToDeclaration/network/network/com.wire.kalium.network.session/-session-manager/index.html
-$dokka.location:com.wire.kalium.network.session/SessionManager/onClientRemoved/#/PointingToDeclaration/network/network/com.wire.kalium.network.session/-session-manager/on-client-removed.html
-$dokka.location:com.wire.kalium.network.session/SessionManager/onSessionExpired/#/PointingToDeclaration/network/network/com.wire.kalium.network.session/-session-manager/on-session-expired.html
 $dokka.location:com.wire.kalium.network.session/SessionManager/proxyCredentials/#/PointingToDeclaration/network/network/com.wire.kalium.network.session/-session-manager/proxy-credentials.html
 $dokka.location:com.wire.kalium.network.session/SessionManager/serverConfig/#/PointingToDeclaration/network/network/com.wire.kalium.network.session/-session-manager/server-config.html
 $dokka.location:com.wire.kalium.network.session/SessionManager/session/#/PointingToDeclaration/network/network/com.wire.kalium.network.session/-session-manager/session.html
 $dokka.location:com.wire.kalium.network.session/SessionManager/updateLoginSession/#com.wire.kalium.network.api.base.model.AccessTokenDTO#com.wire.kalium.network.api.base.model.RefreshTokenDTO?/PointingToDeclaration/network/network/com.wire.kalium.network.session/-session-manager/update-login-session.html
+$dokka.location:com.wire.kalium.network.session/SessionManager/updateToken/#com.wire.kalium.network.api.base.authenticated.AccessTokenApi#kotlin.String#kotlin.String/PointingToDeclaration/network/network/com.wire.kalium.network.session/-session-manager/update-token.html
 $dokka.location:com.wire.kalium.network.tools////PointingToDeclaration/network/network/com.wire.kalium.network.tools/index.html
 $dokka.location:com.wire.kalium.network.tools//isProxyRequired/#com.wire.kalium.network.tools.ServerConfigDTO.ApiProxy?/PointingToDeclaration/network/network/com.wire.kalium.network.tools/is-proxy-required.html
 $dokka.location:com.wire.kalium.network.tools/ApiVersionDTO.Companion///PointingToDeclaration/network/network/com.wire.kalium.network.tools/-api-version-d-t-o/-companion/index.html
