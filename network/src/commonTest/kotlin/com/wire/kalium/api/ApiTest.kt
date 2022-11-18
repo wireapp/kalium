@@ -44,13 +44,13 @@ internal interface ApiTest {
     fun mockAuthenticatedNetworkClient(
         responseBody: String,
         statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {}
+        assertion: suspend (HttpRequestData.() -> Unit) = {}
     ): AuthenticatedNetworkClient = mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion)
 
     private fun mockAuthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {}
+        assertion: suspend (HttpRequestData.() -> Unit) = {}
     ): AuthenticatedNetworkClient {
         val mockEngine = MockEngine { request ->
             request.assertion()
