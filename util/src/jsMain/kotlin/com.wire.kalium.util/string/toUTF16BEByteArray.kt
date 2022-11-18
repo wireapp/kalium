@@ -22,3 +22,7 @@ actual fun String.toUTF16BEByteArray(): ByteArray {
 
     return test
 }
+
+actual fun ByteArray.toStringFromUtf16BE(): String {
+    TODO("Not yet implemented")
+}

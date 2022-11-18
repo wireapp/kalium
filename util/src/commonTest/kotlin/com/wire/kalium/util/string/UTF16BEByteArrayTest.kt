@@ -1,26 +1,23 @@
 package com.wire.kalium.util.string
 
+import okio.ByteString.Companion.encodeUtf8
 import kotlin.test.Test
 
 class UTF16BEByteArrayTest {
 
     @Test
     fun test() {
-        val test = "testString"
-        val test1 = test.toUTF16BEByteArray()
-        println("test prtinging ")
+        val test = "Hello \uD83D\uDC69\u200D\uD83D\uDCBB\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67!"
 
-        println("test prtinging ")
-        println("test prtinging ")
-        println("test prtinging ")
-        println("test prtinging ")
-        println("test prtinging ")
-        println("test prtinging ")
-        println("test prtinging ")
-//
+        val dupa = test.toUTF16BEByteArray()
 
-        val test2 = test1.asUByteArray.joinToString("") { it.toString(16).padStart(2, '0') }
-        throw RuntimeException("${}")
+        val hex = dupa.toStringFromUtf16BE()
+        val hex1 = dupa.toHexString()
+        println(dupa)
+
     }
 
+
 }
+
+fun ByteArray.toHexString() = asUByteArray().joinToString("") { it.toString(16).padStart(2, '0') }
