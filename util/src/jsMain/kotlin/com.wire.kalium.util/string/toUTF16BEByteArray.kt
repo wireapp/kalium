@@ -26,3 +26,7 @@ actual fun String.toUTF16BEByteArray(): ByteArray {
 actual fun ByteArray.toStringFromUtf16BE(): String {
     TODO("Not yet implemented")
 }
+
+actual fun ByteArray.toHexString(): String {
+    TODO("Not yet implemented")
+}
