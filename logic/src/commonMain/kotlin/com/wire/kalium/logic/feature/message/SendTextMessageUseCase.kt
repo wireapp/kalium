@@ -14,19 +14,16 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.util.string.toUTF16BEByteArray
-import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
-import okio.ByteString.Companion.encodeUtf8
 
 class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
@@ -57,7 +54,12 @@ class SendTextMessageUseCase internal constructor(
                 content = MessageContent.Text(
                     value = text,
                     mentions = mentions,
-                    quotedMessageReference = quotedMessageId?.let { createQoutedMessageReference(it) }
+                    quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
+                        createQuotedMessageReference(
+                            conversationId = conversationId,
+                            quotedMessageId = quotedMessageId
+                        )
+                    }
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
@@ -79,61 +81,69 @@ class SendTextMessageUseCase internal constructor(
         }
     }
 
-    private suspend fun createQoutedMessageReference(conversationId: ConversationId, messageId: String): MessageContent.QuoteReference? {
-        val messageResult = messageRepository.getMessageById(conversationId, messageId)
+    private suspend fun createQuotedMessageReference(
+        conversationId: ConversationId,
+        quotedMessageId: String
+    ): MessageContent.QuoteReference? {
+        val messageResult = messageRepository.getMessageById(conversationId, quotedMessageId)
 
-        return messageResult.fold({ }, { message: Message ->
+        return if (messageResult.isLeft()) {
+            null
+        } else {
+            val message = messageResult.value
+            val messageTimeStampInMillis = message.date.toTimeInMillis()
 
-        })
+            val quotedMessageSha256 = when (val messageContent = message.content) {
+                is MessageContent.Asset -> messageContentEncryptor.encryptMessageAsset(
+                    messageTimeStampInMillis,
+                    messageContent.value.remoteData.assetId
+                )
+
+                is MessageContent.Text ->
+                    messageContentEncryptor.encryptMessageTextBody(
+                        messageTimeStampInMillis,
+                        messageContent.value
+                    )
+
+                else -> null
+            }
+
+            MessageContent.QuoteReference(
+                quotedMessageId = quotedMessageId,
+                quotedMessageSha256 = quotedMessageSha256
+            )
+        }
     }
 
 }
 
-class MessageContentEncryptor(private val messageRepository: MessageRepository) {
+class MessageContentEncryptor {
+    fun encryptMessageAsset(
+        messageTimeStampInMillis: Long,
+        assetId: String
+    ): ByteArray {
+        val messageTimeStampInSec = messageTimeStampInMillis / MILLIS_IN_SEC
+        val messageTimeUTF16BE = messageTimeStampInSec.toString().toUTF16BEByteArray()
 
-    suspend fun encryptMessageContent(conversationId: ConversationId, messageId: String): Either<CoreFailure, String> {
-        val messageResult = messageRepository.getMessageById(conversationId, messageId)
+        val assetIdUTF16BE = assetId.toUTF16BEByteArray()
 
-        return messageResult.flatMap { message ->
-            val messageContent = message.content
-            val messageTimeStampInSec = (message.date.toTimeInMillis() / 1000)
-
-            when (messageContent) {
-                is MessageContent.Asset -> encryptMessageAsset()
-                is MessageContent.Text -> {
-                    encodeMessageText(messageContent.value, messageTimeStampInSec)
-//                     val messageBody = messageContent.value
-//                     val utf16BEMessageBody = messageBody.toUTF16BEByteArray()
-//                     val utf16BEMessageTimeStampInSec = (messageTimeStamp.toTimeInMillis() / 1000).toString().toUTF16BEByteArray()
-                }
-
-                is MessageContent.Calling -> TODO()
-                is MessageContent.Cleared -> TODO()
-                is MessageContent.DeleteForMe -> TODO()
-                is MessageContent.DeleteMessage -> TODO()
-                MessageContent.Empty -> TODO()
-                is MessageContent.FailedDecryption -> TODO()
-                is MessageContent.Knock -> TODO()
-                is MessageContent.LastRead -> TODO()
-                is MessageContent.Reaction -> TODO()
-                is MessageContent.RestrictedAsset -> TODO()
-
-                is MessageContent.TextEdited -> TODO()
-                is MessageContent.Unknown -> TODO()
-                is MessageContent.Availability -> TODO()
-                MessageContent.Ignored -> TODO()
-                is MessageContent.ConversationRenamed -> TODO()
-                is MessageContent.MemberChange.Added -> TODO()
-                is MessageContent.MemberChange.Removed -> TODO()
-                MessageContent.MissedCall -> TODO()
-                is MessageContent.TeamMemberRemoved -> TODO()
-            }
-            Either.Right("test")
-        }
+        return assetIdUTF16BE + messageTimeUTF16BE
     }
 
-    private fun encodeMessageText(value: String, messageTimeStampInSec: Long) {
+    fun encryptMessageTextBody(
+        messageTimeStampInMillis: Long,
+        messageTextBody: String
+    ): ByteArray {
+        val messageTimeStampInSec = messageTimeStampInMillis / MILLIS_IN_SEC
+        val messageTimeUTF16BE = messageTimeStampInSec.toString().toUTF16BEByteArray()
 
+        val messageTextBodyUTF16BE = messageTextBody.toUTF16BEByteArray()
+
+        return messageTextBodyUTF16BE + messageTimeUTF16BE
+    }
+
+    private companion object {
+        const val MILLIS_IN_SEC = 1000
     }
 
 }
