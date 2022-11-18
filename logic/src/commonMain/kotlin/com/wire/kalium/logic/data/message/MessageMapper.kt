@@ -240,8 +240,9 @@ class MessageMapperImpl(
     }
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
-        // Prioritise Deletion over content types
-        it.visibility != MessageEntity.Visibility.VISIBLE -> MessageContent.QuotedMessageDetails.Deleted
+        // Prioritise Invalid and Deleted over content types
+        it.isQuoteValid -> MessageContent.QuotedMessageDetails.Invalid
+        !it.visibility.isVisible -> MessageContent.QuotedMessageDetails.Deleted
         it.contentType == MessageEntity.ContentType.TEXT -> MessageContent.QuotedMessageDetails.Text(it.textBody!!)
         it.contentType == MessageEntity.ContentType.ASSET -> {
             MessageContent.QuotedMessageDetails.Asset(
@@ -250,8 +251,8 @@ class MessageMapperImpl(
             )
         }
 
-        // If a new content type can be replied to (Pings, for example), fallback to deleted
-        else -> MessageContent.QuotedMessageDetails.Deleted
+        // If a new content type can be replied to (Pings, for example), fallback to Invalid
+        else -> MessageContent.QuotedMessageDetails.Invalid
     }
 
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {

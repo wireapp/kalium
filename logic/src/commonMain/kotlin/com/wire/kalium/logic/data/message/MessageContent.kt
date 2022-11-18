@@ -71,6 +71,8 @@ sealed class MessageContent {
         ) : Content
 
         object Deleted : Content
+
+        object Invalid : Content
     }
 
     data class Calling(val value: String) : Regular()
