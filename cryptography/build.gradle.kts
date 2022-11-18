@@ -1,8 +1,9 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
-    Plugins.serialization(this)
-    Plugins.carthage(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.kotlin.serialization)
+    id(libs.plugins.carthage.get().pluginId)
 }
 
 group = "com.wire.kalium"
@@ -52,7 +53,7 @@ kotlin {
     }
     android() {
         dependencies {
-            coreLibraryDesugaring(Dependencies.Android.desugarJdkLibs)
+            coreLibraryDesugaring(libs.desugarJdkLibs)
         }
     }
 
@@ -81,28 +82,30 @@ kotlin {
             dependencies {
                 api(project(":logger"))
                 // coroutines
-                implementation(Dependencies.Coroutines.core)
-                api(Dependencies.Ktor.core)
+                implementation(libs.coroutines.core)
+                api(libs.ktor.core)
 
                 // Okio
-                implementation(Dependencies.Okio.core)
+                implementation(libs.okio.core)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(Dependencies.Coroutines.test)
-                implementation(Dependencies.Test.okio)
+                implementation(libs.coroutines.test)
+                implementation(libs.okio.test)
             }
         }
+
         fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
+
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(Dependencies.Cryptography.cryptobox4j)
-                implementation(Dependencies.Cryptography.coreCryptoJvm)
+                implementation(libs.cryptobox4j)
+                implementation(libs.coreCryptoJvm)
             }
         }
         val jvmTest by getting
@@ -116,15 +119,15 @@ kotlin {
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(Dependencies.Cryptography.cryptoboxAndroid)
-                implementation(Dependencies.Cryptography.javaxCrypto)
-                implementation(Dependencies.Cryptography.coreCryptoAndroid)
+                implementation(libs.cryptoboxAndroid)
+                implementation(libs.javaxCrypto)
+                implementation(libs.coreCryptoAndroid)
             }
         }
         val androidAndroidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
             }
         }
     }
