@@ -14,11 +14,14 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.util.string.toUTF16BEByteArray
 import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -32,6 +35,7 @@ class SendTextMessageUseCase internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val messageContentEncryptor: MessageContentEncryptor,
+    private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -53,12 +57,7 @@ class SendTextMessageUseCase internal constructor(
                 content = MessageContent.Text(
                     value = text,
                     mentions = mentions,
-                    quotedMessageReference = quotedMessageId?.let {
-                        MessageContent.QuoteReference(
-                            quotedMessageId = it,
-                            quotedMessageSha256 = null
-                        )
-                    }
+                    quotedMessageReference = quotedMessageId?.let { createQoutedMessageReference(it) }
                 ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
@@ -80,6 +79,14 @@ class SendTextMessageUseCase internal constructor(
         }
     }
 
+    private suspend fun createQoutedMessageReference(conversationId: ConversationId, messageId: String): MessageContent.QuoteReference? {
+        val messageResult = messageRepository.getMessageById(conversationId, messageId)
+
+        return messageResult.fold({ }, { message: Message ->
+
+        })
+    }
+
 }
 
 class MessageContentEncryptor(private val messageRepository: MessageRepository) {
@@ -89,10 +96,17 @@ class MessageContentEncryptor(private val messageRepository: MessageRepository) 
 
         return messageResult.flatMap { message ->
             val messageContent = message.content
-            val messageTimeStamp = message.date
+            val messageTimeStampInSec = (message.date.toTimeInMillis() / 1000)
 
             when (messageContent) {
-                is MessageContent.Asset -> TODO()
+                is MessageContent.Asset -> encryptMessageAsset()
+                is MessageContent.Text -> {
+                    encodeMessageText(messageContent.value, messageTimeStampInSec)
+//                     val messageBody = messageContent.value
+//                     val utf16BEMessageBody = messageBody.toUTF16BEByteArray()
+//                     val utf16BEMessageTimeStampInSec = (messageTimeStamp.toTimeInMillis() / 1000).toString().toUTF16BEByteArray()
+                }
+
                 is MessageContent.Calling -> TODO()
                 is MessageContent.Cleared -> TODO()
                 is MessageContent.DeleteForMe -> TODO()
@@ -103,14 +117,6 @@ class MessageContentEncryptor(private val messageRepository: MessageRepository) 
                 is MessageContent.LastRead -> TODO()
                 is MessageContent.Reaction -> TODO()
                 is MessageContent.RestrictedAsset -> TODO()
-                is MessageContent.Text -> {
-                    val messageBody = messageContent.value
-                    val utf8MessageBody = messageBody.encodeUtf8().utf8()
-                    val messageTimeStampInSec = messageTimeStamp.toTimeInMillis() / 1000
-
-
-                    val dupa = "test"
-                }
 
                 is MessageContent.TextEdited -> TODO()
                 is MessageContent.Unknown -> TODO()
@@ -124,6 +130,10 @@ class MessageContentEncryptor(private val messageRepository: MessageRepository) 
             }
             Either.Right("test")
         }
+    }
+
+    private fun encodeMessageText(value: String, messageTimeStampInSec: Long) {
+
     }
 
 }
