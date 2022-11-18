@@ -47,6 +47,7 @@ class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 delay(CLEAR_DATA_DELAY)
                 clearClientDataUseCase()
                 clientRepository.clearCurrentClientId()
+                clientRepository.clearHasRegisteredMLSClient()
             }
             LogoutReason.SELF_SOFT_LOGOUT, LogoutReason.SESSION_EXPIRED -> {
                 clientRepository.clearCurrentClientId()
