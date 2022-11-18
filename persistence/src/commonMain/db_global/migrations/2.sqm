@@ -1,7 +1,5 @@
 PRAGMA foreign_keys=off;
 
-BEGIN TRANSACTION;
-
 ALTER TABLE ServerConfiguration RENAME COLUMN proxyApi TO apiProxyHost;
 ALTER TABLE ServerConfiguration RENAME COLUMN proxyNeedsAuthentication TO apiProxyNeedsAuthentication;
 ALTER TABLE ServerConfiguration RENAME COLUMN proxyPort TO apiProxyPort;
@@ -29,7 +27,5 @@ CREATE TABLE ServerConfiguration (
 
 INSERT INTO ServerConfiguration SELECT * FROM oldServerConfiguration;
 
-COMMIT;
 PRAGMA foreign_keys=on;
-
 DROP TABLE oldServerConfiguration;
