@@ -40,6 +40,14 @@ class UTF16BEByteArrayTest {
         assertEquals(markDown.first, encodedTextBody.toStringFromUtf16BE())
     }
 
+    @Test
+    fun test() {
+        val test: Long = 15000
+        val test1 = test.to16BitHexString()
+
+        println(test1)
+    }
+
     companion object TestData {
         val textBody = (
                 "Hello \\uD83D\\uDC69\\u200D\\uD83D\\uDCBB\\uD83D\\uDC68\\u200D\\uD83D\\uDC69\\u200D\\uD83D\\uDC67!"

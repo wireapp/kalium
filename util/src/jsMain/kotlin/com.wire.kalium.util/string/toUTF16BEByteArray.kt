@@ -30,3 +30,7 @@ actual fun ByteArray.toStringFromUtf16BE(): String {
 actual fun ByteArray.toHexString(): String {
     TODO("Not yet implemented")
 }
+
+actual fun Long.to16BitHexString(): String {
+    TODO("Not yet implemented")
+}

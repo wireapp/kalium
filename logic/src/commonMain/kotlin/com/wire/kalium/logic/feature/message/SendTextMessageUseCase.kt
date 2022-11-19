@@ -31,7 +31,7 @@ class SendTextMessageUseCase internal constructor(
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
-    private val messageContentEncryptor: MessageContentEncryptor,
+    private val messageContentEncryptor: MessageContentEncoder,
     private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -94,15 +94,16 @@ class SendTextMessageUseCase internal constructor(
             val messageTimeStampInMillis = message.date.toTimeInMillis()
 
             val quotedMessageSha256 = when (val messageContent = message.content) {
-                is MessageContent.Asset -> messageContentEncryptor.encryptMessageAsset(
-                    messageTimeStampInMillis,
-                    messageContent.value.remoteData.assetId
-                )
+                is MessageContent.Asset ->
+                    messageContentEncryptor.encryptMessageAsset(
+                        messageTimeStampInMillis = messageTimeStampInMillis,
+                        assetId = messageContent.value.remoteData.assetId
+                    )
 
                 is MessageContent.Text ->
                     messageContentEncryptor.encryptMessageTextBody(
-                        messageTimeStampInMillis,
-                        messageContent.value
+                        messageTimeStampInMillis = messageTimeStampInMillis,
+                        messageTextBody = messageContent.value
                     )
 
                 else -> null
@@ -117,7 +118,7 @@ class SendTextMessageUseCase internal constructor(
 
 }
 
-class MessageContentEncryptor {
+class MessageContentEncoder {
     fun encryptMessageAsset(
         messageTimeStampInMillis: Long,
         assetId: String
@@ -145,5 +146,6 @@ class MessageContentEncryptor {
     private companion object {
         const val MILLIS_IN_SEC = 1000
     }
+
 
 }

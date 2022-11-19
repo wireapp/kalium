@@ -77,7 +77,7 @@ class MessageScope internal constructor(
     private val idMapper: IdMapper
         get() = IdMapperImpl()
 
-    private val messageContentEncryptor = MessageContentEncryptor(messageRepository)
+    private val messageContentEncryptor = MessageContentEncoder()
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
@@ -104,7 +104,8 @@ class MessageScope internal constructor(
             currentClientIdProvider,
             slowSyncRepository,
             messageSender,
-            messageContentEncryptor
+            messageContentEncryptor,
+            messageRepository
         )
 
     val getMessageById: GetMessageByIdUseCase
