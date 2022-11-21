@@ -14,20 +14,8 @@ data class ClientResponse(
     @SerialName("type") val type: ClientTypeDTO,
     @SerialName("class") val deviceType: DeviceTypeDTO = DeviceTypeDTO.Unknown,
     @SerialName("capabilities") val capabilities: Capabilities?,
-    @SerialName("label") val label: String?
-)
-
-@Serializable
-data class EventClientResponse(
-    @SerialName("id") val id: String,
-    @SerialName("cookie") val refreshToken: String,
-    @SerialName("time") val registrationTime: String,
-    @SerialName("location") val location: LocationResponse?,
-    @SerialName("address") val ipAddress: String?,
-    @SerialName("model") val model: String?,
-    @SerialName("type") val deviceType: String,
-    @SerialName("class") val deviceClass: String,
-    @SerialName("label") val label: String?
+    @SerialName("label") val label: String?,
+    @SerialName("mls_public_keys") val mlsPublicKeys: Map<String, String>?
 )
 
 @Serializable
