@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
@@ -36,7 +37,8 @@ class ProtoContentMapperImpl(
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(),
+    private val userId: UserId? = null,
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(userId),
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {

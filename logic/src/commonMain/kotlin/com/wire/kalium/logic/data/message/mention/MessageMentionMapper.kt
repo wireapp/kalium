@@ -12,7 +12,10 @@ interface MessageMentionMapper {
     fun fromModelToProto(mention: MessageMention): Mention
 }
 
-class MessageMentionMapperImpl(private val idMapper: IdMapper) : MessageMentionMapper {
+class MessageMentionMapperImpl(
+    private val idMapper: IdMapper,
+    private val selfUserId: UserId?
+) : MessageMentionMapper {
 
     override fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention {
         return MessageMention(
@@ -36,8 +39,10 @@ class MessageMentionMapperImpl(private val idMapper: IdMapper) : MessageMentionM
         return MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = mention.qualifiedUserId?.let { idMapper.fromProtoUserId(it) } ?: UserId(mention.mentionType?.value as String, ""),
-            mentionType = MentionType(mention.mentionType?.value as String)
+            userId = mention.qualifiedUserId?.let { idMapper.fromProtoUserId(it) } ?: UserId(
+                mention.mentionType?.value as String,
+                selfUserId!!.domain
+            ),
         )
     }
 

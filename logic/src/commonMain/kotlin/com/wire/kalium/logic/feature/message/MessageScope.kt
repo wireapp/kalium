@@ -66,7 +66,7 @@ class MessageScope internal constructor(
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
 
     private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl()
+        get() = ProtoContentMapperImpl(userId = userId)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
