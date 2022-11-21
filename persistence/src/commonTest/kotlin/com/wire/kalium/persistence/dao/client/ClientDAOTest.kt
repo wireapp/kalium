@@ -1,6 +1,9 @@
 package com.wire.kalium.persistence.dao.client
 
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -18,6 +21,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     private lateinit var clientDAO: ClientDAO
     private lateinit var userDAO: UserDAO
+    private lateinit var conversationDAO: ConversationDAO
 
     @BeforeTest
     fun setUp() {
@@ -25,6 +29,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         val db = createDatabase()
         clientDAO = db.clientDAO
         userDAO = db.userDAO
+        conversationDAO = db.conversationDAO
     }
 
     @Test
@@ -129,7 +134,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenClientIsInsertedAndRemoveRedundant_whenFetchingClientsByUserId_thenTheRelevantClientsAreReturned() = runTest {
         userDAO.insertUser(user)
-        clientDAO.insertClientsAndRemoveRedundant(user.id, listOf(insertedClient1, insertedClient2))
+        clientDAO.insertClientsAndRemoveRedundant(listOf(insertedClient1, insertedClient2))
 
         val result = clientDAO.getClientsOfUserByQualifiedID(userId)
 
@@ -141,9 +146,9 @@ class ClientDAOTest : BaseDatabaseTest() {
     fun givenClientIsInsertedAndRemoveRedundant_whenFetchingClientsByUserId_thenTheRedundantClientsAreNotReturned() = runTest {
 
         userDAO.insertUser(user)
-        clientDAO.insertClientsAndRemoveRedundant(user.id, listOf(insertedClient, insertedClient1))
+        clientDAO.insertClientsAndRemoveRedundant(listOf(insertedClient, insertedClient1))
         // this supposes to remove insertedClient1
-        clientDAO.insertClientsAndRemoveRedundant(user.id, listOf(insertedClient, insertedClient2))
+        clientDAO.insertClientsAndRemoveRedundant(listOf(insertedClient, insertedClient2))
 
         val result = clientDAO.getClientsOfUserByQualifiedID(userId)
 
@@ -178,6 +183,21 @@ class ClientDAOTest : BaseDatabaseTest() {
         assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isValid }
     }
 
+    @Test
+    fun givenInvalidUserClient_whenSelectingConversationRecipients_thenOnlyValidClientAreReturned() = runTest {
+        val user = user
+        val expected: Map<QualifiedIDEntity, List<Client>> = mapOf(user.id to listOf(client1, client2))
+        userDAO.insertUser(user)
+        clientDAO.insertClient(insertedClient)
+        clientDAO.insertClient(insertedClient1)
+        clientDAO.insertClient(insertedClient2)
+        clientDAO.tryMarkInvalid(insertedClient.userId, insertedClient.id)
+        conversationDAO.insertConversations(listOf(conversationEntity1))
+        conversationDAO.insertMember(Member(user.id, Member.Role.Admin), conversationEntity1.id)
+        val actual = clientDAO.conversationRepents(conversationEntity1.id)
+        assertEquals(expected, actual)
+    }
+
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
@@ -189,5 +209,21 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         val client2 = Client(user.id, "id2", deviceType = null, isValid = true)
         val insertedClient2 = InsertClientParam(user.id, "id2", deviceType = null)
+
+        const val teamId = "teamId"
+        val conversationEntity1 = ConversationEntity(
+            QualifiedIDEntity("1", "wire.com"),
+            "conversation1",
+            ConversationEntity.Type.ONE_ON_ONE,
+            teamId,
+            ConversationEntity.ProtocolInfo.Proteus,
+            creatorId = "someValue",
+            lastNotificationDate = null,
+            lastModifiedDate = "2022-03-30T15:36:00.000Z",
+            lastReadDate = "2000-01-01T12:00:00.000Z",
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER)
+        )
     }
 }
