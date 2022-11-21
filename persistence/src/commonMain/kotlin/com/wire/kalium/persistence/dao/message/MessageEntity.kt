@@ -150,7 +150,7 @@ sealed class MessageEntityContent {
          *                 Otherwise we'd need to pass a full QuotedMessage object
          */
         val quotedMessageId: String? = null,
-        val isQuoteValid: Boolean? = null,
+        val isQuoteVerified: Boolean? = null,
         /**
          * Details of the message being quoted.
          * Unused when inserting into the DB.
@@ -161,7 +161,11 @@ sealed class MessageEntityContent {
             val id: String,
             val senderId: QualifiedIDEntity,
             val isQuotingSelfUser: Boolean,
-            val isQuoteValid: Boolean,
+            /**
+             * Indicates that the hash of the quote
+             * matches the hash of the original message
+             */
+            val isVerified: Boolean,
             val senderName: String,
             val dateTime: String,
             val editTimestamp: String?,

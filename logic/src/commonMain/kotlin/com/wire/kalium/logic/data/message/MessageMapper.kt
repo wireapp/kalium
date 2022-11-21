@@ -129,7 +129,7 @@ class MessageMapperImpl(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
             quotedMessageId = this.quotedMessageReference?.quotedMessageId,
-            isQuoteValid = this.quotedMessageReference?.isQuoteValid
+            isQuoteVerified = this.quotedMessageReference?.isVerified
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -212,7 +212,7 @@ class MessageMapperImpl(
                     senderId = idMapper.fromDaoModel(it.senderId),
                     senderName = it.senderName,
                     isQuotingSelfUser = it.isQuotingSelfUser,
-                    isQuoteValid = it.isQuoteValid,
+                    isVerified = it.isVerified,
                     messageId = it.id,
                     timeInstant = Instant.parse(it.dateTime),
                     editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
@@ -226,7 +226,7 @@ class MessageMapperImpl(
                     MessageContent.QuoteReference(
                         quotedMessageId = it.messageId,
                         quotedMessageSha256 = null,
-                        isQuoteValid = it.isQuoteValid
+                        isVerified = it.isVerified
                     )
                 },
                 quotedMessageDetails = quotedMessageDetails
@@ -249,7 +249,7 @@ class MessageMapperImpl(
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
         // Prioritise Invalid and Deleted over content types
-        !it.isQuoteValid -> MessageContent.QuotedMessageDetails.Invalid
+        !it.isVerified -> MessageContent.QuotedMessageDetails.Invalid
         !it.visibility.isVisible -> MessageContent.QuotedMessageDetails.Deleted
         it.contentType == MessageEntity.ContentType.TEXT -> MessageContent.QuotedMessageDetails.Text(it.textBody!!)
         it.contentType == MessageEntity.ContentType.ASSET -> {

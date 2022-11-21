@@ -115,7 +115,7 @@ IFNULL(
 QuotedMessage.quotedMessageId AS quotedMessageId,
 QuotedMessage.quotedSenderId AS quotedSenderId,
 QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
-QuotedMessage.isQuoteValid AS isQuoteValid,
+QuotedMessage.isQuoteVerified AS isQuoteVerified,
 QuotedMessage.quotedSenderName AS quotedSenderName,
 QuotedMessage.quotedMessageDateTime AS quotedMessageDateTime,
 QuotedMessage.quotedMessageEditTimestamp AS quotedMessageEditTimestamp,
