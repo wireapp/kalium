@@ -54,15 +54,15 @@ class ProtoContentMapperImpl(
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
             is MessageContent.Text -> {
-                val mentions = readableContent.mentions
-                val mappedMentions = mentions.map { messageMentionMapper.fromModelToProto(it) }
+                val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
+                val quote = readableContent.quotedMessageReference?.let {
+                    Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+                }
                 GenericMessage.Content.Text(
                     Text(
                         content = readableContent.value,
-                        mentions = mappedMentions,
-                        quote = readableContent.quotedMessageReference?.let {
-                            Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
-                        }
+                        mentions = mentions,
+                        quote = quote
                     )
                 )
             }
@@ -152,7 +152,7 @@ class ProtoContentMapperImpl(
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(
                 protoContent.value.content,
-                protoContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
+                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
                 protoContent.value.quote?.let {
                     MessageContent.QuoteReference(
                         it.quotedMessageId,
@@ -190,11 +190,11 @@ class ProtoContentMapperImpl(
                 val replacingMessageId = protoContent.value.replacingMessageId
                 when (val editContent = protoContent.value.content) {
                     is MessageEdit.Content.Text -> {
-                        val mentions = editContent.value.mentions
+                        val mentions = editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
                         MessageContent.TextEdited(
                             replacingMessageId,
                             editContent.value.content,
-                            mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) }
+                            mentions
                         )
                     }
                     // TODO: for now we do not implement it
