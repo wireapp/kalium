@@ -1,4 +1,4 @@
-ALTER TABLE MessageTextContent ADD COLUMN is_quote_valid INTEGER;
+ALTER TABLE MessageTextContent ADD COLUMN is_quote_verified INTEGER;
 
 DROP VIEW MessageQuoteDetails;
 DROP VIEW MessageDetailsView;
@@ -9,7 +9,7 @@ AS SELECT
     MessageTextContent.message_id AS messageId,
     MessageTextContent.conversation_id AS conversationId,
     MessageTextContent.quoted_message_id AS quotedMessageId,
-    MessageTextContent.is_quote_valid AS isQuoteValid,
+    MessageTextContent.is_quote_verified AS isQuoteVerified,
     QuotedSender.qualified_id AS quotedSenderId,
     CASE
         WHEN (qualified_id = SelfUser.id) THEN 1
