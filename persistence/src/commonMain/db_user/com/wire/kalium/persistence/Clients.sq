@@ -1,10 +1,12 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
+import kotlin.Boolean;
 
 CREATE TABLE Client (
     user_id TEXT AS QualifiedIDEntity NOT NULL,
     id TEXT NOT NULL,
     device_type TEXT AS DeviceTypeEntity,
+    is_valid INTEGER  AS Boolean NOT NULL DEFAULT 1,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, id)
 );
@@ -19,10 +21,11 @@ deleteClientsOfUser:
 DELETE FROM Client WHERE user_id = ?;
 
 insertClient:
-INSERT INTO Client(user_id, id,device_type)
-VALUES(?, ?,?)
+INSERT INTO Client(user_id, id,device_type, is_valid)
+VALUES(?, ?,?, ?)
 ON CONFLICT(id, user_id) DO UPDATE SET
-device_type = coalesce(excluded.device_type, device_type);
+device_type = coalesce(excluded.device_type, device_type),
+is_valid = is_valid;
 
 selectAllClients:
 SELECT * FROM Client;
@@ -38,3 +41,6 @@ SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversatio
 
 deleteClientsOfUserExcept:
 DELETE FROM Client WHERE user_id = :user_id AND id NOT IN :exception_ids;
+
+tryMarkAsInvalid:
+UPDATE OR IGNORE Client SET is_valid = ? WHERE user_id = ? AND  id = ?;

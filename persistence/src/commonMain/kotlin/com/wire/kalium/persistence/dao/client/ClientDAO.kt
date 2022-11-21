@@ -6,7 +6,8 @@ import kotlinx.coroutines.flow.Flow
 data class Client(
     val userId: QualifiedIDEntity,
     val id: String,
-    val deviceType: DeviceTypeEntity?
+    val deviceType: DeviceTypeEntity?,
+    val isValid: Boolean
 )
 
 enum class DeviceTypeEntity {
@@ -27,4 +28,5 @@ interface ClientDAO {
     suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String)
     suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
     suspend fun insertClientsAndRemoveRedundant(qualifiedID: QualifiedIDEntity, clients: List<Client>)
+    suspend fun markInvalid(userId: QualifiedIDEntity, clientId: String)
 }

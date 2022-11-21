@@ -5,17 +5,15 @@ import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
-import com.wire.kalium.persistence.Client as SQLDelightClient
 
 internal object ClientMapper {
-    fun toModel(dbEntry: SQLDelightClient) = Client(dbEntry.user_id, dbEntry.id, dbEntry.device_type)
-
     @Suppress("FunctionParameterNaming")
     fun fromClient(
         user_id: QualifiedIDEntity,
         id: String,
-        device_type: DeviceTypeEntity?
-    ): Client = Client(user_id, id, device_type)
+        device_type: DeviceTypeEntity?,
+        is_valid: Boolean
+    ): Client = Client(user_id, id, device_type, is_valid)
 }
 
 internal class ClientDAOImpl internal constructor(
@@ -24,18 +22,18 @@ internal class ClientDAOImpl internal constructor(
 ) : ClientDAO {
 
     override suspend fun insertClient(client: Client): Unit =
-        clientsQueries.insertClient(client.userId, client.id, client.deviceType)
+        clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
 
     override suspend fun insertClients(clients: List<Client>) = clientsQueries.transaction {
         clients.forEach { client ->
-            clientsQueries.insertClient(client.userId, client.id, client.deviceType)
+            clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
         }
     }
 
     override suspend fun insertClientsAndRemoveRedundant(qualifiedID: QualifiedIDEntity, clients: List<Client>) =
         clientsQueries.transaction {
             clients.forEach { client ->
-                clientsQueries.insertClient(client.userId, client.id, client.deviceType)
+                clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
             }
             clientsQueries.deleteClientsOfUserExcept(qualifiedID, clients.map { it.id })
         }
