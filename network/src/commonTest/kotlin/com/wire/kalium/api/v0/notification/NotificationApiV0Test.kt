@@ -102,7 +102,7 @@ class NotificationApiV0Test : ApiTest {
     }
 
     @Test
-    fun given404Response_whenGettingAllNotifications_thenTheResponseIsParsedCorrectly() = runTest {
+    fun given404Response_whenGettingAllNotifications_thenTheErrorIsBeingForwarded() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             NotificationEventsResponseJson.notificationsWithUnknownEventAtFirstPosition,
             statusCode = HttpStatusCode.NotFound
@@ -111,8 +111,7 @@ class NotificationApiV0Test : ApiTest {
 
         val result = notificationsApi.getAllNotifications(1, "")
 
-        assertIs<NetworkResponse.Success<NotificationResponse>>(result)
-        assertTrue { result.value.isMissingNotifications }
+        assertFalse(result.isSuccessful())
     }
 
     @Test
@@ -122,11 +121,9 @@ class NotificationApiV0Test : ApiTest {
             statusCode = HttpStatusCode.OK
         )
         val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
-
         val result = notificationsApi.getAllNotifications(1, "")
 
         assertIs<NetworkResponse.Success<NotificationResponse>>(result)
-        assertFalse { result.value.isMissingNotifications }
     }
 
     private companion object {

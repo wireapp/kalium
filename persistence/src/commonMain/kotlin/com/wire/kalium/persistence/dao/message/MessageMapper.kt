@@ -59,7 +59,7 @@ object MessageMapper {
         lastEditTimestamp?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     fun toEntityMessageFromView(
         id: String,
         conversationId: QualifiedIDEntity,
@@ -115,6 +115,7 @@ object MessageMapper {
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
         isQuotingSelfUser: Long?,
+        isQuoteVerified: Boolean?,
         quotedSenderName: String?,
         quotedMessageDateTime: String?,
         quotedMessageEditTimestamp: String?,
@@ -122,8 +123,7 @@ object MessageMapper {
         quotedMessageContentType: MessageEntity.ContentType?,
         quotedTextBody: String?,
         quotedAssetMimeType: String?,
-        quotedAssetId: String?,
-        quotedAssetDomain: String?,
+        quotedAssetName: String?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -138,6 +138,7 @@ object MessageMapper {
                         id = it,
                         senderId = quotedSenderId.requireField("quotedSenderId"),
                         isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser") != 0L,
+                        isVerified = isQuoteVerified ?: false,
                         senderName = quotedSenderName.requireField("quotedSenderName"),
                         dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime"),
                         editTimestamp = quotedMessageEditTimestamp,
@@ -145,8 +146,7 @@ object MessageMapper {
                         contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
                         textBody = quotedTextBody,
                         assetMimeType = quotedAssetMimeType,
-                        assetId = quotedAssetId,
-                        assetDomain = quotedAssetDomain
+                        assetName = quotedAssetName,
                     )
                 }
             )
