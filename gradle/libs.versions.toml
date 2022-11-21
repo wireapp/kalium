@@ -38,6 +38,7 @@ agp = "7.2.2"
 dokka = "1.6.10"
 carthage = "0.0.1"
 protobufCodegen = "0.8.18"
+libsodiumBindings = "0.8.5"
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -93,6 +94,7 @@ cryptobox4j = { module = "com.wire:cryptobox4j", version.ref = "cryptobox4j" }
 javaxCrypto = { module = "androidx.security:security-crypto-ktx", version.ref = "javax-crypto" }
 coreCryptoJvm = { module = "com.wire:core-crypto-jvm", version.ref = "core-crypto" }
 coreCryptoAndroid = { module = "com.wire:core-crypto-android", version.ref = "core-crypto" }
+libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsodium-bindings", version.ref = "libsodiumBindings" }
 
 # cli
 cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }

@@ -93,7 +93,7 @@ kotlin {
                 implementation(libs.okio.core)
 
                 // Libsodium
-                implementation(libs.okio.libsodiumBindingsMP)
+                implementation(libs.libsodiumBindingsMP)
             }
         }
         val commonTest by getting {
