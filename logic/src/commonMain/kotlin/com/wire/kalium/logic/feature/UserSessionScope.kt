@@ -88,6 +88,9 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.client.MLSClientManager
+import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
@@ -96,6 +99,7 @@ import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
@@ -210,7 +214,7 @@ fun interface SelfTeamIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(
     private val userId: UserId,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
@@ -490,7 +494,7 @@ class UserSessionScope internal constructor(
         )
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(
+        get() = JoinExistingMLSConversationsUseCaseImpl(
             featureSupport,
             conversationRepository,
             conversationGroupRepository
@@ -548,6 +552,7 @@ class UserSessionScope internal constructor(
         KeyPackageManagerImpl(
             featureSupport,
             incrementalSyncRepository,
+            lazy { clientRepository },
             lazy { client.refillKeyPackages },
             lazy { client.mlsKeyPackageCountUseCase },
             lazy { users.timestampKeyRepository }
@@ -556,8 +561,26 @@ class UserSessionScope internal constructor(
         KeyingMaterialsManagerImpl(
             featureSupport,
             incrementalSyncRepository,
+            lazy { clientRepository },
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository }
+        )
+
+    internal val mlsClientManager: MLSClientManager =
+        MLSClientManagerImpl(
+            clientIdProvider,
+            featureSupport,
+            incrementalSyncRepository,
+            lazy { slowSyncRepository },
+            lazy { clientRepository },
+            lazy {
+                RegisterMLSClientUseCaseImpl(
+                    mlsClientProvider,
+                    clientRepository,
+                    keyPackageRepository,
+                    keyPackageLimitsProvider
+                )
+            }
         )
 
     internal val mlsPublicKeysRepository: MLSPublicKeysRepository

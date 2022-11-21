@@ -27,7 +27,7 @@ class PersistRegisteredClientIdUseCaseTest {
     @Test
     fun givenRegisteredClientId_whenPersisting_thenReturnSuccess() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model")
+        val client = Client(clientId, ClientType.Permanent, "time", null, null, "label", "cookie", null, "model", emptyMap())
         val (arrangement, useCase) = Arrangement()
             .withSelfClientsResult(Either.Right(listOf(client)))
             .withPersistClientResult(Either.Right(Unit))
