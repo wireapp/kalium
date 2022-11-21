@@ -14,6 +14,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import kotlinx.datetime.Instant
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message): MessageEntity
@@ -126,7 +127,8 @@ class MessageMapperImpl(
     private fun MessageContent.Regular.toMessageEntityContent(): MessageEntityContent.Regular = when (this) {
         is MessageContent.Text -> MessageEntityContent.Text(
             messageBody = this.value,
-            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) }
+            mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
+            quotedMessageId = this.quotedMessageReference?.quotedMessageId
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -203,10 +205,25 @@ class MessageMapperImpl(
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
-        is MessageEntityContent.Text -> MessageContent.Text(
-            value = this.messageBody,
-            mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) }
-        )
+        is MessageEntityContent.Text -> {
+            val quotedMessageDetails = this.quotedMessage?.let {
+                MessageContent.QuotedMessageDetails(
+                    senderId = idMapper.fromDaoModel(it.senderId),
+                    senderName = it.senderName,
+                    isQuotingSelfUser = it.isQuotingSelfUser,
+                    messageId = it.id,
+                    timeInstant = Instant.parse(it.dateTime),
+                    editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
+                    quotedContent = quotedContentFromEntity(it)
+                )
+            }
+            MessageContent.Text(
+                value = this.messageBody,
+                mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
+                quotedMessageReference = quotedMessageDetails?.messageId?.let { MessageContent.QuoteReference(it, null) },
+                quotedMessageDetails = quotedMessageDetails
+            )
+        }
 
         is MessageEntityContent.Asset -> MessageContent.Asset(
             MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
@@ -220,6 +237,22 @@ class MessageMapperImpl(
 
         is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
         is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(this.encodedData)
+    }
+
+    private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
+        // Prioritise Deletion over content types
+        it.visibility != MessageEntity.Visibility.VISIBLE -> MessageContent.QuotedMessageDetails.Deleted
+        it.contentType == MessageEntity.ContentType.TEXT -> MessageContent.QuotedMessageDetails.Text(it.textBody!!)
+        it.contentType == MessageEntity.ContentType.ASSET -> {
+            MessageContent.QuotedMessageDetails.Asset(
+                assetId = requireNotNull(it.assetId),
+                assetDomain = requireNotNull(it.assetDomain),
+                assetMimeType = requireNotNull(it.assetMimeType)
+            )
+        }
+
+        // If a new content type can be replied to (Pings, for example), fallback to deleted
+        else -> MessageContent.QuotedMessageDetails.Deleted
     }
 
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {

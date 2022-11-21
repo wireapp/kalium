@@ -1,5 +1,6 @@
 package com.wire.kalium.network.api.v3.authenticated.networkContainer
 
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
@@ -52,6 +53,8 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
         { httpClient -> AccessTokenApiV3(httpClient) },
         engine
     ) {
+
+    override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV3(networkClient.httpClient)
 
     override val logoutApi: LogoutApi get() = LogoutApiV3(networkClient, sessionManager)
 

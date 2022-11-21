@@ -89,7 +89,8 @@ class MessageDAOImpl(
                     queries.insertMessageTextContent(
                         message_id = message.id,
                         conversation_id = message.conversationId,
-                        text_body = content.messageBody
+                        text_body = content.messageBody,
+                        quoted_message_id = content.quotedMessageId
                     )
                     content.mentions.forEach {
                         queries.insertMessageMention(

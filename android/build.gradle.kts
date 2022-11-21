@@ -1,6 +1,7 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidApplication(this)
-    Plugins.androidKotlin(this)
+    id(libs.plugins.android.application.get().pluginId)
+    id(libs.plugins.kotlin.android.get().pluginId)
 }
 
 android {
@@ -20,7 +21,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = Versions.composeCompiler
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 
     buildTypes {
@@ -50,11 +51,5 @@ dependencies {
     implementation(project(":cryptography"))
     implementation(project(":logic"))
 
-    implementation(Dependencies.Android.appCompat)
-    implementation(Dependencies.Android.activityCompose)
-    implementation(Dependencies.Android.composeMaterial)
-    implementation(Dependencies.Android.coroutines)
-    implementation(Dependencies.Android.work)
-    implementation(Dependencies.Android.ktor)
-    implementation(Dependencies.Ktor.okHttp)
+    implementation(libs.bundles.android)
 }

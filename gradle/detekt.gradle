@@ -23,7 +23,8 @@ detekt {
 
 dependencies {
     // Can't add using the full version "Dependencies.Detekt.detektCli" (xml error on sync)
-    detekt "io.gitlab.arturbosch.detekt:detekt-cli:$Versions.detekt"
-    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$Versions.detekt"
+    def catalogs = project.extensions.getByType(VersionCatalogsExtension)
+    detekt "io.gitlab.arturbosch.detekt:detekt-cli:${catalogs.first().findVersion("detekt").get()}"
+    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:${catalogs.first().findVersion("detekt").get()}"
     detekt project(path: ":detekt-rules")
 }

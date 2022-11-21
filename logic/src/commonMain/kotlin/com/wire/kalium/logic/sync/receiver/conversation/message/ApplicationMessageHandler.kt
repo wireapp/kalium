@@ -158,7 +158,10 @@ internal class ApplicationMessageHandlerImpl(
         when (message) {
             is Message.Regular -> when (val content = message.content) {
                 // Persist Messages - > lists
-                is MessageContent.Text, is MessageContent.FailedDecryption -> persistMessage(message)
+                is MessageContent.Text, is MessageContent.FailedDecryption -> {
+                    // TODO: Check if quote hash matches the stored message
+                    persistMessage(message)
+                }
                 is MessageContent.Knock -> persistMessage(message)
                 is MessageContent.Reaction -> persistReaction(message, content)
                 is MessageContent.Asset -> handleAssetMessage(message)
