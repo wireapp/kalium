@@ -40,6 +40,7 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -751,6 +752,22 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun whenGettingConversationRecipients_thenDAOFunctionIscalled() = runTest {
+        val (arrange, conversationRepository) = Arrangement()
+            .withConversationRecipients(CONVERSATION_ENTITY_ID, emptyMap())
+            .arrange()
+
+        val result = conversationRepository.getConversationRecipients(CONVERSATION_ID)
+        with(result) {
+            shouldSucceed()
+            verify(arrange.clientDao)
+                .suspendFunction(arrange.clientDao::conversationRepents)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -1000,6 +1017,12 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationApi::updateConversationName)
                 .whenInvokedWith(any(), eq(newName))
                 .thenReturn(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
+        }
+
+        suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<Client>>) = apply {
+            given(clientDao)
+                .coroutine { clientDao.conversationRepents(conversationIDEntity) }
+                .then { result }
         }
 
         fun arrange() = this to conversationRepository
