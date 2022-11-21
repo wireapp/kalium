@@ -21,22 +21,24 @@ internal class ClientDAOImpl internal constructor(
     private val mapper: ClientMapper = ClientMapper
 ) : ClientDAO {
 
-    override suspend fun insertClient(client: Client): Unit =
+    override suspend fun insertClient(client: InsertClientParam): Unit =
         clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
 
-    override suspend fun insertClients(clients: List<Client>) = clientsQueries.transaction {
+    override suspend fun insertClients(clients: List<InsertClientParam>) = clientsQueries.transaction {
         clients.forEach { client ->
             clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
         }
     }
 
-    override suspend fun insertClientsAndRemoveRedundant(qualifiedID: QualifiedIDEntity, clients: List<Client>) =
+    override suspend fun insertClientsAndRemoveRedundant(qualifiedID: QualifiedIDEntity, clients: List<InsertClientParam>) =
         clientsQueries.transaction {
             clients.forEach { client ->
                 clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
             }
             clientsQueries.deleteClientsOfUserExcept(qualifiedID, clients.map { it.id })
         }
+
+    override suspend fun tryMarkInvalid(userId: QualifiedIDEntity, clientId: String) = clientsQueries.tryMarkAsInvalid(userId, clientId)
 
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
@@ -66,4 +68,6 @@ internal class ClientDAOImpl internal constructor(
         clientsQueries.selectAllClientsByConversation(id, mapper = mapper::fromClient)
             .executeAsList()
             .groupBy { it.userId }
+
+
 }

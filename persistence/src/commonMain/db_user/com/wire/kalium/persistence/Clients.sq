@@ -43,4 +43,4 @@ deleteClientsOfUserExcept:
 DELETE FROM Client WHERE user_id = :user_id AND id NOT IN :exception_ids;
 
 tryMarkAsInvalid:
-UPDATE OR IGNORE Client SET is_valid = ? WHERE user_id = ? AND  id = ?;
+UPDATE OR IGNORE Client SET is_valid = 0 WHERE user_id = ? AND  id = ?;
