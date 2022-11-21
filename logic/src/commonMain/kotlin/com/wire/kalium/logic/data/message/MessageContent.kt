@@ -26,7 +26,8 @@ sealed class MessageContent {
         /**
          * The hash of the text of the quoted message
          */
-        val quotedMessageSha256: ByteArray?
+        val quotedMessageSha256: ByteArray?,
+        val isVerified: Boolean
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -55,6 +56,11 @@ sealed class MessageContent {
         val senderId: UserId,
         val senderName: String,
         val isQuotingSelfUser: Boolean,
+        /**
+         * Indicates that the hash of the quote
+         * matched the hash of the original message
+         */
+        val isVerified: Boolean,
         val messageId: String,
         val timeInstant: Instant,
         val editInstant: Instant?,
@@ -66,12 +72,13 @@ sealed class MessageContent {
         data class Text(val value: String) : Content
 
         data class Asset(
-            val assetId: String,
-            val assetDomain: String,
+            val assetName: String?,
             val assetMimeType: String
         ) : Content
 
         object Deleted : Content
+
+        object Invalid : Content
     }
 
     data class Calling(val value: String) : Regular()
