@@ -42,12 +42,19 @@ class UTF16BEByteArrayTest {
 
     @Test
     fun test() {
-        val test = 15000.toString(16)
+        val test = 15000.convertLongToHexStringBuffer()
+
+        println(test)
+    }
+
+    private fun Int.convertLongToHexStringBuffer() {
+        val stringRepresentation = toString(16)
+
         val buffer = Array(16) { '0' }
 
-        for (charIndex in test.indices) {
+        for (charIndex in stringRepresentation.indices) {
             val offSet = (buffer.size - 1) - charIndex
-            buffer[offSet] = test[(test.length - charIndex - 1)]
+            buffer[offSet] = stringRepresentation[(stringRepresentation.length - charIndex - 1)]
         }
 
         var bufferString = ""
@@ -56,7 +63,6 @@ class UTF16BEByteArrayTest {
             bufferString += it
         }
 
-        println(buffer)
     }
 
     companion object TestData {

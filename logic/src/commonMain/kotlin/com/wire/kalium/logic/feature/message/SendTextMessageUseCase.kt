@@ -131,6 +131,23 @@ class MessageContentEncoder {
         return assetIdUTF16BE + messageTimeUTF16BE
     }
 
+    private fun Int.convertLongToHexStringBuffer() {
+        val stringRepresentation = toString(16)
+
+        val buffer = Array(16) { '0' }
+
+        for (charIndex in stringRepresentation.indices) {
+            val offSet = (buffer.size - 1) - charIndex
+            buffer[offSet] = stringRepresentation[(stringRepresentation.length - charIndex - 1)]
+        }
+
+        var bufferString = ""
+
+        buffer.forEach {
+            bufferString += it
+        }
+
+    }
     fun encryptMessageTextBody(
         messageTimeStampInMillis: Long,
         messageTextBody: String
