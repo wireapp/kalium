@@ -31,3 +31,10 @@ actual fun ByteArray.toHexString(): String {
     TODO("Not yet implemented")
 }
 
+actual fun ByteArray.toStringFromUtf8(): String {
+    TODO("Not yet implemented")
+}
+
+actual fun Long.toByteArray(): ByteArray {
+    TODO("Not yet implemented")
+}

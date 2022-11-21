@@ -20,7 +20,9 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.util.string.toByteArray
 import com.wire.kalium.util.string.toUTF16BEByteArray
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -128,32 +130,29 @@ class MessageContentEncoder {
 
         val assetIdUTF16BE = assetId.toUTF16BEByteArray()
 
-        return assetIdUTF16BE + messageTimeUTF16BE
+        return byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + assetIdUTF16BE + messageTimeUTF16BE
     }
 
-    private fun Int.convertLongToHexStringBuffer() {
-        val stringRepresentation = toString(16)
+    private fun Long.convertLongToHexStringBuffer(): ByteArray {
+        val longAsHexByteArray = toString(16).toByteArray()
+        val buffer = ByteArray(16) { 0 }
 
-        val buffer = Array(16) { '0' }
-
-        for (charIndex in stringRepresentation.indices) {
+        for (charIndex in longAsHexByteArray.indices) {
             val offSet = (buffer.size - 1) - charIndex
-            buffer[offSet] = stringRepresentation[(stringRepresentation.length - charIndex - 1)]
+            buffer[offSet] = longAsHexByteArray[(longAsHexByteArray.size - charIndex - 1)]
         }
 
-        var bufferString = ""
-
-        buffer.forEach {
-            bufferString += it
-        }
-
+        return buffer
     }
+
     fun encryptMessageTextBody(
         messageTimeStampInMillis: Long,
         messageTextBody: String
     ): ByteArray {
         val messageTimeStampInSec = messageTimeStampInMillis / MILLIS_IN_SEC
         val messageTimeUTF16BE = messageTimeStampInSec.toString().toUTF16BEByteArray()
+
+        val test = messageTimeStampInSec.toByteArray()
 
         val messageTextBodyUTF16BE = messageTextBody.toUTF16BEByteArray()
 

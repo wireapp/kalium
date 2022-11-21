@@ -1,5 +1,7 @@
 package com.wire.kalium.util.string
 
+import java.nio.ByteBuffer
+
 actual fun String.toUTF16BEByteArray(): ByteArray {
     return toByteArray(charset = Charsets.UTF_16BE)
 }
@@ -12,3 +14,12 @@ actual fun ByteArray.toHexString(): String {
     return joinToString("") { (0xFF and it.toInt()).toString(16).padStart(2, '0') }
 }
 
+actual fun ByteArray.toStringFromUtf8(): String {
+    return toString(charset = Charsets.UTF_8)
+}
+
+actual fun Long.toByteArray(): ByteArray {
+    val buffer = ByteBuffer.allocate(Long.SIZE_BYTES)
+    buffer.putLong(this)
+    return buffer.array()
+}
