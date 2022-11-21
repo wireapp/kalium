@@ -128,7 +128,8 @@ class MessageMapperImpl(
         is MessageContent.Text -> MessageEntityContent.Text(
             messageBody = this.value,
             mentions = this.mentions.map { messageMentionMapper.fromModelToDao(it) },
-            quotedMessageId = this.quotedMessageReference?.quotedMessageId
+            quotedMessageId = this.quotedMessageReference?.quotedMessageId,
+            isQuoteVerified = this.quotedMessageReference?.isVerified
         )
 
         is MessageContent.Asset -> with(this.value) {
@@ -211,6 +212,7 @@ class MessageMapperImpl(
                     senderId = idMapper.fromDaoModel(it.senderId),
                     senderName = it.senderName,
                     isQuotingSelfUser = it.isQuotingSelfUser,
+                    isVerified = it.isVerified,
                     messageId = it.id,
                     timeInstant = Instant.parse(it.dateTime),
                     editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
@@ -220,7 +222,13 @@ class MessageMapperImpl(
             MessageContent.Text(
                 value = this.messageBody,
                 mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
-                quotedMessageReference = quotedMessageDetails?.messageId?.let { MessageContent.QuoteReference(it, null) },
+                quotedMessageReference = quotedMessageDetails?.let {
+                    MessageContent.QuoteReference(
+                        quotedMessageId = it.messageId,
+                        quotedMessageSha256 = null,
+                        isVerified = it.isVerified
+                    )
+                },
                 quotedMessageDetails = quotedMessageDetails
             )
         }
@@ -240,19 +248,19 @@ class MessageMapperImpl(
     }
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
-        // Prioritise Deletion over content types
-        it.visibility != MessageEntity.Visibility.VISIBLE -> MessageContent.QuotedMessageDetails.Deleted
+        // Prioritise Invalid and Deleted over content types
+        !it.isVerified -> MessageContent.QuotedMessageDetails.Invalid
+        !it.visibility.isVisible -> MessageContent.QuotedMessageDetails.Deleted
         it.contentType == MessageEntity.ContentType.TEXT -> MessageContent.QuotedMessageDetails.Text(it.textBody!!)
         it.contentType == MessageEntity.ContentType.ASSET -> {
             MessageContent.QuotedMessageDetails.Asset(
-                assetId = requireNotNull(it.assetId),
-                assetDomain = requireNotNull(it.assetDomain),
+                assetName = it.assetName,
                 assetMimeType = requireNotNull(it.assetMimeType)
             )
         }
 
-        // If a new content type can be replied to (Pings, for example), fallback to deleted
-        else -> MessageContent.QuotedMessageDetails.Deleted
+        // If a new content type can be replied to (Pings, for example), fallback to Invalid
+        else -> MessageContent.QuotedMessageDetails.Invalid
     }
 
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
