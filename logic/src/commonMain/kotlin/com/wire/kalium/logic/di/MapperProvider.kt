@@ -85,6 +85,7 @@ internal object MapperProvider {
         idMapper(),
         clientMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper()
     )
+
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
     fun reactionsMapper(): ReactionsMapper = ReactionsMapperImpl(domainUserTypeMapper = userTypeMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
@@ -119,7 +120,7 @@ internal object MapperProvider {
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
-    fun clientMapper(): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper())
+    fun clientMapper(): ClientMapper = ClientMapper(idMapper(), preyKeyMapper(), locationMapper())
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl(idMapper())
     fun protoContentMapper(): ProtoContentMapper = ProtoContentMapperImpl()
     fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)

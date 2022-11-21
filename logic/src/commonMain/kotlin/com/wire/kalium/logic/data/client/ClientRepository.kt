@@ -42,7 +42,7 @@ interface ClientRepository {
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun clientInfo(clientId: ClientId /* = com.wire.kalium.logic.data.id.PlainId */): Either<NetworkFailure, Client>
-    suspend fun storeUserClientListAndRemoveRedundantClients(userId: UserId, clients: List<OtherUserClient>): Either<StorageFailure, Unit>
+    suspend fun storeUserClientListAndRemoveRedundantClients(clients: List<InsertClientParam>): Either<StorageFailure, Unit>
     suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
@@ -140,14 +140,8 @@ class ClientDataSource(
         }
 
     override suspend fun storeUserClientListAndRemoveRedundantClients(
-        userId: UserId,
-        clients: List<OtherUserClient>
-    ): Either<StorageFailure, Unit> =
-        userMapper.toUserIdPersistence(userId).let { userEntity ->
-            clients.map { InsertClientParam(userEntity, it.id, clientMapper.toDeviceTypeEntity(it.deviceType)) }.let { clientEntityList ->
-                wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(userEntity, clientEntityList) }
-            }
-        }
+        clients: List<InsertClientParam>
+    ): Either<StorageFailure, Unit> = wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(clients) }
 
     override suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit> = clientRemoteRepository.registerToken(body)
     override suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit> = clientRemoteRepository.deregisterToken(token)

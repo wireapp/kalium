@@ -249,7 +249,7 @@ internal class UserMapperImpl(
 
     override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClient(clientMapper.fromDeviceTypeEntity(it.deviceType), it.id)
+            OtherUserClient(clientMapper.fromDeviceTypeEntity(it.deviceType), it.id, it.isValid)
         }
 
     override fun apiToEntity(user: UserProfileDTO, member: TeamsApi.TeamMemberDTO?, teamId: String?, selfUser: QualifiedID): UserEntity {

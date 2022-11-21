@@ -6,13 +6,16 @@ import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.fun2
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -28,11 +31,13 @@ class PersistOtherUsersClientsUseCaseTest {
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
+
+        val userIdDTO = UserIdDTO(userId.value, userId.domain)
         val otherUserClients = listOf(
-            OtherUserClient(DeviceType.Phone, "111"), OtherUserClient(DeviceType.Desktop, "2222")
+            SimpleClientResponse("111",DeviceTypeDTO.Phone), SimpleClientResponse("2222", DeviceTypeDTO.Desktop)
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
-            .withSuccessfulResponse(userId, otherUserClients)
+            .withSuccessfulResponse(userIdDTO, otherUserClients)
             .arrange()
 
         // When
@@ -43,8 +48,8 @@ class PersistOtherUsersClientsUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::storeUserClientListAndRemoveRedundantClients, fun2())
-            .with(any(), any())
+            .suspendFunction(arrangement.clientRepository::storeUserClientListAndRemoveRedundantClients)
+            .with(any())
             .wasInvoked(exactly = once)
 
     }
@@ -76,17 +81,25 @@ class PersistOtherUsersClientsUseCaseTest {
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
 
+        val clientMapper = MapperProvider.clientMapper()
+
         val persistOtherUserClientsUseCase =
             PersistOtherUserClientsUseCaseImpl(clientRemoteRepository, clientRepository)
 
-        suspend fun withSuccessfulResponse(userId: UserId, expectedResponse: List<OtherUserClient>): Arrangement {
+        suspend fun withSuccessfulResponse(userIdDTO: UserIdDTO, expectedResponse: List<SimpleClientResponse>): Arrangement {
             given(clientRemoteRepository)
                 .suspendFunction(clientRemoteRepository::fetchOtherUserClients).whenInvokedWith(any())
-                .thenReturn(Either.Right(listOf(userId to expectedResponse)))
+                .thenReturn(Either.Right(mapOf(userIdDTO to expectedResponse)))
 
             given(clientRepository)
-                .coroutine { clientRepository.storeUserClientListAndRemoveRedundantClients(userId, expectedResponse) }
-                .thenReturn(Either.Right(Unit))
+                .coroutine {
+                    clientRepository.storeUserClientListAndRemoveRedundantClients(
+                        clientMapper.toInsertClientParam(
+                            userIdDTO = userIdDTO,
+                            simpleClientResponse = expectedResponse
+                        )
+                    )
+                }.thenReturn(Either.Right(Unit))
 
             return this
         }

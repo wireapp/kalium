@@ -30,12 +30,14 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
-    override suspend fun insertClientsAndRemoveRedundant(qualifiedID: QualifiedIDEntity, clients: List<InsertClientParam>) =
+    override suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>) =
         clientsQueries.transaction {
             clients.forEach { client ->
                 clientsQueries.insertClient(client.userId, client.id, client.deviceType, true)
             }
-            clientsQueries.deleteClientsOfUserExcept(qualifiedID, clients.map { it.id })
+            clients.groupBy { it.userId }.forEach { (userId, clientsList) ->
+                clientsQueries.deleteClientsOfUserExcept(userId, clientsList.map { it.id })
+            }
         }
 
     override suspend fun tryMarkInvalid(userId: QualifiedIDEntity, clientId: String) = clientsQueries.tryMarkAsInvalid(userId, clientId)
