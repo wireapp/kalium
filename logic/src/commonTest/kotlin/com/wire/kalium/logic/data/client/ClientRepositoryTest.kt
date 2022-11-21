@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
@@ -248,6 +249,22 @@ class ClientRepositoryTest {
 
         verify(clientRemoteRepository)
             .coroutine { clientRepository.deleteClient(param) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenClient_whenMarkingAsInvalid_thenDAOFunctionIsCalled() = runTest {
+        val userId = UserId("user_id", "domain")
+        val userIDEntity = UserIDEntity(userId.value, userId.domain)
+        val clientId = CLIENT_ID
+        given(clientDAO)
+            .coroutine { clientDAO.tryMarkInvalid(userIDEntity, clientId.value) }
+            .then { Unit}
+
+        clientRepository.tryMarkingAsInvalid(userId, clientId)
+
+        verify(clientDAO)
+            .coroutine { clientDAO.tryMarkInvalid(userIDEntity, clientId.value) }
             .wasInvoked(exactly = once)
     }
 

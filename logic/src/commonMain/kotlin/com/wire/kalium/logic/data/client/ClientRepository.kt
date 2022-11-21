@@ -6,6 +6,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -18,6 +19,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.InsertClientParam
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -45,6 +47,7 @@ interface ClientRepository {
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
+    suspend fun tryMarkingAsInvalid(userId: UserId, clientId: ClientId): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -131,7 +134,7 @@ class ClientDataSource(
 
     override suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
-            clients.map { ClientEntity(userEntity, it.value, null) }.let { clientEntityList ->
+            clients.map { InsertClientParam(userEntity, it.value, null) }.let { clientEntityList ->
                 wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
             }
         }
@@ -141,7 +144,7 @@ class ClientDataSource(
         clients: List<OtherUserClient>
     ): Either<StorageFailure, Unit> =
         userMapper.toUserIdPersistence(userId).let { userEntity ->
-            clients.map { ClientEntity(userEntity, it.id, clientMapper.toDeviceTypeEntity(it.deviceType)) }.let { clientEntityList ->
+            clients.map { InsertClientParam(userEntity, it.id, clientMapper.toDeviceTypeEntity(it.deviceType)) }.let { clientEntityList ->
                 wrapStorageRequest { clientDAO.insertClientsAndRemoveRedundant(userEntity, clientEntityList) }
             }
         }
@@ -155,4 +158,7 @@ class ClientDataSource(
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }
+
+    override suspend fun tryMarkingAsInvalid(userId: UserId, clientId: ClientId) =
+        wrapStorageRequest { clientDAO.tryMarkInvalid(idMapper.toDaoModel(userId), clientId.value) }
 }

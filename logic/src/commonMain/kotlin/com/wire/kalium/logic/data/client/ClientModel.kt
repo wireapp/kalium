@@ -59,5 +59,6 @@ enum class ClientCapability {
 
 data class OtherUserClient(
     val deviceType: DeviceType,
-    val id: String
+    val id: String,
+    val isValid: Boolean
 )
