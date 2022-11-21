@@ -42,10 +42,21 @@ class UTF16BEByteArrayTest {
 
     @Test
     fun test() {
-        val test: Long = 15000
-        val test1 = test.to16BitHexString()
+        val test = 15000.toString(16)
+        val buffer = Array(16) { '0' }
 
-        println(test1)
+        for (charIndex in test.indices) {
+            val offSet = (buffer.size - 1) - charIndex
+            buffer[offSet] = test[(test.length - charIndex - 1)]
+        }
+
+        var bufferString = ""
+
+        buffer.forEach {
+            bufferString += it
+        }
+
+        println(buffer)
     }
 
     companion object TestData {
