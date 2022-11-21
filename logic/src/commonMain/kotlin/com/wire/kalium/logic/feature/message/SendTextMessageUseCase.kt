@@ -20,7 +20,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import com.wire.kalium.util.string.toByteArray
+import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toUTF16BEByteArray
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.flow.first
