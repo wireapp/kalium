@@ -2,15 +2,11 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.feature.message.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
-import com.wire.kalium.util.string.toUTF16BEByteArray
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MessageContentEncryptorTest {
-//
-//     @Mock
-//     private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
     private val messageContentEncryptor: MessageContentEncoder = MessageContentEncoder()
 
@@ -51,7 +47,6 @@ class MessageContentEncryptorTest {
         // then
 //         assertIs<Either.Right<String>>(result)
         assertEquals(result.toHexString(), textWithEmoji.second)
-        println("Test")
     }
 
     @Test
@@ -70,11 +65,12 @@ class MessageContentEncryptorTest {
 
     private companion object TestData {
         val textWithEmoji =
-            ("Hello \uD83D\uDC69\u200D\uD83D\uDCBB\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67!" to "2018-10-22T15:09:29.000+02:00".toTimeInMillis()) to "4f8ee55a8b71a7eb7447301d1bd0c8429971583b15a91594b45dee16f208afd5"
+            (
+                    "Hello \uD83D\uDC69\u200D\uD83D\uDCBB\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67!" to
+                            "2018-10-22T15:09:29.000+02:00".toTimeInMillis()
+                    ) to "4f8ee55a8b71a7eb7447301d1bd0c8429971583b15a91594b45dee16f208afd5"
         val url = "https://www.youtube.com/watch?v=DLzxrzFCyOs" to "2018-10-22T15:09:29.000+02:00".toTimeInMillis()
         val arabic = "بغداد" to "(2018-10-22, 3:12:45 PM"
         val markDown = "This has **markdown**" to "(2018-10-22, 3:12:45 PM"
     }
 }
-
-
