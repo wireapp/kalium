@@ -13,13 +13,3 @@ actual fun ByteArray.toStringFromUtf16BE(): String {
 actual fun ByteArray.toHexString(): String {
     return joinToString("") { (0xFF and it.toInt()).toString(16).padStart(2, '0') }
 }
-
-actual fun ByteArray.toStringFromUtf8(): String {
-    return toString(charset = Charsets.UTF_8)
-}
-
-actual fun Long.toByteArray(): ByteArray {
-    val buffer = ByteBuffer.allocate(Long.SIZE_BYTES)
-    buffer.putLong(this)
-    return buffer.array()
-}
