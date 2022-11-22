@@ -11,32 +11,6 @@ class MessageContentEncryptorTest {
 
     @Test
     fun givenAMessageBodyWithEmoji_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
-        // given
-//         given(messageRepository).suspendFunction(messageRepository::getMessageById).whenInvokedWith(anything(), anything())
-//             .then { _, _ ->
-//                 Either.Right(
-//                     Message.Regular(
-//                         id = "someTestId",
-//                         content = MessageContent.Text(
-//                             value = TestData.textWithEmoji.first.first,
-//                             mentions = listOf(),
-//                             quotedMessageReference = null,
-//                             quotedMessageDetails = null
-//                         ),
-//                         conversationId = ConversationId("someConversationValue", "someConversationDomain"),
-//                         date = TestData.textWithEmoji.first.second,
-//                         senderUserId = UserId("someValue", "someDomain"),
-//                         status = Message.Status.READ,
-//                         visibility = Message.Visibility.VISIBLE,
-//                         senderClientId = PlainId(value = ""),
-//                         editStatus = Message.EditStatus.NotEdited,
-//                         reactions = Message.Reactions(
-//                             totalReactions = mapOf(),
-//                             selfUserReactions = setOf()
-//                         )
-//                     )
-//                 )
-//             }
         // given / when
         val result = messageContentEncryptor.encodeMessageTextBody(
             messageTimeStampInMillis = textWithEmoji.first.second,
@@ -82,32 +56,6 @@ class MessageContentEncryptorTest {
 
     @Test
     fun givenAMessageBodyWithEmoji_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
-        // given
-//         given(messageRepository).suspendFunction(messageRepository::getMessageById).whenInvokedWith(anything(), anything())
-//             .then { _, _ ->
-//                 Either.Right(
-//                     Message.Regular(
-//                         id = "someTestId",
-//                         content = MessageContent.Text(
-//                             value = TestData.textWithEmoji.first.first,
-//                             mentions = listOf(),
-//                             quotedMessageReference = null,
-//                             quotedMessageDetails = null
-//                         ),
-//                         conversationId = ConversationId("someConversationValue", "someConversationDomain"),
-//                         date = TestData.textWithEmoji.first.second,
-//                         senderUserId = UserId("someValue", "someDomain"),
-//                         status = Message.Status.READ,
-//                         visibility = Message.Visibility.VISIBLE,
-//                         senderClientId = PlainId(value = ""),
-//                         editStatus = Message.EditStatus.NotEdited,
-//                         reactions = Message.Reactions(
-//                             totalReactions = mapOf(),
-//                             selfUserReactions = setOf()
-//                         )
-//                     )
-//                 )
-//             }
         // given / when
         val result = messageContentEncryptor.encodeMessageTextBody(
             messageTimeStampInMillis = textWithEmoji.first.second,

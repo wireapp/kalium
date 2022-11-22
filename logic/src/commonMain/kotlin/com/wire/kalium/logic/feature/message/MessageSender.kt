@@ -86,6 +86,7 @@ internal class MessageSenderImpl internal constructor(
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingScheduler: MessageSendingScheduler,
+    private val messageSendingInterceptor: MessageSendingInterceptor,
     private val timeParser: TimeParser,
     private val scope: CoroutineScope
 ) : MessageSender {
@@ -111,8 +112,10 @@ internal class MessageSenderImpl internal constructor(
     }
 
     override suspend fun sendMessage(message: Message.Regular, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
-        attemptToSend(message, messageTarget).map { messageRemoteTime ->
-            updateDatesOfMessagesWithServerTime(message, messageRemoteTime)
+        messageSendingInterceptor.prepareMessage(message).flatMap { processedMessage ->
+            attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
+                updateDatesOfMessagesWithServerTime(processedMessage, messageRemoteTime)
+            }
         }
 
     private suspend fun updateDatesOfMessagesWithServerTime(

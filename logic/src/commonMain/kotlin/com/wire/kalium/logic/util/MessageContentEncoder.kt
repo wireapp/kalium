@@ -6,7 +6,6 @@ import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
 
 class MessageContentEncoder {
-
     fun encodeMessageAsset(
         messageTimeStampInMillis: Long,
         assetId: String
