@@ -31,7 +31,8 @@ interface SessionMapper {
     fun fromPersistentWebSocketStatusEntity(
         persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
     ): PersistentWebSocketStatus
-
+    fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity
+    fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO
 }
 
 internal class SessionMapperImpl(
@@ -116,4 +117,9 @@ internal class SessionMapperImpl(
         idMapper.fromDaoModel(persistentWebSocketStatusEntity.userIDEntity),
         persistentWebSocketStatusEntity.isPersistentWebSocketEnabled
     )
+    override fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity =
+        ProxyCredentialsEntity(proxyCredentialsModel.username, proxyCredentialsModel.password)
+
+    override fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO =
+        ProxyCredentialsDTO(proxyCredentialsModel.username, proxyCredentialsModel.password)
 }

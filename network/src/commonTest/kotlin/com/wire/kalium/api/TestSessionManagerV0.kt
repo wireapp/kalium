@@ -1,6 +1,7 @@
 package com.wire.kalium.api
 
 import com.wire.kalium.api.json.model.testCredentials
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenDTO
@@ -12,9 +13,13 @@ class TestSessionManagerV0 : SessionManager {
     private val serverConfig = TEST_BACKEND_CONFIG
     private var session = testCredentials
 
-    override fun session(): SessionDTO = session
+    override suspend fun session(): SessionDTO = session
     override fun serverConfig(): ServerConfigDTO = serverConfig
-    override fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
+    override suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?) =
         SessionDTO(
             session.userId,
             newAccessTokenDTO.tokenType,
@@ -22,16 +27,8 @@ class TestSessionManagerV0 : SessionManager {
             newRefreshTokenDTO?.value ?: session.refreshToken
         )
 
-    override suspend fun onClientRemoved() {
-        TODO("Not yet implemented")
-    }
-
     override fun proxyCredentials(): ProxyCredentialsDTO? =
         ProxyCredentialsDTO("username", "password")
-
-    override suspend fun onSessionExpired() {
-        TODO("Not yet implemented")
-    }
 
     companion object {
         val SESSION = testCredentials

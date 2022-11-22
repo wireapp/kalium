@@ -46,6 +46,8 @@ import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionsMapper
+import com.wire.kalium.logic.data.message.reaction.ReactionsMapperImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapperImpl
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
@@ -83,7 +85,8 @@ internal object MapperProvider {
         idMapper(),
         clientMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper()
     )
-
+    fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
+    fun reactionsMapper(): ReactionsMapper = ReactionsMapperImpl(domainUserTypeMapper = userTypeMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
     fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
@@ -127,7 +130,6 @@ internal object MapperProvider {
     fun localNotificationMessageMapper(): LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
     fun connectionMapper(): ConnectionMapper = ConnectionMapperImpl()
     fun userTypeEntityMapper(): UserEntityTypeMapper = UserEntityTypeMapperImpl()
-    fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
     fun federatedIdMapper(
         userId: UserId,
         qualifiedIdMapper: QualifiedIdMapper,

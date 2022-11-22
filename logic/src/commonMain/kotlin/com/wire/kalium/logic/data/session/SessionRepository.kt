@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.session
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
@@ -30,7 +31,8 @@ interface SessionRepository {
     suspend fun storeSession(
         serverConfigId: String,
         ssoId: SsoId?,
-        authTokens: AuthTokens
+        authTokens: AuthTokens,
+        proxyCredentials: ProxyCredentials?
     ): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
@@ -64,7 +66,8 @@ internal class SessionDataSource(
     override suspend fun storeSession(
         serverConfigId: String,
         ssoId: SsoId?,
-        authTokens: AuthTokens
+        authTokens: AuthTokens,
+        proxyCredentials: ProxyCredentials?
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
@@ -74,7 +77,12 @@ internal class SessionDataSource(
                 isPersistentWebSocketEnabled = false
             )
         }.flatMap {
-            wrapStorageRequest { authTokenStorage.addOrReplace(sessionMapper.toAuthTokensEntity(authTokens)) }
+            wrapStorageRequest {
+                authTokenStorage.addOrReplace(
+                    sessionMapper.toAuthTokensEntity(authTokens),
+                    proxyCredentials?.let { sessionMapper.fromModelToProxyCredentialsEntity(it) }
+                )
+            }
         }
 
     override suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>> =

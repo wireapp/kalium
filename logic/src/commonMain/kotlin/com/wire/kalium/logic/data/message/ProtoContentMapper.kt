@@ -20,6 +20,7 @@ import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import kotlinx.datetime.Instant
@@ -53,7 +54,11 @@ class ProtoContentMapperImpl(
             is MessageContent.Text -> GenericMessage.Content.Text(
                 Text(
                     content = readableContent.value,
-                    mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) })
+                    mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) },
+                    quote = readableContent.quotedMessageReference?.let {
+                        Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+                    }
+                )
             )
 
             is MessageContent.Calling -> GenericMessage.Content.Calling(Calling(content = readableContent.value))
@@ -141,7 +146,14 @@ class ProtoContentMapperImpl(
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(
                 protoContent.value.content,
-                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull()
+                protoContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
+                protoContent.value.quote?.let {
+                    MessageContent.QuoteReference(
+                        it.quotedMessageId,
+                        it.quotedMessageSha256?.array,
+                        true // TODO: Check hash to figure out if it's valid
+                    )
+                }, null
             )
 
             is GenericMessage.Content.Asset -> {

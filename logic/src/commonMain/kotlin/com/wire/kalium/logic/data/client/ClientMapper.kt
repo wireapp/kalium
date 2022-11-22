@@ -44,7 +44,8 @@ class ClientMapper(
             { fromClientCapabilityDTO(it) })
         }
             ?: run { null },
-        model = response.model
+        model = response.model,
+        mlsPublicKeys = response.mlsPublicKeys ?: emptyMap()
     )
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {

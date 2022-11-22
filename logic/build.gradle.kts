@@ -1,8 +1,9 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
-    Plugins.serialization(this)
-    Plugins.ksp(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 group = "com.wire.kalium"
@@ -23,6 +24,9 @@ android {
     }
     packagingOptions {
         resources.pickFirsts.add("google/protobuf/*.proto")
+    }
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
     // Run only Instrumented tests. No need to run Unit AND Instrumented
     // We have JVM tests if we want to run quickly on our machines
@@ -52,20 +56,19 @@ kotlin {
                 implementation(project(":util"))
 
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        strictly(Versions.coroutines)
-                    }
-                }
-                implementation(Dependencies.Coroutines.core)
-                implementation(Dependencies.Kotlinx.serialization)
-                implementation(Dependencies.Kotlinx.dateTime)
-                implementation(Dependencies.UUID.benAsherUUID)
+                implementation(libs.coroutines.core.map {
+                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
+                        version { strictly(libs.versions.coroutines.get()) }
+                    })
+                })
+                implementation(libs.ktxSerialization)
+                implementation(libs.ktxDateTime)
+                implementation(libs.benAsherUUID)
                 // the Dependency is duplicated between here and persistence build.gradle.kts
-                implementation(Dependencies.MultiplatformSettings.settings)
+                implementation(libs.settings.kmp)
 
                 // Okio
-                implementation(Dependencies.Okio.core)
+                implementation(libs.okio.core)
             }
         }
         val commonTest by getting {
@@ -73,31 +76,32 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(project(":persistence-test"))
                 // coroutines
-                implementation(Dependencies.Coroutines.test)
-                implementation(Dependencies.Test.turbine)
+                implementation(libs.coroutines.test)
+                implementation(libs.turbine)
 
                 // mocking
-                implementation(Dependencies.Test.mockative)
-                implementation(Dependencies.Test.okio)
-                implementation(Dependencies.MultiplatformSettings.test)
+                implementation(libs.mockative.runtime)
+                implementation(libs.okio.test)
+                implementation(libs.settings.kmpTest)
             }
         }
         val jvmMain by getting {
             dependencies {
-	        implementation(Dependencies.Calling.jna)
+                implementation(libs.jna)
             }
         }
         val jvmTest by getting
         val androidMain by getting {
             dependencies {
-                implementation(Dependencies.Android.paging3)
-                implementation(Dependencies.Android.work)
+                implementation(libs.paging3)
+                implementation(libs.work)
             }
         }
         val androidAndroidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
+                implementation(libs.androidtest.orchestratorRunner)
             }
         }
     }
@@ -107,8 +111,9 @@ dependencies {
     configurations
         .filter { it.name.startsWith("ksp") && it.name.contains("Test") }
         .forEach {
-            add(it.name, Dependencies.Test.mockativeProcessor)
+            add(it.name, libs.mockative.processor)
         }
+    androidTestUtil(libs.androidtest.orchestratorUtil)
 }
 
 ksp {
