@@ -21,11 +21,13 @@ class MessageSendingInterceptorImpl(
     override suspend fun prepareMessage(message: Message.Regular): Either<CoreFailure, Message.Regular> {
         val replyMessageContent = message.content
 
-        if (replyMessageContent !is MessageContent.Text) {
+        if (replyMessageContent !is MessageContent.Text
+            || replyMessageContent.quotedMessageReference == null
+        ) {
             return Either.Right(message)
         }
 
-        return messageRepository.getMessageById(message.conversationId, message.id).map { originalMessage ->
+        return messageRepository.getMessageById(message.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId).map { originalMessage ->
             val encodedMessageContent = when (val messageContent = originalMessage.content) {
                 is MessageContent.Asset ->
                     messageContentEncoder.encodeMessageAsset(
@@ -44,7 +46,7 @@ class MessageSendingInterceptorImpl(
 
             message.copy(
                 content = replyMessageContent.copy(
-                    quotedMessageReference = replyMessageContent.quotedMessageReference?.copy(
+                    quotedMessageReference = replyMessageContent.quotedMessageReference.copy(
                         quotedMessageSha256 = encodedMessageContent?.asSHA256
                     )
                 )
