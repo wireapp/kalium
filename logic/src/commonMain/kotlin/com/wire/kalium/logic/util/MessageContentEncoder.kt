@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.util
 
+import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
@@ -40,4 +41,5 @@ class MessageContentEncoder {
 class EncodedMessageContent(byteArray: ByteArray) {
     val asByteArray = byteArray
     val asHexString = byteArray.toHexString()
+    val asSHA256 = calcSHA256(byteArray)
 }
