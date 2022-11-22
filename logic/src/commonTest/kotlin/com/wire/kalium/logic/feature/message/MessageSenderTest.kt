@@ -18,6 +18,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -480,6 +481,12 @@ class MessageSenderTest {
 
         val testScope = TestScope()
 
+        private val messageSendingInterceptor = object : MessageSendingInterceptor {
+            override suspend fun prepareMessage(message: Message.Regular): Either<CoreFailure, Message.Regular> {
+                return Either.Right(message)
+            }
+        }
+
         fun arrange() = this to MessageSenderImpl(
             messageRepository = messageRepository,
             conversationRepository = conversationRepository,
@@ -491,6 +498,7 @@ class MessageSenderTest {
             mlsMessageCreator = mlsMessageCreator,
             timeParser = timeParser,
             messageSendingScheduler = messageSendingScheduler,
+            messageSendingInterceptor = messageSendingInterceptor,
             scope = testScope
         )
 

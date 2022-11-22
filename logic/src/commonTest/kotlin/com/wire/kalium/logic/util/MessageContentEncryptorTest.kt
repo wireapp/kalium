@@ -16,7 +16,60 @@ class MessageContentEncryptorTest {
             messageTimeStampInMillis = textWithEmoji.first.second,
             messageTextBody = textWithEmoji.first.first
         )
-
+//
+//         val byteArray = ubyteArrayOf(
+//             0xfeu,
+//             0xffu,
+//             0x00u,
+//             0x48u,
+//             0x00u,
+//             0x65u,
+//             0x00u,
+//             0x6cu,
+//             0x00u,
+//             0x6cu,
+//             0x00u,
+//             0x6fu,
+//             0x00u,
+//             0x20u,
+//             0xd8u,
+//             0x3du,
+//             0xdcu,
+//             0x69u,
+//             0x20u,
+//             0x0du,
+//             0xd8u,
+//             0x3du,
+//             0xdcu,
+//             0xbbu,
+//             0xd8u,
+//             0x3du,
+//             0xdcu,
+//             0x68u,
+//             0x20u,
+//             0x0du,
+//             0xd8u,
+//             0x3du,
+//             0xdcu,
+//             0x69u,
+//             0x20u,
+//             0x0du,
+//             0xd8u,
+//             0x3du,
+//             0xdcu,
+//             0x67u,
+//             0x00u,
+//             0x21u,
+//             0x00u,
+//             0x00u,
+//             0x00u,
+//             0x00u,
+//             0x5bu,
+//             0xcdu,
+//             0xccu,
+//             0x09u
+//         )
+//         result
         // then
         assertEquals(result.asHexString, textWithEmoji.second.first)
     }
