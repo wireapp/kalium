@@ -17,6 +17,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -117,36 +118,4 @@ class SendTextMessageUseCase internal constructor(
         }
     }
 
-}
-
-class MessageContentEncoder {
-    fun encryptMessageAsset(
-        messageTimeStampInMillis: Long,
-        assetId: String
-    ): ByteArray = wrapIntoByteResult(
-        messageTimeStampByteArray = encodeMessageTimeStampInMillis(messageTimeStampInMillis = messageTimeStampInMillis),
-        messageTextBodyUTF16BE = assetId.toUTF16BEByteArray()
-    )
-
-    fun encryptMessageTextBody(
-        messageTimeStampInMillis: Long,
-        messageTextBody: String
-    ): ByteArray = wrapIntoByteResult(
-        messageTimeStampByteArray = encodeMessageTimeStampInMillis(messageTimeStampInMillis = messageTimeStampInMillis),
-        messageTextBodyUTF16BE = messageTextBody.toUTF16BEByteArray()
-    )
-
-    private fun encodeMessageTimeStampInMillis(messageTimeStampInMillis: Long): ByteArray {
-        val messageTimeStampInSec = messageTimeStampInMillis / MILLIS_IN_SEC
-
-        return messageTimeStampInSec.toByteArray()
-    }
-
-    private fun wrapIntoByteResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): ByteArray {
-        return byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + messageTimeStampByteArray
-    }
-
-    private companion object {
-        const val MILLIS_IN_SEC = 1000
-    }
 }
