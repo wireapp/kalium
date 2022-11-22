@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
+@Suppress("LongParameterList")
 class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
