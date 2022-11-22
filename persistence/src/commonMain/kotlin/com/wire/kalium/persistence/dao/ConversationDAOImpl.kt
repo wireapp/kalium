@@ -256,10 +256,11 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun getConversationWithOtherUser(userId: UserIDEntity): ConversationViewEntity? {
-        return memberQueries.selectConversationByMember(userId).executeAsOneOrNull().let {
-            conversationMapper.fromOneToOneToModel(it)
-        }
+    override suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
+        return memberQueries.selectConversationByMember(userId)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { it?.let { conversationMapper.fromOneToOneToModel(it) } }
     }
 
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {

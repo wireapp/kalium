@@ -90,7 +90,8 @@ class MessageDAOImpl(
                         message_id = message.id,
                         conversation_id = message.conversationId,
                         text_body = content.messageBody,
-                        quoted_message_id = content.quotedMessageId
+                        quoted_message_id = content.quotedMessageId,
+                        is_quote_verified = content.isQuoteVerified
                     )
                     content.mentions.forEach {
                         queries.insertMessageMention(

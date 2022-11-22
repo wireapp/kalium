@@ -31,6 +31,48 @@ import kotlin.test.Test
 class LogoutUseCaseTest {
 
     @Test
+    fun givenAnyReason_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
+        for (reason in LogoutReason.values()) {
+            val (arrangement, logoutUseCase) = Arrangement()
+                .withLogoutResult(Either.Right(Unit))
+                .withSessionLogoutResult(Either.Right(Unit))
+                .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+                .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+                .withClearCurrentClientIdResult(Either.Right(Unit))
+                .withClearRetainedClientIdResult(Either.Right(Unit))
+                .withClearHasRegisteredMLSClientResult(Either.Right(Unit))
+                .withUserSessionScopeGetResult(null)
+                .withFirebaseTokenUpdate()
+                .arrange()
+
+            logoutUseCase.invoke(reason)
+
+            verify(arrangement.deregisterTokenUseCase)
+                .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
+                .wasInvoked(exactly = once)
+            verify(arrangement.logoutRepository)
+                .suspendFunction(arrangement.logoutRepository::logout)
+                .wasInvoked(exactly = once)
+            verify(arrangement.sessionRepository)
+                .suspendFunction(arrangement.sessionRepository::logout)
+                .with(any(), eq(reason))
+                .wasInvoked(exactly = once)
+            verify(arrangement.sessionRepository)
+                .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.userSessionScopeProvider)
+                .function(arrangement.userSessionScopeProvider::delete)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.pushTokenRepository)
+                .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
+                .with(eq(true))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
     fun givenHardLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
         val reason = LogoutReason.SELF_HARD_LOGOUT
         val (arrangement, logoutUseCase) = Arrangement()
@@ -46,34 +88,44 @@ class LogoutUseCaseTest {
 
         logoutUseCase.invoke(reason)
 
-        verify(arrangement.deregisterTokenUseCase)
-            .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
-            .wasInvoked(exactly = once)
-        verify(arrangement.logoutRepository)
-            .suspendFunction(arrangement.logoutRepository::logout)
-            .wasInvoked(exactly = once)
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::logout)
-            .with(any(), eq(reason))
-            .wasInvoked(exactly = once)
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
             .wasInvoked(exactly = once)
         verify(arrangement.clearUserDataUseCase)
             .suspendFunction(arrangement.clearUserDataUseCase::invoke)
             .wasInvoked(exactly = once)
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.userSessionScopeProvider)
-            .function(arrangement.userSessionScopeProvider::delete)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.pushTokenRepository)
-            .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
-            .with(eq(true))
-            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRemovedClientOrDeletedAccount_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
+        for (reason in listOf(LogoutReason.REMOVED_CLIENT, LogoutReason.DELETED_ACCOUNT)) {
+            val (arrangement, logoutUseCase) = Arrangement()
+                .withLogoutResult(Either.Right(Unit))
+                .withSessionLogoutResult(Either.Right(Unit))
+                .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+                .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+                .withClearCurrentClientIdResult(Either.Right(Unit))
+                .withClearRetainedClientIdResult(Either.Right(Unit))
+                .withClearHasRegisteredMLSClientResult(Either.Right(Unit))
+                .withUserSessionScopeGetResult(null)
+                .withFirebaseTokenUpdate()
+                .arrange()
+
+            logoutUseCase.invoke(reason)
+
+            verify(arrangement.clearClientDataUseCase)
+                .suspendFunction(arrangement.clearClientDataUseCase::invoke)
+                .wasInvoked(exactly = once)
+            verify(arrangement.clearUserDataUseCase)
+                .suspendFunction(arrangement.clearUserDataUseCase::invoke)
+                .wasNotInvoked()
+            verify(arrangement.clientRepository)
+                .suspendFunction(arrangement.clientRepository::clearCurrentClientId)
+                .wasInvoked(exactly = once)
+            verify(arrangement.clientRepository)
+                .suspendFunction(arrangement.clientRepository::clearHasRegisteredMLSClient)
+                .wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -92,16 +144,6 @@ class LogoutUseCaseTest {
 
         logoutUseCase.invoke(reason)
 
-        verify(arrangement.deregisterTokenUseCase)
-            .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
-            .wasInvoked(exactly = once)
-        verify(arrangement.logoutRepository)
-            .suspendFunction(arrangement.logoutRepository::logout)
-            .wasInvoked(exactly = once)
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::logout)
-            .with(any(), eq(reason))
-            .wasInvoked(exactly = once)
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
             .wasNotInvoked()
@@ -111,18 +153,9 @@ class LogoutUseCaseTest {
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::clearCurrentClientId)
             .wasInvoked(exactly = once)
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
-            .with(any())
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::clearHasRegisteredMLSClient)
             .wasNotInvoked()
-        verify(arrangement.userSessionScopeProvider)
-            .function(arrangement.userSessionScopeProvider::delete)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.pushTokenRepository)
-            .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
-            .with(eq(true))
-            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -205,6 +238,14 @@ class LogoutUseCaseTest {
         fun withClearRetainedClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
             given(clientRepository)
                 .suspendFunction(clientRepository::clearRetainedClientId)
+                .whenInvoked()
+                .thenReturn(result)
+            return this
+        }
+
+        fun withClearHasRegisteredMLSClientResult(result: Either<StorageFailure, Unit>): Arrangement {
+            given(clientRepository)
+                .suspendFunction(clientRepository::clearHasRegisteredMLSClient)
                 .whenInvoked()
                 .thenReturn(result)
             return this

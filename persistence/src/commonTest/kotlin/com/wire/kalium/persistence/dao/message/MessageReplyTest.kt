@@ -54,8 +54,7 @@ class MessageReplyTest : BaseMessageTest() {
         assertEquals(ORIGINAL_MESSAGE_SENDER.name, quotedMessage.senderName)
         assertEquals(ORIGINAL_IMAGE_MESSAGE.date, quotedMessage.dateTime)
         assertEquals(ORIGINAL_IMAGE_MESSAGE_ASSET_MIMETYPE, quotedMessage.assetMimeType)
-        assertEquals(ORIGINAL_IMAGE_MESSAGE_ASSET_ID, quotedMessage.assetId)
-        assertEquals(ORIGINAL_IMAGE_MESSAGE_ASSET_DOMAIN, quotedMessage.assetDomain)
+        assertEquals(ORIGINAL_IMAGE_MESSAGE_NAME, quotedMessage.assetName)
         assertNull(quotedMessage.textBody)
     }
 
@@ -85,8 +84,7 @@ class MessageReplyTest : BaseMessageTest() {
             )
         )
         const val ORIGINAL_IMAGE_MESSAGE_ASSET_MIMETYPE = "jpeg"
-        const val ORIGINAL_IMAGE_MESSAGE_ASSET_ID = "someAssetID"
-        const val ORIGINAL_IMAGE_MESSAGE_ASSET_DOMAIN = "someAssetDomain"
+        const val ORIGINAL_IMAGE_MESSAGE_NAME = "someAssetName"
         val ORIGINAL_IMAGE_MESSAGE = newRegularMessageEntity(
             id = "originalAssetMessage",
             conversationId = TEST_CONVERSATION_1.id,
@@ -96,8 +94,9 @@ class MessageReplyTest : BaseMessageTest() {
                 assetMimeType = ORIGINAL_IMAGE_MESSAGE_ASSET_MIMETYPE,
                 assetOtrKey = byteArrayOf(),
                 assetSha256Key = byteArrayOf(),
-                assetId = ORIGINAL_IMAGE_MESSAGE_ASSET_ID,
-                assetDomain = ORIGINAL_IMAGE_MESSAGE_ASSET_DOMAIN,
+                assetName = ORIGINAL_IMAGE_MESSAGE_NAME,
+                assetId = "someId",
+                assetDomain = "someDomain",
                 assetEncryptionAlgorithm = null
             )
         )

@@ -3,13 +3,6 @@ import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
 import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 
 buildscript {
-    val kotlinVersion = "1.6.10"
-    val dokkaVersion = "1.6.10"
-    val sqlDelightVersion = "2.0.0-alpha01"
-    val protobufCodegenVersion = "0.8.18"
-    val carthageVersion = "0.0.1"
-    val detektVersion = "1.19.0"
-
     repositories {
         google()
         mavenCentral()
@@ -18,14 +11,14 @@ buildscript {
 
     dependencies {
         // keeping this here to allow AS to automatically update
-        classpath("com.android.tools.build:gradle:7.2.2")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath("app.cash.sqldelight:gradle-plugin:$sqlDelightVersion")
-        classpath("com.wire:carthage-gradle-plugin:$carthageVersion")
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:$dokkaVersion")
-        classpath("com.google.protobuf:protobuf-gradle-plugin:$protobufCodegenVersion")
-        classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:$detektVersion")
-        classpath("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
+        classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
+        classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
+        classpath("com.wire:carthage-gradle-plugin:${libs.versions.carthage.get()}")
+        classpath("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
+        classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
+        classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
+        classpath("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
         classpath("com.github.leandroborgesferreira:dag-command:1.5.3")
     }
 }
@@ -44,8 +37,7 @@ plugins {
 }
 
 dependencies {
-    val dokkaVersion = "1.6.10"
-    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:$dokkaVersion")
+    dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:${libs.versions.dokka.get()}")
 }
 
 tasks.withType<Test> {

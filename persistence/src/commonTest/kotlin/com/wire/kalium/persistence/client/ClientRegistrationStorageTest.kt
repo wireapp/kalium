@@ -6,7 +6,9 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClientRegistrationStorageTest : BaseDatabaseTest() {
@@ -104,5 +106,25 @@ class ClientRegistrationStorageTest : BaseDatabaseTest() {
         val result = clientRegistrationStorage.getRetainedClientId()
 
         assertNull(result)
+    }
+
+    @Test
+    fun givenHasRegisteredMLSClientWasNotSet_whenGettingHasRegisteredMLSClient_thenResultShouldBeFalse() = runTest(dispatcher) {
+        assertFalse(clientRegistrationStorage.hasRegisteredMLSClient())
+    }
+
+    @Test
+    fun givenHasRegisteredMLSClientWasSet_whenGettingHasRegisteredMLSClient_thenResultShouldBeTrue() = runTest(dispatcher) {
+        clientRegistrationStorage.setHasRegisteredMLSClient()
+
+        assertTrue(clientRegistrationStorage.hasRegisteredMLSClient())
+    }
+
+    @Test
+    fun givenHasRegisteredMLSClientWasSet_andWasCleared_whenGettingHasRegisteredMLSClient_thenResultShouldBeFalse() = runTest(dispatcher) {
+        clientRegistrationStorage.setHasRegisteredMLSClient()
+        clientRegistrationStorage.clearHasRegisteredMLSClient()
+
+        assertFalse(clientRegistrationStorage.hasRegisteredMLSClient())
     }
 }
