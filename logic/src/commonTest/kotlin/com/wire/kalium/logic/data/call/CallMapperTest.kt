@@ -208,6 +208,16 @@ class CallMapperTest {
     }
 
     @Test
+    fun givenACallStatusREJECTED_whenMappingToCallEntityStatus_thenReturnCorrectCallEntityStatus() = runTest {
+        val result = callMapper.toCallEntityStatus(callStatus = CallStatus.REJECTED)
+
+        assertEquals(
+            CallEntity.Status.REJECTED,
+            result
+        )
+    }
+
+    @Test
     fun givenAConversationId_whenMappingToQualifiedIDEntity_thenReturnCorrectQualifiedIDEntity() = runTest {
         val result = callMapper.fromConversationIdToQualifiedIDEntity(
             conversationId = TestCall.CONVERSATION_ID

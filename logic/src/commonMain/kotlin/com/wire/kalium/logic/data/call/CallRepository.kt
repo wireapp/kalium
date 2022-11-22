@@ -53,7 +53,6 @@ interface CallRepository {
     fun updateCallParticipants(conversationId: String, participants: List<Participant>)
     fun updateParticipantsActiveSpeaker(conversationId: String, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
-    suspend fun getLastCallConversationTypeByConversationId(conversationId: ConversationId): Conversation.Type
     suspend fun updateOpenCallsToClosedStatus()
 }
 
@@ -328,15 +327,6 @@ internal class CallDataSource(
             )
         )
 
-    override suspend fun getLastCallConversationTypeByConversationId(conversationId: ConversationId): Conversation.Type =
-        callDAO.getLastCallConversationTypeByConversationId(
-            conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
-                conversationId = conversationId
-            )
-        )?.let {
-            callMapper.toConversationType(conversationType = it)
-        } ?: Conversation.Type.ONE_ON_ONE
-
     override suspend fun updateOpenCallsToClosedStatus() {
         callDAO.updateOpenCallsToClosedStatus()
     }
@@ -349,9 +339,7 @@ internal class CallDataSource(
             .firstOrNull()
             ?.conversationId
 
-    private suspend fun persistMissedCallMessageIfNeeded(
-        conversationId: ConversationId
-    ) {
+    private suspend fun persistMissedCallMessageIfNeeded(conversationId: ConversationId) {
         val callerId = callDAO.getCallerIdByConversationId(
             conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
                 conversationId = conversationId

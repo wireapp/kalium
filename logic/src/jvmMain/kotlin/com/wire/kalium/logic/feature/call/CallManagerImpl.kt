@@ -127,7 +127,7 @@ class CallManagerImpl internal constructor(
             ).keepingStrongReference(),
             sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope).keepingStrongReference(),
             incomingCallHandler = OnIncomingCall(callRepository, callMapper, qualifiedIdMapper, scope).keepingStrongReference(),
-            missedCallHandler = OnMissedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
+            missedCallHandler = OnMissedCall,
             answeredCallHandler = OnAnsweredCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
             establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
             closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper).keepingStrongReference(),
@@ -219,14 +219,6 @@ class CallManagerImpl internal constructor(
 
     override suspend fun endCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("[$TAG][endCall] -> ConversationId: [$conversationId]")
-        val conversationType = callRepository.getLastCallConversationTypeByConversationId(conversationId = conversationId)
-
-        callingLogger.d("[$TAG][endCall] -> ConversationType: [$conversationType]")
-        callRepository.updateCallStatusById(
-            conversationIdString = conversationId.toString(),
-            status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
-        )
-
         callingLogger.d("[$TAG][endCall] -> Calling wcall_end()")
         wcall_end(
             inst = deferredHandle.await(),
@@ -236,14 +228,6 @@ class CallManagerImpl internal constructor(
 
     override suspend fun rejectCall(conversationId: ConversationId) = withCalling {
         callingLogger.d("[$TAG][rejectCall] -> ConversationId: [$conversationId]")
-        val conversationType = callRepository.getLastCallConversationTypeByConversationId(conversationId = conversationId)
-
-        callingLogger.d("[$TAG][rejectCall] -> ConversationType: [$conversationType]")
-        callRepository.updateCallStatusById(
-            conversationIdString = conversationId.toString(),
-            status = if (conversationType == Conversation.Type.GROUP) CallStatus.STILL_ONGOING else CallStatus.CLOSED
-        )
-
         callingLogger.d("[$TAG][rejectCall] -> Calling wcall_reject()")
         wcall_reject(
             inst = deferredHandle.await(),
