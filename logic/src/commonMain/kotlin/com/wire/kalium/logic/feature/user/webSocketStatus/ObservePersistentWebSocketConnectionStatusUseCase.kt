@@ -1,24 +1,16 @@
 package com.wire.kalium.logic.feature.user.webSocketStatus
 
-import com.wire.kalium.logic.configuration.GlobalConfigRepository
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.feature.auth.PersistentWebSocketStatus
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 interface ObservePersistentWebSocketConnectionStatusUseCase {
-    operator fun invoke(): Flow<Boolean>
+    suspend operator fun invoke(): Flow<List<PersistentWebSocketStatus>>
 }
 
 internal class ObservePersistentWebSocketConnectionStatusUseCaseImpl(
-    private val globalConfigRepository: GlobalConfigRepository
+    private val sessionRepository: SessionRepository
 ) : ObservePersistentWebSocketConnectionStatusUseCase {
-
-    override operator fun invoke(): Flow<Boolean> =
-        globalConfigRepository.isPersistentWebSocketConnectionEnabledFlow().map { isPersistetWebSocketEnabledFlow ->
-            isPersistetWebSocketEnabledFlow.fold({
-                false
-            }, {
-                it
-            })
-        }
+    override suspend operator fun invoke(): Flow<List<PersistentWebSocketStatus>> =
+        sessionRepository.getAllValidAccountPersistentWebSocketStatus()
 }

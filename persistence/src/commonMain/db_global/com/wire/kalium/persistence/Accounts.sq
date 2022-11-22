@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.model.LogoutReason;
+import kotlin.Boolean;
 
 CREATE TABLE Accounts (
     id TEXT AS QualifiedIDEntity PRIMARY KEY NOT NULL,
@@ -7,12 +8,13 @@ CREATE TABLE Accounts (
     subject TEXT,
     tenant TEXT,
     server_config_id TEXT NOT NULL,
-    logout_reason TEXT AS LogoutReason
+    logout_reason TEXT AS LogoutReason,
+    isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL
 );
 
 insertOrReplace:
-INSERT OR REPLACE INTO Accounts (id, scim_external_id, subject, tenant, server_config_id, logout_reason)
- VALUES (:id, :scimExternalId, :subject, :tenant, :serverConfigId, :logoutReason);
+INSERT OR REPLACE INTO Accounts (id, scim_external_id, subject, tenant, server_config_id, logout_reason, isPersistentWebSocketEnabled)
+VALUES (:id, :scimExternalId, :subject, :tenant, :serverConfigId, :logoutReason,:isPersistentWebSocketEnabled);
 
 delete:
 DELETE FROM Accounts WHERE id = :id;
@@ -43,6 +45,12 @@ SELECT EXISTS(SELECT 1 FROM Accounts WHERE id = :userId AND logout_reason IS NUL
 
 markAccountAsLoggedOut:
 UPDATE Accounts SET logout_reason = :logoutReason WHERE id = :userId;
+
+allValidAccountsPersistentWebSocketStatus:
+SELECT id, isPersistentWebSocketEnabled FROM Accounts WHERE logout_reason IS NULL;
+
+updatePersistentWebSocketStatus:
+UPDATE Accounts SET isPersistentWebSocketEnabled = :isPersistentWebSocketEnabled WHERE id = :userId;
 
 updateSsoId:
 UPDATE Accounts SET scim_external_id = :scimExternalId, subject = :subject, tenant = :tenant WHERE id = :userId;

@@ -84,6 +84,11 @@ class GlobalKaliumScope internal constructor(
                 globalPreferences.value.authTokenStorage,
                 serverConfigRepository
             )
+    val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
+        get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
+
+    val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
+        get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
 
     private val notificationTokenRepository: NotificationTokenRepository
         get() =
@@ -119,14 +124,7 @@ class GlobalKaliumScope internal constructor(
     val enableLogging: EnableLoggingUseCase get() = EnableLoggingUseCaseImpl(globalConfigRepository)
     val isLoggingEnabled: IsLoggingEnabledUseCase get() = IsLoggingEnabledUseCaseImpl(globalConfigRepository)
     val buildConfigs: GetBuildConfigsUseCase get() = GetBuildConfigsUseCaseImpl(kaliumConfigs)
-    val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
-        get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(
-            globalConfigRepository
-        )
-    val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
-        get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(
-            globalConfigRepository
-        )
+
     val deleteSession: DeleteSessionUseCase
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
 

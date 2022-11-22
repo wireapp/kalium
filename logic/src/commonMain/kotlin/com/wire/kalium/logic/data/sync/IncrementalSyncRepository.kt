@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.data.sync
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,7 +29,9 @@ internal interface IncrementalSyncRepository {
     suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy)
 }
 
-internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
+internal class InMemoryIncrementalSyncRepository(
+    private val sessionRepository: SessionRepository
+) : IncrementalSyncRepository {
     private val _syncState = MutableSharedFlow<IncrementalSyncStatus>(
         replay = 1,
         extraBufferCapacity = BUFFER_SIZE
@@ -58,8 +61,13 @@ internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
     }
 
     override suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy) {
-        kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
-        _connectionPolicy.emit(connectionPolicy)
+        sessionRepository.getAllValidAccountPersistentWebSocketStatus().collect {
+            if (it.map { it.isPersistentWebSocketEnabled }.contains(false)) {
+                kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
+                _connectionPolicy.emit(connectionPolicy)
+
+            }
+        }
     }
 
     private companion object {

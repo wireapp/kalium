@@ -435,7 +435,11 @@ class UserSessionScope internal constructor(
             kaliumFileSystem = kaliumFileSystem
         )
 
-    private val incrementalSyncRepository: IncrementalSyncRepository by lazy { InMemoryIncrementalSyncRepository() }
+    private val incrementalSyncRepository: IncrementalSyncRepository by lazy {
+        InMemoryIncrementalSyncRepository(
+            globalScope.sessionRepository
+        )
+    }
 
     private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
 

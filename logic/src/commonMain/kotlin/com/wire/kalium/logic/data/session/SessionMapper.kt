@@ -6,11 +6,13 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.feature.auth.PersistentWebSocketStatus
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
+import com.wire.kalium.persistence.daokaliumdb.PersistentWebSocketStatusEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.model.LogoutReason as LogoutReasonEntity
 
@@ -26,6 +28,10 @@ interface SessionMapper {
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
     fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials?): ProxyCredentialsDTO
+    fun fromPersistentWebSocketStatusEntity(
+        persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
+    ): PersistentWebSocketStatus
+
 }
 
 internal class SessionMapperImpl(
@@ -103,4 +109,11 @@ internal class SessionMapperImpl(
 
     override fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials?): ProxyCredentialsDTO =
         ProxyCredentialsDTO(proxyCredentialsModel?.username, proxyCredentialsModel?.password)
+
+    override fun fromPersistentWebSocketStatusEntity(
+        persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
+    ): PersistentWebSocketStatus = PersistentWebSocketStatus(
+        idMapper.fromDaoModel(persistentWebSocketStatusEntity.userIDEntity),
+        persistentWebSocketStatusEntity.isPersistentWebSocketEnabled
+    )
 }

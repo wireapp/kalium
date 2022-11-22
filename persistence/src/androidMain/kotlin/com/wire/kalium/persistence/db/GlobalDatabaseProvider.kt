@@ -49,7 +49,7 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
 
         database = GlobalDatabase(
             driver,
-            AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter),
+            AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter,),
             CurrentAccountAdapter = CurrentAccount.Adapter(QualifiedIDAdapter),
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter,

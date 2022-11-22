@@ -16,20 +16,34 @@ data class AccountInfoEntity(
     val logoutReason: LogoutReason?
 )
 
+data class PersistentWebSocketStatusEntity(
+    val userIDEntity: UserIDEntity,
+    val isPersistentWebSocketEnabled: Boolean
+)
+
 data class FullAccountEntity(
     val info: AccountInfoEntity,
     val serverConfigId: String,
-    val ssoId: SsoIdEntity?
+    val ssoId: SsoIdEntity?,
+    val persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
 )
 
 @Suppress("FunctionParameterNaming", "LongParameterList")
 internal object AccountMapper {
     fun fromAccount(
         user_id: UserIDEntity,
-        logout_reason: LogoutReason?
+        logout_reason: LogoutReason?,
     ): AccountInfoEntity = AccountInfoEntity(
         userIDEntity = user_id,
-        logoutReason = logout_reason
+        logoutReason = logout_reason,
+    )
+
+    fun fromPersistentWebSocketStatus(
+        user_id: UserIDEntity,
+        isPersistentWebSocketEnabled: Boolean,
+    ): PersistentWebSocketStatusEntity = PersistentWebSocketStatusEntity(
+        userIDEntity = user_id,
+        isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
     )
 
     fun fromFullAccountInfo(
@@ -39,10 +53,12 @@ internal object AccountMapper {
         tenant: String?,
         server_config_id: String,
         logout_reason: LogoutReason?,
+        isPersistentWebSocketEnabled: Boolean
     ): FullAccountEntity = FullAccountEntity(
         info = fromAccount(id, logout_reason),
         serverConfigId = server_config_id,
-        ssoId = toSsoIdEntity(scim_external_id, subject, tenant)
+        ssoId = toSsoIdEntity(scim_external_id, subject, tenant),
+        persistentWebSocketStatusEntity = fromPersistentWebSocketStatus(id, isPersistentWebSocketEnabled)
     )
 
     fun toSsoIdEntity(
@@ -59,7 +75,13 @@ internal object AccountMapper {
 @Suppress("TooManyFunctions")
 interface AccountsDAO {
     suspend fun ssoId(userIDEntity: UserIDEntity): SsoIdEntity?
-    suspend fun insertOrReplace(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?, serverConfigId: String)
+    suspend fun insertOrReplace(
+        userIDEntity: UserIDEntity,
+        ssoIdEntity: SsoIdEntity?,
+        serverConfigId: String,
+        isPersistentWebSocketEnabled: Boolean
+    )
+
     suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?>
     suspend fun allAccountList(): List<AccountInfoEntity>
     suspend fun allValidAccountList(): List<AccountInfoEntity>
@@ -73,8 +95,10 @@ interface AccountsDAO {
     suspend fun updateSsoId(userIDEntity: UserIDEntity, ssoIdEntity: SsoIdEntity?)
     suspend fun deleteAccount(userIDEntity: UserIDEntity)
     suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason)
+    suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean)
     suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity?
     fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity?
+    suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
 }
 
 @Suppress("TooManyFunctions")
@@ -90,7 +114,8 @@ internal class AccountsDAOImpl internal constructor(
     override suspend fun insertOrReplace(
         userIDEntity: UserIDEntity,
         ssoIdEntity: SsoIdEntity?,
-        serverConfigId: String
+        serverConfigId: String,
+        isPersistentWebSocketEnabled: Boolean
     ) {
         queries.insertOrReplace(
             scimExternalId = ssoIdEntity?.scimExternalId,
@@ -98,7 +123,8 @@ internal class AccountsDAOImpl internal constructor(
             tenant = ssoIdEntity?.tenant,
             id = userIDEntity,
             serverConfigId = serverConfigId,
-            logoutReason = null
+            logoutReason = null,
+            isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
         )
     }
 
@@ -157,6 +183,13 @@ internal class AccountsDAOImpl internal constructor(
     override suspend fun markAccountAsInvalid(userIDEntity: UserIDEntity, logoutReason: LogoutReason) {
         queries.markAccountAsLoggedOut(logoutReason, userIDEntity)
     }
+
+    override suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean) {
+        queries.updatePersistentWebSocketStatus(isPersistentWebSocketEnabled, userIDEntity)
+    }
+
+    override suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>> =
+        queries.allValidAccountsPersistentWebSocketStatus(mapper = mapper::fromPersistentWebSocketStatus).asFlow().mapToList()
 
     override suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? =
         queries.accountInfo(userIDEntity, mapper = mapper::fromAccount).executeAsOneOrNull()
