@@ -93,7 +93,7 @@ class SendTextMessageUseCase internal constructor(
             val message = messageResult.value
             val messageTimeStampInMillis = message.date.toTimeInMillis()
 
-            val quotedMessageSha256 = when (val messageContent = message.content) {
+            val encodedMessageContent = when (val messageContent = message.content) {
                 is MessageContent.Asset ->
                     messageContentEncryptor.encodeMessageAsset(
                         messageTimeStampInMillis = messageTimeStampInMillis,
@@ -111,7 +111,7 @@ class SendTextMessageUseCase internal constructor(
 
             MessageContent.QuoteReference(
                 quotedMessageId = quotedMessageId,
-                quotedMessageSha256 = quotedMessageSha256
+                quotedMessageSha256 = encodedMessageContent?.let { it.asByteArray }
             )
         }
     }

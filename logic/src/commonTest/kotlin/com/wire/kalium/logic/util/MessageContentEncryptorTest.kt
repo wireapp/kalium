@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.util.string.toHexString
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,7 +43,7 @@ class MessageContentEncryptorTest {
         )
 
         // then
-        assertEquals(result.toHexString(), textWithEmoji.second)
+        assertEquals(result.asHexString, textWithEmoji.second)
     }
 
     @Test
@@ -55,7 +54,7 @@ class MessageContentEncryptorTest {
         )
 
         // then
-        assertEquals(result.toHexString(), url.second)
+        assertEquals(result.asHexString, url.second)
     }
 
     @Test
@@ -66,7 +65,7 @@ class MessageContentEncryptorTest {
         )
 
         // then
-        assertEquals(result.toHexString(), textWithEmoji.second)
+        assertEquals(result.asHexString, arabic.second)
     }
 
     @Test
@@ -77,7 +76,7 @@ class MessageContentEncryptorTest {
         )
 
         // then
-        assertEquals(result.toHexString(), arabic.second)
+        assertEquals(result.asHexString, arabic.second)
     }
 
     @Test
@@ -88,7 +87,7 @@ class MessageContentEncryptorTest {
         )
 
         // then
-        assertEquals(result.toHexString(), markDown.second)
+        assertEquals(result.asHexString, markDown.second)
     }
 
     private companion object TestData {
@@ -108,12 +107,12 @@ class MessageContentEncryptorTest {
 
         val arabic = (
                 "بغداد" to
-                        "(2018-10-22, 3:12:45 PM".toTimeInMillis()
+                        "2018-10-22T15:12:45.000+02:00".toTimeInMillis()
                 ) to "feff0628063a062f0627062f000000005bcdcccd"
 
         val markDown = (
                 "This has **markdown**" to
-                        "(2018-10-22, 3:12:45 PM".toTimeInMillis()
+                        "2018-10-22T15:12:45.000+02:00".toTimeInMillis()
                 ) to "feff005400680069007300200068006100730020002a" +
                 "002a006d00610072006b0064006f0077006e002a002a00000" +
                 "0005bcdcccd"
