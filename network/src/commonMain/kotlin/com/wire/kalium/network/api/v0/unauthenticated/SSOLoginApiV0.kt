@@ -8,9 +8,11 @@ import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.model.toSessionDto
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
+import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.splitSetCookieHeader
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
@@ -23,6 +25,7 @@ import io.ktor.client.request.post
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.appendPathSegments
+import io.ktor.http.parseServerSetCookieHeader
 
 internal open class SSOLoginApiV0 internal constructor(
     private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
@@ -57,8 +60,13 @@ internal open class SSOLoginApiV0 internal constructor(
                 header(HttpHeaders.Cookie, cookie)
             }
         }.flatMap { accessTokenDTOResponse ->
+            val refreshToken = cookie.splitSetCookieHeader().flatMap { it.splitSetCookieHeader() }
+                .map { parseServerSetCookieHeader(it) }.associate {
+                    it.name to it.value
+                }[RefreshTokenProperties.COOKIE_NAME] ?: return@flatMap MISSING_REFRESH_TOKEN
+
             with(accessTokenDTOResponse) {
-                NetworkResponse.Success(cookie, headers, httpCode)
+                NetworkResponse.Success(refreshToken, headers, httpCode)
             }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
         }.flatMap { tokensPairResponse ->
             wrapKaliumResponse<UserDTO> {

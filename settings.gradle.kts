@@ -10,3 +10,11 @@ rootDir
     }.forEach {
         include(":${it.name}")
     }
+
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}

@@ -120,7 +120,8 @@ sealed class MessageEntity(
     }
 
     enum class Visibility {
-        VISIBLE, DELETED, HIDDEN
+        VISIBLE, DELETED, HIDDEN;
+        val isVisible get() = this == VISIBLE
     }
 
     @Serializable
@@ -149,6 +150,7 @@ sealed class MessageEntityContent {
          *                 Otherwise we'd need to pass a full QuotedMessage object
          */
         val quotedMessageId: String? = null,
+        val isQuoteVerified: Boolean? = null,
         /**
          * Details of the message being quoted.
          * Unused when inserting into the DB.
@@ -159,6 +161,11 @@ sealed class MessageEntityContent {
             val id: String,
             val senderId: QualifiedIDEntity,
             val isQuotingSelfUser: Boolean,
+            /**
+             * Indicates that the hash of the quote
+             * matches the hash of the original message
+             */
+            val isVerified: Boolean,
             val senderName: String,
             val dateTime: String,
             val editTimestamp: String?,
@@ -166,8 +173,7 @@ sealed class MessageEntityContent {
             val contentType: MessageEntity.ContentType,
             val textBody: String?,
             val assetMimeType: String?,
-            val assetId: String?,
-            val assetDomain: String?
+            val assetName: String?,
         )
     }
 
