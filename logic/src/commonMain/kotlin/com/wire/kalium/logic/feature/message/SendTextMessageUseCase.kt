@@ -111,7 +111,7 @@ class SendTextMessageUseCase internal constructor(
 
             MessageContent.QuoteReference(
                 quotedMessageId = quotedMessageId,
-                quotedMessageSha256 = encodedMessageContent?.let { it.asByteArray }
+                quotedMessageSha256 = encodedMessageContent?.asSHA256
             )
         }
     }
