@@ -5,6 +5,7 @@ import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.cryptography.createSessions
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.ProteusFailure
@@ -20,6 +21,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.mockative.Mock
 import io.mockative.anything
@@ -53,16 +55,14 @@ class SessionEstablisherTest {
 
     private lateinit var sessionEstablisher: SessionEstablisher
 
-    init {
+    @BeforeTest
+    fun setup() {
+        sessionEstablisher = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, clientDAO)
+
         given(proteusClientProvider)
             .suspendFunction(proteusClientProvider::getOrError)
             .whenInvoked()
             .thenReturn(Either.Right(proteusClient))
-    }
-
-    @BeforeTest
-    fun setup() {
-        sessionEstablisher = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, clientDAO)
     }
 
     @Test
@@ -163,8 +163,10 @@ class SessionEstablisherTest {
     @Test
     fun givenFetchingPreKeysSucceeds_whenPreparingSessions_thenProteusClientShouldCreateSessions() = runTest {
         val preKey = PreKeyDTO(42, "encodedData")
+        val prekeyCrypto = PreKeyCrypto(preKey.id, preKey.key)
         val userPreKeysResult = mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to preKey)))
-
+        val expected: Map<String, Map<String, Map<String, PreKeyCrypto>>> =
+            mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to prekeyCrypto)))
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::preKeysOfClientsByQualifiedUsers)
             .whenInvokedWith(anything())
@@ -177,14 +179,45 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
 
-        val cryptoSessionId = CryptoSessionId(
-            CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain),
-            CryptoClientId(TEST_CLIENT_ID_1.value)
+        verify(proteusClient)
+            .coroutine { proteusClient.createSessions(expected) }
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenFetchingPreKeysWithNullClients_whenPreparingSessions_thenTryToInvalidateINvalidSessions() = runTest {
+        val preKey = PreKeyDTO(42, "encodedData")
+        val prekeyCrypto = PreKeyCrypto(preKey.id, preKey.key)
+        val userPreKeysResult = mapOf(
+            TEST_USER_ID_1.domain to mapOf(
+                TEST_USER_ID_1.value to mapOf(
+                    TEST_CLIENT_ID_1.value to preKey,
+                    "invalidClient" to null,
+
+                )
+            )
         )
+        val expectedValid: Map<String, Map<String, Map<String, PreKeyCrypto>>> =
+            mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to prekeyCrypto)))
+
+        val expectedInvalid: List<Pair<UserIDEntity, List<String>>> = listOf(UserIDEntity(TEST_USER_ID_1.value, TEST_USER_ID_1.domain) to listOf("invalidClient"))
+        given(preKeyRepository)
+            .suspendFunction(preKeyRepository::preKeysOfClientsByQualifiedUsers)
+            .whenInvokedWith(anything())
+            .then { Either.Right(userPreKeysResult) }
+
+        given(proteusClient)
+            .suspendFunction(proteusClient::doesSessionExist)
+            .whenInvokedWith(anything())
+            .then { false }
+
+        sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
 
         verify(proteusClient)
-            .suspendFunction(proteusClient::createSession)
-            .with(eq(preKey), eq(cryptoSessionId))
+            .coroutine { proteusClient.createSessions(expectedValid) }
+            .wasInvoked(exactly = once)
+        verify(clientDAO)
+            .coroutine { clientDAO.tryMarkInvalid(expectedInvalid) }
             .wasInvoked(exactly = once)
     }
 

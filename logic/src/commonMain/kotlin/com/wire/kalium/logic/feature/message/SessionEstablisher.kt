@@ -60,15 +60,14 @@ internal class SessionEstablisherImpl internal constructor(
     private suspend fun establishSessions(preKeyInfoList: Map<String, Map<String, Map<String, PreKeyDTO?>>>): Either<CoreFailure, Unit> =
         proteusClientProvider.getOrError()
             .flatMap { proteusClient ->
-                getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList).let { (valid, invalid) ->
-                    wrapCryptoRequest {
-                        proteusClient.createSessions(valid)
-                    }
+                val (valid, invalid) = getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList)
+                wrapCryptoRequest {
+                    proteusClient.createSessions(valid)
+                }.also {
                     wrapStorageRequest {
                         clientDAO.tryMarkInvalid(invalid)
                     }
                 }
-
             }
 
     private suspend fun getAllMissingClients(
@@ -114,10 +113,11 @@ internal interface CryptoSessionMapper {
     ): FilteredRecipient
 }
 
-data class FilteredRecipient (
+data class FilteredRecipient(
     val valid: Map<String, Map<String, Map<String, PreKeyCrypto>>>,
     val invalid: List<Pair<QualifiedIDEntity, List<String>>>
 )
+
 internal class CryptoSessionMapperImpl internal constructor(
     private val preKeyMapper: PreKeyMapper
 ) : CryptoSessionMapper {
@@ -129,7 +129,7 @@ internal class CryptoSessionMapperImpl internal constructor(
             preKeyInfoList.mapValues { (domain, userIdToClientToPrekeyMap) ->
                 userIdToClientToPrekeyMap.mapValues { (userId, clientIdToPreKeyMap) ->
                     clientIdToPreKeyMap.filter { (clientId, prekey) ->
-                        if(prekey == null) {
+                        if (prekey == null) {
                             invalidList.add(QualifiedIDEntity(userId, domain) to clientId)
                             false
                         } else {
