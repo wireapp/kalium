@@ -10,5 +10,5 @@ fun Long.toByteArray(): ByteArray {
         longConvertedToByteArray = longConvertedToByteArray shr Long.SIZE_BYTES
     }
 
-    return result.copyOfRange(result.indexOfLast { it == 0x00.toByte() } + 1, result.size)
+    return result
 }
