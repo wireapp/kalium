@@ -21,8 +21,6 @@ import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import com.wire.kalium.util.long.toByteArray
-import com.wire.kalium.util.string.toUTF16BEByteArray
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -97,13 +95,13 @@ class SendTextMessageUseCase internal constructor(
 
             val quotedMessageSha256 = when (val messageContent = message.content) {
                 is MessageContent.Asset ->
-                    messageContentEncryptor.encryptMessageAsset(
+                    messageContentEncryptor.encodeMessageAsset(
                         messageTimeStampInMillis = messageTimeStampInMillis,
                         assetId = messageContent.value.remoteData.assetId
                     )
 
                 is MessageContent.Text ->
-                    messageContentEncryptor.encryptMessageTextBody(
+                    messageContentEncryptor.encodeMessageTextBody(
                         messageTimeStampInMillis = messageTimeStampInMillis,
                         messageTextBody = messageContent.value
                     )

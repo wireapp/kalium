@@ -1,22 +1,23 @@
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.util.long.toByteArray
+import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
 
 class MessageContentEncoder {
 
-    fun encryptMessageAsset(
+    fun encodeMessageAsset(
         messageTimeStampInMillis: Long,
         assetId: String
-    ): ByteArray = wrapIntoByteResult(
+    ): EncodedMessageContent = wrapIntoResult(
         messageTimeStampByteArray = encodeMessageTimeStampInMillis(messageTimeStampInMillis = messageTimeStampInMillis),
         messageTextBodyUTF16BE = assetId.toUTF16BEByteArray()
     )
 
-    fun encryptMessageTextBody(
+    fun encodeMessageTextBody(
         messageTimeStampInMillis: Long,
         messageTextBody: String
-    ): ByteArray = wrapIntoByteResult(
+    ): EncodedMessageContent = wrapIntoResult(
         messageTimeStampByteArray = encodeMessageTimeStampInMillis(messageTimeStampInMillis = messageTimeStampInMillis),
         messageTextBodyUTF16BE = messageTextBody.toUTF16BEByteArray()
     )
@@ -27,11 +28,16 @@ class MessageContentEncoder {
         return messageTimeStampInSec.toByteArray()
     }
 
-    private fun wrapIntoByteResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): ByteArray {
-        return byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + messageTimeStampByteArray
+    private fun wrapIntoResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): EncodedMessageContent {
+        return EncodedMessageContent(byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + messageTimeStampByteArray)
     }
 
     private companion object {
         const val MILLIS_IN_SEC = 1000
     }
+}
+
+class EncodedMessageContent(byteArray: ByteArray) {
+    val asByteArray = byteArray
+    val asHexString = byteArray.toHexString()
 }

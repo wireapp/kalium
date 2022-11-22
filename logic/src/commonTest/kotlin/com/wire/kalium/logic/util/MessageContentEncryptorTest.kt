@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.feature.message.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -38,29 +37,58 @@ class MessageContentEncryptorTest {
 //                     )
 //                 )
 //             }
-        // when
-        val result = messageContentEncryptor.encryptMessageTextBody(
+        // given / when
+        val result = messageContentEncryptor.encodeMessageTextBody(
             messageTimeStampInMillis = textWithEmoji.first.second,
             messageTextBody = textWithEmoji.first.first
         )
 
         // then
-//         assertIs<Either.Right<String>>(result)
         assertEquals(result.toHexString(), textWithEmoji.second)
     }
 
     @Test
     fun test1() = runTest {
-//         val test = "https://www.youtube.com/watch?v=DLzxrzFCyOs"
-//         val dupa123 = test.toUTF16BEByteArray()
-//
-//         val test2 = ("2018-10-22T15:09:29.000+02:00".toTimeInMillis()) / 1000
-//         val jelop = test2.toString().toUTF16BEByteArray()
-//         val array = dupa123 + jelop
-//         println(array)
-//         val gamon = "test"
-//
-//         val expectedArrayAsHex = hex("feff00480065006c006c006f0020d83ddc69200dd83ddcbbd83ddc68200dd83ddc69200dd83ddc670021000000005bcdcc09")
+        val result = messageContentEncryptor.encodeMessageTextBody(
+            messageTimeStampInMillis = url.first.second,
+            messageTextBody = url.first.first
+        )
+
+        // then
+        assertEquals(result.toHexString(), url.second)
+    }
+
+    @Test
+    fun test2() = runTest {
+        val result = messageContentEncryptor.encodeMessageTextBody(
+            messageTimeStampInMillis = arabic.first.second,
+            messageTextBody = arabic.first.first
+        )
+
+        // then
+        assertEquals(result.toHexString(), textWithEmoji.second)
+    }
+
+    @Test
+    fun test3() = runTest {
+        val result = messageContentEncryptor.encodeMessageTextBody(
+            messageTimeStampInMillis = arabic.first.second,
+            messageTextBody = arabic.first.first
+        )
+
+        // then
+        assertEquals(result.toHexString(), arabic.second)
+    }
+
+    @Test
+    fun test4() = runTest {
+        val result = messageContentEncryptor.encodeMessageTextBody(
+            messageTimeStampInMillis = markDown.first.second,
+            messageTextBody = markDown.first.first
+        )
+
+        // then
+        assertEquals(result.toHexString(), markDown.second)
     }
 
     private companion object TestData {
@@ -68,9 +96,26 @@ class MessageContentEncryptorTest {
             (
                     "Hello \uD83D\uDC69\u200D\uD83D\uDCBB\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67!" to
                             "2018-10-22T15:09:29.000+02:00".toTimeInMillis()
-                    ) to "4f8ee55a8b71a7eb7447301d1bd0c8429971583b15a91594b45dee16f208afd5"
-        val url = "https://www.youtube.com/watch?v=DLzxrzFCyOs" to "2018-10-22T15:09:29.000+02:00".toTimeInMillis()
-        val arabic = "بغداد" to "(2018-10-22, 3:12:45 PM"
-        val markDown = "This has **markdown**" to "(2018-10-22, 3:12:45 PM"
+                    ) to "feff00480065006c006c006f0020d83ddc69200dd83ddcbbd83ddc68200dd83ddc69200dd83ddc670021000000005bcdcc09"
+
+        val url = (
+                "https://www.youtube.com/watch?v=DLzxrzFCyOs" to
+                        "2018-10-22T15:09:29.000+02:00".toTimeInMillis()
+                ) to "feff00680074007400700073003a002f002f007700770077002e" +
+                "0079006f00750074007500620065002e0063006f006d002f007700610" +
+                "07400630068003f0076003d0044004c007a00780072007a0046004300" +
+                "79004f0073000000005bcdcc09"
+
+        val arabic = (
+                "بغداد" to
+                        "(2018-10-22, 3:12:45 PM".toTimeInMillis()
+                ) to "feff0628063a062f0627062f000000005bcdcccd"
+
+        val markDown = (
+                "This has **markdown**" to
+                        "(2018-10-22, 3:12:45 PM".toTimeInMillis()
+                ) to "feff005400680069007300200068006100730020002a" +
+                "002a006d00610072006b0064006f0077006e002a002a00000" +
+                "0005bcdcccd"
     }
 }
