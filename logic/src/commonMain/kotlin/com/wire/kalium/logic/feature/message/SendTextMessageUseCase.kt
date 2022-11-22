@@ -22,7 +22,6 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toUTF16BEByteArray
-import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -124,44 +123,30 @@ class MessageContentEncoder {
     fun encryptMessageAsset(
         messageTimeStampInMillis: Long,
         assetId: String
-    ): ByteArray {
-        val messageTimeStampInSec = messageTimeStampInMillis / MILLIS_IN_SEC
-        val messageTimeUTF16BE = messageTimeStampInSec.toString().toUTF16BEByteArray()
-
-        val assetIdUTF16BE = assetId.toUTF16BEByteArray()
-
-        return byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + assetIdUTF16BE + messageTimeUTF16BE
-    }
-
-    private fun Long.convertLongToHexStringBuffer(): ByteArray {
-        val longAsHexByteArray = toString(16).toByteArray()
-        val buffer = ByteArray(16) { 0 }
-
-        for (charIndex in longAsHexByteArray.indices) {
-            val offSet = (buffer.size - 1) - charIndex
-            buffer[offSet] = longAsHexByteArray[(longAsHexByteArray.size - charIndex - 1)]
-        }
-
-        return buffer
-    }
+    ): ByteArray = wrapIntoByteResult(
+        messageTimeStampByteArray = encodeMessageTimeStampInMillis(messageTimeStampInMillis = messageTimeStampInMillis),
+        messageTextBodyUTF16BE = assetId.toUTF16BEByteArray()
+    )
 
     fun encryptMessageTextBody(
         messageTimeStampInMillis: Long,
         messageTextBody: String
-    ): ByteArray {
+    ): ByteArray = wrapIntoByteResult(
+        messageTimeStampByteArray = encodeMessageTimeStampInMillis(messageTimeStampInMillis = messageTimeStampInMillis),
+        messageTextBodyUTF16BE = messageTextBody.toUTF16BEByteArray()
+    )
+
+    private fun encodeMessageTimeStampInMillis(messageTimeStampInMillis: Long): ByteArray {
         val messageTimeStampInSec = messageTimeStampInMillis / MILLIS_IN_SEC
-        val messageTimeUTF16BE = messageTimeStampInSec.toString().toUTF16BEByteArray()
 
-        val test = messageTimeStampInSec.toByteArray()
+        return messageTimeStampInSec.toByteArray()
+    }
 
-        val messageTextBodyUTF16BE = messageTextBody.toUTF16BEByteArray()
-
-        return messageTextBodyUTF16BE + messageTimeUTF16BE
+    private fun wrapIntoByteResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): ByteArray {
+        return byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + messageTimeStampByteArray
     }
 
     private companion object {
         const val MILLIS_IN_SEC = 1000
     }
-
-
 }
