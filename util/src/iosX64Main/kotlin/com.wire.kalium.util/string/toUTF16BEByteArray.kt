@@ -10,7 +10,3 @@ actual fun String.toUTF16BEByteArray(): ByteArray {
 actual fun ByteArray.toStringFromUtf16BE(): String {
     TODO("Not yet implemented")
 }
-
-actual fun ByteArray.toHexString(): String {
-    return joinToString("") { (0xFF and it.toInt()).toString(16).padStart(2, '0') }
-}

@@ -30,6 +30,7 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -77,7 +78,7 @@ class MessageScope internal constructor(
     private val idMapper: IdMapper
         get() = IdMapperImpl()
 
-    private val messageContentEncryptor = MessageContentEncryptor(messageRepository)
+    private val messageContentEncryptor = MessageContentEncoder()
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
@@ -104,7 +105,8 @@ class MessageScope internal constructor(
             currentClientIdProvider,
             slowSyncRepository,
             messageSender,
-            messageContentEncryptor
+            messageContentEncryptor,
+            messageRepository
         )
 
     val getMessageById: GetMessageByIdUseCase

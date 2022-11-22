@@ -7,7 +7,3 @@ actual fun String.toUTF16BEByteArray(): ByteArray {
 actual fun ByteArray.toStringFromUtf16BE(): String {
     return toString(charset = Charsets.UTF_16BE)
 }
-
-actual fun ByteArray.toHexString(): String {
-    return joinToString("") { (0xFF and it.toInt()).toString(16).padStart(2, '0') }
-}

@@ -14,24 +14,26 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
-import okio.ByteString.Companion.encodeUtf8
 
+@Suppress("LongParameterList")
 class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
-    private val messageContentEncryptor: MessageContentEncryptor,
+    private val messageContentEncryptor: MessageContentEncoder,
+    private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -53,10 +55,10 @@ class SendTextMessageUseCase internal constructor(
                 content = MessageContent.Text(
                     value = text,
                     mentions = mentions,
-                    quotedMessageReference = quotedMessageId?.let {
-                        MessageContent.QuoteReference(
-                            quotedMessageId = it,
-                            quotedMessageSha256 = null
+                    quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
+                        createQuotedMessageReference(
+                            conversationId = conversationId,
+                            quotedMessageId = quotedMessageId
                         )
                     }
                 ),
@@ -80,49 +82,38 @@ class SendTextMessageUseCase internal constructor(
         }
     }
 
-}
+    private suspend fun createQuotedMessageReference(
+        conversationId: ConversationId,
+        quotedMessageId: String
+    ): MessageContent.QuoteReference? {
+        val messageResult = messageRepository.getMessageById(conversationId, quotedMessageId)
 
-class MessageContentEncryptor(private val messageRepository: MessageRepository) {
+        return if (messageResult.isLeft()) {
+            null
+        } else {
+            val message = messageResult.value
+            val messageTimeStampInMillis = message.date.toTimeInMillis()
 
-    suspend fun encryptMessageContent(conversationId: ConversationId, messageId: String): Either<CoreFailure, String> {
-        val messageResult = messageRepository.getMessageById(conversationId, messageId)
+            val encodedMessageContent = when (val messageContent = message.content) {
+                is MessageContent.Asset ->
+                    messageContentEncryptor.encodeMessageAsset(
+                        messageTimeStampInMillis = messageTimeStampInMillis,
+                        assetId = messageContent.value.remoteData.assetId
+                    )
 
-        return messageResult.flatMap { message ->
-            val messageContent = message.content
-            val messageTimeStamp = message.date
+                is MessageContent.Text ->
+                    messageContentEncryptor.encodeMessageTextBody(
+                        messageTimeStampInMillis = messageTimeStampInMillis,
+                        messageTextBody = messageContent.value
+                    )
 
-            when (messageContent) {
-                is MessageContent.Asset -> TODO()
-                is MessageContent.Calling -> TODO()
-                is MessageContent.Cleared -> TODO()
-                is MessageContent.DeleteForMe -> TODO()
-                is MessageContent.DeleteMessage -> TODO()
-                MessageContent.Empty -> TODO()
-                is MessageContent.FailedDecryption -> TODO()
-                is MessageContent.Knock -> TODO()
-                is MessageContent.LastRead -> TODO()
-                is MessageContent.Reaction -> TODO()
-                is MessageContent.RestrictedAsset -> TODO()
-                is MessageContent.Text -> {
-                    val messageBody = messageContent.value
-                    val utf8MessageBody = messageBody.encodeUtf8().utf8()
-                    val messageTimeStampInSec = messageTimeStamp.toTimeInMillis() / 1000
-
-
-                    val dupa = "test"
-                }
-
-                is MessageContent.TextEdited -> TODO()
-                is MessageContent.Unknown -> TODO()
-                is MessageContent.Availability -> TODO()
-                MessageContent.Ignored -> TODO()
-                is MessageContent.ConversationRenamed -> TODO()
-                is MessageContent.MemberChange.Added -> TODO()
-                is MessageContent.MemberChange.Removed -> TODO()
-                MessageContent.MissedCall -> TODO()
-                is MessageContent.TeamMemberRemoved -> TODO()
+                else -> null
             }
-            Either.Right("test")
+
+            MessageContent.QuoteReference(
+                quotedMessageId = quotedMessageId,
+                quotedMessageSha256 = encodedMessageContent?.asSHA256
+            )
         }
     }
 
