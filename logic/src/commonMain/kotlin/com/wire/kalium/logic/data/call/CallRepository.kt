@@ -7,7 +7,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.mapper.ActiveSpeakerMapper
 import com.wire.kalium.logic.data.call.mapper.CallMapper
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId

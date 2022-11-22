@@ -18,7 +18,6 @@ import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.FederatedIdMapper
