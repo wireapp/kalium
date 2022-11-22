@@ -35,5 +35,5 @@ interface ClientDAO {
     suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
     suspend fun conversationRepents(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
     suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>)
-    suspend fun tryMarkInvalid(userId: QualifiedIDEntity, clientId: String)
+    suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>)
 }

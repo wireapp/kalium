@@ -40,7 +40,11 @@ internal class ClientDAOImpl internal constructor(
             }
         }
 
-    override suspend fun tryMarkInvalid(userId: QualifiedIDEntity, clientId: String) = clientsQueries.tryMarkAsInvalid(userId, clientId)
+    override suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>) = clientsQueries.transaction {
+        invalidClientsList.forEach { (userId, clientIdList) ->
+            clientsQueries.tryMarkAsInvalid(userId, clientIdList)
+        }
+    }
 
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
@@ -73,6 +77,6 @@ internal class ClientDAOImpl internal constructor(
 
     override suspend fun conversationRepents(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
         clientsQueries.conversationRecipets(ids, mapper = mapper::fromClient)
-            .executeAsList().groupBy { it.userId}
+            .executeAsList().groupBy { it.userId }
 
 }

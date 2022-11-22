@@ -169,7 +169,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         val user = user
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
-        clientDAO.tryMarkInvalid(insertedClient.userId, insertedClient.id)
+        clientDAO.tryMarkInvalid(listOf(insertedClient.userId to listOf(insertedClient.id)))
         assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isValid }
     }
 
@@ -178,7 +178,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         val user = user
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
-        clientDAO.tryMarkInvalid(insertedClient.userId, insertedClient.id)
+        clientDAO.tryMarkInvalid(listOf(insertedClient.userId to listOf(insertedClient.id)))
         clientDAO.insertClient(insertedClient)
         assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isValid }
     }
@@ -191,7 +191,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         clientDAO.insertClient(insertedClient)
         clientDAO.insertClient(insertedClient1)
         clientDAO.insertClient(insertedClient2)
-        clientDAO.tryMarkInvalid(insertedClient.userId, insertedClient.id)
+        clientDAO.tryMarkInvalid(listOf(insertedClient.userId to listOf(insertedClient.id)))
         conversationDAO.insertConversations(listOf(conversationEntity1))
         conversationDAO.insertMember(Member(user.id, Member.Role.Admin), conversationEntity1.id)
         val actual = clientDAO.conversationRepents(conversationEntity1.id)

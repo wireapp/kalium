@@ -15,12 +15,13 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.PrekeyDAO
 
 interface PreKeyRepository {
     suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
-    ): Either<NetworkFailure, List<QualifiedUserPreKeyInfo>>
+    ): Either<NetworkFailure,  Map<String, Map<String, Map<String, PreKeyDTO?>>>>
 
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
     suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto>
@@ -37,9 +38,9 @@ class PreKeyDataSource(
 ) : PreKeyRepository {
     override suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
-    ): Either<NetworkFailure, List<QualifiedUserPreKeyInfo>> = wrapApiRequest {
+    ): Either<NetworkFailure,  Map<String, Map<String, Map<String, PreKeyDTO?>>>> = wrapApiRequest {
         preKeyApi.getUsersPreKey(preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdsMap))
-    }.map { preKeyListMapper.fromRemoteQualifiedPreKeyInfoMap(it) }
+    }
 
     override suspend fun generateNewPreKeys(
         firstKeyId: Int,

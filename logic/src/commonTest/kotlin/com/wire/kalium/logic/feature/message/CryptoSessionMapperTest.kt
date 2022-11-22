@@ -5,7 +5,12 @@ import com.wire.kalium.logic.data.prekey.QualifiedUserPreKeyInfo
 import com.wire.kalium.logic.data.user.UserId
 import kotlin.test.Test
 import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 
 class CryptoSessionMapperTest {
@@ -14,44 +19,26 @@ class CryptoSessionMapperTest {
 
     @BeforeTest
     fun setup() {
-        cryptoSessionMapper = CryptoSessionMapperImpl()
+        cryptoSessionMapper = CryptoSessionMapperImpl(PreKeyMapperImpl())
     }
 
     @Test
-    fun givenListOfQualifiedUserPreKeyInfo_whenMappingToCryptoSessions_thenClientsWithNullPreyKeyAreIgnored() {
-        val qualifiedUserPreKeyInfo = listOf(
-            QualifiedUserPreKeyInfo(
-                userId = UserId("user1", "domain1"),
-                clientsInfo = listOf(
-                    ClientPreKeyInfo(
-                        clientId = "client1_null",
-                        preKey = null
-                    ),
-                    ClientPreKeyInfo(
-                        clientId = "valid_client",
-                        preKey = PreKeyCrypto(
-                            id = 1,
-                            encodedData = "key1"
-                        )
-                    )
-                )
-            ),
-            QualifiedUserPreKeyInfo(
-                userId = UserId("user2", "domain1"),
-                clientsInfo = listOf(
-                    ClientPreKeyInfo(
-                        clientId = "client1_null",
-                        preKey = null
-                    ),
-                    ClientPreKeyInfo(
-                        clientId = "client1_null",
-                        preKey = null
-                    )
-                )
-            )
-        )
+    fun givenListOfQualifiedUserPreKeyInfo_whenMappingToCryptoSessions_thenValidClientsAreSeperatedFromInvalid() {
 
-        val expected: Map<String, Map<String, Map<String, PreKeyCrypto>>> = mapOf(
+        val domainToUserIdTOClientIdToPrekeyMap: Map<String, Map<String, Map<String, PreKeyDTO?>>> =
+            mapOf("domain1" to mapOf(
+                "user1" to mapOf(
+                    "client1_null" to null,
+                    "valid_client" to PreKeyDTO(1, "key1")
+                ),
+                "user2" to mapOf(
+                    "client1_null" to null,
+                    "client2_null" to null
+                    )
+            ))
+
+
+        val expectedValid: Map<String, Map<String, Map<String, PreKeyCrypto>>> = mapOf(
             "domain1" to mapOf(
                 "user1" to mapOf(
                     "valid_client" to PreKeyCrypto(
@@ -63,8 +50,14 @@ class CryptoSessionMapperTest {
             )
         )
 
-        cryptoSessionMapper.getMapOfSessionIdsToPreKeysAndIgnoreNull(qualifiedUserPreKeyInfo).also { actual ->
-            assertEquals(expected, actual)
+        val expectedInvalid:  List<Pair<QualifiedIDEntity, List<String>>> = listOf(
+            UserIDEntity("user1", "domain1") to listOf("client1_null"),
+            UserIDEntity("user2", "domain1") to listOf("client1_null", "client2_null"),
+
+        )
+        cryptoSessionMapper.getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(domainToUserIdTOClientIdToPrekeyMap).also { actual ->
+            assertEquals(expectedValid, actual.valid)
+            assertEquals(expectedInvalid, actual.invalid)
         }
     }
 }

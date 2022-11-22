@@ -252,22 +252,6 @@ class ClientRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-    @Test
-    fun givenClient_whenMarkingAsInvalid_thenDAOFunctionIsCalled() = runTest {
-        val userId = UserId("user_id", "domain")
-        val userIDEntity = UserIDEntity(userId.value, userId.domain)
-        val clientId = CLIENT_ID
-        given(clientDAO)
-            .coroutine { clientDAO.tryMarkInvalid(userIDEntity, clientId.value) }
-            .then { Unit}
-
-        clientRepository.tryMarkingAsInvalid(userId, clientId)
-
-        verify(clientDAO)
-            .coroutine { clientDAO.tryMarkInvalid(userIDEntity, clientId.value) }
-            .wasInvoked(exactly = once)
-    }
-
     // selfListOfClients
     @Test
     fun whenSelfListOfClientsIsReturnSuccess_thenTheSuccessIsPropagated() = runTest {

@@ -47,7 +47,6 @@ interface ClientRepository {
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
-    suspend fun tryMarkingAsInvalid(userId: UserId, clientId: ClientId): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -152,7 +151,4 @@ class ClientDataSource(
         }.map { clientsList ->
             userMapper.fromOtherUsersClientsDTO(clientsList)
         }
-
-    override suspend fun tryMarkingAsInvalid(userId: UserId, clientId: ClientId) =
-        wrapStorageRequest { clientDAO.tryMarkInvalid(idMapper.toDaoModel(userId), clientId.value) }
 }
