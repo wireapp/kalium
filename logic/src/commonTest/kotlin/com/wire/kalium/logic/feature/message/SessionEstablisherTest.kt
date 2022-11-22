@@ -194,13 +194,14 @@ class SessionEstablisherTest {
                     TEST_CLIENT_ID_1.value to preKey,
                     "invalidClient" to null,
 
-                )
+                    )
             )
         )
         val expectedValid: Map<String, Map<String, Map<String, PreKeyCrypto>>> =
             mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to prekeyCrypto)))
 
-        val expectedInvalid: List<Pair<UserIDEntity, List<String>>> = listOf(UserIDEntity(TEST_USER_ID_1.value, TEST_USER_ID_1.domain) to listOf("invalidClient"))
+        val expectedInvalid: List<Pair<UserIDEntity, List<String>>> =
+            listOf(UserIDEntity(TEST_USER_ID_1.value, TEST_USER_ID_1.domain) to listOf("invalidClient"))
         given(preKeyRepository)
             .suspendFunction(preKeyRepository::preKeysOfClientsByQualifiedUsers)
             .whenInvokedWith(anything())

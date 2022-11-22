@@ -2,8 +2,6 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.DeviceType
-import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -34,7 +32,7 @@ class PersistOtherUsersClientsUseCaseTest {
 
         val userIdDTO = UserIdDTO(userId.value, userId.domain)
         val otherUserClients = listOf(
-            SimpleClientResponse("111",DeviceTypeDTO.Phone), SimpleClientResponse("2222", DeviceTypeDTO.Desktop)
+            SimpleClientResponse("111", DeviceTypeDTO.Phone), SimpleClientResponse("2222", DeviceTypeDTO.Desktop)
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
             .withSuccessfulResponse(userIdDTO, otherUserClients)

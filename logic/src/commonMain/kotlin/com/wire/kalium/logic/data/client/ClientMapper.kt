@@ -5,7 +5,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.location.LocationMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO

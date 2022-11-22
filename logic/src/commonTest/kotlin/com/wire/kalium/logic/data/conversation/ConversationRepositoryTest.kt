@@ -1022,11 +1022,12 @@ class ConversationRepositoryTest {
                 .thenReturn(NetworkResponse.Success(Unit, emptyMap(), HttpStatusCode.OK.value))
         }
 
-        suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<Client>>) = apply {
-            given(clientDao)
-                .coroutine { clientDao.conversationRepents(conversationIDEntity) }
-                .then { result }
-        }
+        suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<Client>>) =
+            apply {
+                given(clientDao)
+                    .coroutine { clientDao.conversationRepents(conversationIDEntity) }
+                    .then { result }
+            }
 
         fun arrange() = this to conversationRepository
     }

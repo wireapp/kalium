@@ -10,7 +10,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -21,7 +20,7 @@ import com.wire.kalium.persistence.dao.PrekeyDAO
 interface PreKeyRepository {
     suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
-    ): Either<NetworkFailure,  Map<String, Map<String, Map<String, PreKeyDTO?>>>>
+    ): Either<NetworkFailure, Map<String, Map<String, Map<String, PreKeyDTO?>>>>
 
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
     suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto>
@@ -38,7 +37,7 @@ class PreKeyDataSource(
 ) : PreKeyRepository {
     override suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
-    ): Either<NetworkFailure,  Map<String, Map<String, Map<String, PreKeyDTO?>>>> = wrapApiRequest {
+    ): Either<NetworkFailure, Map<String, Map<String, Map<String, PreKeyDTO?>>>> = wrapApiRequest {
         preKeyApi.getUsersPreKey(preKeyListMapper.toRemoteClientPreKeyInfoTo(qualifiedIdsMap))
     }
 
@@ -49,8 +48,9 @@ class PreKeyDataSource(
         wrapCryptoRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }
 
     override suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto> =
-        wrapCryptoRequest { proteusClientProvider.getOrCreate().newLastPreKey()
-    }
+        wrapCryptoRequest {
+            proteusClientProvider.getOrCreate().newLastPreKey()
+        }
 
     override suspend fun lastPreKeyId(): Either<StorageFailure, Int> = wrapStorageRequest {
         prekeyDAO.lastOTRPrekeyId()

@@ -6,7 +6,6 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -23,7 +22,6 @@ import com.wire.kalium.persistence.dao.client.InsertClientParam
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @Suppress("TooManyFunctions")
 interface ClientRepository {
