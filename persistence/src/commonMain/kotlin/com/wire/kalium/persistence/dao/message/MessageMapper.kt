@@ -26,7 +26,9 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         content: MessageEntityContent,
         allReactionsJson: String?,
-        selfReactionsJson: String?
+        selfReactionsJson: String?,
+        senderName: String?,
+        isSelfMessage: Boolean
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> MessageEntity.Regular(
             content = content,
@@ -41,7 +43,9 @@ object MessageMapper {
             reactions = ReactionsEntity(
                 totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
                 selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
-            )
+            ),
+             senderName = senderName,
+            isSelfMessage = isSelfMessage
         )
 
         is MessageEntityContent.System -> MessageEntity.System(
@@ -51,7 +55,9 @@ object MessageMapper {
             date = date,
             senderUserId = senderUserId,
             status = status,
-            visibility = visibility
+            visibility = visibility,
+            senderName = senderName,
+            isSelfMessage = isSelfMessage
         )
     }
 
@@ -83,6 +89,7 @@ object MessageMapper {
         senderUserType: UserTypeEntity?,
         senderBotService: BotEntity?,
         senderIsDeleted: Boolean?,
+        isSelfMessage: Boolean,
         text: String?,
         assetSize: Long?,
         assetName: String?,
@@ -177,7 +184,9 @@ object MessageMapper {
             visibility,
             content,
             allReactionsJson,
-            selfReactionsJson
+            selfReactionsJson,
+            senderName,
+            isSelfMessage
         )
     }
 

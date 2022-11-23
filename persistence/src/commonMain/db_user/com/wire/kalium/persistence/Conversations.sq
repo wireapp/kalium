@@ -100,11 +100,7 @@ CASE (Conversation.type)
         ELSE Conversation.last_modified_date
         END AS lastModifiedDate,
 Conversation.last_read_date AS lastReadDate,
-IFNULL((SELECT Message.date FROM Message
- WHERE Message.conversation_id IS Conversation.qualified_id
- AND (DateTime(Message.date) > (SELECT DateTime(last_read_date) FROM Conversation WHERE qualified_id IS Conversation.qualified_id))
- ORDER BY Message.date ASC
- LIMIT  1), 0) AS lastUnreadMessageDate,
+FirstUnreadMessage.date AS firstUnreadMessageDate,
 CASE (Conversation.type)
     WHEN "ONE_ON_ONE" THEN  User.user_availability_status
     WHEN "CONNECTION_PENDING" THEN connection_user.user_availability_status
@@ -145,10 +141,11 @@ Conversation.last_notified_message_date AS lastNotifiedMessageDate,
 || '}' AS unreadContentTypeJson,
 (SELECT COUNT() FROM MessageMention
     WHERE message_id IN (SELECT Message.id FROM Message WHERE Message.conversation_id = Conversation.qualified_id
-                 AND (DateTime(Message.date) >  DateTime(Conversation.last_read_date))
-                 AND Message.content_type IN ('TEXT') AND Message.visibility IS 'VISIBLE')
+                 AND (DateTime(Message.date) > DateTime(Conversation.last_read_date))
+                 AND Message.content_type IN ('TEXT') AND Message.visibility IS 'VISIBLE'
          AND conversation_id = Conversation.qualified_id
          AND user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1))
+         )
     AS unreadMentionsCount,
 (SELECT COUNT() FROM Member
     WHERE Member.user == (SELECT SelfUser.id FROM SelfUser LIMIT 1)
@@ -167,7 +164,11 @@ Conversation.team_id,
 Conversation.mls_proposal_timer,
 Conversation.muted_time,
 Conversation.creator_id,
-Conversation.last_modified_date
+Conversation.last_modified_date,
+LastMessage.date AS lastMessageDate,
+LastMessage.senderName AS lastMessageSenderName,
+LastMessage.contentType AS lastMessageContentType,
+LastMessage.text AS lastMessageText
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS "ONE_ON_ONE"
@@ -179,6 +180,8 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          OR Connection.status = "NOT_CONNECTED"
          AND Conversation.type IS "CONNECTION_PENDING")
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
+LEFT JOIN Message AS FirstUnreadMessage ON FirstUnreadMessage.id IS (SELECT id FROM Message WHERE Message.conversation_id = Conversation.qualified_id AND DateTime(Message.date) > DateTime(last_read_date) ORDER BY Message.date ASC LIMIT 1)
+LEFT JOIN MessageDetailsView AS LastMessage ON LastMessage.id IS (SELECT id FROM Message WHERE Message.conversation_id = Conversation.qualified_id AND Message.visibility IS 'VISIBLE'  ORDER BY Message.date DESC LIMIT  1)
 LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS "STILL_ONGOING" ORDER BY created_at DESC LIMIT 1);
 
 selectAllConversationDetails:

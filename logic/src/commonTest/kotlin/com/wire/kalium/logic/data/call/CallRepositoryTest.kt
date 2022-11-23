@@ -205,7 +205,7 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap()
                         )
                     )
                 )
@@ -272,7 +272,7 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap()
                         )
                     )
                 )
@@ -334,7 +334,7 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap()
                         )
                     )
                 )
@@ -405,7 +405,7 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap()
                         )
                     )
                 )
@@ -462,7 +462,7 @@ class CallRepositoryTest {
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
-                            unreadContentCount = emptyMap()
+                            unreadEventCount = emptyMap()
                         )
                     )
                 )
@@ -1314,7 +1314,7 @@ class CallRepositoryTest {
             userType = UserType.INTERNAL,
             unreadMessagesCount = 0,
             lastMessage = null,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap()
         )
     }
 }

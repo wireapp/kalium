@@ -49,7 +49,7 @@ class ObserveConversationListDetailsUseCaseTest {
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadContentCount = emptyMap()
+                unreadEventCount = emptyMap()
             )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -85,7 +85,7 @@ class ObserveConversationListDetailsUseCaseTest {
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap()
         )
 
         val (arrangement, observeConversationsUseCase) = Arrangement()
@@ -123,7 +123,7 @@ class ObserveConversationListDetailsUseCaseTest {
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
-                unreadContentCount = emptyMap()
+                unreadEventCount = emptyMap()
             )
         )
 
@@ -134,7 +134,7 @@ class ObserveConversationListDetailsUseCaseTest {
             UserType.INTERNAL,
             unreadMessagesCount = 0,
             lastMessage = null,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap()
         )
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
@@ -143,7 +143,7 @@ class ObserveConversationListDetailsUseCaseTest {
             UserType.INTERNAL,
             unreadMessagesCount = 0,
             lastMessage = null,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap()
         )
 
         val oneOnOneDetailsChannel = Channel<ConversationDetails.OneOne>(Channel.UNLIMITED)
@@ -182,7 +182,7 @@ class ObserveConversationListDetailsUseCaseTest {
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap()
         )
 
         val selfConversation = TestConversation.SELF
@@ -220,7 +220,7 @@ class ObserveConversationListDetailsUseCaseTest {
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap()
         )
 
         val firstConversationsList = listOf(groupConversation)
@@ -252,7 +252,7 @@ class ObserveConversationListDetailsUseCaseTest {
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
-            unreadContentCount = emptyMap()
+            unreadEventCount = emptyMap()
         )
 
         val firstConversationsList = listOf(groupConversation)

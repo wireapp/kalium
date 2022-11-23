@@ -16,7 +16,9 @@ sealed class Message(
     open val date: String,
     open val senderUserId: UserId,
     open val status: Status,
-    open val visibility: Visibility
+    open val visibility: Visibility,
+    open val senderUserName: String?, // TODO we can get it from entity but this will need a lot of changes in use cases,
+    open val isSelfMessage: Boolean
 ) {
 
     data class Regular(
@@ -27,10 +29,12 @@ sealed class Message(
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
+        override val senderUserName: String? = null,
+        override val isSelfMessage: Boolean = false,
         val senderClientId: ClientId,
         val editStatus: EditStatus,
         val reactions: Reactions = Reactions.EMPTY
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+    ) : Message(id, content, conversationId, date, senderUserId, status, visibility, senderUserName, isSelfMessage) {
         @Suppress("LongMethod")
         override fun toString(): String {
             val properties: MutableMap<String, String>
@@ -73,8 +77,8 @@ sealed class Message(
                 }
 
                 is MessageContent.RestrictedAsset -> {
-                     properties = mutableMapOf(
-                         typeKey to "restrictedAsset",
+                    properties = mutableMapOf(
+                        typeKey to "restrictedAsset",
                         "sizeInBytes" to "${content.sizeInBytes}",
                         "mimeType" to content.mimeType,
                     )
@@ -130,7 +134,9 @@ sealed class Message(
                 "status" to "$status",
                 "visibility" to "$visibility",
                 "senderClientId" to senderClientId.value.obfuscateId(),
-                "editStatus" to "$editStatus"
+                "editStatus" to "$editStatus",
+                "senderUserName" to "$senderUserName",
+                "isSelfMessage" to "$isSelfMessage"
             )
 
             properties.putAll(standardProperties)
@@ -146,8 +152,10 @@ sealed class Message(
         override val date: String,
         override val senderUserId: UserId,
         override val status: Status,
-        override val visibility: Visibility = Visibility.VISIBLE
-    ) : Message(id, content, conversationId, date, senderUserId, status, visibility) {
+        override val visibility: Visibility = Visibility.VISIBLE,
+        override val senderUserName: String? = null,
+        override val isSelfMessage: Boolean = false,
+        ) : Message(id, content, conversationId, date, senderUserId, status, visibility, senderUserName, isSelfMessage) {
         override fun toString(): String {
 
             var properties: MutableMap<String, String>
@@ -177,6 +185,8 @@ sealed class Message(
                 "senderUserId" to senderUserId.value.obfuscateId(),
                 "status" to "$status",
                 "visibility" to "$visibility",
+                "senderUserName" to "$senderUserName",
+                "isSelfMessage" to "$isSelfMessage"
             )
 
             properties.putAll(standardProperties)
@@ -261,5 +271,16 @@ sealed class Message(
         }
     }
 }
+
+@Suppress("MagicNumber")
+enum class UnreadEventType(val priority: Int) {
+    KNOCK(1),
+    MISSED_CALL(2),
+    MENTION(3),
+    MESSAGE(4), // text or asset
+    //     REPLY(5), TODO in development
+    IGNORED(10),
+}
+
 typealias ReactionsCount = Map<String, Int>
 typealias UserReactions = Set<String>

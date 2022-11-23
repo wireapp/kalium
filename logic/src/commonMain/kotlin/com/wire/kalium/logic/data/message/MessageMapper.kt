@@ -49,7 +49,9 @@ class MessageMapperImpl(
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp)
                 },
-                visibility = visibility
+                visibility = visibility,
+                senderName = message.senderUserName,
+                isSelfMessage = message.isSelfMessage
             )
 
             is Message.System -> MessageEntity.System(
@@ -59,7 +61,9 @@ class MessageMapperImpl(
                 date = message.date,
                 senderUserId = idMapper.toDaoModel(message.senderUserId),
                 status = status,
-                visibility = visibility
+                visibility = visibility,
+                senderName =message.senderUserName,
+                isSelfMessage = message.isSelfMessage
             )
         }
     }
@@ -90,7 +94,9 @@ class MessageMapperImpl(
                     is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastTimeStamp)
                 },
                 visibility = visibility,
-                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions)
+                reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
+                senderUserName = message.senderName,
+                isSelfMessage = message.isSelfMessage
             )
 
             is MessageEntity.System -> Message.System(
@@ -100,7 +106,9 @@ class MessageMapperImpl(
                 date = message.date,
                 senderUserId = idMapper.fromDaoModel(message.senderUserId),
                 status = status,
-                visibility = visibility
+                visibility = visibility,
+                senderUserName = message.senderName,
+                isSelfMessage = message.isSelfMessage
             )
         }
     }

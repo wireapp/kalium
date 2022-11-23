@@ -13,7 +13,8 @@ sealed class MessageEntity(
     open val date: String,
     open val senderUserId: QualifiedIDEntity,
     open val status: Status,
-    open val visibility: Visibility
+    open val visibility: Visibility,
+    open val isSelfMessage: Boolean,
 ) {
 
     data class Regular(
@@ -24,10 +25,12 @@ sealed class MessageEntity(
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
+        override val isSelfMessage: Boolean = false,
+        val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
+    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     data class System(
         override val id: String,
@@ -36,8 +39,10 @@ sealed class MessageEntity(
         override val date: String,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
-        override val visibility: Visibility = Visibility.VISIBLE
-    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility)
+        override val visibility: Visibility = Visibility.VISIBLE,
+        override val isSelfMessage: Boolean = false,
+        val senderName: String?,
+        ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     enum class Status {
         PENDING, SENT, READ, FAILED

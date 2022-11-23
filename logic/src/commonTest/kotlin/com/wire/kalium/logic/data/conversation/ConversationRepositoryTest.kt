@@ -498,7 +498,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.Group>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
+            assertTrue { conversationDetail.value.unreadEventCount.values.sum() == 5 }
 
             awaitComplete()
         }
@@ -576,7 +576,7 @@ class ConversationRepositoryTest {
             val conversationDetail = awaitItem()
 
             assertIs<Either.Right<ConversationDetails.OneOne>>(conversationDetail)
-            assertTrue { conversationDetail.value.unreadContentCount.values.sum() == 5 }
+            assertTrue { conversationDetail.value.unreadEventCount.values.sum() == 5 }
             assertTrue(conversationDetail.value.lastMessage != null)
 
             awaitComplete()
