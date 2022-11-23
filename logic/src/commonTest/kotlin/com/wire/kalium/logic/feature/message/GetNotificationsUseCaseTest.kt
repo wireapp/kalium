@@ -443,9 +443,6 @@ class GetNotificationsUseCaseTest {
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
-        val selfUserId = mock(classOf<UserId>())
-
-        @Mock
         private val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
 
         val timeParser = TimeParserImpl()
@@ -455,7 +452,7 @@ class GetNotificationsUseCaseTest {
             messageRepository = messageRepository,
             userRepository = userRepository,
             conversationRepository = conversationRepository,
-            selfUserId = selfUserId,
+            selfUserId = SELF_USER_ID,
             timeParser = timeParser,
             ephemeralNotificationsManager = ephemeralNotifications
         )
@@ -525,7 +522,7 @@ class GetNotificationsUseCaseTest {
     }
 
     companion object {
-
+        val SELF_USER_ID = UserId("user-id", "domain")
         private val MY_ID = TestUser.USER_ID
         private const val TIME = "2000-01-23T01:23:35.678+09:00"
         private const val TIME_EARLIER = "2000-01-23T01:23:30.678+09:00"

@@ -66,16 +66,13 @@ class MLSMessageUnpackerTest {
         val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
 
         @Mock
-        val selfUserId = mock(classOf<UserId>())
-
-        @Mock
         val protoContentMapper = mock(classOf<ProtoContentMapper>())
 
         private val mlsMessageUnpacker = MLSMessageUnpackerImpl(
             mlsClientProvider,
             conversationRepository,
             pendingProposalScheduler,
-            selfUserId,
+            SELF_USER_ID,
             protoContentMapper
         )
 
@@ -116,5 +113,8 @@ class MLSMessageUnpackerTest {
 
         fun arrange() = this to mlsMessageUnpacker
 
+    }
+    companion object {
+        val SELF_USER_ID = UserId("user-id", "domain")
     }
 }

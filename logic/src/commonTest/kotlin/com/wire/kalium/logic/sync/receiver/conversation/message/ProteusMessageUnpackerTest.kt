@@ -112,9 +112,6 @@ class ProteusMessageUnpackerTest {
         val proteusClientProvider = mock(classOf<ProteusClientProvider>())
 
         @Mock
-        val selfUserId = mock(classOf<UserId>())
-
-        @Mock
         val protoContentMapper = mock(classOf<ProtoContentMapper>())
 
         init {
@@ -139,8 +136,12 @@ class ProteusMessageUnpackerTest {
         }
 
         fun arrange() = this to ProteusMessageUnpackerImpl(
-            proteusClientProvider, selfUserId, protoContentMapper
+            proteusClientProvider, SELF_USER_ID, protoContentMapper
         )
+
+        companion object {
+            val SELF_USER_ID = UserId("user-id", "domain")
+        }
     }
 
 }

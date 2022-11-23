@@ -47,9 +47,6 @@ class PersistMigratedMessagesUseCaseTest {
         @Mock
         private val applicationMessageHandler = mock(classOf<ApplicationMessageHandler>())
 
-        @Mock
-        private val selfUserId = mock(classOf<UserId>())
-
         val genericMessage = GenericMessage("uuid", GenericMessage.Content.Text(Text("some_text")))
 
         fun fakeMigratedMessage() = MigratedMessage(
@@ -71,8 +68,12 @@ class PersistMigratedMessagesUseCaseTest {
 
         fun arrange() = this to PersistMigratedMessagesUseCaseImpl(
             applicationMessageHandler,
-            MapperProvider.protoContentMapper(selfUserId = selfUserId)
+            MapperProvider.protoContentMapper(selfUserId = SELF_USER_ID)
         )
+    }
+
+    companion object {
+        val SELF_USER_ID = UserId("user-id", "domain")
     }
 
 }

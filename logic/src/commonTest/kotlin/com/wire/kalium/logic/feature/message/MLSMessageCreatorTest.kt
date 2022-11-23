@@ -32,14 +32,11 @@ class MLSMessageCreatorTest {
     @Mock
     private val protoContentMapper = mock(ProtoContentMapper::class)
 
-    @Mock
-    private val selfUserId = mock(UserId::class)
-
     private lateinit var mlsMessageCreator: MLSMessageCreator
 
     @BeforeTest
     fun setup() {
-        mlsMessageCreator = MLSMessageCreatorImpl(mlsClientProvider, selfUserId, protoContentMapper)
+        mlsMessageCreator = MLSMessageCreatorImpl(mlsClientProvider, SELF_USER_ID, protoContentMapper)
     }
 
     @Test
@@ -70,6 +67,7 @@ class MLSMessageCreatorTest {
     }
 
     private companion object {
+        val SELF_USER_ID = UserId("user-id", "domain")
         val GROUP_ID = GroupID("groupId")
         val CRYPTO_GROUP_ID = MapperProvider.idMapper().toCryptoModel(GroupID("groupId"))
         val MLS_CLIENT = mock(classOf<MLSClient>())
