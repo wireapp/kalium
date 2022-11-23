@@ -53,12 +53,11 @@ data class ConversationResponse(
     val isOneOnOneConversation: Boolean
         get() = type in setOf(
             Type.ONE_TO_ONE,
-            Type.WAIT_FOR_CONNECTION,
-            Type.INCOMING_CONNECTION
+            Type.WAIT_FOR_CONNECTION
         )
 
     enum class Type(val id: Int) {
-        GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3), INCOMING_CONNECTION(4);
+        GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3), GLOBAL_TEAM(4);
 
         companion object {
             fun fromId(id: Int): Type = values().first { type -> type.id == id }
