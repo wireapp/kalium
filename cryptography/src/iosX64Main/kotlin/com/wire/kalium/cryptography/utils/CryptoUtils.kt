@@ -2,14 +2,10 @@ package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
 import io.ktor.util.encodeBase64
-import io.ktor.utils.io.charsets.Charset
-import io.ktor.utils.io.charsets.Charsets
 import kotlinx.cinterop.allocArrayOf
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.refTo
-import okio.FileSystem
 import okio.HashingSink
-import okio.Path
 import okio.Sink
 import okio.Source
 import okio.blackholeSink
@@ -76,10 +72,8 @@ actual fun decryptDataWithAES256(data: EncryptedData, secretKey: AES256Key): Pla
 actual fun encryptFileWithAES256(assetDataSource: Source, key: AES256Key, outputSink: Sink): Long =
     TODO("Not yet implemented")
 
-
 actual fun decryptFileWithAES256(encryptedDataSource: Source, decryptedDataSink: Sink, secretKey: AES256Key): Long =
     TODO("Not yet implemented")
-
 
 actual fun generateRandomAES256Key(): AES256Key {
     TODO("Not yet implemented")
