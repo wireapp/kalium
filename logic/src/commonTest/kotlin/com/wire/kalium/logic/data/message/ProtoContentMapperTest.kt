@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
@@ -19,17 +20,33 @@ import kotlin.test.assertIs
 class ProtoContentMapperTest {
 
     private lateinit var protoContentMapper: ProtoContentMapper
-
+    val selfUserId = UserId("user-id", "domain")
     val idMapper: IdMapper = IdMapperImpl()
 
     @BeforeTest
     fun setup() {
-        protoContentMapper = ProtoContentMapperImpl()
+        protoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId)
     }
 
     @Test
     fun givenTextContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val messageContent = MessageContent.Text("Hello")
+        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(decoded, protoContent)
+    }
+
+    @Test
+    fun givenTextContentWithQuoteReference_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val messageContent = MessageContent.Text(
+            value = "Hello",
+            quotedMessageReference = MessageContent.QuoteReference(
+                quotedMessageId = "quotedMessageId", quotedMessageSha256 = null, true
+            )
+        )
         val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent)
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)

@@ -15,6 +15,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.functional.Either
@@ -36,7 +37,8 @@ internal class MLSMessageUnpackerImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val conversationRepository: ConversationRepository,
     private val pendingProposalScheduler: PendingProposalScheduler,
-    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(),
+    private val selfUserId: UserId,
+    private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : MLSMessageUnpacker {
 

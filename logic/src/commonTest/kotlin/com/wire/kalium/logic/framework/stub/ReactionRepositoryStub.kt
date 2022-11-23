@@ -3,9 +3,12 @@ package com.wire.kalium.logic.framework.stub
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.UserReactions
+import com.wire.kalium.logic.data.message.reaction.MessageReaction
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 open class ReactionRepositoryStub : ReactionRepository {
 
@@ -29,6 +32,13 @@ open class ReactionRepositoryStub : ReactionRepository {
         conversationId: ConversationId
     ): Either<StorageFailure, UserReactions> {
         TODO("Not yet implemented")
+    }
+
+    override suspend fun observeMessageReactions(
+        conversationId: ConversationId,
+        messageId: String
+    ): Flow<List<MessageReaction>> {
+        return flowOf(listOf())
     }
 
     override suspend fun updateReaction(

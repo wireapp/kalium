@@ -93,7 +93,7 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
-    suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<CoreFailure, Conversation>
+    suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
     suspend fun updateMutedStatusLocally(
         conversationId: ConversationId,
@@ -172,7 +172,7 @@ internal class ConversationDataSource internal constructor(
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper()
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId)
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -462,11 +462,10 @@ internal class ConversationDataSource internal constructor(
             wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
         }
 
-    override suspend fun getOneToOneConversationWithOtherUser(otherUserId: UserId): Either<StorageFailure, Conversation> {
-        return wrapStorageRequest {
-            val conversationEntity = conversationDAO.getConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
-            conversationEntity?.let { conversationMapper.fromDaoModel(it) }
-        }
+    override suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<StorageFailure, Conversation>> {
+            return conversationDAO.observeConversationWithOtherUser(idMapper.toDaoModel(otherUserId))
+                .wrapStorageRequest()
+                .mapRight { conversationMapper.fromDaoModel(it) }
     }
 
     override suspend fun updateMutedStatusLocally(

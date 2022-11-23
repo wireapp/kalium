@@ -9,6 +9,8 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface ReactionRepository {
     suspend fun persistReaction(
@@ -38,11 +40,17 @@ interface ReactionRepository {
         date: String,
         userReactions: UserReactions
     ): Either<StorageFailure, Unit>
+
+    suspend fun observeMessageReactions(
+        conversationId: ConversationId,
+        messageId: String
+    ): Flow<List<MessageReaction>>
 }
 
 class ReactionRepositoryImpl(
     private val selfUserId: UserId,
     private val reactionsDAO: ReactionDAO,
+    private val reactionsMapper: ReactionsMapper = MapperProvider.reactionsMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ReactionRepository {
 
@@ -99,5 +107,20 @@ class ReactionRepositoryImpl(
             userReactions
         )
     }
-}
 
+    override suspend fun observeMessageReactions(
+        conversationId: ConversationId,
+        messageId: String
+    ): Flow<List<MessageReaction>> =
+        reactionsDAO.observeMessageReactions(
+            conversationId = idMapper.toDaoModel(conversationId),
+            messageId = messageId
+        ).map {
+            it.map { messageReaction ->
+                reactionsMapper.fromEntityToModel(
+                    selfUserId = selfUserId,
+                    messageReactionEntity = messageReaction
+                )
+            }
+        }
+}

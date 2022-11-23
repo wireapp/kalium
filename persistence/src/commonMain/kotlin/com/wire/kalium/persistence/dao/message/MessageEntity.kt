@@ -125,7 +125,8 @@ sealed class MessageEntity(
     }
 
     enum class Visibility {
-        VISIBLE, DELETED, HIDDEN
+        VISIBLE, DELETED, HIDDEN;
+        val isVisible get() = this == VISIBLE
     }
 
     @Serializable
@@ -144,8 +145,42 @@ sealed class MessageEntityContent {
 
     data class Text(
         val messageBody: String,
-        val mentions: List<MessageEntity.Mention> = listOf()
-    ) : Regular()
+        val mentions: List<MessageEntity.Mention> = listOf(),
+        /**
+         * ID of a message being quoted.
+         * When persisting the content, this is the ID that will be used for quotes.
+         *
+         * TODO(refactor): Consider removing this
+         *                 Only exists to make it easier to insert into the DB
+         *                 Otherwise we'd need to pass a full QuotedMessage object
+         */
+        val quotedMessageId: String? = null,
+        val isQuoteVerified: Boolean? = null,
+        /**
+         * Details of the message being quoted.
+         * Unused when inserting into the DB.
+         */
+        val quotedMessage: QuotedMessage? = null
+    ) : Regular() {
+        data class QuotedMessage(
+            val id: String,
+            val senderId: QualifiedIDEntity,
+            val isQuotingSelfUser: Boolean,
+            /**
+             * Indicates that the hash of the quote
+             * matches the hash of the original message
+             */
+            val isVerified: Boolean,
+            val senderName: String,
+            val dateTime: String,
+            val editTimestamp: String?,
+            val visibility: MessageEntity.Visibility,
+            val contentType: MessageEntity.ContentType,
+            val textBody: String?,
+            val assetMimeType: String?,
+            val assetName: String?,
+        )
+    }
 
     data class Asset(
         val assetSizeInBytes: Long,

@@ -49,6 +49,9 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
         } else {
             CoreLogger.setLoggingLevel(logLevel)
         }
+
+        currentContext.findObject<CoreLogic>()?.updateApiVersionsScheduler?.scheduleImmediateApiVersionUpdate()
+        Unit
     }
 
     companion object {

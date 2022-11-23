@@ -86,6 +86,9 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.client.MLSClientManager
+import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
@@ -94,6 +97,7 @@ import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCase
 import com.wire.kalium.logic.feature.conversation.GetSecurityClassificationTypeUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
@@ -116,6 +120,7 @@ import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -135,6 +140,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.network.ApiMigrationManager
+import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -186,6 +193,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -204,13 +212,14 @@ fun interface SelfTeamIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(
     private val userId: UserId,
     private val authenticatedDataSourceSet: AuthenticatedDataSourceSet,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
     private val globalPreferences: GlobalPrefProvider,
+    private val sessionManager: SessionManager,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val featureSupport: FeatureSupport,
@@ -327,9 +336,10 @@ class UserSessionScope internal constructor(
 
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userStorage.database.messageDAO
+            messageApi = authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
+            mlsMessageApi = authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            messageDAO = userStorage.database.messageDAO,
+            selfUserId = userId
         )
 
     private val userRepository: UserRepository
@@ -420,10 +430,16 @@ class UserSessionScope internal constructor(
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClientProvider)
+        get() = MessageEnvelopeCreatorImpl(
+            proteusClientProvider = authenticatedDataSourceSet.proteusClientProvider,
+            selfUserId = userId
+        )
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider)
+        get() = MLSMessageCreatorImpl(
+            mlsClientProvider = mlsClientProvider,
+            selfUserId = userId
+        )
 
     private val messageSendingScheduler: MessageSendingScheduler
         get() = authenticatedDataSourceSet.userSessionWorkScheduler
@@ -478,7 +494,7 @@ class UserSessionScope internal constructor(
         )
 
     val joinExistingMLSConversations: JoinExistingMLSConversationsUseCase
-        get() = JoinExistingMLSConversationsUseCase(
+        get() = JoinExistingMLSConversationsUseCaseImpl(
             featureSupport,
             conversationRepository,
             conversationGroupRepository
@@ -508,6 +524,23 @@ class UserSessionScope internal constructor(
         IncrementalSyncManager(slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository)
     }
 
+    private val upgradeCurrentSessionUseCase
+        get() =
+            UpgradeCurrentSessionUseCaseImpl(authenticatedDataSourceSet.authenticatedNetworkContainer.accessTokenApi, sessionManager)
+
+    @Suppress("MagicNumber")
+    private val apiMigrations = listOf(
+        Pair(3, ApiMigrationV3(clientIdProvider, upgradeCurrentSessionUseCase))
+    )
+
+    private val apiMigrationManager
+        get() =
+            ApiMigrationManager(
+                sessionManager.serverConfig().metaData.commonApiVersion.version,
+                userStorage.database.metadataDAO,
+                apiMigrations
+            )
+
     private val timeParser: TimeParser = TimeParserImpl()
 
     private val eventRepository: EventRepository
@@ -521,6 +554,7 @@ class UserSessionScope internal constructor(
         KeyPackageManagerImpl(
             featureSupport,
             incrementalSyncRepository,
+            lazy { clientRepository },
             lazy { client.refillKeyPackages },
             lazy { client.mlsKeyPackageCountUseCase },
             lazy { users.timestampKeyRepository }
@@ -529,8 +563,26 @@ class UserSessionScope internal constructor(
         KeyingMaterialsManagerImpl(
             featureSupport,
             incrementalSyncRepository,
+            lazy { clientRepository },
             lazy { conversations.updateMLSGroupsKeyingMaterials },
             lazy { users.timestampKeyRepository }
+        )
+
+    internal val mlsClientManager: MLSClientManager =
+        MLSClientManagerImpl(
+            clientIdProvider,
+            featureSupport,
+            incrementalSyncRepository,
+            lazy { slowSyncRepository },
+            lazy { clientRepository },
+            lazy {
+                RegisterMLSClientUseCaseImpl(
+                    mlsClientProvider,
+                    clientRepository,
+                    keyPackageRepository,
+                    keyPackageLimitsProvider
+                )
+            }
         )
 
     internal val mlsPublicKeysRepository: MLSPublicKeysRepository
@@ -577,10 +629,18 @@ class UserSessionScope internal constructor(
         )
 
     private val mlsUnpacker: MLSMessageUnpacker
-        get() = MLSMessageUnpackerImpl(mlsClientProvider, conversationRepository, pendingProposalScheduler)
+        get() = MLSMessageUnpackerImpl(
+            mlsClientProvider = mlsClientProvider,
+            conversationRepository = conversationRepository,
+            pendingProposalScheduler = pendingProposalScheduler,
+            selfUserId = userId
+        )
 
     private val proteusUnpacker: ProteusMessageUnpacker
-        get() = ProteusMessageUnpackerImpl(authenticatedDataSourceSet.proteusClientProvider)
+        get() = ProteusMessageUnpackerImpl(
+            proteusClientProvider = authenticatedDataSourceSet.proteusClientProvider,
+            selfUserId = userId
+        )
 
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
@@ -708,6 +768,7 @@ class UserSessionScope internal constructor(
             clientRemoteRepository,
             authenticatedDataSourceSet.proteusClientProvider,
             globalScope.sessionRepository,
+            upgradeCurrentSessionUseCase,
             userId,
             featureSupport,
             clientIdProvider
@@ -857,6 +918,7 @@ class UserSessionScope internal constructor(
 
     init {
         launch {
+            apiMigrationManager.performMigrations()
             // TODO: Add a public start function to the Managers
             incrementalSyncManager
             slowSyncManager

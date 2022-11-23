@@ -72,6 +72,28 @@ class UserDAOImpl internal constructor(
         )
     }
 
+    override suspend fun insertOrIgnoreUsers(users: List<UserEntity>) {
+        userQueries.transaction {
+            for (user: UserEntity in users) {
+                userQueries.insertOrIgnoreUser(
+                    user.id,
+                    user.name,
+                    user.handle,
+                    user.email,
+                    user.phone,
+                    user.accentId,
+                    user.team,
+                    user.connectionStatus,
+                    user.previewAssetId,
+                    user.completeAssetId,
+                    user.userType,
+                    user.botService,
+                    user.deleted
+                )
+            }
+        }
+    }
+
     override suspend fun upsertTeamMembers(users: List<UserEntity>) {
         userQueries.transaction {
             for (user: UserEntity in users) {

@@ -236,9 +236,12 @@ class ConversationRepositoryTest {
                 .arrange()
 
             // when
-            val result = conversationRepository.getOneToOneConversationWithOtherUser(OTHER_USER_ID)
-            // then
-            assertIs<Either.Right<ConversationDetails.OneOne>>(result)
+            conversationRepository.observeOneToOneConversationWithOtherUser(OTHER_USER_ID).test {
+                val result = awaitItem()
+                // then
+                assertIs<Either.Right<ConversationDetails.OneOne>>(result)
+                awaitComplete()
+            }
         }
 
     @Test
@@ -865,9 +868,9 @@ class ConversationRepositoryTest {
 
         fun withExpectedConversationWithOtherUser(conversation: ConversationViewEntity?) = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationWithOtherUser)
+                .suspendFunction(conversationDAO::observeConversationWithOtherUser)
                 .whenInvokedWith(anything())
-                .then { conversation }
+                .then { flowOf(conversation) }
         }
 
         fun withUpdateConversationMemberStateResult(response: NetworkResponse<Unit>) = apply {
