@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -12,6 +13,9 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
+import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.mock
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -144,7 +148,10 @@ class SyncManagerTest {
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
         val slowSyncRepository: SlowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
 
-        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
+        @Mock
+        val sessionRepository = mock(classOf<SessionRepository>())
+
+        val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository(sessionRepository)
 
         private val syncManager = SyncManagerImpl(
             slowSyncRepository, incrementalSyncRepository

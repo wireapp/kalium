@@ -61,10 +61,10 @@ internal class InMemoryIncrementalSyncRepository(
     }
 
     override suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy) {
-        if (connectionPolicy==ConnectionPolicy.KEEP_ALIVE){
+        if (connectionPolicy == ConnectionPolicy.KEEP_ALIVE) {
             kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
             _connectionPolicy.emit(connectionPolicy)
-        }else{
+        } else {
             sessionRepository.getAllValidAccountPersistentWebSocketStatus().collect {
                 if (!it.map { it.isPersistentWebSocketEnabled }.contains(true)) {
                     kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")

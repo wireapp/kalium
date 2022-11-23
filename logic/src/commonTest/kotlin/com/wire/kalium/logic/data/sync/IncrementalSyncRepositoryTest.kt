@@ -2,6 +2,10 @@ package com.wire.kalium.logic.data.sync
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.session.SessionRepository
+import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toCollection
@@ -17,9 +21,12 @@ class IncrementalSyncRepositoryTest {
 
     private lateinit var incrementalSyncRepository: IncrementalSyncRepository
 
+    @Mock
+    val sessionRepository = mock(classOf<SessionRepository>())
+
     @BeforeTest
     fun setup() {
-        incrementalSyncRepository = InMemoryIncrementalSyncRepository()
+        incrementalSyncRepository = InMemoryIncrementalSyncRepository(sessionRepository)
     }
 
     @Test

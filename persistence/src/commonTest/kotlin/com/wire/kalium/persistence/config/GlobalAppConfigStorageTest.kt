@@ -39,12 +39,4 @@ class GlobalAppConfigStorageTest {
         assertEquals(false, globalAppConfigStorage.isLoggingEnables())
     }
 
-    @Test
-    fun givenPersistWebSocketStatus_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
-        globalAppConfigStorage.persistPersistentWebSocketConnectionStatus(true)
-        assertEquals(true, globalAppConfigStorage.isPersistentWebSocketConnectionEnabledFlow().first())
-
-        globalAppConfigStorage.persistPersistentWebSocketConnectionStatus(false)
-        assertEquals(false, globalAppConfigStorage.isPersistentWebSocketConnectionEnabledFlow().first())
-    }
 }

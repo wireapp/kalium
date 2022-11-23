@@ -4,6 +4,7 @@ import com.wire.kalium.persistence.GlobalDBBaseTest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.FullAccountEntity
+import com.wire.kalium.persistence.daokaliumdb.PersistentWebSocketStatusEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.model.LogoutReason
@@ -61,12 +62,14 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         db.accountsDAO.insertOrReplace(
             accountWithNullSsoId.info.userIDEntity,
             accountWithNullSsoId.ssoId,
-            accountWithNullSsoId.serverConfigId
+            accountWithNullSsoId.serverConfigId,
+            false
         )
         db.accountsDAO.insertOrReplace(
             accountWithSsoId.info.userIDEntity,
             accountWithSsoId.ssoId,
-            accountWithSsoId.serverConfigId
+            accountWithSsoId.serverConfigId,
+            false
         )
 
         db.accountsDAO.ssoId(accountWithNullSsoId.info.userIDEntity).also {
@@ -80,7 +83,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenInsertingAccount_thenAccountIsInserted() = runTest {
         val account = VALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId)
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
 
         val insertedAccount = db.accountsDAO.fullAccountInfo(account.info.userIDEntity)
         assertEquals(account.info, insertedAccount?.info)
@@ -110,10 +113,10 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         val account3 = VALID_ACCOUNT
             .copy(info = VALID_ACCOUNT.info.copy(userIDEntity = UserIDEntity("user3", "domain3")))
         val account4 = INVALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account1.info.userIDEntity, account1.ssoId, account1.serverConfigId)
-        db.accountsDAO.insertOrReplace(account2.info.userIDEntity, account2.ssoId, account2.serverConfigId)
-        db.accountsDAO.insertOrReplace(account3.info.userIDEntity, account3.ssoId, account3.serverConfigId)
-        db.accountsDAO.insertOrReplace(account4.info.userIDEntity, account4.ssoId, account4.serverConfigId)
+        db.accountsDAO.insertOrReplace(account1.info.userIDEntity, account1.ssoId, account1.serverConfigId, false)
+        db.accountsDAO.insertOrReplace(account2.info.userIDEntity, account2.ssoId, account2.serverConfigId, false)
+        db.accountsDAO.insertOrReplace(account3.info.userIDEntity, account3.ssoId, account3.serverConfigId, false)
+        db.accountsDAO.insertOrReplace(account4.info.userIDEntity, account4.ssoId, account4.serverConfigId, false)
         db.accountsDAO.markAccountAsInvalid(account4.info.userIDEntity, account4.info.logoutReason!!)
 
         return listOf(account1, account2, account3, account4)
@@ -122,7 +125,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenMarkingAccountAsInvalid_thenAccountIsMarkedAsInvalid() = runTest {
         val account = VALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId)
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
         db.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, LogoutReason.SELF_SOFT_LOGOUT)
 
         val insertedAccount = db.accountsDAO.fullAccountInfo(account.info.userIDEntity)
@@ -132,7 +135,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenDeletingAccount_thenAccountIsDeleted() = runTest {
         val account = VALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId)
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
         val insertedAccount = db.accountsDAO.fullAccountInfo(account.info.userIDEntity)
         assertEquals(account, insertedAccount)
 
@@ -151,7 +154,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun givenInvalidSession_whenCallindDoesValidAccountExists_thenFalseIsReturned() = runTest {
         val account = INVALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId)
+        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
         db.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, account.info.logoutReason!!)
         val exists = db.accountsDAO.doesValidAccountExists(account.info.userIDEntity)
         assertEquals(false, exists)
@@ -162,13 +165,15 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         val VALID_ACCOUNT = FullAccountEntity(
             info = AccountInfoEntity(UserIDEntity("valid_user", "valid_domain"), null),
             serverConfigId = "server_config_id",
-            ssoId = null
+            ssoId = null,
+            PersistentWebSocketStatusEntity(UserIDEntity("valid_user", "valid_domain"), false)
         )
 
         val INVALID_ACCOUNT = FullAccountEntity(
             info = AccountInfoEntity(UserIDEntity("invalid_user", "invalid_domain"), LogoutReason.REMOVED_CLIENT),
             serverConfigId = "server_config_id",
-            ssoId = null
+            ssoId = null,
+            PersistentWebSocketStatusEntity(UserIDEntity("valid_user", "valid_domain"), false)
         )
 
         val SERVER_CONFIG = ServerConfigEntity(

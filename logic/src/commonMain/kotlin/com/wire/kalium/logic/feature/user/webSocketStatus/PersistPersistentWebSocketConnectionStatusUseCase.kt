@@ -22,6 +22,4 @@ internal class PersistPersistentWebSocketConnectionStatusUseCaseImpl(
 
         })
     }
-
 }
-
