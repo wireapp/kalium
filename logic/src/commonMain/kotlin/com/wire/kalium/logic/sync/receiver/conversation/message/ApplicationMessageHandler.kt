@@ -16,6 +16,8 @@ import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -23,6 +25,9 @@ import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandl
 import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
+import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.logic.util.toTimeInMillis
+import com.wire.kalium.util.string.toHexString
 
 internal interface ApplicationMessageHandler {
 
@@ -58,6 +63,7 @@ internal class ApplicationMessageHandlerImpl(
     private val lastReadContentHandler: LastReadContentHandler,
     private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
+    private val messageEncoder: MessageContentEncoder
 ) : ApplicationMessageHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
@@ -158,10 +164,12 @@ internal class ApplicationMessageHandlerImpl(
         when (message) {
             is Message.Regular -> when (val content = message.content) {
                 // Persist Messages - > lists
-                is MessageContent.Text, is MessageContent.FailedDecryption -> {
-                    // TODO: Check if quote hash matches the stored message
+                 is MessageContent.Text -> handleTextMessage(message, content)
+
+                is MessageContent.FailedDecryption -> {
                     persistMessage(message)
                 }
+
                 is MessageContent.Knock -> persistMessage(message)
                 is MessageContent.Reaction -> persistReaction(message, content)
                 is MessageContent.Asset -> handleAssetMessage(message)
@@ -196,6 +204,58 @@ internal class ApplicationMessageHandlerImpl(
                 is MessageContent.ConversationRenamed -> TODO()
                 is MessageContent.MissedCall -> TODO()
             }
+        }
+    }
+
+    private suspend fun handleTextMessage(
+        message: Message.Regular,
+        messageContent: MessageContent.Text
+    ) {
+        val quotedReference = messageContent.quotedMessageReference
+        val adjustedQuoteReference = if (quotedReference != null) {
+            verifyMessageQuote(quotedReference, message)
+        } else {
+            messageContent.quotedMessageReference
+        }
+        val adjustedMessage = message.copy(content = messageContent.copy(quotedMessageReference = adjustedQuoteReference))
+        persistMessage(adjustedMessage)
+    }
+
+    private suspend fun verifyMessageQuote(
+        quotedReference: MessageContent.QuoteReference,
+        message: Message.Regular
+    ): MessageContent.QuoteReference {
+        val quotedMessageSha256 = quotedReference.quotedMessageSha256 ?: run {
+            logger.i("Quote message received with null hash. Marking as unverified.")
+            return quotedReference.copy(isVerified = false)
+        }
+
+        val originalHash = messageRepository.getMessageById(message.conversationId, quotedReference.quotedMessageId).map { originalMessage ->
+            val originalTimestamp = originalMessage.date.toTimeInMillis()
+            when (val originalContent = originalMessage.content) {
+                is MessageContent.Asset -> {
+                    messageEncoder.encodeMessageAsset(originalTimestamp, originalContent.value.remoteData.assetId)
+                }
+
+                is MessageContent.Text -> {
+                    messageEncoder.encodeMessageTextBody(originalTimestamp, originalContent.value)
+                }
+
+                else -> {
+                    logger.w("Unknown message type being replied to. Marking quote as invalid")
+                    null
+                }
+            }
+        }.getOrElse(null)
+
+        return if (quotedMessageSha256.contentEquals(originalHash?.asSHA256)) {
+            logger.d("hash = MATCHING PERFECTLY DUDE")
+            quotedReference.copy(isVerified = true)
+        } else {
+            logger.d("Expected hash = ${originalHash?.asSHA256?.toHexString()}")
+            logger.d("Received hash = ${quotedMessageSha256.toHexString()}")
+            logger.i("Quote message received but original doesn't match or wasn't found. Marking as unverified.")
+            quotedReference.copy(isVerified = false)
         }
     }
 

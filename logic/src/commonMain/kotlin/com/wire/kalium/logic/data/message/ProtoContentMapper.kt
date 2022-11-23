@@ -151,7 +151,7 @@ class ProtoContentMapperImpl(
                     MessageContent.QuoteReference(
                         it.quotedMessageId,
                         it.quotedMessageSha256?.array,
-                        true // TODO: Check hash to figure out if it's valid
+                        false
                     )
                 }, null
             )

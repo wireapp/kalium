@@ -191,6 +191,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.logic.util.TimeParserImpl
 import com.wire.kalium.network.session.SessionManager
@@ -517,20 +518,22 @@ class UserSessionScope internal constructor(
         IncrementalSyncManager(slowSyncRepository, incrementalSyncWorker, incrementalSyncRepository)
     }
 
-    private val upgradeCurrentSessionUseCase get() =
-        UpgradeCurrentSessionUseCaseImpl(authenticatedDataSourceSet.authenticatedNetworkContainer.accessTokenApi, sessionManager)
+    private val upgradeCurrentSessionUseCase
+        get() =
+            UpgradeCurrentSessionUseCaseImpl(authenticatedDataSourceSet.authenticatedNetworkContainer.accessTokenApi, sessionManager)
 
     @Suppress("MagicNumber")
     private val apiMigrations = listOf(
         Pair(3, ApiMigrationV3(clientIdProvider, upgradeCurrentSessionUseCase))
     )
 
-    private val apiMigrationManager get() =
-        ApiMigrationManager(
-            sessionManager.serverConfig().metaData.commonApiVersion.version,
-            userStorage.database.metadataDAO,
-            apiMigrations
-        )
+    private val apiMigrationManager
+        get() =
+            ApiMigrationManager(
+                sessionManager.serverConfig().metaData.commonApiVersion.version,
+                userStorage.database.metadataDAO,
+                apiMigrations
+            )
 
     private val timeParser: TimeParser = TimeParserImpl()
 
@@ -625,6 +628,8 @@ class UserSessionScope internal constructor(
     private val proteusUnpacker: ProteusMessageUnpacker
         get() = ProteusMessageUnpackerImpl(authenticatedDataSourceSet.proteusClientProvider)
 
+    private val messageEncoder get() = MessageContentEncoder()
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -642,6 +647,7 @@ class UserSessionScope internal constructor(
                 selfConversationIdProvider,
             ),
             DeleteForMeHandler(conversationRepository, messageRepository, userId, selfConversationIdProvider),
+            messageEncoder
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl
