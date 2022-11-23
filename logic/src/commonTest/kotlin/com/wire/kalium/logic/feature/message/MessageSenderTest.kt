@@ -480,6 +480,12 @@ class MessageSenderTest {
 
         val testScope = TestScope()
 
+        private val messageSendingInterceptor = object : MessageSendingInterceptor {
+            override suspend fun prepareMessage(message: Message.Regular): Either<CoreFailure, Message.Regular> {
+                return Either.Right(message)
+            }
+        }
+
         fun arrange() = this to MessageSenderImpl(
             messageRepository = messageRepository,
             conversationRepository = conversationRepository,
@@ -491,6 +497,7 @@ class MessageSenderTest {
             mlsMessageCreator = mlsMessageCreator,
             timeParser = timeParser,
             messageSendingScheduler = messageSendingScheduler,
+            messageSendingInterceptor = messageSendingInterceptor,
             scope = testScope
         )
 
