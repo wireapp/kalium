@@ -37,8 +37,8 @@ class ProtoContentMapperImpl(
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val userId: UserId? = null,
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(userId),
+    private val selfUserId: UserId,
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {

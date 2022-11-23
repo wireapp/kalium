@@ -46,6 +46,9 @@ class MessageEnvelopeCreatorTest {
     @Mock
     private val protoContentMapper = mock(ProtoContentMapper::class)
 
+    @Mock
+    private val selfUserId = mock(UserId::class)
+
     private lateinit var messageEnvelopeCreator: MessageEnvelopeCreator
 
     init {
@@ -57,7 +60,7 @@ class MessageEnvelopeCreatorTest {
 
     @BeforeTest
     fun setup() {
-        messageEnvelopeCreator = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
+        messageEnvelopeCreator = MessageEnvelopeCreatorImpl(proteusClientProvider, selfUserId, protoContentMapper)
     }
 
     @Test

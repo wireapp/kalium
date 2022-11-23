@@ -171,7 +171,7 @@ internal class ConversationDataSource internal constructor(
     private val conversationStatusMapper: ConversationStatusMapper = MapperProvider.conversationStatusMapper(),
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper()
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId)
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,

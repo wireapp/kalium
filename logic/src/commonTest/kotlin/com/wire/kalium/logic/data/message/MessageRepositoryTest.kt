@@ -235,6 +235,9 @@ class MessageRepositoryTest {
         @Mock
         val messageMapper = mock(MessageMapper::class)
 
+        @Mock
+        val selfUserId = mock(UserId::class)
+
         fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
             given(messageDAO)
                 .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
@@ -290,7 +293,14 @@ class MessageRepositoryTest {
         }
 
         fun arrange() = this to MessageDataSource(
-            messageApi, mlsMessageApi, messageDAO, messageMapper, idMapper, assetMapper, sendMessageFailureMapper
+            messageApi = messageApi,
+            mlsMessageApi = mlsMessageApi,
+            messageDAO = messageDAO,
+            messageMapper = messageMapper,
+            idMapper = idMapper,
+            assetMapper = assetMapper,
+            selfUserId = selfUserId,
+            sendMessageFailureMapper = sendMessageFailureMapper
         )
     }
 

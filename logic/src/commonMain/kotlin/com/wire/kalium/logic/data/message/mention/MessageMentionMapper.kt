@@ -14,7 +14,7 @@ interface MessageMentionMapper {
 
 class MessageMentionMapperImpl(
     private val idMapper: IdMapper,
-    private val selfUserId: UserId?
+    private val selfUserId: UserId
 ) : MessageMentionMapper {
 
     override fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention {
@@ -34,15 +34,16 @@ class MessageMentionMapperImpl(
     }
 
     override fun fromProtoToModel(mention: Mention): MessageMention {
-
-        // for now we only support direct mentions which require userId https://github.com/wireapp/kalium/pull/857#discussion_r960302664
+        val userId = mention.qualifiedUserId?.let {
+            idMapper.fromProtoUserId(it)
+        } ?: UserId(
+            mention.mentionType?.value as String,
+            selfUserId!!.domain
+        )
         return MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = mention.qualifiedUserId?.let { idMapper.fromProtoUserId(it) } ?: UserId(
-                mention.mentionType?.value as String,
-                selfUserId!!.domain
-            ),
+            userId = userId,
         )
     }
 

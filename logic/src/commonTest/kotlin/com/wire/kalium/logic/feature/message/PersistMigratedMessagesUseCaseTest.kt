@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
@@ -46,6 +47,9 @@ class PersistMigratedMessagesUseCaseTest {
         @Mock
         private val applicationMessageHandler = mock(classOf<ApplicationMessageHandler>())
 
+        @Mock
+        private val selfUserId = mock(classOf<UserId>())
+
         val genericMessage = GenericMessage("uuid", GenericMessage.Content.Text(Text("some_text")))
 
         fun fakeMigratedMessage() = MigratedMessage(
@@ -67,7 +71,7 @@ class PersistMigratedMessagesUseCaseTest {
 
         fun arrange() = this to PersistMigratedMessagesUseCaseImpl(
             applicationMessageHandler,
-            MapperProvider.protoContentMapper()
+            MapperProvider.protoContentMapper(selfUserId = selfUserId)
         )
     }
 

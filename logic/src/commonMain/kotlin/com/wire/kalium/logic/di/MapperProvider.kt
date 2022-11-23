@@ -89,7 +89,12 @@ internal object MapperProvider {
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
     fun reactionsMapper(): ReactionsMapper = ReactionsMapperImpl(domainUserTypeMapper = userTypeMapper())
     fun teamMapper(): TeamMapper = TeamMapperImpl()
-    fun messageMapper(): MessageMapper = MessageMapperImpl(idMapper(), memberMapper())
+    fun messageMapper(selfUserId: UserId): MessageMapper = MessageMapperImpl(
+        idMapper = idMapper(),
+        memberMapper = memberMapper(),
+        selfUserId = selfUserId
+    )
+
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
     fun conversationMapper(): ConversationMapper =
         ConversationMapperImpl(
@@ -115,14 +120,14 @@ internal object MapperProvider {
         userTypeMapper(),
     )
 
-    fun messageMentionMapper(selfUserId: UserId? = null): MessageMentionMapper = MessageMentionMapperImpl(idMapper(), selfUserId)
+    fun messageMentionMapper(selfUserId: UserId): MessageMentionMapper = MessageMentionMapperImpl(idMapper(), selfUserId)
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()
     fun preKeyListMapper(): PreKeyListMapper = PreKeyListMapper(preyKeyMapper())
     fun locationMapper(): LocationMapper = LocationMapper()
     fun clientMapper(): ClientMapper = ClientMapper(preyKeyMapper(), locationMapper())
     fun conversationStatusMapper(): ConversationStatusMapper = ConversationStatusMapperImpl(idMapper())
-    fun protoContentMapper(): ProtoContentMapper = ProtoContentMapperImpl()
+    fun protoContentMapper(selfUserId: UserId): ProtoContentMapper = ProtoContentMapperImpl(selfUserId = selfUserId)
     fun qualifiedIdMapper(selfUserId: UserId): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
     fun callMapper(selfUserId: UserId): CallMapper = CallMapperImpl(qualifiedIdMapper(selfUserId))
     fun activeSpeakerMapper(): ActiveSpeakerMapper = ActiveSpeakerMapperImpl()

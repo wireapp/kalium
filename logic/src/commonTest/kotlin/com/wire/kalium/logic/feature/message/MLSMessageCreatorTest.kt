@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -31,11 +32,14 @@ class MLSMessageCreatorTest {
     @Mock
     private val protoContentMapper = mock(ProtoContentMapper::class)
 
+    @Mock
+    private val selfUserId = mock(UserId::class)
+
     private lateinit var mlsMessageCreator: MLSMessageCreator
 
     @BeforeTest
     fun setup() {
-        mlsMessageCreator = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        mlsMessageCreator = MLSMessageCreatorImpl(mlsClientProvider, selfUserId, protoContentMapper)
     }
 
     @Test

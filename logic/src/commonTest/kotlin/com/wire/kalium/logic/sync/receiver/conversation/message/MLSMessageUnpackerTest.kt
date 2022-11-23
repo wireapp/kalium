@@ -8,6 +8,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
@@ -65,12 +66,16 @@ class MLSMessageUnpackerTest {
         val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
 
         @Mock
+        val selfUserId = mock(classOf<UserId>())
+
+        @Mock
         val protoContentMapper = mock(classOf<ProtoContentMapper>())
 
         private val mlsMessageUnpacker = MLSMessageUnpackerImpl(
             mlsClientProvider,
             conversationRepository,
             pendingProposalScheduler,
+            selfUserId,
             protoContentMapper
         )
 

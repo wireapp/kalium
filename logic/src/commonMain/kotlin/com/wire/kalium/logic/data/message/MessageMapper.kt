@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -26,7 +27,8 @@ class MessageMapperImpl(
     private val idMapper: IdMapper,
     private val memberMapper: MemberMapper,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper()
+    private val selfUserId : UserId,
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message): MessageEntity {
