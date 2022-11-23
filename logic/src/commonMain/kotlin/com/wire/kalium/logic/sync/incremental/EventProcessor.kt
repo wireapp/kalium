@@ -41,6 +41,8 @@ internal class EventProcessorImpl(
             is Event.Team -> teamEventReceiver.onEvent(event)
         }
         kaliumLogger.withFeatureId(EVENT_RECEIVER).i("Updating lastProcessedEventId ${event.id.obfuscateId()}")
-        eventRepository.updateLastProcessedEventId(event.id)
+        if (!event.transient) {
+            eventRepository.updateLastProcessedEventId(event.id)
+        }
     }
 }
