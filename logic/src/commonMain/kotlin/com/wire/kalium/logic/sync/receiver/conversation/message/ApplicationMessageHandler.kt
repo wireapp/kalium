@@ -164,7 +164,7 @@ internal class ApplicationMessageHandlerImpl(
         when (message) {
             is Message.Regular -> when (val content = message.content) {
                 // Persist Messages - > lists
-                 is MessageContent.Text -> handleTextMessage(message, content)
+                is MessageContent.Text -> handleTextMessage(message, content)
 
                 is MessageContent.FailedDecryption -> {
                     persistMessage(message)
@@ -230,23 +230,10 @@ internal class ApplicationMessageHandlerImpl(
             return quotedReference.copy(isVerified = false)
         }
 
-        val originalHash = messageRepository.getMessageById(message.conversationId, quotedReference.quotedMessageId).map { originalMessage ->
-            val originalTimestamp = originalMessage.date.toTimeInMillis()
-            when (val originalContent = originalMessage.content) {
-                is MessageContent.Asset -> {
-                    messageEncoder.encodeMessageAsset(originalTimestamp, originalContent.value.remoteData.assetId)
-                }
-
-                is MessageContent.Text -> {
-                    messageEncoder.encodeMessageTextBody(originalTimestamp, originalContent.value)
-                }
-
-                else -> {
-                    logger.w("Unknown message type being replied to. Marking quote as invalid")
-                    null
-                }
-            }
-        }.getOrElse(null)
+        val originalHash =
+            messageRepository.getMessageById(message.conversationId, quotedReference.quotedMessageId).map { originalMessage ->
+                messageEncoder.encodeMessageContent(originalMessage.date, originalMessage.content)
+            }.getOrElse(null)
 
         return if (quotedMessageSha256.contentEquals(originalHash?.asSHA256)) {
             logger.d("hash = MATCHING PERFECTLY DUDE")

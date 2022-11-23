@@ -2,6 +2,7 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
@@ -22,7 +23,10 @@ class MessageContentEncoder {
                     messageTextBody = messageContent.value
                 )
 
-            else -> null
+            else -> {
+                kaliumLogger.w("Unknown message type being replied to. Marking quote as invalid")
+                null
+            }
         }
     }
 
