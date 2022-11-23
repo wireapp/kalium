@@ -40,31 +40,6 @@ class UTF16BEByteArrayTest {
         assertEquals(markDown.first, encodedTextBody.toStringFromUtf16BE())
     }
 
-    @Test
-    fun test() {
-        val test = 15000.convertLongToHexStringBuffer()
-
-        println(test)
-    }
-
-    private fun Int.convertLongToHexStringBuffer() {
-        val stringRepresentation = toString(16)
-
-        val buffer = Array(16) { '0' }
-
-        for (charIndex in stringRepresentation.indices) {
-            val offSet = (buffer.size - 1) - charIndex
-            buffer[offSet] = stringRepresentation[(stringRepresentation.length - charIndex - 1)]
-        }
-
-        var bufferString = ""
-
-        buffer.forEach {
-            bufferString += it
-        }
-
-    }
-
     companion object TestData {
         val textBody = (
                 "Hello \\uD83D\\uDC69\\u200D\\uD83D\\uDCBB\\uD83D\\uDC68\\u200D\\uD83D\\uDC69\\u200D\\uD83D\\uDC67!"
