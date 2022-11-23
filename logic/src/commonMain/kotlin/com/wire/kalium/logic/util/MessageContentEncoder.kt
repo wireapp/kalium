@@ -24,7 +24,7 @@ class MessageContentEncoder {
                 )
 
             else -> {
-                kaliumLogger.w("Unknown message type being replied to. Marking quote as invalid")
+                kaliumLogger.w("Attempting to encode message with unsupported content type")
                 null
             }
         }
