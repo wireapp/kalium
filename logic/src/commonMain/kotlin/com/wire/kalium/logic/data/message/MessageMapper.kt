@@ -27,7 +27,7 @@ class MessageMapperImpl(
     private val idMapper: IdMapper,
     private val memberMapper: MemberMapper,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
-    private val selfUserId : UserId,
+    private val selfUserId: UserId,
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
