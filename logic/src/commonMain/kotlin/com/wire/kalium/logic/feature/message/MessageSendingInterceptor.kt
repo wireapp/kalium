@@ -27,30 +27,20 @@ class MessageSendingInterceptorImpl(
             return Either.Right(message)
         }
 
-        return messageRepository.getMessageById(message.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId).map { originalMessage ->
-            val encodedMessageContent = when (val messageContent = originalMessage.content) {
-                is MessageContent.Asset ->
-                    messageContentEncoder.encodeMessageAsset(
-                        messageTimeStampInMillis = originalMessage.date.toTimeInMillis(),
-                        assetId = messageContent.value.remoteData.assetId
-                    )
+        return messageRepository.getMessageById(message.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId)
+            .map { originalMessage ->
+                val encodedMessageContent = messageContentEncoder.encodeMessageContent(
+                    messageDate = originalMessage.date,
+                    messageContent = originalMessage.content
+                )
 
-                is MessageContent.Text ->
-                    messageContentEncoder.encodeMessageTextBody(
-                        messageTimeStampInMillis = originalMessage.date.toTimeInMillis(),
-                        messageTextBody = messageContent.value
-                    )
-
-                else -> null
-            }
-
-            message.copy(
-                content = replyMessageContent.copy(
-                    quotedMessageReference = replyMessageContent.quotedMessageReference.copy(
-                        quotedMessageSha256 = encodedMessageContent?.asSHA256
+                message.copy(
+                    content = replyMessageContent.copy(
+                        quotedMessageReference = replyMessageContent.quotedMessageReference.copy(
+                            quotedMessageSha256 = encodedMessageContent?.asSHA256
+                        )
                     )
                 )
-            )
-        }
+            }
     }
 }

@@ -25,15 +25,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 
-@Suppress("LongParameterList")
 class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
-    private val messageContentEncryptor: MessageContentEncoder,
-    private val messageRepository: MessageRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -56,9 +53,10 @@ class SendTextMessageUseCase internal constructor(
                     value = text,
                     mentions = mentions,
                     quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
-                        createQuotedMessageReference(
-                            conversationId = conversationId,
-                            quotedMessageId = quotedMessageId
+                        MessageContent.QuoteReference(
+                            quotedMessageId = quotedMessageId,
+                            quotedMessageSha256 = null,
+                            isVerified = true
                         )
                     }
                 ),
@@ -81,41 +79,4 @@ class SendTextMessageUseCase internal constructor(
             }
         }
     }
-
-    private suspend fun createQuotedMessageReference(
-        conversationId: ConversationId,
-        quotedMessageId: String
-    ): MessageContent.QuoteReference? {
-        val messageResult = messageRepository.getMessageById(conversationId, quotedMessageId)
-
-        return if (messageResult.isLeft()) {
-            null
-        } else {
-            val message = messageResult.value
-            val messageTimeStampInMillis = message.date.toTimeInMillis()
-
-            val encodedMessageContent = when (val messageContent = message.content) {
-                is MessageContent.Asset ->
-                    messageContentEncryptor.encodeMessageAsset(
-                        messageTimeStampInMillis = messageTimeStampInMillis,
-                        assetId = messageContent.value.remoteData.assetId
-                    )
-
-                is MessageContent.Text ->
-                    messageContentEncryptor.encodeMessageTextBody(
-                        messageTimeStampInMillis = messageTimeStampInMillis,
-                        messageTextBody = messageContent.value
-                    )
-
-                else -> null
-            }
-
-            MessageContent.QuoteReference(
-                quotedMessageId = quotedMessageId,
-                quotedMessageSha256 = encodedMessageContent?.asSHA256,
-                isVerified = true
-            )
-        }
-    }
-
 }

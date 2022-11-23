@@ -1,12 +1,32 @@
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.cryptography.utils.calcSHA256
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
 
 class MessageContentEncoder {
-    fun encodeMessageAsset(
+
+    fun encodeMessageContent(messageDate: String, messageContent: MessageContent): EncodedMessageContent? {
+        return when (messageContent) {
+            is MessageContent.Asset ->
+                encodeMessageAsset(
+                    messageTimeStampInMillis = messageDate.toTimeInMillis(),
+                    assetId = messageContent.value.remoteData.assetId
+                )
+
+            is MessageContent.Text ->
+                encodeMessageTextBody(
+                    messageTimeStampInMillis = messageDate.toTimeInMillis(),
+                    messageTextBody = messageContent.value
+                )
+
+            else -> null
+        }
+    }
+
+    private fun encodeMessageAsset(
         messageTimeStampInMillis: Long,
         assetId: String
     ): EncodedMessageContent = wrapIntoResult(
@@ -14,7 +34,7 @@ class MessageContentEncoder {
         messageTextBodyUTF16BE = assetId.toUTF16BEByteArray()
     )
 
-    fun encodeMessageTextBody(
+    private fun encodeMessageTextBody(
         messageTimeStampInMillis: Long,
         messageTextBody: String
     ): EncodedMessageContent = wrapIntoResult(
@@ -29,7 +49,9 @@ class MessageContentEncoder {
     }
 
     private fun wrapIntoResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): EncodedMessageContent {
-        return EncodedMessageContent(byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + messageTimeStampByteArray)
+        return EncodedMessageContent(
+            byteArray = byteArrayOf(0xFE.toByte(), 0xFF.toByte()) + messageTextBodyUTF16BE + messageTimeStampByteArray
+        )
     }
 
     private companion object {
@@ -37,8 +59,7 @@ class MessageContentEncoder {
     }
 }
 
-class EncodedMessageContent(byteArray: ByteArray) {
-    val asByteArray = byteArray
+class EncodedMessageContent(val byteArray: ByteArray) {
     val asHexString = byteArray.toHexString()
     val asSHA256 = calcSHA256(byteArray)
 }
