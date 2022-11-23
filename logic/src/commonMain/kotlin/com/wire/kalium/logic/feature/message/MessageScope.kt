@@ -66,13 +66,21 @@ class MessageScope internal constructor(
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
 
     private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl()
+        get() = ProtoContentMapperImpl(selfUserId = userId)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
+        get() = MessageEnvelopeCreatorImpl(
+            proteusClientProvider = proteusClientProvider,
+            selfUserId = userId,
+            protoContentMapper = protoContentMapper
+        )
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        get() = MLSMessageCreatorImpl(
+            mlsClientProvider = mlsClientProvider,
+            selfUserId = userId,
+            protoContentMapper = protoContentMapper
+        )
 
     private val idMapper: IdMapper
         get() = IdMapperImpl()
@@ -182,12 +190,13 @@ class MessageScope internal constructor(
 
     val getNotifications: GetNotificationsUseCase
         get() = GetNotificationsUseCaseImpl(
-            connectionRepository,
-            messageRepository,
-            userRepository,
-            conversationRepository,
-            timeParser,
-            EphemeralNotificationsManager
+            connectionRepository = connectionRepository,
+            messageRepository = messageRepository,
+            userRepository = userRepository,
+            conversationRepository = conversationRepository,
+            timeParser = timeParser,
+            selfUserId = userId,
+            ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 
     val persistMigratedMessage: PersistMigratedMessagesUseCase

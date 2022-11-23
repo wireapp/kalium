@@ -1,18 +1,21 @@
 package com.wire.kalium.logic.data.message.mention
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Mention
-import com.wire.kalium.protobuf.messages.QualifiedUserId
 
 interface MessageMentionMapper {
     fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention
     fun fromModelToDao(mention: MessageMention): MessageEntity.Mention
-    fun fromProtoToModel(mention: Mention): MessageMention?
+    fun fromProtoToModel(mention: Mention): MessageMention
     fun fromModelToProto(mention: MessageMention): Mention
 }
 
-class MessageMentionMapperImpl(private val idMapper: IdMapper) : MessageMentionMapper {
+class MessageMentionMapperImpl(
+    private val idMapper: IdMapper,
+    private val selfUserId: UserId
+) : MessageMentionMapper {
 
     override fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention {
         return MessageMention(
@@ -30,18 +33,24 @@ class MessageMentionMapperImpl(private val idMapper: IdMapper) : MessageMentionM
         )
     }
 
-    override fun fromProtoToModel(mention: Mention): MessageMention? = mention.qualifiedUserId?.let { qualifiedUserId: QualifiedUserId ->
-        // for now we only support direct mentions which require userId https://github.com/wireapp/kalium/pull/857#discussion_r960302664
-        MessageMention(
+    override fun fromProtoToModel(mention: Mention): MessageMention {
+        val userId = mention.qualifiedUserId?.let {
+            idMapper.fromProtoUserId(it)
+        } ?: UserId(
+            mention.mentionType?.value as String,
+            selfUserId.domain
+        )
+        return MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = idMapper.fromProtoUserId(qualifiedUserId)
+            userId = userId,
         )
     }
 
     override fun fromModelToProto(mention: MessageMention): Mention = Mention(
         start = mention.start,
         length = mention.length,
-        qualifiedUserId = idMapper.toProtoUserId(mention.userId)
+        qualifiedUserId = idMapper.toProtoUserId(mention.userId),
+        mentionType = Mention.MentionType.UserId(mention.userId.value)
     )
 }
