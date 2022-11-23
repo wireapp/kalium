@@ -7,6 +7,7 @@ import kotlinx.cinterop.utf16
 import platform.Foundation.NSData
 import platform.Foundation.NSString
 import platform.Foundation.NSUTF16BigEndianStringEncoding
+import platform.Foundation.create
 
 actual fun String.toUTF16BEByteArray(): ByteArray {
     return utf16.getBytes()
@@ -18,5 +19,5 @@ actual fun ByteArray.toStringFromUtf16BE(): String = memScoped {
         length = this@toStringFromUtf16BE.size.toULong()
     )
     val string = NSString.create(data = data, encoding = NSUTF16BigEndianStringEncoding)
-    return@memScoped string
+    return@memScoped string as String
 }
