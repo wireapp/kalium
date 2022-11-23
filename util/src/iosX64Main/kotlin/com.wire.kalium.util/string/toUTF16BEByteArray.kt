@@ -20,4 +20,3 @@ actual fun ByteArray.toStringFromUtf16BE(): String = memScoped {
     val string = NSString.create(data = data, encoding = NSUTF16BigEndianStringEncoding)
     return@memScoped string
 }
-
