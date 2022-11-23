@@ -22,7 +22,6 @@ import platform.Foundation.base64Encoding
 import platform.Foundation.create
 
 actual fun calcMd5(bytes: ByteArray): String {
-    Charsets.ISO_8859_1
     val digestData = UByteArray(CC_MD5_DIGEST_LENGTH)
     val data = toData(bytes)
     CC_MD5(data.bytes, data.length.toUInt(), digestData.refTo(0))

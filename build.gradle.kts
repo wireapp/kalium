@@ -33,7 +33,6 @@ plugins {
     id("org.jetbrains.dokka") version "$dokkaVersion"
     id("org.jetbrains.kotlinx.kover") version "0.5.1"
     id("scripts.testing")
-    id("com.louiscad.complete-kotlin") version "1.1.0"
 }
 
 dependencies {
