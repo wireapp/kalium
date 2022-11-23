@@ -66,7 +66,9 @@ interface MLSConversationRepository {
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
+
     suspend fun joinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit>
+
     suspend fun clearJoinViaExternalCommit(groupID: GroupID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
@@ -324,7 +326,7 @@ class MLSConversationDataSource(
                             }
 
                         wrapMLSRequest {
-                            if (userIdList.contains(selfUserId) && clientKeyPackageList.isEmpty()) {
+                            if (userIdList.isEmpty()) {
                                 // We are creating a group with only our self client which technically
                                 // doesn't need be added with a commit, but our backend API requires one,
                                 // so we create a commit by updating our key material.
@@ -379,7 +381,7 @@ class MLSConversationDataSource(
                     )
                 }
             }.flatMap {
-                addMemberToMLSGroup(groupID, members + selfUserId)
+                addMemberToMLSGroup(groupID, members)
             }.flatMap {
                 wrapStorageRequest {
                     conversationDAO.updateConversationGroupState(

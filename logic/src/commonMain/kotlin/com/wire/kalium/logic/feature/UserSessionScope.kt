@@ -499,7 +499,7 @@ class UserSessionScope internal constructor(
         get() = JoinExistingMLSConversationsUseCaseImpl(
             featureSupport,
             conversationRepository,
-            conversationGroupRepository
+            mlsConversationRepository
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
