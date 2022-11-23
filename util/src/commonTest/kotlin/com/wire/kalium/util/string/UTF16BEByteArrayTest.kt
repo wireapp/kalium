@@ -3,6 +3,8 @@ package com.wire.kalium.util.string
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@IgnoreIOS
+@IgnoreJS
 class UTF16BEByteArrayTest {
 
     // textBody contains unicode for emoji's, when converting back to hex function is not that clever
