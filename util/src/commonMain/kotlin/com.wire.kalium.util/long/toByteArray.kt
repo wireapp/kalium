@@ -1,5 +1,6 @@
 package com.wire.kalium.util.long
 
+@Suppress("MagicNumber")
 fun Long.toByteArray(): ByteArray {
     val result = ByteArray(Long.SIZE_BYTES)
 

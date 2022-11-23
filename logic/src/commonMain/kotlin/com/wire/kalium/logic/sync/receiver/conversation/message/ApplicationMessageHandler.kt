@@ -26,7 +26,6 @@ import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.logic.util.toTimeInMillis
 import com.wire.kalium.util.string.toHexString
 
 internal interface ApplicationMessageHandler {

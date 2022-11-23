@@ -7,7 +7,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.MessageContentEncoder
-import com.wire.kalium.logic.util.toTimeInMillis
 
 interface MessageSendingInterceptor {
     suspend fun prepareMessage(message: Message.Regular): Either<CoreFailure, Message.Regular>
