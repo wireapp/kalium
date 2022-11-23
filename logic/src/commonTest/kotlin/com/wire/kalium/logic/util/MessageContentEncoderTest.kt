@@ -1,154 +1,110 @@
 package com.wire.kalium.logic.util
 
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.util.string.toHexString
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
-class MessageContentEncryptorTest {
+class MessageContentEncoderTest {
 
-    private val messageContentEncryptor: MessageContentEncoder = MessageContentEncoder()
+    private val messageContentEncoder: MessageContentEncoder = MessageContentEncoder()
 
     @Test
     fun givenAMessageBodyWithEmoji_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
         // given / when
-        val result = messageContentEncryptor.encodeMessageTextBody(
-            messageTimeStampInMillis = textWithEmoji.first.second,
-            messageTextBody = textWithEmoji.first.first
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = textWithEmoji.first.second,
+            messageContent = MessageContent.Text(textWithEmoji.first.first)
         )
-//
-//         val byteArray = ubyteArrayOf(
-//             0xfeu,
-//             0xffu,
-//             0x00u,
-//             0x48u,
-//             0x00u,
-//             0x65u,
-//             0x00u,
-//             0x6cu,
-//             0x00u,
-//             0x6cu,
-//             0x00u,
-//             0x6fu,
-//             0x00u,
-//             0x20u,
-//             0xd8u,
-//             0x3du,
-//             0xdcu,
-//             0x69u,
-//             0x20u,
-//             0x0du,
-//             0xd8u,
-//             0x3du,
-//             0xdcu,
-//             0xbbu,
-//             0xd8u,
-//             0x3du,
-//             0xdcu,
-//             0x68u,
-//             0x20u,
-//             0x0du,
-//             0xd8u,
-//             0x3du,
-//             0xdcu,
-//             0x69u,
-//             0x20u,
-//             0x0du,
-//             0xd8u,
-//             0x3du,
-//             0xdcu,
-//             0x67u,
-//             0x00u,
-//             0x21u,
-//             0x00u,
-//             0x00u,
-//             0x00u,
-//             0x00u,
-//             0x5bu,
-//             0xcdu,
-//             0xccu,
-//             0x09u
-//         )
-//         result
         // then
+        assertNotNull(result)
         assertEquals(result.asHexString, textWithEmoji.second.first)
     }
 
     @Test
     fun givenAMessageBodyWithUrl_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
-        val result = messageContentEncryptor.encodeMessageTextBody(
-            messageTimeStampInMillis = url.first.second,
-            messageTextBody = url.first.first
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = url.first.second,
+            messageContent = MessageContent.Text(url.first.first)
         )
 
         // then
+        assertNotNull(result)
         assertEquals(result.asHexString, url.second.first)
     }
 
     @Test
     fun givenAMessageBodyWithArabic_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
-        val result = messageContentEncryptor.encodeMessageTextBody(
-            messageTimeStampInMillis = arabic.first.second,
-            messageTextBody = arabic.first.first
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = arabic.first.second,
+            messageContent = MessageContent.Text(arabic.first.first)
         )
 
         // then
+        assertNotNull(result)
         assertEquals(result.asHexString, arabic.second.first)
     }
 
     @Test
     fun givenAMessageBodyWithMarkDown_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
-        val result = messageContentEncryptor.encodeMessageTextBody(
-            messageTimeStampInMillis = markDown.first.second,
-            messageTextBody = markDown.first.first
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = markDown.first.second,
+            messageContent = MessageContent.Text(markDown.first.first)
         )
 
         // then
+        assertNotNull(result)
         assertEquals(result.asHexString, markDown.second.first)
     }
 
     @Test
     fun givenAMessageBodyWithEmoji_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
         // given / when
-        val result = messageContentEncryptor.encodeMessageTextBody(
-            messageTimeStampInMillis = textWithEmoji.first.second,
-            messageTextBody = textWithEmoji.first.first
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = textWithEmoji.first.second,
+            messageContent = MessageContent.Text(textWithEmoji.first.first)
         )
 
         // then
+        assertNotNull(result)
         assertEquals(result.asSHA256.toHexString(), textWithEmoji.second.second)
     }
 
     @Test
     fun givenAMessageBodyWithUrl_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
-        val result = messageContentEncryptor.encodeMessageTextBody(
-            messageTimeStampInMillis = url.first.second,
-            messageTextBody = url.first.first
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = url.first.second,
+            messageContent = MessageContent.Text(url.first.first)
         )
 
         // then
+        assertNotNull(result)
         assertEquals(result.asSHA256.toHexString(), url.second.second)
     }
 
     @Test
     fun givenAMessageBodyWithArabic_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
-        val result = messageContentEncryptor.encodeMessageTextBody(
-            messageTimeStampInMillis = arabic.first.second,
-            messageTextBody = arabic.first.first
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = arabic.first.second,
+            messageContent = MessageContent.Text(arabic.first.first)
         )
 
         // then
+        assertNotNull(result)
         assertEquals(result.asSHA256.toHexString(), arabic.second.second)
     }
 
     @Test
     fun givenAMessageBodyWithMarkDown_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
-        val result = messageContentEncryptor.encodeMessageTextBody(
-            messageTimeStampInMillis = markDown.first.second,
-            messageTextBody = markDown.first.first
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = markDown.first.second,
+            messageContent = MessageContent.Text(markDown.first.first)
         )
 
         // then
+        assertNotNull(result)
         assertEquals(result.asSHA256.toHexString(), markDown.second.second)
     }
 
@@ -156,7 +112,7 @@ class MessageContentEncryptorTest {
         val textWithEmoji =
             (
                     "Hello \uD83D\uDC69\u200D\uD83D\uDCBB\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67!" to
-                            "2018-10-22T15:09:29.000+02:00".toTimeInMillis()
+                            "2018-10-22T15:09:29.000+02:00"
                     ) to
                     (
                             "feff00480065006c006c006f0020d83ddc69200dd83ddcbbd83ddc68200dd83ddc69200dd83ddc670021000000005bcdcc09" to
@@ -165,7 +121,7 @@ class MessageContentEncryptorTest {
 
         val url = (
                 "https://www.youtube.com/watch?v=DLzxrzFCyOs" to
-                        "2018-10-22T15:09:29.000+02:00".toTimeInMillis()
+                        "2018-10-22T15:09:29.000+02:00"
                 ) to
                 ("feff00680074007400700073003a002f002f007700770077002e" +
                         "0079006f00750074007500620065002e0063006f006d002f007700610" +
@@ -176,7 +132,7 @@ class MessageContentEncryptorTest {
 
         val arabic = (
                 "بغداد" to
-                        "2018-10-22T15:12:45.000+02:00".toTimeInMillis()
+                        "2018-10-22T15:12:45.000+02:00"
                 ) to
                 (
                         "feff0628063a062f0627062f000000005bcdcccd" to
@@ -185,7 +141,7 @@ class MessageContentEncryptorTest {
 
         val markDown = (
                 "This has **markdown**" to
-                        "2018-10-22T15:12:45.000+02:00".toTimeInMillis()
+                        "2018-10-22T15:12:45.000+02:00"
                 ) to ("feff005400680069007300200068006100730020002a" +
                 "002a006d00610072006b0064006f0077006e002a002a00000" +
                 "0005bcdcccd" to
