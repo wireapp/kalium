@@ -8,7 +8,6 @@ import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
 
 class MessageContentEncoder {
-
     fun encodeMessageContent(messageDate: String, messageContent: MessageContent): EncodedMessageContent? {
         return when (messageContent) {
             is MessageContent.Asset ->
@@ -65,5 +64,5 @@ class MessageContentEncoder {
 
 class EncodedMessageContent(val byteArray: ByteArray) {
     val asHexString = byteArray.toHexString()
-    val asSHA256 = calcSHA256(byteArray)
+    val sha256Digest = calcSHA256(byteArray)
 }

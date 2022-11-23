@@ -36,7 +36,7 @@ class MessageSendingInterceptorImpl(
                 message.copy(
                     content = replyMessageContent.copy(
                         quotedMessageReference = replyMessageContent.quotedMessageReference.copy(
-                            quotedMessageSha256 = encodedMessageContent?.asSHA256
+                            quotedMessageSha256 = encodedMessageContent?.sha256Digest
                         )
                     )
                 )

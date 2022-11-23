@@ -234,11 +234,10 @@ internal class ApplicationMessageHandlerImpl(
                 messageEncoder.encodeMessageContent(originalMessage.date, originalMessage.content)
             }.getOrElse(null)
 
-        return if (quotedMessageSha256.contentEquals(originalHash?.asSHA256)) {
-            logger.d("hash = MATCHING PERFECTLY DUDE")
+        return if (quotedMessageSha256.contentEquals(originalHash?.sha256Digest)) {
             quotedReference.copy(isVerified = true)
         } else {
-            logger.d("Expected hash = ${originalHash?.asSHA256?.toHexString()}")
+            logger.d("Expected hash = ${originalHash?.sha256Digest?.toHexString()}")
             logger.d("Received hash = ${quotedMessageSha256.toHexString()}")
             logger.i("Quote message received but original doesn't match or wasn't found. Marking as unverified.")
             quotedReference.copy(isVerified = false)

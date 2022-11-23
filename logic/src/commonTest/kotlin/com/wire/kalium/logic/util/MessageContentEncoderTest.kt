@@ -69,7 +69,7 @@ class MessageContentEncoderTest {
 
         // then
         assertNotNull(result)
-        assertEquals(result.asSHA256.toHexString(), textWithEmoji.second.second)
+        assertEquals(result.sha256Digest.toHexString(), textWithEmoji.second.second)
     }
 
     @Test
@@ -81,7 +81,7 @@ class MessageContentEncoderTest {
 
         // then
         assertNotNull(result)
-        assertEquals(result.asSHA256.toHexString(), url.second.second)
+        assertEquals(result.sha256Digest.toHexString(), url.second.second)
     }
 
     @Test
@@ -93,7 +93,7 @@ class MessageContentEncoderTest {
 
         // then
         assertNotNull(result)
-        assertEquals(result.asSHA256.toHexString(), arabic.second.second)
+        assertEquals(result.sha256Digest.toHexString(), arabic.second.second)
     }
 
     @Test
@@ -105,7 +105,7 @@ class MessageContentEncoderTest {
 
         // then
         assertNotNull(result)
-        assertEquals(result.asSHA256.toHexString(), markDown.second.second)
+        assertEquals(result.sha256Digest.toHexString(), markDown.second.second)
     }
 
     private companion object TestData {
