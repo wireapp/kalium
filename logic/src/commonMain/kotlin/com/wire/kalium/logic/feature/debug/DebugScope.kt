@@ -74,13 +74,21 @@ class DebugScope internal constructor(
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
 
     private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl()
+        get() = ProtoContentMapperImpl(selfUserId = userId)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
+        get() = MessageEnvelopeCreatorImpl(
+            proteusClientProvider = proteusClientProvider,
+            selfUserId = userId,
+            protoContentMapper = protoContentMapper
+        )
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        get() = MLSMessageCreatorImpl(
+            mlsClientProvider = mlsClientProvider,
+            selfUserId = userId,
+            protoContentMapper = protoContentMapper
+        )
 
     private val messageContentEncoder = MessageContentEncoder()
     private val messageSendingInterceptor: MessageSendingInterceptor

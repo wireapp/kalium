@@ -337,9 +337,10 @@ class UserSessionScope internal constructor(
 
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
-            authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
-            authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
-            userStorage.database.messageDAO
+            messageApi = authenticatedDataSourceSet.authenticatedNetworkContainer.messageApi,
+            mlsMessageApi = authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            messageDAO = userStorage.database.messageDAO,
+            selfUserId = userId
         )
 
     private val userRepository: UserRepository
@@ -430,10 +431,16 @@ class UserSessionScope internal constructor(
         get() = SessionEstablisherImpl(authenticatedDataSourceSet.proteusClientProvider, preKeyRepository)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(authenticatedDataSourceSet.proteusClientProvider)
+        get() = MessageEnvelopeCreatorImpl(
+            proteusClientProvider = authenticatedDataSourceSet.proteusClientProvider,
+            selfUserId = userId
+        )
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider)
+        get() = MLSMessageCreatorImpl(
+            mlsClientProvider = mlsClientProvider,
+            selfUserId = userId
+        )
 
     private val messageSendingScheduler: MessageSendingScheduler
         get() = authenticatedDataSourceSet.userSessionWorkScheduler
@@ -623,10 +630,18 @@ class UserSessionScope internal constructor(
         )
 
     private val mlsUnpacker: MLSMessageUnpacker
-        get() = MLSMessageUnpackerImpl(mlsClientProvider, conversationRepository, pendingProposalScheduler)
+        get() = MLSMessageUnpackerImpl(
+            mlsClientProvider = mlsClientProvider,
+            conversationRepository = conversationRepository,
+            pendingProposalScheduler = pendingProposalScheduler,
+            selfUserId = userId
+        )
 
     private val proteusUnpacker: ProteusMessageUnpacker
-        get() = ProteusMessageUnpackerImpl(authenticatedDataSourceSet.proteusClientProvider)
+        get() = ProteusMessageUnpackerImpl(
+            proteusClientProvider = authenticatedDataSourceSet.proteusClientProvider,
+            selfUserId = userId
+        )
 
     private val messageEncoder get() = MessageContentEncoder()
 

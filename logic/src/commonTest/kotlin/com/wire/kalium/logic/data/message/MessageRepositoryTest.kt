@@ -234,7 +234,6 @@ class MessageRepositoryTest {
 
         @Mock
         val messageMapper = mock(MessageMapper::class)
-
         fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
             given(messageDAO)
                 .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
@@ -290,13 +289,21 @@ class MessageRepositoryTest {
         }
 
         fun arrange() = this to MessageDataSource(
-            messageApi, mlsMessageApi, messageDAO, messageMapper, idMapper, assetMapper, sendMessageFailureMapper
+            messageApi = messageApi,
+            mlsMessageApi = mlsMessageApi,
+            messageDAO = messageDAO,
+            messageMapper = messageMapper,
+            idMapper = idMapper,
+            assetMapper = assetMapper,
+            selfUserId = SELF_USER_ID,
+            sendMessageFailureMapper = sendMessageFailureMapper
         )
     }
 
     private companion object {
         val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val TEST_NETWORK_QUALIFIED_ID_ENTITY = NetworkQualifiedId("value", "domain")
+        val SELF_USER_ID = UserId("user-id", "domain")
         val TEST_MESSAGE_ENTITY =
             MessageEntity.Regular(
                 id = "uid",
