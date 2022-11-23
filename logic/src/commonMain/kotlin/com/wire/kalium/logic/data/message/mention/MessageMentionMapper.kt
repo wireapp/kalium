@@ -38,7 +38,7 @@ class MessageMentionMapperImpl(
             idMapper.fromProtoUserId(it)
         } ?: UserId(
             mention.mentionType?.value as String,
-            selfUserId!!.domain
+            selfUserId.domain
         )
         return MessageMention(
             start = mention.start,
