@@ -262,7 +262,7 @@ internal class ConversationDataSource internal constructor(
             }
 
     override suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId> =
-        wrapStorageRequest { conversationDAO.getSelfConversationId() }
+        wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.PROTEUS) }
             .map { idMapper.fromDaoModel(it) }
 
     override suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {

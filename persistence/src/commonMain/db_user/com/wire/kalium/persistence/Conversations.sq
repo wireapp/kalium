@@ -246,4 +246,4 @@ SET type = ?
 WHERE qualified_id = ?;
 
 selfConversationId:
-SELECT qualified_id FROM Conversation WHERE type = 'SELF' LIMIT 1;
+SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
