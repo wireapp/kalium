@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.sync.incremental
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
@@ -66,7 +65,6 @@ class EventProcessorTest {
         val event = TestEvent.newConnection()
 
         val (arrangement, eventProcessor) = Arrangement()
-//             .withLastProcessedEventId(Either.Right(LAST_EVENT_ID))
             .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
             .arrange()
 
@@ -78,10 +76,6 @@ class EventProcessorTest {
             .suspendFunction(arrangement.userEventReceiver::onEvent)
             .with(eq(event))
             .wasInvoked(exactly = once)
-    }
-
-    private companion object {
-        const val LAST_EVENT_ID = "last_event_id"
     }
 
     private class Arrangement {

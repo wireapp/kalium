@@ -6,12 +6,12 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock
@@ -44,7 +44,7 @@ class EventRepositoryTest {
         val (arrangement, eventRepository) = Arrangement()
             .withLastStoredEventId("someNotificationId")
             .withNotificationsByBatch(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
-            .arrangement()
+            .arrange()
 
         eventRepository.pendingEvents().test {
             awaitItem().shouldSucceed {
@@ -67,8 +67,7 @@ class EventRepositoryTest {
         val (arrangement, eventRepository) = Arrangement()
             .withLastStoredEventId(null)
             .withLastNotificationRemote(NetworkResponse.Success(pendingEvent, mapOf(), 200))
-            .arrangement()
-
+            .arrange()
 
         val result = eventRepository.lastEventId()
         result.shouldSucceed { assertEquals(pendingEvent.id, it) }
@@ -85,7 +84,7 @@ class EventRepositoryTest {
 
         val (arrangement, eventRepository) = Arrangement()
             .withLastStoredEventId(eventId)
-            .arrangement()
+            .arrange()
 
         val result = eventRepository.lastEventId()
         result.shouldSucceed { assertEquals(eventId, it) }
@@ -107,7 +106,7 @@ class EventRepositoryTest {
             .withLastStoredEventId(null)
             .withLastNotificationRemote(NetworkResponse.Success(pendingEvent, mapOf(), 200))
             .withUpdateLastProcessedEventId()
-            .arrangement()
+            .arrange()
 
         eventRepository.lastEventId().shouldSucceed {
             assertEquals(expected, it)
@@ -127,7 +126,7 @@ class EventRepositoryTest {
         val notificationApi: NotificationApi = mock(classOf<NotificationApi>())
 
         @Mock
-        val metaDAO = configure(mock(classOf<MetadataDAO>())) {stubsUnitByDefault = true}
+        val metaDAO = configure(mock(classOf<MetadataDAO>())) { stubsUnitByDefault = true }
 
         @Mock
         val clientIdProvider = mock(CurrentClientIdProvider::class)
@@ -160,7 +159,7 @@ class EventRepositoryTest {
                 .whenInvokedWith(any(), any())
         }
 
-        fun arrangement(): Pair<Arrangement, EventRepository> {
+        fun arrange(): Pair<Arrangement, EventRepository> {
             given(clientIdProvider)
                 .suspendFunction(clientIdProvider::invoke)
                 .whenInvoked()
