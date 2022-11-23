@@ -1,17 +1,7 @@
 package com.wire.kalium.logic.data.event
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
-import com.wire.kalium.logic.data.connection.ConnectionStatusMapperImpl
-import com.wire.kalium.logic.data.conversation.ConversationRoleMapperImpl
-import com.wire.kalium.logic.data.conversation.MemberMapperImpl
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
-import com.wire.kalium.logic.data.id.IdMapperImpl
-import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
-import com.wire.kalium.logic.data.user.AvailabilityStatusMapperImpl
-import com.wire.kalium.logic.data.user.ConnectionStateMapperImpl
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -27,49 +17,18 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.configure
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventRepositoryTest {
-
-    @Mock
-    private val notificationApi: NotificationApi = mock(classOf<NotificationApi>())
-
-    @Mock
-    val metaDAO = mock(classOf<MetadataDAO>())
-
-    @Mock
-    private val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
-
-    @Mock
-    private val eventMapper: EventMapper =
-        EventMapper(
-            IdMapperImpl(),
-            MemberMapperImpl(IdMapperImpl(), ConversationRoleMapperImpl()),
-            ConnectionMapperImpl(
-                IdMapperImpl(),
-                ConnectionStatusMapperImpl(),
-                PublicUserMapperImpl(IdMapperImpl(), AvailabilityStatusMapperImpl(), ConnectionStateMapperImpl())
-            ),
-            FeatureConfigMapperImpl(),
-            ConversationRoleMapperImpl(),
-            DomainUserTypeMapperImpl()
-        )
-
-    private lateinit var eventRepository: EventRepository
-
-    @BeforeTest
-    fun setup() {
-        eventRepository = EventDataSource(notificationApi, metaDAO, clientRepository, eventMapper)
-    }
 
     @Test
     fun givenPendingEvents_whenGettingPendingEvents_thenReturnPendingFirstFollowedByComplete() = runTest {
@@ -82,20 +41,10 @@ class EventRepositoryTest {
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
         val notificationsPageResponse = NotificationResponse("time", false, listOf(pendingEvent))
 
-        given(metaDAO)
-            .suspendFunction(metaDAO::valueByKey).whenInvokedWith(any())
-            .thenReturn("someNotificationId")
-
-        given(notificationApi)
-            .suspendFunction(notificationApi::notificationsByBatch)
-            .whenInvokedWith(any(), any(), any())
-            .thenReturn(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
-
-        val clientId = TestClient.CLIENT_ID
-        given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .thenReturn(Either.Right(clientId))
+        val (arrangement, eventRepository) = Arrangement()
+            .withLastStoredEventId("someNotificationId")
+            .withNotificationsByBatch(NetworkResponse.Success(notificationsPageResponse, mapOf(), 200))
+            .arrangement()
 
         eventRepository.pendingEvents().test {
             awaitItem().shouldSucceed {
@@ -107,9 +56,43 @@ class EventRepositoryTest {
 
     @Test
     fun givenNoSavedLastProcessedId_whenGettingLastProcessedEventId_thenShouldAskFromAPI() = runTest {
-        given(metaDAO)
-            .suspendFunction(metaDAO::valueByKey).whenInvokedWith(any())
-            .thenReturn(null)
+        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
+            TestConversation.NETWORK_ID,
+            UserId("value", "domain"),
+            "eventTime",
+            MessageEventData("text", "senderId", "recipient")
+        )
+        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
+
+        val (arrangement, eventRepository) = Arrangement()
+            .withLastStoredEventId(null)
+            .withLastNotificationRemote(NetworkResponse.Success(pendingEvent, mapOf(), 200))
+            .arrangement()
+
+
+        val result = eventRepository.lastEventId()
+        result.shouldSucceed { assertEquals(pendingEvent.id, it) }
+
+        verify(arrangement.notificationApi)
+            .suspendFunction(arrangement.notificationApi::lastNotification)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenASavedLastProcessedId_whenGettingLastEventId_thenShouldReturnIt() = runTest {
+        val eventId = "dh817h2e"
+
+        val (arrangement, eventRepository) = Arrangement()
+            .withLastStoredEventId(eventId)
+            .arrangement()
+
+        val result = eventRepository.lastEventId()
+        result.shouldSucceed { assertEquals(eventId, it) }
+    }
+
+    @Test
+    fun givenNoLastProcessedEventIdIsStored_thenLastEventIsFetchedFromRemoteAndStored() = runTest {
 
         val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
             TestConversation.NETWORK_ID,
@@ -119,34 +102,70 @@ class EventRepositoryTest {
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
 
-        val clientId = TestClient.CLIENT_ID
-        given(clientRepository)
-            .suspendFunction(clientRepository::currentClientId)
-            .whenInvoked()
-            .thenReturn(Either.Right(clientId))
+        val expected = pendingEvent.id
+        val (arrangement, eventRepository) = Arrangement()
+            .withLastStoredEventId(null)
+            .withLastNotificationRemote(NetworkResponse.Success(pendingEvent, mapOf(), 200))
+            .withUpdateLastProcessedEventId()
+            .arrangement()
 
-        given(notificationApi)
-            .suspendFunction(notificationApi::lastNotification)
-            .whenInvokedWith(any())
-            .thenReturn(NetworkResponse.Success(pendingEvent, mapOf(), 200))
+        eventRepository.lastEventId().shouldSucceed {
+            assertEquals(expected, it)
+        }
 
-        val result = eventRepository.lastEventId()
-        result.shouldSucceed { assertEquals(pendingEvent.id, it) }
-
-        verify(notificationApi)
-            .suspendFunction(notificationApi::lastNotification)
-            .with(any())
+        verify(arrangement.metaDAO)
+            .coroutine { arrangement.metaDAO.insertValue(key = LAST_PROCESSED_EVENT_ID_KEY, value = expected) }
             .wasInvoked(exactly = once)
     }
 
-    @Test
-    fun givenASavedLastProcessedId_whenGettingLastEventId_thenShouldReturnIt() = runTest {
-        val eventId = "dh817h2e"
-        given(metaDAO)
-            .suspendFunction(metaDAO::valueByKey).whenInvokedWith(any())
-            .thenReturn(eventId)
+    private companion object {
+        const val LAST_PROCESSED_EVENT_ID_KEY = "last_processed_event_id"
+    }
 
-        val result = eventRepository.lastEventId()
-        result.shouldSucceed { assertEquals(eventId, it) }
+    private class Arrangement {
+        @Mock
+        val notificationApi: NotificationApi = mock(classOf<NotificationApi>())
+
+        @Mock
+        val metaDAO = configure(mock(classOf<MetadataDAO>())) {stubsUnitByDefault = true}
+
+        @Mock
+        val clientIdProvider = mock(CurrentClientIdProvider::class)
+
+        private val eventRepository: EventRepository = EventDataSource(notificationApi, metaDAO, clientIdProvider)
+
+        suspend fun withLastStoredEventId(value: String?) = apply {
+            given(metaDAO)
+                .coroutine { metaDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY) }
+                .thenReturn(value)
+        }
+
+        fun withNotificationsByBatch(result: NetworkResponse<NotificationResponse>) = apply {
+            given(notificationApi)
+                .suspendFunction(notificationApi::notificationsByBatch)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(result)
+        }
+
+        fun withLastNotificationRemote(result: NetworkResponse<EventResponse>) = apply {
+            given(notificationApi)
+                .suspendFunction(notificationApi::lastNotification)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withUpdateLastProcessedEventId() = apply {
+            given(metaDAO)
+                .suspendFunction(metaDAO::insertValue)
+                .whenInvokedWith(any(), any())
+        }
+
+        fun arrangement(): Pair<Arrangement, EventRepository> {
+            given(clientIdProvider)
+                .suspendFunction(clientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(TestClient.CLIENT_ID))
+            return this to eventRepository
+        }
     }
 }

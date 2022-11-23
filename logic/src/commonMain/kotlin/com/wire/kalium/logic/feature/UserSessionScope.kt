@@ -538,7 +538,7 @@ class UserSessionScope internal constructor(
         get() = EventDataSource(
             authenticatedDataSourceSet.authenticatedNetworkContainer.notificationApi,
             userStorage.database.metadataDAO,
-            clientRepository
+            clientIdProvider
         )
 
     internal val keyPackageManager: KeyPackageManager =
