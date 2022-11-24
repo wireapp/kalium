@@ -23,7 +23,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
     fun shouldUpdateLastProcessedEventId() = !transient
 
     sealed class Conversation(
-        id: String, override val transient: Boolean, open val conversationId: ConversationId
+        id: String,
+        override val transient: Boolean,
+        open val conversationId: ConversationId
     ) : Event(id, transient) {
         data class AccessUpdate(
             override val id: String,
@@ -338,7 +340,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         transient: Boolean,
     ) : Event(id, transient) {
         data class FileSharingUpdated(
-            override val id: String, override val transient: Boolean, val model: ConfigsStatusModel
+            override val id: String,
+            override val transient: Boolean,
+            val model: ConfigsStatusModel
         ) : FeatureConfig(id, transient) {
             override fun toString(): String {
                 val properties = mapOf(
@@ -350,7 +354,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         }
 
         data class MLSUpdated(
-            override val id: String, override val transient: Boolean, val model: MLSModel
+            override val id: String,
+            override val transient: Boolean,
+            val model: MLSModel
         ) : FeatureConfig(id, transient) {
             override fun toString(): String {
                 val properties = mapOf("id" to id.obfuscateId(),
@@ -403,7 +409,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
     }
 
     sealed class User(
-        id: String, transient: Boolean
+        id: String,
+        transient: Boolean
     ) : Event(id, transient) {
 
         data class Update(
@@ -428,7 +435,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         }
 
         data class NewConnection(
-            override val transient: Boolean, override val id: String, val connection: Connection
+            override val transient: Boolean,
+            override val id: String,
+            val connection: Connection
         ) : User(id, transient) {
             override fun toString(): String {
                 val properties = mapOf(
@@ -440,7 +449,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         }
 
         data class ClientRemove(
-            override val transient: Boolean, override val id: String, val clientId: ClientId
+            override val transient: Boolean,
+            override val id: String,
+            val clientId: ClientId
         ) : User(id, transient) {
             override fun toString(): String {
                 val properties = mapOf(
