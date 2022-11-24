@@ -80,7 +80,7 @@ class ConversationRepositoryTest {
 
     @Test
     fun givenNewConversationEvent_whenCallingPersistConversation_thenConversationShouldBePersisted() = runTest {
-        val event = Event.Conversation.NewConversation("id", TestConversation.ID, "time", CONVERSATION_RESPONSE)
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, false, "time", CONVERSATION_RESPONSE)
         val selfUserFlow = flowOf(TestUser.SELF)
         val (arrangement, conversationRepository) = Arrangement()
             .withSelfUserFlow(selfUserFlow)
@@ -105,6 +105,7 @@ class ConversationRepositoryTest {
         val event = Event.Conversation.NewConversation(
             "id",
             TestConversation.ID,
+            false,
             "time",
             CONVERSATION_RESPONSE.copy(
                 groupId = RAW_GROUP_ID,
