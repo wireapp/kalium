@@ -65,7 +65,7 @@ class MessageMapperImpl(
                 senderUserId = idMapper.toDaoModel(message.senderUserId),
                 status = status,
                 visibility = visibility,
-                senderName =message.senderUserName,
+                senderName = message.senderUserName,
                 isSelfMessage = message.isSelfMessage
             )
         }
