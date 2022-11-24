@@ -50,8 +50,7 @@ class CryptoSessionMapperTest {
         val expectedInvalid: List<Pair<QualifiedIDEntity, List<String>>> = listOf(
             UserIDEntity("user1", "domain1") to listOf("client1_null"),
             UserIDEntity("user2", "domain1") to listOf("client1_null", "client2_null"),
-
-            )
+        )
         cryptoSessionMapper.getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(domainToUserIdTOClientIdToPrekeyMap).also { actual ->
             assertEquals(expectedValid, actual.valid)
             assertEquals(expectedInvalid, actual.invalid)
