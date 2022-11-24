@@ -33,4 +33,3 @@ internal class ObservePersistentWebSocketConnectionStatusUseCaseImpl(
             ObservePersistentWebSocketConnectionStatusUseCase.Result.Success(it)
         })
 }
-
