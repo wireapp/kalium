@@ -64,6 +64,7 @@ data class Conversation(
     enum class Access {
         PRIVATE,
         INVITE,
+        SELF_INVITE,
         LINK,
         CODE;
     }

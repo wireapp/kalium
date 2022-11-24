@@ -26,7 +26,7 @@ data class ConversationEntity(
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
-    enum class Access { PRIVATE, INVITE, LINK, CODE; }
+    enum class Access { PRIVATE, INVITE, SELF_INVITE, LINK, CODE; }
 
     enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING, GLOBAL_TEAM }
 

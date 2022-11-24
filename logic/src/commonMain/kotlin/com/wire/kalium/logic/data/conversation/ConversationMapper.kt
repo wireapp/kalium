@@ -200,6 +200,7 @@ internal class ConversationMapperImpl(
             ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
             ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
             ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
+            ConversationAccessDTO.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
             ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
         }
     }
@@ -249,6 +250,7 @@ internal class ConversationMapperImpl(
         Conversation.Access.PRIVATE -> ConversationAccessDTO.PRIVATE
         Conversation.Access.CODE -> ConversationAccessDTO.CODE
         Conversation.Access.INVITE -> ConversationAccessDTO.INVITE
+        Conversation.Access.SELF_INVITE -> ConversationAccessDTO.SELF_INVITE
         Conversation.Access.LINK -> ConversationAccessDTO.LINK
     }
 
@@ -341,12 +343,14 @@ private fun ConversationAccessDTO.toDAO(): ConversationEntity.Access = when (thi
     ConversationAccessDTO.PRIVATE -> ConversationEntity.Access.PRIVATE
     ConversationAccessDTO.CODE -> ConversationEntity.Access.CODE
     ConversationAccessDTO.INVITE -> ConversationEntity.Access.INVITE
+    ConversationAccessDTO.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     ConversationAccessDTO.LINK -> ConversationEntity.Access.LINK
 }
 
 private fun ConversationEntity.Access.toDAO(): Conversation.Access = when (this) {
     ConversationEntity.Access.PRIVATE -> Conversation.Access.PRIVATE
     ConversationEntity.Access.INVITE -> Conversation.Access.INVITE
+    ConversationEntity.Access.SELF_INVITE -> Conversation.Access.SELF_INVITE
     ConversationEntity.Access.LINK -> Conversation.Access.LINK
     ConversationEntity.Access.CODE -> Conversation.Access.CODE
 }
@@ -378,6 +382,7 @@ private fun Conversation.AccessRole.toDAO(): ConversationEntity.AccessRole = whe
 private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this) {
     Conversation.Access.PRIVATE -> ConversationEntity.Access.PRIVATE
     Conversation.Access.INVITE -> ConversationEntity.Access.INVITE
+    Conversation.Access.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
 }

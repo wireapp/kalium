@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -30,6 +31,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
@@ -54,6 +56,8 @@ import kotlinx.datetime.Clock
 interface ConversationRepository {
     @DelicateKaliumApi("this function does not get values from cache")
     suspend fun getSelfConversationId(): Either<StorageFailure, ConversationId>
+
+    suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit>
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
 
     // TODO make all functions to have only logic models
@@ -181,6 +185,18 @@ internal class ConversationDataSource internal constructor(
         return fetchAllConversationsFromAPI()
     }
 
+    // TODO temporary method until backend API changed
+    override suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit> =
+        selfTeamIdProvider().flatMap { teamId ->
+            teamId?.let {
+                wrapApiRequest {
+                    conversationApi.fetchGlobalTeamConversationDetails(idMapper.toApiModel(selfUserId), teamId.value)
+                }.flatMap {
+                    persistConversations(listOf(it), teamId.value)
+                }
+            } ?: Either.Right(Unit)
+        }
+
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, Unit> {
         var hasMore = true
         var lastPagingState: String? = null
@@ -223,7 +239,9 @@ internal class ConversationDataSource internal constructor(
         selfUserTeamId: String?,
         originatedFromEvent: Boolean,
     ) = wrapStorageRequest {
-        val conversationEntities = conversations.map { conversationResponse ->
+        val conversationEntities = conversations
+            .filter { !(it.type == ConversationResponse.Type.GLOBAL_TEAM && it.protocol == ConvProtocol.PROTEUS) }
+            .map { conversationResponse ->
             conversationMapper.fromApiModelToDaoModel(
                 conversationResponse,
                 mlsGroupState = conversationResponse.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) },

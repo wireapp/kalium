@@ -9,6 +9,32 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class GlobalTeamConversationResponse(
+    @SerialName("creator")
+    val creator: String?,
+
+    @SerialName("name")
+    val name: String?,
+
+    @SerialName("qualified_id")
+    val id: ConversationId,
+
+    @SerialName("group_id")
+    val groupId: String?,
+
+    @SerialName("epoch")
+    val epoch: ULong?,
+
+    @SerialName("team")
+    val teamId: TeamId?,
+
+    @SerialName("cipher_suite")
+    val mlsCipherSuiteTag: Int?,
+
+    @SerialName("access") val access: Set<ConversationAccessDTO>
+)
+
+@Serializable
 data class ConversationResponse(
     @SerialName("creator")
     val creator: String,

@@ -19,6 +19,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
@@ -65,6 +66,10 @@ internal open class ConversationApiV0 internal constructor(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}"
             )
         }
+
+    override suspend fun fetchGlobalTeamConversationDetails(selfUserId: UserId, teamId: TeamId): NetworkResponse<ConversationResponse> {
+        TODO("Not yet implemented")
+    }
 
     /**
      * returns 201 when a new conversation is created or 200 if the conversation already existed
