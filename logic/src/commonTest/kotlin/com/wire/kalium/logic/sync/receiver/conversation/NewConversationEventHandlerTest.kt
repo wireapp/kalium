@@ -35,6 +35,7 @@ class NewConversationEventHandlerTest {
         val event = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
+            transient = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE,
         )
@@ -67,6 +68,7 @@ class NewConversationEventHandlerTest {
         val event = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
+            false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE
         )
