@@ -53,7 +53,7 @@ data class DecryptedMessageBundle(
     val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?
 )
-
+@Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
@@ -203,7 +203,7 @@ class MLSConversationDataSource(
         }.flatMap {
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
-                    mlsClient.joinByExternalCommit(it.decodeBase64Bytes())
+                    mlsClient.joinByExternalCommit(it)
                 }.flatMap {
                     wrapMLSRequest {
                         mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))

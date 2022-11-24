@@ -178,7 +178,7 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
-    override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<String> =
+    override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
         NetworkResponse.Error(
             APINotSupported("MLS: fetchGroupInfo api is only available on API V3")
         )
