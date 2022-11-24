@@ -750,7 +750,7 @@ class MLSConversationRepositoryTest {
             given(conversationApi)
                 .suspendFunction(conversationApi::fetchGroupInfo)
                 .whenInvokedWith(anything())
-                .thenReturn(NetworkResponse.Success("", mapOf(), 201))
+                .thenReturn(NetworkResponse.Success("".decodeBase64Bytes(), mapOf(), 201))
         }
 
         fun withProcessWelcomeMessageSuccessful() = apply {
