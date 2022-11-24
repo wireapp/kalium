@@ -14,7 +14,7 @@ internal open class ConversationApiV3 internal constructor(
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
             httpClient.get(
-                "${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_GROUP_INFO}"
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_GROUP_INFO"
             )
         }
 
