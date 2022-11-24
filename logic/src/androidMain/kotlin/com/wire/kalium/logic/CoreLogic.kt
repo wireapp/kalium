@@ -26,7 +26,7 @@ actual class CoreLogic(
 ) : CoreLogicCommon(clientLabel, rootPath, kaliumConfigs = kaliumConfigs) {
 
     override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
-        GlobalPrefProvider(appContext)
+        GlobalPrefProvider(appContext, kaliumConfigs.shouldEncryptData)
     }
 
     override val globalDatabase: Lazy<GlobalDatabaseProvider> =
@@ -51,7 +51,8 @@ actual class CoreLogic(
     )
 
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(
-        appContext = appContext
+        appContext = appContext,
+        coreLogic = this
     )
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {

@@ -13,15 +13,25 @@ data class AuthTokenEntity(
     @SerialName("token_type") val tokenType: String
 )
 
+@Serializable
+data class ProxyCredentialsEntity(
+    @SerialName("username") val username: String,
+    @SerialName("password") val password: String,
+)
+
 class AuthTokenStorage internal constructor(
     private val kaliumPreferences: KaliumPreferences
 ) {
-    fun addOrReplace(authTokenEntity: AuthTokenEntity) {
+    fun addOrReplace(authTokenEntity: AuthTokenEntity, proxyCredentialsEntity: ProxyCredentialsEntity?) {
         kaliumPreferences.putSerializable(
-            getTokenKey(authTokenEntity.userId),
+            tokenKey(authTokenEntity.userId),
             authTokenEntity,
             AuthTokenEntity.serializer()
         )
+
+        proxyCredentialsEntity?.let {
+            kaliumPreferences.putSerializable(proxyCredentialsKey(authTokenEntity.userId), it, ProxyCredentialsEntity.serializer())
+        }
     }
 
     fun updateToken(
@@ -30,7 +40,7 @@ class AuthTokenStorage internal constructor(
         tokenType: String,
         refreshToken: String?,
     ): AuthTokenEntity {
-        val key = getTokenKey(userId)
+        val key = tokenKey(userId)
         val newToken: AuthTokenEntity = (refreshToken?.let {
             AuthTokenEntity(userId, accessToken, refreshToken, tokenType)
         } ?: run {
@@ -51,15 +61,23 @@ class AuthTokenStorage internal constructor(
     // TODO: make suspendable
     fun getToken(userId: UserIDEntity): AuthTokenEntity? =
         kaliumPreferences.getSerializable(
-            getTokenKey(userId),
+            tokenKey(userId),
             AuthTokenEntity.serializer()
         )
 
     fun deleteToken(userId: UserIDEntity) {
-        kaliumPreferences.remove(getTokenKey(userId))
+        kaliumPreferences.remove(tokenKey(userId))
+        kaliumPreferences.remove(proxyCredentialsKey(userId))
     }
 
-    private fun getTokenKey(userId: UserIDEntity): String {
+    fun proxyCredentials(userId: UserIDEntity): ProxyCredentialsEntity? =
+        kaliumPreferences.getSerializable(proxyCredentialsKey(userId), ProxyCredentialsEntity.serializer())
+
+    private fun tokenKey(userId: UserIDEntity): String {
         return "user_tokens_${userId.value}@${userId.domain}"
+    }
+
+    private fun proxyCredentialsKey(userId: UserIDEntity): String {
+        return "proxy_credentials_${userId.value}@${userId.domain}"
     }
 }

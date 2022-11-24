@@ -1,8 +1,9 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsHolder
+import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsPlatformParam
 import com.wire.kalium.persistence.kmmSettings.SettingOptions
+import com.wire.kalium.persistence.kmmSettings.encryptedSettingsBuilder
 import org.junit.Test
 import java.io.FileInputStream
 import java.nio.file.Files
@@ -11,21 +12,21 @@ import java.util.Properties
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class EncryptedSettingsHolderTest {
+class EncryptedSettingsBuilderTest {
 
     @Test
     fun givenJvmPropertiesSettings_WhenUserSettingsAreChanged_ThenItIsStoredInFile() {
         val rootPath = Files.createTempDirectory("test-rootPath").toString()
         val userIDEntity = QualifiedIDEntity("user", "domain")
 
-        val encryptedSettingsHolder = EncryptedSettingsHolder(
-            rootPath,
+        val encryptedSettings = encryptedSettingsBuilder(
             SettingOptions.UserSettings(
                 shouldEncryptData = false,
                 userIDEntity
-            )
+            ),
+            EncryptedSettingsPlatformParam(rootPath)
         )
-        encryptedSettingsHolder.encryptedSettings.putString("test-key", "test-value")
+        encryptedSettings.putString("test-key", "test-value")
 
         val expectedSettingsFile = Paths.get(rootPath, "user-pref-${userIDEntity.value}-${userIDEntity.domain}").toFile()
         assertTrue(expectedSettingsFile.exists(), "User settings file was not created")
@@ -38,13 +39,13 @@ class EncryptedSettingsHolderTest {
     fun givenJvmPropertiesSettings_WhenAppSettingsAreChanged_ThenItIsStoredInFile() {
         val rootPath = Files.createTempDirectory("test-rootPath").toString()
 
-        val encryptedSettingsHolder = EncryptedSettingsHolder(
-            rootPath,
+        val encryptedSettings = encryptedSettingsBuilder(
             SettingOptions.AppSettings(
                 shouldEncryptData = false
-            )
+            ),
+            EncryptedSettingsPlatformParam(rootPath)
         )
-        encryptedSettingsHolder.encryptedSettings.putString("test-key", "test-value")
+        encryptedSettings.putString("test-key", "test-value")
 
         val expectedSettingsFile = Paths.get(rootPath, "app-preference").toFile()
         assertTrue(expectedSettingsFile.exists(), "App settings file was not created")

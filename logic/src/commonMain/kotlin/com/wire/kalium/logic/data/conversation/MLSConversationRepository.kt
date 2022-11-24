@@ -93,6 +93,7 @@ private fun CoreFailure.getStrategy(): CommitStrategy {
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class MLSConversationDataSource(
+    private val selfUserId: UserId,
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
@@ -103,7 +104,8 @@ class MLSConversationDataSource(
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
-    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
+    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
+    private val mlsCommitBundleMapper: MLSCommitBundleMapper = MapperProvider.mlsCommitBundleMapper()
 ) : MLSConversationRepository {
 
     override suspend fun messageFromMLSMessage(
@@ -215,18 +217,12 @@ class MLSConversationDataSource(
     private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
-                mlsMessageApi.sendMessage(MLSMessageApi.Message(bundle.commit))
+                mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
             }.flatMap { response ->
                 processCommitBundleEvents(response.events)
                 wrapMLSRequest {
                     mlsClient.commitAccepted(idMapper.toCryptoModel(groupID))
                 }
-            }.flatMap {
-                bundle.welcome?.let {
-                    wrapApiRequest {
-                        mlsMessageApi.sendWelcomeMessage(MLSMessageApi.WelcomeMessage(it))
-                    }
-                } ?: Either.Right(Unit)
             }
         }
     }
@@ -281,7 +277,14 @@ class MLSConversationDataSource(
                             }
 
                         wrapMLSRequest {
-                            mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
+                            if (userIdList.contains(selfUserId) && clientKeyPackageList.isEmpty()) {
+                                // We are creating a group with only our self client which technically
+                                // doesn't need be added with a commit, but our backend API requires one,
+                                // so we create a commit by updating our key material.
+                                mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))
+                            } else {
+                                mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
+                            }
                         }.flatMap { commitBundle ->
                             commitBundle?.let {
                                 sendCommitBundle(groupID, it)
@@ -329,7 +332,7 @@ class MLSConversationDataSource(
                     )
                 }
             }.flatMap {
-                addMemberToMLSGroup(groupID, members)
+                addMemberToMLSGroup(groupID, members + selfUserId)
             }.flatMap {
                 wrapStorageRequest {
                     conversationDAO.updateConversationGroupState(

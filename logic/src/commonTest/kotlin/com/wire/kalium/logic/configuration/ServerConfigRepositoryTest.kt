@@ -187,7 +187,7 @@ class ServerConfigRepositoryTest {
 
         verify(arrangement.serverConfigDAO)
             .function(arrangement.serverConfigDAO::configByLinks)
-            .with(any(), any(), any())
+            .with(any())
             .wasNotInvoked()
 
         verify(arrangement.serverConfigDAO)
@@ -208,7 +208,7 @@ class ServerConfigRepositoryTest {
 
         verify(arrangement.serverConfigDAO)
             .function(arrangement.serverConfigDAO::configByLinks)
-            .with(any(), any(), any())
+            .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
             .function(arrangement.serverConfigDAO::insert)
@@ -232,7 +232,7 @@ class ServerConfigRepositoryTest {
     fun givenStoredConfig_whenAddingNewOne_thenNewOneShouldBeInsertedAndReturned() {
         val expected = newServerConfig(1)
         val (arrangement, repository) = Arrangement()
-            .withConfigForNewRequest(expected)
+            .withConfigForNewRequest(newServerConfigEntity(1))
             .arrange()
 
         repository
@@ -241,7 +241,7 @@ class ServerConfigRepositoryTest {
 
         verify(arrangement.serverConfigDAO)
             .function(arrangement.serverConfigDAO::configByLinks)
-            .with(any(), any(), any())
+            .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
             .function(arrangement.serverConfigDAO::insert)
@@ -272,7 +272,7 @@ class ServerConfigRepositoryTest {
             null
         )
         val (arrangement, repository) = Arrangement()
-            .withConfigForNewRequest(expectedServerConfig)
+            .withConfigForNewRequest(newServerConfigEntity(1))
             .withCalculateApiVersion(expectedServerConfigDTO.metaData)
             .arrange()
 
@@ -286,7 +286,7 @@ class ServerConfigRepositoryTest {
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
             .function(arrangement.serverConfigDAO::configByLinks)
-            .with(any(), any(), any())
+            .with(any())
             .wasInvoked(exactly = once)
         verify(arrangement.serverConfigDAO)
             .function(arrangement.serverConfigDAO::insert)
@@ -337,19 +337,14 @@ class ServerConfigRepositoryTest {
             )
         )
 
-        fun withConfigForNewRequest(serverConfig: ServerConfig): Arrangement {
+        fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
             given(serverConfigDAO)
-                .invocation { with(serverConfig) { configByLinks(links.title, links.api, links.webSocket) } }
+                .invocation { configByLinks(serverConfigEntity.links) }
                 .then { null }
             given(serverConfigDAO)
                 .function(serverConfigDAO::configById)
                 .whenInvokedWith(any())
                 .then { newServerConfigEntity(1) }
-            // config is not inserted before
-            given(serverConfigDAO)
-                .invocation { configByLinks(serverConfig.links.title, serverConfig.links.api, serverConfig.links.webSocket) }
-                .then { null }
-
             return this
         }
 
@@ -377,7 +372,7 @@ class ServerConfigRepositoryTest {
         fun withConfigByLinks(serverConfigEntity: ServerConfigEntity?): Arrangement {
             given(serverConfigDAO)
                 .function(serverConfigDAO::configByLinks)
-                .whenInvokedWith(any(), any(), any())
+                .whenInvokedWith(any())
                 .thenReturn(serverConfigEntity)
             return this
         }
@@ -406,7 +401,7 @@ class ServerConfigRepositoryTest {
             )
 
             given(serverConfigDAO)
-                .invocation { with(serverConfigEntity) { configByLinks(links.title, links.api, links.webSocket) } }
+                .invocation { configByLinks(serverConfigEntity.links) }
                 .then { serverConfigEntity }
             given(serverConfigDAO)
                 .function(serverConfigDAO::configById)

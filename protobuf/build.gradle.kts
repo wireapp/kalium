@@ -2,9 +2,10 @@ import com.google.protobuf.gradle.GenerateProtoTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
 }
 
 group = "com.wire.kalium"
@@ -61,7 +62,7 @@ kotlin {
         val commonMain by getting {
             kotlin.srcDir(generatedFilesBaseDir)
             dependencies {
-                api(Dependencies.Protobuf.pbandkRuntime)
+                api(libs.pbandkRuntime)
             }
         }
         val commonTest by getting {
@@ -71,8 +72,8 @@ kotlin {
         }
         val androidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
             }
         }
     }

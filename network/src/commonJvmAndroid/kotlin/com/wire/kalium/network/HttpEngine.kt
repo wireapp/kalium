@@ -13,14 +13,14 @@ import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
 actual fun defaultHttpEngine(
-    serverConfigDTOProxy: ServerConfigDTO.Proxy?,
+    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?
 ): HttpClientEngine = OkHttp.create {
     // OkHttp doesn't support configuring ping intervals dynamically,
     // so they must be set when creating the Engine
     // See https://youtrack.jetbrains.com/issue/KTOR-4752
-    if (isProxyRequired(serverConfigDTOProxy)) {
-        if (serverConfigDTOProxy?.needsAuthentication == true) {
+    if (isProxyRequired(serverConfigDTOApiProxy)) {
+        if (serverConfigDTOApiProxy?.needsAuthentication == true) {
             if (proxyCredentials == null) throw error("Credentials does not exist")
             with(proxyCredentials) {
                 Authenticator.setDefault(object : Authenticator() {
@@ -33,7 +33,7 @@ actual fun defaultHttpEngine(
 
         val proxy = Proxy(
             Proxy.Type.SOCKS,
-            InetSocketAddress.createUnresolved(serverConfigDTOProxy?.proxyApi, serverConfigDTOProxy!!.proxyPort)
+            InetSocketAddress.createUnresolved(serverConfigDTOApiProxy?.host, serverConfigDTOApiProxy!!.port)
         )
 
         val client = OkHttpClient.Builder().pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS).proxy(proxy)

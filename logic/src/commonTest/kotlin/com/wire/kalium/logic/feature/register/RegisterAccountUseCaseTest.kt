@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -32,12 +33,13 @@ class RegisterAccountUseCaseTest {
     private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
 
     private val serverConfig = TEST_SERVER_CONFIG
+    private val proxyCredentials = PROXY_CREDENTIALS
 
     private lateinit var registerAccountUseCase: RegisterAccountUseCase
 
     @BeforeTest
     fun setup() {
-        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverConfig)
+        registerAccountUseCase = RegisterAccountUseCase(registerAccountRepository, serverConfig, proxyCredentials)
     }
 
     @Test
@@ -191,5 +193,7 @@ class RegisterAccountUseCaseTest {
             userId = TEST_SELF_USER.id
         )
         val TEST_SSO_ID = SsoId(null, null, null)
+        val PROXY_CREDENTIALS = ProxyCredentials("user_name", "password")
+
     }
 }

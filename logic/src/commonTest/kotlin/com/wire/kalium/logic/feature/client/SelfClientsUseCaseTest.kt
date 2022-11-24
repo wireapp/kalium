@@ -90,7 +90,8 @@ class SelfClientsUseCaseTest {
             label = null,
             cookie = null,
             capabilities = null,
-            model = "Mac ox"
+            model = "Mac ox",
+            emptyMap()
         )
         val CLIENTS_LIST = listOf(
             CLIENT.copy(id = PlainId(value = "client_id_1")),

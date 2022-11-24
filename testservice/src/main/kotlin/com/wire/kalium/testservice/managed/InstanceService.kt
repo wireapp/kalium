@@ -99,7 +99,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
                 teams = ServerConfig.STAGING.teams,
                 website = ServerConfig.STAGING.website,
                 isOnPremises = true,
-                proxy = null
+                apiProxy = null
             )
         } else {
             if (instanceRequest.backend == "staging") {
@@ -122,7 +122,7 @@ class InstanceService(val metricRegistry: MetricRegistry) : Managed {
         log.info("Instance $instanceId: Save Session")
         val userId = coreLogic.globalScope {
             val addAccountResult = addAuthenticatedAccount(
-                loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, true
+                loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, null, true
             )
             if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                 throw WebApplicationException("Instance $instanceId: Failed to save session")

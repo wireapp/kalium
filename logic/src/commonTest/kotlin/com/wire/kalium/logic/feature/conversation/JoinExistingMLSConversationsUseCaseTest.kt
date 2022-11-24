@@ -118,7 +118,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         @Mock
         val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
 
-        fun arrange() = this to JoinExistingMLSConversationsUseCase(featureSupport, conversationRepository, conversationGroupRepository)
+        fun arrange() = this to JoinExistingMLSConversationsUseCaseImpl(featureSupport, conversationRepository, conversationGroupRepository)
 
         @Suppress("MaxLineLength")
         fun withGetConversationsByGroupStateSuccessful(conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) =

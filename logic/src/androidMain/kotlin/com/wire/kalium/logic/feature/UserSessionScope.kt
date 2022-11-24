@@ -12,6 +12,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.SecurityHelper
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
@@ -22,6 +23,7 @@ internal fun UserSessionScope(
     globalScope: GlobalKaliumScope,
     globalCallManager: GlobalCallManager,
     globalPreferences: GlobalPrefProvider,
+    sessionManager: SessionManager,
     dataStoragePaths: DataStoragePaths,
     kaliumConfigs: KaliumConfigs,
     featureSupport: FeatureSupport,
@@ -39,6 +41,7 @@ internal fun UserSessionScope(
         globalScope,
         globalCallManager,
         globalPreferences,
+        sessionManager,
         dataStoragePaths,
         kaliumConfigs,
         featureSupport,

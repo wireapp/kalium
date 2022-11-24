@@ -11,6 +11,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertNotEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,8 +47,9 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val newLinks = config1.links.copy(api = "new_base_url.com")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
-        insertConfig(duplicatedConfig)
-
+        assertFails {
+            insertConfig(duplicatedConfig)
+        }
         val actual = db.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
@@ -59,42 +61,45 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val newLinks = config1.links.copy(title = "title")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
-        insertConfig(duplicatedConfig)
+        assertFails {
+            insertConfig(duplicatedConfig)
+        }
 
         val actual = db.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
         assertNotEquals(duplicatedConfig, actual)
     }
-
 
     @Test
     fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameWSUrl_thenNothingChanges() {
         val newLinks = config1.links.copy(website = "ws_de.berlin.com")
         val duplicatedConfig = config1.copy(links = newLinks)
         insertConfig(config1)
-        insertConfig(duplicatedConfig)
+        assertFails {
+            insertConfig(duplicatedConfig)
+        }
 
         val actual = db.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
         assertNotEquals(duplicatedConfig, actual)
     }
-
 
     @Test
     fun givenAlreadyStoredServerConfig_whenInsertingNewOneWithTheSameDomain_thenNothingChanges() {
         val newMetaData = config1.metaData.copy(domain = "new_domain")
         val duplicatedConfig = config1.copy(metaData = newMetaData)
         insertConfig(config1)
-        insertConfig(duplicatedConfig)
+        assertFails {
+            insertConfig(duplicatedConfig)
+        }
 
         val actual = db.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
         assertNotEquals(duplicatedConfig, actual)
     }
-
 
     @Test
     fun givenExistingConfig_thenItCanBeDeleted() {
@@ -150,7 +155,6 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         assertEquals(expected, actual)
     }
 
-
     private fun insertConfig(serverConfigEntity: ServerConfigEntity) {
         with(serverConfigEntity) {
             db.serverConfigurationDAO.insert(
@@ -167,9 +171,9 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
                     domain = metaData.domain,
                     commonApiVersion = metaData.apiVersion,
                     isOnPremises = false,
-                    proxyApi = links.proxy?.proxyApi,
-                    proxyNeedsAuthentication = links.proxy?.needsAuthentication,
-                    proxyPort = links.proxy?.proxyPort
+                    apiProxyHost = links.apiProxy?.host,
+                    apiProxyNeedsAuthentication = links.apiProxy?.needsAuthentication,
+                    apiProxyPort = links.apiProxy?.port
                 )
             )
         }

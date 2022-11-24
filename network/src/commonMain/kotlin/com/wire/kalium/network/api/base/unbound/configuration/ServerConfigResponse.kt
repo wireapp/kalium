@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 internal data class ServerConfigResponse(
     @SerialName("endpoints") val endpoints: EndPoints,
     @SerialName("title") val title: String,
-    @SerialName("proxy") val proxy: Proxy?
+    @SerialName("apiProxy") val apiProxy: ApiProxy?
 )
 
 @Serializable
@@ -24,8 +24,8 @@ internal data class EndPoints(
 )
 
 @Serializable
-data class Proxy(
+data class ApiProxy(
     @SerialName("needsAuthentication") val needsAuthentication: Boolean,
-    @SerialName("apiProxy") val proxyApi: String,
-    @SerialName("port") val proxyPort: Int
+    @SerialName("host") val host: String,
+    @SerialName("port") val port: Int
 )

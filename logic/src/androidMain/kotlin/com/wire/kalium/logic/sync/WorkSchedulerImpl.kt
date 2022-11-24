@@ -9,8 +9,10 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -24,7 +26,8 @@ import java.util.concurrent.TimeUnit
 private val workerClass = WrapperWorker::class.java
 
 internal actual class GlobalWorkSchedulerImpl(
-    private val appContext: Context
+    private val appContext: Context,
+    private val coreLogic: CoreLogic
 ) : GlobalWorkScheduler {
 
     override fun schedulePeriodicApiVersionUpdate() {
@@ -60,6 +63,14 @@ internal actual class GlobalWorkSchedulerImpl(
             ExistingPeriodicWorkPolicy.KEEP,
             requestPeriodicWork
         )
+    }
+
+    override fun scheduleImmediateApiVersionUpdate() {
+        runBlocking {
+            coreLogic.globalScope {
+                UpdateApiVersionsWorker(updateApiVersions).doWork()
+            }
+        }
     }
 
     private companion object {

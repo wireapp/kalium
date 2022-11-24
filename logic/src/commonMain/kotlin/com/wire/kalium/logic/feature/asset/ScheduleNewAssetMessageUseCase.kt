@@ -7,7 +7,7 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
-import com.wire.kalium.logic.data.asset.isDisplayableMimeType
+import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -182,7 +182,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 name = assetName,
                 mimeType = mimeType,
                 metadata = when {
-                    isDisplayableMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
+                    isDisplayableImageMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
                         AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
                     }
                     else -> null

@@ -21,7 +21,7 @@ internal class PersistMessageUseCaseImpl(
         @OptIn(DelicateKaliumApi::class)
         return messageRepository
             .persistMessage(
-                message,
+                message = message,
                 updateConversationReadDate = isMyMessage,
                 updateConversationModifiedDate = message.content.shouldUpdateConversationOrder(),
                 updateConversationNotificationsDate = isMyMessage

@@ -6,7 +6,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 
 actual fun defaultHttpEngine(
-    serverConfigDTOProxy: ServerConfigDTO.Proxy?,
+    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?
 ): HttpClientEngine {
     return Darwin.create {

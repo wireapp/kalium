@@ -53,7 +53,7 @@ actual class GlobalDatabaseProvider(private val context: Context, passphrase: Gl
             CurrentAccountAdapter = CurrentAccount.Adapter(QualifiedIDAdapter),
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter,
-                proxyPortAdapter = IntColumnAdapter
+                apiProxyPortAdapter = IntColumnAdapter
             )
         )
     }

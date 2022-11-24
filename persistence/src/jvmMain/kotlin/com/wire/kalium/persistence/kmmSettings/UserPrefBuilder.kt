@@ -14,7 +14,7 @@ actual class UserPrefBuilder(
 
     private val kaliumPref =
         KaliumPreferencesSettings(
-            EncryptedSettingsHolder(rootPath, SettingOptions.UserSettings(shouldEncryptData, userId)).encryptedSettings
+            encryptedSettingsBuilder(SettingOptions.UserSettings(shouldEncryptData, userId), EncryptedSettingsPlatformParam(rootPath))
         )
 
     actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage

@@ -6,7 +6,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 actual class UserPrefBuilder {
 
     // TODO: Implement the preferences for iOS.
-    private val kaliumPreferences = KaliumPreferencesSettings(EncryptedSettingsHolder("service").encryptedSettings)
+    private val kaliumPreferences = KaliumPreferencesSettings(TODO())
     actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage
         get() = TODO("Not yet implemented")
 

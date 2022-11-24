@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
@@ -13,7 +14,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
 sealed class SSOLoginSessionResult {
-    data class Success(val authTokens: AuthTokens, val ssoId: SsoId?) : SSOLoginSessionResult()
+    data class Success(val authTokens: AuthTokens, val ssoId: SsoId?, val proxyCredentials: ProxyCredentials?) : SSOLoginSessionResult()
 
     sealed class Failure : SSOLoginSessionResult() {
         object InvalidCookie : Failure()
@@ -27,6 +28,7 @@ interface GetSSOLoginSessionUseCase {
 
 internal class GetSSOLoginSessionUseCaseImpl(
     private val ssoLoginRepository: SSOLoginRepository,
+    private val proxyCredentials: ProxyCredentials?,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : GetSSOLoginSessionUseCase {
@@ -41,7 +43,8 @@ internal class GetSSOLoginSessionUseCaseImpl(
         }, {
             SSOLoginSessionResult.Success(
                 authTokens = sessionMapper.fromSessionDTO(it.sessionDTO),
-                ssoId = idMapper.toSsoId(it.userDTO.ssoID)
+                ssoId = idMapper.toSsoId(it.userDTO.ssoID),
+                proxyCredentials = proxyCredentials
             )
         })
 

@@ -54,9 +54,9 @@ internal class GetNotificationsUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val timeParser: TimeParser,
     private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
-    private val localNotificationMessageMapper: LocalNotificationMessageMapper =
-        MapperProvider.localNotificationMessageMapper()
+    private val selfUserId: UserId,
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
+    private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
     @Suppress("LongMethod")
@@ -220,6 +220,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                     else -> false
                 }
             }
+
             allNotificationsAllowed(conversationMutedStatus, selfUser) -> true
             else -> false
         }

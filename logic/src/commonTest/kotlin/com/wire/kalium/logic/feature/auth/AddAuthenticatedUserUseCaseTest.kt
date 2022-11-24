@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
@@ -25,20 +26,20 @@ class AddAuthenticatedUserUseCaseTest {
     @Test
     fun givenUserWithNoAlreadyStoredSession_whenInvoked_thenSuccessIsReturned() = runTest {
         val tokens = TEST_AUTH_TOKENS
-
+        val proxyCredentials = PROXY_CREDENTIALS
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
             .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
-            .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, Either.Right(Unit))
+            .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, proxyCredentials, Either.Right(Unit))
             .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
             .arrange()
 
-        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, false)
+        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, proxyCredentials, false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::storeSession)
-            .with(any(), any(), any())
+            .with(any(), any(), any(), any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.sessionRepository)
@@ -54,17 +55,19 @@ class AddAuthenticatedUserUseCaseTest {
     @Test
     fun givenUserWithAlreadyStoredSession_whenInvoked_thenUserAlreadyExistsIsReturned() = runTest {
         val tokens = TEST_AUTH_TOKENS
+        val proxyCredentials = PROXY_CREDENTIALS
+
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
             .withDoesValidSessionExistResult(tokens.userId, Either.Right(true))
             .arrange()
 
-        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, false)
+        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, proxyCredentials, false)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::storeSession)
-            .with(any(), any(), any())
+            .with(any(), any(), any(), any())
             .wasNotInvoked()
 
         verify(arrangement.sessionRepository)
@@ -84,21 +87,23 @@ class AddAuthenticatedUserUseCaseTest {
 
         val newSession = TEST_AUTH_TOKENS.copy(accessToken = "newAccessToken", refreshToken = "newRefreshToken")
 
+        val proxyCredentials = PROXY_CREDENTIALS
+
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
-            .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, Either.Right(Unit))
+            .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, proxyCredentials, Either.Right(Unit))
             .withUpdateCurrentSessionResult(newSession.userId, Either.Right(Unit))
             .withFullAccountInfoResult(newSession.userId, Either.Right(oldSessionFullInfo))
             .withConfigByIdResult(TEST_SERVER_CONFIG.id, Either.Right(TEST_SERVER_CONFIG))
             .arrange()
 
-        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, true)
+        val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, proxyCredentials, true)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::storeSession)
-            .with(any(), any(), any())
+            .with(any(), any(), any(), any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.sessionRepository)
@@ -129,6 +134,8 @@ class AddAuthenticatedUserUseCaseTest {
         val newSession = TEST_AUTH_TOKENS.copy(accessToken = "newAccessToken", refreshToken = "newRefreshToken")
         val newSessionServer = newServerConfig(id = 22)
 
+        val proxyCredentials = PROXY_CREDENTIALS
+
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withConfigForUserIdResult(oldSession.userId, Either.Right(oldSessionServer))
@@ -139,7 +146,7 @@ class AddAuthenticatedUserUseCaseTest {
             )
             .arrange()
 
-        val actual = addAuthenticatedUserUseCase(newSessionServer.id, TEST_SSO_ID, newSession, true)
+        val actual = addAuthenticatedUserUseCase(newSessionServer.id, TEST_SSO_ID, newSession, proxyCredentials, true)
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
@@ -149,7 +156,7 @@ class AddAuthenticatedUserUseCaseTest {
             .wasInvoked(exactly = once)
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::storeSession)
-            .with(any(), any(), any())
+            .with(any(), any(), any(), any())
             .wasNotInvoked()
         verify(arrangement.sessionRepository)
             .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
@@ -172,6 +179,7 @@ class AddAuthenticatedUserUseCaseTest {
             "refresh-token",
             "type"
         )
+        val PROXY_CREDENTIALS = ProxyCredentials("user_name", "password")
         val TEST_SSO_ID = SsoId(
             "scim",
             null,
@@ -220,9 +228,10 @@ class AddAuthenticatedUserUseCaseTest {
             serverConfigId: String,
             ssoId: SsoId?,
             authTokens: AuthTokens,
+            proxyCredentials: ProxyCredentials?,
             result: Either<StorageFailure, Unit>
         ) = apply {
-            given(sessionRepository).coroutine { storeSession(serverConfigId, ssoId, authTokens) }.then { result }
+            given(sessionRepository).coroutine { storeSession(serverConfigId, ssoId, authTokens, proxyCredentials) }.then { result }
         }
 
         suspend fun withUpdateCurrentSessionResult(

@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
@@ -25,6 +26,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 
 interface PublicUserMapper {
     fun fromDaoModelToPublicUser(userEntity: UserEntity): OtherUser
+    fun fromPublicUserToDaoModel(otherUser: OtherUser): UserEntity
     fun fromDaoModelToPublicUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized
     fun fromUserDetailResponseWithUsertype(
         userDetailResponse: UserProfileDTO,
@@ -46,7 +48,8 @@ class PublicUserMapperImpl(
     private val idMapper: IdMapper,
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
-    private val domainUserTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
+    private val domainUserTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
+    private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : PublicUserMapper {
 
     override fun fromDaoModelToPublicUser(userEntity: UserEntity) = OtherUser(
@@ -65,6 +68,25 @@ class PublicUserMapperImpl(
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted
     )
+
+    override fun fromPublicUserToDaoModel(otherUser: OtherUser): UserEntity = with(otherUser) {
+        UserEntity(
+            id = idMapper.toDaoModel(id),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = teamId?.value,
+            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionStatus),
+            previewAssetId = previewPicture?.let { idMapper.toDaoModel(it) },
+            completeAssetId = completePicture?.let { idMapper.toDaoModel(it) },
+            availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
+            userType = userEntityTypeMapper.fromUserType(userType),
+            botService = botService?.let { BotEntity(it.id, it.provider) },
+            deleted = deleted
+        )
+    }
 
     override fun fromDaoModelToPublicUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized =
         OtherUserMinimized(

@@ -25,7 +25,8 @@ interface SessionMapper {
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
-    fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials?): ProxyCredentialsDTO
+    fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity
+    fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO
 }
 
 internal class SessionMapperImpl(
@@ -101,6 +102,9 @@ internal class SessionMapperImpl(
     override fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO =
         ProxyCredentialsDTO(proxyCredentialsEntity.username, proxyCredentialsEntity.password)
 
-    override fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials?): ProxyCredentialsDTO =
-        ProxyCredentialsDTO(proxyCredentialsModel?.username, proxyCredentialsModel?.password)
+    override fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity =
+        ProxyCredentialsEntity(proxyCredentialsModel.username, proxyCredentialsModel.password)
+
+    override fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO =
+        ProxyCredentialsDTO(proxyCredentialsModel.username, proxyCredentialsModel.password)
 }

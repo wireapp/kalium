@@ -24,16 +24,20 @@ import kotlinx.coroutines.async
  * Send an external add proposal to join all MLS conversations which the user is member
  * of but has not yet joined the corresponding MLS group.
  */
-class JoinExistingMLSConversationsUseCase(
+interface JoinExistingMLSConversationsUseCase {
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
+}
+
+class JoinExistingMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) {
+) : JoinExistingMLSConversationsUseCase {
     private val dispatcher = kaliumDispatcher.io
     private val scope = CoroutineScope(dispatcher)
 
-    suspend operator fun invoke(): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported) {
             kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
             Either.Right(Unit)

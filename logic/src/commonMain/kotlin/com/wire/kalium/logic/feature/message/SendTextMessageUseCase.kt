@@ -33,17 +33,29 @@ class SendTextMessageUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
-        mentions: List<MessageMention> = listOf()
+        mentions: List<MessageMention> = emptyList(),
+        quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
 
         val generatedMessageUuid = uuid4().toString()
+
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Text(text, mentions),
+                content = MessageContent.Text(
+                    value = text,
+                    mentions = mentions,
+                    quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
+                        MessageContent.QuoteReference(
+                            quotedMessageId = quotedMessageId,
+                            quotedMessageSha256 = null,
+                            isVerified = true
+                        )
+                    }
+                ),
                 conversationId = conversationId,
                 date = Clock.System.now().toString(),
                 senderUserId = selfUserId,
@@ -63,5 +75,4 @@ class SendTextMessageUseCase internal constructor(
             }
         }
     }
-
 }

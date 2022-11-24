@@ -14,10 +14,10 @@ actual class UserPrefBuilder(
 ) {
     private val encryptedSettingsHolder =
         KaliumPreferencesSettings(
-            EncryptedSettingsHolder(
-                context,
-                options = SettingOptions.UserSettings(shouldEncryptData = shouldEncryptData, userIDEntity = userId)
-            ).encryptedSettings
+            encryptedSettingsBuilder(
+                SettingOptions.UserSettings(shouldEncryptData = shouldEncryptData, userIDEntity = userId),
+                EncryptedSettingsPlatformParam(context)
+            )
         )
 
     actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage

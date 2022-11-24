@@ -42,7 +42,8 @@ object ClientResponseJson {
             label = "label",
             cookie = "sldkfmdeklmwldwlek23kl44mntiuepfojfndkjd",
             capabilities = Capabilities(listOf(ClientCapabilityDTO.LegalHoldImplicitConsent)),
-            model = "model"
+            model = "model",
+            mlsPublicKeys = null
         ),
         jsonProvider
     )

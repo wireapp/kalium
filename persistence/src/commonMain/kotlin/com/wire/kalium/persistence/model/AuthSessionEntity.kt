@@ -14,7 +14,7 @@ data class ServerConfigEntity(
         val website: String,
         val title: String,
         val isOnPremises: Boolean,
-        val proxy: Proxy?
+        val apiProxy: ApiProxy?
 
     )
 
@@ -24,10 +24,10 @@ data class ServerConfigEntity(
         val domain: String?
     )
 
-    data class Proxy(
+    data class ApiProxy(
         val needsAuthentication: Boolean,
-        val proxyApi: String,
-        val proxyPort: Int
+        val host: String,
+        val port: Int
     )
 }
 

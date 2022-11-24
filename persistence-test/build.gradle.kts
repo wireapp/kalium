@@ -1,6 +1,7 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
 }
 
 group = "com.wire.kalium"
@@ -46,24 +47,22 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":persistence"))
-                // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        // strictly using the native-mt version on coroutines
-                        strictly(Versions.coroutines)
-                    }
-                }
-                implementation(Dependencies.Coroutines.test)
-
                 implementation(kotlin("test"))
-                implementation(Dependencies.MultiplatformSettings.test)
+                // coroutines
+                implementation(libs.coroutines.core.map {
+                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
+                        version { strictly(libs.versions.coroutines.get()) }
+                    })
+                })
+                implementation(libs.coroutines.test)
+                implementation(libs.settings.kmpTest)
             }
         }
         val androidMain by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
-                implementation(Dependencies.AndroidInstruments.androidTestCore)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
+                implementation(libs.androidtest.core)
             }
         }
     }

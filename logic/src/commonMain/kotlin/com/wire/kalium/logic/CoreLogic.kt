@@ -1,7 +1,5 @@
 package com.wire.kalium.logic
 
-import com.wire.kalium.logic.configuration.ProxyCredentialsDataSource
-import com.wire.kalium.logic.configuration.ProxyCredentialsRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
@@ -16,8 +14,6 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCase
-import com.wire.kalium.logic.feature.client.PersistProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
@@ -66,13 +62,6 @@ abstract class CoreLogicCommon internal constructor(
     protected abstract val globalWorkScheduler: GlobalWorkScheduler
 
     val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
-
-    private val proxyCredentialsRepository: ProxyCredentialsRepository
-        get() =
-            ProxyCredentialsDataSource(globalPreferences.value.proxyCredentialsStorage)
-
-    internal val persistProxyCredentialsUseCase: PersistProxyCredentialsUseCase
-        get() = PersistProxyCredentialsUseCaseImpl(proxyCredentialsRepository)
 
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(serverLinks, this)

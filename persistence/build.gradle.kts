@@ -1,8 +1,9 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
-    Plugins.serialization(this)
-    Plugins.sqlDelight(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.kotlin.serialization)
+    id(libs.plugins.sqldelight.get().pluginId)
 }
 
 group = "com.wire.kalium"
@@ -14,17 +15,19 @@ dependencies {
 
 sqldelight {
     database("UserDatabase") {
-        dialect = Dependencies.SqlDelight.dialect
+        dialect = libs.sqldelight.dialect.get().toString()
         packageName = "com.wire.kalium.persistence"
-        sourceFolders = listOf("db_user")
-//     TODO add :kalium:persistence:generateCommonMainUserDatabaseSchema to build proccess
-        schemaOutputDirectory = file("src/commonMain/db_user/samples_for_migration_testing")
+        val sourceFolderName = "db_user"
+        sourceFolders = listOf(sourceFolderName)
+        schemaOutputDirectory = file("src/commonMain/$sourceFolderName/schemas")
     }
 
     database("GlobalDatabase") {
-        dialect = Dependencies.SqlDelight.dialect
+        dialect = libs.sqldelight.dialect.get().toString()
         packageName = "com.wire.kalium.persistence"
-        sourceFolders = listOf("db_global")
+        val sourceFolderName = "db_global"
+        sourceFolders = listOf(sourceFolderName)
+        schemaOutputDirectory = file("src/commonMain/$sourceFolderName/schemas")
     }
 }
 
@@ -78,18 +81,18 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                implementation(Dependencies.Coroutines.core) {
-                    version {
-                        // strictly using the native-mt version on coroutines
-                        strictly(Versions.coroutines)
-                    }
-                }
-                implementation(Dependencies.SqlDelight.runtime)
-                implementation(Dependencies.SqlDelight.coroutinesExtension)
-                implementation(Dependencies.SqlDelight.primitiveAdapters)
-                implementation(Dependencies.Kotlinx.serialization)
-                implementation(Dependencies.MultiplatformSettings.settings)
-                implementation(Dependencies.Kotlinx.dateTime)
+                implementation(libs.coroutines.core.map {
+                    project.dependencies.create(it, closureOf<ExternalModuleDependency> {
+                        version { strictly(libs.versions.coroutines.get()) }
+                    })
+                })
+
+                implementation(libs.sqldelight.runtime)
+                implementation(libs.sqldelight.coroutinesExtension)
+                implementation(libs.sqldelight.primitiveAdapters)
+                implementation(libs.ktxSerialization)
+                implementation(libs.settings.kmp)
+                implementation(libs.ktxDateTime)
 
                 api(project(":logger"))
             }
@@ -98,21 +101,21 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 // coroutines
-                implementation(Dependencies.Coroutines.test)
-                implementation(Dependencies.Test.turbine)
+                implementation(libs.coroutines.test)
+                implementation(libs.turbine)
                 // MultiplatformSettings
-                implementation(Dependencies.MultiplatformSettings.test)
+                implementation(libs.settings.kmpTest)
             }
         }
         val jvmMain by getting {
             dependencies {
-                implementation(Dependencies.SqlDelight.jvmDriver)
+                implementation(libs.sqldelight.jvmDriver)
             }
         }
         val jvmTest by getting
         val jsMain by getting {
             dependencies {
-                implementation(Dependencies.SqlDelight.jsDriver)
+                implementation(libs.sqldelight.jsDriver)
                 implementation(npm("sql.js", "1.6.2"))
                 implementation(devNpm("copy-webpack-plugin", "9.1.0"))
             }
@@ -120,24 +123,24 @@ kotlin {
         val jsTest by getting
         val androidMain by getting {
             dependencies {
-                implementation(Dependencies.Android.securityCrypto)
-                implementation(Dependencies.SqlDelight.androidDriver)
-                implementation(Dependencies.Android.paging3)
+                implementation(libs.securityCrypto)
+                implementation(libs.sqldelight.androidDriver)
+                implementation(libs.paging3)
                 implementation("net.zetetic:android-database-sqlcipher:4.5.0@aar")
                 implementation("androidx.sqlite:sqlite:2.0.1")
             }
         }
         val androidAndroidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
-                implementation(Dependencies.AndroidInstruments.androidTestCore)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
+                implementation(libs.androidtest.core)
             }
         }
 
         val iosX64Main by getting {
             dependencies {
-                implementation(Dependencies.SqlDelight.nativeDriver)
+                implementation(libs.sqldelight.nativeDriver)
             }
         }
         val iosX64Test by getting

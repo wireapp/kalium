@@ -1,5 +1,6 @@
 package com.wire.kalium.logic.feature.keypackage
 
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
@@ -7,6 +8,7 @@ import com.wire.kalium.logic.feature.TimestampKeys.LAST_KEY_PACKAGE_COUNT_CHECK
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -26,9 +28,11 @@ internal val KEY_PACKAGE_COUNT_CHECK_DURATION = 24.hours
  */
 internal interface KeyPackageManager
 
+@Suppress("LongParameterList")
 internal class KeyPackageManagerImpl(
     private val featureSupport: FeatureSupport,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val clientRepository: Lazy<ClientRepository>,
     private val refillKeyPackagesUseCase: Lazy<RefillKeyPackagesUseCase>,
     private val keyPackageCountUseCase: Lazy<MLSKeyPackageCountUseCase>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
@@ -49,7 +53,10 @@ internal class KeyPackageManagerImpl(
         refillKeyPackageJob = refillKeyPackagesScope.launch {
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
-                if (syncState is IncrementalSyncStatus.Live && featureSupport.isMLSSupported) {
+                if (syncState is IncrementalSyncStatus.Live &&
+                    featureSupport.isMLSSupported &&
+                    clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
+                ) {
                     refillKeyPackagesIfNeeded()
                 }
             }

@@ -16,16 +16,16 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
-import com.wire.kalium.persistence.client.ProxyCredentialsStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -65,17 +65,31 @@ class ClientRepositoryTest {
     @Mock
     private val userMapper = mock(classOf<UserMapper>())
 
-    @Mock
-    private val proxyCredentialsStorage = configure(mock(classOf<ProxyCredentialsStorage>())) {
-        stubsUnitByDefault = true
-    }
-
     private lateinit var clientRepository: ClientRepository
 
     @BeforeTest
     fun setup() {
         clientRepository =
             ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, userMapper)
+    }
+
+    @Test
+    fun givenSuccess_whenRegisteringMLSClient_thenSetHasRegisteredMLSClient() = runTest {
+        given(clientRemoteRepository)
+            .suspendFunction(clientRemoteRepository::registerMLSClient)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+
+        clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY)
+
+        verify(clientRemoteRepository)
+            .suspendFunction(clientRemoteRepository::registerMLSClient)
+            .with(eq(CLIENT_ID), eq(MLS_PUBLIC_KEY.encodeBase64()))
+            .wasInvoked(once)
+
+        verify(clientRegistrationStorage)
+            .suspendFunction(clientRegistrationStorage::setHasRegisteredMLSClient)
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -251,7 +265,8 @@ class ClientRepositoryTest {
                     label = null,
                     cookie = null,
                     capabilities = null,
-                    model = "Mac ox"
+                    model = "Mac ox",
+                    mlsPublicKeys = emptyMap()
                 ),
                 Client(
                     id = PlainId(value = "client_id_1"),
@@ -262,7 +277,8 @@ class ClientRepositoryTest {
                     label = null,
                     cookie = null,
                     capabilities = null,
-                    model = "iphone 15"
+                    model = "iphone 15",
+                    mlsPublicKeys = emptyMap()
                 ),
             )
         )
@@ -418,6 +434,7 @@ class ClientRepositoryTest {
         val REGISTER_CLIENT_PARAMS = RegisterClientParam(
             "pass", listOf(), PreKeyCrypto(2, "2"), null, null, listOf(), null, null
         )
+        val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(

@@ -7,9 +7,10 @@ import com.google.protobuf.gradle.protobuf
 import com.google.protobuf.gradle.protoc
 import com.google.protobuf.gradle.remove
 
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.jvm(this)
-    Plugins.protobuf(this)
+    kotlin("jvm")
+    id(libs.plugins.protobuf.get().pluginId)
 }
 
 group = "com.wire.kalium"
@@ -22,7 +23,7 @@ protobuf {
     }
     plugins {
         id("pbandk") {
-            artifact = "pro.streem.pbandk:protoc-gen-pbandk-jvm:${Versions.pbandk}:jvm8@jar"
+            artifact = "pro.streem.pbandk:protoc-gen-pbandk-jvm:${libs.versions.pbandk.get()}:jvm8@jar"
         }
     }
     generateProtoTasks {

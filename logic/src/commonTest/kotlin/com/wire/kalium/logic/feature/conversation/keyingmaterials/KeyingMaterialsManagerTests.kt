@@ -1,6 +1,7 @@
 package com.wire.kalium.logic.feature.conversation.keyingmaterials
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
@@ -30,6 +31,7 @@ class KeyingMaterialsManagerTests {
 
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Success)
                 .withTimestampKeyCheck(true)
                 .withTimestampKeyResetSuccessful()
@@ -73,8 +75,22 @@ class KeyingMaterialsManagerTests {
 
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(false)
-                .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Success)
-                .withTimestampKeyCheck(true)
+                .arrange()
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+            verify(arrangement.updateKeyingMaterialsUseCase)
+                .suspendFunction(arrangement.updateKeyingMaterialsUseCase::invoke)
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenMLSClientHasNotBeenRegistered_whenObservingAndSyncFinishes_updateKeyingMaterialsUseCaseNotPerformed() =
+        runTest(TestKaliumDispatcher.default) {
+
+            val (arrangement, _) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(false)
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -90,6 +106,7 @@ class KeyingMaterialsManagerTests {
 
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
                 .withUpdateKeyingMaterialIs(UpdateKeyingMaterialsResult.Failure(StorageFailure.DataNotFound))
                 .withTimestampKeyCheck(true)
                 .withTimestampKeyResetSuccessful()
@@ -109,6 +126,9 @@ class KeyingMaterialsManagerTests {
     private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
+
+        @Mock
+        val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
         val featureSupport = mock(classOf<FeatureSupport>())
@@ -146,9 +166,17 @@ class KeyingMaterialsManagerTests {
                 .thenReturn(supported)
         }
 
+        fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::hasRegisteredMLSClient)
+                .whenInvoked()
+                .thenReturn(Either.Right(result))
+        }
+
         fun arrange() = this to KeyingMaterialsManagerImpl(
             featureSupport,
             incrementalSyncRepository,
+            lazy { clientRepository },
             lazy { updateKeyingMaterialsUseCase },
             lazy { timestampKeyRepository },
             TestKaliumDispatcher

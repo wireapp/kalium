@@ -1,8 +1,13 @@
 package com.wire.kalium.persistence.dao.reaction
 
+import com.squareup.sqldelight.runtime.coroutines.asFlow
+import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface ReactionDAO {
 
@@ -34,6 +39,11 @@ interface ReactionDAO {
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity
     ): UserReactionsEntity
+
+    suspend fun observeMessageReactions(
+        conversationId: QualifiedIDEntity,
+        messageId: String
+    ): Flow<List<MessageReactionEntity>>
 }
 
 class ReactionDAOImpl(private val reactionsQueries: ReactionsQueries) : ReactionDAO {
@@ -84,4 +94,10 @@ class ReactionDAOImpl(private val reactionsQueries: ReactionsQueries) : Reaction
         }
         .executeAsList()
         .toSet()
+
+    override suspend fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
+        reactionsQueries.selectMessageReactionsByConversationIdAndMessageId(messageId, conversationId)
+            .asFlow()
+            .mapToList()
+            .map { it.map(ReactionMapper::fromDAOToMessageReactionsEntity) }
 }

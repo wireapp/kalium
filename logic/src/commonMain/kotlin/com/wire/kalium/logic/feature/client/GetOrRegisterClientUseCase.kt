@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.nullableFold
 
 interface GetOrRegisterClientUseCase {
@@ -14,7 +15,8 @@ class GetOrRegisterClientUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val registerClient: RegisterClientUseCase,
     private val clearClientData: ClearClientDataUseCase,
-    private val persistRegisteredClientIdUseCase: PersistRegisteredClientIdUseCase
+    private val persistRegisteredClientIdUseCase: PersistRegisteredClientIdUseCase,
+    private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
 ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
@@ -35,6 +37,11 @@ class GetOrRegisterClientUseCaseImpl(
                     }
                 }
             )
-        return result ?: registerClient(registerClientParam)
+
+        return (result ?: registerClient(registerClientParam)).also {
+            if (it is RegisterClientResult.Success) {
+                upgradeCurrentSessionUseCase(it.client.id)
+            }
+        }
     }
 }

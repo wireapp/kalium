@@ -1,6 +1,7 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    Plugins.androidLibrary(this)
-    Plugins.multiplatform(this)
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
 }
 
 group = "com.wire.kalium"
@@ -44,13 +45,13 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                api(Dependencies.Logging.kermit)
+                api(libs.kermit)
             }
         }
         val androidTest by getting {
             dependencies {
-                implementation(Dependencies.AndroidInstruments.androidTestRunner)
-                implementation(Dependencies.AndroidInstruments.androidTestRules)
+                implementation(libs.androidtest.runner)
+                implementation(libs.androidtest.rules)
             }
         }
     }

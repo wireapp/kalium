@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
@@ -21,6 +22,7 @@ import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
+import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import kotlinx.datetime.Instant
@@ -37,7 +39,8 @@ class ProtoContentMapperImpl(
     private val confirmationTypeMapper: ConfirmationTypeMapper = MapperProvider.confirmationTypeMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(),
+    private val selfUserId: UserId,
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
@@ -53,11 +56,19 @@ class ProtoContentMapperImpl(
     @Suppress("ComplexMethod")
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable) =
         when (val readableContent = protoContent.messageContent) {
-            is MessageContent.Text -> GenericMessage.Content.Text(
-                Text(
-                    content = readableContent.value,
-                    mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) })
-            )
+            is MessageContent.Text -> {
+                val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
+                val quote = readableContent.quotedMessageReference?.let {
+                    Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
+                }
+                GenericMessage.Content.Text(
+                    Text(
+                        content = readableContent.value,
+                        mentions = mentions,
+                        quote = quote
+                    )
+                )
+            }
 
             is MessageContent.Confirmation -> GenericMessage.Content.Confirmation(
                 Confirmation(
@@ -151,7 +162,14 @@ class ProtoContentMapperImpl(
         val readableContent = when (val protoContent = genericMessage.content) {
             is GenericMessage.Content.Text -> MessageContent.Text(
                 protoContent.value.content,
-                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull()
+                protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
+                protoContent.value.quote?.let {
+                    MessageContent.QuoteReference(
+                        it.quotedMessageId,
+                        it.quotedMessageSha256?.array,
+                        true // TODO: Check hash to figure out if it's valid
+                    )
+                }, null
             )
 
             is GenericMessage.Content.Asset -> {
@@ -186,10 +204,11 @@ class ProtoContentMapperImpl(
                 val replacingMessageId = protoContent.value.replacingMessageId
                 when (val editContent = protoContent.value.content) {
                     is MessageEdit.Content.Text -> {
+                        val mentions = editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
                         MessageContent.TextEdited(
                             replacingMessageId,
                             editContent.value.content,
-                            editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }.filterNotNull()
+                            mentions
                         )
                     }
                     // TODO: for now we do not implement it

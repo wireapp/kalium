@@ -14,7 +14,7 @@ data class ServerConfigDTO(
         val website: String,
         val title: String,
         val isOnPremises: Boolean,
-        val proxy: Proxy?
+        val apiProxy: ApiProxy?
     )
 
     data class MetaData(
@@ -23,15 +23,15 @@ data class ServerConfigDTO(
         val domain: String?
     )
 
-    data class Proxy(
+    data class ApiProxy(
         val needsAuthentication: Boolean,
-        val proxyApi: String,
-        val proxyPort: Int
+        val host: String,
+        val port: Int
     )
 }
 
-fun isProxyRequired(serverConfigDTOProxy: ServerConfigDTO.Proxy?): Boolean {
-    return serverConfigDTOProxy != null
+fun isProxyRequired(serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?): Boolean {
+    return serverConfigDTOApiProxy != null
 }
 
 sealed class ApiVersionDTO(open val version: Int) {

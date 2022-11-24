@@ -23,9 +23,9 @@ internal object ServerConfigMapper {
         domain: String?,
         commonApiVersion: Int,
         federation: Boolean,
-        proxyApi: String?,
-        proxyNeedsAuthentication: Boolean?,
-        proxyPort: Int?
+        apiProxyHost: String?,
+        apiProxyNeedsAuthentication: Boolean?,
+        apiProxyPort: Int?
     ): ServerConfigEntity = ServerConfigEntity(
         id,
         ServerConfigEntity.Links(
@@ -37,11 +37,11 @@ internal object ServerConfigMapper {
             website = websiteUrl,
             title = title,
             isOnPremises = isOnPremises,
-            proxy = if (proxyApi != null && proxyNeedsAuthentication != null && proxyPort != null) {
-                ServerConfigEntity.Proxy(
-                    needsAuthentication = proxyNeedsAuthentication,
-                    proxyApi = proxyApi,
-                    proxyPort = proxyPort
+            apiProxy = if (apiProxyHost != null && apiProxyNeedsAuthentication != null && apiProxyPort != null) {
+                ServerConfigEntity.ApiProxy(
+                    needsAuthentication = apiProxyNeedsAuthentication,
+                    host = apiProxyHost,
+                    port = apiProxyPort
                 )
             } else null
         ),
@@ -59,7 +59,7 @@ interface ServerConfigurationDAO {
     fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     fun allConfig(): List<ServerConfigEntity>
     fun configById(id: String): ServerConfigEntity?
-    fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity?
+    fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
     fun updateApiVersion(id: String, commonApiVersion: Int)
     fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
     fun configForUser(userId: UserIDEntity): ServerConfigEntity?
@@ -78,9 +78,9 @@ interface ServerConfigurationDAO {
         val federation: Boolean,
         val domain: String?,
         val commonApiVersion: Int,
-        val proxyApi: String?,
-        val proxyNeedsAuthentication: Boolean?,
-        val proxyPort: Int?
+        val apiProxyHost: String?,
+        val apiProxyNeedsAuthentication: Boolean?,
+        val apiProxyPort: Int?
     )
 }
 
@@ -108,9 +108,9 @@ internal class ServerConfigurationDAOImpl internal constructor(
             federation,
             domain,
             commonApiVersion,
-            proxyApi,
-            proxyNeedsAuthentication,
-            proxyPort
+            apiProxyHost,
+            apiProxyNeedsAuthentication,
+            apiProxyPort
         )
     }
 
@@ -123,9 +123,16 @@ internal class ServerConfigurationDAOImpl internal constructor(
     override fun configById(id: String): ServerConfigEntity? =
         queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
 
-    override fun configByLinks(title: String, apiBaseUrl: String, webSocketBaseUrl: String): ServerConfigEntity? =
-        queries.getByLinks(title, apiBaseUrl, webSocketBaseUrl, mapper = mapper::fromServerConfiguration)
-            .executeAsOneOrNull()
+    override fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity? = with(links) {
+        queries.getByLinks(
+            apiBaseUrl = api,
+            webSocketBaseUrl = webSocket,
+            title = title,
+            api_proxy_host = apiProxy?.host,
+            api_proxy_port = apiProxy?.port,
+            mapper = mapper::fromServerConfiguration
+        )
+    }.executeAsOneOrNull()
 
     override fun updateApiVersion(id: String, commonApiVersion: Int) = queries.updateApiVersion(commonApiVersion, id)
 

@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
@@ -67,8 +68,12 @@ class PersistMigratedMessagesUseCaseTest {
 
         fun arrange() = this to PersistMigratedMessagesUseCaseImpl(
             applicationMessageHandler,
-            MapperProvider.protoContentMapper()
+            MapperProvider.protoContentMapper(selfUserId = SELF_USER_ID)
         )
+    }
+
+    companion object {
+        val SELF_USER_ID = UserId("user-id", "domain")
     }
 
 }

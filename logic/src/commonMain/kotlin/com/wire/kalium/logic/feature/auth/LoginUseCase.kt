@@ -4,6 +4,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
@@ -15,7 +16,8 @@ sealed class AuthenticationResult {
     data class Success(
         val authData: AuthTokens,
         val ssoID: SsoId?,
-        val serverConfigId: String
+        val serverConfigId: String,
+        val proxyCredentials: ProxyCredentials?
     ) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
@@ -43,7 +45,8 @@ internal class LoginUseCaseImpl internal constructor(
     private val loginRepository: LoginRepository,
     private val validateEmailUseCase: ValidateEmailUseCase,
     private val validateUserHandleUseCase: ValidateUserHandleUseCase,
-    private val serverConfig: ServerConfig
+    private val serverConfig: ServerConfig,
+    private val proxyCredentials: ProxyCredentials?
 ) : LoginUseCase {
     override suspend operator fun invoke(
         userIdentifier: String,
@@ -63,7 +66,7 @@ internal class LoginUseCaseImpl internal constructor(
             }
 
             else -> return AuthenticationResult.Failure.InvalidUserIdentifier
-        }.map { (authTokens, ssoId) -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id) }
+        }.map { (authTokens, ssoId) -> AuthenticationResult.Success(authTokens, ssoId, serverConfig.id, proxyCredentials) }
             .fold({
                 when (it) {
                     is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError

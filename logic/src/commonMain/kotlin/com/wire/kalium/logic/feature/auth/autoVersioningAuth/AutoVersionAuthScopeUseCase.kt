@@ -7,6 +7,7 @@ import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.failure.ServerConfigFailure
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
 class AutoVersionAuthScopeUseCase(
     private val serverLinks: ServerConfig.Links,
@@ -16,18 +17,11 @@ class AutoVersionAuthScopeUseCase(
         coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
             handleError(it)
         }, { serverConfig ->
-            when (proxyAuthentication) {
-                is ProxyAuthentication.None -> {
-                    Result.Success(coreLogic.getAuthenticationScope(serverConfig))
-
-                }
-                is ProxyAuthentication.UsernameAndPassword -> {
-                    with(proxyAuthentication.proxyCredentials) {
-                        coreLogic.persistProxyCredentialsUseCase(username, password)
-                    }
-                    Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyAuthentication.proxyCredentials))
-                }
+            val proxyCredentials = when (proxyAuthentication) {
+                is ProxyAuthentication.None -> null
+                is ProxyAuthentication.UsernameAndPassword -> proxyAuthentication.proxyCredentials
             }
+            Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyCredentials))
         })
 
     private fun handleError(coreFailure: CoreFailure): Result.Failure =
@@ -35,7 +29,7 @@ class AutoVersionAuthScopeUseCase(
             is ServerConfigFailure.NewServerVersion -> Result.Failure.TooNewVersion
             is ServerConfigFailure.UnknownServerVersion -> Result.Failure.UnknownServerVersion
             else -> Result.Failure.Generic(coreFailure)
-        }
+        }.also { kaliumLogger.e(coreFailure.toString()) }
 
     sealed class Result {
         class Success(val authenticationScope: AuthenticationScope) : Result()
@@ -48,7 +42,6 @@ class AutoVersionAuthScopeUseCase(
     }
 
     sealed interface ProxyAuthentication {
-
         object None : ProxyAuthentication
 
         class UsernameAndPassword(val proxyCredentials: ProxyCredentials) : ProxyAuthentication

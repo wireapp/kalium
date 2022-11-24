@@ -15,6 +15,7 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -42,9 +43,9 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenDoNotCreateAConversationButReturnExisting() = runTest {
         // given
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getOneToOneConversationWithOtherUser)
+            .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
             .whenInvokedWith(anything())
-            .thenReturn(Either.Right(CONVERSATION))
+            .thenReturn(flowOf(Either.Right(CONVERSATION)))
 
         given(conversationRepository)
             .suspendFunction(conversationGroupRepository::createGroupConversation)
@@ -61,7 +62,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             .wasNotInvoked()
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::getOneToOneConversationWithOtherUser)
+            .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
             .with(anything())
             .wasInvoked()
     }
@@ -70,8 +71,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     fun givenConversationExist_whenCallingTheUseCase_ThenCreateAConversationAndReturn() = runTest {
         // given
         given(conversationRepository)
-            .coroutine { getOneToOneConversationWithOtherUser(USER_ID) }
-            .then { Either.Left(StorageFailure.DataNotFound) }
+            .coroutine { observeOneToOneConversationWithOtherUser(USER_ID) }
+            .then { flowOf(Either.Left(StorageFailure.DataNotFound)) }
 
         given(conversationGroupRepository)
             .suspendFunction(conversationGroupRepository::createGroupConversation)
