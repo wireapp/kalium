@@ -122,11 +122,11 @@ internal class CryptoSessionMapperImpl internal constructor(
     private val preKeyMapper: PreKeyMapper
 ) : CryptoSessionMapper {
     override fun getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(
-        preKeyInfoList: Map<String, Map<String, Map<String, PreKeyDTO?>>>
+        preKeyInfoMap: Map<String, Map<String, Map<String, PreKeyDTO?>>>
     ): FilteredRecipient {
         val invalidList: MutableList<Pair<QualifiedIDEntity, String>> = mutableListOf()
         val validAccumulator: Map<String, Map<String, Map<String, PreKeyCrypto>>> =
-            preKeyInfoList.mapValues { (domain, userIdToClientToPrekeyMap) ->
+            preKeyInfoMap.mapValues { (domain, userIdToClientToPrekeyMap) ->
                 userIdToClientToPrekeyMap.mapValues { (userId, clientIdToPreKeyMap) ->
                     clientIdToPreKeyMap.filter { (clientId, prekey) ->
                         if (prekey == null) {
