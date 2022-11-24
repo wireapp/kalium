@@ -366,9 +366,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val model: ClassifiedDomainsModel,
         ) : FeatureConfig(id, transient) {
             override fun toString(): String {
-                val properties = mapOf("id" to id.obfuscateId(),
+                val properties = mapOf(
+                    "id" to id.obfuscateId(),
                     "status" to model.status.name,
-                    "domains" to model.config.domains.map { it.obfuscateDomain() })
+                    "domains" to model.config.domains.map { it.obfuscateDomain() }
+                )
                 return "${properties.toJsonElement()}"
             }
         }
@@ -418,7 +420,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         ) : User(id, transient) {
             override fun toString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(), "userId" to userId.obfuscateId()
+                    "id" to id.obfuscateId(),
+                    "userId" to userId.obfuscateId()
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -429,7 +432,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         ) : User(id, transient) {
             override fun toString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(), "connection" to connection.toMap()
+                    "id" to id.obfuscateId(),
+                    "connection" to connection.toMap()
                 )
                 return "${properties.toJsonElement()}"
             }
@@ -440,7 +444,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         ) : User(id, transient) {
             override fun toString(): String {
                 val properties = mapOf(
-                    "id" to id.obfuscateId(), "clientId" to clientId.value.obfuscateId()
+                    "id" to id.obfuscateId(),
+                    "clientId" to clientId.value.obfuscateId()
                 )
                 return "${properties.toJsonElement()}"
             }

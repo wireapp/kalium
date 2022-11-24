@@ -117,7 +117,11 @@ class EventMapper(
         return Event.User.UserDelete(transient, id, idMapper.fromApiModel(eventUserDelete.userId))
     }
 
-    private fun clientRemove(id: String, eventClientRemove: EventContentDTO.User.ClientRemoveDTO, transient: Boolean): Event.User.ClientRemove {
+    private fun clientRemove(
+        id: String,
+        eventClientRemove: EventContentDTO.User.ClientRemoveDTO,
+        transient: Boolean
+    ): Event.User.ClientRemove {
         return Event.User.ClientRemove(transient, id, ClientId(eventClientRemove.client.clientId))
     }
 
@@ -190,7 +194,11 @@ class EventMapper(
             }
 
             else -> {
-                Event.Conversation.MemberChanged.IgnoredMemberChanged(id, idMapper.fromApiModel(eventContentDTO.qualifiedConversation), transient)
+                Event.Conversation.MemberChanged.IgnoredMemberChanged(
+                    id,
+                    idMapper.fromApiModel(eventContentDTO.qualifiedConversation),
+                    transient
+                )
             }
         }
     }
