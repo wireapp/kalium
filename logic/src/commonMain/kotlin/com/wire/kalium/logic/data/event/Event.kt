@@ -20,6 +20,8 @@ import kotlinx.serialization.json.JsonNull
 
 sealed class Event(open val id: String, open val transient: Boolean) {
 
+    fun shouldUpdateLastProcessedEventId() = !transient
+
     sealed class Conversation(
         id: String, override val transient: Boolean, open val conversationId: ConversationId
     ) : Event(id, transient) {
