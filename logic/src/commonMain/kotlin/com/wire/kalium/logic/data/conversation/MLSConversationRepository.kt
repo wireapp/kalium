@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.event.Event.Conversation.NewMLSMessage
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -27,6 +28,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -61,6 +63,7 @@ interface MLSConversationRepository {
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
+    suspend fun requestToJoinGroupByExternalCommit(groupID: GroupID, qualifiedID: QualifiedID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
@@ -96,6 +99,7 @@ class MLSConversationDataSource(
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,
+    private val conversationApi: ConversationApi,
     private val conversationDAO: ConversationDAO,
     private val clientApi: ClientApi,
     private val syncManager: SyncManager,
@@ -189,6 +193,22 @@ class MLSConversationDataSource(
                     ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
                     idMapper.toCryptoModel(groupID)
                 )
+            }
+        }
+    }
+
+    override suspend fun requestToJoinGroupByExternalCommit(groupID: GroupID, qualifiedID: QualifiedID) {
+        wrapApiRequest {
+            conversationApi.fetchGroupInfo(idMapper.toApiModel(qualifiedID))
+        }.flatMap {
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.joinByExternalCommit(it.decodeBase64Bytes())
+                }.flatMap {
+                    wrapMLSRequest {
+                        mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
+                    }
+                }
             }
         }
     }

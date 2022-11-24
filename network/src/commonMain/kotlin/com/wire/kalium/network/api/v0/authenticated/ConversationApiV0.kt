@@ -20,6 +20,7 @@ import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
@@ -176,6 +177,11 @@ internal open class ConversationApiV0 internal constructor(
                 setBody(ConversationRenameRequest(conversationName))
             }
         }
+
+    override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<String> =
+        NetworkResponse.Error(
+            APINotSupported("MLS: fetchGroupInfo api is only available on API V3")
+        )
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"

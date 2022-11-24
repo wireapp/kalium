@@ -30,6 +30,14 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
+    override fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
+        TODO("Not yet implemented")
+    }
+
+    override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
+        TODO("Not yet implemented")
+    }
+
     override fun conversationExists(groupId: MLSGroupId): Boolean {
         TODO("Not yet implemented")
     }

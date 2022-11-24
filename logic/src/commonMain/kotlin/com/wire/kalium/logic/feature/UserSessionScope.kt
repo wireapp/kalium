@@ -302,6 +302,7 @@ class UserSessionScope internal constructor(
             keyPackageRepository,
             mlsClientProvider,
             authenticatedDataSourceSet.authenticatedNetworkContainer.mlsMessageApi,
+            authenticatedDataSourceSet.authenticatedNetworkContainer.conversationApi,
             userStorage.database.conversationDAO,
             authenticatedDataSourceSet.authenticatedNetworkContainer.clientApi,
             syncManager,
