@@ -22,10 +22,13 @@ import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageSenderImpl
+import com.wire.kalium.logic.feature.message.MessageSendingInterceptor
+import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -87,6 +90,10 @@ class DebugScope internal constructor(
             protoContentMapper = protoContentMapper
         )
 
+    private val messageContentEncoder = MessageContentEncoder()
+    private val messageSendingInterceptor: MessageSendingInterceptor
+        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
+
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
             messageRepository,
@@ -98,6 +105,7 @@ class DebugScope internal constructor(
             messageEnvelopeCreator,
             mlsMessageCreator,
             messageSendingScheduler,
+            messageSendingInterceptor,
             timeParser,
             scope
         )
