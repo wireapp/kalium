@@ -42,7 +42,7 @@ sealed class MessageEntity(
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
         val senderName: String?,
-        ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
+    ) : MessageEntity(id, content, conversationId, date, senderUserId, status, visibility, isSelfMessage)
 
     enum class Status {
         PENDING, SENT, READ, FAILED
@@ -126,6 +126,7 @@ sealed class MessageEntity(
 
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN;
+
         val isVisible get() = this == VISIBLE
     }
 

@@ -44,7 +44,7 @@ object MessageMapper {
                 totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
                 selfUserReactions = ReactionMapper.userReactionsFromJsonString(selfReactionsJson)
             ),
-             senderName = senderName,
+            senderName = senderName,
             isSelfMessage = isSelfMessage
         )
 

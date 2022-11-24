@@ -16,7 +16,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.isLeft
@@ -48,7 +47,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 

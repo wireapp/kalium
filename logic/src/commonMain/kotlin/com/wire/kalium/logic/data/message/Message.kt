@@ -155,7 +155,7 @@ sealed class Message(
         override val visibility: Visibility = Visibility.VISIBLE,
         override val senderUserName: String? = null,
         override val isSelfMessage: Boolean = false,
-        ) : Message(id, content, conversationId, date, senderUserId, status, visibility, senderUserName, isSelfMessage) {
+    ) : Message(id, content, conversationId, date, senderUserId, status, visibility, senderUserName, isSelfMessage) {
         override fun toString(): String {
 
             var properties: MutableMap<String, String>
@@ -278,6 +278,7 @@ enum class UnreadEventType(val priority: Int) {
     MISSED_CALL(2),
     MENTION(3),
     MESSAGE(4), // text or asset
+
     //     REPLY(5), TODO in development
     IGNORED(10),
 }
