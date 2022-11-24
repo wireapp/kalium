@@ -52,10 +52,6 @@ interface MessageDAO {
 
     suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity)
 
-    suspend fun observeLastUnreadMessage(
-        conversationID: QualifiedIDEntity
-    ): Flow<MessageEntity?>
-
     suspend fun observeConversationLastMessage(
         conversationID: QualifiedIDEntity
     ): Flow<MessageEntity?>
