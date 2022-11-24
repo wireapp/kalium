@@ -5,7 +5,6 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.DeleteClientParam
-import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -16,8 +15,10 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.authenticated.client.UpdateClientRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 interface ClientRemoteRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
@@ -29,7 +30,7 @@ interface ClientRemoteRepository {
     suspend fun deregisterToken(pid: String): Either<NetworkFailure, Unit>
     suspend fun fetchOtherUserClients(
         userIdList: List<UserId>
-    ): Either<NetworkFailure, List<Pair<UserId, List<OtherUserClient>>>>
+    ): Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>>
 }
 
 class ClientRemoteDataSource(
@@ -74,11 +75,8 @@ class ClientRemoteDataSource(
 
     override suspend fun fetchOtherUserClients(
         userIdList: List<UserId>
-    ): Either<NetworkFailure, List<Pair<UserId, List<OtherUserClient>>>> {
+    ): Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>> {
         val networkUserId = userIdList.map { idMapper.toNetworkUserId(it) }
-        return wrapApiRequest { clientApi.listClientsOfUsers(networkUserId) }.map { userIdTOClientListMap ->
-            userIdTOClientListMap
-                .map { keys -> idMapper.fromApiModel(keys.key) to clientMapper.fromOtherUsersClientsDTO(keys.value) }
-        }
+        return wrapApiRequest { clientApi.listClientsOfUsers(networkUserId) }
     }
 }
