@@ -58,4 +58,3 @@ class ReceiptDAOImpl(
             it.executeAsList()
         }
 }
-
