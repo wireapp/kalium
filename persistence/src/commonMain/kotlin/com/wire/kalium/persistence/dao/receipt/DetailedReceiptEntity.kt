@@ -12,7 +12,7 @@ data class DetailedReceiptEntity(
     val userId: QualifiedIDEntity,
     val userName: String?,
     val userHandle: String?,
-    val previewAssetId: QualifiedIDEntity?,
+    val userPreviewAssetId: QualifiedIDEntity?,
     val userType: UserTypeEntity,
     val isUserDeleted: Boolean,
     val connectionStatus: ConnectionEntity.State,

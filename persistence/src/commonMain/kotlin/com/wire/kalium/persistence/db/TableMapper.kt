@@ -18,6 +18,7 @@ import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.Reaction
+import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.SelfUser
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.dao.BotServiceAdapter
@@ -105,6 +106,11 @@ internal object TableMapper {
     val reactionAdapter = Reaction.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         sender_idAdapter = QualifiedIDAdapter
+    )
+    val receiptAdapter = Receipt.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        user_idAdapter = QualifiedIDAdapter,
+        typeAdapter = EnumColumnAdapter()
     )
     val selfUserAdapter = SelfUser.Adapter(
         idAdapter = QualifiedIDAdapter
