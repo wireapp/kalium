@@ -75,7 +75,7 @@ internal class ClientDAOImpl internal constructor(
             .executeAsList()
             .groupBy { it.userId }
 
-    override suspend fun conversationRepents(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
+    override suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
         clientsQueries.conversationRecipets(ids, mapper = mapper::fromClient)
             .executeAsList().groupBy { it.userId }
 

@@ -765,7 +765,7 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             verify(arrange.clientDao)
-                .suspendFunction(arrange.clientDao::conversationRepents)
+                .suspendFunction(arrange.clientDao::conversationRecipient)
                 .with(any())
                 .wasInvoked(exactly = once)
         }
@@ -1025,7 +1025,7 @@ class ConversationRepositoryTest {
         suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<Client>>) =
             apply {
                 given(clientDao)
-                    .coroutine { clientDao.conversationRepents(conversationIDEntity) }
+                    .coroutine { clientDao.conversationRecipient(conversationIDEntity) }
                     .then { result }
             }
 

@@ -194,7 +194,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         clientDAO.tryMarkInvalid(listOf(insertedClient.userId to listOf(insertedClient.id)))
         conversationDAO.insertConversations(listOf(conversationEntity1))
         conversationDAO.insertMember(Member(user.id, Member.Role.Admin), conversationEntity1.id)
-        val actual = clientDAO.conversationRepents(conversationEntity1.id)
+        val actual = clientDAO.conversationRecipient(conversationEntity1.id)
         assertEquals(expected, actual)
     }
 
