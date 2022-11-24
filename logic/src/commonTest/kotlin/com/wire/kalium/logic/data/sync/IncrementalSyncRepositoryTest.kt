@@ -5,8 +5,10 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import io.mockative.Mock
 import io.mockative.classOf
+import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.launch
@@ -103,6 +105,12 @@ class IncrementalSyncRepositoryTest {
 
     @Test
     fun givenConnectionPolicyIsUpdatedWithRepeatedValue_whenCollectingPolicy_thenShouldNotCollectRepeatedValues() = runTest {
+
+        given(sessionRepository)
+            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked().then {
+                flowOf(listOf())
+            }
+
         incrementalSyncRepository.connectionPolicyState.test {
             awaitItem() // Ignore initial value
 
@@ -120,6 +128,11 @@ class IncrementalSyncRepositoryTest {
 
     @Test
     fun givenConnectionPolicyUpdatedMultipleTimes_whenCollectingConnectionPolicy_thenAllUpdatesShouldBeCollected() = runTest {
+        given(sessionRepository)
+            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked().then {
+                flowOf(listOf())
+            }
+
         val updates = listOf(
             ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS,
             ConnectionPolicy.KEEP_ALIVE,

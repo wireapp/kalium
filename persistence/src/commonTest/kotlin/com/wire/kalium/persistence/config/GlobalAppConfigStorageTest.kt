@@ -5,7 +5,6 @@ import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
