@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.sync
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -107,9 +108,8 @@ class IncrementalSyncRepositoryTest {
     fun givenConnectionPolicyIsUpdatedWithRepeatedValue_whenCollectingPolicy_thenShouldNotCollectRepeatedValues() = runTest {
 
         given(sessionRepository)
-            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked().then {
-                flowOf(listOf())
-            }
+            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked()
+            .thenReturn(Either.Right(flowOf(listOf())))
 
         incrementalSyncRepository.connectionPolicyState.test {
             awaitItem() // Ignore initial value
@@ -129,9 +129,8 @@ class IncrementalSyncRepositoryTest {
     @Test
     fun givenConnectionPolicyUpdatedMultipleTimes_whenCollectingConnectionPolicy_thenAllUpdatesShouldBeCollected() = runTest {
         given(sessionRepository)
-            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked().then {
-                flowOf(listOf())
-            }
+            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked()
+            .thenReturn(Either.Right(flowOf(listOf())))
 
         val updates = listOf(
             ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS,

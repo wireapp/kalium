@@ -2,10 +2,12 @@ package com.wire.kalium.logic.data.sync
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 
@@ -65,12 +67,17 @@ internal class InMemoryIncrementalSyncRepository(
             kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
             _connectionPolicy.emit(connectionPolicy)
         } else {
-            sessionRepository.getAllValidAccountPersistentWebSocketStatus().collect {
-                if (!it.map { it.isPersistentWebSocketEnabled }.contains(true)) {
-                    kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
-                    _connectionPolicy.emit(connectionPolicy)
+            sessionRepository.getAllValidAccountPersistentWebSocketStatus().fold({
+                kaliumLogger.withFeatureId(SYNC).i("Error while fetching valid accounts persistent web socket status ")
+
+            }, {
+                it.collect { persistWebSocketStatusList ->
+                    if (!persistWebSocketStatusList.map { it.isPersistentWebSocketEnabled }.contains(true)) {
+                        kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
+                        _connectionPolicy.emit(connectionPolicy)
+                    }
                 }
-            }
+            })
         }
     }
 

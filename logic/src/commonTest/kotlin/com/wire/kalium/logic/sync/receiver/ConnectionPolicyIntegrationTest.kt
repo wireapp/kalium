@@ -5,6 +5,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import io.mockative.Mock
 import io.mockative.classOf
@@ -38,8 +39,9 @@ class ConnectionPolicyIntegrationTest {
     @Test
     fun givenSetConnectionPolicyIsCalled_whenObservingConnectionPolicy_thenTheValueIsUpdated() = runTest {
         // Given
-        given(sessionRepository).coroutine { getAllValidAccountPersistentWebSocketStatus() }
-            .then { flowOf(listOf()) }
+        given(sessionRepository)
+            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked()
+            .thenReturn(Either.Right(flowOf(listOf())))
 
         setConnectionPolicyUseCase(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS)
 
