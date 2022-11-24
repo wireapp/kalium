@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
+import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.TimeParser
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -68,16 +69,28 @@ class MessageScope internal constructor(
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository, userStorage.database.clientDAO)
 
     private val protoContentMapper: ProtoContentMapper
-        get() = ProtoContentMapperImpl()
+        get() = ProtoContentMapperImpl(selfUserId = userId)
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(proteusClientProvider, protoContentMapper)
+        get() = MessageEnvelopeCreatorImpl(
+            proteusClientProvider = proteusClientProvider,
+            selfUserId = userId,
+            protoContentMapper = protoContentMapper
+        )
 
     private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(mlsClientProvider, protoContentMapper)
+        get() = MLSMessageCreatorImpl(
+            mlsClientProvider = mlsClientProvider,
+            selfUserId = userId,
+            protoContentMapper = protoContentMapper
+        )
 
     private val idMapper: IdMapper
         get() = IdMapperImpl()
+
+    private val messageContentEncoder = MessageContentEncoder()
+    private val messageSendingInterceptor: MessageSendingInterceptor
+        get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
 
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
@@ -90,6 +103,7 @@ class MessageScope internal constructor(
             messageEnvelopeCreator,
             mlsMessageCreator,
             messageSendingScheduler,
+            messageSendingInterceptor,
             timeParser,
             scope
         )
@@ -184,12 +198,13 @@ class MessageScope internal constructor(
 
     val getNotifications: GetNotificationsUseCase
         get() = GetNotificationsUseCaseImpl(
-            connectionRepository,
-            messageRepository,
-            userRepository,
-            conversationRepository,
-            timeParser,
-            EphemeralNotificationsManager
+            connectionRepository = connectionRepository,
+            messageRepository = messageRepository,
+            userRepository = userRepository,
+            conversationRepository = conversationRepository,
+            timeParser = timeParser,
+            selfUserId = userId,
+            ephemeralNotificationsManager = EphemeralNotificationsManager
         )
 
     val persistMigratedMessage: PersistMigratedMessagesUseCase

@@ -123,11 +123,12 @@ class MessageDataSource(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
-    private val messageMapper: MessageMapper = MapperProvider.messageMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(),
+    private val selfUserId: UserId,
+    private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, idMapper, messageMapper)
