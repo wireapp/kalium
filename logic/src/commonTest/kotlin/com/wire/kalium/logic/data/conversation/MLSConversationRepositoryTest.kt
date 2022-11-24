@@ -361,7 +361,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::mergePendingGroupFromExternalCommit)
-            .with(any(), any())
+            .with(any())
             .wasInvoked(once)
     }
 

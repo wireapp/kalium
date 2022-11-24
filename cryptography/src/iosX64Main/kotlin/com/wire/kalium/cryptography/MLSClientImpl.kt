@@ -34,7 +34,11 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
+    override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
+        TODO("Not yet implemented")
+    }
+
+    override fun clearPendingGroupExternalCommit(qualifiedID: CryptoQualifiedID) {
         TODO("Not yet implemented")
     }
 

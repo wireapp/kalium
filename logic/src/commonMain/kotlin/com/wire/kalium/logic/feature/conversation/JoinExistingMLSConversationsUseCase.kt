@@ -59,18 +59,20 @@ class JoinExistingMLSConversationsUseCaseImpl(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun requestToJoinMLSGroupAndRetry(conversation: Conversation): Either<CoreFailure, Unit> =
-        conversationGroupRepository.requestToJoinMLSGroup(conversation)
+        conversationGroupRepository.joinMLSGroupViaExternalCommit(conversation)
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if (failure.kaliumException.isMlsStaleMessage()) {
                         kaliumLogger.w("Epoch out of date for conversation ${conversation.id}, re-fetching and re-trying")
-
                         // Re-fetch current epoch and try again
                         return conversationRepository.fetchConversation(conversation.id).flatMap {
                             conversationRepository.detailsById(conversation.id).flatMap { conversation ->
                                 requestToJoinMLSGroupAndRetry(conversation)
                             }
                         }
+                    } else {
+                        conversationGroupRepository.clearMLSGroupJoinViaExternalCommit(conversation.id)
+                        Either.Left(failure)
                     }
                 }
                 Either.Left(failure)

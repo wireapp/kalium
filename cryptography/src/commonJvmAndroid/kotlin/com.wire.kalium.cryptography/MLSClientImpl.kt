@@ -99,19 +99,20 @@ actual class MLSClientImpl actual constructor(
         return toCommitBundle(coreCrypto.joinByExternalCommit(toUByteList(publicGroupState)))
     }
 
-    override fun mergePendingGroupFromExternalCommit(
-        groupId: MLSGroupId,
-        externalSenders: List<Ed22519Key>
-    ) {
+    override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
         val conf = ConversationConfiguration(
             emptyList(),
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
             keyRotationDuration,
-            externalSenders.map { toUByteList(it.value) }
+            emptyList<Ed22519Key>().map { toUByteList(it.value) }
         )
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
         coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes, conf)
+    }
+
+    override fun clearPendingGroupExternalCommit(qualifiedID: CryptoQualifiedID) {
+        coreCrypto.clearPendingGroupFromExternalCommit(toUByteList(qualifiedID.toString()))
     }
 
     override fun createConversation(

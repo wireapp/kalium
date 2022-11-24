@@ -63,7 +63,8 @@ interface MLSConversationRepository {
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
-    suspend fun requestToJoinGroupByExternalCommit(groupID: GroupID, qualifiedID: QualifiedID)
+    suspend fun requestToJoinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit>
+    suspend fun clearJoinViaExternalCommit(conversationId: QualifiedID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
@@ -197,18 +198,29 @@ class MLSConversationDataSource(
         }
     }
 
-    override suspend fun requestToJoinGroupByExternalCommit(groupID: GroupID, qualifiedID: QualifiedID) {
-        wrapApiRequest {
-            conversationApi.fetchGroupInfo(idMapper.toApiModel(qualifiedID))
+    override suspend fun requestToJoinGroupByExternalCommit(groupID: GroupID, conversationId: QualifiedID): Either<CoreFailure, Unit> {
+        kaliumLogger.d("Requesting to re-join MLS group $groupID via external commit")
+        return wrapApiRequest {
+            conversationApi.fetchGroupInfo(idMapper.toApiModel(conversationId))
         }.flatMap {
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     mlsClient.joinByExternalCommit(it)
+                }.flatMap { commitBundle ->
+                    sendCommitBundle(groupID, commitBundle)
                 }.flatMap {
                     wrapMLSRequest {
                         mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
                     }
                 }
+            }
+        }
+    }
+
+    override suspend fun clearJoinViaExternalCommit(conversationId: QualifiedID) {
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.clearPendingGroupExternalCommit(idMapper.toCryptoModel(conversationId))
             }
         }
     }
